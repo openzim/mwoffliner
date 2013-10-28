@@ -30,10 +30,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid.wmflabs.org/fr/';
+var parsoidUrl = 'http://parsoid.wmflabs.org/fa/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://fr.wikipedia.org/';
+var hostUrl = 'http://fa.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -78,7 +78,7 @@ var templateHtml = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 12;
+var maxParallelRequests = 16;
 var maxTryCount = 0;
 var tryCount = {};
 var ltr = true;
@@ -134,6 +134,7 @@ saveFavicon();
 
 /* Get content */
 async.series([
+    function( finished ) { getTextDirection( finished ) },
     function( finished ) { getNamespaces( finished ) },
     function( finished ) { getMainPage( finished ) },
     function( finished ) { getSubTitle( finished ) },
@@ -1124,6 +1125,22 @@ function getNamespaces( finished ) {
     namespaces[ '' ] = 0;
 
     finished();
+}
+
+function getTextDirection( finished ) {
+    console.info( 'Getting text direction...' );
+    var path = rootPath + htmlDirectory + '/index.html';
+    loadUrlSync( webUrl, function( body ) {
+	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
+	var parts = languageDirectionRegex.exec( body );
+	if ( parts[ 1 ] ) {
+	    ltr = ( parts[ 1 ] === 'ltr' );
+	} else {
+	    console.error( 'Unable to get the language direction' );
+	    process.exit( 1 );
+	};
+	finished();
+    });
 }
 
 function lcFirst( str ) {
