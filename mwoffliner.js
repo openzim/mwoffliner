@@ -30,10 +30,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid.wmflabs.org/fa/';
+var parsoidUrl = 'http://parsoid.wmflabs.org/zh/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://fa.wikipedia.org/';
+var hostUrl = 'http://zh.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -78,7 +78,7 @@ var templateHtml = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 16;
+var maxParallelRequests = 12;
 var maxTryCount = 0;
 var tryCount = {};
 var ltr = true;
@@ -373,8 +373,6 @@ function saveArticle( html, articleId ) {
 	    var img = imgs[i];
 	    
 	    if ( withMedias ) {
-		console.log( img.outerHTML );
-		console.log( img.getAttribute( 'src')  );
 		var src = getFullUrl( img.getAttribute( 'src' ) );
 		var filename = decodeURI( pathParser.basename( urlParser.parse( src ).pathname ) );
 		
@@ -867,17 +865,22 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 }
 
 function downloadMedia( url, filename ) {
+    console.log( 'Download media ' + filename + '...' );
     var parts = mediaRegex.exec( filename );
-    console.log( filename );
-    var width = parts[1].replace( /px\-/g, '' ) || 9999999;
+    console.log( 'Analysing ' + filename + '...' );
+    var width = parseInt( parts[1].replace( /px\-/g, '' ) ) || 9999999;
+    console.log( 'Width of ' + filename + ' is ' + width );
     var filenameBase = parts[2] + parts[3] + ( parts[4] || '' );
+    console.log( 'Filename base of ' + filename + ' is ' + filenameBase);
 
-    if ( mediaIds[ filenameBase ] && parseInt( mediaIds[ filenameBase ] ) >=  parseInt( width ) ) {
+    if ( mediaIds[ filenameBase ] && mediaIds[ filenameBase ] >=  width ) {
+	console.log( 'File ' + filename + ' already saved' );
 	return;
     } else {
 	mediaIds[ filenameBase ] = width;
     }
 
+    console.log( 'File ' + filename + ' will be downloaded from ' + url );
     downloadFile( url, getMediaPath( filename ), true );
 }
 
@@ -893,8 +896,8 @@ function downloadFile( url, path, force ) {
 	if ( exists && !force ) {
 	    console.info( path + ' already downloaded, download will be skipped.' );
 	} else {
-	    url = url.replace( /^https\:\/\//, 'http://' );
 	    console.info( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
+	    url = url.replace( /^https\:\/\//, 'http://' );
 	    
 	    createDirectoryRecursively( pathParser.dirname( path ) );
 
@@ -989,8 +992,8 @@ function downloadFile( url, path, force ) {
 			    console.error( 'Exit on purpose' );
 			    process.exit( 1 );
 			} else {
-			    console.error( 'Sleeping for ' + tryCount[ url ] + 'seconds' );
-			    sleep.sleep( tryCount );
+			    console.error( 'Sleeping for ' + tryCount[ url ] + ' seconds' );
+			    sleep.sleep( tryCount[ url ] );
 			}
 			downloadFile( url, path, force );
 		    } else {
@@ -1133,11 +1136,11 @@ function getTextDirection( finished ) {
     loadUrlSync( webUrl, function( body ) {
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
 	var parts = languageDirectionRegex.exec( body );
-	if ( parts[ 1 ] ) {
+	if ( parts && parts[ 1 ] ) {
 	    ltr = ( parts[ 1 ] === 'ltr' );
 	} else {
-	    console.error( 'Unable to get the language direction' );
-	    process.exit( 1 );
+	    console.log( 'Unable to get the language direction, fallback to ltr' );
+	    ltr = true;
 	};
 	finished();
     });
