@@ -15,6 +15,7 @@ var withMedias = true;
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
 
 /* All DOM nodes with on of these styles will be removed */
+/* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */
 var cssClassBlackList = [ 'noprint', 'ambox', 'stub', 'topicon', 'magnify' ]; 
 
 /* All DOM node with these styles will be deleted if no A node is included in the sub-tree */
@@ -30,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid.wmflabs.org/zh/';
+var parsoidUrl = 'http://parsoid.wmflabs.org/bm/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://zh.wikipedia.org/';
+var hostUrl = 'http://bm.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -78,7 +79,7 @@ var templateHtml = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 12;
+var maxParallelRequests = 8;
 var maxTryCount = 0;
 var tryCount = {};
 var ltr = true;
@@ -113,6 +114,7 @@ var sleep = require( 'sleep' );
 var pngquant = require( 'pngquant' );
 var pngcrush = require( 'pngcrush' );
 var jpegtran = require( 'jpegtran' );
+var request = require( 'request' );
 var htmlminifier = require('html-minifier');
 var smooth = require('smooth')(maxParallelRequests);
 
@@ -211,32 +213,17 @@ function saveArticle( html, articleId ) {
 	    }
 	}
 	
-	/* Remove useless DOM nodes without children */
-	var tagNames = [ 'li', 'span' ];
-	tagNames.map( function( tagName ) {
-	    var nodes = parsoidDoc.getElementsByTagName( tagName );
-	    for ( var i = 0; i < nodes.length ; i++ ) {
-	        if ( ! nodes[i].innerHTML ) {
-		    deleteNode( nodes[i] );
-		}
-	    };
-	});
-
-	/* Remove useless input nodes */
-	var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
-	for ( var i = 0; i < inputNodes.length ; i++ ) {
-	    deleteNode( inputNodes[i] );
-	}
-	
-	/* Go through all links (a tag) */
+	/* Go through all links */
 	var as = parsoidDoc.getElementsByTagName( 'a' );
-	for ( var i = 0; i < as.length ; i++ ) {
-	    var a = as[i];
-	    var rel = a.getAttribute( 'rel' );
-	    var href = a.getAttribute( 'href' );
+	var areas = parsoidDoc.getElementsByTagName( 'area' );
+	var linkNodes = Array.prototype.slice.call( as ).concat( Array.prototype.slice.call( areas ) );
+	for ( var i = 0; i < linkNodes.length ; i++ ) {
+	    var linkNode = linkNodes[i];
+	    var rel = linkNode.getAttribute( 'rel' );
+	    var href = linkNode.getAttribute( 'href' );
 	    
 	    if ( !href ) {
-		deleteNode( a );
+		deleteNode( linkNode );
 		continue;
 	    }
 	    
@@ -244,20 +231,20 @@ function saveArticle( html, articleId ) {
 		/* Add 'external' class to external links */
 		if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
 		     rel === 'mw:WikiLink/Interwiki' ) {
-		    a.setAttribute( 'class', concatenateToAttribute( a.getAttribute( 'class'), 'external' ) );
+		    linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class'), 'external' ) );
 		}
 		
 		/* Check if the link is "valid" */
 		if ( ! href ) {
 		    console.error( 'No href attribute in the following code, in article ' + articleId );
-		    console.error( a.outerHTML );
+		    console.error( linkNode.outerHTML );
 		    process.exit(1);
 		}
 		
 		/* Rewrite external links starting with // */
 		if ( rel.substring( 0, 10 ) === 'mw:ExtLink' ) {
 		    if ( href.substring( 0, 1 ) === '/' ) {
-			a.setAttribute( 'href', getFullUrl( href ) );
+			linkNode.setAttribute( 'href', getFullUrl( href ) );
 		    }
 		}
 		
@@ -265,24 +252,24 @@ function saveArticle( html, articleId ) {
 		else if ( rel == 'mw:WikiLink' ) {
 		    var targetId = decodeURI( href.replace( /^\.\//, '' ) );
 		    if ( isMirrored( targetId ) ) {
-			a.setAttribute( 'href', getArticleUrl( targetId ) );
+			linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
 		    } else {
-			while ( a.firstChild ) {
-			    a.parentNode.insertBefore( a.firstChild, a);
+			while ( linkNode.firstChild ) {
+			    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
 			}
-			a.parentNode.removeChild( a );
+			linkNode.parentNode.removeChild( linkNode );
 		    }
 		}
 	    } else {
 		if ( href.indexOf( '/wiki/' ) != -1 ) {
 		    var targetId = decodeURI( href.replace(/^\/wiki\//, '') );
 		    if ( isMirrored( targetId ) ) {
-			a.setAttribute( 'href', getArticleUrl( targetId ) );
+			linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
 		    } else {
-			while ( a.firstChild ) {
-			    a.parentNode.insertBefore( a.firstChild, a);
+			while ( linkNode.firstChild ) {
+			    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
 			}
-			a.parentNode.removeChild( a );
+			linkNode.parentNode.removeChild( linkNode );
 		    }
 		}
 	    }
@@ -305,28 +292,30 @@ function saveArticle( html, articleId ) {
 	    }
 	}
 	
-	/* Rewrite thumbnails */
+	/* Improve image frames */
 	var figures = parsoidDoc.getElementsByTagName( 'figure' );
-	for ( var i = 0; i < figures.length ; i++ ) {
-	    var figure = figures[i];
+	var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
+	var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
+	for ( var i = 0; i < imageNodes.length ; i++ ) {
+	    var imageNode = imageNodes[i];
 	    
 	    if ( withMedias ) {
-		var figureClass = figure.getAttribute( 'class' ) || '';
-		var figureTypeof = figure.getAttribute( 'typeof' );
-		var image = figure.getElementsByTagName( 'img' )[0];
+		var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
+		var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
+		var image = imageNode.getElementsByTagName( 'img' )[0];
 		var imageWidth = parseInt( image.getAttribute( 'width' ) );
 		
-		if ( figureTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
-		    var description = figure.getElementsByTagName( 'figcaption' )[0];
+		if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
+		    var description = imageNode.getElementsByTagName( 'figcaption' )[0];
 		    
 		    var thumbDiv = parsoidDoc.createElement( 'div' );
 		    thumbDiv.setAttribute
 		    thumbDiv.setAttribute( 'class', 'thumb' );
-		    if ( figureClass.search( 'mw-halign-right' ) >= 0 ) {
+		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
-		    } else if ( figureClass.search( 'mw-halign-left' ) >= 0 ) {
+		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
-		    } else if ( figureClass.search( 'mw-halign-center' ) >= 0 ) {
+		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone center' ) );
 		    } else {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
@@ -347,27 +336,27 @@ function saveArticle( html, articleId ) {
 		    thumbinnerDiv.appendChild( thumbcaptionDiv );
 		    thumbDiv.appendChild( thumbinnerDiv );
 		    
-		    figure.parentNode.replaceChild(thumbDiv, figure);
-		} else if ( figureTypeof.indexOf( 'mw:Image' ) >= 0 ) {
+		    imageNode.parentNode.replaceChild(thumbDiv, imageNode);
+		} else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
 		    var div = parsoidDoc.createElement( 'div' );
-		    if ( figureClass.search( 'mw-halign-right' ) >= 0 ) {
+		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
 			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
-		    } else if ( figureClass.search( 'mw-halign-left' ) >= 0 ) {
+		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
 			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
-		    } else if ( figureClass.search( 'mw-halign-center' ) >= 0 ) {
+		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
 			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), ' center' ) );
 		    } else {
 			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'float' + revAutoAlign ) );
 		    }
 		    div.appendChild( image );
-		    figure.parentNode.replaceChild(div, figure);
+		    imageNode.parentNode.replaceChild(div, imageNode);
 		}
 	    } else {
-		deleteNode( figure );
+		deleteNode( imageNode );
 	    }
 	}
-	
-	/* Go through all images */
+
+	/* Clean/rewrite image tags */
 	var imgs = parsoidDoc.getElementsByTagName( 'img' );
 	for ( var i = 0; i < imgs.length ; i++ ) {
 	    var img = imgs[i];
@@ -405,7 +394,7 @@ function saveArticle( html, articleId ) {
 		deleteNode( img );
 	    }
 	}
-	
+
 	/* Remove element with id in the blacklist */
 	idBlackList.map( function( id ) {
 	    var node = parsoidDoc.getElementById( id );
@@ -413,7 +402,7 @@ function saveArticle( html, articleId ) {
 		deleteNode( node );
 	    }
 	});
-	
+
 	/* Remove element with black listed CSS classes */
 	cssClassBlackList.map( function( classname ) {
 	    var nodes = parsoidDoc.getElementsByClassName( classname );
@@ -431,7 +420,30 @@ function saveArticle( html, articleId ) {
 		}
 	    }
 	});
-	
+
+	/* Remove link tags */
+	var links = parsoidDoc.getElementsByTagName( 'link' );
+	for ( var i = 0; i < links.length ; i++ ) {
+	    deleteNode(links[i]);
+	};
+
+	/* Remove useless DOM nodes without children */
+	var tagNames = [ 'li', 'span' ];
+	tagNames.map( function( tagName ) {
+	    var nodes = parsoidDoc.getElementsByTagName( tagName );
+	    for ( var i = 0; i < nodes.length ; i++ ) {
+	        if ( ! nodes[i].innerHTML ) {
+		    deleteNode( nodes[i] );
+		}
+	    };
+	});
+
+	/* Remove useless input nodes */
+	var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
+	for ( var i = 0; i < inputNodes.length ; i++ ) {
+	    deleteNode( inputNodes[i] );
+	};
+
 	/* Create final document by merging template and parsoid documents */
 	var doc = domino.createDocument( templateHtml );
 	var contentNode = doc.getElementById( 'mw-content-text' );
@@ -477,7 +489,7 @@ function saveArticle( html, articleId ) {
 		collapseWhitespace: true,
 		collapseBooleanAttributes: true,
 		removeAttributeQuotes: true,
-		removeEmptyAttributes: true });
+		removeEmptyAttributes: true});
 	} catch ( error ) {
 	    html = doc.documentElement.outerHTML;
 	}
@@ -489,7 +501,9 @@ function saveArticle( html, articleId ) {
 	console.error( error );
 	console.error( 'Sleeping for 10 seconds' );
 	sleep.sleep( 10 );
-	loadUrlAsync( getArticleUrl( articleId ), function( html, articleId ) {
+	var articleUrl = parsoidUrl + articleId;
+	console.error( 'Reload article "' + articleId + '" from ' + articleUrl );
+	loadUrlAsync( articleUrl, function( html, articleId ) {
 	    saveArticle( html, articleId );
 	}, articleId);
     }
@@ -792,58 +806,13 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	},
 	function( finished ) {
 	    finishedGlobal = finished;
-	    var request = http.get( url, function( response ) {
-		response.on( 'socket', function ( socket ) {
-		    socket.on( 'close', function( error ) {
-			finished( error );
-		    });
-		    socket.on( 'error', function( error ) {
-			finished( error );
-		    });
-		    socket.on( 'timeout', function() {
-			finished( "Pipe has timeouted..." );
-		    });
-		});
-		response.on( 'error', function( error ) {
-		    finished( error );
-		});
-
-		data = '';
-		response.setEncoding( 'utf8' );
-		response.on( 'data', function ( chunk ) {
-			data += chunk;
-		});
-		response.on( 'close', function () {
+	    var r = request( url, function( error, response, body ) {
+		if (!error && response.statusCode == 200) {
+		    data = body;
 		    nok = false;
-		    finished();
-		});
-		response.on( 'end', function () {
-		    nok = false;
-		    if ( nok ) {
-			finished();
-		    }
-		});
-	    });
-
-	    request.on( 'error', function( error ) {
+		}
 		finished( error );
 	    });
-	    request.on( 'close', function() {
-		finished();
-	    });
-	    request.on( 'socket', function ( socket ) {
-		socket.on( 'close', function( error ) {
-		    finished( error );
-		});
-		socket.on( 'error', function( error ) {
-		    finished( error );
-		});
-		socket.on( 'timeout', function() {
-		    finished( "Pipe has timeouted..." );
-		});
-	    });
-
-	    request.end();
 	},
 	function( error ) {
 	    if ( error ) {
@@ -865,22 +834,16 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 }
 
 function downloadMedia( url, filename ) {
-    console.log( 'Download media ' + filename + '...' );
     var parts = mediaRegex.exec( filename );
-    console.log( 'Analysing ' + filename + '...' );
     var width = parseInt( parts[1].replace( /px\-/g, '' ) ) || 9999999;
-    console.log( 'Width of ' + filename + ' is ' + width );
     var filenameBase = parts[2] + parts[3] + ( parts[4] || '' );
-    console.log( 'Filename base of ' + filename + ' is ' + filenameBase);
 
     if ( mediaIds[ filenameBase ] && mediaIds[ filenameBase ] >=  width ) {
-	console.log( 'File ' + filename + ' already saved' );
 	return;
     } else {
 	mediaIds[ filenameBase ] = width;
     }
 
-    console.log( 'File ' + filename + ' will be downloaded from ' + url );
     downloadFile( url, getMediaPath( filename ), true );
 }
 
@@ -912,7 +875,7 @@ function downloadFile( url, path, force ) {
 		},
 		function( finished ) {
 		    finishedGlobal = finished;
-		    var request = http.get( url, function( response ) {
+		    var r = http.get( url, function( response ) {
 			var writeFile = function( response, finished ) {
 			    var mimeType = optimize ? response.headers['content-type'] : '';
 			    var file = fs.createWriteStream( path );
@@ -965,13 +928,13 @@ function downloadFile( url, path, force ) {
 			writeFile( response, finished );
 		    });
 
-		    request.on( 'error', function( error ) {
+		    r.on( 'error', function( error ) {
 			finished( error );
 		    });
-		    request.on( 'close', function() {
+		    r.on( 'close', function() {
 			finished();
 		    });
-		    request.on( 'socket', function ( socket ) {
+		    r.on( 'socket', function ( socket ) {
 			socket.on( 'close', function( error ) {
 			    finished( error );
 			});
@@ -983,7 +946,7 @@ function downloadFile( url, path, force ) {
 			});
 		    });
 
-		    request.end();
+		    r.end();
 		},
 		function( error ) {
 		    if ( error ) {
@@ -1028,8 +991,8 @@ function getMediaBase( filename, escape ) {
 		 escape ? encodeURIComponent( string ) : string );
     }
 
-    return mediaDirectory + '/' + ( e( root[0] ) || '_' ) + '/' + ( e( root[1] ) || '_' ) + '/' + 
-	( e( root[2] ) || '_' ) + '/' + ( e( root[3] ) || '_' ) + '/' + e( parts[2] + parts[3] + ( parts[4] || '' ) );
+    return mediaDirectory + '/' + ( e( charAt( root, 0 ) ) || '_' ) + '/' + ( e( charAt( root, 1 ) ) || '_' ) + '/' + 
+	( e( charAt( root, 2 ) ) || '_' ) + '/' + ( e( charAt( root, 3 ) ) || '_' ) + '/' + e( parts[2] + parts[3] + ( parts[4] || '' ) );
 }
 
 function getArticleUrl( articleId ) {
@@ -1054,8 +1017,8 @@ function getArticleBase( articleId, escape ) {
 		 escape ? encodeURIComponent( string ) : string );
     }
 
-    return htmlDirectory + '/' + ( e( dirBase[0] ) || '_' ) + '/' + ( e( dirBase[1] ) || '_' ) + '/' + 
-	( e( dirBase[2] ) || '_' ) + '/' + ( e( dirBase[3] ) || '_' ) + '/' + e( filename ) + '.html';
+    return htmlDirectory + '/' + ( e( charAt( dirBase, 0 ) ) || '_' ) + '/' + ( e( charAt( dirBase, 1 ) ) || '_' ) + '/' + 
+	( e( charAt( dirBase, 2 ) ) || '_' ) + '/' + ( e( charAt( dirBase, 3 ) ) || '_' ) + '/' + e( filename ) + '.html';
 }
 
 function getSubTitle( finished ) {
@@ -1165,4 +1128,32 @@ function decodeURI( uri ) {
 	console.error( error );
 	return uri;
     }
+}
+
+function charAt( str, idx ) {
+    var ret = '';
+    str += '';
+    var end = str.length;
+
+    var surrogatePairs = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
+    while ( ( surrogatePairs.exec( str ) ) != null ) {
+        var li = surrogatePairs.lastIndex;
+        if ( li - 2 < idx ) {
+            idx++;
+        } else {
+            break;
+        }
+    }
+
+    if ( idx >= end || idx < 0 ) {
+        return '';
+    }
+
+    ret += str.charAt( idx );
+
+    if ( /[\uD800-\uDBFF]/.test( ret ) && /[\uDC00-\uDFFF]/.test( str.charAt( idx+1 ) ) ) {
+        ret += str.charAt( idx+1 );
+    }
+
+    return ret;
 }
