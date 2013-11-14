@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid.wmflabs.org/bm/';
+var parsoidUrl = 'http://parsoid.wmflabs.org/fa/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://bm.wikipedia.org/';
+var hostUrl = 'http://fa.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -79,9 +79,8 @@ var templateHtml = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 8;
-var maxTryCount = 0;
-var tryCount = {};
+var maxParallelRequests = 18;
+var maxTryCount = 3;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
@@ -114,7 +113,7 @@ var sleep = require( 'sleep' );
 var pngquant = require( 'pngquant' );
 var pngcrush = require( 'pngcrush' );
 var jpegtran = require( 'jpegtran' );
-var request = require( 'request' );
+var request = require( 'request-enhanced' );
 var htmlminifier = require('html-minifier');
 var smooth = require('smooth')(maxParallelRequests);
 
@@ -133,6 +132,8 @@ createDirectories();
 saveJavascript();
 saveStylesheet();
 saveFavicon();
+
+//articleIds['سگ_سرابی '] = undefined;
 
 /* Get content */
 async.series([
@@ -179,10 +180,14 @@ function saveArticles( finished ) {
 		console.info( articleId + ' already downloaded at ' + articlePath );
 		finished();
 	    } else {
-		var articleUrl = parsoidUrl + articleId;
+		var articleUrl = parsoidUrl + encodeURIComponent( articleId );
 		console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 		loadUrlAsync( articleUrl, function( html, articleId ) {
-		    saveArticle( html, articleId );
+		    if ( html ) {
+			saveArticle( html, articleId );
+		    } else {
+			delete articleIds[ articleId ];
+		    }
 		    finished();
 		}, articleId);
 	    }
@@ -190,9 +195,7 @@ function saveArticles( finished ) {
     }
 
     async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( err ) {
-	if (err) {
-	    console.error( 'Error in saveArticles callback: ' + err );
-	}
+	console.log( err);
     });
 
     finished();
@@ -762,7 +765,8 @@ function writeFile( data, path, callback ) {
 }
 
 function loadUrlSync( url, callback ) {
-    tryCount[ url ] = 0;
+    var tryCount = 0;
+
     do {
 	try {
 	    var req = httpsync.get({ url : url });
@@ -773,7 +777,6 @@ function loadUrlSync( url, callback ) {
 		console.info( "Redirect detected, load " + decodeURI( res.headers.location ) );
 		return loadUrlSync( res.headers.location, callback );
 	    } else {
-		delete tryCount[ url ];
 		if ( callback ) {
 		    callback( content );
 		    break;
@@ -782,53 +785,44 @@ function loadUrlSync( url, callback ) {
 		}
 	    }
 	} catch ( error ) {
-	    console.error( 'Unable to sync retrieve (try nb ' + tryCount[ url ]++ + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
-	    if ( maxTryCount && tryCount[ url ] > maxTryCount ) {
-		console.error( 'Exit on purpose' );
-		process.exit( 1 );
+	    console.error( 'Unable to sync retrieve (try nb ' + tryCount++ + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
+	    if ( maxTryCount && tryCount > maxTryCount ) {
+		console.error( 'Unable to get ' + decodeURI( url ) + ' and abandon.' );
+		return "";
 	    } else {
-		console.error( 'Sleeping for ' + tryCount[ url ] + ' seconds' );
-		sleep.sleep( tryCount[ url ] );
+		console.error( 'Sleeping for ' + tryCount + ' seconds' );
+		sleep.sleep( tryCount );
 	    }
 	}
     } while ( true );
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
-    var nok = true;
-    var finishedGlobal;
+    var tryCount = 0;
     var data;
-    tryCount[ url ] = tryCount[ url ] ? tryCount[ url ] += 1 : 1;
 
     async.whilst(
 	function() {
-	    return nok;
+	    return ( maxTryCount == 0 || tryCount++ < maxTryCount );
 	},
 	function( finished ) {
-	    finishedGlobal = finished;
-	    var r = request( url, function( error, response, body ) {
-		if (!error && response.statusCode == 200) {
+	    request.get( {url: url , timeout: 60000} , function( error, body ) {
+		if ( error ) {
+		    console.error( 'Unable to async retrieve (try nb ' + tryCount + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
+		    console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
+		    sleep.sleep( tryCount );
+		    finished();
+		} else {
 		    data = body;
-		    nok = false;
+		    finished('ok');
 		}
-		finished( error );
 	    });
 	},
 	function( error ) {
-	    if ( error ) {
-		console.error( 'Unable to async retrieve (try nb ' + tryCount[ url ] + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
-		if ( maxTryCount && tryCount[ url ] > maxTryCount ) {
-		    console.error( 'Exit on purpose' );
-		    process.exit( 1 );
-		} else {
-		    console.info( 'Sleeping for ' + tryCount[ url ] + ' seconds' );
-		    sleep.sleep( tryCount[ url ] );
-		}
-		loadUrlAsync( url, callback, var1, var2, var3 );
-	    } else {
-		delete tryCount[ url ];
-		callback( data, var1, var2, var3 );		
+	    if ( !data ) {
+		console.error( 'Abandon retrieving of ' + decodeURI( url ) );
 	    }
+	    callback( data, var1, var2, var3 );
 	}
     );
 }
@@ -855,6 +849,9 @@ process.on( 'uncaughtException', function( error ) {
 
 
 function downloadFile( url, path, force ) {
+    var data;
+    var tryCount = 0;
+
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    console.info( path + ' already downloaded, download will be skipped.' );
@@ -864,107 +861,33 @@ function downloadFile( url, path, force ) {
 	    
 	    createDirectoryRecursively( pathParser.dirname( path ) );
 
-	    var nok = true;
-	    var finishedGlobal;
-	    var optimize = false;
-	    tryCount[ url ] = tryCount[ url ] ? tryCount[ url ] += 1 : 1;
-
 	    async.whilst(
 		function() {
-		    return nok;
+		    return ( tryCount++ < maxTryCount );
 		},
 		function( finished ) {
-		    finishedGlobal = finished;
-		    var r = http.get( url, function( response ) {
-			var writeFile = function( response, finished ) {
-			    var mimeType = optimize ? response.headers['content-type'] : '';
-			    var file = fs.createWriteStream( path );
-			    file.on( 'error', function( error ) { optimize = false; finished( error ); } )
-			    response.on( 'socket', function ( socket ) {
-				socket.on( 'close', function( error ) {
-				    finished( error );
-				});
-				socket.on( 'timeout', function() {
-				    finished( "Pipe has timeouted..." );
-				});
-				socket.on( 'error', function( error ) {
-				    finished( error );
-				});
-			    });
-			    response.on( 'error', function( error ) {
-				finished( error );
-			    });
-			    response.on( 'close', function() {
-				finished();
-			    });
-
-			    switch( mimeType ) {
-			    case 'image/png':
-				response
-				    .pipe( new pngquant( [ 192, '--ordered' ] ) )
-				    .on( 'error', function( error ) { optimize = false; finished( error ); } )
-				    .pipe( new pngcrush( [ '-brute', '-l', '9', '-rem', 'alla' ] ) )
-				    .on( 'error', function( error ) { optimize = false; finished( error ); } )
-				    .pipe( file )
-				    .on( 'error', function( error ) { optimize = false; finished( error ); } )
-				break;
-			    case 'image/jpeg':
-				response
-				    .pipe( new jpegtran( [ '-copy', 'none', '-progressive', '-optimize' ] ) )
-				    .on( 'error', function( error ) { optimize = false; finished( error ); } )
-				    .pipe( file )
-				    .on( 'error', function( error ) { optimize = false; finished( error ); } )
-				break;
-			    default:
-				response.pipe( file )
-				    .on( 'error', function( error ) { optimize = false; finished( error ); } )
-				break;
+		    console.log( path );
+		    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
+			if ( error ) {
+			    console.error( 'Unable to download (try nb ' + tryCount + ') from ' + decodeURI( url ) + ' ( ' + error + ' )');
+			    if ( maxTryCount == 0 || tryCount < maxTryCount ) {
+				console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
+				sleep.sleep( tryCount );
+				error = undefined;
 			    }
-			    
-			    nok = false;
-			    finished();
-			};
-			writeFile = smooth( writeFile, maxParallelRequests, maxParallelRequests, 180000 );
-			writeFile( response, finished );
-		    });
-
-		    r.on( 'error', function( error ) {
+			} else {
+			    tryCount = maxTryCount;
+			}
 			finished( error );
 		    });
-		    r.on( 'close', function() {
-			finished();
-		    });
-		    r.on( 'socket', function ( socket ) {
-			socket.on( 'close', function( error ) {
-			    finished( error );
-			});
-			socket.on( 'error', function( error ) {
-			    finished( error );
-			});
-			socket.on( 'timeout', function() {
-			    finished( "Pipe has timeouted..." );
-			});
-		    });
-
-		    r.end();
 		},
 		function( error ) {
 		    if ( error ) {
-			console.error( 'Unable to download (try nb ' + tryCount[ url ] + ') from ' + decodeURI( url ) + ' ( ' + error + ' )');
-			if ( maxTryCount && tryCount[ url ] > maxTryCount ) {
-			    console.error( 'Exit on purpose' );
-			    process.exit( 1 );
-			} else {
-			    console.error( 'Sleeping for ' + tryCount[ url ] + ' seconds' );
-			    sleep.sleep( tryCount[ url ] );
-			}
-			downloadFile( url, path, force );
-		    } else {
-			delete tryCount[ url ];
+			console.error( 'Abandon retrieving of ' + decodeURI( url ) );
 		    }
 		}
 	    );
-	}			    
+	}
     });
 }
 
