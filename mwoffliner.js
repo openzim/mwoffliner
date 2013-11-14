@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid.wmflabs.org/fa/';
+var parsoidUrl = 'http://208.80.154.248/bmwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://fa.wikipedia.org/';
+var hostUrl = 'http://bm.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -133,8 +133,6 @@ saveJavascript();
 saveStylesheet();
 saveFavicon();
 
-//articleIds['سگ_سرابی '] = undefined;
-
 /* Get content */
 async.series([
     function( finished ) { getTextDirection( finished ) },
@@ -180,11 +178,11 @@ function saveArticles( finished ) {
 		console.info( articleId + ' already downloaded at ' + articlePath );
 		finished();
 	    } else {
-		var articleUrl = parsoidUrl + encodeURIComponent( articleId );
+		var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 		console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
-		loadUrlAsync( articleUrl, function( html, articleId ) {
+		loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 		    if ( html ) {
-			saveArticle( html, articleId );
+			saveArticle( html, articleId);
 		    } else {
 			delete articleIds[ articleId ];
 		    }
@@ -624,12 +622,12 @@ function getArticleIds( finished ) {
 
 	do {
 	    console.info( 'Getting article ids' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-	    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
+	    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
 	    var body = loadUrlSync( url );
 	    var entries = JSON.parse( body )['query']['pages'];
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
-		articleIds[entry['title'].replace( / /g, '_' )] = undefined;
+		articleIds[entry['title'].replace( / /g, '_' )] = entry['revisions'][0]['revid'];
 	    });
 	    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
 	} while ( next );
