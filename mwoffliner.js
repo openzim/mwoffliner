@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://208.80.154.248/bmwiki/';
+var parsoidUrl = 'http://208.80.154.248/eswiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://bm.wikipedia.org/';
+var hostUrl = 'http://es.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -192,8 +192,12 @@ function saveArticles( finished ) {
 	});
     }
 
-    async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( err ) {
-	console.log( err);
+    async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
+	if ( error ) {
+	    console.log( err );
+	} else {
+	    console.log( 'All articles were retrieved and saved.' );
+	}
     });
 
     finished();
