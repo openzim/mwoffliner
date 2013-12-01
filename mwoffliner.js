@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://208.80.154.248/eswiki/';
+var parsoidUrl = 'http://208.80.154.248/enwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://es.wikipedia.org/';
+var hostUrl = 'http://en.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -982,7 +982,7 @@ function getMainPage( finished ) {
 	    var html = redirectTemplate( { title:  parts[1].replace( /_/g, ' ' ), 
 					   target : '../' + getArticleBase( parts[1], true ) } );
 	    writeFile( html, rootPath + htmlDirectory + '/index.html' );
-	    articleIds[ parts[ 1 ] ] = undefined;
+	    articleIds[ parts[ 1 ] ] = '';
 	} else {
 	    console.error( 'Unable to get the main page' );
 	    process.exit( 1 );
