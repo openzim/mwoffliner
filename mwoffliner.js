@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://208.80.154.248/enwiki/';
+var parsoidUrl = 'http://208.80.154.248/enwikivoyage/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://en.wikipedia.org/';
+var hostUrl = 'http://en.wikivoyage.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -518,8 +518,7 @@ function isMirrored( id ) {
     var namespaceNumber = 0;
 
     if ( id.indexOf(':') >= 0 ) {
-	var tmpNamespace = id.substring( 0, id.indexOf(':') ).replace( / /g, '_');
-	var tmpNamespaceNumber = namespaces[tmpNamespace];
+	var tmpNamespaceNumber = namespaces[ id.substring( 0, id.indexOf(':') ).replace( / /g, '_') ];
 	if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
 	    return true;
 	}
