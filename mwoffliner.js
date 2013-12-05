@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://208.80.154.248/enwikivoyage/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/frwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://en.wikivoyage.org/';
+var hostUrl = 'http://fr.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -321,7 +321,10 @@ function saveArticle( html, articleId ) {
 		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
 		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone center' ) );
+			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
+			var centerDiv = parsoidDoc.createElement( 'center' );
+			centerDiv.appendChild( thumbDiv );
+			thumbDiv = centerDiv;
 		    } else {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
 		    }
