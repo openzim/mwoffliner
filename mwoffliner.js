@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/frwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/ruwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://fr.wikipedia.org/';
+var hostUrl = 'http://ru.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -50,7 +50,7 @@ var styleDirectory = 'style';
 var htmlDirectory = 'html';
 var mediaDirectory = 'media';
 var javascriptDirectory = 'js';
-var mediaRegex = /^(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6})(\.[A-Za-z0-9]{2,6}|)$/;
+var mediaRegex = /^(.*\/)([^\/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6})(\.[A-Za-z0-9]{2,6}|)$/;
 var templateHtml = function(){/*
 <!DOCTYPE html>
 <html>
@@ -371,13 +371,12 @@ function saveArticle( html, articleId ) {
 	    
 	    if ( withMedias ) {
 		var src = getFullUrl( img.getAttribute( 'src' ) );
-		var filename = decodeURI( pathParser.basename( urlParser.parse( src ).pathname ) );
 		
 		/* Download image */
-		downloadMedia( src, filename );
+		downloadMedia( src );
 		
 		/* Change image source attribute to point to the local image */
-		img.setAttribute( 'src', getMediaUrl( filename ) );
+		img.setAttribute( 'src', getMediaUrl( src ) );
 		
 		/* Remove useless 'resource' attribute */
 		img.removeAttribute( 'resource' ); 
@@ -831,10 +830,10 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     );
 }
 
-function downloadMedia( url, filename ) {
-    var parts = mediaRegex.exec( filename );
-    var width = parseInt( parts[1].replace( /px\-/g, '' ) ) || 9999999;
-    var filenameBase = parts[2] + parts[3] + ( parts[4] || '' );
+function downloadMedia( url ) {
+    var parts = mediaRegex.exec( decodeURI( url ) );
+    var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
+    var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
 
     if ( mediaIds[ filenameBase ] && mediaIds[ filenameBase ] >=  width ) {
 	return;
@@ -842,7 +841,7 @@ function downloadMedia( url, filename ) {
 	mediaIds[ filenameBase ] = width;
     }
 
-    downloadFile( url, getMediaPath( filename ), true );
+    downloadFile( url, getMediaPath( url ), true );
 }
 
 process.on( 'uncaughtException', function( error ) {
@@ -896,17 +895,17 @@ function downloadFile( url, path, force ) {
 }
 
 /* Internal path/url functions */
-function getMediaUrl( filename ) {
-    return '../../../../../' + getMediaBase( filename, true );
+function getMediaUrl( url ) {
+    return '../../../../../' + getMediaBase( url, true );
 }
 
-function getMediaPath( filename, escape ) {
-    return rootPath + getMediaBase( filename, escape );
+function getMediaPath( url, escape ) {
+    return rootPath + getMediaBase( url, escape );
 }
 
-function getMediaBase( filename, escape ) {
-    var parts = mediaRegex.exec( filename );
-    var root = parts[2];
+function getMediaBase( url, escape ) {
+    var parts = mediaRegex.exec( decodeURI( url ) );
+    var root = parts[2].length > parts[5].length ? parts[2] : parts[5];
 
     if ( !root ) {
 	console.error( 'Unable to parse filename \'' + filename + '\'' );
@@ -919,7 +918,7 @@ function getMediaBase( filename, escape ) {
     }
 
     return mediaDirectory + '/' + ( e( charAt( root, 0 ) ) || '_' ) + '/' + ( e( charAt( root, 1 ) ) || '_' ) + '/' + 
-	( e( charAt( root, 2 ) ) || '_' ) + '/' + ( e( charAt( root, 3 ) ) || '_' ) + '/' + e( parts[2] + parts[3] + ( parts[4] || '' ) );
+	( e( charAt( root, 2 ) ) || '_' ) + '/' + ( e( charAt( root, 3 ) ) || '_' ) + '/' + e( parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ) );
 }
 
 function getArticleUrl( articleId ) {
