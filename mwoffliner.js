@@ -9,7 +9,7 @@
 var withCategories = false;
 
 /* Keep thumbnails in articles */
-var withMedias = true;
+var withMedias = false;
 
 /* Template code for any redirect to be written on the FS */
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/bmwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/dewiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://bm.wikipedia.org/';
+var hostUrl = 'http://de.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -369,7 +369,7 @@ function saveArticle( html, articleId ) {
 	for ( var i = 0; i < imgs.length ; i++ ) {
 	    var img = imgs[i];
 	    
-	    if ( withMedias ) {
+	    if ( withMedias || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
 		var src = getFullUrl( img.getAttribute( 'src' ) );
 		
 		/* Download image */
