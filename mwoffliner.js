@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/ruwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/bmwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://ru.wikipedia.org/';
+var hostUrl = 'http://bm.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -93,8 +93,6 @@ var redirectIds = {};
 var mediaIds = {};
 var webUrl = hostUrl + 'wiki/';
 var apiUrl = hostUrl + 'w/api.php?';
-var getRedirectIdsCount = 0;
-var getRedirectIdsFinished;
 
 /************************************/
 /* MODULE VARIABLE SECTION **********/
@@ -142,8 +140,8 @@ async.series([
     function( finished ) { getSiteInfo( finished ) },
     function( finished ) { getArticleIds( finished ) }, 
     function( finished ) { getRedirectIds( finished ) },
+    function( finished ) { saveRedirects( finished ) },
     function( finished ) { saveArticles( finished ) },
-    function( finished ) { saveRedirects( finished ) }
 ]);
 
 /************************************/
@@ -159,13 +157,15 @@ function saveRedirects( finished ) {
 	writeFile( html, getArticlePath( redirectId ), finished );
     }
 
-    async.eachLimit( Object.keys( redirectIds ), maxParallelRequests, callback, function( err ) {
-	if (err) {
-	    console.error( 'Error in saveRedirects callback: ' + err );
+    async.eachLimit( Object.keys( redirectIds ), maxParallelRequests, callback, function( error ) {
+	if ( error ) {
+	    console.error( 'Unable to save a redirect: ' + error );
+	    process.exit( 1 );
+	} else {
+	    console.log( 'All redirects were saved successfuly.' );
+	    finished();
 	}
     });
-
-    finished();
 }
 
 function saveArticles( finished ) {
@@ -194,13 +194,13 @@ function saveArticles( finished ) {
 
     async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
 	if ( error ) {
-	    console.log( err );
+	    console.log( 'Unable to retrieve an article correctly: ' + error );
+	    process.exit( 1 );
 	} else {
 	    console.log( 'All articles were retrieved and saved.' );
+	    finished();
 	}
     });
-
-    finished();
 }
 
 function saveArticle( html, articleId ) {
@@ -643,12 +643,9 @@ function getArticleIds( finished ) {
 
 function getRedirectIds( finished ) {
     console.log( 'Getting redirect ids...' );
-    getRedirectIdsCount = Object.keys(articleIds).length;
-    getRedirectIdsFinished = finished;
 
     function callback( articleId, finished ) { 
 	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId );
-	getRedirectIdsCount -= 1;
 	loadUrlAsync( url, function( body, articleId ) {
             console.info( 'Getting redirects for article ' + articleId + '...' );
 	    try {
@@ -661,16 +658,16 @@ function getRedirectIds( finished ) {
 	    } catch( error ) {
 		finished( error );
 	    }
-   
-	    if ( getRedirectIdsCount <= 0 ) {
-		getRedirectIdsFinished();
-	    }
 	}, articleId);
     }
 
-    async.eachLimit( Object.keys(articleIds), maxParallelRequests, callback, function( err ) {
-	if (err) {
-            console.error( 'Error in getRedirectIds callback: ' + err );
+    async.eachLimit( Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
+	if ( error ) {
+            console.error( 'Unable to get redirects for an article: ' + error );
+	    process.exit( 1 );
+	} else {
+	    console.log( 'All redirects were retrieved successfuly.' );
+	    finished();
 	}
     });
 }
