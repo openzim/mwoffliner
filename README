@@ -1,0 +1,14 @@
+mwoffliner is a tool which allows to "dump" a Wikimedia project
+(Wikipedia, Wiktionary, ...) to a local storage. It goes through all
+articles of the project and write the HTML/pictures  to local files.
+
+To use it, you need a recent version of nodejs and a POSIX system
+(like GNU/Linux). You need also to install all necessary nodejs
+packages with "npm install <modulename>" in this directory. You can
+get the list of packages you need to install in the "MODULE VARIABLE
+SECTION".
+
+One time you have done this, you should be able to start the tool with
+./mwoffliner. To configure things related to the project you want to
+dump, just go to the "CUSTOM VARIABLE SECTION".
+
