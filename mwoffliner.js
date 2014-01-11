@@ -9,7 +9,7 @@
 var withCategories = false;
 
 /* Keep thumbnails in articles */
-var withMedias = false;
+var withMedias = true;
 
 /* Template code for any redirect to be written on the FS */
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/dewiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/cawiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://de.wikipedia.org/';
+var hostUrl = 'http://ca.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -51,7 +51,7 @@ var htmlDirectory = 'html';
 var mediaDirectory = 'media';
 var javascriptDirectory = 'js';
 var mediaRegex = /^(.*\/)([^\/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6})(\.[A-Za-z0-9]{2,6}|)$/;
-var templateHtml = function(){/*
+var htmlTemplateCode = function(){/*
 <!DOCTYPE html>
 <html>
   <head>
@@ -79,7 +79,7 @@ var templateHtml = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 18;
+var maxParallelRequests = 25;
 var maxTryCount = 3;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
@@ -119,8 +119,10 @@ var smooth = require('smooth')(maxParallelRequests);
 /* RUNNING CODE *********************/
 /************************************/
 
-/* Compile redirect template */
+/* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
+var footerTemplate = swig.compile( footerTemplateCode );
+var documentTemplate = domino.createDocument( htmlTemplateCode );
 
 /* Increase the number of allowed parallel requests */
 http.globalAgent.maxSockets = maxParallelRequests;
@@ -215,6 +217,14 @@ function saveArticle( html, articleId ) {
 	for ( var i = 0; i < galleryboxes.length ; i++ ) {
 	    if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( ! withMedias ) ) {
 		deleteNode( galleryboxes[i] );
+	    }
+	}
+
+	/* Remove "map" tags if necessary */
+	if ( !withMedias ) {
+	    var maps = parsoidDoc.getElementsByTagName( 'map' );
+	    for ( var i = 0; i < maps.length ; i++ ) {
+		deleteNode( maps[i] );
 	    }
 	}
 	
@@ -451,17 +461,8 @@ function saveArticle( html, articleId ) {
 	    deleteNode( inputNodes[i] );
 	};
 
-	/* Create final document by merging template and parsoid documents */
-	var doc = domino.createDocument( templateHtml );
-	var contentNode = doc.getElementById( 'mw-content-text' );
-	contentNode.innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
-	var contentTitleNode = doc.getElementById( 'firstHeading' );
-	contentTitleNode.innerHTML = articleId.replace( /_/g, ' ' );
-	var titleNode = doc.getElementsByTagName( 'title' )[0];
-	titleNode.innerHTML = articleId.replace( /_/g, ' ' );
-	
 	/* Clean the DOM of all uncessary code */
-	var allNodes = doc.getElementsByTagName( '*' );
+	var allNodes = parsoidDoc.getElementsByTagName( '*' );
 	for ( var i = 0; i < allNodes.length ; i++ ) {                                                                                
             var node = allNodes[i];
 	    node.removeAttribute( 'data-parsoid' );
@@ -480,6 +481,12 @@ function saveArticle( html, articleId ) {
 		}
 	    });
 	}
+
+	/* Create final document by merging template and parsoid documents */
+	var doc = documentTemplate;
+	doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
+	doc.getElementById( 'firstHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
+	doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
 	
 	/* Set sub-title */
 	doc.getElementById( 'ss' ).innerHTML = subTitle;
@@ -487,22 +494,8 @@ function saveArticle( html, articleId ) {
 	/* Append footer node */
 	doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId ) );
 	
-	/* Minify HTML code */
-	var html;
-	try {
-	    html = htmlminifier.minify( doc.documentElement.outerHTML, {
-		removeComments: true,
-		removeCommentsFromCDATA: true,
-		collapseWhitespace: true,
-		collapseBooleanAttributes: true,
-		removeAttributeQuotes: true,
-		removeEmptyAttributes: true});
-	} catch ( error ) {
-	    html = doc.documentElement.outerHTML;
-	}
-
 	/* Write the static html file */
-	writeFile( html, getArticlePath( articleId ) );
+	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ) );
     } catch ( error ) {
 	console.error( 'Crash by parsing ' + articleId );
 	console.error( error );
@@ -732,10 +725,8 @@ function concatenateToAttribute( old, add ) {
 }
 
 function getFooterNode( doc, articleId ) {
-    var escapedArticleId = encodeURIComponent( articleId );
     var div = doc.createElement( 'div' );
-    var tpl = swig.compile( footerTemplateCode );
-    div.innerHTML = tpl({ articleId: escapedArticleId, webUrl: webUrl, name: name });
+    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name });
     return div;
 }
 
