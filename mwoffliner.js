@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/cawiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/enwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://ca.wikipedia.org/';
+var hostUrl = 'http://en.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -79,7 +79,7 @@ var htmlTemplateCode = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 25;
+var maxParallelRequests = 30;
 var maxTryCount = 3;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
@@ -89,7 +89,6 @@ var name = '';
 var lang = 'en';
 var articleIds = {};
 var namespaces = {};
-var redirectIds = {};
 var mediaIds = {};
 var webUrl = hostUrl + 'wiki/';
 var apiUrl = hostUrl + 'w/api.php?';
@@ -102,6 +101,7 @@ var fs = require( 'fs' );
 var domino = require( 'domino' );
 var jsdom = require( 'jsdom' );
 var async = require( 'async' );
+var Sync = require('sync');
 var http = require( 'follow-redirects' ).http;
 var httpsync = require( 'httpsync' );
 var swig = require( 'swig' );
@@ -113,28 +113,28 @@ var pngcrush = require( 'pngcrush' );
 var jpegtran = require( 'jpegtran' );
 var request = require( 'request-enhanced' );
 var htmlminifier = require('html-minifier');
-var smooth = require('smooth')(maxParallelRequests);
+var hiredis = require("hiredis");
+var redis = require("redis");
 
 /************************************/
 /* RUNNING CODE *********************/
 /************************************/
 
+/* Setup redis client */
+var redisClient = redis.createClient("/tmp/redis.sock");
+var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "redirects";
+redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {});
+
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
 var footerTemplate = swig.compile( footerTemplateCode );
-var documentTemplate = domino.createDocument( htmlTemplateCode );
 
 /* Increase the number of allowed parallel requests */
 http.globalAgent.maxSockets = maxParallelRequests;
 
-/* Initialization */
-createDirectories();
-saveJavascript();
-saveStylesheet();
-saveFavicon();
-
 /* Get content */
 async.series([
+    function( finished ) { startProcess( finished ) },
     function( finished ) { getTextDirection( finished ) },
     function( finished ) { getNamespaces( finished ) },
     function( finished ) { getMainPage( finished ) },
@@ -144,28 +144,57 @@ async.series([
     function( finished ) { getRedirectIds( finished ) },
     function( finished ) { saveRedirects( finished ) },
     function( finished ) { saveArticles( finished ) },
+    function( finished ) { endProcess( finished ) },
 ]);
 
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
 
+function startProcess( finished ) {
+    createDirectories();
+    saveJavascript();
+    saveStylesheet();
+    saveFavicon();
+    finished();
+}
+
+function endProcess( finished ) {
+    redisClient.flushdb( function( error, result) {});
+    redisClient.quit();
+    finished();
+}
+
 function saveRedirects( finished ) {
     console.info( 'Saving redirects...' );
 
     function callback( redirectId, finished ) {
-	var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
-				       target : getArticleUrl( redirectIds[ redirectId ] ) } );
-	writeFile( html, getArticlePath( redirectId ), finished );
+	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
+	    if ( error ) {
+		console.error( 'Unable to get a redirect target from redis: ' + error );
+		process.exit( 1 );
+	    } else {
+		var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
+					       target : getArticleUrl( target ) } );
+		writeFile( html, getArticlePath( redirectId ), finished );
+	    }
+	});
     }
 
-    async.eachLimit( Object.keys( redirectIds ), maxParallelRequests, callback, function( error ) {
+    redisClient.hkeys( redisRedirectsDatabase, function ( error, keys ) {
 	if ( error ) {
-	    console.error( 'Unable to save a redirect: ' + error );
+	    console.error( 'Unable to get redirect keys from redis: ' + error );
 	    process.exit( 1 );
 	} else {
-	    console.log( 'All redirects were saved successfuly.' );
-	    finished();
+	    async.eachLimit( keys, maxParallelRequests, callback, function( error ) {
+		if ( error ) {
+		    console.error( 'Unable to save a redirect: ' + error );
+		    process.exit( 1 );
+		} else {
+		    console.log( 'All redirects were saved successfuly.' );
+		    finished();
+		}
+	    });
 	}
     });
 }
@@ -174,6 +203,357 @@ function saveArticles( finished ) {
     console.info( 'Saving articles...' );
 
     function callback( articleId, finished ) {
+	
+	function parseHtml( html, articleId, finished) {
+	    try {
+		setTimeout( finished, 0, null, domino.createDocument( html ), articleId );
+	    } catch ( error ) {
+		console.error( 'Crash by parsing ' + articleId );
+		console.error( error );
+		process.exit( 1 );
+	    }
+	}
+
+	function rewriteUrls( parsoidDoc, articleId, finished) {
+
+	    /* Go through all links */
+	    var as = parsoidDoc.getElementsByTagName( 'a' );
+	    var areas = parsoidDoc.getElementsByTagName( 'area' );
+	    var linkNodes = Array.prototype.slice.call( as ).concat( Array.prototype.slice.call( areas ) );
+
+	    function rewriteUrl( linkNode, finished ) {
+		var rel = linkNode.getAttribute( 'rel' );
+		var href = linkNode.getAttribute( 'href' );
+
+		if ( !href ) {
+		    deleteNode( linkNode );
+		    setTimeout( finished, 0 );
+		} else {
+		    if ( rel ) {
+
+			/* Add 'external' class to external links */
+			if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
+			     rel === 'mw:WikiLink/Interwiki' ) {
+			    linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class'), 'external' ) );
+			}
+			
+			/* Check if the link is "valid" */
+			if ( ! href ) {
+			    console.error( 'No href attribute in the following code, in article ' + articleId );
+			    console.error( linkNode.outerHTML );
+			    process.exit(1);
+			}
+			
+			/* Rewrite external links starting with // */
+			if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || rel == 'nofollow' ) {
+			    if ( href.substring( 0, 1 ) === '/' ) {
+				linkNode.setAttribute( 'href', getFullUrl( href ) );
+			    }
+			    setTimeout( finished, 0 );
+			}
+			
+			/* Remove internal links pointing to no mirrored articles */
+			else if ( rel == 'mw:WikiLink' ) {
+			    var targetId = decodeURI( href.replace( /^\.\//, '' ) );
+			    if ( isMirrored( targetId ) ) {
+				linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+				setTimeout( finished, 0 );
+			    } else {
+				try {
+				    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
+					if ( error ) {
+					    console.error( 'Unable to check redirect existence with redis: ' + error );
+					    process.exit( 1 );
+					} else {
+					    if ( res ) {
+						linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+					    } else {
+						while ( linkNode.firstChild ) {
+						    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
+						}
+						linkNode.parentNode.removeChild( linkNode );
+					    }
+					}
+					setTimeout( finished, 0 );
+				    });
+				} catch ( error ) {
+				    console.error ( "Exception by requesting redis " + error );
+				    process.exit( 1 );
+				}
+			    }
+			}
+		    } else {
+			if ( href.indexOf( '/wiki/' ) != -1 ) {
+			    var targetId = decodeURI( href.replace(/^\/wiki\//, '') );
+			    if ( isMirrored( targetId ) ) {
+				linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+				setTimeout( finished, 0 );
+			    } else {
+				redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
+				    if ( error ) {
+					console.error( 'Unable to check redirect existence with redis: ' + error );
+					process.exit( 1 );
+				    } else {
+					if ( res ) {
+					    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+					} else {
+					    while ( linkNode.firstChild ) {
+						linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
+					    }
+					    linkNode.parentNode.removeChild( linkNode );
+					}
+				    }
+				    setTimeout( finished, 0 );
+				});
+			    }
+			} else {
+			    setTimeout( finished, 0 );
+			}
+		    }
+		}
+	    }
+
+	    async.eachLimit( linkNodes, maxParallelRequests, rewriteUrl, function( error ) {
+		if ( error ) {
+		    console.error( 'Problem by rewriting urls: ' + error );
+		    process.exit( 1 );
+		} else {
+		    setTimeout( finished, 0, null, parsoidDoc, articleId );
+		}
+	    });
+
+	}
+	
+	function applyOtherTreatments( parsoidDoc, redirectId, finished ) {
+	    
+	    /* Go through gallerybox */
+	    var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
+	    for ( var i = 0; i < galleryboxes.length ; i++ ) {
+		if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( ! withMedias ) ) {
+		    deleteNode( galleryboxes[i] );
+		}
+	    }
+	    
+	    /* Remove "map" tags if necessary */
+	    if ( !withMedias ) {
+		var maps = parsoidDoc.getElementsByTagName( 'map' );
+		for ( var i = 0; i < maps.length ; i++ ) {
+		    deleteNode( maps[i] );
+		}
+	    }
+	    
+	    /* Go through all reference calls */
+	    var spans = parsoidDoc.getElementsByTagName( 'span' );
+	    for ( var i = 0; i < spans.length ; i++ ) {
+		var span = spans[i];
+		var rel = span.getAttribute( 'rel' );
+		if ( rel === 'dc:references' ) {
+		    var sup = parsoidDoc.createElement( 'sup' );
+		    if ( span.innerHTML ) {
+			sup.id = span.id;
+			sup.innerHTML = span.innerHTML;
+			span.parentNode.replaceChild(sup, span);
+		    } else {
+			deleteNode( span );
+		    }
+		}
+	    }
+	    
+	    /* Improve image frames */
+	    var figures = parsoidDoc.getElementsByTagName( 'figure' );
+	    var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
+	    var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
+	    for ( var i = 0; i < imageNodes.length ; i++ ) {
+		var imageNode = imageNodes[i];
+		
+		if ( withMedias ) {
+		    var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
+		    var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
+		    var image = imageNode.getElementsByTagName( 'img' )[0];
+		    var imageWidth = parseInt( image.getAttribute( 'width' ) );
+		    
+		    if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
+			var description = imageNode.getElementsByTagName( 'figcaption' )[0];
+			
+			var thumbDiv = parsoidDoc.createElement( 'div' );
+			thumbDiv.setAttribute
+			thumbDiv.setAttribute( 'class', 'thumb' );
+			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
+			    var centerDiv = parsoidDoc.createElement( 'center' );
+			    centerDiv.appendChild( thumbDiv );
+			    thumbDiv = centerDiv;
+			} else {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
+			}
+			
+			var thumbinnerDiv = parsoidDoc.createElement( 'div' );
+			thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
+			thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
+			
+			var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
+			thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
+			thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
+			if ( description ) {
+			    thumbcaptionDiv.innerHTML = description.innerHTML
+			}
+			
+			thumbinnerDiv.appendChild( image );
+			thumbinnerDiv.appendChild( thumbcaptionDiv );
+			thumbDiv.appendChild( thumbinnerDiv );
+			
+			imageNode.parentNode.replaceChild(thumbDiv, imageNode);
+		    } else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
+			var div = parsoidDoc.createElement( 'div' );
+			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), ' center' ) );
+			} else {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'float' + revAutoAlign ) );
+			}
+			div.appendChild( image );
+			imageNode.parentNode.replaceChild(div, imageNode);
+		    }
+		} else {
+		    deleteNode( imageNode );
+		}
+	    }
+	    
+	    /* Clean/rewrite image tags */
+	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
+	    for ( var i = 0; i < imgs.length ; i++ ) {
+		var img = imgs[i];
+		
+		if ( withMedias || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
+		    var src = getFullUrl( img.getAttribute( 'src' ) );
+		    
+		    /* Download image */
+		    downloadMedia( src );
+		    
+		    /* Change image source attribute to point to the local image */
+		    img.setAttribute( 'src', getMediaUrl( src ) );
+		    
+		    /* Remove useless 'resource' attribute */
+		    img.removeAttribute( 'resource' ); 
+		    
+		    /* Remove image link */
+		    var linkNode = img.parentNode;
+		    if ( linkNode.tagName === 'A') {
+			
+			/* Under certain condition it seems that this is possible
+			 * to have parentNode == undefined, in this case this
+			 * seems preferable to remove the whole link+content than
+			 * keeping a wrong link. See for example this url
+			 * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
+			
+			if ( linkNode.parentNode ) {
+			    linkNode.parentNode.replaceChild( img, linkNode );
+			} else {
+			    deleteNode( img );
+			}
+		    }
+		} else {
+		    deleteNode( img );
+		}
+	    }
+	    
+	    /* Remove element with id in the blacklist */
+	    idBlackList.map( function( id ) {
+		var node = parsoidDoc.getElementById( id );
+		if (node) {
+		    deleteNode( node );
+		}
+	    });
+	    
+	    /* Remove element with black listed CSS classes */
+	    cssClassBlackList.map( function( classname ) {
+		var nodes = parsoidDoc.getElementsByClassName( classname );
+		for ( var i = 0; i < nodes.length ; i++ ) {
+		    deleteNode( nodes[i] );
+		}
+	    });
+	    
+	    /* Remove element with black listed CSS classes and no link */
+	    cssClassBlackListIfNoLink.map( function( classname ) {
+		var nodes = parsoidDoc.getElementsByClassName( classname );
+		for ( var i = 0; i < nodes.length ; i++ ) {
+		    if ( nodes[i].getElementsByTagName( 'a' ).length === 0 ) {
+			deleteNode(nodes[i]);
+		    }
+		}
+	    });
+	    
+	    /* Remove link tags */
+	    var links = parsoidDoc.getElementsByTagName( 'link' );
+	    for ( var i = 0; i < links.length ; i++ ) {
+		deleteNode(links[i]);
+	    };
+	    
+	    /* Remove useless DOM nodes without children */
+	    var tagNames = [ 'li', 'span' ];
+	    tagNames.map( function( tagName ) {
+		var nodes = parsoidDoc.getElementsByTagName( tagName );
+		for ( var i = 0; i < nodes.length ; i++ ) {
+	            if ( ! nodes[i].innerHTML ) {
+			deleteNode( nodes[i] );
+		    }
+		};
+	    });
+	    
+	    /* Remove useless input nodes */
+	    var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
+	    for ( var i = 0; i < inputNodes.length ; i++ ) {
+		deleteNode( inputNodes[i] );
+	    };
+	    
+	    /* Clean the DOM of all uncessary code */
+	    var allNodes = parsoidDoc.getElementsByTagName( '*' );
+	    for ( var i = 0; i < allNodes.length ; i++ ) {                                                                                
+		var node = allNodes[i];
+		node.removeAttribute( 'data-parsoid' );
+		node.removeAttribute( 'typeof' );
+		node.removeAttribute( 'about' );
+		node.removeAttribute( 'data-mw' );
+		
+		if ( node.getAttribute( 'rel' ) && node.getAttribute( 'rel' ).substr( 0, 3 ) === 'mw:' ) {
+		    node.removeAttribute( 'rel' );
+		}
+		
+		/* Remove a few css calls */
+		cssClassCallsBlackList.map( function( classname )  {
+		    if ( node.getAttribute( 'class' ) ) {
+			node.setAttribute( 'class', node.getAttribute( 'class' ).replace( classname, '' ) );
+		    }
+		});
+	    }
+
+	    finished( null, parsoidDoc, articleId );
+	}
+
+	function writeArticle( parsoidDoc, articleId, finished ) {
+	    /* Create final document by merging template and parsoid documents */
+	    var doc = domino.createDocument( htmlTemplateCode );
+	    doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
+	    doc.getElementById( 'firstHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
+	    doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
+	    
+	    /* Set sub-title */
+	    doc.getElementById( 'ss' ).innerHTML = subTitle;
+	    
+	    /* Append footer node */
+	    doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId ) );
+	    
+	    /* Write the static html file */
+	    writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
+	}
+
 	var articlePath = getArticlePath( articleId );
 	fs.exists( articlePath, function (exists) {
 	    if ( exists ) {
@@ -184,11 +564,19 @@ function saveArticles( finished ) {
 		console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 		loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 		    if ( html ) {
-			saveArticle( html, articleId);
+			var prepareAndSaveArticle = async.compose( writeArticle, applyOtherTreatments, rewriteUrls, parseHtml );
+			prepareAndSaveArticle(html, articleId, function ( error, result ) {
+			    if ( error ) {
+				console.error( "Error by preparing and saving file " + error );
+				process.exit( 1 );
+			    } else {
+				setTimeout( finished, 0 );
+			    }
+			});
 		    } else {
 			delete articleIds[ articleId ];
+			setTimeout( finished, 0 );
 		    }
-		    finished();
 		}, articleId);
 	    }
 	});
@@ -205,310 +593,6 @@ function saveArticles( finished ) {
     });
 }
 
-function saveArticle( html, articleId ) {
-    console.info( 'Parsing HTML/RDF of ' + articleId + '...' );
-    
-    /* For some reasons this code crash randomly */
-    try {
-	var parsoidDoc = domino.createDocument( html );
-
-	/* Go through gallerybox */
-	var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
-	for ( var i = 0; i < galleryboxes.length ; i++ ) {
-	    if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( ! withMedias ) ) {
-		deleteNode( galleryboxes[i] );
-	    }
-	}
-
-	/* Remove "map" tags if necessary */
-	if ( !withMedias ) {
-	    var maps = parsoidDoc.getElementsByTagName( 'map' );
-	    for ( var i = 0; i < maps.length ; i++ ) {
-		deleteNode( maps[i] );
-	    }
-	}
-	
-	/* Go through all links */
-	var as = parsoidDoc.getElementsByTagName( 'a' );
-	var areas = parsoidDoc.getElementsByTagName( 'area' );
-	var linkNodes = Array.prototype.slice.call( as ).concat( Array.prototype.slice.call( areas ) );
-	for ( var i = 0; i < linkNodes.length ; i++ ) {
-	    var linkNode = linkNodes[i];
-	    var rel = linkNode.getAttribute( 'rel' );
-	    var href = linkNode.getAttribute( 'href' );
-	    
-	    if ( !href ) {
-		deleteNode( linkNode );
-		continue;
-	    }
-	    
-	    if ( rel ) {
-		/* Add 'external' class to external links */
-		if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
-		     rel === 'mw:WikiLink/Interwiki' ) {
-		    linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class'), 'external' ) );
-		}
-		
-		/* Check if the link is "valid" */
-		if ( ! href ) {
-		    console.error( 'No href attribute in the following code, in article ' + articleId );
-		    console.error( linkNode.outerHTML );
-		    process.exit(1);
-		}
-		
-		/* Rewrite external links starting with // */
-		if ( rel.substring( 0, 10 ) === 'mw:ExtLink' ) {
-		    if ( href.substring( 0, 1 ) === '/' ) {
-			linkNode.setAttribute( 'href', getFullUrl( href ) );
-		    }
-		}
-		
-		/* Remove internal links pointing to no mirrored articles */
-		else if ( rel == 'mw:WikiLink' ) {
-		    var targetId = decodeURI( href.replace( /^\.\//, '' ) );
-		    if ( isMirrored( targetId ) ) {
-			linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-		    } else {
-			while ( linkNode.firstChild ) {
-			    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
-			}
-			linkNode.parentNode.removeChild( linkNode );
-		    }
-		}
-	    } else {
-		if ( href.indexOf( '/wiki/' ) != -1 ) {
-		    var targetId = decodeURI( href.replace(/^\/wiki\//, '') );
-		    if ( isMirrored( targetId ) ) {
-			linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-		    } else {
-			while ( linkNode.firstChild ) {
-			    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
-			}
-			linkNode.parentNode.removeChild( linkNode );
-		    }
-		}
-	    }
-	}
-	
-	/* Go through all reference calls */
-	var spans = parsoidDoc.getElementsByTagName( 'span' );
-	for ( var i = 0; i < spans.length ; i++ ) {
-	    var span = spans[i];
-	    var rel = span.getAttribute( 'rel' );
-	    if ( rel === 'dc:references' ) {
-		var sup = parsoidDoc.createElement( 'sup' );
-		if ( span.innerHTML ) {
-		    sup.id = span.id;
-		    sup.innerHTML = span.innerHTML;
-		    span.parentNode.replaceChild(sup, span);
-		} else {
-		    deleteNode( span );
-		}
-	    }
-	}
-	
-	/* Improve image frames */
-	var figures = parsoidDoc.getElementsByTagName( 'figure' );
-	var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
-	var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
-	for ( var i = 0; i < imageNodes.length ; i++ ) {
-	    var imageNode = imageNodes[i];
-	    
-	    if ( withMedias ) {
-		var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
-		var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
-		var image = imageNode.getElementsByTagName( 'img' )[0];
-		var imageWidth = parseInt( image.getAttribute( 'width' ) );
-		
-		if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
-		    var description = imageNode.getElementsByTagName( 'figcaption' )[0];
-		    
-		    var thumbDiv = parsoidDoc.createElement( 'div' );
-		    thumbDiv.setAttribute
-		    thumbDiv.setAttribute( 'class', 'thumb' );
-		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
-			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
-		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
-			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
-		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
-			var centerDiv = parsoidDoc.createElement( 'center' );
-			centerDiv.appendChild( thumbDiv );
-			thumbDiv = centerDiv;
-		    } else {
-			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
-		    }
-		    
-		    var thumbinnerDiv = parsoidDoc.createElement( 'div' );
-		    thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
-		    thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
-		    
-		    var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
-		    thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
-		    thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
-		    if ( description ) {
-			thumbcaptionDiv.innerHTML = description.innerHTML
-		    }
-		    
-		    thumbinnerDiv.appendChild( image );
-		    thumbinnerDiv.appendChild( thumbcaptionDiv );
-		    thumbDiv.appendChild( thumbinnerDiv );
-		    
-		    imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-		} else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
-		    var div = parsoidDoc.createElement( 'div' );
-		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
-			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
-		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
-			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
-		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), ' center' ) );
-		    } else {
-			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'float' + revAutoAlign ) );
-		    }
-		    div.appendChild( image );
-		    imageNode.parentNode.replaceChild(div, imageNode);
-		}
-	    } else {
-		deleteNode( imageNode );
-	    }
-	}
-
-	/* Clean/rewrite image tags */
-	var imgs = parsoidDoc.getElementsByTagName( 'img' );
-	for ( var i = 0; i < imgs.length ; i++ ) {
-	    var img = imgs[i];
-	    
-	    if ( withMedias || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
-		var src = getFullUrl( img.getAttribute( 'src' ) );
-		
-		/* Download image */
-		downloadMedia( src );
-		
-		/* Change image source attribute to point to the local image */
-		img.setAttribute( 'src', getMediaUrl( src ) );
-		
-		/* Remove useless 'resource' attribute */
-		img.removeAttribute( 'resource' ); 
-		
-		/* Remove image link */
-		var linkNode = img.parentNode;
-		if ( linkNode.tagName === 'A') {
-		    
-		    /* Under certain condition it seems that this is possible
-		     * to have parentNode == undefined, in this case this
-		     * seems preferable to remove the whole link+content than
-		     * keeping a wrong link. See for example this url
-		     * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-		    
-		    if ( linkNode.parentNode ) {
-			linkNode.parentNode.replaceChild( img, linkNode );
-		    } else {
-			deleteNode( img );
-		    }
-		}
-	    } else {
-		deleteNode( img );
-	    }
-	}
-
-	/* Remove element with id in the blacklist */
-	idBlackList.map( function( id ) {
-	    var node = parsoidDoc.getElementById( id );
-	    if (node) {
-		deleteNode( node );
-	    }
-	});
-
-	/* Remove element with black listed CSS classes */
-	cssClassBlackList.map( function( classname ) {
-	    var nodes = parsoidDoc.getElementsByClassName( classname );
-	    for ( var i = 0; i < nodes.length ; i++ ) {
-		deleteNode( nodes[i] );
-	    }
-	});
-	
-	/* Remove element with black listed CSS classes and no link */
-	cssClassBlackListIfNoLink.map( function( classname ) {
-	    var nodes = parsoidDoc.getElementsByClassName( classname );
-	    for ( var i = 0; i < nodes.length ; i++ ) {
-		if ( nodes[i].getElementsByTagName( 'a' ).length === 0 ) {
-		    deleteNode(nodes[i]);
-		}
-	    }
-	});
-
-	/* Remove link tags */
-	var links = parsoidDoc.getElementsByTagName( 'link' );
-	for ( var i = 0; i < links.length ; i++ ) {
-	    deleteNode(links[i]);
-	};
-
-	/* Remove useless DOM nodes without children */
-	var tagNames = [ 'li', 'span' ];
-	tagNames.map( function( tagName ) {
-	    var nodes = parsoidDoc.getElementsByTagName( tagName );
-	    for ( var i = 0; i < nodes.length ; i++ ) {
-	        if ( ! nodes[i].innerHTML ) {
-		    deleteNode( nodes[i] );
-		}
-	    };
-	});
-
-	/* Remove useless input nodes */
-	var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
-	for ( var i = 0; i < inputNodes.length ; i++ ) {
-	    deleteNode( inputNodes[i] );
-	};
-
-	/* Clean the DOM of all uncessary code */
-	var allNodes = parsoidDoc.getElementsByTagName( '*' );
-	for ( var i = 0; i < allNodes.length ; i++ ) {                                                                                
-            var node = allNodes[i];
-	    node.removeAttribute( 'data-parsoid' );
-	    node.removeAttribute( 'typeof' );
-	    node.removeAttribute( 'about' );
-	    node.removeAttribute( 'data-mw' );
-	    
-	    if ( node.getAttribute( 'rel' ) && node.getAttribute( 'rel' ).substr( 0, 3 ) === 'mw:' ) {
-		node.removeAttribute( 'rel' );
-	    }
-	    
-	    /* Remove a few css calls */
-	    cssClassCallsBlackList.map( function( classname )  {
-		if ( node.getAttribute( 'class' ) ) {
-		    node.setAttribute( 'class', node.getAttribute( 'class' ).replace( classname, '' ) );
-		}
-	    });
-	}
-
-	/* Create final document by merging template and parsoid documents */
-	var doc = documentTemplate;
-	doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
-	doc.getElementById( 'firstHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
-	doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
-	
-	/* Set sub-title */
-	doc.getElementById( 'ss' ).innerHTML = subTitle;
-	
-	/* Append footer node */
-	doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId ) );
-	
-	/* Write the static html file */
-	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ) );
-    } catch ( error ) {
-	console.error( 'Crash by parsing ' + articleId );
-	console.error( error );
-	console.error( 'Sleeping for 10 seconds' );
-	sleep.sleep( 10 );
-	var articleUrl = parsoidUrl + articleId;
-	console.error( 'Reload article "' + articleId + '" from ' + articleUrl );
-	loadUrlAsync( articleUrl, function( html, articleId ) {
-	    saveArticle( html, articleId );
-	}, articleId);
-    }
-}
-
 function isMirrored( id ) {
     var namespaceNumber = 0;
 
@@ -518,8 +602,8 @@ function isMirrored( id ) {
 	    return true;
 	}
     }
-    
-    return ( id in articleIds || id in redirectIds );
+
+    return ( id in articleIds );
 }
 
 /* Grab and concatenate javascript files */
@@ -645,7 +729,7 @@ function getRedirectIds( finished ) {
 		var entries;
 		entries = JSON.parse( body )['query']['backlinks'];
 		entries.map( function( entry ) {
-		    redirectIds[entry['title'].replace( / /g, '_' )] = articleId;
+		    redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
 		});
 		finished();
 	    } catch( error ) {
@@ -833,7 +917,7 @@ function downloadMedia( url ) {
 }
 
 process.on( 'uncaughtException', function( error ) {
-    console.trace( error );
+    console.trace( "NODEJS FATAL EXCEPTION:" + error );
     throw error;
     process.exit( 42 );
 });
@@ -857,7 +941,6 @@ function downloadFile( url, path, force ) {
 		    return ( tryCount++ < maxTryCount );
 		},
 		function( finished ) {
-		    console.log( path );
 		    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
 			if ( error ) {
 			    console.error( 'Unable to download (try nb ' + tryCount + ') from ' + decodeURI( url ) + ' ( ' + error + ' )');
@@ -905,8 +988,12 @@ function getMediaBase( url, escape ) {
 		 escape ? encodeURIComponent( string ) : string );
     }
 
+    var filenameFirstVariant = parts[2];
+    var filenameSecondVariant = parts[5] + parts[6] + ( parts[7] || '' );
+
     return mediaDirectory + '/' + ( e( charAt( root, 0 ) ) || '_' ) + '/' + ( e( charAt( root, 1 ) ) || '_' ) + '/' + 
-	( e( charAt( root, 2 ) ) || '_' ) + '/' + ( e( charAt( root, 3 ) ) || '_' ) + '/' + e( parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ) );
+	( e( charAt( root, 2 ) ) || '_' ) + '/' + ( e( charAt( root, 3 ) ) || '_' ) + '/' + e( filenameFirstVariant.length > filenameSecondVariant.length ? 
+ 											       filenameFirstVariant : filenameSecondVariant );
 }
 
 function getArticleUrl( articleId ) {
