@@ -9,7 +9,7 @@
 var withCategories = false;
 
 /* Keep thumbnails in articles */
-var withMedias = true;
+var withMedias = false;
 
 /* Template code for any redirect to be written on the FS */
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
@@ -174,9 +174,13 @@ function saveRedirects( finished ) {
 		console.error( 'Unable to get a redirect target from redis: ' + error );
 		process.exit( 1 );
 	    } else {
-		var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
-					       target : getArticleUrl( target ) } );
-		writeFile( html, getArticlePath( redirectId ), finished );
+		if ( target ) {
+		    var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
+						   target : getArticleUrl( target ) } );
+		    writeFile( html, getArticlePath( redirectId ), finished );
+		} else {
+		    finished();
+		}
 	    }
 	});
     }
