@@ -9,7 +9,7 @@
 var withCategories = false;
 
 /* Keep thumbnails in articles */
-var withMedias = false;
+var withMedias = true;
 
 /* Template code for any redirect to be written on the FS */
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/enwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/orwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://en.wikipedia.org/';
+var hostUrl = 'http://or.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -89,7 +89,6 @@ var name = '';
 var lang = 'en';
 var articleIds = {};
 var namespaces = {};
-var mediaIds = {};
 var webUrl = hostUrl + 'wiki/';
 var apiUrl = hostUrl + 'w/api.php?';
 
@@ -123,7 +122,9 @@ var redis = require("redis");
 /* Setup redis client */
 var redisClient = redis.createClient("/tmp/redis.sock");
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "redirects";
+var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "mediaIds";
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {});
+redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {});
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
@@ -911,13 +912,17 @@ function downloadMedia( url ) {
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
 
-    if ( mediaIds[ filenameBase ] && mediaIds[ filenameBase ] >=  width ) {
-	return;
-    } else {
-	mediaIds[ filenameBase ] = width;
-    }
-
-    downloadFile( url, getMediaPath( url ), true );
+    redisClient.hget( redisMediaIdsDatabase, filenameBase, function(error, r_width) {
+        if( error ||  r_width < width) {
+            // Download this image & update DB
+            console.info("mediaId cache miss: " + filenameBase);
+            downloadFile( url, getMediaPath( url ), true );
+            redisClient.hset( redisMediaIdsDatabase, filenameBase, width );
+        }
+        else {
+            console.info("mediaId cache hit: " + filenameBase);
+        }
+    });
 }
 
 process.on( 'uncaughtException', function( error ) {
