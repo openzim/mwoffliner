@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/orwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/bmwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://or.wikipedia.org/';
+var hostUrl = 'http://bm.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -623,6 +623,11 @@ function saveJavascript() {
 
     var html = loadUrlSync( webUrl );
     html = html.replace( '<head>', '<head><base href="' + hostUrl + '" />');
+
+    // Create a dummy JS file to be executed asynchronously in place of loader.php
+    var dummyPath = rootPath + javascriptDirectory + '/local.js';
+    fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
+
     var window = jsdom.jsdom( html ).createWindow();
     
     window.addEventListener('load', function () {
@@ -636,16 +641,23 @@ function saveJavascript() {
 	for ( var i = 0; i < scripts.length ; i++ ) {
 	  var script = scripts[i];
 	  var url = script.getAttribute( 'src' );
+
+
+	    var munge_js = function(txt) {
+		txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
+		return txt;
+	    }
+
 	  
 	  if ( url ) {
-	    url = getFullUrl( url );
+	    url = getFullUrl( url ).replace("debug=false", "debug=true");
 	    console.info( 'Downloading javascript from ' + url );
 	    // var body = loadUrlSync( url ).replace( '"//', '"http://' );
 	    var body = loadUrlSync( url );
 	    
-	    fs.appendFile( javascriptPath, '\n' + body + '\n', function (err) {} );
+	      fs.appendFile( javascriptPath, '\n' + munge_js(body) + '\n', function (err) {} );
 	  } else {
-	      fs.appendFile( javascriptPath, '\n' + script.innerHTML + '\n', function (err) {} );
+	      fs.appendFile( javascriptPath, '\n' + munge_js(script.innerHTML) + '\n', function (err) {} );
 	  }
 	}
     });
