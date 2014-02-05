@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/bmwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/enwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://bm.wikipedia.org/';
+var hostUrl = 'http://en.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -112,8 +112,9 @@ var pngcrush = require( 'pngcrush' );
 var jpegtran = require( 'jpegtran' );
 var request = require( 'request-enhanced' );
 var htmlminifier = require('html-minifier');
-var hiredis = require("hiredis");
-var redis = require("redis");
+var hiredis = require( 'hiredis' );
+var redis = require( 'redis' );
+var lineByLineReader = require( 'line-by-line' );
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -141,6 +142,8 @@ async.series([
     function( finished ) { getMainPage( finished ) },
     function( finished ) { getSubTitle( finished ) },
     function( finished ) { getSiteInfo( finished ) },
+//    function( finished ) { getArticleIdsFromFile( finished ) }, 
+//    function( finished ) { createMainPage( finished ) },
     function( finished ) { getArticleIds( finished ) }, 
     function( finished ) { getRedirectIds( finished ) },
     function( finished ) { saveRedirects( finished ) },
@@ -714,6 +717,26 @@ function saveStylesheet() {
     });
 }
 
+/* Get ids from file */
+function getArticleIdsFromFile( finished ) {
+    var file = new lineByLineReader( 'articles' );
+
+    file.on( 'error', function ( error ) {
+	console.log( 'Error by reading article file: ' + error );
+	process.exit( 1 );
+    });
+
+    file.on( 'line', function ( line ) {
+	if ( line ) {
+	    articleIds[line.replace( / /g, '_' )] = '';
+	}
+    });
+
+    file.on( 'end', function () {
+	finished();
+    });
+}
+
 /* Get ids */
 function getArticleIds( finished ) {
     namespacesToMirror.map( function( namespace ) {
@@ -924,15 +947,15 @@ function downloadMedia( url ) {
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
 
-    redisClient.hget( redisMediaIdsDatabase, filenameBase, function(error, r_width) {
-        if( error ||  r_width < width) {
+    redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
+        if( error || r_width < width) {
             // Download this image & update DB
-            console.info("mediaId cache miss: " + filenameBase);
+            console.info( 'MediaId cache miss: ' + filenameBase );
             downloadFile( url, getMediaPath( url ), true );
             redisClient.hset( redisMediaIdsDatabase, filenameBase, width );
         }
         else {
-            console.info("mediaId cache hit: " + filenameBase);
+            console.info( 'MediaId cache hit: ' + filenameBase );
         }
     });
 }
@@ -1086,6 +1109,24 @@ function getMainPage( finished ) {
 	};
 	finished();
     });
+}
+
+function createMainPage( finished ) {
+    console.info( 'Creating main page...' );
+    var path = rootPath + htmlDirectory + '/index.html';
+    var doc = domino.createDocument( htmlTemplateCode );
+    doc.getElementById( 'firstHeading' ).innerHTML = 'Summary';
+    doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
+
+    var html = '<ul>\n';
+    Object.keys(articleIds).sort().map( function( articleId ) {
+	html = html + '<li><a href="../' + getArticleBase( articleId ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
+    });
+    html = html + '</ul>\n';
+    doc.getElementById( 'mw-content-text' ).innerHTML = html;
+    
+    /* Write the static html file */
+    writeFile( doc.documentElement.outerHTML, rootPath + htmlDirectory + '/index.html', function() { setTimeout( finished, 0 ); } );
 }
 
 function getNamespaces( finished ) {
