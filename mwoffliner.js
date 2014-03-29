@@ -115,6 +115,8 @@ var htmlminifier = require('html-minifier');
 var hiredis = require( 'hiredis' );
 var redis = require( 'redis' );
 var lineByLineReader = require( 'line-by-line' );
+var childProcess = require('child_process');
+var exec = require('child_process').exec;
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -1013,6 +1015,25 @@ function downloadFile( url, path, force ) {
 		    process.exit( 1 );
 		} else {
 		    console.info( 'Succesfuly downloaded ' + decodeURI( url ) );
+		    var ext = pathParser.extname( path || '' ).split( '.' )[1].toLowerCase();
+		    
+		    var cmd;
+		    if ( ext === 'jpg' || ext === 'jpeg' ) {
+			cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
+		    } else if ( ext === 'png' ) {
+			cmd = 'pngquant --nofs --force --ext=".png" "' + path+ '"; ' + 
+			    'advdef -z -4 -i 5 "' + path+ '"';
+		    }
+
+		    if ( cmd ) {
+			var child = exec(cmd, function( error, stdout, stderr ) {
+			    if ( error ) {
+				console.error( 'Failed to optim ' + path + ' (' + error + ')' );
+			    } else {
+				console.info( 'Successfuly optimized ' + path );
+			    }
+			});
+		    }
 		}
 	    });
 	}
