@@ -997,7 +997,6 @@ process.on( 'uncaughtException', function( error ) {
 
 function downloadFile( url, path, force ) {
     var data;
-    var tryCount = 0;
 
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
@@ -1008,31 +1007,14 @@ function downloadFile( url, path, force ) {
 	    
 	    createDirectoryRecursively( pathParser.dirname( path ) );
 
-	    async.whilst(
-		function() {
-		    return ( tryCount++ < maxTryCount );
-		},
-		function( finished ) {
-		    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
-			if ( error ) {
-			    console.error( 'Unable to download (try nb ' + tryCount + ') from ' + decodeURI( url ) + ' ( ' + error + ' )');
-			    if ( maxTryCount == 0 || tryCount < maxTryCount ) {
-				console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
-				sleep.sleep( tryCount );
-				error = undefined;
-			    }
-			} else {
-			    tryCount = maxTryCount;
-			}
-			finished( error );
-		    });
-		},
-		function( error ) {
-		    if ( error ) {
-			console.error( 'Abandon retrieving of ' + decodeURI( url ) );
-		    }
+	    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
+		if ( error ) {
+		    console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
+		    process.exit( 1 );
+		} else {
+		    console.info( 'Succesfuly downloaded ' + decodeURI( url ) );
 		}
-	    );
+	    });
 	}
     });
 }
