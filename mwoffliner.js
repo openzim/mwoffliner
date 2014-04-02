@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/bmwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/dewiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://bm.wikipedia.org/';
+var hostUrl = 'http://de.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -1012,10 +1012,10 @@ function downloadFile( url, path, force ) {
 	    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
 		if ( error ) {
 		    console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
-		    process.exit( 1 );
 		} else {
-		    console.info( 'Succesfuly downloaded ' + decodeURI( url ) );
-		    var ext = pathParser.extname( path || '' ).split( '.' )[1].toLowerCase();
+		    console.info( 'Successfuly downloaded ' + decodeURI( url ) );
+		    var ext = pathParser.extname( path || '' ).split( '.' )[1];
+		    ext = ext ? ext.toLowerCase() : ext;
 		    
 		    var cmd;
 		    if ( ext === 'jpg' || ext === 'jpeg' ) {
