@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/dewiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/ckbwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://de.wikipedia.org/';
+var hostUrl = 'http://ckb.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -754,12 +754,14 @@ function getArticleIds( finished ) {
 		    Object.keys( entries ).map( function( key ) {
 			var entry = entries[key];
 			entry['title'] = entry['title'].replace( / /g, '_' );
-			articleIds[entry['title']] = entry['revisions'][0]['revid'];
-			queue.push( entry['title'], function ( error ) {
-			    if ( error ) {
-				finished( error );
-			    }
-			});
+			if ( entry['revisions'] !== undefined ) {
+			    articleIds[entry['title']] = entry['revisions'][0]['revid'];
+			    queue.push( entry['title'], function ( error ) {
+				if ( error ) {
+				    finished( error );
+				}
+			    });
+			}
 		    });
 		    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
 		    finished();
