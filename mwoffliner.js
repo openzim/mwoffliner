@@ -31,10 +31,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/ckbwiki/';
+var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/enwiki/';
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://ckb.wikipedia.org/';
+var hostUrl = 'http://en.wikipedia.org/';
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -46,10 +46,9 @@ var footerTemplateCode = '<div style="clear:both; background-image:linear-gradie
 /* CONSTANT VARIABLE SECTION ********/
 /************************************/
 
-var styleDirectory = 'style';
-var htmlDirectory = 'html';
-var mediaDirectory = 'media';
-var javascriptDirectory = 'js';
+var styleDirectory = 's';
+var mediaDirectory = 'm';
+var javascriptDirectory = 'j';
 var mediaRegex = /^(.*\/)([^\/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6})(\.[A-Za-z0-9]{2,6}|)$/;
 var htmlTemplateCode = function(){/*
 <!DOCTYPE html>
@@ -57,8 +56,8 @@ var htmlTemplateCode = function(){/*
   <head>
     <meta charset="UTF-8" />
     <title></title>
-    <link rel="stylesheet" href="../../../../../style/style.css" />
-    <script src="../../../../../js/head.js"></script>
+    <link rel="stylesheet" href="s/style.css" />
+    <script src="j/head.js"></script>
   </head>
   <body class="mediawiki" style="background-color: white;">
     <div id="content" style="margin: 0px; border-width: 0px;">
@@ -70,7 +69,7 @@ var htmlTemplateCode = function(){/*
         </div>
       </div>
     </div>
-    <script src="../../../../../js/body.js"></script>
+    <script src="j/body.js"></script>
   </body>
 </html>
 */}.toString().slice(14,-3);
@@ -758,7 +757,7 @@ function getArticleIds( finished ) {
 			    articleIds[entry['title']] = entry['revisions'][0]['revid'];
 			    queue.push( entry['title'], function ( error ) {
 				if ( error ) {
-				    finished( error );
+				    finished( error + ' - ' + body);
 				}
 			    });
 			}
@@ -771,6 +770,7 @@ function getArticleIds( finished ) {
 	    function ( error ) {
 		if ( error ) {
 		    console.error( 'Unable to download article ids: ' + error );
+		    
 		    process.exit( 1 );
 		} else {
 		    finished();
@@ -826,7 +826,6 @@ function createDirectories() {
     console.info( 'Creating directories at \'' + rootPath + '\'...' );
     createDirectory( rootPath );
     createDirectory( rootPath + styleDirectory );
-    createDirectory( rootPath + htmlDirectory );
     createDirectory( rootPath + mediaDirectory );
     createDirectory( rootPath + javascriptDirectory );
 }
@@ -1020,11 +1019,13 @@ function downloadFile( url, path, force ) {
 		    ext = ext ? ext.toLowerCase() : ext;
 		    
 		    var cmd;
-		    if ( ext === 'jpg' || ext === 'jpeg' ) {
+		    if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG') {
 			cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
-		    } else if ( ext === 'png' ) {
+		    } else if ( ext === 'png' || ext === 'PNG') {
 			cmd = 'pngquant --nofs --force --ext=".png" "' + path+ '"; ' + 
 			    'advdef -z -4 -i 5 "' + path+ '"';
+		    } else if ( ext === 'gif' || ext === 'GIF') {
+			cmd = 'gifsicle -O3 "' + path + '" -o "' + path+ '"';
 		    }
 
 		    if ( cmd ) {
@@ -1044,7 +1045,7 @@ function downloadFile( url, path, force ) {
 
 /* Internal path/url functions */
 function getMediaUrl( url ) {
-    return '../../../../../' + getMediaBase( url, true );
+    return getMediaBase( url, true );
 }
 
 function getMediaPath( url, escape ) {
@@ -1068,13 +1069,12 @@ function getMediaBase( url, escape ) {
     var filenameFirstVariant = parts[2];
     var filenameSecondVariant = parts[5] + parts[6] + ( parts[7] || '' );
 
-    return mediaDirectory + '/' + ( e( charAt( root, 0 ) ) || '_' ) + '/' + ( e( charAt( root, 1 ) ) || '_' ) + '/' + 
-	( e( charAt( root, 2 ) ) || '_' ) + '/' + ( e( charAt( root, 3 ) ) || '_' ) + '/' + e( filenameFirstVariant.length > filenameSecondVariant.length ? 
- 											       filenameFirstVariant : filenameSecondVariant );
+    return mediaDirectory + '/' + e( filenameFirstVariant.length > filenameSecondVariant.length ?
+                                     filenameFirstVariant : filenameSecondVariant );
 }
 
 function getArticleUrl( articleId ) {
-    return '../../../../../' + getArticleBase( articleId, true );
+    return getArticleBase( articleId, true );
 }
 
 function getArticlePath( articleId, escape ) {
@@ -1095,8 +1095,7 @@ function getArticleBase( articleId, escape ) {
 		 escape ? encodeURIComponent( string ) : string );
     }
 
-    return htmlDirectory + '/' + ( e( charAt( dirBase, 0 ) ) || '_' ) + '/' + ( e( charAt( dirBase, 1 ) ) || '_' ) + '/' + 
-	( e( charAt( dirBase, 2 ) ) || '_' ) + '/' + ( e( charAt( dirBase, 3 ) ) || '_' ) + '/' + e( filename ) + '.html';
+    return e( filename ) + '.html';
 }
 
 function getSubTitle( finished ) {
@@ -1127,14 +1126,14 @@ function saveFavicon() {
 
 function getMainPage( finished ) {
     console.info( 'Getting main page...' );
-    var path = rootPath + htmlDirectory + '/index.html';
+    var path = rootPath + '/index.html';
     loadUrlSync( webUrl, function( body ) {
 	var mainPageRegex = /\"wgPageName\"\:\"(.*?)\"/;
 	var parts = mainPageRegex.exec( body );
 	if ( parts[ 1 ] ) {
 	    var html = redirectTemplate( { title:  parts[1].replace( /_/g, ' ' ), 
-					   target : '../' + getArticleBase( parts[1], true ) } );
-	    writeFile( html, rootPath + htmlDirectory + '/index.html' );
+					   target : getArticleBase( parts[1], true ) } );
+	    writeFile( html, rootPath + '/index.html' );
 	    articleIds[ parts[ 1 ] ] = '';
 	} else {
 	    console.error( 'Unable to get the main page' );
@@ -1146,7 +1145,7 @@ function getMainPage( finished ) {
 
 function createMainPage( finished ) {
     console.info( 'Creating main page...' );
-    var path = rootPath + htmlDirectory + '/index.html';
+    var path = rootPath + '/index.html';
     var doc = domino.createDocument( htmlTemplateCode );
     doc.getElementById( 'firstHeading' ).innerHTML = 'Summary';
     doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
@@ -1159,7 +1158,7 @@ function createMainPage( finished ) {
     doc.getElementById( 'mw-content-text' ).innerHTML = html;
     
     /* Write the static html file */
-    writeFile( doc.documentElement.outerHTML, rootPath + htmlDirectory + '/index.html', function() { setTimeout( finished, 0 ); } );
+    writeFile( doc.documentElement.outerHTML, rootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
 }
 
 function getNamespaces( finished ) {
@@ -1191,7 +1190,7 @@ function getNamespaces( finished ) {
 
 function getTextDirection( finished ) {
     console.info( 'Getting text direction...' );
-    var path = rootPath + htmlDirectory + '/index.html';
+    var path = rootPath + '/index.html';
     loadUrlSync( webUrl, function( body ) {
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
 	var parts = languageDirectionRegex.exec( body );
