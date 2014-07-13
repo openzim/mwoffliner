@@ -256,6 +256,8 @@ function saveArticles( finished ) {
 			if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || rel == 'nofollow' ) {
 			    if ( href.substring( 0, 1 ) === '/' ) {
 				linkNode.setAttribute( 'href', getFullUrl( href ) );
+			    } else if ( href.substring( 0, 2 ) === './' ) {
+				deleteNode( linkNode );
 			    }
 			    setTimeout( finished, 0 );
 			}
