@@ -1,0 +1,35 @@
+{
+"name": "mwoffliner",
+"version": "0.0.0",
+"description": "Parsoid HTML dump utility",
+"main": "mwoffliner.js",
+"scripts": {
+"test": "echo \"Error: no test specified\" && exit 1"
+},
+"repository": {
+"type": "git",
+"url": "git.code.sf.net/p/kiwix/other"
+},
+"author": "Emmanuel Engelhart <kelson@kiwix.org>",
+"license": "GPLv3",
+"bugs": {
+"url": "http://reportabug.kiwix.org"
+},
+"dependencies": {
+"domino": "*",
+"jsdom": "*",
+"async": "*",
+"sync": "*",
+"follow-redirects": "*",
+"httpsync": "*",
+"swig": "*",
+"sleep": "*",
+"pngquant": "*",
+"pngcrush": "*",
+"jpegtran": "*",
+"request-enhanced": "*",
+"html-minifier": "*",
+"hiredis": "*",
+"redis": "*"
+}
+}
