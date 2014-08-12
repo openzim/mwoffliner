@@ -143,7 +143,7 @@ async.series([
     function( finished ) { getMainPage( finished ) },
     function( finished ) { getSubTitle( finished ) },
     function( finished ) { getSiteInfo( finished ) },
-//    function( finished ) { getArticleIdsFromFile( finished ) }, 
+    function( finished ) { getArticleIdsFromFile( finished ) }, 
 //    function( finished ) { createMainPage( finished ) },
     function( finished ) { getArticleIds( finished ) }, 
     function( finished ) { saveRedirects( finished ) },
@@ -721,22 +721,39 @@ function saveStylesheet() {
 
 /* Get ids from file */
 function getArticleIdsFromFile( finished ) {
-    var file = new lineByLineReader( 'articles' );
 
-    file.on( 'error', function ( error ) {
-	console.log( 'Error by reading article file: ' + error );
-	process.exit( 1 );
-    });
+    function readLines( input, func ) {
+	var remaining = '';
+	
+	input.on('data', function( data ) {
+	    remaining += data;
+	    var index = remaining.indexOf( '\n' );
+	    while ( index > -1 ) {
+		var line = remaining.substring( 0, index );
+		remaining = remaining.substring( index + 1 );
+		func( line );
+		index = remaining.indexOf( '\n' );
+	    }
+	});
+	
+	input.on( 'end', function() {
+	    if ( remaining.length > 0 ) {
+		func(remaining);
+	    } else {
+		finished();
+	    }
+	});
+    }
 
-    file.on( 'line', function ( line ) {
+    function addArticleId( line ) {
 	if ( line ) {
 	    articleIds[line.replace( / /g, '_' )] = '';
+	    console.log( 'Add following title to the mirror list ' + line );
 	}
-    });
+    }
 
-    file.on( 'end', function () {
-	finished();
-    });
+    var input = fs.createReadStream( 'articles' );
+    readLines( input, addArticleId );
 }
 
 /* Get ids */
