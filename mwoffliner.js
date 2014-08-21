@@ -2,6 +2,42 @@
 "use strict";
 
 /************************************/
+/* MODULE VARIABLE SECTION **********/
+/************************************/
+
+var fs = require( 'fs' );
+var domino = require( 'domino' );
+var jsdom = require( 'jsdom' );
+var async = require( 'async' );
+var Sync = require('sync');
+var http = require( 'follow-redirects' ).http;
+var httpsync = require( 'httpsync' );
+var swig = require( 'swig' );
+var urlParser = require( 'url' );
+var pathParser = require( 'path' );
+var sleep = require( 'sleep' );
+var pngquant = require( 'pngquant' );
+var pngcrush = require( 'pngcrush' );
+var jpegtran = require( 'jpegtran' );
+var request = require( 'request-enhanced' );
+var htmlminifier = require('html-minifier');
+var hiredis = require( 'hiredis' );
+var redis = require( 'redis' );
+var lineByLineReader = require( 'line-by-line' );
+var childProcess = require('child_process');
+var exec = require('child_process').exec;
+var yargs = require('yargs');
+
+/************************************/
+/* COMMAND LINE PARSING *************/
+/************************************/
+
+var argv = yargs.usage('Create a fancy HTML dump in a directory\nUsage: $0'
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
+    .demand(['mwUrl', 'parsoidUrl'])
+    .argv;
+
+/************************************/
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
 
@@ -31,10 +67,10 @@ var idBlackList = [ 'purgelink' ];
 var rootPath = 'static/';
 
 /* Parsoid URL */
-var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/enwiki/';
+var parsoidUrl = argv.parsoidUrl;
 
 /* Wikipedia/... URL */
-var hostUrl = 'http://en.wikipedia.org/';
+var mwUrl = argv.mwUrl;
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -88,34 +124,8 @@ var name = '';
 var lang = 'en';
 var articleIds = {};
 var namespaces = {};
-var webUrl = hostUrl + 'wiki/';
-var apiUrl = hostUrl + 'w/api.php?';
-
-/************************************/
-/* MODULE VARIABLE SECTION **********/
-/************************************/
-
-var fs = require( 'fs' );
-var domino = require( 'domino' );
-var jsdom = require( 'jsdom' );
-var async = require( 'async' );
-var Sync = require('sync');
-var http = require( 'follow-redirects' ).http;
-var httpsync = require( 'httpsync' );
-var swig = require( 'swig' );
-var urlParser = require( 'url' );
-var pathParser = require( 'path' );
-var sleep = require( 'sleep' );
-var pngquant = require( 'pngquant' );
-var pngcrush = require( 'pngcrush' );
-var jpegtran = require( 'jpegtran' );
-var request = require( 'request-enhanced' );
-var htmlminifier = require('html-minifier');
-var hiredis = require( 'hiredis' );
-var redis = require( 'redis' );
-var lineByLineReader = require( 'line-by-line' );
-var childProcess = require('child_process');
-var exec = require('child_process').exec;
+var webUrl = mwUrl + 'wiki/';
+var apiUrl = mwUrl + 'w/api.php?';
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -143,7 +153,7 @@ async.series([
     function( finished ) { getMainPage( finished ) },
     function( finished ) { getSubTitle( finished ) },
     function( finished ) { getSiteInfo( finished ) },
-    function( finished ) { getArticleIdsFromFile( finished ) }, 
+//    function( finished ) { getArticleIdsFromFile( finished ) }, 
 //    function( finished ) { createMainPage( finished ) },
     function( finished ) { getArticleIds( finished ) }, 
     function( finished ) { saveRedirects( finished ) },
@@ -627,7 +637,7 @@ function saveJavascript() {
     }
 
     var html = loadUrlSync( webUrl );
-    html = html.replace( '<head>', '<head><base href="' + hostUrl + '" />');
+    html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
 
     // Create a dummy JS file to be executed asynchronously in place of loader.php
     var dummyPath = rootPath + javascriptDirectory + '/local.js';
@@ -1171,7 +1181,7 @@ function createMainPage( finished ) {
 
     var html = '<ul>\n';
     Object.keys(articleIds).sort().map( function( articleId ) {
-	html = html + '<li><a href="../' + getArticleBase( articleId ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
+	html = html + '<li><a href="' + getArticleBase( articleId ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
     });
     html = html + '</ul>\n';
     doc.getElementById( 'mw-content-text' ).innerHTML = html;
