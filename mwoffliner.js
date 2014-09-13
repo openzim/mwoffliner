@@ -31,11 +31,14 @@ var yargs = require('yargs');
 /* COMMAND LINE PARSING *************/
 /************************************/
 
-var argv = yargs.usage('Create a fancy HTML dump in a directory\nUsage: $0'
+var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --articleList=titles.txt')
     .require(['mwUrl', 'parsoidUrl'])
     .options(['articleList'])
     .describe( 'articleList', 'File with one title (in UTF8)')
+    .describe( 'textOnly', 'To avoid image/media mirroring')
+    .describe( 'mwURL', 'Mediawiki API URL')
+    .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .argv;
 
 /************************************/
@@ -46,7 +49,7 @@ var argv = yargs.usage('Create a fancy HTML dump in a directory\nUsage: $0'
 var withCategories = false;
 
 /* Keep thumbnails in articles */
-var withMedias = true;
+var withMedias = ( argv.textOnly ? false : true );
 
 /* Template code for any redirect to be written on the FS */
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
