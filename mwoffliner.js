@@ -23,7 +23,6 @@ var request = require( 'request-enhanced' );
 var htmlminifier = require('html-minifier');
 var hiredis = require( 'hiredis' );
 var redis = require( 'redis' );
-var lineByLineReader = require( 'line-by-line' );
 var childProcess = require('child_process');
 var exec = require('child_process').exec;
 var yargs = require('yargs');
@@ -33,8 +32,10 @@ var yargs = require('yargs');
 /************************************/
 
 var argv = yargs.usage('Create a fancy HTML dump in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
-    .demand(['mwUrl', 'parsoidUrl'])
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --articleList=titles.txt')
+    .require(['mwUrl', 'parsoidUrl'])
+    .options(['articleList'])
+    .describe( 'articleList', 'File with one title (in UTF8)')
     .argv;
 
 /************************************/
@@ -69,6 +70,9 @@ var rootPath = 'static/';
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
 
+/* List of articles is maybe in a file */
+var articleList = argv.articleList;
+
 /* Wikipedia/... URL */
 var mwUrl = argv.mwUrl;
 
@@ -96,7 +100,7 @@ var htmlTemplateCode = function(){/*
     <script src="j/head.js"></script>
   </head>
   <body class="mediawiki" style="background-color: white;">
-    <div id="content" style="margin: 0px; border-width: 0px;">
+    <div id="content" style="margin: 0 1em; border-width: 0px;">
       <a id="top"></a>
       <h1 id="firstHeading" class="firstHeading" style="margin-bottom: 0.5em; background-color: white;"></h1>
       <div id="ss" style="font-size: smaller; margin-top: -1em;"></div>
@@ -150,12 +154,10 @@ async.series([
     function( finished ) { startProcess( finished ) },
     function( finished ) { getTextDirection( finished ) },
     function( finished ) { getNamespaces( finished ) },
-    function( finished ) { getMainPage( finished ) },
     function( finished ) { getSubTitle( finished ) },
     function( finished ) { getSiteInfo( finished ) },
-//    function( finished ) { getArticleIdsFromFile( finished ) }, 
-//    function( finished ) { createMainPage( finished ) },
     function( finished ) { getArticleIds( finished ) }, 
+    function( finished ) { getMainPage( finished ) },
     function( finished ) { saveRedirects( finished ) },
     function( finished ) { saveArticles( finished ) },
     function( finished ) { endProcess( finished ) },
@@ -729,47 +731,64 @@ function saveStylesheet() {
     });
 }
 
-/* Get ids from file */
-function getArticleIdsFromFile( finished ) {
-
-    function readLines( input, func ) {
-	var remaining = '';
-	
-	input.on('data', function( data ) {
-	    remaining += data;
-	    var index = remaining.indexOf( '\n' );
-	    while ( index > -1 ) {
-		var line = remaining.substring( 0, index );
-		remaining = remaining.substring( index + 1 );
-		func( line );
-		index = remaining.indexOf( '\n' );
-	    }
-	});
-	
-	input.on( 'end', function() {
-	    if ( remaining.length > 0 ) {
-		func(remaining);
-	    } else {
-		finished();
-	    }
-	});
-    }
-
-    function addArticleId( line ) {
-	if ( line ) {
-	    articleIds[line.replace( / /g, '_' )] = '';
-	    console.log( 'Add following title to the mirror list ' + line );
-	}
-    }
-
-    var input = fs.createReadStream( 'articles' );
-    readLines( input, addArticleId );
-}
-
 /* Get ids */
 function getArticleIds( finished ) {
     var next = '';
 
+    /* Get ids from file */
+    function getArticleIdsFromFile( finished ) {
+	var remaining = '';
+    
+	function readLines( input, func ) {
+	    
+	    input.on('data', function( data ) {
+		remaining += data;
+		var index = remaining.indexOf( '\n' );
+		while ( index > -1 ) {
+		    var line = remaining.substring( 0, index );
+		    remaining = remaining.substring( index + 1 );
+		    func( line );
+		    index = remaining.indexOf( '\n' );
+		}
+	    });
+	    
+	    input.on( 'end', function() {
+		if ( remaining.length > 0 ) {
+		    func( remaining );
+		}
+	    });
+	}
+	
+	function addArticleIdFromLine( line ) {
+	    if ( line ) {
+		var title = line.replace( / /g, '_' );
+		var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
+		var body = loadUrlAsync( url, function( body ) {
+		    var entries = JSON.parse( body )['query']['pages'];
+		    Object.keys( entries ).map( function( key ) {
+			var entry = entries[key];
+			entry['title'] = entry['title'].replace( / /g, '_' );
+			if ( entry['revisions'] !== undefined ) {
+			    console.log( 'Add following title to the mirror list ' + title );
+			    articleIds[entry['title']] = entry['revisions'][0]['revid'];
+			    queue.push( entry['title'], function ( error ) {
+				if ( error ) {
+				    finished( error + ' - ' + body);
+				}
+				if ( remaining == 0 ) {
+				    finished();
+				}
+			    });
+			}
+		    });
+		});
+	    }
+	}
+
+	var input = fs.createReadStream( articleList );
+	readLines( input, addArticleIdFromLine );
+    }
+    
     function getArticleIdsForNamespace( namespace, finished ) {
 	next = '';
 	
@@ -799,7 +818,6 @@ function getArticleIds( finished ) {
 	    function ( error ) {
 		if ( error ) {
 		    console.error( 'Unable to download article ids: ' + error );
-		    
 		    process.exit( 1 );
 		} else {
 		    finished();
@@ -822,15 +840,19 @@ function getArticleIds( finished ) {
 	}
     };
     
-    async.eachLimit( namespacesToMirror, maxParallelRequests, getArticleIdsForNamespace, function( error ) {
-	if ( error ) {
-            console.error( 'Unable to get all article ids for in a namespace: ' + error );
-	    process.exit( 1 );
-	} else {
-	    console.log( 'All article ids retrieved successfully.' );
-	    next = 'finished';
-	}
-    });
+    if ( articleList ) {
+	getArticleIdsFromFile( finished );
+    } else {
+	async.eachLimit( namespacesToMirror, maxParallelRequests, getArticleIdsForNamespace, function( error ) {
+	    if ( error ) {
+		console.error( 'Unable to get all article ids for in a namespace: ' + error );
+		process.exit( 1 );
+	    } else {
+		console.log( 'All article ids retrieved successfully.' );
+		next = 'finished';
+	    }
+	});
+    }
 }
 
 function getRedirectIds( articleId, finished ) { 
@@ -1154,40 +1176,48 @@ function saveFavicon() {
 }
 
 function getMainPage( finished ) {
-    console.info( 'Getting main page...' );
     var path = rootPath + '/index.html';
-    loadUrlSync( webUrl, function( body ) {
-	var mainPageRegex = /\"wgPageName\"\:\"(.*?)\"/;
-	var parts = mainPageRegex.exec( body );
-	if ( parts[ 1 ] ) {
-	    var html = redirectTemplate( { title:  parts[1].replace( /_/g, ' ' ), 
-					   target : getArticleBase( parts[1], true ) } );
-	    writeFile( html, rootPath + '/index.html' );
-	    articleIds[ parts[ 1 ] ] = '';
-	} else {
-	    console.error( 'Unable to get the main page' );
-	    process.exit( 1 );
-	};
-	finished();
-    });
-}
-
-function createMainPage( finished ) {
-    console.info( 'Creating main page...' );
-    var path = rootPath + '/index.html';
-    var doc = domino.createDocument( htmlTemplateCode );
-    doc.getElementById( 'firstHeading' ).innerHTML = 'Summary';
-    doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
-
-    var html = '<ul>\n';
-    Object.keys(articleIds).sort().map( function( articleId ) {
-	html = html + '<li><a href="' + getArticleBase( articleId ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
-    });
-    html = html + '</ul>\n';
-    doc.getElementById( 'mw-content-text' ).innerHTML = html;
     
-    /* Write the static html file */
-    writeFile( doc.documentElement.outerHTML, rootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
+    function createMainPage( finished ) {
+	console.info( 'Creating main page...' );
+	var doc = domino.createDocument( htmlTemplateCode );
+	doc.getElementById( 'firstHeading' ).innerHTML = 'Summary';
+	doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
+	
+	var html = '<ul>\n';
+	Object.keys(articleIds).sort().map( function( articleId ) {
+	    html = html + '<li><a href="' + getArticleBase( articleId ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
+	});
+	html = html + '</ul>\n';
+	doc.getElementById( 'mw-content-text' ).innerHTML = html;
+	
+	/* Write the static html file */
+	writeFile( doc.documentElement.outerHTML, rootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
+    }
+    
+    function retrieveMainPage( finished ) {
+	console.info( 'Getting main page...' );
+	loadUrlSync( webUrl, function( body ) {
+	    var mainPageRegex = /\"wgPageName\"\:\"(.*?)\"/;
+	    var parts = mainPageRegex.exec( body );
+	    if ( parts[ 1 ] ) {
+		var html = redirectTemplate( { title:  parts[1].replace( /_/g, ' ' ), 
+					       target : getArticleBase( parts[1], true ) } );
+		writeFile( html, rootPath + '/index.html' );
+		articleIds[ parts[ 1 ] ] = '';
+	    } else {
+		console.error( 'Unable to get the main page' );
+		process.exit( 1 );
+	    };
+	    finished();
+	});
+    }
+
+    if ( articleList ) {
+	createMainPage( finished );
+    } else {
+	retrieveMainPage( finished );
+    }
 }
 
 function getNamespaces( finished ) {
