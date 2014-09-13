@@ -1,17 +1,17 @@
 mwoffliner is a tool which allows to "dump" a Wikimedia project
-(Wikipedia, Wiktionary, ...) to a local storage. It goes through all
-articles of the project and write the HTML/pictures  to local files.
+(Wikipedia, Wiktionary, ...) to a local storage. It should also work
+for any Mediawiki instance having parsoid installed. It goes through
+all articles (or a selection if specified) of the project and write
+the HTML/pictures to local files.
 
 To use it, you need a recent version of nodejs and a POSIX system
 (like GNU/Linux). You need also to install all necessary nodejs
-packages with "npm install <modulename>" in this directory. You can
-get the list of packages you need to install in the "MODULE VARIABLE
-SECTION".
+packages with "npm install" in this directory.
 
 You need also a redis server correctly configured and listening to
-/tmp/redis.sock.
+/tmp/redis.sock. Following console binaries are necessary to reduce
+image size: jpegoptim, advdef, gifsicle, pngquant
 
 One time you have done this, you should be able to start the tool with
-./mwoffliner. To configure things related to the project you want to
-dump, just go to the "CUSTOM VARIABLE SECTION".
+./mwoffliner.js and see the usage() for more details.
 
