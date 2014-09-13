@@ -838,7 +838,7 @@ function getArticleIds( finished ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve redirects for an article: ' + error );
             process.exit( 1 );
-	} else if ( next === 'finished' ){
+	} else { /* This assumes that getting redirects will be slower than getting articleIds */
 	    console.log('All articles have been checked for redirects.');
 	    finished();
 	}
@@ -853,7 +853,6 @@ function getArticleIds( finished ) {
 		process.exit( 1 );
 	    } else {
 		console.log( 'All article ids retrieved successfully.' );
-		next = 'finished';
 	    }
 	});
     }
