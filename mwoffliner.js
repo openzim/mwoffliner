@@ -738,6 +738,7 @@ function getArticleIds( finished ) {
     /* Get ids from file */
     function getArticleIdsFromFile( finished ) {
 	var remaining = '';
+	var todo = 0;
     
 	function readLines( input, func ) {
 	    
@@ -747,6 +748,7 @@ function getArticleIds( finished ) {
 		while ( index > -1 ) {
 		    var line = remaining.substring( 0, index );
 		    remaining = remaining.substring( index + 1 );
+		    todo += 1;
 		    func( line );
 		    index = remaining.indexOf( '\n' );
 		}
@@ -754,6 +756,7 @@ function getArticleIds( finished ) {
 	    
 	    input.on( 'end', function() {
 		if ( remaining.length > 0 ) {
+		    todo += 1;
 		    func( remaining );
 		}
 	    });
@@ -775,7 +778,8 @@ function getArticleIds( finished ) {
 				if ( error ) {
 				    finished( error + ' - ' + body);
 				}
-				if ( remaining == 0 ) {
+				todo -= 1;
+				if ( todo == 0 ) {
 				    finished();
 				}
 			    });
