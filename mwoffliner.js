@@ -866,11 +866,13 @@ function getRedirectIds( articleId, finished ) {
     loadUrlAsync( url, function( body ) {
         console.info( 'Getting redirects for article ' + articleId + '...' );
 	try {
-	    var entries;
-	    entries = JSON.parse( body )['query']['backlinks'];
-	    entries.map( function( entry ) {
-		redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
-	    });
+	    if ( !JSON.parse( body )['error'] ) {
+		var entries;
+		entries = JSON.parse( body )['query']['backlinks'];
+		entries.map( function( entry ) {
+		    redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
+		});
+	    }
 	    finished();
 	} catch( error ) {
 	    finished( error );
