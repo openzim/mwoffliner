@@ -741,7 +741,6 @@ function getArticleIds( finished ) {
     /* Get ids from file */
     function getArticleIdsFromFile( finished ) {
 	var remaining = '';
-	var todo = 0;
     
 	function readLines( input, func ) {
 	    
@@ -751,7 +750,6 @@ function getArticleIds( finished ) {
 		while ( index > -1 ) {
 		    var line = remaining.substring( 0, index );
 		    remaining = remaining.substring( index + 1 );
-		    todo += 1;
 		    func( line );
 		    index = remaining.indexOf( '\n' );
 		}
@@ -759,7 +757,6 @@ function getArticleIds( finished ) {
 	    
 	    input.on( 'end', function() {
 		if ( remaining.length > 0 ) {
-		    todo += 1;
 		    func( remaining );
 		}
 	    });
@@ -780,10 +777,6 @@ function getArticleIds( finished ) {
 			    queue.push( entry['title'], function ( error ) {
 				if ( error ) {
 				    finished( error + ' - ' + body);
-				}
-				todo -= 1;
-				if ( todo == 0 ) {
-				    finished();
 				}
 			    });
 			}
@@ -826,8 +819,6 @@ function getArticleIds( finished ) {
 		if ( error ) {
 		    console.error( 'Unable to download article ids: ' + error );
 		    process.exit( 1 );
-		} else {
-		    finished();
 		}
 	    }
 	);
