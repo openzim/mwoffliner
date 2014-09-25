@@ -103,7 +103,7 @@ var htmlTemplateCode = function(){/*
     <script src="j/head.js"></script>
   </head>
   <body class="mediawiki" style="background-color: white;">
-    <div id="content" style="margin: 0 1em; border-width: 0px;">
+    <div id="content" class="mw-body" style="margin: 0 1em; border-width: 0px;">
       <a id="top"></a>
       <h1 id="firstHeading" class="firstHeading" style="margin-bottom: 0.5em; background-color: white;"></h1>
       <div id="ss" style="font-size: smaller; margin-top: -1em;"></div>
