@@ -26,6 +26,7 @@ var redis = require( 'redis' );
 var childProcess = require('child_process');
 var exec = require('child_process').exec;
 var yargs = require('yargs');
+var os = require('os');
 
 /************************************/
 /* COMMAND LINE PARSING *************/
@@ -122,6 +123,7 @@ var htmlTemplateCode = function(){/*
 /************************************/
 
 var maxParallelRequests = 30;
+var cpuCount = os.cpus().length;
 var maxTryCount = 3;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
@@ -152,6 +154,49 @@ var footerTemplate = swig.compile( footerTemplateCode );
 /* Increase the number of allowed parallel requests */
 http.globalAgent.maxSockets = maxParallelRequests;
 
+/* Setting up media optimization queue */
+var optimizationQueue = async.queue( function ( path, finished ) {
+    if ( path ) {
+	var ext = pathParser.extname( path || '' ).split( '.' )[1];
+	ext = ext ? ext.toLowerCase() : ext;
+	
+	var cmd;
+	if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG') {
+	    cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
+	} else if ( ext === 'png' || ext === 'PNG') {
+	    cmd = 'pngquant --nofs --force --ext=".png" "' + path+ '"; ' + 
+		'advdef -z -4 -i 5 "' + path+ '"';
+	} else if ( ext === 'gif' || ext === 'GIF') {
+	    cmd = 'gifsicle -O3 "' + path + '" -o "' + path+ '"';
+	}
+	
+	if ( cmd ) {
+	    var child = exec(cmd, function( error, stdout, stderr ) {
+		if ( error ) {
+		    console.error( 'Failed to optim ' + path + ' (' + error + ')' );
+		} else {
+		    console.info( 'Successfuly optimized ' + path );
+		}
+		finished();
+	    });
+	} else {
+	    finished();
+	}
+    } else  {
+	finished();
+    }
+}, cpuCount );
+
+/* Setting up the downloading queue */
+var downloadMediaQueue = async.queue( function ( url, finished ) {
+    if ( url ) {
+	console.log( "Add url to download: " + url );
+	downloadMedia( url, finished );
+    } else {
+	finished();
+    }
+}, maxParallelRequests );
+
 /* Get content */
 async.series([
     function( finished ) { startProcess( finished ) },
@@ -163,6 +208,8 @@ async.series([
     function( finished ) { getMainPage( finished ) },
     function( finished ) { saveRedirects( finished ) },
     function( finished ) { saveArticles( finished ) },
+    function( finished ) { drainDownloadMediaQueue( finished ) },
+    function( finished ) { drainOptimizationQueue( finished ) },
     function( finished ) { endProcess( finished ) },
 ]);
 
@@ -180,8 +227,40 @@ function startProcess( finished ) {
 
 function endProcess( finished ) {
     redisClient.flushdb( function( error, result) {});
-    redisClient.quit();
-    finished();
+    redisClient.quit(); 
+    console.log( "Dumping finished with success." );
+}
+
+function drainDownloadMediaQueue( finished ) {
+    console.log( downloadMediaQueue.length() + " images still to be downloaded." );
+    downloadMediaQueue.drain = function( error ) {
+	if ( error ) {
+	    console.error( 'Error by downloading images' + error );
+	    process.exit( 1 );
+	} else {
+            if ( downloadMediaQueue.length() == 0 ) {
+		console.error( 'All images successfuly downloaded' );
+		finished();
+            }
+	}
+    };
+    downloadMediaQueue.push( '' );
+}
+
+function drainOptimizationQueue( finished ) {
+    console.log( optimizationQueue.length() + " images still to be optimized." );
+    optimizationQueue.drain = function( error ) {
+	if ( error ) {
+	    console.error( 'Error by optimizing images' + error );
+	    process.exit( 1 );
+	} else {
+            if ( optimizationQueue.length() == 0 ) {
+		console.error( 'All images successfuly optimized' );
+		finished();
+            }
+	}
+    };
+    optimizationQueue.push( '' );
 }
 
 function saveRedirects( finished ) {
@@ -460,7 +539,7 @@ function saveArticles( finished ) {
 		    var src = getFullUrl( img.getAttribute( 'src' ) );
 		    
 		    /* Download image */
-		    downloadMedia( src );
+		    downloadMediaQueue.push( src );
 		    
 		    /* Change image source attribute to point to the local image */
 		    img.setAttribute( 'src', getMediaUrl( src ) );
@@ -1020,7 +1099,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     );
 }
 
-function downloadMedia( url ) {
+function downloadMedia( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
@@ -1029,11 +1108,14 @@ function downloadMedia( url ) {
         if( error || r_width < width) {
             // Download this image & update DB
             console.info( 'MediaId cache miss: ' + filenameBase );
-            downloadFile( url, getMediaPath( url ), true );
+            downloadFile( url, getMediaPath( url ), true, callback );
             redisClient.hset( redisMediaIdsDatabase, filenameBase, width );
         }
         else {
             console.info( 'MediaId cache hit: ' + filenameBase );
+	    if ( callback ) {
+		callback();
+	    }
         }
     });
 }
@@ -1045,12 +1127,15 @@ process.on( 'uncaughtException', function( error ) {
 });
 
 
-function downloadFile( url, path, force ) {
+function downloadFile( url, path, force, callback ) {
     var data;
 
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    console.info( path + ' already downloaded, download will be skipped.' );
+	    if (callback) {
+		callback();
+	    }
 	} else {
 	    console.info( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
@@ -1062,28 +1147,12 @@ function downloadFile( url, path, force ) {
 		    console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
 		} else {
 		    console.info( 'Successfuly downloaded ' + decodeURI( url ) );
-		    var ext = pathParser.extname( path || '' ).split( '.' )[1];
-		    ext = ext ? ext.toLowerCase() : ext;
-		    
-		    var cmd;
-		    if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG') {
-			cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
-		    } else if ( ext === 'png' || ext === 'PNG') {
-			cmd = 'pngquant --nofs --force --ext=".png" "' + path+ '"; ' + 
-			    'advdef -z -4 -i 5 "' + path+ '"';
-		    } else if ( ext === 'gif' || ext === 'GIF') {
-			cmd = 'gifsicle -O3 "' + path + '" -o "' + path+ '"';
-		    }
+		    optimizationQueue.push( path, function ( error ) {
+		    });
+		}
 
-		    if ( cmd ) {
-			var child = exec(cmd, function( error, stdout, stderr ) {
-			    if ( error ) {
-				console.error( 'Failed to optim ' + path + ' (' + error + ')' );
-			    } else {
-				console.info( 'Successfuly optimized ' + path );
-			    }
-			});
-		    }
+		if (callback) {
+		    callback();
 		}
 	    });
 	}
