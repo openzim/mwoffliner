@@ -33,9 +33,10 @@ var os = require('os');
 /************************************/
 
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --articleList=titles.txt')
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
     .require(['mwUrl', 'parsoidUrl'])
-    .options(['articleList'])
+    .options(['articleList', 'textOnly', 'outputDirectory'])
+    .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'articleList', 'File with one title (in UTF8)')
     .describe( 'textOnly', 'To avoid image/media mirroring')
     .describe( 'mwURL', 'Mediawiki API URL')
@@ -69,7 +70,7 @@ var cssClassCallsBlackList = [ 'plainlinks' ];
 var idBlackList = [ 'purgelink' ];
 
 /* Directory wehre everything is saved */
-var rootPath = 'static/';
+var rootPath = argv.outputDirectory ? argv.outputDirectory + '/' : 'static/';
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
