@@ -152,36 +152,52 @@ http.globalAgent.maxSockets = maxParallelRequests;
 
 /* Setting up media optimization queue */
 var optimizationQueue = async.queue( function ( path, finished ) {
-    if ( path ) {
-	var ext = pathParser.extname( path || '' ).split( '.' )[1];
-	ext = ext ? ext.toLowerCase() : ext;
-	
-	var cmd;
-	if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG' ) {
-	    cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
-	} else if ( ext === 'png' || ext === 'PNG' ) {
-	    cmd = 'pngquant --nofs --force --ext=".png" "' + path + '"; ' + 
-		'advdef -z -4 -i 5 "' + path+ '"';
-	} else if ( ext === 'gif' || ext === 'GIF' ) {
-	    cmd = 'gifsicle -O3 "' + path + '" -o "' + path+ '"';
+
+    setTimeout(function () {
+
+	function randomString( len ) {
+	    var randomString = '';
+	    var charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+	    for ( var i = 0; i < len; i++ ) {
+		var randomPoz = Math.floor(Math.random() * charSet.length);
+		randomString += charSet.substring(randomPoz,randomPoz+1);
+	    }
+	    return randomString;
 	}
 	
-	if ( cmd ) {
-	    var child = exec(cmd, function( error, stdout, stderr ) {
-		if ( error ) {
-		    console.error( 'Failed to optim ' + path + ' (' + error + ')' );
-		} else {
-		    console.info( 'Successfuly optimized ' + path );
-		}
+	if ( path ) {
+	    var ext = pathParser.extname( path ).split( '.' )[1];
+	    var basename = path.substring( 0, path.length - ext.length - 1);
+	    var tmpExt = '.' + randomString( 5 ) + '.' + ext;
+	    var tmpPath = basename + tmpExt;
+	    
+	    var cmd;
+	    if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG' ) {
+		cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
+	    } else if ( ext === 'png' || ext === 'PNG' ) {
+		cmd = 'pngquant --nofs --force --ext="' + tmpExt + '" "' + path + '" && mv "' + tmpPath + '" "' + path + '" && advdef -q -z -4 -i 5 "' + path + '"';
+	    } else if ( ext === 'gif' || ext === 'GIF' ) {
+		cmd = 'gifsicle -O3 "' + path + '" -o "' + tmpPath + '" && mv "' + tmpPath + '" "' + path + '"';
+	    }
+	    
+	    if ( cmd ) {
+		console.log( 'Executing command : "' + cmd + '"' );
+		var child = exec(cmd, function( error, stdout, stderr ) {
+		    if ( error ) {
+			console.error( 'Failed to optim ' + path + ' (' + error + ')' );
+		    } else {
+			console.info( 'Successfuly optimized ' + path );
+		    }
+		    finished();
+		});
+	    } else {
 		finished();
-	    });
-	} else {
+	    }
+	} else  {
 	    finished();
 	}
-    } else  {
-	finished();
-    }
-}, cpuCount );
+    }, 2000 );
+}, cpuCount * 3 );
 
 /* Setting up the downloading queue */
 var downloadMediaQueue = async.queue( function ( url, finished ) {
@@ -234,7 +250,7 @@ function drainDownloadMediaQueue( finished ) {
 	    process.exit( 1 );
 	} else {
             if ( downloadMediaQueue.length() == 0 ) {
-		console.error( 'All images successfuly downloaded' );
+		console.log( 'All images successfuly downloaded' );
 		finished();
             }
 	}
@@ -243,14 +259,14 @@ function drainDownloadMediaQueue( finished ) {
 }
 
 function drainOptimizationQueue( finished ) {
-    console.log( optimizationQueue.length() + " images still to be optimized." );
+    console.log( optimizationQueue.length() + ' images still to be optimized.' );
     optimizationQueue.drain = function( error ) {
 	if ( error ) {
 	    console.error( 'Error by optimizing images' + error );
 	    process.exit( 1 );
 	} else {
             if ( optimizationQueue.length() == 0 ) {
-		console.error( 'All images successfuly optimized' );
+		console.log( 'All images successfuly optimized' );
 		finished();
             }
 	}
@@ -804,7 +820,7 @@ function saveStylesheet() {
 			    url = getFullUrl( url );
 			    
 			    /* Download CSS dependency */
-			    downloadFile(url, rootPath + styleDirectory + '/' +filename );
+			    downloadFile(url, rootPath + styleDirectory + '/' + filename );
 			}
 		    }
 		    fs.appendFileSync( stylePath, rewrittenCss );
@@ -1109,10 +1125,20 @@ function downloadMedia( url, callback ) {
         if( error || r_width < width) {
             // Download this image & update DB
             console.info( 'MediaId cache miss: ' + filenameBase );
-            downloadFile( url, getMediaPath( url ), true, callback );
-            redisClient.hset( redisMediaIdsDatabase, filenameBase, width );
-        }
-        else {
+            downloadFile( url, getMediaPath( url ), true, function( ok ) {
+		if ( ok ) {
+		    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
+			if ( callback ) {
+			    callback();
+			}
+		    } );
+		} else {
+		    if ( callback ) {
+			callback();
+		    }
+		}
+	    });
+        } else {
             console.info( 'MediaId cache hit: ' + filenameBase );
 	    if ( callback ) {
 		callback();
@@ -1146,14 +1172,16 @@ function downloadFile( url, path, force, callback ) {
 	    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
 		if ( error ) {
 		    console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
+		    if (callback) {
+			callback();
+		    }
 		} else {
 		    console.info( 'Successfuly downloaded ' + decodeURI( url ) );
 		    optimizationQueue.push( path, function ( error ) {
+			if ( callback ) {
+			    callback( true );
+			}
 		    });
-		}
-
-		if (callback) {
-		    callback();
 		}
 	    });
 	}
