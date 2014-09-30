@@ -727,8 +727,14 @@ function saveJavascript() {
     var dummyPath = rootPath + javascriptDirectory + '/local.js';
     fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
 
-    var window = jsdom.jsdom( html ).createWindow();
-    
+    // Backward compatibility for old version of jsdom
+    var window;
+    try {
+	window = jsdom.jsdom( html ).parentWindow;
+    } catch ( error ) {
+	window = jsdom.jsdom( html ).createWindow();
+    }
+
     window.addEventListener('load', function () {
       var nodeNames = [ 'head', 'body' ];
       nodeNames.map( function( nodeName ) {
