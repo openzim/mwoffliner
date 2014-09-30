@@ -16,12 +16,7 @@ var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var sleep = require( 'sleep' );
-var pngquant = require( 'pngquant' );
-var pngcrush = require( 'pngcrush' );
-var jpegtran = require( 'jpegtran' );
 var request = require( 'request-enhanced' );
-var htmlminifier = require('html-minifier');
-var hiredis = require( 'hiredis' );
 var redis = require( 'redis' );
 var childProcess = require('child_process');
 var exec = require('child_process').exec;
@@ -162,12 +157,12 @@ var optimizationQueue = async.queue( function ( path, finished ) {
 	ext = ext ? ext.toLowerCase() : ext;
 	
 	var cmd;
-	if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG') {
+	if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG' ) {
 	    cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
-	} else if ( ext === 'png' || ext === 'PNG') {
-	    cmd = 'pngquant --nofs --force --ext=".png" "' + path+ '"; ' + 
+	} else if ( ext === 'png' || ext === 'PNG' ) {
+	    cmd = 'pngquant --nofs --force --ext=".png" "' + path + '"; ' + 
 		'advdef -z -4 -i 5 "' + path+ '"';
-	} else if ( ext === 'gif' || ext === 'GIF') {
+	} else if ( ext === 'gif' || ext === 'GIF' ) {
 	    cmd = 'gifsicle -O3 "' + path + '" -o "' + path+ '"';
 	}
 	
