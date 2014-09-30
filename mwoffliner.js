@@ -191,7 +191,6 @@ var optimizationQueue = async.queue( function ( path, finished ) {
 /* Setting up the downloading queue */
 var downloadMediaQueue = async.queue( function ( url, finished ) {
     if ( url ) {
-	console.log( "Add url to download: " + url );
 	downloadMedia( url, finished );
     } else {
 	finished();
