@@ -736,139 +736,136 @@ function saveStylesheet() {
 
 /* Get ids */
 function getArticleIds( finished ) {
-    var next = '';
 
-    /* Get ids from file */
-    function getArticleIdsFromFile( finished ) {
-	var remaining = '';
-    
-	function readLines( input, func ) {
-	    
-	    input.on('data', function( data ) {
-		remaining += data;
-		var index = remaining.indexOf( '\n' );
-		while ( index > -1 ) {
-		    var line = remaining.substring( 0, index );
-		    remaining = remaining.substring( index + 1 );
-		    func( line );
-		    index = remaining.indexOf( '\n' );
-		}
-	    });
-	    
-	    input.on( 'end', function() {
-		if ( remaining.length > 0 ) {
-		    func( remaining );
-		}
-	    });
-	}
-	
-	function addArticleIdFromLine( line ) {
-	    if ( line ) {
-		var title = line.replace( / /g, '_' );
-		var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
-		var body = loadUrlAsync( url, function( body ) {
-		    var entries = JSON.parse( body )['query']['pages'];
-		    Object.keys( entries ).map( function( key ) {
-			var entry = entries[key];
-			entry['title'] = entry['title'].replace( / /g, '_' );
-			if ( entry['revisions'] !== undefined ) {
-			    console.log( 'Add following title to the mirror list ' + title );
-			    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-			    queue.push( entry['title'], function ( error ) {
-				if ( error ) {
-				    finished( error + ' - ' + body);
-				}
-			    });
-			}
+    /* Get redirect ids give an article id */
+    var redirectQueue = async.queue( function ( articleId, finished ) {
+	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId );
+	loadUrlAsync( url, function( body ) {
+            console.info( 'Getting redirects for article ' + articleId + '...' );
+	    try {
+		if ( !JSON.parse( body )['error'] ) {
+		    var entries;
+		    entries = JSON.parse( body )['query']['backlinks'];
+		    entries.map( function( entry ) {
+			redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
 		    });
-		});
-	    }
-	}
-
-	var input = fs.createReadStream( articleList );
-	readLines( input, addArticleIdFromLine );
-    }
-    
-    function getArticleIdsForNamespace( namespace, finished ) {
-	next = '';
-	
-	async.doWhilst(
-	    function ( finished ) {
-		console.info( 'Getting article ids' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
-		var body = loadUrlAsync( url, function( body ) {
-		    var entries = JSON.parse( body )['query']['pages'];
-		    Object.keys( entries ).map( function( key ) {
-			var entry = entries[key];
-			entry['title'] = entry['title'].replace( / /g, '_' );
-			if ( entry['revisions'] !== undefined ) {
-			    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-			    queue.push( entry['title'], function ( error ) {
-				if ( error ) {
-				    finished( error + ' - ' + body);
-				}
-			    });
-			}
-		    });
-		    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
 		    finished();
-		});
-	    },
-	    function () { return next; },
-	    function ( error ) {
-		if ( error ) {
-		    console.error( 'Unable to download article ids: ' + error );
-		    process.exit( 1 );
+		} else {
+		    finished();
 		}
+	    } catch( error ) {
+		console.error( error );
+		finished( error );
 	    }
-	);
-    }
-
-    var queue = async.queue( function ( articleId, finished ) {
-	getRedirectIds( articleId, finished );
+	});
     }, maxParallelRequests);
-
-    queue.drain = function( error ) {
+    
+    redirectQueue.drain = function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve redirects for an article: ' + error );
             process.exit( 1 );
-	} else { /* This assumes that getting redirects will be slower than getting articleIds */
-	    console.log('All articles have been checked for redirects.');
-	    finished();
 	}
     };
     
-    if ( articleList ) {
-	getArticleIdsFromFile( finished );
-    } else {
+    function parseJson( body, finished ) {
+	var articleIdsToGetRedirect = new Array();
+	var entries = JSON.parse( body )['query']['pages'];
+	Object.keys( entries ).map( function( key ) {
+	    var entry = entries[key];
+	    entry['title'] = entry['title'].replace( / /g, '_' );
+	    if ( entry['revisions'] !== undefined ) {
+		articleIds[entry['title']] = entry['revisions'][0]['revid'];
+		articleIdsToGetRedirect.push( entry['title'] );
+	    }
+	});
+	async.map( articleIdsToGetRedirect, redirectQueue.push, function( error ) {
+	    if ( error ) {
+		console.error( 'Unable to get all redirect ids for article: ' + error );
+		process.exit( 1 );
+	    } else {
+		var next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
+		finished( next );
+	    }
+	});
+    }
+
+    /* Get ids from file */
+    function getArticleIdsForFile() {
+	
+	function getArticleIdsForLine( line, finished ) {
+	    if ( line ) {
+		var title = line.replace( / /g, '_' );
+		var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
+		loadUrlAsync( url, parseJson, function() { 
+		    finished();
+		});
+	    } else {
+                finished();
+            }
+	}
+
+	var lines = fs.readFileSync( articleList ).toString().split("\n");
+	async.eachLimit( lines, maxParallelRequests, getArticleIdsForLine, function( error ) {
+	    if ( error ) {
+		console.error( 'Unable to get all article ids for a file: ' + error );
+		process.exit( 1 );
+	    } else {
+		console.error( 'List of article ids to mirror completed' );
+		finished();
+	    }
+	});
+    }
+    
+    function getArticleIdsForNamespaces() {
+
+	function getArticleIdsForNamespace( namespace, finished ) {
+	    var next = '';
+
+	    var parseJsonQueue = async.queue( parseJson, maxParallelRequests);
+	    parseJsonQueue.drain = function( error ) {
+		if ( !next ) {
+		    console.log( 'List of article ids to mirror completed for namespace ' +  namespace );
+		    finished();
+		}
+	    };
+
+	    async.doWhilst(
+		function ( finished ) {
+		    console.info( 'Getting article ids' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
+		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
+		    loadUrlAsync( url, function( body ) {
+			next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
+			parseJsonQueue.push( body );
+			finished();
+		    });
+		},
+		function () { return next; },
+		function ( error ) {
+		    if ( error ) {
+			console.error( 'Unable to download article ids: ' + error );
+			process.exit( 1 );
+		    }
+		}
+	    );
+	}
+
 	async.eachLimit( namespacesToMirror, maxParallelRequests, getArticleIdsForNamespace, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for in a namespace: ' + error );
 		process.exit( 1 );
 	    } else {
-		console.log( 'All article ids retrieved successfully.' );
+		console.log( 'List of article ids to mirror completed' );
+		finished();
 	    }
 	});
     }
-}
-
-function getRedirectIds( articleId, finished ) { 
-    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId );
-    loadUrlAsync( url, function( body ) {
-        console.info( 'Getting redirects for article ' + articleId + '...' );
-	try {
-	    if ( !JSON.parse( body )['error'] ) {
-		var entries;
-		entries = JSON.parse( body )['query']['backlinks'];
-		entries.map( function( entry ) {
-		    redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
-		});
-	    }
-	    finished();
-	} catch( error ) {
-	    finished( error );
-	}
-    }, articleId);
+	
+    /* Get list of article ids */
+    if ( articleList ) {
+	getArticleIdsForFile();
+    } else {
+	getArticleIdsForNamespaces();
+    }
 }
 
 /* Create directories for static files */
