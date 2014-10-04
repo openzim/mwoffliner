@@ -166,8 +166,8 @@ var optimizationQueue = async.queue( function ( path, finished ) {
 	}
 	
 	if ( path ) {
-	    var ext = pathParser.extname( path ).split( '.' )[1];
-	    var basename = path.substring( 0, path.length - ext.length - 1);
+	    var ext = pathParser.extname( path ).split( '.' )[1] || '';
+	    var basename = path.substring( 0, path.length - ext.length - 1) || '';
 	    var tmpExt = '.' + randomString( 5 ) + '.' + ext;
 	    var tmpPath = basename + tmpExt;
 	    
@@ -1169,7 +1169,7 @@ function downloadFile( url, path, force, callback ) {
 	    
 	    createDirectoryRecursively( pathParser.dirname( path ) );
 
-	    request.get( {url: url , timeout: 60000}, path, function( error, filename ) {
+	    request.get( {url: url , timeout: 120000}, path, function( error, filename ) {
 		if ( error ) {
 		    console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
 		    if (callback) {
