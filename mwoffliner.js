@@ -375,7 +375,10 @@ function saveArticles( finished ) {
 			    if ( href.substring( 0, 1 ) === '/' ) {
 				linkNode.setAttribute( 'href', getFullUrl( href ) );
 			    } else if ( href.substring( 0, 2 ) === './' ) {
-				deleteNode( linkNode );
+				while ( linkNode.firstChild ) {
+				    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
+				}
+				linkNode.parentNode.removeChild( linkNode );
 			    }
 			    setTimeout( finished, 0 );
 			}
