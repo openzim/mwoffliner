@@ -100,7 +100,7 @@ var htmlTemplateCode = function(){/*
     <link rel="stylesheet" href="s/style.css" />
     <script src="j/head.js"></script>
   </head>
-  <body class="mediawiki" style="background-color: white;">
+  <body class="mw-body mw-body-content mediawiki" style="background-color: white; margin: 1em 0.5em 0 0; border-width: 0px; padding: 0px;">
     <div id="content" class="mw-body" style="margin: 0 1em; border-width: 0px;">
       <a id="top"></a>
       <h1 id="firstHeading" class="firstHeading" style="margin-bottom: 0.5em; background-color: white;"></h1>
@@ -654,11 +654,11 @@ function saveArticles( finished ) {
 		node.removeAttribute( 'typeof' );
 		node.removeAttribute( 'about' );
 		node.removeAttribute( 'data-mw' );
-		
+
 		if ( node.getAttribute( 'rel' ) && node.getAttribute( 'rel' ).substr( 0, 3 ) === 'mw:' ) {
 		    node.removeAttribute( 'rel' );
 		}
-		
+
 		/* Remove a few css calls */
 		cssClassCallsBlackList.map( function( classname )  {
 		    if ( node.getAttribute( 'class' ) ) {
