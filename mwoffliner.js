@@ -36,6 +36,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'textOnly', 'To avoid image/media mirroring')
     .describe( 'mwURL', 'Mediawiki API URL')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
+    .strict()
     .argv;
 
 /************************************/
