@@ -166,38 +166,46 @@ var optimizationQueue = async.queue( function ( path, finished ) {
 	}
 	
 	if ( path ) {
-	    var ext = pathParser.extname( path ).split( '.' )[1] || '';
-	    var basename = path.substring( 0, path.length - ext.length - 1) || '';
-	    var tmpExt = '.' + randomString( 5 ) + '.' + ext;
-	    var tmpPath = basename + tmpExt;
-	    
-	    var cmd;
-	    if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG' ) {
-		cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
-	    } else if ( ext === 'png' || ext === 'PNG' ) {
-		cmd = 'pngquant --nofs --force --ext="' + tmpExt + '" "' + path + '" && mv "' + tmpPath + '" "' + path + '" && advdef -q -z -4 -i 5 "' + path + '"';
-	    } else if ( ext === 'gif' || ext === 'GIF' ) {
-		cmd = 'gifsicle -O3 "' + path + '" -o "' + tmpPath + '" && mv "' + tmpPath + '" "' + path + '"';
-	    }
-	    
-	    if ( cmd ) {
-		console.log( 'Executing command : "' + cmd + '"' );
-		var child = exec(cmd, function( error, stdout, stderr ) {
-		    if ( error ) {
-			console.error( 'Failed to optim ' + path + ' (' + error + ')' );
-		    } else {
-			console.info( 'Successfuly optimized ' + path );
+	    fs.exists( path, function (exists) {
+		if ( exists ) {
+		    var ext = pathParser.extname( path ).split( '.' )[1] || '';
+		    var basename = path.substring( 0, path.length - ext.length - 1) || '';
+		    var tmpExt = '.' + randomString( 5 ) + '.' + ext;
+		    var tmpPath = basename + tmpExt;
+		    
+		    var cmd;
+		    if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG' ) {
+			cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
+		    } else if ( ext === 'png' || ext === 'PNG' ) {
+			cmd = 'pngquant --nofs --force --ext="' + tmpExt + '" "' + path + '" && mv "' + tmpPath + '" "' + path + '" && advdef -q -z -4 -i 5 "' + path + '"';
+		    } else if ( ext === 'gif' || ext === 'GIF' ) {
+			cmd = 'gifsicle -O3 "' + path + '" -o "' + tmpPath + '" && mv "' + tmpPath + '" "' + path + '"';
 		    }
+		    
+		    if ( cmd ) {
+			console.log( 'Executing command : "' + cmd + '"' );
+			var child = exec(cmd, function( error, stdout, stderr ) {
+			    if ( error ) {
+				console.error( 'Failed to optim ' + path + ' (' + error + ')' );
+			    } else {
+				console.info( 'Successfuly optimized ' + path );
+			    }
+			    finished();
+			});
+		    } else {
+			finished();
+		    }
+		} else  {
 		    finished();
-		});
-	    } else {
-		finished();
-	    }
-	} else  {
+		}
+	    });
+	} else {
 	    finished();
 	}
-    }, 2000 );
-}, cpuCount * 3 );
+
+    }, 0 );
+
+}, cpuCount );
 
 /* Setting up the downloading queue */
 var downloadMediaQueue = async.queue( function ( url, finished ) {
@@ -543,14 +551,19 @@ function saveArticles( finished ) {
 	    
 	    /* Clean/rewrite image tags */
 	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
+	    var imgSrcCache = new Object();
+
 	    for ( var i = 0; i < imgs.length ; i++ ) {
 		var img = imgs[i];
 		
 		if ( withMedias || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
 		    var src = getFullUrl( img.getAttribute( 'src' ) );
 		    
-		    /* Download image */
-		    downloadMediaQueue.push( src );
+		    /* Download image, but avoid duplicate calls */
+		    if ( !imgSrcCache.hasOwnProperty( src ) ) {
+			imgSrcCache[src] = true;
+			downloadMediaQueue.push( src );
+		    }
 		    
 		    /* Change image source attribute to point to the local image */
 		    img.setAttribute( 'src', getMediaUrl( src ) );
@@ -757,14 +770,11 @@ function saveJavascript() {
 	for ( var i = 0; i < scripts.length ; i++ ) {
 	  var script = scripts[i];
 	  var url = script.getAttribute( 'src' );
-
-
-	    var munge_js = function(txt) {
-		txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
-		return txt;
-	    }
-
-	  
+	  var munge_js = function(txt) {
+	      txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
+	      return txt;
+	  }
+  
 	  if ( url ) {
 	    url = getFullUrl( url ).replace("debug=false", "debug=true");
 	    console.info( 'Downloading javascript from ' + url );
@@ -790,6 +800,7 @@ function saveStylesheet() {
 	var links = doc.getElementsByTagName( 'link' );
 	var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
 	var cssDataUrlRegex = new RegExp( '^data' );
+	var urlCache = new Object();
 	
 	for ( var i = 0; i < links.length ; i++ ) {
 	    var link = links[i];
@@ -819,8 +830,11 @@ function saveStylesheet() {
 			    /* Need a rewrite if url doesn't include protocol */
 			    url = getFullUrl( url );
 			    
-			    /* Download CSS dependency */
-			    downloadFile(url, rootPath + styleDirectory + '/' + filename );
+			    /* Download CSS dependency, but avoid duplicate calls */
+			    if ( !urlCache.hasOwnProperty( url ) ) {
+				urlCache[url] = true;
+				downloadFile( url, rootPath + styleDirectory + '/' + filename );
+			    }
 			}
 		    }
 		    fs.appendFileSync( stylePath, rewrittenCss );
@@ -1122,7 +1136,7 @@ function downloadMedia( url, callback ) {
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
 
     redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
-        if( error || r_width < width) {
+        if ( error || r_width < width) {
             // Download this image & update DB
             console.info( 'MediaId cache miss: ' + filenameBase );
             downloadFile( url, getMediaPath( url ), true, function( ok ) {
