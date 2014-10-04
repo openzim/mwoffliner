@@ -133,6 +133,20 @@ var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
 
 /************************************/
+/* TOOLS ****************************/
+/************************************/
+
+function randomString( len ) {
+    var randomString = '';
+    var charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    for ( var i = 0; i < len; i++ ) {
+	var randomPoz = Math.floor(Math.random() * charSet.length);
+	randomString += charSet.substring(randomPoz,randomPoz+1);
+	    }
+    return randomString;
+}
+
+/************************************/
 /* RUNNING CODE *********************/
 /************************************/
 
@@ -155,16 +169,6 @@ var optimizationQueue = async.queue( function ( path, finished ) {
 
     setTimeout(function () {
 
-	function randomString( len ) {
-	    var randomString = '';
-	    var charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
-	    for ( var i = 0; i < len; i++ ) {
-		var randomPoz = Math.floor(Math.random() * charSet.length);
-		randomString += charSet.substring(randomPoz,randomPoz+1);
-	    }
-	    return randomString;
-	}
-	
 	if ( path ) {
 	    fs.exists( path, function (exists) {
 		if ( exists ) {
@@ -1183,18 +1187,24 @@ function downloadFile( url, path, force, callback ) {
 	    
 	    createDirectoryRecursively( pathParser.dirname( path ) );
 
-	    request.get( {url: url , timeout: 120000}, path, function( error, filename ) {
+	    var tmpExt = '.' + randomString( 5 );
+	    var tmpPath = path + tmpExt;
+	    request.get( {url: url, timeout: 120000}, tmpPath, function( error, filename ) {
 		if ( error ) {
-		    console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
-		    if (callback) {
-			callback();
-		    }
-		} else {
-		    console.info( 'Successfuly downloaded ' + decodeURI( url ) );
-		    optimizationQueue.push( path, function ( error ) {
-			if ( callback ) {
-			    callback( true );
+		    fs.unlink( tmpPath, function() {
+			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
+			if (callback) {
+			    callback();
 			}
+		    })
+		} else {
+		    fs.rename( tmpPath, path, function() {
+			console.log( 'Successfuly downloaded ' + decodeURI( url ) );
+			optimizationQueue.push( path, function ( error ) {
+			    if ( callback ) {
+				callback( true );
+			    }
+			});
 		    });
 		}
 	    });
