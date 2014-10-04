@@ -542,9 +542,7 @@ function saveArticles( finished ) {
 			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
 			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
 			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), ' center' ) );
-			} else {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'float' + revAutoAlign ) );
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'center' ) );
 			}
 			div.appendChild( image );
 			imageNode.parentNode.replaceChild(div, imageNode);
