@@ -1014,7 +1014,6 @@ function createDirectory( path ) {
 function createDirectoryRecursively( path, position ) {
     fs.exists( path, function ( exists ) {
 	if ( !exists ) {
-	    console.error( 'Creating directory recur. \'' + path + '\'' );
 	    position = position || 0;
 	    var parts = pathParser.normalize( path ).split( '/' );
 	    
