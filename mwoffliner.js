@@ -66,7 +66,12 @@ var cssClassCallsBlackList = [ 'plainlinks' ];
 var idBlackList = [ 'purgelink' ];
 
 /* Directory wehre everything is saved */
-var rootPath = argv.outputDirectory ? argv.outputDirectory + '/' : 'static/';
+var outputDirectory = argv.outputDirectory ? argv.outputDirectory + '/' : 'static/';
+var rootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
+if ( fs.existsSync( rootPath ) ) {
+    console.error( 'Directory "' + rootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );
+    process.exit( 1 );
+}
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
