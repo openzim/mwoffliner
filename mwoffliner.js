@@ -1012,15 +1012,20 @@ function createDirectory( path ) {
 }
     
 function createDirectoryRecursively( path, position ) {
-    position = position || 0;
-    var parts = pathParser.normalize( path ).split( '/' );
- 
-    if ( position >= parts.length ) {
-	return true;
-    }
- 
-    createDirectory( parts.slice( 0, position + 1 ).join( '/' ) );
-    createDirectoryRecursively( path, position + 1 );
+    fs.exists( path, function ( exists ) {
+	if ( !exists ) {
+	    console.error( 'Creating directory recur. \'' + path + '\'' );
+	    position = position || 0;
+	    var parts = pathParser.normalize( path ).split( '/' );
+	    
+	    if ( position >= parts.length ) {
+		return true;
+	    }
+	    
+	    createDirectory( parts.slice( 0, position + 1 ).join( '/' ) );
+	    createDirectoryRecursively( path, position + 1 );
+	}
+    });
 }
 
 /* Multiple developer friendly functions */
