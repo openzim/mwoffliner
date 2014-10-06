@@ -23,6 +23,17 @@ var exec = require('child_process').exec;
 var yargs = require('yargs');
 var os = require('os');
 
+/* Check if opt. binaries are available */
+var optBinaries = [ 'jpegoptim', 'pngquant', 'gifsicle', 'advdef' ];
+optBinaries.forEach( function( cmd ) {
+    var child = exec(cmd + ' --version 2>&1 > /dev/null', function( error, stdout, stderr ) {
+	if ( error ) {
+	    console.error( 'Failed to run image optimizer binary "' + cmd + '": (' + error + ')' );
+	    process.exit( 1 );
+	}
+    });
+});
+
 /************************************/
 /* COMMAND LINE PARSING *************/
 /************************************/
