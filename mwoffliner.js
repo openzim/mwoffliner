@@ -1233,7 +1233,7 @@ function downloadFile( url, path, force, callback ) {
 			 * optimisation process */
 			setTimeout( function() {
 			    optimizationQueue.push( path );
-			}, 60000);
+			}, 120000);
 
 		    });
 		    if ( callback ) {
