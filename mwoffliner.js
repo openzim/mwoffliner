@@ -288,19 +288,22 @@ function drainDownloadMediaQueue( finished ) {
 }
 
 function drainOptimizationQueue( finished ) {
-    console.log( optimizationQueue.length() + ' images still to be optimized.' );
-    optimizationQueue.drain = function( error ) {
-	if ( error ) {
-	    console.error( 'Error by optimizing images' + error );
-	    process.exit( 1 );
-	} else {
-            if ( optimizationQueue.length() == 0 ) {
-		console.log( 'All images successfuly optimized' );
-		finished();
-            }
-	}
-    };
-    optimizationQueue.push( '' );
+    console.log( 'Need to wait  60 s. that the last optimization request is pushed to the queue.' );
+    setTimeout( function () {
+	console.log( optimizationQueue.length() + ' images still to be optimized.' );
+	optimizationQueue.drain = function( error ) {
+	    if ( error ) {
+		console.error( 'Error by optimizing images' + error );
+		process.exit( 1 );
+	    } else {
+		if ( optimizationQueue.length() == 0 ) {
+		    console.log( 'All images successfuly optimized' );
+		    finished();
+		}
+	    }
+	};
+	optimizationQueue.push( '' );
+    }, 60000 );
 }
 
 function saveRedirects( finished ) {
@@ -1220,14 +1223,22 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    })
 		} else {
+		    console.log( 'Successfuly downloaded ' + decodeURI( url ) );
 		    fs.rename( tmpPath, path, function() {
-			console.log( 'Successfuly downloaded ' + decodeURI( url ) );
-			optimizationQueue.push( path, function ( error ) {
-			    if ( callback ) {
-				callback( true );
-			    }
-			});
+			
+			/* It seems that request.get() callback is
+			 * called even if the file handle is not
+			 * released, thus we need to wait to be sure the
+			 * file handle is closed before we start any
+			 * optimisation process */
+			setTimeout( function() {
+			    optimizationQueue.push( path );
+			}, 60000);
+
 		    });
+		    if ( callback ) {
+			callback( true );
+		    }
 		}
 	    });
 	}
