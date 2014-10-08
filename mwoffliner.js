@@ -288,7 +288,7 @@ function drainDownloadMediaQueue( finished ) {
 }
 
 function drainOptimizationQueue( finished ) {
-    console.log( 'Need to wait  60 s. that the last optimization request is pushed to the queue.' );
+    console.log( 'Need to wait 120 s. that the last optimization request is pushed to the queue.' );
     setTimeout( function () {
 	console.log( optimizationQueue.length() + ' images still to be optimized.' );
 	optimizationQueue.drain = function( error ) {
@@ -303,7 +303,7 @@ function drainOptimizationQueue( finished ) {
 	    }
 	};
 	optimizationQueue.push( '' );
-    }, 60000 );
+    }, 121000 );
 }
 
 function saveRedirects( finished ) {
@@ -1138,7 +1138,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	    return ( maxTryCount == 0 || tryCount++ < maxTryCount );
 	},
 	function( finished ) {
-	    request.get( {url: url , timeout: 60000} , function( error, body ) {
+	    request.get( {url: url , timeout: 120000} , function( error, body ) {
 		if ( error ) {
 		    console.error( 'Unable to async retrieve (try nb ' + tryCount + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
 		    console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
