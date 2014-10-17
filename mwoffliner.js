@@ -15,6 +15,7 @@ var httpsync = require( 'httpsync' );
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
+var homeDirExpander = require( 'expand-home-dir' );
 var sleep = require( 'sleep' );
 var request = require( 'request-enhanced' );
 var redis = require( 'redis' );
@@ -77,7 +78,7 @@ var cssClassCallsBlackList = [ 'plainlinks' ];
 var idBlackList = [ 'purgelink' ];
 
 /* Directory wehre everything is saved */
-var outputDirectory = argv.outputDirectory ? argv.outputDirectory + '/' : 'static/';
+var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
 var rootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
 if ( fs.existsSync( rootPath ) ) {
     console.error( 'Directory "' + rootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );

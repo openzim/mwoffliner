@@ -16,6 +16,7 @@
 "url": "http://reportabug.kiwix.org"
 },
 "dependencies": {
+"expand-home-dir": "*",
 "yargs": "*",
 "domino": "*",
 "jsdom": "*",
