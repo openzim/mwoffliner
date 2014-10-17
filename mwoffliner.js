@@ -25,11 +25,11 @@ var yargs = require('yargs');
 var os = require('os');
 
 /* Check if opt. binaries are available */
-var optBinaries = [ 'jpegoptim', 'pngquant', 'gifsicle', 'advdef' ];
+var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help' ];
 optBinaries.forEach( function( cmd ) {
-    var child = exec(cmd + ' --version 2>&1 > /dev/null', function( error, stdout, stderr ) {
+    var child = exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	if ( error ) {
-	    console.error( 'Failed to run image optimizer binary "' + cmd + '": (' + error + ')' );
+	    console.error( 'Failed to find binary "' + cmd.split(' ')[0] + '": (' + error + ')' );
 	    process.exit( 1 );
 	}
     });
@@ -160,7 +160,7 @@ function randomString( len ) {
     for ( var i = 0; i < len; i++ ) {
 	var randomPoz = Math.floor(Math.random() * charSet.length);
 	randomString += charSet.substring(randomPoz,randomPoz+1);
-	    }
+    }
     return randomString;
 }
 
