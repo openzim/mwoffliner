@@ -194,8 +194,8 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	var type = forcedType || ext;
 	
 	/* Escape paths */
-	path = path.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' );
-	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' );
+	path = path.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
+	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 
 	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
 	    return 'jpegoptim --strip-all -m50 "' + path + '"';
