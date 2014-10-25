@@ -183,50 +183,86 @@ var footerTemplate = swig.compile( footerTemplateCode );
 http.globalAgent.maxSockets = maxParallelRequests;
 
 /* Setting up media optimization queue */
-var optimizationQueue = async.queue( function ( path, finished ) {
+var optimizationQueue = async.queue( function ( file, finished ) {
+    var path = file.path;
+    
+    function getOptimizationCommand( path, forcedType ) {
+	var ext = pathParser.extname( path ).split( '.' )[1] || '';
+	var basename = path.substring( 0, path.length - ext.length - 1) || '';
+	var tmpExt = '.' + randomString( 5 ) + '.' + ext;
+	var tmpPath = basename + tmpExt;
+	var type = forcedType || ext;
+	
+	/* Escape paths */
+	path = path.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' );
+	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' );
 
-    setTimeout(function () {
+	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
+	    return 'jpegoptim --strip-all -m50 "' + path + '"';
+	} else if ( type === 'png' || type === 'PNG' ) {
+	    return 'pngquant --nofs --force --ext="' + tmpExt + '" "' + path + '" && mv "' + tmpPath + '" "' + path + '" && advdef -q -z -4 -i 5 "' + path + '"';
+	} else if ( type === 'gif' || type === 'GIF' ) {
+	    return 'gifsicle -O3 "' + path + '" -o "' + tmpPath + '" && mv "' + tmpPath + '" "' + path + '"';
+	}
+    }
 
-	if ( path ) {
-	    fs.exists( path, function (exists) {
-		if ( exists ) {
-		    var ext = pathParser.extname( path ).split( '.' )[1] || '';
-		    var basename = path.substring( 0, path.length - ext.length - 1) || '';
-		    var tmpExt = '.' + randomString( 5 ) + '.' + ext;
-		    var tmpPath = basename + tmpExt;
-		    
-		    var cmd;
-		    if ( ext === 'jpg' || ext === 'jpeg' || ext === 'JPG' || ext === 'JPEG' ) {
-			cmd = 'jpegoptim --strip-all -m50 "' + path + '"';
-		    } else if ( ext === 'png' || ext === 'PNG' ) {
-			cmd = 'pngquant --nofs --force --ext="' + tmpExt + '" "' + path + '" && mv "' + tmpPath + '" "' + path + '" && advdef -q -z -4 -i 5 "' + path + '"';
-		    } else if ( ext === 'gif' || ext === 'GIF' ) {
-			cmd = 'gifsicle -O3 "' + path + '" -o "' + tmpPath + '" && mv "' + tmpPath + '" "' + path + '"';
-		    }
-		    
-		    if ( cmd ) {
-			console.log( 'Executing command : "' + cmd + '"' );
-			var child = exec(cmd, function( error, stdout, stderr ) {
-			    if ( error ) {
-				console.error( 'Failed to optim ' + path + ' (' + error + ')' );
-			    } else {
-				console.info( 'Successfuly optimized ' + path );
-			    }
-			    finished();
-			});
-		    } else {
-			finished();
-		    }
-		} else  {
+    if ( path ) {
+	fs.stat( path, function ( error, stats ) {
+	    if ( !error && stats.size == file.size ) {
+		var cmd = getOptimizationCommand( path );
+		
+		if ( cmd ) {
+		    async.retry( 5,
+				 function( finished, skip ) {
+				     console.info( 'Executing command : ' + cmd );
+				     exec( cmd, function( executionError, stdout, stderr ) {
+					 if ( executionError ) {
+					     fs.stat( path, function ( error, stats ) {
+						 if ( !error && stats.size > file.size ) {
+						     finished( null, true );
+						 } else if ( !error && stats.size < file.size ) {
+						     finished( 'File to optim is smaller (before optim) than it should.' );
+						 } else {
+						     exec( 'file -b --mime-type "' + path.replace( /"/g, '\\"' ) + '"', function( error, stdout, stderr ) {
+							 var type = stdout.replace( /image\//, '').replace( /[\n\r]/g, '' );
+							 cmd = getOptimizationCommand( path, type );
+							 setTimeout( function() {
+							     finished( executionError );
+							 }, 2000 );
+						     });
+						 }
+					     });
+					 } else {
+					     finished();
+					 }
+				     });
+				 },
+				 function( error, skip ) {
+				     if ( error ) {
+					 console.error( 'Failed to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
+					 process.exit( 1 );
+				     } else if ( skip ) {
+					 console.info( 'Optimization skipped for ' + path + ', with size=' + file.size + ', a better version was downloaded meanwhile.' );
+				     } else {
+					 console.info( 'Successfuly optimized ' + path );
+				     }
+				     finished();
+				 }
+			       );
+		} else {
 		    finished();
 		}
-	    });
-	} else {
-	    finished();
-	}
-
-    }, 0 );
-
+	    } else  {
+		if ( error ) {
+		    console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
+		}
+		finished();
+	    }
+	});
+    } else {
+	finished();
+    }
+    
 }, cpuCount );
 
 /* Setting up the downloading queue */
@@ -289,22 +325,19 @@ function drainDownloadMediaQueue( finished ) {
 }
 
 function drainOptimizationQueue( finished ) {
-    console.log( 'Need to wait 120 s. that the last optimization request is pushed to the queue.' );
-    setTimeout( function () {
-	console.log( optimizationQueue.length() + ' images still to be optimized.' );
-	optimizationQueue.drain = function( error ) {
-	    if ( error ) {
-		console.error( 'Error by optimizing images' + error );
-		process.exit( 1 );
-	    } else {
-		if ( optimizationQueue.length() == 0 ) {
-		    console.log( 'All images successfuly optimized' );
-		    finished();
-		}
+    console.log( optimizationQueue.length() + ' images still to be optimized.' );
+    optimizationQueue.drain = function( error ) {
+	if ( error ) {
+	    console.error( 'Error by optimizing images' + error );
+	    process.exit( 1 );
+	} else {
+	    if ( optimizationQueue.length() == 0 ) {
+		console.log( 'All images successfuly optimized' );
+		finished();
 	    }
-	};
-	optimizationQueue.push( '' );
-    }, 121000 );
+	}
+    };
+    optimizationQueue.push( {path: '', size: 0} );
 }
 
 function saveRedirects( finished ) {
@@ -469,7 +502,7 @@ function saveArticles( finished ) {
 		    console.error( 'Problem by rewriting urls: ' + error );
 		    process.exit( 1 );
 		} else {
-		    setTimeout( finished, 0, null, parsoidDoc, articleId );
+		    setTimeout( finished, downloadMediaQueue.length() + optimizationQueue.length(), null, parsoidDoc, articleId );
 		}
 	    });
 
@@ -516,15 +549,15 @@ function saveArticles( finished ) {
 	    var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
 	    for ( var i = 0; i < imageNodes.length ; i++ ) {
 		var imageNode = imageNodes[i];
+		var image = imageNode.getElementsByTagName( 'img' )[0];
 		
-		if ( withMedias ) {
+		if ( withMedias && imageNode && image ) {
 		    var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
 		    var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
-		    var image = imageNode.getElementsByTagName( 'img' )[0];
-		    var imageWidth = parseInt( image.getAttribute( 'width' ) );
 		    
 		    if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
 			var description = imageNode.getElementsByTagName( 'figcaption' )[0];
+			var imageWidth = parseInt( image.getAttribute( 'width' ) );
 			
 			var thumbDiv = parsoidDoc.createElement( 'div' );
 			thumbDiv.setAttribute
@@ -905,24 +938,33 @@ function getArticleIds( finished ) {
     
     function parseJson( body, finished ) {
 	var articleIdsToGetRedirect = new Array();
-	var entries = JSON.parse( body )['query']['pages'];
-	Object.keys( entries ).map( function( key ) {
-	    var entry = entries[key];
-	    entry['title'] = entry['title'].replace( / /g, '_' );
-	    if ( entry['revisions'] !== undefined ) {
-		articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		articleIdsToGetRedirect.push( entry['title'] );
-	    }
-	});
-	async.map( articleIdsToGetRedirect, redirectQueue.push, function( error ) {
-	    if ( error ) {
-		console.error( 'Unable to get all redirect ids for article: ' + error );
-		process.exit( 1 );
-	    } else {
-		var next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
-		finished( next );
-	    }
-	});
+	var entries = new Array();
+	
+	try {
+	    entries = JSON.parse( body )['query']['pages'];
+	    Object.keys( entries ).map( function( key ) {
+		var entry = entries[key];
+		entry['title'] = entry['title'].replace( / /g, '_' );
+		if ( entry['revisions'] !== undefined ) {
+		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
+		    articleIdsToGetRedirect.push( entry['title'] );
+		}
+	    });
+
+	    async.map( articleIdsToGetRedirect, redirectQueue.push, function( error ) {
+		if ( error ) {
+		    console.error( 'Unable to get all redirect ids for article: ' + error );
+		    process.exit( 1 );
+		} else {
+		    var next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
+		    finished( next );
+		}
+	    });
+	} catch ( error ) {
+	    console.error( 'Unable to parse JSON and redirects: '  + error );
+	    var next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
+	    finished( next );
+	}
     }
 
     /* Get ids from file */
@@ -1139,7 +1181,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	    return ( maxTryCount == 0 || tryCount++ < maxTryCount );
 	},
 	function( finished ) {
-	    request.get( {url: url , timeout: 120000} , function( error, body ) {
+	    request.get( {url: url, timeout: 120000} , function( error, body ) {
 		if ( error ) {
 		    console.error( 'Unable to async retrieve (try nb ' + tryCount + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
 		    console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
@@ -1169,18 +1211,12 @@ function downloadMedia( url, callback ) {
         if ( error || r_width < width) {
             // Download this image & update DB
             console.info( 'MediaId cache miss: ' + filenameBase );
-            downloadFile( url, getMediaPath( url ), true, function( ok ) {
-		if ( ok ) {
-		    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-			if ( callback ) {
-			    callback();
-			}
-		    } );
-		} else {
+	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
+		downloadFile( url, getMediaPath( url ), true, function( ok ) {
 		    if ( callback ) {
 			callback();
 		    }
-		}
+		});
 	    });
         } else {
             console.info( 'MediaId cache hit: ' + filenameBase );
@@ -1225,17 +1261,23 @@ function downloadFile( url, path, force, callback ) {
 		    })
 		} else {
 		    console.log( 'Successfuly downloaded ' + decodeURI( url ) );
-		    fs.rename( tmpPath, path, function() {
-			
-			/* It seems that request.get() callback is
-			 * called even if the file handle is not
-			 * released, thus we need to wait to be sure the
-			 * file handle is closed before we start any
-			 * optimisation process */
-			setTimeout( function() {
-			    optimizationQueue.push( path );
-			}, 120000);
-
+		    fs.stat( path, function ( error, stats ) {
+			if ( error ) {
+			    fs.rename( tmpPath, path, function() {
+				fs.stat( path, function ( error, stats ) {
+				    optimizationQueue.push( {path: path, size: stats.size} );
+				});
+			    });
+			} else {
+			    var targetSize = stats.size;
+			    fs.stat( tmpPath, function ( error, stats ) {
+				if ( stats.size > targetSize ) {
+				    fs.rename( tmpPath, path, function() {
+					optimizationQueue.push( {path: path, size: stats.size} );
+				    });
+				}
+			    });
+			}
 		    });
 		    if ( callback ) {
 			callback( true );
