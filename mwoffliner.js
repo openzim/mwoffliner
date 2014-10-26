@@ -240,7 +240,6 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				 function( error, skip ) {
 				     if ( error ) {
 					 console.error( 'Failed to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
-					 process.exit( 1 );
 				     } else if ( skip ) {
 					 console.info( 'Optimization skipped for ' + path + ', with size=' + file.size + ', a better version was downloaded meanwhile.' );
 				     } else {
