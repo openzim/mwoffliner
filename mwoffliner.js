@@ -1208,8 +1208,6 @@ function downloadMedia( url, callback ) {
 
     redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
         if ( error || r_width < width) {
-            // Download this image & update DB
-            console.info( 'MediaId cache miss: ' + filenameBase );
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
 		downloadFile( url, getMediaPath( url ), true, function( ok ) {
 		    if ( callback ) {
@@ -1218,7 +1216,6 @@ function downloadMedia( url, callback ) {
 		});
 	    });
         } else {
-            console.info( 'MediaId cache hit: ' + filenameBase );
 	    if ( callback ) {
 		callback();
 	    }
@@ -1260,27 +1257,60 @@ function downloadFile( url, path, force, callback ) {
 		    })
 		} else {
 		    console.log( 'Successfuly downloaded ' + decodeURI( url ) );
-		    fs.stat( path, function ( error, stats ) {
-			if ( error ) {
-			    fs.rename( tmpPath, path, function() {
-				fs.stat( path, function ( error, stats ) {
-				    optimizationQueue.push( {path: path, size: stats.size} );
-				});
-			    });
-			} else {
-			    var targetSize = stats.size;
-			    fs.stat( tmpPath, function ( error, stats ) {
-				if ( stats.size > targetSize ) {
-				    fs.rename( tmpPath, path, function() {
-					optimizationQueue.push( {path: path, size: stats.size} );
-				    });
-				}
-			    });
-			}
-		    });
-		    if ( callback ) {
-			callback( true );
-		    }
+
+		    async.retry( 5,		
+				 function ( finished ) {
+				     fs.stat( path, function ( error, stats ) {
+					 if ( error ) {
+					     fs.rename( tmpPath, path, function( error ) {
+						 if ( error ) {
+						     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
+						 } else {
+						     fs.stat( path, function ( error, stats ) {
+							 if ( error ) {
+							     finished( 'Unable to stat "' + path + '" (' + error + ')' );
+							 } else {
+							     optimizationQueue.push( {path: path, size: stats.size} );
+							     finished();
+							 }
+						     });
+						 }
+					     });
+					 } else {
+					     var targetSize = stats.size;
+					     fs.stat( tmpPath, function ( error, stats ) {
+						 if ( error ) {
+						     finished( 'Unable to stat "' + tmpPath + '" (' + error + ')' );
+						 } else {
+						     if ( stats.size > targetSize ) {
+							 fs.rename( tmpPath, path, function() {
+							     if ( error ) {
+								 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
+							     } else {
+								 optimizationQueue.push( {path: path, size: stats.size} );
+								 finished();
+							     }
+							 });
+						     } else {
+							 console.info( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
+							 fs.unlink( tmpPath );
+							 finished();
+						     }
+						 }
+					     });
+					 }
+				     });
+				 },
+				 function ( error ) {
+				     if ( error ) {
+					 console.error( error );
+					 process.exit( 1 );
+				     } else {
+					 if ( callback ) {
+					     callback( true );
+					 }
+				     }
+				 });
 		}
 	    });
 	}
