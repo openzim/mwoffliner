@@ -25,7 +25,7 @@ var yargs = require('yargs');
 var os = require('os');
 
 /* Check if opt. binaries are available */
-var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help' ];
+var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version' ];
 optBinaries.forEach( function( cmd ) {
     var child = exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	if ( error ) {
@@ -200,9 +200,12 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
 	    return 'jpegoptim --strip-all -m50 "' + path + '"';
 	} else if ( type === 'png' || type === 'PNG' ) {
-	    return 'pngquant --nofs --force --ext="' + tmpExt + '" "' + path + '" && mv "' + tmpPath + '" "' + path + '" && advdef -q -z -4 -i 5 "' + path + '"';
+	    return 'pngquant --verbose --nofs --force --ext="' + tmpExt + '" "' + path + 
+		'" && advdef -q -z -4 -i 5 "' + tmpPath + 
+		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	} else if ( type === 'gif' || type === 'GIF' ) {
-	    return 'gifsicle -O3 "' + path + '" -o "' + tmpPath + '" && mv "' + tmpPath + '" "' + path + '"';
+	    return 'gifsicle --verbose -O3 "' + path + '" -o "' + tmpPath +
+		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	}
     }
 
@@ -223,7 +226,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						 } else if ( !error && stats.size < file.size ) {
 						     finished( 'File to optim is smaller (before optim) than it should.' );
 						 } else {
-						     exec( 'file -b --mime-type "' + path.replace( /"/g, '\\"' ) + '"', function( error, stdout, stderr ) {
+						     exec( 'file -b --mime-type "' + path + '"', function( error, stdout, stderr ) {
 							 var type = stdout.replace( /image\//, '').replace( /[\n\r]/g, '' );
 							 cmd = getOptimizationCommand( path, type );
 							 setTimeout( function() {
