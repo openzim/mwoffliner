@@ -1183,7 +1183,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	    return ( maxTryCount == 0 || tryCount++ < maxTryCount );
 	},
 	function( finished ) {
-	    request.get( {url: url, timeout: 120000} , function( error, body ) {
+	    request.get( {url: url, timeout: 240000} , function( error, body ) {
 		if ( error ) {
 		    console.error( 'Unable to async retrieve (try nb ' + tryCount + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
 		    console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
