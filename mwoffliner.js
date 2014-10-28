@@ -217,7 +217,6 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 		if ( cmd ) {
 		    async.retry( 5,
 				 function( finished, skip ) {
-				     console.info( 'Executing command : ' + cmd );
 				     exec( cmd, function( executionError, stdout, stderr ) {
 					 if ( executionError ) {
 					     fs.stat( path, function ( error, stats ) {
@@ -242,6 +241,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				 },
 				 function( error, skip ) {
 				     if ( error ) {
+					 console.error( 'Executing command : ' + cmd );
 					 console.error( 'Failed to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
 				     } else if ( skip ) {
 					 console.info( 'Optimization skipped for ' + path + ', with size=' + file.size + ', a better version was downloaded meanwhile.' );
