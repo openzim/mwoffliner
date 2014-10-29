@@ -11,7 +11,6 @@ var jsdom = require( 'jsdom' );
 var async = require( 'async' );
 var Sync = require('sync');
 var http = require( 'follow-redirects' ).http;
-var httpsync = require( 'httpsync' );
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
@@ -278,7 +277,11 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 
 /* Get content */
 async.series([
-    function( finished ) { startProcess( finished ) },
+    function( finished ) { createDirectories( finished ) },
+    function( finished ) { saveJavascript( finished ) }, 
+    function( finished ) { saveStylesheet( finished ) },
+    function( finished ) { saveFavicon( finished ) },
+
     function( finished ) { getTextDirection( finished ) },
     function( finished ) { getNamespaces( finished ) },
     function( finished ) { getSubTitle( finished ) },
@@ -295,14 +298,6 @@ async.series([
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
-
-function startProcess( finished ) {
-    createDirectories();
-    saveJavascript();
-    saveStylesheet();
-    saveFavicon();
-    finished();
-}
 
 function endProcess( finished ) {
     redisClient.flushdb( function( error, result) {});
@@ -796,7 +791,7 @@ function isMirrored( id ) {
 }
 
 /* Grab and concatenate javascript files */
-function saveJavascript() {
+function saveJavascript( finished ) {
     console.info( 'Creating javascript...' );
     
     jsdom.defaultDocumentFeatures = {
@@ -805,58 +800,64 @@ function saveJavascript() {
 	MutationEvents           : '2.0',
     }
 
-    var html = loadUrlSync( webUrl );
-    html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
-
-    // Create a dummy JS file to be executed asynchronously in place of loader.php
-    var dummyPath = rootPath + javascriptDirectory + '/local.js';
-    fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
-
-    // Backward compatibility for old version of jsdom
-    var window;
-    try {
-	window = jsdom.jsdom( html ).parentWindow;
-    } catch ( error ) {
-	window = jsdom.jsdom( html ).createWindow();
-    }
-
-    window.addEventListener('load', function () {
-      var nodeNames = [ 'head', 'body' ];
-      nodeNames.map( function( nodeName ) {
-        var node = window.document.getElementsByTagName( nodeName )[0];
-	var scripts = node.getElementsByTagName( 'script' );
-	var javascriptPath = rootPath + javascriptDirectory + '/' + nodeName + '.js';
+    loadUrlAsync( webUrl, function( html ) {
 	
-	fs.unlink( javascriptPath, function() {} );
-	for ( var i = 0; i < scripts.length ; i++ ) {
-	  var script = scripts[i];
-	  var url = script.getAttribute( 'src' );
-	  var munge_js = function(txt) {
-	      txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
-	      return txt;
-	  }
-  
-	  if ( url ) {
-	    url = getFullUrl( url ).replace("debug=false", "debug=true");
-	    console.info( 'Downloading javascript from ' + url );
-	    // var body = loadUrlSync( url ).replace( '"//', '"http://' );
-	    var body = loadUrlSync( url );
-	    
-	      fs.appendFile( javascriptPath, '\n' + munge_js(body) + '\n', function (err) {} );
-	  } else {
-	      fs.appendFile( javascriptPath, '\n' + munge_js(script.innerHTML) + '\n', function (err) {} );
-	  }
+	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
+
+	// Create a dummy JS file to be executed asynchronously in place of loader.php
+	var dummyPath = rootPath + javascriptDirectory + '/local.js';
+	fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
+	
+	// Backward compatibility for old version of jsdom
+	var window;
+	try {
+	    window = jsdom.jsdom( html ).parentWindow;
+	} catch ( error ) {
+	    window = jsdom.jsdom( html ).createWindow();
 	}
+	
+	window.addEventListener('load', function () {
+	    var nodeNames = [ 'head', 'body' ];
+	    nodeNames.map( function( nodeName ) {
+		var node = window.document.getElementsByTagName( nodeName )[0];
+		var scripts = node.getElementsByTagName( 'script' );
+		var javascriptPath = rootPath + javascriptDirectory + '/' + nodeName + '.js';
+		
+		fs.unlink( javascriptPath, function() {} );
+		for ( var i = 0; i < scripts.length ; i++ ) {
+		    var script = scripts[i];
+		    var url = script.getAttribute( 'src' );
+		    
+		    var munge_js = function(txt) {
+			txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
+			return txt;
+		    }
+		    
+		    if ( url ) {
+			url = getFullUrl( url ).replace("debug=false", "debug=true");
+			console.info( 'Downloading javascript from ' + url );
+			loadUrlAsync( url, function( body) {
+			    fs.appendFile( javascriptPath, '\n' + munge_js(body) + '\n', function (err) {} );
+			});
+		    } else {
+			fs.appendFile( javascriptPath, '\n' + munge_js(script.innerHTML) + '\n', function (err) {} );
+		    }
+		}
+	    });
+	});
+	
+	finished();
+
     });
-   });
 }
 
 /* Grab and concatenate stylesheet files */
-function saveStylesheet() {
+function saveStylesheet( finished ) {
     console.info( 'Creating stylesheet...' );
     var stylePath = rootPath + styleDirectory + '/style.css';
     fs.unlink( stylePath, function() {} );
-    loadUrlSync( webUrl, function( html ) {
+
+    loadUrlAsync( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var links = doc.getElementsByTagName( 'link' );
 	var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
@@ -872,7 +873,7 @@ function saveStylesheet() {
 		url = getFullUrl( url );
 		
 		console.info( 'Downloading CSS from ' + decodeURI( url ) );
-		loadUrlSync( url, function( body ) {
+		loadUrlAsync( url, function( body ) {
 
 		    /* Downloading CSS dependencies */
 		    var match;
@@ -902,6 +903,8 @@ function saveStylesheet() {
 		});
 	    }
 	}
+
+	finished();
     });
 }
 
@@ -1049,12 +1052,13 @@ function getArticleIds( finished ) {
 }
 
 /* Create directories for static files */
-function createDirectories() {
+function createDirectories( finished ) {
     console.info( 'Creating directories at \'' + rootPath + '\'...' );
     createDirectory( rootPath );
     createDirectory( rootPath + styleDirectory );
     createDirectory( rootPath + mediaDirectory );
     createDirectory( rootPath + javascriptDirectory );
+    finished();
 }
 
 function createDirectory( path ) {
@@ -1139,39 +1143,6 @@ function writeFile( data, path, callback ) {
 	    callback();
 	}
     });
-}
-
-function loadUrlSync( url, callback ) {
-    var tryCount = 0;
-
-    do {
-	try {
-	    var req = httpsync.get({ url : url });
-	    var res = req.end();
-	    var content = res.data.toString('utf8');
-
-	    if ( res.headers.location ) {
-		console.info( "Redirect detected, load " + decodeURI( res.headers.location ) );
-		return loadUrlSync( res.headers.location, callback );
-	    } else {
-		if ( callback ) {
-		    callback( content );
-		    break;
-		} else {
-		    return content;
-		}
-	    }
-	} catch ( error ) {
-	    console.error( 'Unable to sync retrieve (try nb ' + tryCount++ + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
-	    if ( maxTryCount && tryCount > maxTryCount ) {
-		console.error( 'Unable to get ' + decodeURI( url ) + ' and abandon.' );
-		return "";
-	    } else {
-		console.error( 'Sleeping for ' + tryCount + ' seconds' );
-		sleep.sleep( tryCount );
-	    }
-	}
-    } while ( true );
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
@@ -1377,7 +1348,7 @@ function getArticleBase( articleId, escape ) {
 
 function getSubTitle( finished ) {
     console.info( 'Getting sub-title...' );
-    loadUrlSync( webUrl, function( html ) {
+    loadUrlAsync( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
@@ -1388,7 +1359,7 @@ function getSubTitle( finished ) {
 function getSiteInfo( finished ) {
     console.info( 'Getting web site name...' );
     var url = apiUrl + 'action=query&meta=siteinfo&format=json';
-    loadUrlSync( url, function( body ) {
+    loadUrlAsync( url, function( body ) {
 	var entries = JSON.parse( body )['query']['general'];
 	name = entries['sitename'];
 	lang = entries['lang'];
@@ -1396,9 +1367,10 @@ function getSiteInfo( finished ) {
     });
 }
 
-function saveFavicon() {
+function saveFavicon( finished ) {
     console.info( 'Saving favicon.png...' );
     downloadFile( 'http://sourceforge.net/p/kiwix/tools/ci/master/tree/dumping_tools/data/wikipedia-icon-48x48.png?format=raw', rootPath + mediaDirectory + '/favicon.png' );
+    finished();
 }
 
 function getMainPage( finished ) {
@@ -1423,7 +1395,7 @@ function getMainPage( finished ) {
     
     function retrieveMainPage( finished ) {
 	console.info( 'Getting main page...' );
-	loadUrlSync( webUrl, function( body ) {
+	loadUrlAsync( webUrl, function( body ) {
 	    var mainPageRegex = /\"wgPageName\"\:\"(.*?)\"/;
 	    var parts = mainPageRegex.exec( body );
 	    if ( parts[ 1 ] ) {
@@ -1448,35 +1420,36 @@ function getMainPage( finished ) {
 
 function getNamespaces( finished ) {
     var url = apiUrl + 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json';
-    var body = loadUrlSync( url );
-    var types = [ 'namespaces', 'namespacealiases' ];
-    types.map( function( type ) {
-	var entries = JSON.parse( body )['query'][type];
-	Object.keys(entries).map( function( key ) {
-	    var entry = entries[key];
-	    var name = entry['*'].replace( / /g, '_');
-	    if ( name ) {
-		var number =  entry['id'];
-		namespaces[ lcFirst( name ) ] = number;
-		namespaces[ ucFirst( name ) ] = number;
-		
-		var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
-		if ( canonical ) {
-		    namespaces[ lcFirst( canonical ) ] = number;
-		    namespaces[ ucFirst( canonical ) ] = number;
-		}
-	    };
+    var body = loadUrlAsync( url, function( body ) { 
+	var types = [ 'namespaces', 'namespacealiases' ];
+	types.map( function( type ) {
+	    var entries = JSON.parse( body )['query'][type];
+	    Object.keys(entries).map( function( key ) {
+		var entry = entries[key];
+		var name = entry['*'].replace( / /g, '_');
+		if ( name ) {
+		    var number =  entry['id'];
+		    namespaces[ lcFirst( name ) ] = number;
+		    namespaces[ ucFirst( name ) ] = number;
+		    
+		    var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
+		    if ( canonical ) {
+			namespaces[ lcFirst( canonical ) ] = number;
+			namespaces[ ucFirst( canonical ) ] = number;
+		    }
+		};
+	    });
 	});
+	namespaces[ '' ] = 0;
+	
+	finished();
     });
-    namespaces[ '' ] = 0;
-
-    finished();
 }
 
 function getTextDirection( finished ) {
     console.info( 'Getting text direction...' );
     var path = rootPath + '/index.html';
-    loadUrlSync( webUrl, function( body ) {
+    loadUrlAsync( webUrl, function( body ) {
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
 	var parts = languageDirectionRegex.exec( body );
 	if ( parts && parts[ 1 ] ) {

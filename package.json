@@ -23,7 +23,6 @@
 "async": "*",
 "sync": "*",
 "follow-redirects": "*",
-"httpsync": "*",
 "swig": "*",
 "sleep": "*",
 "request-enhanced": "*",
