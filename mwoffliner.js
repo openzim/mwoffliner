@@ -135,7 +135,7 @@ var htmlTemplateCode = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 30;
+var maxParallelRequests = 20;
 var cpuCount = os.cpus().length;
 var maxTryCount = 3;
 var ltr = true;
@@ -1242,7 +1242,10 @@ function downloadFile( url, path, force, callback ) {
 						 } else {
 						     fs.stat( path, function ( error, stats ) {
 							 if ( error ) {
-							     finished( 'Unable to stat "' + path + '" (' + error + ')' );
+							     console.error( 'Unable to stat -- "' + path + '" (' + error + ')' );
+							     setTimeout ( function() {
+								 finished( 'Unable to stat "' + path + '" (' + error + ')' );
+							     }, 40000 );
 							 } else {
 							     optimizationQueue.push( {path: path, size: stats.size} );
 							     finished();
@@ -1254,12 +1257,17 @@ function downloadFile( url, path, force, callback ) {
 					     var targetSize = stats.size;
 					     fs.stat( tmpPath, function ( error, stats ) {
 						 if ( error ) {
-						     finished( 'Unable to stat "' + tmpPath + '" (' + error + ')' );
+						     console.error( 'Unable to stat ++ "' + tmpPath + '" (' + error + ')' );
+						     setTimeout ( function() {
+							 finished( 'Unable to stat "' + tmpPath + '" (' + error + ')' );
+						     }, 40000 );
 						 } else {
 						     if ( stats.size > targetSize ) {
 							 fs.rename( tmpPath, path, function() {
 							     if ( error ) {
-								 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
+								 setTimeout ( function() {
+								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
+								 }, 40000 );
 							     } else {
 								 optimizationQueue.push( {path: path, size: stats.size} );
 								 finished();
