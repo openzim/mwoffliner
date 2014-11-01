@@ -48,6 +48,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'textOnly', 'To avoid image/media mirroring')
     .describe( 'mwURL', 'Mediawiki API URL')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
+    .describe( 'parallelRequests', 'Number of parallel HTTP requests')
     .strict()
     .argv;
 
@@ -94,6 +95,9 @@ var articleList = argv.articleList;
 /* Wikipedia/... URL */
 var mwUrl = argv.mwUrl;
 
+/* NUmber of parallel requests */
+var maxParallelRequests = argv.parallelRequests || 30;
+
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
 
@@ -136,7 +140,6 @@ var htmlTemplateCode = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var maxParallelRequests = 20;
 var cpuCount = os.cpus().length;
 var maxTryCount = 3;
 var ltr = true;
