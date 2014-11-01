@@ -97,6 +97,10 @@ var mwUrl = argv.mwUrl;
 
 /* NUmber of parallel requests */
 var maxParallelRequests = argv.parallelRequests || 30;
+if ( isNaN( maxParallelRequests ) ) {
+    console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
+    process.exit( 1 );
+}
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -286,7 +290,6 @@ async.series([
     function( finished ) { saveJavascript( finished ) }, 
     function( finished ) { saveStylesheet( finished ) },
     function( finished ) { saveFavicon( finished ) },
-
     function( finished ) { getTextDirection( finished ) },
     function( finished ) { getNamespaces( finished ) },
     function( finished ) { getSubTitle( finished ) },
@@ -1388,7 +1391,7 @@ function getSiteInfo( finished ) {
 
 function saveFavicon( finished ) {
     console.info( 'Saving favicon.png...' );
-    downloadFile( 'http://sourceforge.net/p/kiwix/tools/ci/master/tree/dumping_tools/data/wikipedia-icon-48x48.png?format=raw', rootPath + mediaDirectory + '/favicon.png' );
+    downloadFile( 'http://sourceforge.net/p/kiwix/tools/ci/master/tree/dumping_tools/data/wikipedia-icon-48x48.png?format=raw', rootPath + '/favicon.png' );
     finished();
 }
 
