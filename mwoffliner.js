@@ -1242,7 +1242,6 @@ function downloadFile( url, path, force, callback ) {
 						 } else {
 						     fs.stat( path, function ( error, stats ) {
 							 if ( error ) {
-							     console.error( 'Unable to stat -- "' + path + '" (' + error + ')' );
 							     setTimeout ( function() {
 								 finished( 'Unable to stat "' + path + '" (' + error + ')' );
 							     }, 40000 );
@@ -1257,7 +1256,6 @@ function downloadFile( url, path, force, callback ) {
 					     var targetSize = stats.size;
 					     fs.stat( tmpPath, function ( error, stats ) {
 						 if ( error ) {
-						     console.error( 'Unable to stat ++ "' + tmpPath + '" (' + error + ')' );
 						     setTimeout ( function() {
 							 finished( 'Unable to stat "' + tmpPath + '" (' + error + ')' );
 						     }, 40000 );
