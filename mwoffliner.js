@@ -26,7 +26,7 @@ var os = require('os');
 /* Check if opt. binaries are available */
 var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version' ];
 optBinaries.forEach( function( cmd ) {
-    var child = exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	if ( error ) {
 	    console.error( 'Failed to find binary "' + cmd.split(' ')[0] + '": (' + error + ')' );
 	    process.exit( 1 );
@@ -48,6 +48,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'mwURL', 'Mediawiki API URL')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'parallelRequests', 'Number of parallel HTTP requests')
+    .describe( 'zim', 'Build a ZIM file at the end of the process (you might give a filename)')
     .strict()
     .argv;
 
@@ -100,6 +101,9 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
+
+/* ZIM path */
+var zimPath = argv.zim;
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -298,12 +302,40 @@ async.series([
     function( finished ) { saveArticles( finished ) },
     function( finished ) { drainDownloadMediaQueue( finished ) },
     function( finished ) { drainOptimizationQueue( finished ) },
+    function( finished ) { buildZIM( finished ) },
     function( finished ) { endProcess( finished ) },
 ]);
 
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function buildZIM( finished ) {
+    if ( zimPath ) {
+	if ( zimPath === true ) {
+	    console.log( 'ZIM filename needs to be computed automatically.' )
+	    zimPath = 'static.zim';
+	}
+
+	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 + 
+	    ' --title="Wikipedia" --description="' + subTitle + '" --creator=Wikipedia --publisher=Kiwix ' + 
+	    '"' + rootPath + '" "' + zimPath + '"';
+	console.log( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
+
+	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+	    if ( error ) {
+		console.error( 'Failed to build successfuly the ZIM file ' + zimPath + '(' + error + ')' );
+		process.exit( 1 );
+	    } else {
+		console.log( 'ZIM file built at ' + zimPath );
+	    }
+	    finished();
+	});	
+
+    } else {
+	finished();
+    }
+}
 
 function endProcess( finished ) {
     redisClient.flushdb( function( error, result) {});
