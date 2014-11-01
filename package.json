@@ -23,6 +23,7 @@
 "async": "*",
 "sync": "*",
 "follow-redirects": "*",
+"country-language": "*",
 "swig": "*",
 "sleep": "*",
 "request-enhanced": "*",

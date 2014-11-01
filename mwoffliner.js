@@ -15,6 +15,7 @@ var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
+var countryLanguage = require( 'country-language' );
 var sleep = require( 'sleep' );
 var request = require( 'request-enhanced' );
 var redis = require( 'redis' );
@@ -143,7 +144,8 @@ var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
 var subTitle = 'From Wikipedia, the free encyclopedia';
 var name = '';
-var lang = 'en';
+var langIso2 = 'en';
+var langIso3 = 'eng';
 var articleIds = {};
 var namespaces = {};
 var webUrl = mwUrl + 'wiki/';
@@ -1368,8 +1370,16 @@ function getSiteInfo( finished ) {
     loadUrlAsync( url, function( body ) {
 	var entries = JSON.parse( body )['query']['general'];
 	name = entries['sitename'];
-	lang = entries['lang'];
-	finished();
+	langIso2 = entries['lang'];
+	countryLanguage.getLanguage( langIso2, function ( error, language ) {
+	    if ( error ) {
+		console.log( error );
+		process.exit( 1 );
+	    } else {
+		langIso3 = language.iso639_3;
+	    }
+	    finished();
+	});
     });
 }
 
