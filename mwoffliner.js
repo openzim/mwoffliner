@@ -24,7 +24,7 @@ var yargs = require('yargs');
 var os = require('os');
 
 /* Check if opt. binaries are available */
-var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version' ];
+var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version', 'convert --version' ];
 optBinaries.forEach( function( cmd ) {
     exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	if ( error ) {
@@ -104,6 +104,12 @@ if ( isNaN( maxParallelRequests ) ) {
 
 /* ZIM path */
 var zimPath = argv.zim;
+
+/* ZIM publisher */
+var publisher = 'Kiwix';
+
+/* ZIM (content) creator */
+var creator;
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -312,14 +318,21 @@ async.series([
 
 function buildZIM( finished ) {
     if ( zimPath ) {
+
 	if ( zimPath === true ) {
 	    console.log( 'ZIM filename needs to be computed automatically.' )
 	    zimPath = 'static.zim';
 	}
 
-	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 + 
-	    ' --title="Wikipedia" --description="' + subTitle + '" --creator=Wikipedia --publisher=Kiwix ' + 
-	    '"' + rootPath + '" "' + zimPath + '"';
+	if ( !creator ) {
+	    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+	    creator = hostParts[0] > hostParts[1] ? hostParts[0] : hostParts[1];
+	    creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
+	}
+
+	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
+	    + ' --title="' + name + '" --description="' + subTitle + '" --creator="' + creator + '" --publisher="' 
+	    + publisher+ '" "' + rootPath + '" "' + zimPath + '"';
 	console.log( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 
 	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
@@ -1025,7 +1038,7 @@ function getArticleIds( finished ) {
             }
 	}
 
-	var lines = fs.readFileSync( articleList ).toString().split("\n");
+	var lines = fs.readFileSync( articleList ).toString().split( '\n' );
 	async.eachLimit( lines, maxParallelRequests, getArticleIdsForLine, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for a file: ' + error );
@@ -1415,8 +1428,19 @@ function getSiteInfo( finished ) {
 
 function saveFavicon( finished ) {
     console.info( 'Saving favicon.png...' );
-    downloadFile( 'http://sourceforge.net/p/kiwix/tools/ci/master/tree/dumping_tools/data/wikipedia-icon-48x48.png?format=raw', rootPath + '/favicon.png' );
-    finished();
+    var faviconPath = rootPath + '/favicon.png';
+    
+    loadUrlAsync( apiUrl + 'action=query&meta=siteinfo&format=json', function( body ) {	
+	var entries = JSON.parse( body )['query']['general'];
+	var logoUrl = entries['logo'];
+	logoUrl = urlParser.parse( logoUrl ).protocol ? logoUrl : 'http:' + logoUrl;
+	downloadFile( logoUrl, faviconPath, true, function() {
+	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '"';
+	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+		finished();
+	    });
+	});
+    });
 }
 
 function getMainPage( finished ) {
