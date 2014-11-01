@@ -16,7 +16,6 @@ var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var countryLanguage = require( 'country-language' );
-var sleep = require( 'sleep' );
 var request = require( 'request-enhanced' );
 var redis = require( 'redis' );
 var childProcess = require('child_process');
@@ -145,7 +144,6 @@ var htmlTemplateCode = function(){/*
 /************************************/
 
 var cpuCount = os.cpus().length;
-var maxTryCount = 3;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
@@ -1154,33 +1152,27 @@ function writeFile( data, path, callback ) {
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
-    var tryCount = 0;
-    var data;
-
-    async.whilst(
-	function() {
-	    return ( maxTryCount == 0 || tryCount++ < maxTryCount );
-	},
+    async.retry(
+	5,
 	function( finished ) {
-	    request.get( {url: url, timeout: 240000} , function( error, body ) {
+	    request.get( {url: url, timeout: 200000} , function( error, body ) {
 		if ( error ) {
-		    console.error( 'Unable to async retrieve (try nb ' + tryCount + ') ' + decodeURI( url ) + ' ( ' + error + ' )');
-		    console.info( 'Sleeping for ' + tryCount + ' seconds and they retry.' );
-		    sleep.sleep( tryCount );
-		    finished();
+		    setTimeout( function() {
+			finished( 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )');
+		    }, 50000 );
 		} else {
-		    data = body;
-		    finished('ok');
+		    finished( undefined, body );
 		}
 	    });
 	},
-	function( error ) {
-	    if ( !data ) {
-		console.error( 'Abandon retrieving of ' + decodeURI( url ) );
+	function ( error, data ) {
+	    if ( error ) {
+		console.error( error );
 	    }
-	    callback( data, var1, var2, var3 );
-	}
-    );
+	    if ( callback ) {
+		callback( data, var1, var2, var3 );
+	    } 		    
+	});
 }
 
 function downloadMedia( url, callback ) {
@@ -1229,7 +1221,7 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url, timeout: 120000}, tmpPath, function( error, filename ) {
+	    request.get( {url: url, timeout: 200000}, tmpPath, function( error, filename ) {
 		if ( error ) {
 		    fs.unlink( tmpPath, function() {
 			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
@@ -1252,7 +1244,7 @@ function downloadFile( url, path, force, callback ) {
 							 if ( error ) {
 							     setTimeout ( function() {
 								 finished( 'Unable to stat "' + path + '" (' + error + ')' );
-							     }, 40000 );
+							     }, 50000 );
 							 } else {
 							     optimizationQueue.push( {path: path, size: stats.size} );
 							     finished();

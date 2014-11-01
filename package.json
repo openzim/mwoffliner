@@ -25,7 +25,6 @@
 "follow-redirects": "*",
 "country-language": "*",
 "swig": "*",
-"sleep": "*",
 "request-enhanced": "*",
 "html-minifier": "*",
 "redis": "*"
