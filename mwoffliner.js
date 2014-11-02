@@ -115,7 +115,7 @@ var creator;
 var namespacesToMirror = [ '' ];
 
 /* License footer template code */
-var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em;">This article is issued from <a class="external text" href="{{ webUrl }}{{ articleId }}">{{ name }}</a>. The text is available under the <a class="external text" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution/Share Alike</a>; additional terms may apply for the media files.</div>';
+var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em;">This article is issued from <a class="external text" href="{{ webUrl }}{{ articleId }}?oldid={{ oldId }}">{{ name }}</a>{% if date %} - version of the {{ date }}{% endif %}. The text is available under the <a class="external text" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution/Share Alike</a> but additional terms may apply for the media files.</div>';
 
 /************************************/
 /* CONSTANT VARIABLE SECTION ********/
@@ -783,7 +783,7 @@ function saveArticles( finished ) {
 	    doc.getElementById( 'ss' ).innerHTML = subTitle;
 	    
 	    /* Append footer node */
-	    doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId ) );
+	    doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId, articleIds[ articleId ][0], articleIds[ articleId ][1] ) );
 	    
 	    /* Write the static html file */
 	    writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
@@ -795,7 +795,7 @@ function saveArticles( finished ) {
 		console.info( articleId + ' already downloaded at ' + articlePath );
 		finished();
 	    } else {
-		var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
+		var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ][0];
 		console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 		loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 		    if ( html ) {
@@ -1002,7 +1002,7 @@ function getArticleIds( finished ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
-		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
+		    articleIds[entry['title']] = [ entry['revisions'][0]['revid'], entry['revisions'][0]['timestamp'] ];
 		    articleIdsToGetRedirect.push( entry['title'] );
 		}
 	    });
@@ -1165,9 +1165,10 @@ function concatenateToAttribute( old, add ) {
     return old ? old + ' ' + add : add;
 }
 
-function getFooterNode( doc, articleId ) {
+function getFooterNode( doc, articleId, oldId, timestamp ) {
     var div = doc.createElement( 'div' );
-    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name });
+    var date = new Date(timestamp);
+    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
     return div;
 }
 
@@ -1466,13 +1467,12 @@ function getMainPage( finished ) {
     function retrieveMainPage( finished ) {
 	console.info( 'Getting main page...' );
 	loadUrlAsync( webUrl, function( body ) {
-	    var mainPageRegex = /\"wgPageName\"\:\"(.*?)\"/;
-	    var parts = mainPageRegex.exec( body );
-	    if ( parts[ 1 ] ) {
-		var html = redirectTemplate( { title:  parts[1].replace( /_/g, ' ' ), 
-					       target : getArticleBase( parts[1], true ) } );
+	    var titleRegex = /\"wgPageName\"\:\"(.*?)\"/;
+	    var titleParts = titleRegex.exec( body );
+	    if ( titleParts[ 1 ] ) {
+		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
+					       target : getArticleBase( titleParts[1], true ) } );
 		writeFile( html, rootPath + '/index.html' );
-		articleIds[ parts[ 1 ] ] = '';
 	    } else {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
