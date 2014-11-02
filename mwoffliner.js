@@ -9,7 +9,7 @@ var fs = require( 'fs' );
 var domino = require( 'domino' );
 var jsdom = require( 'jsdom' );
 var async = require( 'async' );
-var Sync = require('sync');
+var sync = require('sync');
 var http = require( 'follow-redirects' ).http;
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
@@ -56,8 +56,8 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
 
-/* TODO: Create category pages */
-var withCategories = false;
+/* Formats */
+var dumps = [''];
 
 /* Keep thumbnails in articles */
 var withMedias = ( argv.textOnly ? false : true );
@@ -293,24 +293,28 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 }, maxParallelRequests );
 
 /* Get content */
-async.series([
-    function( finished ) { createDirectories( finished ) },
-    function( finished ) { saveJavascript( finished ) }, 
-    function( finished ) { saveStylesheet( finished ) },
-    function( finished ) { saveFavicon( finished ) },
-    function( finished ) { getTextDirection( finished ) },
-    function( finished ) { getNamespaces( finished ) },
-    function( finished ) { getSubTitle( finished ) },
-    function( finished ) { getSiteInfo( finished ) },
-    function( finished ) { getArticleIds( finished ) }, 
-    function( finished ) { getMainPage( finished ) },
-    function( finished ) { saveRedirects( finished ) },
-    function( finished ) { saveArticles( finished ) },
-    function( finished ) { drainDownloadMediaQueue( finished ) },
-    function( finished ) { drainOptimizationQueue( finished ) },
-    function( finished ) { buildZIM( finished ) },
-    function( finished ) { endProcess( finished ) },
-]);
+for ( var i=0 ; i<dumps.length ; i++) {
+    var dump = dumps[i];
+
+    async.series([
+	function( finished ) { createDirectories( finished ) },
+	function( finished ) { saveJavascript( finished ) }, 
+	function( finished ) { saveStylesheet( finished ) },
+	function( finished ) { saveFavicon( finished ) },
+	function( finished ) { getTextDirection( finished ) },
+	function( finished ) { getNamespaces( finished ) },
+	function( finished ) { getSubTitle( finished ) },
+	function( finished ) { getSiteInfo( finished ) },
+	function( finished ) { getArticleIds( finished ) }, 
+	function( finished ) { getMainPage( finished ) },
+	function( finished ) { saveRedirects( finished ) },
+	function( finished ) { saveArticles( finished ) },
+	function( finished ) { drainDownloadMediaQueue( finished ) },
+	function( finished ) { drainOptimizationQueue( finished ) },
+	function( finished ) { buildZIM( finished ) },
+	function( finished ) { endProcess( finished ) },
+    ]);
+}
 
 /************************************/
 /* FUNCTIONS ************************/
@@ -319,15 +323,40 @@ async.series([
 function buildZIM( finished ) {
     if ( zimPath ) {
 
-	if ( zimPath === true ) {
-	    console.log( 'ZIM filename needs to be computed automatically.' )
-	    zimPath = 'static.zim';
-	}
-
 	if ( !creator ) {
 	    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
 	    creator = hostParts[0] > hostParts[1] ? hostParts[0] : hostParts[1];
 	    creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
+	}
+
+	if ( zimPath === true ) {
+	    console.log( 'ZIM filename needs to be computed automatically.' )
+
+	    /* Add the content descriptor first */
+	    zimPath = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
+
+	    /* Add the language next (if necessary) */
+	    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+	    for (var i=0; i<hostParts.length; i++) {
+		if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
+		    zimPath += hostParts[i] + '_';
+		    break;
+		}
+	    }
+
+	    /* Add selection name (or all) */
+	    if ( articleList ) {
+		zimPath += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+	    } else {
+		zimPath += 'all_';
+	    }
+
+	    /* Add date */
+	    var date = new Date();
+	    zimPath += date.getMonth() + '_' + date.getFullYear();
+
+	    /* Add extension */
+	    zimPath += '.zim';
 	}
 
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
