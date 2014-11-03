@@ -41,14 +41,13 @@ optBinaries.forEach( function( cmd ) {
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
     .require(['mwUrl', 'parsoidUrl'])
-    .options(['articleList', 'textOnly', 'outputDirectory'])
+    .options(['articleList', 'outputDirectory', 'parallelRequests', 'format'])
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'articleList', 'File with one title (in UTF8)')
-    .describe( 'textOnly', 'To avoid image/media mirroring')
+    .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
     .describe( 'mwURL', 'Mediawiki API URL')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'parallelRequests', 'Number of parallel HTTP requests')
-    .describe( 'zim', 'Build a ZIM file at the end of the process (you might give a filename)')
     .strict()
     .argv;
 
@@ -58,9 +57,13 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
 
 /* Formats */
 var dumps = [''];
-
-/* Keep thumbnails in articles */
-var withMedias = ( argv.textOnly ? false : true );
+if ( argv.format ) {
+    if ( argv.format instanceof Array ) {
+	dumps = argv.format;
+    } else if ( argv.format != true ) {
+	dumps = [ argv.format ];
+    }
+}
 
 /* Template code for any redirect to be written on the FS */
 var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title }}</title><meta http-equiv="refresh" content="0; URL={{ target }}"></head><body></body></html>';
@@ -101,9 +104,6 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
-
-/* ZIM path */
-var zimPath = argv.zim;
 
 /* ZIM publisher */
 var publisher = 'Kiwix';
@@ -165,6 +165,8 @@ var articleIds = {};
 var namespaces = {};
 var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
+var nopic = false;
+var nozim = false;
 
 /************************************/
 /* TOOLS ****************************/
@@ -293,35 +295,49 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 }, maxParallelRequests );
 
 /* Get content */
-for ( var i=0 ; i<dumps.length ; i++) {
-    var dump = dumps[i];
+async.eachSeries(
+    dumps,
+    function( dump, finished ) {
+	console.log( 'Start a new dump' );
+	nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
+	nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
 
-    async.series([
-	function( finished ) { createDirectories( finished ) },
-	function( finished ) { saveJavascript( finished ) }, 
-	function( finished ) { saveStylesheet( finished ) },
-	function( finished ) { saveFavicon( finished ) },
-	function( finished ) { getTextDirection( finished ) },
-	function( finished ) { getNamespaces( finished ) },
-	function( finished ) { getSubTitle( finished ) },
-	function( finished ) { getSiteInfo( finished ) },
-	function( finished ) { getArticleIds( finished ) }, 
-	function( finished ) { getMainPage( finished ) },
-	function( finished ) { saveRedirects( finished ) },
-	function( finished ) { saveArticles( finished ) },
-	function( finished ) { drainDownloadMediaQueue( finished ) },
-	function( finished ) { drainOptimizationQueue( finished ) },
-	function( finished ) { buildZIM( finished ) },
-	function( finished ) { endProcess( finished ) },
-    ]);
-}
+	async.series(
+	    [
+		function( finished ) { createDirectories( finished ) },
+		function( finished ) { saveJavascript( finished ) }, 
+		function( finished ) { saveStylesheet( finished ) },
+		function( finished ) { saveFavicon( finished ) },
+		function( finished ) { getTextDirection( finished ) },
+		function( finished ) { getNamespaces( finished ) },
+		function( finished ) { getSubTitle( finished ) },
+		function( finished ) { getSiteInfo( finished ) },
+		function( finished ) { getArticleIds( finished ) }, 
+		function( finished ) { getMainPage( finished ) },
+		function( finished ) { saveRedirects( finished ) },
+		function( finished ) { saveArticles( finished ) },
+		function( finished ) { drainDownloadMediaQueue( finished ) },
+		function( finished ) { drainOptimizationQueue( finished ) },
+		function( finished ) { buildZIM( finished ) },
+		function( finished ) { endProcess( finished ) }
+	    ],
+	    function( error, result ) {
+		finished();
+	    }
+	);
+    },
+    function( error ) {
+	console.log( 'All dumping(s) finished with success.' );
+	redisClient.quit(); 
+    }
+);
 
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
 
 function buildZIM( finished ) {
-    if ( zimPath ) {
+    if ( !nozim ) {
 
 	if ( !creator ) {
 	    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
@@ -329,35 +345,24 @@ function buildZIM( finished ) {
 	    creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 	}
 
-	if ( zimPath === true ) {
-	    console.log( 'ZIM filename needs to be computed automatically.' )
-
-	    /* Add the content descriptor first */
-	    zimPath = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
-
-	    /* Add the language next (if necessary) */
-	    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
-	    for (var i=0; i<hostParts.length; i++) {
-		if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
-		    zimPath += hostParts[i] + '_';
-		    break;
-		}
+	/* Compute ZIM filename */
+	var zimPath = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
+	var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+	for (var i=0; i<hostParts.length; i++) {
+	    if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
+		zimPath += hostParts[i] + '_';
+		break;
 	    }
-
-	    /* Add selection name (or all) */
-	    if ( articleList ) {
-		zimPath += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
-	    } else {
-		zimPath += 'all_';
-	    }
-
-	    /* Add date */
-	    var date = new Date();
-	    zimPath += date.getMonth() + '_' + date.getFullYear();
-
-	    /* Add extension */
-	    zimPath += '.zim';
 	}
+	if ( articleList ) {
+	    zimPath += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+	} else {
+	    zimPath += 'all_';
+	}
+	zimPath += nopic ? 'nopic_' : '';
+	var date = new Date();
+	zimPath += date.getMonth() + '_' + date.getFullYear();
+	zimPath += '.zim';
 
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
 	    + ' --title="' + name + '" --description="' + subTitle + '" --creator="' + creator + '" --publisher="' 
@@ -380,8 +385,9 @@ function buildZIM( finished ) {
 }
 
 function endProcess( finished ) {
-    redisClient.flushdb( function( error, result) {});
-    redisClient.quit(); 
+    redisClient.flushdb( function( error, result) {
+	finished();
+    });
     console.log( "Dumping finished with success." );
 }
 
@@ -590,13 +596,13 @@ function saveArticles( finished ) {
 	    /* Go through gallerybox */
 	    var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
 	    for ( var i = 0; i < galleryboxes.length ; i++ ) {
-		if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( ! withMedias ) ) {
+		if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( nopic ) ) {
 		    deleteNode( galleryboxes[i] );
 		}
 	    }
 	    
 	    /* Remove "map" tags if necessary */
-	    if ( !withMedias ) {
+	    if ( nopic ) {
 		var maps = parsoidDoc.getElementsByTagName( 'map' );
 		for ( var i = 0; i < maps.length ; i++ ) {
 		    deleteNode( maps[i] );
@@ -627,8 +633,8 @@ function saveArticles( finished ) {
 	    for ( var i = 0; i < imageNodes.length ; i++ ) {
 		var imageNode = imageNodes[i];
 		var image = imageNode.getElementsByTagName( 'img' )[0];
-		
-		if ( withMedias && imageNode && image ) {
+
+		if ( !nopic && imageNode && image ) {
 		    var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
 		    var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
 		    
@@ -692,7 +698,7 @@ function saveArticles( finished ) {
 	    for ( var i = 0; i < imgs.length ; i++ ) {
 		var img = imgs[i];
 		
-		if ( withMedias || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
+		if ( !nopic || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
 		    var src = getFullUrl( img.getAttribute( 'src' ) );
 		    
 		    /* Download image, but avoid duplicate calls */
