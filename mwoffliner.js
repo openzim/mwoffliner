@@ -167,50 +167,6 @@ var filenameRadical = '';
 var htmlRootPath = '';
 
 /************************************/
-/* TOOLS ****************************/
-/************************************/
-
-function randomString( len ) {
-    var randomString = '';
-    var charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    for ( var i = 0; i < len; i++ ) {
-	var randomPoz = Math.floor(Math.random() * charSet.length);
-	randomString += charSet.substring(randomPoz,randomPoz+1);
-    }
-    return randomString;
-}
-
-function computeFilenameRadical() {
-    var radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
-    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
-    for (var i=0; i<hostParts.length; i++) {
-	if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
-	    radical += hostParts[i] + '_';
-	    break;
-	}
-    }
-    if ( articleList ) {
-	radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
-    } else {
-	radical += 'all_';
-    }
-    radical += nopic ? 'nopic_' : '';
-    var date = new Date();
-    radical += date.getFullYear() + '-' + date.getMonth();
-    return radical;
-}
-
-function computeHtmlRootPath() {
-    var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
-    htmlRootPath += computeFilenameRadical() + '/';
-    if ( fs.existsSync( htmlRootPath ) ) {
-	console.error( 'Directory "' + htmlRootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );
-	process.exit( 1 );
-    }
-    return htmlRootPath;
-}
-
-/************************************/
 /* RUNNING CODE *********************/
 /************************************/
 
@@ -323,39 +279,50 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 }, maxParallelRequests );
 
 /* Get content */
-async.eachSeries(
-    dumps,
-    function( dump, finished ) {
-	console.log( 'Start a new dump' );
-	nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
-	nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
-	fs.mkdir( outputDirectory );
+async.series(
+    [
+	function( finished ) { fs.mkdir( outputDirectory, undefined, finished ) },
+	function( finished ) { getTextDirection( finished ) },
+	function( finished ) { getSubTitle( finished ) },
+	function( finished ) { getSiteInfo( finished ) },
+	function( finished ) { getNamespaces( finished ) },
+	function( finished ) { getArticleIds( finished ) },
+	function( finished ) { 
+	    async.eachSeries(
+		dumps,
+		function( dump, finished ) {
+		    console.log( 'Starting a new dump...' );
+		    nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
+		    nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
+		    filenameRadical = computeFilenameRadical();
+		    htmlRootPath = computeHtmlRootPath();
 
-	async.series(
-	    [
-		function( finished ) { getTextDirection( finished ) },
-		function( finished ) { getSubTitle( finished ) },
-		function( finished ) { getSiteInfo( finished ) },
-		function( finished ) { createDirectories( finished ) },
-		function( finished ) { saveJavascript( finished ) }, 
-		function( finished ) { saveStylesheet( finished ) },
-		function( finished ) { saveFavicon( finished ) },
-		function( finished ) { getNamespaces( finished ) },
-		function( finished ) { getArticleIds( finished ) }, 
-		function( finished ) { getMainPage( finished ) },
-		function( finished ) { saveRedirects( finished ) },
-		function( finished ) { saveArticles( finished ) },
-		function( finished ) { drainDownloadMediaQueue( finished ) },
-		function( finished ) { drainOptimizationQueue( finished ) },
-		function( finished ) { buildZIM( finished ) },
-		function( finished ) { endProcess( finished ) }
-	    ],
-	    function( error, result ) {
-		
-		finished();
-	    }
-	);
-    },
+		    async.series(
+			[
+			    function( finished ) { createDirectories( finished ) },
+			    function( finished ) { saveJavascript( finished ) }, 
+			    function( finished ) { saveStylesheet( finished ) },
+			    function( finished ) { saveFavicon( finished ) },
+			    function( finished ) { getMainPage( finished ) },
+			    function( finished ) { saveRedirects( finished ) },
+			    function( finished ) { saveArticles( finished ) },
+			    function( finished ) { drainDownloadMediaQueue( finished ) },
+			    function( finished ) { drainOptimizationQueue( finished ) },
+			    function( finished ) { buildZIM( finished ) },
+			    function( finished ) { endProcess( finished ) }
+			],
+			function( error, result ) {
+			    
+			    finished();
+			}
+		    );
+		},
+		function( error ) {
+		    finished();
+		}
+	    )
+	}
+    ],
     function( error ) {
 	console.log( 'All dumping(s) finished with success.' );
 	redisClient.quit(); 
@@ -365,6 +332,46 @@ async.eachSeries(
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function randomString( len ) {
+    var randomString = '';
+    var charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    for ( var i = 0; i < len; i++ ) {
+	var randomPoz = Math.floor(Math.random() * charSet.length);
+	randomString += charSet.substring(randomPoz,randomPoz+1);
+    }
+    return randomString;
+}
+
+function computeFilenameRadical() {
+    var radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
+    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+    for (var i=0; i<hostParts.length; i++) {
+	if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
+	    radical += hostParts[i] + '_';
+	    break;
+	}
+    }
+    if ( articleList ) {
+	radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+    } else {
+	radical += 'all_';
+    }
+    radical += nopic ? 'nopic_' : '';
+    var date = new Date();
+    radical += date.getFullYear() + '-' + date.getMonth();
+    return radical;
+}
+
+function computeHtmlRootPath() {
+    var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
+    htmlRootPath += computeFilenameRadical() + '/';
+    if ( fs.existsSync( htmlRootPath ) ) {
+	console.error( 'Directory "' + htmlRootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );
+	process.exit( 1 );
+    }
+    return htmlRootPath;
+}
 
 function buildZIM( finished ) {
     if ( !nozim ) {
@@ -405,6 +412,7 @@ function drainDownloadMediaQueue( finished ) {
 	} else {
             if ( downloadMediaQueue.length() == 0 ) {
 		console.log( 'All images successfuly downloaded' );
+		downloadMediaQueue.drain = undefined;
 		finished();
             }
 	}
@@ -421,6 +429,7 @@ function drainOptimizationQueue( finished ) {
 	} else {
 	    if ( optimizationQueue.length() == 0 ) {
 		console.log( 'All images successfuly optimized' );
+		optimizationQueue.drain = undefined;
 		finished();
 	    }
 	}
@@ -1137,9 +1146,6 @@ function getArticleIds( finished ) {
 
 /* Create directories for static files */
 function createDirectories( finished ) {
-    filenameRadical = computeFilenameRadical();
-    htmlRootPath = computeHtmlRootPath();
-
     console.info( 'Creating directories at \'' + htmlRootPath + '\'...' );
     async.series(
         [
