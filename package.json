@@ -21,7 +21,6 @@
 "domino": "*",
 "jsdom": "*",
 "async": "*",
-"sync": "*",
 "follow-redirects": "*",
 "country-language": "*",
 "swig": "*",
