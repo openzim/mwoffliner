@@ -361,7 +361,7 @@ function buildZIM( finished ) {
 	}
 	zimPath += nopic ? 'nopic_' : '';
 	var date = new Date();
-	zimPath += date.getMonth() + '_' + date.getFullYear();
+	zimPath += date.getFullYear() + '-' + date.getMonth();
 	zimPath += '.zim';
 
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
