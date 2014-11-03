@@ -9,7 +9,6 @@ var fs = require( 'fs' );
 var domino = require( 'domino' );
 var jsdom = require( 'jsdom' );
 var async = require( 'async' );
-var sync = require('sync');
 var http = require( 'follow-redirects' ).http;
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
@@ -83,11 +82,6 @@ var idBlackList = [ 'purgelink' ];
 
 /* Directory wehre everything is saved */
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
-var rootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
-if ( fs.existsSync( rootPath ) ) {
-    console.error( 'Directory "' + rootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );
-    process.exit( 1 );
-}
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
@@ -97,6 +91,7 @@ var articleList = argv.articleList;
 
 /* Wikipedia/... URL */
 var mwUrl = argv.mwUrl;
+var hostParts = urlParser.parse( mwUrl ).hostname.split( '.' );
 
 /* NUmber of parallel requests */
 var maxParallelRequests = argv.parallelRequests || 30;
@@ -109,7 +104,8 @@ if ( isNaN( maxParallelRequests ) ) {
 var publisher = 'Kiwix';
 
 /* ZIM (content) creator */
-var creator;
+var creator = hostParts[0] > hostParts[1] ? hostParts[0] : hostParts[1];
+creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 
 /* Namespaces to mirror */
 var namespacesToMirror = [ '' ];
@@ -167,6 +163,8 @@ var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
 var nopic = false;
 var nozim = false;
+var filenameRadical = '';
+var htmlRootPath = '';
 
 /************************************/
 /* TOOLS ****************************/
@@ -180,6 +178,36 @@ function randomString( len ) {
 	randomString += charSet.substring(randomPoz,randomPoz+1);
     }
     return randomString;
+}
+
+function computeFilenameRadical() {
+    var radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
+    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+    for (var i=0; i<hostParts.length; i++) {
+	if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
+	    radical += hostParts[i] + '_';
+	    break;
+	}
+    }
+    if ( articleList ) {
+	radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+    } else {
+	radical += 'all_';
+    }
+    radical += nopic ? 'nopic_' : '';
+    var date = new Date();
+    radical += date.getFullYear() + '-' + date.getMonth();
+    return radical;
+}
+
+function computeHtmlRootPath() {
+    var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
+    htmlRootPath += computeFilenameRadical() + '/';
+    if ( fs.existsSync( htmlRootPath ) ) {
+	console.error( 'Directory "' + htmlRootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );
+	process.exit( 1 );
+    }
+    return htmlRootPath;
 }
 
 /************************************/
@@ -301,17 +329,18 @@ async.eachSeries(
 	console.log( 'Start a new dump' );
 	nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
 	nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
+	fs.mkdir( outputDirectory );
 
 	async.series(
 	    [
+		function( finished ) { getTextDirection( finished ) },
+		function( finished ) { getSubTitle( finished ) },
+		function( finished ) { getSiteInfo( finished ) },
 		function( finished ) { createDirectories( finished ) },
 		function( finished ) { saveJavascript( finished ) }, 
 		function( finished ) { saveStylesheet( finished ) },
 		function( finished ) { saveFavicon( finished ) },
-		function( finished ) { getTextDirection( finished ) },
 		function( finished ) { getNamespaces( finished ) },
-		function( finished ) { getSubTitle( finished ) },
-		function( finished ) { getSiteInfo( finished ) },
 		function( finished ) { getArticleIds( finished ) }, 
 		function( finished ) { getMainPage( finished ) },
 		function( finished ) { saveRedirects( finished ) },
@@ -322,6 +351,7 @@ async.eachSeries(
 		function( finished ) { endProcess( finished ) }
 	    ],
 	    function( error, result ) {
+		
 		finished();
 	    }
 	);
@@ -338,35 +368,10 @@ async.eachSeries(
 
 function buildZIM( finished ) {
     if ( !nozim ) {
-
-	if ( !creator ) {
-	    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
-	    creator = hostParts[0] > hostParts[1] ? hostParts[0] : hostParts[1];
-	    creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
-	}
-
-	/* Compute ZIM filename */
-	var zimPath = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
-	var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
-	for (var i=0; i<hostParts.length; i++) {
-	    if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
-		zimPath += hostParts[i] + '_';
-		break;
-	    }
-	}
-	if ( articleList ) {
-	    zimPath += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
-	} else {
-	    zimPath += 'all_';
-	}
-	zimPath += nopic ? 'nopic_' : '';
-	var date = new Date();
-	zimPath += date.getFullYear() + '-' + date.getMonth();
-	zimPath += '.zim';
-
+	var zimPath = outputDirectory + filenameRadical + '.zim';
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
 	    + ' --title="' + name + '" --description="' + subTitle + '" --creator="' + creator + '" --publisher="' 
-	    + publisher+ '" "' + rootPath + '" "' + zimPath + '"';
+	    + publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	console.log( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 
 	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
@@ -806,7 +811,7 @@ function saveArticles( finished ) {
 
 	    finished( null, parsoidDoc, articleId );
 	}
-
+	
 	function writeArticle( parsoidDoc, articleId, finished ) {
 	    /* Create final document by merging template and parsoid documents */
 	    var doc = domino.createDocument( htmlTemplateCode );
@@ -825,31 +830,24 @@ function saveArticles( finished ) {
 	}
 
 	var articlePath = getArticlePath( articleId );
-	fs.exists( articlePath, function (exists) {
-	    if ( exists ) {
-		console.info( articleId + ' already downloaded at ' + articlePath );
-		finished();
-	    } else {
-		var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ][0];
-		console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
-		loadUrlAsync( articleUrl, function( html, articleId, revId ) {
-		    if ( html ) {
-			var prepareAndSaveArticle = async.compose( writeArticle, applyOtherTreatments, rewriteUrls, parseHtml );
-			prepareAndSaveArticle(html, articleId, function ( error, result ) {
-			    if ( error ) {
-				console.error( "Error by preparing and saving file " + error );
-				process.exit( 1 );
-			    } else {
-				setTimeout( finished, 0 );
-			    }
-			});
+	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ][0];
+	console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
+	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
+	    if ( html ) {
+		var prepareAndSaveArticle = async.compose( writeArticle, applyOtherTreatments, rewriteUrls, parseHtml );
+		prepareAndSaveArticle(html, articleId, function ( error, result ) {
+		    if ( error ) {
+			console.error( "Error by preparing and saving file " + error );
+			process.exit( 1 );
 		    } else {
-			delete articleIds[ articleId ];
 			setTimeout( finished, 0 );
 		    }
-		}, articleId);
+		});
+	    } else {
+		delete articleIds[ articleId ];
+		setTimeout( finished, 0 );
 	    }
-	});
+	}, articleId);
     }
 
     async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
@@ -891,7 +889,7 @@ function saveJavascript( finished ) {
 	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
 
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
-	var dummyPath = rootPath + javascriptDirectory + '/local.js';
+	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
 	fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
 	
 	// Backward compatibility for old version of jsdom
@@ -907,7 +905,7 @@ function saveJavascript( finished ) {
 	    nodeNames.map( function( nodeName ) {
 		var node = window.document.getElementsByTagName( nodeName )[0];
 		var scripts = node.getElementsByTagName( 'script' );
-		var javascriptPath = rootPath + javascriptDirectory + '/' + nodeName + '.js';
+		var javascriptPath = htmlRootPath + javascriptDirectory + '/' + nodeName + '.js';
 		
 		fs.unlink( javascriptPath, function() {} );
 		for ( var i = 0; i < scripts.length ; i++ ) {
@@ -940,7 +938,7 @@ function saveJavascript( finished ) {
 /* Grab and concatenate stylesheet files */
 function saveStylesheet( finished ) {
     console.info( 'Creating stylesheet...' );
-    var stylePath = rootPath + styleDirectory + '/style.css';
+    var stylePath = htmlRootPath + styleDirectory + '/style.css';
     fs.unlink( stylePath, function() {} );
 
     loadUrlAsync( webUrl, function( html ) {
@@ -981,7 +979,7 @@ function saveStylesheet( finished ) {
 			    /* Download CSS dependency, but avoid duplicate calls */
 			    if ( !urlCache.hasOwnProperty( url ) ) {
 				urlCache[url] = true;
-				downloadFile( url, rootPath + styleDirectory + '/' + filename );
+				downloadFile( url, htmlRootPath + styleDirectory + '/' + filename );
 			    }
 			}
 		    }
@@ -1139,41 +1137,25 @@ function getArticleIds( finished ) {
 
 /* Create directories for static files */
 function createDirectories( finished ) {
-    console.info( 'Creating directories at \'' + rootPath + '\'...' );
-    createDirectory( rootPath );
-    createDirectory( rootPath + styleDirectory );
-    createDirectory( rootPath + mediaDirectory );
-    createDirectory( rootPath + javascriptDirectory );
-    finished();
-}
+    filenameRadical = computeFilenameRadical();
+    htmlRootPath = computeHtmlRootPath();
 
-function createDirectory( path ) {
-    try {
-	fs.mkdirSync( path );
-    } catch ( error ) {
-	fs.exists( path, function ( exists ) {
-	    if ( ! ( exists && fs.lstatSync( path ).isDirectory() ) ) {
-		console.error( 'Unable to create directory \'' + path + '\'' );
+    console.info( 'Creating directories at \'' + htmlRootPath + '\'...' );
+    async.series(
+        [
+	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
+	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
+	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
+	    function( finished ) { fs.mkdir( htmlRootPath + javascriptDirectory, undefined, finished ) }
+	],
+	function( error ) {
+	    if ( error ) {
+		console.error( 'Unable to create mandatory directories : ' + error );
 		process.exit( 1 );
+	    } else {
+		finished();
 	    }
 	});
-    }
-}
-    
-function createDirectoryRecursively( path, position ) {
-    fs.exists( path, function ( exists ) {
-	if ( !exists ) {
-	    position = position || 0;
-	    var parts = pathParser.normalize( path ).split( '/' );
-	    
-	    if ( position >= parts.length ) {
-		return true;
-	    }
-	    
-	    createDirectory( parts.slice( 0, position + 1 ).join( '/' ) );
-	    createDirectoryRecursively( path, position + 1 );
-	}
-    });
 }
 
 /* Multiple developer friendly functions */
@@ -1214,8 +1196,6 @@ function writeFile( data, path, callback ) {
 	console.error( 'Wrong path ' + path );
 	process.exit( 1 );
     }
-
-    createDirectoryRecursively( pathParser.dirname( path ) );
 
     var stream = fs.createWriteStream( path);
     stream.on( 'error', function( error ) {
@@ -1297,8 +1277,6 @@ function downloadFile( url, path, force, callback ) {
 	} else {
 	    console.info( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
-	    
-	    createDirectoryRecursively( pathParser.dirname( path ) );
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
@@ -1384,7 +1362,7 @@ function getMediaUrl( url ) {
 }
 
 function getMediaPath( url, escape ) {
-    return rootPath + getMediaBase( url, escape );
+    return htmlRootPath + getMediaBase( url, escape );
 }
 
 function getMediaBase( url, escape ) {
@@ -1413,7 +1391,7 @@ function getArticleUrl( articleId ) {
 }
 
 function getArticlePath( articleId, escape ) {
-    return rootPath + getArticleBase( articleId, escape );
+    return htmlRootPath + getArticleBase( articleId, escape );
 }
 
 function getArticleBase( articleId, escape ) {
@@ -1464,7 +1442,7 @@ function getSiteInfo( finished ) {
 
 function saveFavicon( finished ) {
     console.info( 'Saving favicon.png...' );
-    var faviconPath = rootPath + '/favicon.png';
+    var faviconPath = htmlRootPath + '/favicon.png';
     
     loadUrlAsync( apiUrl + 'action=query&meta=siteinfo&format=json', function( body ) {	
 	var entries = JSON.parse( body )['query']['general'];
@@ -1480,7 +1458,7 @@ function saveFavicon( finished ) {
 }
 
 function getMainPage( finished ) {
-    var path = rootPath + '/index.html';
+    var path = htmlRootPath + '/index.html';
     
     function createMainPage( finished ) {
 	console.info( 'Creating main page...' );
@@ -1496,7 +1474,7 @@ function getMainPage( finished ) {
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
 	
 	/* Write the static html file */
-	writeFile( doc.documentElement.outerHTML, rootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
+	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
     }
     
     function retrieveMainPage( finished ) {
@@ -1507,7 +1485,7 @@ function getMainPage( finished ) {
 	    if ( titleParts[ 1 ] ) {
 		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
 					       target : getArticleBase( titleParts[1], true ) } );
-		writeFile( html, rootPath + '/index.html' );
+		writeFile( html, htmlRootPath + '/index.html' );
 	    } else {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
@@ -1553,7 +1531,7 @@ function getNamespaces( finished ) {
 
 function getTextDirection( finished ) {
     console.info( 'Getting text direction...' );
-    var path = rootPath + '/index.html';
+    var path = htmlRootPath + '/index.html';
     loadUrlAsync( webUrl, function( body ) {
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
 	var parts = languageDirectionRegex.exec( body );
