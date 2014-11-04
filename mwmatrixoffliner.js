@@ -22,11 +22,11 @@ var exec = require('child_process').exec;
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
 	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ [--projects=wikivoyage] [--languages=en,fr /var/zim/]')
     .require([ 'mwUrl', 'parsoidUrl' ])
-    .options( ['projects', 'languages', 'tmpDirectory', 'outputDirectory'] )
-    .describe( 'projects', 'List of projects to dump')
-    .describe( 'language', 'List of language to dump')
+    .options( ['project', 'language', 'tmpDirectory', 'outputDirectory'] )
+    .describe( 'project', 'Projects to dump')
+    .describe( 'language', 'Language to dump')
     .describe( 'mwURL', 'Mediawiki API URL')
-    .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
+    .describe( 'parsoidUrl', 'Mediawiki Parsoid URL')
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'outputDirectory', 'Directory to write the ZIM files')
     .strict()
@@ -37,12 +37,15 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
 /************************************/
 
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
+var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : '/tmp/';
 var parsoidUrl = argv.parsoidUrl;
 var mwUrl = argv.mwUrl;
 var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
 var matrixUrl = apiUrl + 'action=sitematrix&format=json';
 var mediawikis = new Array();
+var project = argv.project;
+var language = argv.language;
 
 /************************************/
 /* MAIN *****************************/
@@ -54,7 +57,7 @@ async.series(
 	function( finished ) { dump( finished ) }
     ],
     function( error ) {
-	console.log( 'All mediawikis dumps successfuly' );
+	console.log( 'All mediawikis dump successfuly' );
     }
 );
 
@@ -63,11 +66,28 @@ async.series(
 /************************************/
 
 function dump( finished ) {
-    var cmd = 'cat /tmp';
-
-    exec( cmd, function( executionError, stdout, stderr ) {
-	finished();
-    });    
+    async.eachSeries(
+	mediawikis,
+	function ( site, finished ) {
+	    if ( site.code == project || site.lang == language ) {
+		var localMwUrl = site.url + '/';
+		var localParsoidUrl = parsoidUrl + site.dbname + '/';
+		var localTmpDirectory = tmpDirectory + site.dbname + '/';
+		var localLog = tmpDirectory + site.dbname + '.log';
+		var cmd = 'node mwoffliner.js --mwUrl="' + localMwUrl + '" --parsoidUrl="' + localParsoidUrl 
+		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" > "' + localLog + '"';
+		console.log( 'Dumping ' + site.url + '(' + cmd + ')' );
+		exec( cmd, function( executionError, stdout, stderr ) {
+		    finished();
+		});
+	    } else {
+		finished()
+	    }
+	},
+	function( error ) {
+	    finished();
+	}
+    )
 }
 
 function loadMatrix( finished ) {
@@ -81,6 +101,7 @@ function loadMatrix( finished ) {
 		    var language = entry['code'];
 		    var sites = entry['site'];
 		    for ( var j=0; j<sites.length; j++) {
+			sites[ j ].lang = language;
 			mediawikis.push( sites[ j ] );
 		    }
 		}
