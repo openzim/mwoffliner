@@ -104,7 +104,7 @@ if ( isNaN( maxParallelRequests ) ) {
 var publisher = 'Kiwix';
 
 /* ZIM (content) creator */
-var creator = hostParts[0] > hostParts[1] ? hostParts[0] : hostParts[1];
+var creator = hostParts[0].length > hostParts[1].length ? hostParts[0] : hostParts[1];
 creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 
 /* Namespaces to mirror */
@@ -312,7 +312,6 @@ async.series(
 			    function( finished ) { endProcess( finished ) }
 			],
 			function( error, result ) {
-			    
 			    finished();
 			}
 		    );
@@ -1100,7 +1099,7 @@ function getArticleIds( finished ) {
 	    var parseJsonQueue = async.queue( parseJson, maxParallelRequests);
 	    parseJsonQueue.drain = function( error ) {
 		if ( !next ) {
-		    console.log( 'List of article ids to mirror completed for namespace ' +  namespace );
+		    console.log( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
 		    finished();
 		}
 	    };
