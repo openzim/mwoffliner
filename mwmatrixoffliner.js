@@ -69,7 +69,8 @@ function dump( finished ) {
     async.eachSeries(
 	mediawikis,
 	function ( site, finished ) {
-	    if ( site.code == project || site.lang == language ) {
+	    if ( ( !project || site.code == project ) && 
+		 ( !language || site.lang == language ) ) {
 		var localMwUrl = site.url + '/';
 		var localParsoidUrl = parsoidUrl + site.dbname + '/';
 		var localTmpDirectory = tmpDirectory + site.dbname + '/';
