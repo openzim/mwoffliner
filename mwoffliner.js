@@ -345,12 +345,14 @@ function randomString( len ) {
 function computeFilenameRadical() {
     var radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
     var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+    var langSuffix = langIso2;
     for (var i=0; i<hostParts.length; i++) {
-	if ( hostParts[i] === langIso2 || hostParts[i] === langIso3) {
-	    radical += hostParts[i] + '_';
+	if ( hostParts[i] === langIso3 ) {
+	    langSuffix += hostParts[i];
 	    break;
 	}
     }
+    radical += langSuffix + '_';
     if ( articleList ) {
 	radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
     } else {
