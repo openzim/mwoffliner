@@ -164,7 +164,6 @@ var htmlRootPath = '';
 
 /* Check if opt. binaries are available */
 var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version', 'convert --version' ];
-console.log( dumps );
 try {
     dumps.forEach( function( dump ) {
 	if ( dump.toLowerCase().indexOf( 'nozim' ) < 0 ) {
