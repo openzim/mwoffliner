@@ -22,17 +22,6 @@ var exec = require('child_process').exec;
 var yargs = require('yargs');
 var os = require('os');
 
-/* Check if opt. binaries are available */
-var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version', 'convert --version' ];
-optBinaries.forEach( function( cmd ) {
-    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-	if ( error ) {
-	    console.error( 'Failed to find binary "' + cmd.split(' ')[0] + '": (' + error + ')' );
-	    process.exit( 1 );
-	}
-    });
-});
-
 /************************************/
 /* COMMAND LINE PARSING *************/
 /************************************/
@@ -55,10 +44,13 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
 /************************************/
 
 /* Formats */
-var dumps = [''];
+var dumps = [ '' ];
 if ( argv.format ) {
     if ( argv.format instanceof Array ) {
-	dumps = argv.format;
+	dumps = new Array();
+	argv.format.forEach( function( value ) {
+	    dumps.push( value == true ? '' : value );
+	});
     } else if ( argv.format != true ) {
 	dumps = [ argv.format ];
     }
@@ -169,6 +161,27 @@ var htmlRootPath = '';
 /************************************/
 /* RUNNING CODE *********************/
 /************************************/
+
+/* Check if opt. binaries are available */
+var optBinaries = [ 'jpegoptim --version', 'pngquant --version', 'gifsicle --version', 'advdef --version', 'file --help', 'stat --version', 'convert --version' ];
+console.log( dumps );
+try {
+    dumps.forEach( function( dump ) {
+	if ( dump.toLowerCase().indexOf( 'nozim' ) < 0 ) {
+	    optBinaries.push( 'zimwriterfs --help' );
+	    throw BreakException;
+	}
+    });
+} catch(e) {
+}
+optBinaries.forEach( function( cmd ) {
+    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+	if ( error ) {
+	    console.error( 'Failed to find binary "' + cmd.split(' ')[0] + '": (' + error + ')' );
+	    process.exit( 1 );
+	}
+    });
+});
 
 /* Setup redis client */
 var redisClient = redis.createClient("/tmp/redis.sock");
