@@ -108,7 +108,7 @@ var creator = hostParts[0].length > hostParts[1].length ? hostParts[0] : hostPar
 creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 
 /* Namespaces to mirror */
-var namespacesToMirror = [ '' ];
+var namespacesToMirror = new Array();
 
 /* License footer template code */
 var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em;">This article is issued from <a class="external text" href="{{ webUrl }}{{ articleId }}?oldid={{ oldId }}">{{ name }}</a>{% if date %} - version of the {{ date }}{% endif %}. The text is available under the <a class="external text" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution/Share Alike</a> but additional terms may apply for the media files.</div>';
@@ -384,7 +384,7 @@ function buildZIM( finished ) {
 
 	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	    if ( error ) {
-		console.error( 'Failed to build successfuly the ZIM file ' + zimPath + '(' + error + ')' );
+		console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
 		process.exit( 1 );
 	    } else {
 		console.log( 'ZIM file built at ' + zimPath );
@@ -1430,7 +1430,7 @@ function getSubTitle( finished ) {
 
 function getSiteInfo( finished ) {
     console.info( 'Getting web site name...' );
-    var url = apiUrl + 'action=query&meta=siteinfo&format=json';
+    var url = apiUrl + 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc';
     loadUrlAsync( url, function( body ) {
 	var entries = JSON.parse( body )['query']['general'];
 	name = entries['sitename'];
@@ -1517,20 +1517,26 @@ function getNamespaces( finished ) {
 	    Object.keys(entries).map( function( key ) {
 		var entry = entries[key];
 		var name = entry['*'].replace( / /g, '_');
-		if ( name ) {
-		    var number =  entry['id'];
-		    namespaces[ lcFirst( name ) ] = number;
-		    namespaces[ ucFirst( name ) ] = number;
-		    
-		    var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
-		    if ( canonical ) {
-			namespaces[ lcFirst( canonical ) ] = number;
-			namespaces[ ucFirst( canonical ) ] = number;
-		    }
-		};
+		var number =  entry['id'];
+		var isContent = entry['content'] != undefined ? true : false;
+		var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
+
+		/* Namespaces in local language */
+		namespaces[ lcFirst( name ) ] = number;
+		namespaces[ ucFirst( name ) ] = number;
+
+		/* Namespaces in English (if available) */
+		if ( canonical ) {
+		    namespaces[ lcFirst( canonical ) ] = number;
+		    namespaces[ ucFirst( canonical ) ] = number;
+		}
+
+		/* Is content to mirror */
+		if ( isContent ) {
+		    namespacesToMirror.push( name );
+		}
 	    });
 	});
-	namespaces[ '' ] = 0;
 	
 	finished();
     });
