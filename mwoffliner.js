@@ -372,7 +372,7 @@ function computeFilenameRadical() {
     }
     radical += nopic ? 'nopic_' : '';
     var date = new Date();
-    radical += date.getFullYear() + '-' + date.getMonth();
+    radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
     return radical;
 }
 
