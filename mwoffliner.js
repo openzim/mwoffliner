@@ -14,6 +14,7 @@ var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
+var rimraf = require( 'rimraf' );
 var countryLanguage = require( 'country-language' );
 var request = require( 'request-enhanced' );
 var redis = require( 'redis' );
@@ -29,13 +30,14 @@ var os = require('os');
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
     .require(['mwUrl', 'parsoidUrl'])
-    .options(['articleList', 'outputDirectory', 'parallelRequests', 'format'])
+    .options(['articleList', 'outputDirectory', 'parallelRequests', 'format', 'keepHtml'])
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'articleList', 'File with one title (in UTF8)')
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
     .describe( 'mwURL', 'Mediawiki API URL')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'parallelRequests', 'Number of parallel HTTP requests')
+    .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory')
     .strict()
     .argv;
 
@@ -77,6 +79,9 @@ var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirecto
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
+
+/* If ZIM is built, should temporary HTML directory be kept */
+var keepHtml = argv.keepHtml;
 
 /* List of articles is maybe in a file */
 var articleList = argv.articleList;
@@ -293,7 +298,7 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 /* Get content */
 async.series(
     [
-	function( finished ) { fs.mkdir( outputDirectory, undefined, finished ) },
+	function( finished ) { createOutputDirectory( finished ) },
 	function( finished ) { getTextDirection( finished ) },
 	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getSiteInfo( finished ) },
@@ -311,7 +316,7 @@ async.series(
 
 		    async.series(
 			[
-			    function( finished ) { createDirectories( finished ) },
+			    function( finished ) { createSubDirectories( finished ) },
 			    function( finished ) { saveJavascript( finished ) }, 
 			    function( finished ) { saveStylesheet( finished ) },
 			    function( finished ) { saveFavicon( finished ) },
@@ -343,6 +348,19 @@ async.series(
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function createOutputDirectory( finished ) {
+    fs.mkdir( outputDirectory, undefined, function() {
+	fs.exists( outputDirectory, function ( exists ) {
+	    if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
+		finished();
+	    } else {
+		console.error( 'Unable to create directory \'' + outputDirectory + '\'' );
+		process.exit( 1 );
+	    }
+	});
+    });
+}
 
 function randomString( len ) {
     var randomString = '';
@@ -379,10 +397,6 @@ function computeFilenameRadical() {
 function computeHtmlRootPath() {
     var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
     htmlRootPath += computeFilenameRadical() + '/';
-    if ( fs.existsSync( htmlRootPath ) ) {
-	console.error( 'Directory "' + htmlRootPath + '" already exists. mwoffliner can not write inside. Please remove it before running mwoffliner.' );
-	process.exit( 1 );
-    }
     return htmlRootPath;
 }
 
@@ -401,9 +415,14 @@ function buildZIM( finished ) {
 	    } else {
 		console.log( 'ZIM file built at ' + zimPath );
 	    }
-	    finished();
-	});	
 
+	    /* Delete the html directory ? */
+	    if ( keepHtml ) {
+		finished();
+	    } else {
+		rimraf( htmlRootPath, finished );
+	    }
+	});	
     } else {
 	finished();
     }
@@ -1158,10 +1177,11 @@ function getArticleIds( finished ) {
 }
 
 /* Create directories for static files */
-function createDirectories( finished ) {
+function createSubDirectories( finished ) {
     console.info( 'Creating directories at \'' + htmlRootPath + '\'...' );
     async.series(
         [
+	    function( finished ) { rimraf( htmlRootPath, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
