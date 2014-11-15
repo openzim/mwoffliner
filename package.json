@@ -17,6 +17,7 @@
 },
 "dependencies": {
 "expand-home-dir": "*",
+"rimraf": "*",
 "yargs": "*",
 "domino": "*",
 "jsdom": "*",
