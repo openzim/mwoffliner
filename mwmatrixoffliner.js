@@ -5,6 +5,7 @@
 /* MODULE VARIABLE SECTION **********/
 /************************************/
 
+var fs = require( 'fs' );
 var async = require( 'async' );
 var http = require( 'follow-redirects' ).http;
 var urlParser = require( 'url' );
@@ -20,7 +21,7 @@ var exec = require('child_process').exec;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ [--projects=wikivoyage] [--languages=en,fr /var/zim/]')
+	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl' ])
     .options( ['project', 'language', 'tmpDirectory', 'outputDirectory'] )
     .describe( 'project', 'Projects to dump')
@@ -36,10 +37,10 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
 
-var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
-var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : '/tmp/';
-var parsoidUrl = argv.parsoidUrl;
-var mwUrl = argv.mwUrl;
+var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'zim/';
+var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/';
+var parsoidUrl = argv.parsoidUrl[ argv.parsoidUrl.length - 1 ] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/';
+var mwUrl = argv.mwUrl[ argv.mwUrl.length - 1 ] == '/' ? argv.mwUrl : argv.mwUrl + '/';
 var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
 var matrixUrl = apiUrl + 'action=sitematrix&format=json';
@@ -53,17 +54,59 @@ var language = argv.language;
 
 async.series(
     [
+	function( finished ) { init( finished ) },
 	function( finished ) { loadMatrix( finished ) },
 	function( finished ) { dump( finished ) }
     ],
     function( error ) {
-	console.log( 'All mediawikis dump successfuly' );
+	if ( error ) {
+	    console.error( 'Unable to dump correctly all mediawikis' );
+	} else {
+	    console.log( 'All mediawikis dump successfuly' );
+	}
     }
 );
 
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function init( finished ) {
+    async.series(
+	[
+	    function( finished ) {
+		fs.mkdir( outputDirectory, undefined, function() {
+		    fs.exists( outputDirectory, function ( exists ) {
+			if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
+			    finished();
+			} else {
+			    finished( 'Unable to create directory \'' + outputDirectory + '\'' );
+			}
+		    });
+		});
+	    },
+	    function( finished ) {
+		fs.mkdir( tmpDirectory, undefined, function() {
+		    fs.exists( tmpDirectory, function ( exists ) {
+			if ( exists && fs.lstatSync( tmpDirectory ).isDirectory() ) {
+			    finished();
+			} else {
+			    finished( 'Unable to create directory \'' + tmpDirectory + '\'' );
+			}
+		    });
+		});
+	    },
+	],
+	function( error ) {
+	    if ( error ) {
+		console.error( error );
+		process.exit( 1  );
+	    } else {
+		finished();
+	    }
+	}
+    );
+}
 
 function dump( finished ) {
     async.eachSeries(
@@ -77,9 +120,21 @@ function dump( finished ) {
 		var localLog = tmpDirectory + site.dbname + '.log';
 		var cmd = 'node mwoffliner.js --mwUrl="' + localMwUrl + '" --parsoidUrl="' + localParsoidUrl 
 		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" > "' + localLog + '"';
-		console.log( 'Dumping ' + site.url + '(' + cmd + ')' );
+		console.log( 'Dumping ' + site.url + ' (' + cmd + ')' );
 		exec( cmd, function( executionError, stdout, stderr ) {
-		    finished();
+		    if ( executionError ) {
+			finished( executionError );
+		    } else {
+			cmd = 'mv ' + localTmpDirectory + '*.zim "' + outputDirectory + '"'; 
+			console.log( 'Moving ZIM files (' + cmd + ')' );
+			exec( cmd, function( executionError, stdout, stderr ) {
+			    if ( executionError ) {
+				finished( executionError );
+			    } else {
+				finished();
+			    }
+			});
+		    }
 		});
 	    } else {
 		finished()
