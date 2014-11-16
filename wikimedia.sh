@@ -1,2 +1,3 @@
 #!/bin/sh
 ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikivoyage --outputDirectory=/var/www/zimfarm.kiwix.org/upload/zim2index/wikivoyage/
+./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikinews   --outputDirectory=/var/www/zimfarm.kiwix.org/upload/zim2index/wikinews/
