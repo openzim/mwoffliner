@@ -60,7 +60,7 @@ async.series(
     ],
     function( error ) {
 	if ( error ) {
-	    console.error( 'Unable to dump correctly all mediawikis' );
+	    console.error( 'Unable to dump correctly all mediawikis (' + error + ')' );
 	} else {
 	    console.log( 'All mediawikis dump successfuly' );
 	}
@@ -141,7 +141,7 @@ function dump( finished ) {
 	    }
 	},
 	function( error ) {
-	    finished();
+	    finished( error );
 	}
     )
 }
