@@ -1469,8 +1469,12 @@ function getSiteInfo( finished ) {
 	langIso2 = entries['lang'];
 	countryLanguage.getLanguage( langIso2, function ( error, language ) {
 	    if ( error ) {
-		console.log( error );
-		process.exit( 1 );
+		if ( langIso2.length == 3 ) {
+		    langIso3 = langIso2;
+		} else {
+		    console.log( error );
+		    process.exit( 1 );
+		}
 	    } else {
 		langIso3 = language.iso639_3;
 	    }
