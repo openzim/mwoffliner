@@ -119,7 +119,7 @@ function dump( finished ) {
 		var localTmpDirectory = tmpDirectory + site.dbname + '/';
 		var localLog = tmpDirectory + site.dbname + '.log';
 		var cmd = 'node mwoffliner.js --mwUrl="' + localMwUrl + '" --parsoidUrl="' + localParsoidUrl 
-		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" > "' + localLog + '"';
+		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" &> "' + localLog + '"';
 		console.log( 'Dumping ' + site.url + ' (' + cmd + ')' );
 		exec( cmd, function( executionError, stdout, stderr ) {
 		    if ( executionError ) {
@@ -157,8 +157,10 @@ function loadMatrix( finished ) {
 		    var language = entry['code'];
 		    var sites = entry['site'];
 		    for ( var j=0; j<sites.length; j++) {
-			sites[ j ].lang = language;
-			mediawikis.push( sites[ j ] );
+			if (  sites[ j ].closed === undefined ) {
+			    sites[ j ].lang = language;
+			    mediawikis.push( sites[ j ] );
+			}
 		    }
 		}
 	    }
