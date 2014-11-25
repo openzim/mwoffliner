@@ -33,6 +33,17 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .strict()
     .argv;
 
+/* Check if opt. binaries are available */
+var optBinaries = [ 'xz --version', 'mv --version' ];
+optBinaries.forEach( function( cmd ) {
+    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+	if ( error ) {
+	    console.error( 'Failed to find binary "' + cmd.split(' ')[0] + '": (' + error + ')' );
+	    process.exit( 1 );
+	}
+    });
+});
+
 /************************************/
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
@@ -119,7 +130,7 @@ function dump( finished ) {
 		var localTmpDirectory = tmpDirectory + site.dbname + '/';
 		var localLog = tmpDirectory + site.dbname + '.log';
 		var cmd = 'node mwoffliner.js --mwUrl="' + localMwUrl + '" --parsoidUrl="' + localParsoidUrl 
-		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" &> "' + localLog + '"';
+		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" | xz 2>&1 > "' + localLog + '"';
 		console.log( 'Dumping ' + site.url + ' (' + cmd + ')' );
 		exec( cmd, function( executionError, stdout, stderr ) {
 		    if ( executionError ) {
