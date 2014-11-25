@@ -404,7 +404,7 @@ function buildZIM( finished ) {
     if ( !nozim ) {
 	var zimPath = outputDirectory + filenameRadical + '.zim';
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
-	    + ' --title="' + name + '" --description="' + subTitle + '" --creator="' + creator + '" --publisher="' 
+	    + ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 	    + publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	console.log( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 
