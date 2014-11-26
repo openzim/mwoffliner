@@ -1503,7 +1503,7 @@ function saveFavicon( finished ) {
 	downloadFile( logoUrl, faviconPath, true, function() {
 	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '"';
 	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-		finished();
+		finished( error );
 	    });
 	});
     });
