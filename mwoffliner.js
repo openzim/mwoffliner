@@ -22,6 +22,7 @@ var childProcess = require('child_process');
 var exec = require('child_process').exec;
 var yargs = require('yargs');
 var os = require('os');
+var crypto = require('crypto');
 
 /************************************/
 /* COMMAND LINE PARSING *************/
@@ -208,7 +209,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
     function getOptimizationCommand( path, forcedType ) {
 	var ext = pathParser.extname( path ).split( '.' )[1] || '';
 	var basename = path.substring( 0, path.length - ext.length - 1) || '';
-	var tmpExt = '.' + randomString( 5 ) + '.' + ext;
+	var tmpExt = '.' + randomString( 2 ) + '.' + ext;
 	var tmpPath = basename + tmpExt;
 	var type = forcedType || ext;
 	
@@ -1317,7 +1318,7 @@ function downloadFile( url, path, force, callback ) {
 	    console.info( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
 
-	    var tmpExt = '.' + randomString( 5 );
+	    var tmpExt = '.' + randomString( 2 );
 	    var tmpPath = path + tmpExt;
 	    request.get( {url: url, timeout: 200000}, tmpPath, function( error, filename ) {
 		if ( error ) {
@@ -1420,9 +1421,17 @@ function getMediaBase( url, escape ) {
 
     var filenameFirstVariant = parts[2];
     var filenameSecondVariant = parts[5] + parts[6] + ( parts[7] || '' );
+    var filename = filenameFirstVariant.length > filenameSecondVariant.length ?
+        filenameFirstVariant : filenameSecondVariant ;
 
-    return mediaDirectory + '/' + e( filenameFirstVariant.length > filenameSecondVariant.length ?
-                                     filenameFirstVariant : filenameSecondVariant );
+    /* Need to shorten the file due to filesystem limitations */
+    if ( filename.length > 246 ) {
+	var ext = pathParser.extname( filename ).split( '.' )[1] || '';
+        var basename = filename.substring( 0, filename.length - ext.length - 1) || '';
+	filename = basename.substring( 0, 242 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest('hex').substring( 0, 2) + "." + ext;
+    }
+
+    return mediaDirectory + '/' + e( filename );
 }
 
 function getArticleUrl( articleId ) {

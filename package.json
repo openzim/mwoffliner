@@ -19,6 +19,7 @@
 "expand-home-dir": "*",
 "rimraf": "*",
 "yargs": "*",
+"crypto": "*",
 "domino": "*",
 "jsdom": "*",
 "async": "*",
