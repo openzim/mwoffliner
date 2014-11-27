@@ -1501,7 +1501,7 @@ function saveFavicon( finished ) {
 	var logoUrl = entries['logo'];
 	logoUrl = urlParser.parse( logoUrl ).protocol ? logoUrl : 'http:' + logoUrl;
 	downloadFile( logoUrl, faviconPath, true, function() {
-	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '"';
+	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
 	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 		finished( error );
 	    });
