@@ -31,7 +31,7 @@ var crypto = require('crypto');
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
     .require(['mwUrl', 'parsoidUrl'])
-    .options(['articleList', 'outputDirectory', 'parallelRequests', 'format', 'keepHtml'])
+    .options(['articleList', 'outputDirectory', 'parallelRequests', 'format', 'keepHtml', 'filePrefix'])
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'articleList', 'File with one title (in UTF8)')
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
@@ -39,6 +39,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'parallelRequests', 'Number of parallel HTTP requests')
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory')
+    .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
     .strict()
     .argv;
 
@@ -86,6 +87,9 @@ var keepHtml = argv.keepHtml;
 
 /* List of articles is maybe in a file */
 var articleList = argv.articleList;
+
+/* Prefix part of the filename (radical) */
+var filenamePrefix = argv.filenamePrefix || '';
 
 /* Wikipedia/... URL */
 var mwUrl = argv.mwUrl;
@@ -374,24 +378,32 @@ function randomString( len ) {
 }
 
 function computeFilenameRadical() {
-    var radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
-    var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
-    var langSuffix = langIso2;
-    for (var i=0; i<hostParts.length; i++) {
-	if ( hostParts[i] === langIso3 ) {
-	    langSuffix += hostParts[i];
-	    break;
-	}
-    }
-    radical += langSuffix + '_';
-    if ( articleList ) {
-	radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+    var radical;
+
+    if ( filenamePrefix ) {
+	radical = filenamePrefix + "_";
     } else {
-	radical += 'all_';
+	radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
+	var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
+	var langSuffix = langIso2;
+	for (var i=0; i<hostParts.length; i++) {
+	    if ( hostParts[i] === langIso3 ) {
+		langSuffix += hostParts[i];
+		break;
+	    }
+	}
+	radical += langSuffix + '_';
+	if ( articleList ) {
+	    radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+	} else {
+	    radical += 'all_';
+	}
+	radical += nopic ? 'nopic_' : '';
     }
-    radical += nopic ? 'nopic_' : '';
+
     var date = new Date();
     radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
+ 
     return radical;
 }
 
