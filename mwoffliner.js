@@ -609,7 +609,7 @@ function saveArticles( finished ) {
 			    }
 			}
 		    } else {
-			if ( href.indexOf( '/wiki/' ) != -1 ) {
+			if ( href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ) {
 			    var targetId = decodeURI( href.replace(/^(\/wiki\/|\.\/)/, '') );
 			    if ( isMirrored( targetId ) ) {
 				linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
