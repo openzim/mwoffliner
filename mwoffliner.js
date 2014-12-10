@@ -213,7 +213,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
     function getOptimizationCommand( path, forcedType ) {
 	var ext = pathParser.extname( path ).split( '.' )[1] || '';
 	var basename = path.substring( 0, path.length - ext.length - 1) || '';
-	var tmpExt = '.' + randomString( 2 ) + '.' + ext;
+	var tmpExt = '.' + randomString( 5 ) + '.' + ext;
 	var tmpPath = basename + tmpExt;
 	var type = forcedType || ext;
 	
@@ -1330,7 +1330,7 @@ function downloadFile( url, path, force, callback ) {
 	    console.info( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
 
-	    var tmpExt = '.' + randomString( 2 );
+	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
 	    request.get( {url: url, timeout: 200000}, tmpPath, function( error, filename ) {
 		if ( error ) {
@@ -1354,7 +1354,7 @@ function downloadFile( url, path, force, callback ) {
 						     fs.stat( path, function ( error, stats ) {
 							 if ( error ) {
 							     setTimeout ( function() {
-								 finished( 'Unable to stat "' + path + '" (' + error + ')' );
+								 finished( 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
 							     }, 50000 );
 							 } else {
 							     optimizationQueue.push( {path: path, size: stats.size} );
@@ -1368,15 +1368,15 @@ function downloadFile( url, path, force, callback ) {
 					     fs.stat( tmpPath, function ( error, stats ) {
 						 if ( error ) {
 						     setTimeout ( function() {
-							 finished( 'Unable to stat "' + tmpPath + '" (' + error + ')' );
-						     }, 40000 );
+							 finished( 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
+						     }, 50000 );
 						 } else {
 						     if ( stats.size > targetSize ) {
-							 fs.rename( tmpPath, path, function() {
+							 fs.rename( tmpPath, path, function( error ) {
 							     if ( error ) {
 								 setTimeout ( function() {
 								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
-								 }, 40000 );
+								 }, 50000 );
 							     } else {
 								 optimizationQueue.push( {path: path, size: stats.size} );
 								 finished();
@@ -1437,10 +1437,10 @@ function getMediaBase( url, escape ) {
         filenameFirstVariant : filenameSecondVariant ;
 
     /* Need to shorten the file due to filesystem limitations */
-    if ( filename.length > 246 ) {
+    if ( filename.length > 242 ) {
 	var ext = pathParser.extname( filename ).split( '.' )[1] || '';
         var basename = filename.substring( 0, filename.length - ext.length - 1) || '';
-	filename = basename.substring( 0, 242 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest('hex').substring( 0, 2) + "." + ext;
+	filename = basename.substring( 0, 238 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest('hex').substring( 0, 2) + "." + ext;
     }
 
     return mediaDirectory + '/' + e( filename );
