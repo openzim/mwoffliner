@@ -18,11 +18,12 @@ var rimraf = require( 'rimraf' );
 var countryLanguage = require( 'country-language' );
 var request = require( 'request-enhanced' );
 var redis = require( 'redis' );
-var childProcess = require('child_process');
-var exec = require('child_process').exec;
-var yargs = require('yargs');
-var os = require('os');
-var crypto = require('crypto');
+var childProcess = require( 'child_process' );
+var exec = require( 'child_process' ).exec;
+var yargs = require( 'yargs' );
+var os = require( 'os' );
+var crypto = require( 'crypto' );
+var unicodeCutter = require( 'utf8-binary-cutter' )
 
 /************************************/
 /* COMMAND LINE PARSING *************/
@@ -1437,10 +1438,10 @@ function getMediaBase( url, escape ) {
         filenameFirstVariant : filenameSecondVariant ;
 
     /* Need to shorten the file due to filesystem limitations */
-    if ( filename.length > 242 ) {
+    if ( unicodeCutter.getBinarySize( filename ) > 249 ) {
 	var ext = pathParser.extname( filename ).split( '.' )[1] || '';
         var basename = filename.substring( 0, filename.length - ext.length - 1) || '';
-	filename = basename.substring( 0, 238 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest('hex').substring( 0, 2) + "." + ext;
+	filename = unicodeCutter.truncateToBinarySize( basename, 239 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest('hex').substring( 0, 2) + "." + ext;
     }
 
     return mediaDirectory + '/' + e( filename );
