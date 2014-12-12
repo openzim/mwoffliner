@@ -196,8 +196,10 @@ optBinaries.forEach( function( cmd ) {
 var redisClient = redis.createClient("/tmp/redis.sock");
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "redirects";
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "mediaIds";
+var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "mediaIds";
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {});
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {});
+redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {});
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
@@ -863,29 +865,41 @@ function saveArticles( finished ) {
 		});
 	    }
 
-	    finished( null, parsoidDoc, articleId );
+	    setTimeout( finished, 0 , null, parsoidDoc, articleId );
 	}
-	
-	function writeArticle( parsoidDoc, articleId, finished ) {
+
+	function setFooter( parsoidDoc, articleId, finished ) {
 	    /* Create final document by merging template and parsoid documents */
 	    var doc = domino.createDocument( htmlTemplateCode );
 	    doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
 	    doc.getElementById( 'firstHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
 	    doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
-	    
-	    /* Append footer node */
-	    doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId, articleIds[ articleId ][0], articleIds[ articleId ][1] ) );
-	    
-	    /* Write the static html file */
+
+	    /* Set footer */
+	    var div = doc.createElement( 'div' );
+	    var oldId = articleIds[ articleId ];
+	    redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
+		if ( error || !timestamp ) {
+		    finished( 'Unable to get the timestamp from redis for article + ' + articleId + ': ' + ( error || "Null timestamp" ) );
+		} else {
+		    var date = new Date(timestamp);
+		    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
+		    doc.getElementById( 'mw-content-text' ).appendChild( div );
+		    setTimeout( finished, 0, null, doc, articleId );
+		}
+	    });
+	}
+	
+	function writeArticle( doc, articleId, finished ) {
 	    writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
 	}
 
 	var articlePath = getArticlePath( articleId );
-	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ][0];
+	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
-		var prepareAndSaveArticle = async.compose( writeArticle, applyOtherTreatments, rewriteUrls, parseHtml );
+		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, parseHtml );
 		prepareAndSaveArticle(html, articleId, function ( error, result ) {
 		    if ( error ) {
 			console.error( "Error by preparing and saving file " + error );
@@ -1086,7 +1100,8 @@ function getArticleIds( finished ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
-		    articleIds[entry['title']] = [ entry['revisions'][0]['revid'], entry['revisions'][0]['timestamp'] ];
+		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
+		    redisClient.hset( redisArticleDetailsDatabase, entry['title'], entry['revisions'][0]['timestamp'] );
 		    articleIdsToGetRedirect.push( entry['title'] );
 		}
 	    });
@@ -1229,13 +1244,6 @@ function deleteNode( node ) {
 
 function concatenateToAttribute( old, add ) {
     return old ? old + ' ' + add : add;
-}
-
-function getFooterNode( doc, articleId, oldId, timestamp ) {
-    var div = doc.createElement( 'div' );
-    var date = new Date(timestamp);
-    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
-    return div;
 }
 
 function writeFile( data, path, callback ) {
