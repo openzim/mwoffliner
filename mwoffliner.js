@@ -137,7 +137,6 @@ var htmlTemplateCode = function(){/*
     <div id="content" class="mw-body" style="margin: 0 1em; border-width: 0px;">
       <a id="top"></a>
       <h1 id="firstHeading" class="firstHeading" style="margin-bottom: 0.5em; background-color: white;"></h1>
-      <div id="ss" style="font-size: smaller; margin-top: -1em;"></div>
       <div id="bodyContent">
         <div id="mw-content-text" style="padding-top: 1em;">
         </div>
@@ -873,9 +872,6 @@ function saveArticles( finished ) {
 	    doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
 	    doc.getElementById( 'firstHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
 	    doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
-	    
-	    /* Set sub-title */
-	    doc.getElementById( 'ss' ).innerHTML = subTitle;
 	    
 	    /* Append footer node */
 	    doc.getElementById( 'mw-content-text' ).appendChild( getFooterNode( doc, articleId, articleIds[ articleId ][0], articleIds[ articleId ][1] ) );
