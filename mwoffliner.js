@@ -687,6 +687,58 @@ function saveArticles( finished ) {
 		}
 	    }
 	    
+	    /* Clean/rewrite image tags */
+	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
+	    var imgSrcCache = new Object();
+
+	    for ( var i = 0; i < imgs.length ; i++ ) {
+		var img = imgs[i];
+		
+		if ( !nopic || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
+
+                    /* Remove image link */
+                    var linkNode = img.parentNode;
+                    if ( linkNode.tagName === 'A') {
+
+                        /* Under certain condition it seems that this is possible
+                        * to have parentNode == undefined, in this case this
+                        * seems preferable to remove the whole link+content than
+                        * keeping a wrong link. See for example this url
+                        * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
+                        if ( linkNode.parentNode ) {
+                            linkNode.parentNode.replaceChild( img, linkNode );
+                        } else {
+                            deleteNode( img );
+                        }
+                    } 
+
+                    /* Rewrite image src attribute */
+                    if ( img ) {
+                        var src = getFullUrl( img.getAttribute( 'src' ) );
+                	var newSrc = getMediaUrl( src );
+                        
+                        if ( newSrc ) {
+
+                            /* Download image, but avoid duplicate calls */
+                            if ( !imgSrcCache.hasOwnProperty( src ) ) {
+                                imgSrcCache[src] = true;
+                                downloadMediaQueue.push( src );
+                            }
+       
+                            /* Change image source attribute to point to the local image */
+                            img.setAttribute( 'src', getMediaUrl( newSrc ) );
+
+                            /* Remove useless 'resource' attribute */
+                            img.removeAttribute( 'resource' );
+                        } else {
+                            deleteNode( img );
+                        }
+                    }
+		} else {
+		    deleteNode( img );
+		}
+	    }
+
 	    /* Improve image frames */
 	    var figures = parsoidDoc.getElementsByTagName( 'figure' );
 	    var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
@@ -749,49 +801,6 @@ function saveArticles( finished ) {
 		    }
 		} else {
 		    deleteNode( imageNode );
-		}
-	    }
-	    
-	    /* Clean/rewrite image tags */
-	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
-	    var imgSrcCache = new Object();
-
-	    for ( var i = 0; i < imgs.length ; i++ ) {
-		var img = imgs[i];
-		
-		if ( !nopic || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
-		    var src = getFullUrl( img.getAttribute( 'src' ) );
-		    
-		    /* Download image, but avoid duplicate calls */
-		    if ( !imgSrcCache.hasOwnProperty( src ) ) {
-			imgSrcCache[src] = true;
-			downloadMediaQueue.push( src );
-		    }
-		    
-		    /* Change image source attribute to point to the local image */
-		    img.setAttribute( 'src', getMediaUrl( src ) );
-		    
-		    /* Remove useless 'resource' attribute */
-		    img.removeAttribute( 'resource' ); 
-		    
-		    /* Remove image link */
-		    var linkNode = img.parentNode;
-		    if ( linkNode.tagName === 'A') {
-			
-			/* Under certain condition it seems that this is possible
-			 * to have parentNode == undefined, in this case this
-			 * seems preferable to remove the whole link+content than
-			 * keeping a wrong link. See for example this url
-			 * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-			
-			if ( linkNode.parentNode ) {
-			    linkNode.parentNode.replaceChild( img, linkNode );
-			} else {
-			    deleteNode( img );
-			}
-		    }
-		} else {
-		    deleteNode( img );
 		}
 	    }
 	    
@@ -1240,6 +1249,7 @@ function deleteNode( node ) {
     } else {
 	node.outerHTML = '';
     }
+    node = undefined;
 }
 
 function concatenateToAttribute( old, add ) {
@@ -1419,16 +1429,21 @@ function getMediaUrl( url ) {
 }
 
 function getMediaPath( url, escape ) {
-    return htmlRootPath + getMediaBase( url, escape );
+    var mediaBase = getMediaBase( url, escape );
+    return mediaBase ? htmlRootPath + mediaBase : undefined;
 }
 
 function getMediaBase( url, escape ) {
-    var parts = mediaRegex.exec( decodeURI( url ) );
-    var root = parts[2].length > parts[5].length ? parts[2] : parts[5];
+    var root;
 
+    var parts = mediaRegex.exec( decodeURI( url ) );
+    if ( parts ) {
+        root = parts[2].length > parts[5].length ? parts[2] : parts[5];
+    }
+ 
     if ( !root ) {
-	console.error( 'Unable to parse filename \'' + filename + '\'' );
-	process.exit( 1 );
+        console.error( 'Unable to parse media url \'' + url + '\'' );
+        return;
     }
 
     function e( string ) {
