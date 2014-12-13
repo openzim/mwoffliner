@@ -726,7 +726,7 @@ function saveArticles( finished ) {
                             }
        
                             /* Change image source attribute to point to the local image */
-                            img.setAttribute( 'src', getMediaUrl( newSrc ) );
+                            img.setAttribute( 'src', newSrc );
 
                             /* Remove useless 'resource' attribute */
                             img.removeAttribute( 'resource' );
