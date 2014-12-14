@@ -537,7 +537,138 @@ function saveArticles( finished ) {
 	    }
 	}
 
-	function rewriteUrls( parsoidDoc, articleId, finished) {
+	function treatMedias( parsoidDoc, articleId, finished ) {
+
+	    /* Clean/rewrite image tags */
+	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
+	    var imgSrcCache = new Object();
+
+	    for ( var i = 0; i < imgs.length ; i++ ) {
+		var img = imgs[i];
+		
+		if ( !nopic || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
+
+                    /* Remove image link */
+                    var linkNode = img.parentNode;
+                    if ( linkNode.tagName === 'A') {
+
+			/* Check if the target is mirrored */
+			var href = linkNode.getAttribute( 'href' );
+			var keepLink =
+			    href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ?
+			    isMirrored( decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
+
+                        /* Under certain condition it seems that this is possible
+                        * to have parentNode == undefined, in this case this
+                        * seems preferable to remove the whole link+content than
+                        * keeping a wrong link. See for example this url
+                        * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
+			if ( !keepLink ) {
+                            if ( linkNode.parentNode ) {
+				linkNode.parentNode.replaceChild( img, linkNode );
+                            } else {
+				deleteNode( img );
+                            }
+			}
+                    } 
+
+                    /* Rewrite image src attribute */
+                    if ( img ) {
+                        var src = getFullUrl( img.getAttribute( 'src' ) );
+                	var newSrc = getMediaUrl( src );
+                        
+                        if ( newSrc ) {
+
+                            /* Download image, but avoid duplicate calls */
+                            if ( !imgSrcCache.hasOwnProperty( src ) ) {
+                                imgSrcCache[src] = true;
+                                downloadMediaQueue.push( src );
+                            }
+       
+                            /* Change image source attribute to point to the local image */
+                            img.setAttribute( 'src', newSrc );
+
+                            /* Remove useless 'resource' attribute */
+                            img.removeAttribute( 'resource' );
+                        } else {
+                            deleteNode( img );
+                        }
+                    }
+		} else {
+		    deleteNode( img );
+		}
+	    }
+
+	    /* Improve image frames */
+	    var figures = parsoidDoc.getElementsByTagName( 'figure' );
+	    var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
+	    var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
+	    for ( var i = 0; i < imageNodes.length ; i++ ) {
+		var imageNode = imageNodes[i];
+		var image = imageNode.getElementsByTagName( 'img' )[0];
+		var isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
+
+		if ( !nopic && imageNode && image ) {
+		    var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
+		    var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
+		    
+		    if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
+			var description = imageNode.getElementsByTagName( 'figcaption' )[0];
+			var imageWidth = parseInt( image.getAttribute( 'width' ) );
+			
+			var thumbDiv = parsoidDoc.createElement( 'div' );
+			thumbDiv.setAttribute
+			thumbDiv.setAttribute( 'class', 'thumb' );
+			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
+			    var centerDiv = parsoidDoc.createElement( 'center' );
+			    centerDiv.appendChild( thumbDiv );
+			    thumbDiv = centerDiv;
+			} else {
+			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
+			}
+			
+			var thumbinnerDiv = parsoidDoc.createElement( 'div' );
+			thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
+			thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
+			
+			var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
+			thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
+			thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
+			if ( description ) {
+			    thumbcaptionDiv.innerHTML = description.innerHTML
+			}
+			
+			thumbinnerDiv.appendChild( isStillLinked ? image.parentNode : image );
+			thumbinnerDiv.appendChild( thumbcaptionDiv );
+			thumbDiv.appendChild( thumbinnerDiv );
+
+			imageNode.parentNode.replaceChild(thumbDiv, imageNode);
+		    } else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
+			var div = parsoidDoc.createElement( 'div' );
+			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
+			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
+			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'center' ) );
+			}
+			div.appendChild( isStillLinked ? image.parentNode : image );
+			imageNode.parentNode.replaceChild(div, imageNode);
+		    }
+		} else {
+		    deleteNode( imageNode );
+		}
+	    }
+
+	    setTimeout( finished, 0, null, parsoidDoc, articleId );
+	}
+
+	function rewriteUrls( parsoidDoc, articleId, finished ) {
 
 	    /* Go through all links */
 	    var as = parsoidDoc.getElementsByTagName( 'a' );
@@ -687,123 +818,6 @@ function saveArticles( finished ) {
 		}
 	    }
 	    
-	    /* Clean/rewrite image tags */
-	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
-	    var imgSrcCache = new Object();
-
-	    for ( var i = 0; i < imgs.length ; i++ ) {
-		var img = imgs[i];
-		
-		if ( !nopic || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
-
-                    /* Remove image link */
-                    var linkNode = img.parentNode;
-                    if ( linkNode.tagName === 'A') {
-
-                        /* Under certain condition it seems that this is possible
-                        * to have parentNode == undefined, in this case this
-                        * seems preferable to remove the whole link+content than
-                        * keeping a wrong link. See for example this url
-                        * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-                        if ( linkNode.parentNode ) {
-                            linkNode.parentNode.replaceChild( img, linkNode );
-                        } else {
-                            deleteNode( img );
-                        }
-                    } 
-
-                    /* Rewrite image src attribute */
-                    if ( img ) {
-                        var src = getFullUrl( img.getAttribute( 'src' ) );
-                	var newSrc = getMediaUrl( src );
-                        
-                        if ( newSrc ) {
-
-                            /* Download image, but avoid duplicate calls */
-                            if ( !imgSrcCache.hasOwnProperty( src ) ) {
-                                imgSrcCache[src] = true;
-                                downloadMediaQueue.push( src );
-                            }
-       
-                            /* Change image source attribute to point to the local image */
-                            img.setAttribute( 'src', newSrc );
-
-                            /* Remove useless 'resource' attribute */
-                            img.removeAttribute( 'resource' );
-                        } else {
-                            deleteNode( img );
-                        }
-                    }
-		} else {
-		    deleteNode( img );
-		}
-	    }
-
-	    /* Improve image frames */
-	    var figures = parsoidDoc.getElementsByTagName( 'figure' );
-	    var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
-	    var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
-	    for ( var i = 0; i < imageNodes.length ; i++ ) {
-		var imageNode = imageNodes[i];
-		var image = imageNode.getElementsByTagName( 'img' )[0];
-
-		if ( !nopic && imageNode && image ) {
-		    var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
-		    var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
-		    
-		    if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
-			var description = imageNode.getElementsByTagName( 'figcaption' )[0];
-			var imageWidth = parseInt( image.getAttribute( 'width' ) );
-			
-			var thumbDiv = parsoidDoc.createElement( 'div' );
-			thumbDiv.setAttribute
-			thumbDiv.setAttribute( 'class', 'thumb' );
-			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
-			    var centerDiv = parsoidDoc.createElement( 'center' );
-			    centerDiv.appendChild( thumbDiv );
-			    thumbDiv = centerDiv;
-			} else {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
-			}
-			
-			var thumbinnerDiv = parsoidDoc.createElement( 'div' );
-			thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
-			thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
-			
-			var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
-			thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
-			thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
-			if ( description ) {
-			    thumbcaptionDiv.innerHTML = description.innerHTML
-			}
-			
-			thumbinnerDiv.appendChild( image );
-			thumbinnerDiv.appendChild( thumbcaptionDiv );
-			thumbDiv.appendChild( thumbinnerDiv );
-			
-			imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-		    } else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
-			var div = parsoidDoc.createElement( 'div' );
-			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'center' ) );
-			}
-			div.appendChild( image );
-			imageNode.parentNode.replaceChild(div, imageNode);
-		    }
-		} else {
-		    deleteNode( imageNode );
-		}
-	    }
-	    
 	    /* Remove element with id in the blacklist */
 	    idBlackList.map( function( id ) {
 		var node = parsoidDoc.getElementById( id );
@@ -908,7 +922,7 @@ function saveArticles( finished ) {
 	console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
-		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, parseHtml );
+		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
 		prepareAndSaveArticle(html, articleId, function ( error, result ) {
 		    if ( error ) {
 			console.error( "Error by preparing and saving file " + error );
