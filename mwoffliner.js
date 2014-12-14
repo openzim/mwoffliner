@@ -66,10 +66,10 @@ var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title 
 
 /* All DOM nodes with on of these styles will be removed */
 /* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */
-var cssClassBlackList = [ 'noprint', 'ambox', 'stub', 'topicon', 'magnify' ]; 
+var cssClassBlackList = [ 'ambox', 'stub', 'topicon', 'magnify' ]; 
 
 /* All DOM node with these styles will be deleted if no A node is included in the sub-tree */
-var cssClassBlackListIfNoLink = [ 'mainarticle', 'seealso', 'dablink', 'rellink' ];
+var cssClassBlackListIfNoLink = [ 'noprint', 'mainarticle', 'seealso', 'dablink', 'rellink' ];
 
 /* List of style to be removed */
 var cssClassCallsBlackList = [ 'plainlinks' ];
@@ -683,6 +683,28 @@ function saveArticles( finished ) {
 		    deleteNode( linkNode );
 		    setTimeout( finished, 0 );
 		} else {
+
+		    /* Deal with custom geo. URL replacement, for example: 
+		     * http://maps.wikivoyage-ev.org/w/poimap2.php?lat=44.5044943&lon=34.1969633&zoom=15&layer=M&lang=ru&name=%D0%9C%D0%B0%D1%81%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0
+		     * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
+		     */
+		    if ( rel != 'mw:WikiLink' ) {
+			var piomapUrlRegexp = new RegExp( '.*poimap2\.php.*', 'gi' );
+			var match = piomapUrlRegexp.exec( href );
+			if ( match ) {
+			    var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
+			    match = latRegexp.exec( href );
+			    var lat = match ? match[1] : undefined;
+			    var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
+			    match = lonRegexp.exec( href );
+			    var lon = match ? match[1] : undefined;
+			    if ( lat && lon ) {
+				href = 'geo:' + lat + ',' + lon;
+				linkNode.setAttribute( 'href', href );
+			    }
+			}
+		    }
+
 		    if ( rel ) {
 
 			/* Add 'external' class to external links */
@@ -710,7 +732,7 @@ function saveArticles( finished ) {
 			    }
 			    setTimeout( finished, 0 );
 			}
-			
+
 			/* Remove internal links pointing to no mirrored articles */
 			else if ( rel == 'mw:WikiLink' ) {
 			    var targetId = decodeURI( href.replace( /^\.\//, '' ) );
