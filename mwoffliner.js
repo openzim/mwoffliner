@@ -743,7 +743,7 @@ function saveArticles( finished ) {
 			}
 		    } else {
 			if ( href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ) {
-			    var targetId = decodeURI( href.replace(/^(\/wiki\/|\.\/)/, '') );
+			    var targetId = decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			    if ( isMirrored( targetId ) ) {
 				linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
 				setTimeout( finished, 0 );
@@ -903,7 +903,7 @@ function saveArticles( finished ) {
 	    var oldId = articleIds[ articleId ];
 	    redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
 		if ( error ) {
-		    finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error ) );
+		    finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 		} else {
 		    var date = new Date( timestamp );
 		    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
