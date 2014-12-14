@@ -1552,7 +1552,7 @@ function getMainPage( finished ) {
 	
 	var html = '<ul>\n';
 	Object.keys(articleIds).sort().map( function( articleId ) {
-	    html = html + '<li><a href="' + getArticleBase( articleId ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
+	    html = html + '<li><a href="' + getArticleBase( articleId, true ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
 	});
 	html = html + '</ul>\n';
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
