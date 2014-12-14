@@ -136,7 +136,7 @@ var htmlTemplateCode = function(){/*
   <body class="mw-body mw-body-content mediawiki" style="background-color: white; margin: 1em 0.5em 0 0; border-width: 0px; padding: 0px;">
     <div id="content" class="mw-body" style="margin: 0 1em; border-width: 0px;">
       <a id="top"></a>
-      <h1 id="firstHeading" style="background-color: white;"></h1>
+      <h1 id="titleHeading" style="background-color: white;"></h1>
       <div id="mw-content-text" style="padding-top: 1em;">
       </div>
     </div>
@@ -915,7 +915,7 @@ function saveArticles( finished ) {
 	    /* Create final document by merging template and parsoid documents */
 	    var doc = domino.createDocument( htmlTemplateCode );
 	    doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
-	    doc.getElementById( 'firstHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
+	    doc.getElementById( 'titleHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
 	    doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
 
 	    /* Set footer */
@@ -1581,7 +1581,7 @@ function getMainPage( finished ) {
     function createMainPage( finished ) {
 	console.info( 'Creating main page...' );
 	var doc = domino.createDocument( htmlTemplateCode );
-	doc.getElementById( 'firstHeading' ).innerHTML = 'Summary';
+	doc.getElementById( 'titleHeading' ).innerHTML = 'Summary';
 	doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
 	
 	var html = '<ul>\n';
