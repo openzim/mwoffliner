@@ -902,10 +902,10 @@ function saveArticles( finished ) {
 	    var div = doc.createElement( 'div' );
 	    var oldId = articleIds[ articleId ];
 	    redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
-		if ( error || !timestamp ) {
-		    finished( 'Unable to get the timestamp from redis for article + ' + articleId + ': ' + ( error || "Null timestamp" ) );
+		if ( error ) {
+		    finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error ) );
 		} else {
-		    var date = new Date(timestamp);
+		    var date = new Date( timestamp );
 		    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
 		    doc.getElementById( 'mw-content-text' ).appendChild( div );
 		    setTimeout( finished, 0, null, doc, articleId );
