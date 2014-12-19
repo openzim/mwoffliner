@@ -66,10 +66,10 @@ var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title 
 
 /* All DOM nodes with on of these styles will be removed */
 /* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */
-var cssClassBlackList = [ 'ambox', 'stub', 'topicon', 'magnify' ]; 
+var cssClassBlackList = [ 'noprint', 'ambox', 'stub', 'topicon', 'magnify' ]; 
 
 /* All DOM node with these styles will be deleted if no A node is included in the sub-tree */
-var cssClassBlackListIfNoLink = [ 'noprint', 'mainarticle', 'seealso', 'dablink', 'rellink' ];
+var cssClassBlackListIfNoLink = [ 'mainarticle', 'seealso', 'dablink', 'rellink' ];
 
 /* List of style to be removed */
 var cssClassCallsBlackList = [ 'plainlinks' ];
