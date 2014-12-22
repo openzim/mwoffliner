@@ -1390,7 +1390,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    })
 		} else {
-		    console.log( 'Successfuly downloaded ' + decodeURI( url ) );
+		    console.log( 'Successfuly downloaded ' + decodeURI( url ) ' to ' + tmpPath );
 
 		    async.retry( 5,		
 				 function ( finished ) {
@@ -1398,7 +1398,7 @@ function downloadFile( url, path, force, callback ) {
 					 if ( error ) {
 					     fs.rename( tmpPath, path, function( error ) {
 						 if ( error ) {
-						     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
+						     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
 						 } else {
 						     fs.stat( path, function ( error, stats ) {
 							 if ( error ) {
@@ -1424,7 +1424,7 @@ function downloadFile( url, path, force, callback ) {
 							 fs.rename( tmpPath, path, function( error ) {
 							     if ( error ) {
 								 setTimeout ( function() {
-								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + ')' );
+								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
 								 }, 50000 );
 							     } else {
 								 optimizationQueue.push( {path: path, size: stats.size} );
