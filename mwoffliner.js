@@ -42,6 +42,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'parallelRequests', 'Number of parallel HTTP requests')
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory')
+    .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
     .strict()
     .argv;
@@ -104,6 +105,9 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
+
+/* Verbose */
+var verbose = argv.verbose;
 
 /* ZIM publisher */
 var publisher = 'Kiwix';
@@ -270,9 +274,9 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 					 console.error( 'Executing command : ' + cmd );
 					 console.error( 'Failed to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
 				     } else if ( skip ) {
-					 console.info( 'Optimization skipped for ' + path + ', with size=' + file.size + ', a better version was downloaded meanwhile.' );
+					 printLog( 'Optimization skipped for ' + path + ', with size=' + file.size + ', a better version was downloaded meanwhile.' );
 				     } else {
-					 console.info( 'Successfuly optimized ' + path );
+					 printLog( 'Successfuly optimized ' + path );
 				     }
 				     finished();
 				 }
@@ -315,7 +319,7 @@ async.series(
 	    async.eachSeries(
 		dumps,
 		function( dump, finished ) {
-		    console.log( 'Starting a new dump...' );
+		    printLog( 'Starting a new dump...' );
 		    nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
 		    nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
 		    filenameRadical = computeFilenameRadical();
@@ -347,7 +351,7 @@ async.series(
 	}
     ],
     function( error ) {
-	console.log( 'All dumping(s) finished with success.' );
+	printLog( 'All dumping(s) finished with success.' );
 	redisClient.quit(); 
     }
 );
@@ -421,14 +425,14 @@ function buildZIM( finished ) {
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
 	    + ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 	    + publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
-	console.log( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
+	printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 
 	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	    if ( error ) {
 		console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
 		process.exit( 1 );
 	    } else {
-		console.log( 'ZIM file built at ' + zimPath );
+		printLog( 'ZIM file built at ' + zimPath );
 	    }
 
 	    /* Delete the html directory ? */
@@ -447,18 +451,18 @@ function endProcess( finished ) {
     redisClient.flushdb( function( error, result) {
 	finished();
     });
-    console.log( "Dumping finished with success." );
+    printLog( "Dumping finished with success." );
 }
 
 function drainDownloadMediaQueue( finished ) {
-    console.log( downloadMediaQueue.length() + " images still to be downloaded." );
+    printLog( downloadMediaQueue.length() + " images still to be downloaded." );
     downloadMediaQueue.drain = function( error ) {
 	if ( error ) {
 	    console.error( 'Error by downloading images' + error );
 	    process.exit( 1 );
 	} else {
             if ( downloadMediaQueue.length() == 0 ) {
-		console.log( 'All images successfuly downloaded' );
+		printLog( 'All images successfuly downloaded' );
 		downloadMediaQueue.drain = undefined;
 		finished();
             }
@@ -468,14 +472,14 @@ function drainDownloadMediaQueue( finished ) {
 }
 
 function drainOptimizationQueue( finished ) {
-    console.log( optimizationQueue.length() + ' images still to be optimized.' );
+    printLog( optimizationQueue.length() + ' images still to be optimized.' );
     optimizationQueue.drain = function( error ) {
 	if ( error ) {
 	    console.error( 'Error by optimizing images' + error );
 	    process.exit( 1 );
 	} else {
 	    if ( optimizationQueue.length() == 0 ) {
-		console.log( 'All images successfuly optimized' );
+		printLog( 'All images successfuly optimized' );
 		optimizationQueue.drain = undefined;
 		finished();
 	    }
@@ -485,7 +489,7 @@ function drainOptimizationQueue( finished ) {
 }
 
 function saveRedirects( finished ) {
-    console.info( 'Saving redirects...' );
+    printLog( 'Saving redirects...' );
 
     function callback( redirectId, finished ) {
 	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
@@ -514,7 +518,7 @@ function saveRedirects( finished ) {
 		    console.error( 'Unable to save a redirect: ' + error );
 		    process.exit( 1 );
 		} else {
-		    console.log( 'All redirects were saved successfuly.' );
+		    printLog( 'All redirects were saved successfuly.' );
 		    finished();
 		}
 	    });
@@ -523,7 +527,7 @@ function saveRedirects( finished ) {
 }
 
 function saveArticles( finished ) {
-    console.info( 'Saving articles...' );
+    printLog( 'Saving articles...' );
 
     function callback( articleId, finished ) {
 	
@@ -941,7 +945,7 @@ function saveArticles( finished ) {
 
 	var articlePath = getArticlePath( articleId );
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
-	console.info( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
+	printLog( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
@@ -962,10 +966,10 @@ function saveArticles( finished ) {
 
     async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
 	if ( error ) {
-	    console.log( 'Unable to retrieve an article correctly: ' + error );
+	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
 	} else {
-	    console.log( 'All articles were retrieved and saved.' );
+	    printLog( 'All articles were retrieved and saved.' );
 	    finished();
 	}
     });
@@ -986,7 +990,7 @@ function isMirrored( id ) {
 
 /* Grab and concatenate javascript files */
 function saveJavascript( finished ) {
-    console.info( 'Creating javascript...' );
+    printLog( 'Creating javascript...' );
     
     jsdom.defaultDocumentFeatures = {
 	FetchExternalResources   : ['script'],
@@ -1000,7 +1004,7 @@ function saveJavascript( finished ) {
 
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
 	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
-	fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
+	fs.writeFileSync(dummyPath, "printLog('mw.loader not supported');");
 	
 	// Backward compatibility for old version of jsdom
 	var window;
@@ -1029,7 +1033,7 @@ function saveJavascript( finished ) {
 		    
 		    if ( url ) {
 			url = getFullUrl( url ).replace("debug=false", "debug=true");
-			console.info( 'Downloading javascript from ' + url );
+			printLog( 'Downloading javascript from ' + url );
 			loadUrlAsync( url, function( body) {
 			    fs.appendFile( javascriptPath, '\n' + munge_js(body) + '\n', function (err) {} );
 			});
@@ -1047,7 +1051,7 @@ function saveJavascript( finished ) {
 
 /* Grab and concatenate stylesheet files */
 function saveStylesheet( finished ) {
-    console.info( 'Creating stylesheet...' );
+    printLog( 'Creating stylesheet...' );
     var stylePath = htmlRootPath + styleDirectory + '/style.css';
     fs.unlink( stylePath, function() {} );
 
@@ -1066,7 +1070,7 @@ function saveStylesheet( finished ) {
 		/* Need a rewrite if url doesn't include protocol */
 		url = getFullUrl( url );
 		
-		console.info( 'Downloading CSS from ' + decodeURI( url ) );
+		printLog( 'Downloading CSS from ' + decodeURI( url ) );
 		loadUrlAsync( url, function( body ) {
 
 		    /* Downloading CSS dependencies */
@@ -1109,7 +1113,7 @@ function getArticleIds( finished ) {
     var redirectQueue = async.queue( function ( articleId, finished ) {
 	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId );
 	loadUrlAsync( url, function( body ) {
-            console.info( 'Getting redirects for article ' + articleId + '...' );
+            printLog( 'Getting redirects for article ' + articleId + '...' );
 	    try {
 		if ( !JSON.parse( body )['error'] ) {
 		    var entries;
@@ -1202,14 +1206,14 @@ function getArticleIds( finished ) {
 	    var parseJsonQueue = async.queue( parseJson, maxParallelRequests);
 	    parseJsonQueue.drain = function( error ) {
 		if ( !next ) {
-		    console.log( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
+		    printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
 		    finished();
 		}
 	    };
 
 	    async.doWhilst(
 		function ( finished ) {
-		    console.info( 'Getting article ids' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
+		    printLog( 'Getting article ids' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
 		    loadUrlAsync( url, function( body ) {
 			next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
@@ -1232,7 +1236,7 @@ function getArticleIds( finished ) {
 		console.error( 'Unable to get all article ids for in a namespace: ' + error );
 		process.exit( 1 );
 	    } else {
-		console.log( 'List of article ids to mirror completed' );
+		printLog( 'List of article ids to mirror completed' );
 		finished();
 	    }
 	});
@@ -1248,7 +1252,7 @@ function getArticleIds( finished ) {
 
 /* Create directories for static files */
 function createSubDirectories( finished ) {
-    console.info( 'Creating directories at \'' + htmlRootPath + '\'...' );
+    printLog( 'Creating directories at \'' + htmlRootPath + '\'...' );
     async.series(
         [
 	    function( finished ) { rimraf( htmlRootPath, finished ) },
@@ -1293,7 +1297,7 @@ function concatenateToAttribute( old, add ) {
 }
 
 function writeFile( data, path, callback ) {
-    console.info( 'Writing ' + path + '...' );
+    printLog( 'Writing ' + path + '...' );
     
     if ( pathParser.dirname( path ).indexOf('./') >= 0 ) {
 	console.error( 'Wrong path ' + path );
@@ -1373,12 +1377,12 @@ function downloadFile( url, path, force, callback ) {
 
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
-	    console.info( path + ' already downloaded, download will be skipped.' );
+	    printLog( path + ' already downloaded, download will be skipped.' );
 	    if (callback) {
 		callback();
 	    }
 	} else {
-	    console.info( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
+	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
 
 	    var tmpExt = '.' + randomString( 5 );
@@ -1392,7 +1396,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    })
 		} else {
-		    console.log( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
+		    printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
 
 		    async.retry( 5,		
 				 function ( finished ) {
@@ -1434,7 +1438,7 @@ function downloadFile( url, path, force, callback ) {
 							     }
 							 });
 						     } else {
-							 console.info( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
+							 printLog( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
 							 fs.unlink( tmpPath );
 							 finished();
 						     }
@@ -1528,7 +1532,7 @@ function getArticleBase( articleId, escape ) {
 }
 
 function getSubTitle( finished ) {
-    console.info( 'Getting sub-title...' );
+    printLog( 'Getting sub-title...' );
     loadUrlAsync( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
@@ -1538,7 +1542,7 @@ function getSubTitle( finished ) {
 }
 
 function getSiteInfo( finished ) {
-    console.info( 'Getting web site name...' );
+    printLog( 'Getting web site name...' );
     var url = apiUrl + 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc';
     loadUrlAsync( url, function( body ) {
 	var entries = JSON.parse( body )['query']['general'];
@@ -1549,7 +1553,7 @@ function getSiteInfo( finished ) {
 		if ( langIso2.length == 3 ) {
 		    langIso3 = langIso2;
 		} else {
-		    console.log( error );
+		    printLog( error );
 		    process.exit( 1 );
 		}
 	    } else {
@@ -1561,7 +1565,7 @@ function getSiteInfo( finished ) {
 }
 
 function saveFavicon( finished ) {
-    console.info( 'Saving favicon.png...' );
+    printLog( 'Saving favicon.png...' );
     var faviconPath = htmlRootPath + '/favicon.png';
     
     loadUrlAsync( apiUrl + 'action=query&meta=siteinfo&format=json', function( body ) {	
@@ -1581,7 +1585,7 @@ function getMainPage( finished ) {
     var path = htmlRootPath + '/index.html';
     
     function createMainPage( finished ) {
-	console.info( 'Creating main page...' );
+	printLog( 'Creating main page...' );
 	var doc = domino.createDocument( htmlTemplateCode );
 	doc.getElementById( 'titleHeading' ).innerHTML = 'Summary';
 	doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
@@ -1598,7 +1602,7 @@ function getMainPage( finished ) {
     }
     
     function retrieveMainPage( finished ) {
-	console.info( 'Getting main page...' );
+	printLog( 'Getting main page...' );
 	loadUrlAsync( webUrl, function( body ) {
 	    var titleRegex = /\"wgPageName\"\:\"(.*?)\"/;
 	    var titleParts = titleRegex.exec( body );
@@ -1656,7 +1660,7 @@ function getNamespaces( finished ) {
 }
 
 function getTextDirection( finished ) {
-    console.info( 'Getting text direction...' );
+    printLog( 'Getting text direction...' );
     var path = htmlRootPath + '/index.html';
 
     loadUrlAsync( webUrl, function( body ) {
@@ -1669,7 +1673,7 @@ function getTextDirection( finished ) {
 	} else if ( contentNode ) {
 	    ltr = ( contentNode.getAttribute( 'dir' ) == 'ltr' ? true : false );
 	} else {
-	    console.log( 'Unable to get the language direction, fallback to ltr' );
+	    printLog( 'Unable to get the language direction, fallback to ltr' );
 	    ltr = true;
 	};
 
@@ -1677,7 +1681,7 @@ function getTextDirection( finished ) {
 	autoAlign = ltr ? 'left' : 'right';
 	revAutoAlign = ltr ? 'right' : 'left';
 
-	console.info( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
+	printLog( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
 	finished();
     });
 }
@@ -1729,4 +1733,10 @@ function charAt( str, idx ) {
     }
 
     return ret;
+}
+
+function printLog( msg ) {
+    if ( verbose ) {
+	console.info( msg );
+    }
 }
