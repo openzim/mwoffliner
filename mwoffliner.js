@@ -1656,15 +1656,26 @@ function getNamespaces( finished ) {
 function getTextDirection( finished ) {
     console.info( 'Getting text direction...' );
     var path = htmlRootPath + '/index.html';
+
     loadUrlAsync( webUrl, function( body ) {
+	var doc = domino.createDocument( body );
+	var contentNode = doc.getElementById( 'mw-content-text' );
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
 	var parts = languageDirectionRegex.exec( body );
 	if ( parts && parts[ 1 ] ) {
 	    ltr = ( parts[ 1 ] === 'ltr' );
+	} else if ( contentNode ) {
+	    ltr = ( contentNode.getAttribute( 'dir' ) == 'ltr' ? true : false );
 	} else {
 	    console.log( 'Unable to get the language direction, fallback to ltr' );
 	    ltr = true;
 	};
+
+	/* Update alignement values */
+	autoAlign = ltr ? 'left' : 'right';
+	revAutoAlign = ltr ? 'right' : 'left';
+
+	console.info( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
 	finished();
     });
 }
