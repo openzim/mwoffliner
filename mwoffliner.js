@@ -550,7 +550,10 @@ function saveArticles( finished ) {
 	    for ( var i = 0; i < imgs.length ; i++ ) {
 		var img = imgs[i];
 		
-		if ( !nopic || img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) {
+		if ( ( !nopic || 
+		     img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) && 
+		     img.getAttribute( 'src' ) && img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
+		   ) {
 
                     /* Remove image link */
                     var linkNode = img.parentNode;
@@ -582,20 +585,20 @@ function saveArticles( finished ) {
                 	var newSrc = getMediaUrl( src );
                         
                         if ( newSrc ) {
-
-                            /* Download image, but avoid duplicate calls */
-                            if ( !imgSrcCache.hasOwnProperty( src ) ) {
+			    
+			    /* Download image, but avoid duplicate calls */
+			    if ( !imgSrcCache.hasOwnProperty( src ) ) {
                                 imgSrcCache[src] = true;
                                 downloadMediaQueue.push( src );
-                            }
-       
-                            /* Change image source attribute to point to the local image */
-                            img.setAttribute( 'src', newSrc );
-
-                            /* Remove useless 'resource' attribute */
-                            img.removeAttribute( 'resource' );
+			    }
+			    
+			    /* Change image source attribute to point to the local image */
+			    img.setAttribute( 'src', newSrc );
+			    
+			    /* Remove useless 'resource' attribute */
+			    img.removeAttribute( 'resource' );
                         } else {
-                            deleteNode( img );
+			    deleteNode( img );
                         }
                     }
 		} else {
