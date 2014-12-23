@@ -36,7 +36,9 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'articleList', 'File with one title (in UTF8)')
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
-    .describe( 'mwURL', 'Mediawiki API URL')
+    .describe( 'mwURL', 'Mediawiki base URL')
+    .describe( 'mwWikiPath', 'Mediawiki API path (per default "/w/api.php")')
+    .describe( 'mwApiPath', 'Mediawiki wiki base path (per default "/wiki/"')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'parallelRequests', 'Number of parallel HTTP requests')
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory')
@@ -159,8 +161,8 @@ var langIso2 = 'en';
 var langIso3 = 'eng';
 var articleIds = {};
 var namespaces = {};
-var webUrl = mwUrl + 'wiki/';
-var apiUrl = mwUrl + 'w/api.php?';
+var webUrl = mwUrl + ( argv.mwWikiPath ? argv.mwWikiPath : 'wiki' ) + '/';
+var apiUrl = mwUrl + ( argv.mwApiPath ? argv.mwApiPath : 'w/api.php' ) + '?';
 var nopic = false;
 var nozim = false;
 var filenameRadical = '';
