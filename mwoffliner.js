@@ -1390,7 +1390,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    })
 		} else {
-		    console.log( 'Successfuly downloaded ' + decodeURI( url ) ' to ' + tmpPath );
+		    console.log( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
 
 		    async.retry( 5,		
 				 function ( finished ) {
