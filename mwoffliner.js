@@ -1613,6 +1613,10 @@ function getMainPage( finished ) {
 		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
 					       target : getArticleBase( titleParts[1], true ) } );
 		writeFile( html, htmlRootPath + '/index.html' );
+
+		/* We have to mirror the main page even if this is not
+		 * in a namespace to mirror */
+		articleIds[ parts[ 1 ] ] = '';
 	    } else {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
