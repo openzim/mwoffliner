@@ -1616,7 +1616,7 @@ function getMainPage( finished ) {
 
 		/* We have to mirror the main page even if this is not
 		 * in a namespace to mirror */
-		articleIds[ parts[ 1 ] ] = '';
+		articleIds[ titleParts[ 1 ] ] = '';
 	    } else {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
