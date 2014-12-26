@@ -95,10 +95,6 @@ var articleList = argv.articleList;
 /* Prefix part of the filename (radical) */
 var filenamePrefix = argv.filenamePrefix || '';
 
-/* Wikipedia/... URL */
-var mwUrl = argv.mwUrl;
-var hostParts = urlParser.parse( mwUrl ).hostname.split( '.' );
-
 /* NUmber of parallel requests */
 var maxParallelRequests = argv.parallelRequests || 30;
 if ( isNaN( maxParallelRequests ) ) {
@@ -112,8 +108,15 @@ var verbose = argv.verbose;
 /* ZIM publisher */
 var publisher = 'Kiwix';
 
+/* Wikipedia/... URL */
+var mwUrl = argv.mwUrl;
+var hostParts = urlParser.parse( mwUrl ).hostname.split( '#' );
+
 /* ZIM (content) creator */
-var creator = hostParts[0].length > hostParts[1].length ? hostParts[0] : hostParts[1];
+var creator = hostParts[0];
+if ( hostParts.length > 1 ) {
+    hostParts[0].length > hostParts[1].length ? hostParts[0] : hostParts[1];
+}
 creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 
 /* Namespaces to mirror */
