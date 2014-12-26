@@ -742,9 +742,18 @@ function saveArticles( finished ) {
 
 			/* Remove internal links pointing to no mirrored articles */
 			else if ( rel == 'mw:WikiLink' ) {
-			    var targetId = decodeURI( href.replace( /^\.\//, '' ) );
+			    var targetId = href.replace( /^\.\//, '' );
+			    targetId = decodeURI( targetId );
+
+			    /* Deal with local anchor */
+			    var localAnchor = '';
+			    if ( targetId.lastIndexOf("#") != -1 ) {
+				localAnchor = targetId.substr( targetId.lastIndexOf("#") );
+				targetId = targetId.substr( 0, targetId.lastIndexOf("#") );
+			    }
+
 			    if ( isMirrored( targetId ) ) {
-				linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+				linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
 				setTimeout( finished, 0 );
 			    } else {
 				try {
