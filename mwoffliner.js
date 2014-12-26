@@ -72,7 +72,7 @@ var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title 
 var cssClassBlackList = [ 'noprint', 'ambox', 'stub', 'topicon', 'magnify' ]; 
 
 /* All DOM node with these styles will be deleted if no A node is included in the sub-tree */
-var cssClassBlackListIfNoLink = [ 'mainarticle', 'seealso', 'dablink', 'rellink' ];
+var cssClassBlackListIfNoLink = [ 'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote' ];
 
 /* List of style to be removed */
 var cssClassCallsBlackList = [ 'plainlinks' ];
