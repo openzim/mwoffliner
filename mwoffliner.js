@@ -110,12 +110,12 @@ var publisher = 'Kiwix';
 
 /* Wikipedia/... URL */
 var mwUrl = argv.mwUrl;
-var hostParts = urlParser.parse( mwUrl ).hostname.split( '#' );
+var hostParts = urlParser.parse( mwUrl ).hostname.split( '.' );
 
 /* ZIM (content) creator */
 var creator = hostParts[0];
 if ( hostParts.length > 1 ) {
-    hostParts[0].length > hostParts[1].length ? hostParts[0] : hostParts[1];
+    creator = hostParts[0].length > hostParts[1].length ? hostParts[0] : hostParts[1];
 }
 creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 
