@@ -449,7 +449,7 @@ function buildZIM( finished ) {
 				  } else {
 				      rimraf( htmlRootPath, finished );
 				  }
-			      });	
+			      }, !verbose, !verbose);	
     } else {
 	finished();
     }
@@ -1771,7 +1771,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	
 	if ( !nostdout ) {
 	    proc.stdout.on( 'data', function ( data ) {
-		console.log( String( data ).substr( 0, data.length-1 ) );
+		printLog( String( data ).substr( 0, data.length-1 ) );
 	    });
 	}
 	

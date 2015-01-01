@@ -15,6 +15,7 @@ var countryLanguage = require( 'country-language' );
 var request = require( 'request-enhanced' );
 var yargs = require('yargs');
 var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
 
 /************************************/
 /* COMMAND LINE PARSING *************/
@@ -27,6 +28,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .describe( 'project', 'Projects to dump')
     .describe( 'language', 'Language to dump')
     .describe( 'mwURL', 'Mediawiki API URL')
+    .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'parsoidUrl', 'Mediawiki Parsoid URL')
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'outputDirectory', 'Directory to write the ZIM files')
@@ -58,6 +60,7 @@ var matrixUrl = apiUrl + 'action=sitematrix&format=json';
 var mediawikis = new Array();
 var project = argv.project;
 var language = argv.language;
+var verbose = argv.verbose;
 
 /************************************/
 /* MAIN *****************************/
@@ -129,24 +132,25 @@ function dump( finished ) {
 		var localParsoidUrl = parsoidUrl + site.dbname + '/';
 		var localTmpDirectory = tmpDirectory + site.dbname + '/';
 		var localLog = tmpDirectory + site.dbname + '.log';
-		var cmd = 'node mwoffliner.js --mwUrl="' + localMwUrl + '" --parsoidUrl="' + localParsoidUrl 
-		    + '" --format= --format=nopic --outputDirectory="' + localTmpDirectory + '" | xz 2>&1 > "' + localLog + '"';
-		console.log( 'Dumping ' + site.url + ' (' + cmd + ')' );
-		exec( cmd, function( executionError, stdout, stderr ) {
-		    if ( executionError ) {
-			finished( executionError );
-		    } else {
-			cmd = 'mv ' + localTmpDirectory + '*.zim "' + outputDirectory + '"'; 
-			console.log( 'Moving ZIM files (' + cmd + ')' );
-			exec( cmd, function( executionError, stdout, stderr ) {
-			    if ( executionError ) {
-				finished( executionError );
-			    } else {
-				finished();
-			    }
-			});
-		    }
-		});
+		console.log( 'Dumping ' + site.url );
+		executeTransparently( 'node',
+				      [ 'mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl,
+					'--format=', '--format=nopic', '--outputDirectory=' + localTmpDirectory, verbose ? '--verbose' : '' ],
+				      function( executionError ) {
+					  if ( executionError ) {
+					      finished( executionError );
+					  } else {
+					      var cmd = 'mv ' + localTmpDirectory + '*.zim "' + outputDirectory + '"'; 
+					      console.log( 'Moving ZIM files (' + cmd + ')' );
+					      exec( cmd, function( executionError, stdout, stderr ) {
+						  if ( executionError ) {
+						      finished( executionError );
+						  } else {
+						      finished();
+						  }
+					      });
+					  }
+				      });
 	    } else {
 		finished()
 	    }
@@ -206,4 +210,30 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 		callback( data, var1, var2, var3 );
 	    } 		    
 	});
+}
+
+function executeTransparently( command, args, callback, nostdout, nostderr ) {
+    console.log( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
+
+    try {
+        var proc = spawn( command, args );
+
+	if ( !nostdout ) {
+            proc.stdout.on( 'data', function ( data ) {
+		console.log( String( data ).substr( 0, data.length-1 ) );
+            });
+	}
+
+        if ( !nostderr ) {
+            proc.stderr.on( 'data', function ( data ) {
+		console.error( String( data ).substr( 0, data.length-1 ) );
+            });
+	}
+
+        proc.on( 'close', function ( code ) {
+            callback( code !== 0 ? 'Error by executing ' + command : undefined );
+	});
+    } catch ( error ) {
+	callback( 'Error by executing ' + command );
+    }
 }
