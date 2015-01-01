@@ -1234,10 +1234,12 @@ function getArticleIds( finished ) {
 	    async.doWhilst(
 		function ( finished ) {
 		    printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
+		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&rawcontinue=' + encodeURIComponent( next );
 		    loadUrlAsync( url, function( body ) {
-			next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
-			parseJsonQueue.push( body );
+			if ( body && body.length > 2 ) {
+			    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['rawcontinue'] : undefined;
+			    parseJsonQueue.push( body );
+			}
 			finished();
 		    });
 		},
