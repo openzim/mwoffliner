@@ -1766,6 +1766,8 @@ function printLog( msg ) {
 }
 
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
+    console.log( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
+
     try {
 	var proc = spawn( command, args );
 	
