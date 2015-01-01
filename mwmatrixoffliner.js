@@ -134,7 +134,7 @@ function dump( finished ) {
 		var localLog = tmpDirectory + site.dbname + '.log';
 		console.log( 'Dumping ' + site.url );
 		executeTransparently( 'node',
-				      [ 'mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl,
+				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl,
 					'--format=', '--format=nopic', '--outputDirectory=' + localTmpDirectory, verbose ? '--verbose' : '' ],
 				      function( executionError ) {
 					  if ( executionError ) {
@@ -220,13 +220,13 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 
 	if ( !nostdout ) {
             proc.stdout.on( 'data', function ( data ) {
-		console.log( String( data ).substr( 0, data.length-1 ) );
+		console.log( String( data ).replace(/[\n\r]/g, '') );
             });
 	}
 
         if ( !nostderr ) {
             proc.stderr.on( 'data', function ( data ) {
-		console.error( String( data ).substr( 0, data.length-1 ) );
+		console.error( String( data ).replace(/[\n\r]/g, '') );
             });
 	}
 

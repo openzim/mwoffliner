@@ -1234,10 +1234,10 @@ function getArticleIds( finished ) {
 	    async.doWhilst(
 		function ( finished ) {
 		    printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&rawcontinue=' + encodeURIComponent( next );
+		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
 		    loadUrlAsync( url, function( body ) {
 			if ( body && body.length > 2 ) {
-			    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['rawcontinue'] : undefined;
+			    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
 			    parseJsonQueue.push( body );
 			}
 			finished();
@@ -1775,13 +1775,13 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	
 	if ( !nostdout ) {
 	    proc.stdout.on( 'data', function ( data ) {
-		printLog( String( data ).substr( 0, data.length-1 ) );
+		printLog( String( data ).replace(/[\n\r]/g, '') );
 	    });
 	}
 	
 	if ( !nostderr ) {
 	    proc.stderr.on( 'data', function ( data ) {
-		console.error( String( data ).substr( 0, data.length-1 ) );
+		console.error( String( data ).replace(/[\n\r]/g, '') );
 	    });
 	}
 	
