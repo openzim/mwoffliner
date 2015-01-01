@@ -20,10 +20,11 @@ var request = require( 'request-enhanced' );
 var redis = require( 'redis' );
 var childProcess = require( 'child_process' );
 var exec = require( 'child_process' ).exec;
+var spawn = require('child_process').spawn;
 var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
-var unicodeCutter = require( 'utf8-binary-cutter' )
+var unicodeCutter = require( 'utf8-binary-cutter' );
 
 /************************************/
 /* COMMAND LINE PARSING *************/
@@ -193,10 +194,10 @@ try {
 optBinaries.forEach( function( cmd ) {
     exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	if ( error ) {
-	    console.error( 'Failed to find binary "' + cmd.split(' ')[0] + '": (' + error + ')' );
+	    console.error( 'Failed to find binary "' + cmd.split( ' ' )[0] + '": (' + error + ')' );
 	    process.exit( 1 );
 	}
-    });
+    }, true, true);
 });
 
 /* Setup redis client */
@@ -430,21 +431,25 @@ function buildZIM( finished ) {
 	    + publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 
-	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-	    if ( error ) {
-		console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
-		process.exit( 1 );
-	    } else {
-		printLog( 'ZIM file built at ' + zimPath );
-	    }
+	executeTransparently( 'zimwriterfs',
+			      [ '--welcome=index.html', '--favicon=favicon.png', '--language=' + langIso3, '--title="' + name + '"', 
+				'--description="' + ( subTitle || name ) + '"', '--creator="' + creator + '"', 
+				'--publisher="' + publisher+ '"', htmlRootPath, zimPath ], 
+			      function( error ) {
+				  if ( error ) {
+				      console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
+				      process.exit( 1 );
+				  } else {
+				      printLog( 'ZIM file built at ' + zimPath );
+				  }
 
-	    /* Delete the html directory ? */
-	    if ( keepHtml ) {
-		finished();
-	    } else {
-		rimraf( htmlRootPath, finished );
-	    }
-	});	
+				  /* Delete the html directory ? */
+				  if ( keepHtml ) {
+				      finished();
+				  } else {
+				      rimraf( htmlRootPath, finished );
+				  }
+			      });	
     } else {
 	finished();
     }
@@ -1757,5 +1762,29 @@ function charAt( str, idx ) {
 function printLog( msg ) {
     if ( verbose ) {
 	console.info( msg );
+    }
+}
+
+function executeTransparently( command, args, callback, nostdout, nostderr ) {
+    try {
+	var proc = spawn( command, args );
+	
+	if ( !nostdout ) {
+	    proc.stdout.on( 'data', function ( data ) {
+		console.log( String( data ).substr( 0, data.length-1 ) );
+	    });
+	}
+	
+	if ( !nostderr ) {
+	    proc.stderr.on( 'data', function ( data ) {
+		console.error( String( data ).substr( 0, data.length-1 ) );
+	    });
+	}
+	
+	proc.on( 'close', function ( code ) {
+	    callback( code !== 0 ? 'Error by executing ' + command : undefined );
+	});
+    } catch ( error ) {
+	callback( 'Error by executing ' + command );
     }
 }
