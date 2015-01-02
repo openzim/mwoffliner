@@ -1071,58 +1071,98 @@ function saveJavascript( finished ) {
 
 /* Grab and concatenate stylesheet files */
 function saveStylesheet( finished ) {
-    printLog( 'Creating stylesheet...' );
+    printLog( 'Dumping stylesheets...' );
+    var urlCache = new Object();
     var stylePath = htmlRootPath + styleDirectory + '/style.css';
+
+    /* Remove if exists */
     fs.unlink( stylePath, function() {} );
 
+    /* Take care to download medias */
+    var downloadCSSMediaQueue = async.queue( function ( data, finished ) {
+	if ( data.url && data.path ) {
+	    downloadFile( data.url, data.path, true, finished );
+	} else {
+	    finished();
+	}
+    }, maxParallelRequests );
+
+    /* Take care to download CSS files */
+    var downloadCSSQueue = async.queue( function ( url, finished ) {
+
+	if ( url ) {
+	    var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
+	    var cssDataUrlRegex = new RegExp( '^data' );
+	    
+	    printLog( 'Downloading CSS from ' + decodeURI( url ) );
+	    loadUrlAsync( url, function( body ) {
+		
+		/* Downloading CSS dependencies */
+		var match;
+		var rewrittenCss = body;
+		
+		while (match = cssUrlRegexp.exec( body ) ) {
+		    var url = match[1];
+		    
+		    /* Avoid 'data', so no url dependency */
+		    if ( ! url.match( '^data' ) ) {
+			var filename = pathParser.basename( urlParser.parse( url, false, true ).pathname );
+			
+			/* Rewrite the CSS */
+			rewrittenCss = rewrittenCss.replace( url, filename );
+			
+			/* Need a rewrite if url doesn't include protocol */
+			url = getFullUrl( url );
+			
+			/* Download CSS dependency, but avoid duplicate calls */
+			if ( !urlCache.hasOwnProperty( url ) ) {
+			    urlCache[url] = true;
+			    downloadCSSMediaQueue.push( { url: url, path: htmlRootPath + styleDirectory + '/' + filename } );
+			}
+		    }
+		}
+		
+		fs.appendFileSync( stylePath, rewrittenCss );
+		finished();
+	    });
+	} else {
+	    finished();
+	}
+
+    }, maxParallelRequests );
+
+    /* Load main page to see which CSS files are needed */
     loadUrlAsync( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var links = doc.getElementsByTagName( 'link' );
-	var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
-	var cssDataUrlRegex = new RegExp( '^data' );
-	var urlCache = new Object();
-	
+
+	/* Go through all CSS links */
 	for ( var i = 0; i < links.length ; i++ ) {
 	    var link = links[i];
 	    if (link.getAttribute('rel') === 'stylesheet') {
-		var url = link.getAttribute('href');
-
-		/* Need a rewrite if url doesn't include protocol */
-		url = getFullUrl( url );
-		
-		printLog( 'Downloading CSS from ' + decodeURI( url ) );
-		loadUrlAsync( url, function( body ) {
-
-		    /* Downloading CSS dependencies */
-		    var match;
-		    var rewrittenCss = body;
-		    
-		    while (match = cssUrlRegexp.exec( body ) ) {
-			var url = match[1];
-			
-			/* Avoid 'data', so no url dependency */
-			if ( ! url.match( '^data' ) ) {
-			    var filename = pathParser.basename( urlParser.parse( url, false, true ).pathname );
-			    
-			    /* Rewrite the CSS */
-			    rewrittenCss = rewrittenCss.replace( url, filename );
-			    
-			    /* Need a rewrite if url doesn't include protocol */
-			    url = getFullUrl( url );
-			    
-			    /* Download CSS dependency, but avoid duplicate calls */
-			    if ( !urlCache.hasOwnProperty( url ) ) {
-				urlCache[url] = true;
-				downloadFile( url, htmlRootPath + styleDirectory + '/' + filename );
-			    }
-			}
-		    }
-		    fs.appendFileSync( stylePath, rewrittenCss );
-		});
+		downloadCSSQueue.push( getFullUrl( link.getAttribute('href') ) );
 	    }
 	}
 
-	finished();
+	/* Set the drain method to be called one time everything is done */
+	downloadCSSQueue.drain = function( error ) {
+	    if ( error ) {
+		console.error( 'Error by CSS dependencies: ' + error );
+		process.exit( 1 );
+	    } else {
+		
+		downloadCSSMediaQueue.drain = function( error ) {
+		    if ( error ) {
+			console.error( 'Error by CSS medias: ' + error );
+			process.exit( 1 );
+		    } else {
+			finished();
+		    }
+		};
+		downloadCSSMediaQueue.push( '' );
+	    }
+	};
+	downloadCSSQueue.push( '' );
     });
 }
 
@@ -1347,8 +1387,10 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	function( finished ) {
 	    request.get( {url: url, timeout: 200000} , function( error, body ) {
 		if ( error ) {
+		    var message = 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )';
+		    console.error( message );
 		    setTimeout( function() {
-			finished( 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )');
+			finished( message );
 		    }, 50000 );
 		} else {
 		    finished( undefined, body );
@@ -1395,8 +1437,6 @@ process.on( 'uncaughtException', function( error ) {
 
 
 function downloadFile( url, path, force, callback ) {
-    var data;
-
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
