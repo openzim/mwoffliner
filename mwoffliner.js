@@ -214,9 +214,6 @@ redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( err
 var redirectTemplate = swig.compile( redirectTemplateCode );
 var footerTemplate = swig.compile( footerTemplateCode );
 
-/* Increase the number of allowed parallel requests */
-http.globalAgent.maxSockets = maxParallelRequests;
-
 /* Setting up media optimization queue */
 var optimizationQueue = async.queue( function ( file, finished ) {
     var path = file.path;
@@ -1172,7 +1169,7 @@ function getArticleIds( finished ) {
 
     /* Get redirect ids give an article id */
     var redirectQueue = async.queue( function ( articleId, finished ) {
-	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId );
+	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
 	loadUrlAsync( url, function( body ) {
             printLog( 'Getting redirects for article ' + articleId + '...' );
 	    try {
@@ -1386,7 +1383,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
-	    request.get( {url: url, timeout: 200000} , function( error, body ) {
+	    request.get( { url: url, timeout: 200000, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, function( error, body ) {
 		if ( error ) {
 		    var message = 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
@@ -1449,7 +1446,7 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url, timeout: 200000}, tmpPath, function( error, filename ) {
+	    request.get( {url: url, timeout: 200000, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests } }, tmpPath, function( error, filename ) {
 		if ( error ) {
 		    fs.unlink( tmpPath, function() {
 			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
