@@ -1446,7 +1446,7 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url, timeout: 200000, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests } }, tmpPath, function( error, filename ) {
+	    request.get( {url: url, timeout: 200000, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, tmpPath, function( error, filename ) {
 		if ( error ) {
 		    fs.unlink( tmpPath, function() {
 			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
