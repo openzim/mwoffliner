@@ -202,13 +202,13 @@ optBinaries.forEach( function( cmd ) {
 });
 
 /* Setup redis client */
-var redisClient = redis.createClient("/tmp/redis.sock");
-var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "redirects";
-var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "mediaIds";
-var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + "mediaIds";
-redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {});
-redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {});
-redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {});
+var redisClient = redis.createClient( '/tmp/redis.sock' );
+var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
+var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
+var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
+redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
+redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
+redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
@@ -821,7 +821,7 @@ function saveArticles( finished ) {
 		    console.error( 'Problem by rewriting urls: ' + error );
 		    process.exit( 1 );
 		} else {
-		    setTimeout( finished, downloadMediaQueue.length() + optimizationQueue.length(), null, parsoidDoc, articleId );
+		    setTimeout( finished, 0, null, parsoidDoc, articleId );
 		}
 	    });
 
@@ -967,12 +967,16 @@ function saveArticles( finished ) {
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
+		printLog( 'Savind article ' + articleId + '...' );
 		prepareAndSaveArticle(html, articleId, function ( error, result ) {
 		    if ( error ) {
 			console.error( "Error by preparing and saving file " + error );
 			process.exit( 1 );
 		    } else {
-			setTimeout( finished, 0 );
+			printLog( 'Dumped successfully article ' + articleId );
+			console.log( 'Download queue size: ' + downloadMediaQueue.length() );
+			console.log( 'Optimization queue size: ' + optimizationQueue.length() );
+			setTimeout( finished, downloadMediaQueue.length() + optimizationQueue.length() );
 		    }
 		});
 	    } else {
@@ -982,7 +986,7 @@ function saveArticles( finished ) {
 	}, articleId);
     }
 
-    async.eachLimit(Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
+    async.eachLimit( Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
