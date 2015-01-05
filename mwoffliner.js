@@ -1467,7 +1467,9 @@ function downloadFile( url, path, force, callback ) {
 					 if ( error ) {
 					     fs.rename( tmpPath, path, function( error ) {
 						 if ( error ) {
-						     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
+						     setTimeout ( function() {
+							 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
+						     }, 50000 );
 						 } else {
 						     fs.stat( path, function ( error, stats ) {
 							 if ( error ) {
