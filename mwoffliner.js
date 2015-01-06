@@ -1171,65 +1171,56 @@ function saveStylesheet( finished ) {
 /* Get ids */
 function getArticleIds( finished ) {
 
-    /* Get redirect ids give an article id */
+    /* Get redirect ids given an article id */
     var redirectQueue = async.queue( function ( articleId, finished ) {
-	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
-	loadUrlAsync( url, function( body ) {
+	if ( articleId ) {
             printLog( 'Getting redirects for article ' + articleId + '...' );
-	    try {
-		if ( !JSON.parse( body )['error'] ) {
-		    var entries;
-		    entries = JSON.parse( body )['query']['backlinks'];
-		    entries.map( function( entry ) {
-			redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
-		    });
+	    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
+	    loadUrlAsync( url, function( body ) {
+		try {
+		    if ( !JSON.parse( body )['error'] ) {
+			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
+			    redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
+			});
+		    }
 		    finished();
-		} else {
-		    finished();
+		} catch( error ) {
+		    finished( error );
 		}
-	    } catch( error ) {
-		console.error( error );
-		finished( error );
-	    }
-	});
-    }, maxParallelRequests);
-    
-    redirectQueue.drain = function( error ) {
-	if ( error ) {
-	    console.error( 'Unable to retrieve redirects for an article: ' + error );
-            process.exit( 1 );
+	    });
+	} else {
+	    finished();
 	}
-    };
+    }, maxParallelRequests );
+
+    function setRedirectQueueDrain( finished ) {
+	redirectQueue.drain = function( error ) {
+	    if ( error ) {
+		console.error( 'Unable to retrieve redirects for an article: ' + error );
+		process.exit( 1 );
+	    } else {
+		printLog( 'All redirect ids retrieve successfuly.' );
+		finished();
+	    }
+	};
+	redirectQueue.push( '' );
+    }
     
-    function parseJson( body, finished ) {
-	var articleIdsToGetRedirect = new Array();
-	var entries = new Array();
-	
+    function parseJson( body ) {
 	try {
-	    entries = JSON.parse( body )['query']['pages'];
+	    var entries = JSON.parse( body )['query']['pages'];
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
 		    redisClient.hset( redisArticleDetailsDatabase, entry['title'], entry['revisions'][0]['timestamp'] );
-		    articleIdsToGetRedirect.push( entry['title'] );
-		}
-	    });
-
-	    async.map( articleIdsToGetRedirect, redirectQueue.push, function( error ) {
-		if ( error ) {
-		    console.error( 'Unable to get all redirect ids for article: ' + error );
-		    process.exit( 1 );
-		} else {
-		    var next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
-		    finished( next );
+		    redirectQueue.push( entry['title'] );
 		}
 	    });
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
-	    var next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
-	    finished( next );
+	    process.exit( 1 );
 	}
     }
 
@@ -1240,7 +1231,10 @@ function getArticleIds( finished ) {
 	    if ( line ) {
 		var title = line.replace( / /g, '_' );
 		var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
-		loadUrlAsync( url, parseJson, function() { 
+		loadUrlAsync( url, function( body ) {
+		    if ( body && body.length > 2 ) {
+			parseJson( body );
+		    }
 		    finished();
 		});
 	    } else {
@@ -1259,49 +1253,45 @@ function getArticleIds( finished ) {
 	    }
 	});
     }
-    
+
+    /* Get ids from Mediawiki API */
     function getArticleIdsForNamespaces() {
 
 	function getArticleIdsForNamespace( namespace, finished ) {
 	    var next = '';
 
-	    var parseJsonQueue = async.queue( parseJson, maxParallelRequests);
-	    parseJsonQueue.drain = function( error ) {
-		if ( !next ) {
-		    printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
-		    finished();
-		}
-	    };
-
 	    async.doWhilst(
 		function ( finished ) {
 		    printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next );
+		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) ;
 		    loadUrlAsync( url, function( body ) {
 			if ( body && body.length > 2 ) {
+			    parseJson( body );
 			    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
-			    parseJsonQueue.push( body );
 			}
 			finished();
 		    });
 		},
-		function () { return next; },
+		function () { return next },
 		function ( error ) {
 		    if ( error ) {
 			console.error( 'Unable to download article ids: ' + error );
 			process.exit( 1 );
+		    } else {
+			printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
+			finished();
 		    }
 		}
 	    );
 	}
 
-	async.eachLimit( namespacesToMirror, maxParallelRequests, getArticleIdsForNamespace, function( error ) {
+	async.eachLimit( namespacesToMirror, namespacesToMirror.length, getArticleIdsForNamespace, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for in a namespace: ' + error );
 		process.exit( 1 );
 	    } else {
-		printLog( 'List of article ids to mirror completed' );
-		finished();
+		printLog( 'All articles ids (with redirects) for all namespaces were successfuly retrieved.' );
+		setRedirectQueueDrain( finished );
 	    }
 	});
     }
@@ -1384,10 +1374,12 @@ function writeFile( data, path, callback ) {
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
+    var retryCount = 1;
     async.retry(
 	5,
 	function( finished ) {
-	    request.get( { url: url, timeout: 200000, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, function( error, body ) {
+	    request.get( { url: url, timeout: 50000 * retryCount, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, function( error, body ) {
+		retryCount += 1;
 		if ( error ) {
 		    var message = 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
@@ -1438,6 +1430,8 @@ process.on( 'uncaughtException', function( error ) {
 });
 
 function downloadFile( url, path, force, callback ) {
+    var retryCount = 1;
+
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
@@ -1450,7 +1444,8 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url, timeout: 200000, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, tmpPath, function( error, filename ) {
+	    request.get( {url: url, ut: 50000 * retryCount, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, tmpPath, function( error, filename ) {
+ 		retryCount += 1;
 		if ( error ) {
 		    fs.unlink( tmpPath, function() {
 			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
