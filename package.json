@@ -29,7 +29,7 @@
 "request-enhanced": "*",
 "html-minifier": "*",
 "utf8-binary-cutter": "*",
-"redis": "*"
+"redis": "*",
 "longjohn": "*"
 }
 }
