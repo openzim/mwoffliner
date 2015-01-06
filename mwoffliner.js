@@ -974,8 +974,7 @@ function saveArticles( finished ) {
 			process.exit( 1 );
 		    } else {
 			printLog( 'Dumped successfully article ' + articleId );
-			console.log( 'Download queue size: ' + downloadMediaQueue.length() );
-			console.log( 'Optimization queue size: ' + optimizationQueue.length() );
+			console.log( 'Download queue size [' + downloadMediaQueue.length() + '] & Optimization queue size ' + optimizationQueue.length() + ']' );
 			setTimeout( finished, downloadMediaQueue.length() + optimizationQueue.length() );
 		    }
 		});
@@ -1425,7 +1424,7 @@ function downloadMedia( url, callback ) {
 
 process.on( 'uncaughtException', function( error ) {
     console.trace( 'NODEJS FATAL EXCEPTION:' + error );
-    throw new Error( error );
+    throw error;
     process.exit( 42 );
 });
 
