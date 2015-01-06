@@ -967,7 +967,7 @@ function saveArticles( finished ) {
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
-		printLog( 'Savind article ' + articleId + '...' );
+		printLog( 'Saving article ' + articleId + '...' );
 		prepareAndSaveArticle(html, articleId, function ( error, result ) {
 		    if ( error ) {
 			console.error( "Error by preparing and saving file " + error );
