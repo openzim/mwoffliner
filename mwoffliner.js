@@ -25,6 +25,7 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
+var longjohn = require('longjohn');
 
 /************************************/
 /* COMMAND LINE PARSING *************/

@@ -30,5 +30,6 @@
 "html-minifier": "*",
 "utf8-binary-cutter": "*",
 "redis": "*"
+"longjohn": "*"
 }
 }
