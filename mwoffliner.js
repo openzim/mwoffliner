@@ -98,7 +98,7 @@ var articleList = argv.articleList;
 var filenamePrefix = argv.filenamePrefix || '';
 
 /* NUmber of parallel requests */
-var maxParallelRequests = argv.parallelRequests || 30;
+var maxParallelRequests = argv.parallelRequests || 40;
 if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
@@ -254,21 +254,19 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 					 if ( executionError ) {
 					     fs.stat( path, function ( error, stats ) {
 						 if ( !error && stats.size > file.size ) {
-						     finished( null, true );
+						     setTimeout( finished, 0, null, true );
 						 } else if ( !error && stats.size < file.size ) {
-						     finished( 'File to optim is smaller (before optim) than it should.' );
+						     setTimeout( finished, 0, 'File to optim is smaller (before optim) than it should.' );
 						 } else {
 						     exec( 'file -b --mime-type "' + path + '"', function( error, stdout, stderr ) {
 							 var type = stdout.replace( /image\//, '').replace( /[\n\r]/g, '' );
 							 cmd = getOptimizationCommand( path, type );
-							 setTimeout( function() {
-							     finished( executionError );
-							 }, 2000 );
+							 setTimeout( finished, 2000, executionError );
 						     });
 						 }
 					     });
 					 } else {
-					     finished();
+					     setTimeout( finished, 0 );
 					 }
 				     });
 				 },
@@ -281,21 +279,21 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				     } else {
 					 printLog( 'Successfuly optimized ' + path );
 				     }
-				     finished();
+				     setTimeout( finished, 0 );
 				 }
 			       );
 		} else {
-		    finished();
+		    setTimeout( finished, 0 );
 		}
 	    } else  {
 		if ( error ) {
 		    console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
 		}
-		finished();
+		setTimeout( finished, 0 );
 	    }
 	});
     } else {
-	finished();
+	setTimeout( finished, 0 );
     }
     
 }, cpuCount );
@@ -305,7 +303,7 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
     if ( url ) {
 	downloadMedia( url, finished );
     } else {
-	finished();
+	setTimeout( finished, 0 );
     }
 }, maxParallelRequests );
 
@@ -343,12 +341,12 @@ async.series(
 			    function( finished ) { endProcess( finished ) }
 			],
 			function( error, result ) {
-			    finished();
+			    setTimeout( finished, 0 );
 			}
 		    );
 		},
 		function( error ) {
-		    finished();
+		    setTimeout( finished, 0 );
 		}
 	    )
 	}
@@ -367,7 +365,7 @@ function createOutputDirectory( finished ) {
     fs.mkdir( outputDirectory, undefined, function() {
 	fs.exists( outputDirectory, function ( exists ) {
 	    if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-		finished();
+		setTimeout( finished, 0 );
 	    } else {
 		console.error( 'Unable to create directory \'' + outputDirectory + '\'' );
 		process.exit( 1 );
@@ -444,19 +442,19 @@ function buildZIM( finished ) {
 
 				  /* Delete the html directory ? */
 				  if ( keepHtml ) {
-				      finished();
+				      setTimeout( finished, 0 );
 				  } else {
 				      rimraf( htmlRootPath, finished );
 				  }
 			      }, !verbose, !verbose);	
     } else {
-	finished();
+	setTimeout( finished, 0 );
     }
 }
 
 function endProcess( finished ) {
     redisClient.flushdb( function( error, result) {
-	finished();
+	setTimeout( finished, 0 );
     });
     printLog( "Dumping finished with success." );
 }
@@ -471,7 +469,7 @@ function drainDownloadMediaQueue( finished ) {
             if ( downloadMediaQueue.length() == 0 ) {
 		printLog( 'All images successfuly downloaded' );
 		downloadMediaQueue.drain = undefined;
-		finished();
+		setTimeout( finished, 0 );
             }
 	}
     };
@@ -488,7 +486,7 @@ function drainOptimizationQueue( finished ) {
 	    if ( optimizationQueue.length() == 0 ) {
 		printLog( 'All images successfuly optimized' );
 		optimizationQueue.drain = undefined;
-		finished();
+		setTimeout( finished, 0 );
 	    }
 	}
     };
@@ -509,7 +507,7 @@ function saveRedirects( finished ) {
 						   target : getArticleUrl( target ) } );
 		    writeFile( html, getArticlePath( redirectId ), finished );
 		} else {
-		    finished();
+		    setTimeout( finished, 0 );
 		}
 	    }
 	});
@@ -526,7 +524,7 @@ function saveRedirects( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'All redirects were saved successfuly.' );
-		    finished();
+		    setTimeout( finished, 0 );
 		}
 	    });
 	}
@@ -534,265 +532,233 @@ function saveRedirects( finished ) {
 }
 
 function saveArticles( finished ) {
-    printLog( 'Saving articles...' );
 
-    function callback( articleId, finished ) {
-	
-	function parseHtml( html, articleId, finished) {
-	    try {
-		setTimeout( finished, 0, null, domino.createDocument( html ), articleId );
-	    } catch ( error ) {
-		console.error( 'Crash by parsing ' + articleId );
-		console.error( error );
-		process.exit( 1 );
-	    }
+    function parseHtml( html, articleId, finished) {
+	try {
+	    setTimeout( finished, 0, null, domino.createDocument( html ), articleId );
+	} catch ( error ) {
+	    console.error( 'Crash by parsing ' + articleId );
+	    console.error( error );
+	    process.exit( 1 );
 	}
-
-	function treatMedias( parsoidDoc, articleId, finished ) {
-
-	    /* Clean/rewrite image tags */
-	    var imgs = parsoidDoc.getElementsByTagName( 'img' );
-	    var imgSrcCache = new Object();
-
-	    for ( var i = 0; i < imgs.length ; i++ ) {
-		var img = imgs[i];
+    }
+    
+    function treatMedias( parsoidDoc, articleId, finished ) {
+	
+	/* Clean/rewrite image tags */
+	var imgs = parsoidDoc.getElementsByTagName( 'img' );
+ 	var imgSrcCache = new Object();
+	
+	for ( var i = 0; i < imgs.length ; i++ ) {
+	    var img = imgs[i];
+	    
+	    if ( ( !nopic || 
+		   img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) && 
+		 img.getAttribute( 'src' ) && img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
+	       ) {
 		
-		if ( ( !nopic || 
-		     img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) && 
-		     img.getAttribute( 'src' ) && img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
-		   ) {
-
-                    /* Remove image link */
-                    var linkNode = img.parentNode;
-                    if ( linkNode.tagName === 'A') {
-
-			/* Check if the target is mirrored */
-			var href = linkNode.getAttribute( 'href' );
-			var keepLink =
-			    href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ?
-			    isMirrored( decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
-
-                        /* Under certain condition it seems that this is possible
-                        * to have parentNode == undefined, in this case this
-                        * seems preferable to remove the whole link+content than
-                        * keeping a wrong link. See for example this url
-                        * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-			if ( !keepLink ) {
-                            if ( linkNode.parentNode ) {
-				linkNode.parentNode.replaceChild( img, linkNode );
-                            } else {
-				deleteNode( img );
-                            }
-			}
-                    } 
-
-                    /* Rewrite image src attribute */
-                    if ( img ) {
-                        var src = getFullUrl( img.getAttribute( 'src' ) );
-                	var newSrc = getMediaUrl( src );
-                        
-                        if ( newSrc ) {
-			    
-			    /* Download image, but avoid duplicate calls */
-			    if ( !imgSrcCache.hasOwnProperty( src ) ) {
-                                imgSrcCache[src] = true;
-                                downloadMediaQueue.push( src );
-			    }
-			    
-			    /* Change image source attribute to point to the local image */
-			    img.setAttribute( 'src', newSrc );
-			    
-			    /* Remove useless 'resource' attribute */
-			    img.removeAttribute( 'resource' );
+                /* Remove image link */
+                var linkNode = img.parentNode;
+                if ( linkNode.tagName === 'A') {
+		    
+		    /* Check if the target is mirrored */
+		    var href = linkNode.getAttribute( 'href' ) || '';
+		    var keepLink =
+			href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ?
+			isMirrored( decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
+		    
+                    /* Under certain condition it seems that this is possible
+                     * to have parentNode == undefined, in this case this
+                     * seems preferable to remove the whole link+content than
+                     * keeping a wrong link. See for example this url
+                     * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
+		    if ( !keepLink ) {
+                        if ( linkNode.parentNode ) {
+			    linkNode.parentNode.replaceChild( img, linkNode );
                         } else {
 			    deleteNode( img );
                         }
+		    }
+                } 
+		
+                /* Rewrite image src attribute */
+                if ( img ) {
+                    var src = getFullUrl( img.getAttribute( 'src' ) );
+                    var newSrc = getMediaUrl( src );
+                    
+                    if ( newSrc ) {
+			
+			/* Download image, but avoid duplicate calls */
+			if ( !imgSrcCache.hasOwnProperty( src ) ) {
+                            imgSrcCache[src] = true;
+                            downloadMediaQueue.push( src );
+			}
+			
+			/* Change image source attribute to point to the local image */
+			img.setAttribute( 'src', newSrc );
+			
+			/* Remove useless 'resource' attribute */
+			img.removeAttribute( 'resource' );
+                    } else {
+			deleteNode( img );
                     }
-		} else {
-		    deleteNode( img );
-		}
+                }
+	    } else {
+		deleteNode( img );
 	    }
-
-	    /* Improve image frames */
-	    var figures = parsoidDoc.getElementsByTagName( 'figure' );
-	    var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
-	    var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
-	    for ( var i = 0; i < imageNodes.length ; i++ ) {
-		var imageNode = imageNodes[i];
-		var image = imageNode.getElementsByTagName( 'img' )[0];
-		var isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
-
-		if ( !nopic && imageNode && image ) {
-		    var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
-		    var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
-		    
-		    if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
-			var description = imageNode.getElementsByTagName( 'figcaption' )[0];
-			var imageWidth = parseInt( image.getAttribute( 'width' ) );
-			
-			var thumbDiv = parsoidDoc.createElement( 'div' );
-			thumbDiv.setAttribute
-			thumbDiv.setAttribute( 'class', 'thumb' );
-			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
-			    var centerDiv = parsoidDoc.createElement( 'center' );
-			    centerDiv.appendChild( thumbDiv );
-			    thumbDiv = centerDiv;
-			} else {
-			    thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
-			}
-			
-			var thumbinnerDiv = parsoidDoc.createElement( 'div' );
-			thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
-			thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
-			
-			var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
-			thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
-			thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
-			if ( description ) {
-			    thumbcaptionDiv.innerHTML = description.innerHTML
-			}
-			
-			thumbinnerDiv.appendChild( isStillLinked ? image.parentNode : image );
-			thumbinnerDiv.appendChild( thumbcaptionDiv );
-			thumbDiv.appendChild( thumbinnerDiv );
-
-			imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-		    } else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
-			var div = parsoidDoc.createElement( 'div' );
-			if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
-			} else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
-			    div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'center' ) );
-			}
-			div.appendChild( isStillLinked ? image.parentNode : image );
-			imageNode.parentNode.replaceChild(div, imageNode);
-		    }
-		} else {
-		    deleteNode( imageNode );
-		}
-	    }
-
-	    setTimeout( finished, 0, null, parsoidDoc, articleId );
 	}
-
-	function rewriteUrls( parsoidDoc, articleId, finished ) {
-
-	    /* Go through all links */
-	    var as = parsoidDoc.getElementsByTagName( 'a' );
-	    var areas = parsoidDoc.getElementsByTagName( 'area' );
-	    var linkNodes = Array.prototype.slice.call( as ).concat( Array.prototype.slice.call( areas ) );
-
-	    function rewriteUrl( linkNode, finished ) {
-		var rel = linkNode.getAttribute( 'rel' );
-		var href = linkNode.getAttribute( 'href' );
-
-		if ( !href ) {
-		    deleteNode( linkNode );
-		    setTimeout( finished, 0 );
-		} else {
-
-		    /* Deal with custom geo. URL replacement, for example: 
-		     * http://maps.wikivoyage-ev.org/w/poimap2.php?lat=44.5044943&lon=34.1969633&zoom=15&layer=M&lang=ru&name=%D0%9C%D0%B0%D1%81%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0
-		     * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
-		     */
-		    if ( rel != 'mw:WikiLink' ) {
-			var piomapUrlRegexp = new RegExp( '.*poimap2\.php.*', 'gi' );
-			var match = piomapUrlRegexp.exec( href );
-			if ( match ) {
-			    var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
-			    match = latRegexp.exec( href );
-			    var lat = match ? match[1] : undefined;
-			    var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
-			    match = lonRegexp.exec( href );
-			    var lon = match ? match[1] : undefined;
-			    if ( lat && lon ) {
-				href = 'geo:' + lat + ',' + lon;
-				linkNode.setAttribute( 'href', href );
-			    }
+	
+	/* Improve image frames */
+	var figures = parsoidDoc.getElementsByTagName( 'figure' );
+	var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
+	var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
+	for ( var i = 0; i < imageNodes.length ; i++ ) {
+	    var imageNode = imageNodes[i];
+	    var image = imageNode.getElementsByTagName( 'img' )[0];
+	    var isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
+	    
+	    if ( !nopic && imageNode && image ) {
+		var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
+		var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
+		
+		if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
+		    var description = imageNode.getElementsByTagName( 'figcaption' )[0];
+		    var imageWidth = parseInt( image.getAttribute( 'width' ) );
+		    
+		    var thumbDiv = parsoidDoc.createElement( 'div' );
+		    thumbDiv.setAttribute
+		    thumbDiv.setAttribute( 'class', 'thumb' );
+		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
+			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
+		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
+			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tleft' ) );
+		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
+			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tnone' ) );
+			var centerDiv = parsoidDoc.createElement( 'center' );
+			centerDiv.appendChild( thumbDiv );
+			thumbDiv = centerDiv;
+		    } else {
+			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
+		    }
+		    
+		    var thumbinnerDiv = parsoidDoc.createElement( 'div' );
+		    thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
+		    thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
+		    
+		    var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
+		    thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
+		    thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
+		    if ( description ) {
+			thumbcaptionDiv.innerHTML = description.innerHTML
+		    }
+		    
+		    thumbinnerDiv.appendChild( isStillLinked ? image.parentNode : image );
+		    thumbinnerDiv.appendChild( thumbcaptionDiv );
+		    thumbDiv.appendChild( thumbinnerDiv );
+		    
+		    imageNode.parentNode.replaceChild(thumbDiv, imageNode);
+		} else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
+		    var div = parsoidDoc.createElement( 'div' );
+		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
+			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatright' ) );
+		    } else if ( imageNodeClass.search( 'mw-halign-left' ) >= 0 ) {
+			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'floatleft' ) );
+		    } else if ( imageNodeClass.search( 'mw-halign-center' ) >= 0 ) {
+			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'center' ) );
+		    }
+		    div.appendChild( isStillLinked ? image.parentNode : image );
+		    imageNode.parentNode.replaceChild(div, imageNode);
+		}
+	    } else {
+		deleteNode( imageNode );
+	    }
+	}
+	
+	setTimeout( finished, 0, null, parsoidDoc, articleId );
+    }
+    
+    function rewriteUrls( parsoidDoc, articleId, finished ) {
+	
+	/* Go through all links */
+	var as = parsoidDoc.getElementsByTagName( 'a' );
+	var areas = parsoidDoc.getElementsByTagName( 'area' );
+	var linkNodes = Array.prototype.slice.call( as ).concat( Array.prototype.slice.call( areas ) );
+	
+	function rewriteUrl( linkNode, finished ) {
+	    var rel = linkNode.getAttribute( 'rel' );
+	    var href = linkNode.getAttribute( 'href' );
+	    
+	    if ( !href ) {
+		deleteNode( linkNode );
+		setTimeout( finished, 0 );
+	    } else {
+		
+		/* Deal with custom geo. URL replacement, for example: 
+		 * http://maps.wikivoyage-ev.org/w/poimap2.php?lat=44.5044943&lon=34.1969633&zoom=15&layer=M&lang=ru&name=%D0%9C%D0%B0%D1%81%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0
+		 * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
+		 */
+		if ( rel != 'mw:WikiLink' ) {
+		    var piomapUrlRegexp = new RegExp( '.*poimap2\.php.*', 'gi' );
+		    var match = piomapUrlRegexp.exec( href );
+		    if ( match ) {
+			var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
+			match = latRegexp.exec( href );
+			var lat = match ? match[1] : undefined;
+			var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
+			match = lonRegexp.exec( href );
+			var lon = match ? match[1] : undefined;
+			if ( lat && lon ) {
+			    href = 'geo:' + lat + ',' + lon;
+			    linkNode.setAttribute( 'href', href );
 			}
 		    }
-
-		    if ( rel ) {
-
-			/* Add 'external' class to external links */
-			if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
-			     rel === 'mw:WikiLink/Interwiki' ) {
-			    linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class'), 'external' ) );
-			}
-			
-			/* Check if the link is "valid" */
-			if ( ! href ) {
-			    console.error( 'No href attribute in the following code, in article ' + articleId );
-			    console.error( linkNode.outerHTML );
-			    process.exit(1);
-			}
-			
-			/* Rewrite external links starting with // */
-			if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || rel == 'nofollow' ) {
-			    if ( href.substring( 0, 1 ) === '/' ) {
-				linkNode.setAttribute( 'href', getFullUrl( href ) );
-			    } else if ( href.substring( 0, 2 ) === './' ) {
-				while ( linkNode.firstChild ) {
-				    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
-				}
-				linkNode.parentNode.removeChild( linkNode );
+		}
+		
+		if ( rel ) {
+		    
+		    /* Add 'external' class to external links */
+		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
+			 rel === 'mw:WikiLink/Interwiki' ) {
+			linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class'), 'external' ) );
+		    }
+		    
+		    /* Check if the link is "valid" */
+		    if ( ! href ) {
+			console.error( 'No href attribute in the following code, in article ' + articleId );
+			console.error( linkNode.outerHTML );
+			process.exit(1);
+		    }
+		    
+		    /* Rewrite external links starting with // */
+		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || rel == 'nofollow' ) {
+			if ( href.substring( 0, 1 ) === '/' ) {
+			    linkNode.setAttribute( 'href', getFullUrl( href ) );
+			} else if ( href.substring( 0, 2 ) === './' ) {
+			    while ( linkNode.firstChild ) {
+				linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
 			    }
+			    linkNode.parentNode.removeChild( linkNode );
+			}
+			setTimeout( finished, 0 );
+		    }
+		    
+		    /* Remove internal links pointing to no mirrored articles */
+		    else if ( rel == 'mw:WikiLink' ) {
+			var targetId = href.replace( /^\.\//, '' );
+			targetId = decodeURI( targetId );
+			
+			/* Deal with local anchor */
+			var localAnchor = '';
+			if ( targetId.lastIndexOf("#") != -1 ) {
+			    localAnchor = targetId.substr( targetId.lastIndexOf("#") );
+			    targetId = targetId.substr( 0, targetId.lastIndexOf("#") );
+			}
+			
+			if ( isMirrored( targetId ) ) {
+			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
 			    setTimeout( finished, 0 );
-			}
-
-			/* Remove internal links pointing to no mirrored articles */
-			else if ( rel == 'mw:WikiLink' ) {
-			    var targetId = href.replace( /^\.\//, '' );
-			    targetId = decodeURI( targetId );
-
-			    /* Deal with local anchor */
-			    var localAnchor = '';
-			    if ( targetId.lastIndexOf("#") != -1 ) {
-				localAnchor = targetId.substr( targetId.lastIndexOf("#") );
-				targetId = targetId.substr( 0, targetId.lastIndexOf("#") );
-			    }
-
-			    if ( isMirrored( targetId ) ) {
-				linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
-				setTimeout( finished, 0 );
-			    } else {
-				try {
-				    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
-					if ( error ) {
-					    console.error( 'Unable to check redirect existence with redis: ' + error );
-					    process.exit( 1 );
-					} else {
-					    if ( res ) {
-						linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-					    } else {
-						while ( linkNode.firstChild ) {
-						    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
-						}
-						linkNode.parentNode.removeChild( linkNode );
-					    }
-					}
-					setTimeout( finished, 0 );
-				    });
-				} catch ( error ) {
-				    console.error ( "Exception by requesting redis " + error );
-				    process.exit( 1 );
-				}
-			    }
-			}
-		    } else {
-			if ( href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ) {
-			    var targetId = decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
-			    if ( isMirrored( targetId ) ) {
-				linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-				setTimeout( finished, 0 );
-			    } else {
+			} else {
+			    try {
 				redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
 				    if ( error ) {
 					console.error( 'Unable to check redirect existence with redis: ' + error );
@@ -809,190 +775,223 @@ function saveArticles( finished ) {
 				    }
 				    setTimeout( finished, 0 );
 				});
+			    } catch ( error ) {
+				console.error ( "Exception by requesting redis " + error );
+				process.exit( 1 );
 			    }
-			} else {
-			    setTimeout( finished, 0 );
 			}
 		    }
-		}
-	    }
-
-	    async.eachLimit( linkNodes, maxParallelRequests, rewriteUrl, function( error ) {
-		if ( error ) {
-		    console.error( 'Problem by rewriting urls: ' + error );
-		    process.exit( 1 );
 		} else {
-		    setTimeout( finished, 0, null, parsoidDoc, articleId );
-		}
-	    });
-
-	}
-	
-	function applyOtherTreatments( parsoidDoc, redirectId, finished ) {
-	    
-	    /* Go through gallerybox */
-	    var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
-	    for ( var i = 0; i < galleryboxes.length ; i++ ) {
-		if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( nopic ) ) {
-		    deleteNode( galleryboxes[i] );
-		}
-	    }
-	    
-	    /* Remove "map" tags if necessary */
-	    if ( nopic ) {
-		var maps = parsoidDoc.getElementsByTagName( 'map' );
-		for ( var i = 0; i < maps.length ; i++ ) {
-		    deleteNode( maps[i] );
-		}
-	    }
-	    
-	    /* Go through all reference calls */
-	    var spans = parsoidDoc.getElementsByTagName( 'span' );
-	    for ( var i = 0; i < spans.length ; i++ ) {
-		var span = spans[i];
-		var rel = span.getAttribute( 'rel' );
-		if ( rel === 'dc:references' ) {
-		    var sup = parsoidDoc.createElement( 'sup' );
-		    if ( span.innerHTML ) {
-			sup.id = span.id;
-			sup.innerHTML = span.innerHTML;
-			span.parentNode.replaceChild(sup, span);
+		    if ( href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ) {
+			var targetId = decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
+			if ( isMirrored( targetId ) ) {
+			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+			    setTimeout( finished, 0 );
+			} else {
+			    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
+				if ( error ) {
+				    console.error( 'Unable to check redirect existence with redis: ' + error );
+				    process.exit( 1 );
+				} else {
+				    if ( res ) {
+					linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
+				    } else {
+					while ( linkNode.firstChild ) {
+					    linkNode.parentNode.insertBefore( linkNode.firstChild, linkNode);
+					}
+					linkNode.parentNode.removeChild( linkNode );
+				    }
+				}
+				setTimeout( finished, 0 );
+			    });
+			}
 		    } else {
-			deleteNode( span );
+			setTimeout( finished, 0 );
 		    }
 		}
 	    }
-	    
-	    /* Remove element with id in the blacklist */
-	    idBlackList.map( function( id ) {
-		var node = parsoidDoc.getElementById( id );
-		if (node) {
-		    deleteNode( node );
+	}
+	
+	async.eachLimit( linkNodes, maxParallelRequests, rewriteUrl, function( error ) {
+	    if ( error ) {
+		console.error( 'Problem by rewriting urls: ' + error );
+		process.exit( 1 );
+	    } else {
+		setTimeout( finished, 0, null, parsoidDoc, articleId );
+	    }
+	});
+    }
+    
+    function applyOtherTreatments( parsoidDoc, articleId, finished ) {
+	
+	/* Go through gallerybox */
+	var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
+	for ( var i = 0; i < galleryboxes.length ; i++ ) {
+	    if ( ( ! galleryboxes[i].getElementsByClassName( 'thumb' ).length ) || ( nopic ) ) {
+		deleteNode( galleryboxes[i] );
+	    }
+	}
+	
+	/* Remove "map" tags if necessary */
+	if ( nopic ) {
+	    var maps = parsoidDoc.getElementsByTagName( 'map' );
+	    for ( var i = 0; i < maps.length ; i++ ) {
+		deleteNode( maps[i] );
+	    }
+	}
+	
+	/* Go through all reference calls */
+	var spans = parsoidDoc.getElementsByTagName( 'span' );
+	for ( var i = 0; i < spans.length ; i++ ) {
+	    var span = spans[i];
+	    var rel = span.getAttribute( 'rel' );
+	    if ( rel === 'dc:references' ) {
+		var sup = parsoidDoc.createElement( 'sup' );
+		if ( span.innerHTML ) {
+		    sup.id = span.id;
+		    sup.innerHTML = span.innerHTML;
+		    span.parentNode.replaceChild( sup, span );
+		} else {
+		    deleteNode( span );
 		}
-	    });
-	    
-	    /* Remove element with black listed CSS classes */
-	    cssClassBlackList.map( function( classname ) {
-		var nodes = parsoidDoc.getElementsByClassName( classname );
-		for ( var i = 0; i < nodes.length ; i++ ) {
+	    }
+	}
+	
+	/* Remove element with id in the blacklist */
+	idBlackList.map( function( id ) {
+	    var node = parsoidDoc.getElementById( id );
+	    if (node) {
+		deleteNode( node );
+	    }
+	});
+	
+	/* Remove element with black listed CSS classes */
+	cssClassBlackList.map( function( classname ) {
+	    var nodes = parsoidDoc.getElementsByClassName( classname );
+	    for ( var i = 0; i < nodes.length ; i++ ) {
+		deleteNode( nodes[i] );
+	    }
+	});
+	
+	/* Remove element with black listed CSS classes and no link */
+	cssClassBlackListIfNoLink.map( function( classname ) {
+	    var nodes = parsoidDoc.getElementsByClassName( classname );
+	    for ( var i = 0; i < nodes.length ; i++ ) {
+		if ( nodes[i].getElementsByTagName( 'a' ).length === 0 ) {
 		    deleteNode( nodes[i] );
 		}
-	    });
-	    
-	    /* Remove element with black listed CSS classes and no link */
-	    cssClassBlackListIfNoLink.map( function( classname ) {
-		var nodes = parsoidDoc.getElementsByClassName( classname );
-		for ( var i = 0; i < nodes.length ; i++ ) {
-		    if ( nodes[i].getElementsByTagName( 'a' ).length === 0 ) {
-			deleteNode(nodes[i]);
-		    }
-		}
-	    });
-	    
-	    /* Remove link tags */
-	    var links = parsoidDoc.getElementsByTagName( 'link' );
-	    for ( var i = 0; i < links.length ; i++ ) {
-		deleteNode(links[i]);
-	    };
-	    
-	    /* Remove useless DOM nodes without children */
-	    var tagNames = [ 'li', 'span' ];
-	    tagNames.map( function( tagName ) {
-		var nodes = parsoidDoc.getElementsByTagName( tagName );
-		for ( var i = 0; i < nodes.length ; i++ ) {
-	            if ( ! nodes[i].innerHTML ) {
-			deleteNode( nodes[i] );
-		    }
-		};
-	    });
-	    
-	    /* Remove useless input nodes */
-	    var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
-	    for ( var i = 0; i < inputNodes.length ; i++ ) {
-		deleteNode( inputNodes[i] );
-	    };
-	    
-	    /* Clean the DOM of all uncessary code */
-	    var allNodes = parsoidDoc.getElementsByTagName( '*' );
-	    for ( var i = 0; i < allNodes.length ; i++ ) {                                                                                
-		var node = allNodes[i];
-		node.removeAttribute( 'data-parsoid' );
-		node.removeAttribute( 'typeof' );
-		node.removeAttribute( 'about' );
-		node.removeAttribute( 'data-mw' );
-
-		if ( node.getAttribute( 'rel' ) && node.getAttribute( 'rel' ).substr( 0, 3 ) === 'mw:' ) {
-		    node.removeAttribute( 'rel' );
-		}
-
-		/* Remove a few css calls */
-		cssClassCallsBlackList.map( function( classname )  {
-		    if ( node.getAttribute( 'class' ) ) {
-			node.setAttribute( 'class', node.getAttribute( 'class' ).replace( classname, '' ) );
-		    }
-		});
 	    }
-
-	    setTimeout( finished, 0 , null, parsoidDoc, articleId );
-	}
-
-	function setFooter( parsoidDoc, articleId, finished ) {
-	    /* Create final document by merging template and parsoid documents */
-	    var doc = domino.createDocument( htmlTemplateCode );
-	    doc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
-	    doc.getElementById( 'titleHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
-	    doc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
-
-	    /* Set footer */
-	    var div = doc.createElement( 'div' );
-	    var oldId = articleIds[ articleId ];
-	    redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
-		if ( error ) {
-		    finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
-		} else {
-		    var date = new Date( timestamp );
-		    div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
-		    doc.getElementById( 'mw-content-text' ).appendChild( div );
-		    setTimeout( finished, 0, null, doc, articleId );
+	});
+	
+	/* Remove link tags */
+	var links = parsoidDoc.getElementsByTagName( 'link' );
+	for ( var i = 0; i < links.length ; i++ ) {
+	    deleteNode( links[i] );
+	};
+	
+	/* Remove useless DOM nodes without children */
+	var tagNames = [ 'li', 'span' ];
+	tagNames.map( function( tagName ) {
+	    var nodes = parsoidDoc.getElementsByTagName( tagName );
+	    for ( var i = 0; i < nodes.length ; i++ ) {
+	        if ( ! nodes[i].innerHTML ) {
+		    deleteNode( nodes[i] );
+		}
+	    };
+	});
+	
+	/* Remove useless input nodes */
+	var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
+	for ( var i = 0; i < inputNodes.length ; i++ ) {
+	    deleteNode( inputNodes[i] );
+	};
+	
+	/* Clean the DOM of all uncessary code */
+	var allNodes = parsoidDoc.getElementsByTagName( '*' );
+	for ( var i = 0; i < allNodes.length ; i++ ) {                                                                                
+	    var node = allNodes[i];
+	    node.removeAttribute( 'data-parsoid' );
+	    node.removeAttribute( 'typeof' );
+	    node.removeAttribute( 'about' );
+	    node.removeAttribute( 'data-mw' );
+	    
+	    if ( node.getAttribute( 'rel' ) && node.getAttribute( 'rel' ).substr( 0, 3 ) === 'mw:' ) {
+		node.removeAttribute( 'rel' );
+	    }
+	    
+	    /* Remove a few css calls */
+	    cssClassCallsBlackList.map( function( classname )  {
+		if ( node.getAttribute( 'class' ) ) {
+		    node.setAttribute( 'class', node.getAttribute( 'class' ).replace( classname, '' ) );
 		}
 	    });
 	}
 	
-	function writeArticle( doc, articleId, finished ) {
-	    writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
-	}
+	setTimeout( finished, 0 , null, parsoidDoc, articleId );
+    }
+    
+    function setFooter( parsoidDoc, articleId, finished ) {
+	var htmlTemplateDoc = domino.createDocument( htmlTemplateCode );
+	
+	/* Create final document by merging template and parsoid documents */
+	htmlTemplateDoc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
+	htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
+	htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
+	
+	/* Set footer */
+	var div = htmlTemplateDoc.createElement( 'div' );
+	var oldId = articleIds[ articleId ];
+	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
+	    if ( error ) {
+		setTimeout( finished, 0, 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
+	    } else {
+		var date = new Date( timestamp );
+		div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
+		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+		setTimeout( finished, 0, null, htmlTemplateDoc, articleId );
+	    }
+	});
+    }
+    
+    function writeArticle( doc, articleId, finished ) {
+	printLog( 'Saving article ' + articleId + '...' );
+	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
+    }
 
+    function saveArticle( articleId, finished ) {
 	var articlePath = getArticlePath( articleId );
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
+	var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
+
 	printLog( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
-		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
-		printLog( 'Saving article ' + articleId + '...' );
-		prepareAndSaveArticle(html, articleId, function ( error, result ) {
+		printLog( 'Treating article ' + articleId + '...' );
+		prepareAndSaveArticle( html, articleId, function ( error, result ) {
 		    if ( error ) {
-			console.error( "Error by preparing and saving file " + error );
+			console.error( 'Error by preparing and saving file ' + error );
 			process.exit( 1 );
 		    } else {
 			printLog( 'Dumped successfully article ' + articleId );
-			console.log( 'Download queue size [' + downloadMediaQueue.length() + '] & Optimization queue size ' + optimizationQueue.length() + ']' );
-			setTimeout( finished, downloadMediaQueue.length() + optimizationQueue.length() );
+			printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
+			setTimeout( finished, ( downloadMediaQueue.length() + optimizationQueue.length() ) * 100 );
 		    }
 		});
 	    } else {
 		delete articleIds[ articleId ];
 		setTimeout( finished, 0 );
 	    }
-	}, articleId);
+	}, articleId );
     }
 
-    async.eachLimit( Object.keys(articleIds), maxParallelRequests, callback, function( error ) {
+    printLog( 'Saving articles...' );
+    async.eachLimit( Object.keys( articleIds ), maxParallelRequests, saveArticle, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
 	} else {
 	    printLog( 'All articles were retrieved and saved.' );
-	    finished();
+	    setTimeout( finished, 0 );
 	}
     });
 }
@@ -1001,7 +1000,7 @@ function isMirrored( id ) {
     var namespaceNumber = 0;
 
     if ( id.indexOf(':') >= 0 ) {
-	var tmpNamespaceNumber = namespaces[ id.substring( 0, id.indexOf(':') ).replace( / /g, '_') ];
+	var tmpNamespaceNumber = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
 	if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
 	    return true;
 	}
@@ -1066,8 +1065,7 @@ function saveJavascript( finished ) {
 	    });
 	});
 	
-	finished();
-
+	setTimeout( finished, 0 );
     });
 }
 
@@ -1085,7 +1083,7 @@ function saveStylesheet( finished ) {
 	if ( data.url && data.path ) {
 	    downloadFile( data.url, data.path, true, finished );
 	} else {
-	    finished();
+	    setTimeout( finished, 0 );
 	}
     }, maxParallelRequests );
 
@@ -1125,10 +1123,10 @@ function saveStylesheet( finished ) {
 		}
 		
 		fs.appendFileSync( stylePath, rewrittenCss );
-		finished();
+		setTimeout( finished, 0 );
 	    });
 	} else {
-	    finished();
+	    setTimeout( finished, 0 );
 	}
 
     }, maxParallelRequests );
@@ -1158,7 +1156,7 @@ function saveStylesheet( finished ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
 		    } else {
-			finished();
+			setTimeout( finished, 0 );
 		    }
 		};
 		downloadCSSMediaQueue.push( '' );
@@ -1183,32 +1181,36 @@ function getArticleIds( finished ) {
 			    redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
 			});
 		    }
-		    finished();
+		    setTimeout( finished, 0 );
 		} catch( error ) {
-		    finished( error );
+		    setTimeout( finished, 0, error );
 		}
 	    });
 	} else {
-	    finished();
+	    setTimeout( finished, 0 );
 	}
     }, maxParallelRequests );
 
-    function setRedirectQueueDrain( finished ) {
+    function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to retrieve redirects for an article: ' + error );
 		process.exit( 1 );
 	    } else {
 		printLog( 'All redirect ids retrieve successfuly.' );
-		finished();
+		setTimeout( finished, 0 );
 	    }
 	};
 	redirectQueue.push( '' );
     }
     
+    /* Parse article list given by API */
     function parseJson( body ) {
+	var next = '';
+
 	try {
-	    var entries = JSON.parse( body )['query']['pages'];
+	    var json = JSON.parse( body );
+	    var entries = json['query']['pages'];
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
@@ -1217,81 +1219,84 @@ function getArticleIds( finished ) {
 		    redisClient.hset( redisArticleDetailsDatabase, entry['title'], entry['revisions'][0]['timestamp'] );
 		    redirectQueue.push( entry['title'] );
 		}
+		next = json['query-continue'] ? json['query-continue']['allpages']['gapcontinue'] : undefined;
+
 	    });
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
 	    process.exit( 1 );
 	}
+
+	return next;
     }
 
     /* Get ids from file */
-    function getArticleIdsForFile() {
-	
-	function getArticleIdsForLine( line, finished ) {
-	    if ( line ) {
-		var title = line.replace( / /g, '_' );
-		var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
-		loadUrlAsync( url, function( body ) {
-		    if ( body && body.length > 2 ) {
-			parseJson( body );
-		    }
-		    finished();
-		});
-	    } else {
-                finished();
-            }
-	}
+    function getArticleIdsForLine( line, finished ) {
+	if ( line ) {
+	    var title = line.replace( / /g, '_' );
+	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
+	    loadUrlAsync( url, function( body ) {
+		if ( body && body.length > 2 ) {
+		    parseJson( body );
+		}
+		setTimeout( finished, 0 );
+	    });
+	} else {
+	    setTimeout( finished, 0 );
+        }
+    }
 
+    function getArticleIdsForFile() {
 	var lines = fs.readFileSync( articleList ).toString().split( '\n' );
 	async.eachLimit( lines, maxParallelRequests, getArticleIdsForLine, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for a file: ' + error );
 		process.exit( 1 );
 	    } else {
-		console.error( 'List of article ids to mirror completed' );
-		finished();
+		printLog( 'List of article ids to mirror completed' );
+		drainRedirectQueue( finished );
 	    }
 	});
     }
 
     /* Get ids from Mediawiki API */
-    function getArticleIdsForNamespaces() {
-
-	function getArticleIdsForNamespace( namespace, finished ) {
-	    var next = '';
-
-	    async.doWhilst(
-		function ( finished ) {
-		    printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		    var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) ;
-		    loadUrlAsync( url, function( body ) {
-			if ( body && body.length > 2 ) {
-			    parseJson( body );
-			    next = JSON.parse( body )['query-continue'] ? JSON.parse( body )['query-continue']['allpages']['gapcontinue'] : undefined;
-			}
-			finished();
-		    });
-		},
-		function () { return next },
-		function ( error ) {
-		    if ( error ) {
-			console.error( 'Unable to download article ids: ' + error );
-			process.exit( 1 );
+    function getArticleIdsForNamespace( namespace, finished ) {
+	var next = '';
+	
+	async.doWhilst(
+	    function ( finished ) {
+		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) ;
+		loadUrlAsync( url, function( body ) {
+		    if ( body && body.length > 2 ) {
+			next = parseJson( body );
 		    } else {
-			printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
-			finished();
+			next = '';
 		    }
+		    setTimeout( finished, 0 );
+		});
+	    },
+	    function () { return next },
+	    function ( error ) {
+		if ( error ) {
+		    console.error( 'Unable to download article ids: ' + error );
+		    process.exit( 1 );
+		} else {
+		    printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
+		    setTimeout( finished, 0 );
 		}
-	    );
-	}
-
+	    }
+	);
+    }
+    
+    function getArticleIdsForNamespaces() {
 	async.eachLimit( namespacesToMirror, namespacesToMirror.length, getArticleIdsForNamespace, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for in a namespace: ' + error );
 		process.exit( 1 );
 	    } else {
 		printLog( 'All articles ids (with redirects) for all namespaces were successfuly retrieved.' );
-		setRedirectQueueDrain( finished );
+		drainRedirectQueue( finished );
 	    }
 	});
     }
@@ -1320,7 +1325,7 @@ function createSubDirectories( finished ) {
 		console.error( 'Unable to create mandatory directories : ' + error );
 		process.exit( 1 );
 	    } else {
-		finished();
+		setTimeout( finished, 0 );
 	    }
 	});
 }
@@ -1358,36 +1363,27 @@ function writeFile( data, path, callback ) {
 	process.exit( 1 );
     }
 
-    var stream = fs.createWriteStream( path);
-    stream.on( 'error', function( error ) {
-	console.error( 'Unable to write data at ' + path + " - " + error );
-	process.exit( 1 );
-    });
-    stream.once('open', function( fd ) {
-	stream.write( data);
-	stream.end();
-
-	if (callback) {
-	    callback();
+    fs.writeFile( path, data, function ( error ) {
+	if ( error ) {
+	    console.error( 'Unable to write data at ' + path + " - " + error );
+	    process.exit( 1 );
+	} else if (callback) {
+	    setTimeout( callback, 0 );
 	}
     });
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
-    var retryCount = 1;
     async.retry(
 	5,
 	function( finished ) {
-	    request.get( { url: url, timeout: 50000 * retryCount, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, function( error, body ) {
-		retryCount += 1;
+	    request.get( { url: url }, function( error, body ) {
 		if ( error ) {
 		    var message = 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
-		    setTimeout( function() {
-			finished( message );
-		    }, 50000 );
+		    setTimeout( finished, 50000, message );
 		} else {
-		    finished( undefined, body );
+		    setTimeout( finished, 0, null, body );
 		}
 	    });
 	},
@@ -1396,7 +1392,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 		console.error( error );
 	    }
 	    if ( callback ) {
-		callback( data, var1, var2, var3 );
+		setTimeout( callback, 0, data, var1, var2, var3 );
 	    } 		    
 	});
 }
@@ -1411,13 +1407,13 @@ function downloadMedia( url, callback ) {
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
 		downloadFile( url, getMediaPath( url ), true, function( ok ) {
 		    if ( callback ) {
-			callback();
+			setTimeout( callback, 0 );
 		    }
 		});
 	    });
         } else {
 	    if ( callback ) {
-		callback();
+		setTimeout( callback, 0 );
 	    }
         }
     });
@@ -1430,13 +1426,11 @@ process.on( 'uncaughtException', function( error ) {
 });
 
 function downloadFile( url, path, force, callback ) {
-    var retryCount = 1;
-
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
 	    if (callback) {
-		callback();
+		setTimeout( callback, 0 );
 	    }
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
@@ -1444,13 +1438,12 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url, ut: 50000 * retryCount, pool: { maxSockets: maxParallelRequests }, maxConcurrent: maxParallelRequests }, tmpPath, function( error, filename ) {
- 		retryCount += 1;
+	    request.get( {url: url }, tmpPath, function( error, filename ) {
 		if ( error ) {
 		    fs.unlink( tmpPath, function() {
 			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
 			if (callback) {
-			    callback();
+			    setTimeout( callback, 0 );
 			}
 		    })
 		} else {
@@ -1473,7 +1466,7 @@ function downloadFile( url, path, force, callback ) {
 							     }, 50000 );
 							 } else {
 							     optimizationQueue.push( {path: path, size: stats.size} );
-							     finished();
+							     setTimeout( finished, 0 );
 							 }
 						     });
 						 }
@@ -1494,13 +1487,13 @@ function downloadFile( url, path, force, callback ) {
 								 }, 50000 );
 							     } else {
 								 optimizationQueue.push( {path: path, size: stats.size} );
-								 finished();
+								 setTimeout( finished, 0 );
 							     }
 							 });
 						     } else {
 							 printLog( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
 							 fs.unlink( tmpPath );
-							 finished();
+							 setTimeout( finished, 0 );
 						     }
 						 }
 					     });
@@ -1513,7 +1506,7 @@ function downloadFile( url, path, force, callback ) {
 					 process.exit( 1 );
 				     } else {
 					 if ( callback ) {
-					     callback( true );
+					     setTimeout( callback, 0, true );
 					 }
 				     }
 				 });
@@ -1597,7 +1590,7 @@ function getSubTitle( finished ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
-	finished();
+	setTimeout( finished, 0 );
     });
 }
 
@@ -1619,7 +1612,7 @@ function getSiteInfo( finished ) {
 	    } else {
 		langIso3 = language.iso639_3;
 	    }
-	    finished();
+	    setTimeout( finished, 0 );
 	});
     });
 }
@@ -1635,7 +1628,7 @@ function saveFavicon( finished ) {
 	downloadFile( logoUrl, faviconPath, true, function() {
 	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
 	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-		finished( error );
+		setTimeout( finished, 0, error );
 	    });
 	});
     });
@@ -1678,7 +1671,7 @@ function getMainPage( finished ) {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
 	    };
-	    finished();
+	    setTimeout( finished, 0 );
 	});
     }
 
@@ -1719,7 +1712,7 @@ function getNamespaces( finished ) {
 	    });
 	});
 	
-	finished();
+	setTimeout( finished, 0 );
     });
 }
 
@@ -1746,7 +1739,7 @@ function getTextDirection( finished ) {
 	revAutoAlign = ltr ? 'right' : 'left';
 
 	printLog( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
-	finished();
+	setTimeout( finished, 0 );
     });
 }
 
@@ -1824,9 +1817,9 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	}
 	
 	proc.on( 'close', function ( code ) {
-	    callback( code !== 0 ? 'Error by executing ' + command : undefined );
+	    setTimeout( callback, 0, code !== 0 ? 'Error by executing ' + command : undefined );
 	});
     } catch ( error ) {
-	callback( 'Error by executing ' + command );
+	setTimeout( callback, 0, 'Error by executing ' + command );
     }
 }
