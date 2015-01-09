@@ -1381,6 +1381,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 		if ( error ) {
 		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
+		    console.error( 'Message was: ' + body || '' );
 		    setTimeout( finished, 50000, message );
 		} else {
 		    setTimeout( finished, 0, null, body );
