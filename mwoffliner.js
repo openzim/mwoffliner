@@ -1372,12 +1372,14 @@ function writeFile( data, path, callback ) {
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
+    var retryCount = 0;
+
     async.retry(
 	5,
 	function( finished ) {
-	    request.get( { url: url }, function( error, body ) {
+	    request.get( { url: url, timeout: 10000 * ++retryCount }, function( error, body ) {
 		if ( error ) {
-		    var message = 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )';
+		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
 		    setTimeout( finished, 50000, message );
 		} else {
@@ -1425,6 +1427,8 @@ process.on( 'uncaughtException', function( error ) {
 });
 
 function downloadFile( url, path, force, callback ) {
+    var retryCount = 0;
+
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
@@ -1437,10 +1441,10 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url }, tmpPath, function( error, filename ) {
+	    request.get( {url: url, timeout: 10000 * ++retryCount }, tmpPath, function( error, filename ) {
 		if ( error ) {
 		    fs.unlink( tmpPath, function() {
-			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
+			console.error( 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
 			if (callback) {
 			    setTimeout( callback, 0 );
 			}
