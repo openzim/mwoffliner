@@ -676,6 +676,9 @@ function saveArticles( finished ) {
 	setTimeout( finished, 0, null, parsoidDoc, articleId );
     }
     
+    var piomapUrlRegexp = new RegExp( '.*poimap2\.php.*', 'gi' );
+    var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
+    var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
     function rewriteUrls( parsoidDoc, articleId, finished ) {
 	
 	/* Go through all links */
@@ -697,13 +700,10 @@ function saveArticles( finished ) {
 		 * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
 		 */
 		if ( rel != 'mw:WikiLink' ) {
-		    var piomapUrlRegexp = new RegExp( '.*poimap2\.php.*', 'gi' );
 		    var match = piomapUrlRegexp.exec( href );
 		    if ( match ) {
-			var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
 			match = latRegexp.exec( href );
 			var lat = match ? match[1] : undefined;
-			var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
 			match = lonRegexp.exec( href );
 			var lon = match ? match[1] : undefined;
 			if ( lat && lon ) {
@@ -743,14 +743,13 @@ function saveArticles( finished ) {
 		    
 		    /* Remove internal links pointing to no mirrored articles */
 		    else if ( rel == 'mw:WikiLink' ) {
-			var targetId = href.replace( /^\.\//, '' );
-			targetId = decodeURI( targetId );
+			var targetId = decodeURI( href.replace( /^\.\//, '' ) );
 			
 			/* Deal with local anchor */
 			var localAnchor = '';
 			if ( targetId.lastIndexOf("#") != -1 ) {
-			    localAnchor = targetId.substr( targetId.lastIndexOf("#") );
-			    targetId = targetId.substr( 0, targetId.lastIndexOf("#") );
+			    localAnchor = targetId.substr( targetId.lastIndexOf( '#' ) );
+			    targetId = targetId.substr( 0, targetId.lastIndexOf( '#' ) );
 			}
 			
 			if ( isMirrored( targetId ) ) {
@@ -859,7 +858,7 @@ function saveArticles( finished ) {
 	/* Remove element with id in the blacklist */
 	idBlackList.map( function( id ) {
 	    var node = parsoidDoc.getElementById( id );
-	    if (node) {
+	    if ( node ) {
 		deleteNode( node );
 	    }
 	});
