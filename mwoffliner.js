@@ -103,7 +103,6 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
-http.globalAgent.maxSockets = maxParallelRequests;
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -1421,6 +1420,7 @@ function downloadMedia( url, callback ) {
 
 process.on( 'uncaughtException', function( error ) {
     console.trace( 'NODEJS FATAL EXCEPTION:' + error );
+    console.error( error.stack );
     throw error;
     process.exit( 42 );
 });
