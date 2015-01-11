@@ -9,14 +9,14 @@ var fs = require( 'fs' );
 var domino = require( 'domino' );
 var jsdom = require( 'jsdom' );
 var async = require( 'async' );
-var http = require( 'follow-redirects' ).http;
+var http = require( 'http' );
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var rimraf = require( 'rimraf' );
 var countryLanguage = require( 'country-language' );
-var request = require( 'request-enhanced' );
+var request = require( 'request' );
 var redis = require( 'redis' );
 var childProcess = require( 'child_process' );
 var exec = require( 'child_process' ).exec;
@@ -97,12 +97,13 @@ var articleList = argv.articleList;
 /* Prefix part of the filename (radical) */
 var filenamePrefix = argv.filenamePrefix || '';
 
-/* NUmber of parallel requests */
+/* Number of parallel requests */
 var maxParallelRequests = argv.parallelRequests || 40;
 if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
+http.globalAgent.maxSockets = maxParallelRequests;
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -1377,16 +1378,15 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
-	    request.get( { url: url, timeout: 10000 * ++retryCount }, function( error, body ) {
-		if ( error ) {
+	    request( { timeout: 10000 * ++retryCount, uri: url }, function ( error, response, body ) {
+		if ( !error && response.statusCode == 200 ) {
+		    setTimeout( finished, 0, null, body );
+		} else {
 		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
-		    console.error( 'Message was: ' + body || '' );
 		    setTimeout( finished, 50000, message );
-		} else {
-		    setTimeout( finished, 0, null, body );
 		}
-	    });
+	    })
 	},
 	function ( error, data ) {
 	    if ( error ) {
@@ -1428,8 +1428,6 @@ process.on( 'uncaughtException', function( error ) {
 });
 
 function downloadFile( url, path, force, callback ) {
-    var retryCount = 0;
-
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
@@ -1442,15 +1440,22 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    request.get( {url: url, timeout: 10000 * ++retryCount }, tmpPath, function( error, filename ) {
-		if ( error ) {
+	    var tmpPathStream = fs.createWriteStream( tmpPath );
+
+	    request
+		.get( url )
+		.on( 'error', function( error ) {
 		    fs.unlink( tmpPath, function() {
-			console.error( 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
-			if (callback) {
+			console.error( 'Unable to download ' + decodeURI( url ) + ' ( ' + error + ' )' );
+			if ( callback ) {
 			    setTimeout( callback, 0 );
-			}
+			} 
+
 		    })
-		} else {
+		})
+		.pipe( tmpPathStream );
+
+	    tmpPathStream.on('close', function () {
 		    printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
 
 		    async.retry( 5,		
@@ -1514,7 +1519,6 @@ function downloadFile( url, path, force, callback ) {
 					 }
 				     }
 				 });
-		}
 	    });
 	}
     });

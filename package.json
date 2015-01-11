@@ -1,35 +1,40 @@
 {
-"name": "mwoffliner",
-"version": "0.0.0",
-"description": "Parsoid HTML dump utility",
-"main": "mwoffliner.js",
-"scripts": {
-"test": "echo \"Error: no test specified\" && exit 1"
-},
-"repository": {
-"type": "git",
-"url": "git.code.sf.net/p/kiwix/other"
-},
-"author": "Emmanuel Engelhart <kelson@kiwix.org>",
-"license": "GPLv3",
-"bugs": {
-"url": "http://reportabug.kiwix.org"
-},
-"dependencies": {
-"expand-home-dir": "*",
-"rimraf": "*",
-"yargs": "*",
-"crypto": "*",
-"domino": "*",
-"jsdom": "*",
-"async": "*",
-"follow-redirects": "*",
-"country-language": "*",
-"swig": "*",
-"request-enhanced": "*",
-"html-minifier": "*",
-"utf8-binary-cutter": "*",
-"redis": "*",
-"longjohn": "*"
-}
+  "name": "mwoffliner",
+  "version": "0.0.0",
+  "description": "Parsoid HTML dump utility",
+  "main": "mwoffliner.js",
+  "license": "GPLv3",
+  "author": {
+    "name": "Emmanuel Engelhart",
+    "email": "kelson@kiwix.org",
+    "url": "http://www.kiwix.org"
+  },
+  "scripts": {
+    "mwoffliner": "node mwoffliner.js",
+    "mwmatrixoffliner": "node mwmatrixoffliner.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://git.code.sf.net/p/kiwix/other"
+  },
+  "bugs": {
+    "url": "http://reportabug.kiwix.org"
+  },
+  "dependencies": {
+    "expand-home-dir": "*",
+    "rimraf": "*",
+    "yargs": "*",
+    "domino": "*",
+    "jsdom": "*",
+    "async": "*",
+    "country-language": "*",
+    "swig": "*",
+    "request": "*",
+    "html-minifier": "*",
+    "utf8-binary-cutter": "*",
+    "redis": "*",
+    "longjohn": "*"
+  },
+  "keywords": [ "mediawiki", "parsoid", "zim" ]
 }
