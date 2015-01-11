@@ -1233,7 +1233,7 @@ function getArticleIds( finished ) {
     function getArticleIdsForLine( line, finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
-	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title );
+	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
 	    loadUrlAsync( url, function( body ) {
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
@@ -1265,7 +1265,7 @@ function getArticleIds( finished ) {
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) ;
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=' + encodeURIComponent( next );
 		loadUrlAsync( url, function( body ) {
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
