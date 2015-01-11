@@ -1,6 +1,6 @@
 #!/bin/sh
 
-ZIM2INDEX=`readlink -f $1`
+ZIM2INDEX=`readlink -f $1 2> /dev/null`
 SCRIPT=`readlink -f $0`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js"
