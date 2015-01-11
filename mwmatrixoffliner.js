@@ -7,12 +7,11 @@
 
 var fs = require( 'fs' );
 var async = require( 'async' );
-var http = require( 'follow-redirects' ).http;
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var countryLanguage = require( 'country-language' );
-var request = require( 'request-enhanced' );
+var request = require( 'request' );
 var yargs = require('yargs');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
@@ -189,25 +188,27 @@ function loadMatrix( finished ) {
 }
 
 function loadUrlAsync( url, callback, var1, var2, var3 ) {
+    var retryCount = 0;
+
     async.retry(
 	5,
 	function( finished ) {
-	    request.get( {url: url, timeout: 200000} , function( error, body ) {
-		if ( error ) {
-		    setTimeout( function() {
-			finished( 'Unable to async retrieve ' + decodeURI( url ) + ' ( ' + error + ' )');
-		    }, 50000 );
+	    request( { timeout: 10000 * ++retryCount, uri: url }, function ( error, response, body ) {
+		if ( !error && response.statusCode == 200 ) {
+		    setTimeout( finished, 0, null, body );
 		} else {
-		    finished( undefined, body );
+		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
+		    console.error( message );
+		    setTimeout( finished, 50000, message );
 		}
-	    });
+	    })
 	},
 	function ( error, data ) {
 	    if ( error ) {
 		console.error( error );
 	    }
 	    if ( callback ) {
-		callback( data, var1, var2, var3 );
+		setTimeout( callback, 0, data, var1, var2, var3 );
 	    } 		    
 	});
 }
