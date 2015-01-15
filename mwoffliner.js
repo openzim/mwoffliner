@@ -677,9 +677,6 @@ function saveArticles( finished ) {
 	setTimeout( finished, 0, null, parsoidDoc, articleId );
     }
     
-    var piomapUrlRegexp = new RegExp( '.*poimap2\.php.*', 'gi' );
-    var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
-    var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
     function rewriteUrls( parsoidDoc, articleId, finished ) {
 	
 	/* Go through all links */
@@ -701,8 +698,11 @@ function saveArticles( finished ) {
 		 * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
 		 */
 		if ( rel != 'mw:WikiLink' ) {
+		    var piomapUrlRegexp = new RegExp( '.*poimap2\.php[^\"]*', 'gi' );
 		    var match = piomapUrlRegexp.exec( href );
 		    if ( match ) {
+			var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
+			var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
 			match = latRegexp.exec( href );
 			var lat = match ? match[1] : undefined;
 			match = lonRegexp.exec( href );
