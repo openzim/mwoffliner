@@ -22,20 +22,19 @@ else
 fi
 
 # Wikivoyage
-$MWMATRIXOFFLINER --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikivoyage --outputDirectory=$ZIM2INDEX/wikivoyage/
+$MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikivoyage --outputDirectory=$ZIM2INDEX/wikivoyage/
 
 # Wikinews
-$MWMATRIXOFFLINER --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/
+$MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/
 
 # Wikiquote
-$MWMATRIXOFFLINER --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikiquote --outputDirectory=$ZIM2INDEX/wikiquote/
+$MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikiquote --outputDirectory=$ZIM2INDEX/wikiquote/
 
 # Wikiversity
-$MWMATRIXOFFLINER --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikiversity --outputDirectory=$ZIM2INDEX/wikiversity/
+$MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikiversity --outputDirectory=$ZIM2INDEX/wikiversity/
 
 # Wikibooks
-$MWMATRIXOFFLINER --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/
+$MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/
 
 # Wikispecies
-$MWOFFLINER --mwUrl=http://species.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/species/ --format= --format=nopic --outputDirectory=species --filenamePrefix="wikispecies_en_all"
-mv species/*.zim $ZIM2INDEX/wikispecies
+$MWOFFLINER --verbose --mwUrl=http://species.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/species/ --format= --format=nopic --outputDirectory=species --filenamePrefix="wikispecies_en_all" ; mv species/*.zim $ZIM2INDEX/wikispecies
