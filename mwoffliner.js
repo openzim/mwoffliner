@@ -37,7 +37,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .require(['mwUrl', 'parsoidUrl'])
     .options(['articleList', 'outputDirectory', 'parallelRequests', 'format', 'keepHtml', 'filePrefix'])
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
-    .describe( 'articleList', 'File with one title (in UTF8)')
+    .describe( 'articleList', 'File with one title (in UTF8) per line')
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
     .describe( 'mwURL', 'Mediawiki base URL')
     .describe( 'mwWikiPath', 'Mediawiki API path (per default "/w/api.php")')
@@ -99,7 +99,7 @@ var articleList = argv.articleList;
 var filenamePrefix = argv.filenamePrefix || '';
 
 /* Number of parallel requests */
-var maxParallelRequests = argv.parallelRequests || 40;
+var maxParallelRequests = argv.parallelRequests || 10;
 if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
@@ -968,8 +968,6 @@ function saveArticles( finished ) {
 	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
 	    if ( html ) {
 		printLog( 'Treating article ' + articleId + '...' );
-		printLog( "HTTP global agent has currently " + http.globalAgent.sockets.length + " sockets open." );
-		printLog( "HTTP global agent has currently " + http.globalAgent.requests.length + " requests waiting for a socket." );
 		prepareAndSaveArticle( html, articleId, function ( error, result ) {
 		    if ( error ) {
 			console.error( 'Error by preparing and saving file ' + error );
@@ -1276,8 +1274,6 @@ function getArticleIds( finished ) {
 		    } else {
 			next = '';
 		    }
-		    printLog( "HTTP global agent has currently " + http.globalAgent.sockets.length + " sockets open." );
-		    printLog( "HTTP global agent has currently " + http.globalAgent.requests.length + " requests waiting for a socket." );
 		    setTimeout( finished, 0 );
 		});
 	    },
