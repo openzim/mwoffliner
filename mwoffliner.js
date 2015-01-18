@@ -1442,12 +1442,13 @@ function downloadFile( url, path, force, callback ) {
 
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-	    var tmpPathStream = fs.createWriteStream( tmpPath );
 
 	    var retryCount = 0;
 	    async.retry(
 		5,
 		function( finished ) {
+		    var tmpPathStream = fs.createWriteStream( tmpPath );
+
 		    request
 			.get( { timeout: 10000 * ++retryCount, url: url } )
 			.on( 'error', function( error ) {
