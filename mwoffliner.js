@@ -982,15 +982,14 @@ function saveArticles( finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 
 	printLog( 'Downloading article from ' + articleUrl );
+	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
 	loadUrlAsync( articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		saveArticleQueue.push( {html: html, id: articleId});
-		printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-		setTimeout( finished, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) * 100 );
 	    } else {
 		delete articleIds[ articleId ];
-		setTimeout( finished, 0 );
 	    }
+	    setTimeout( finished, 0 );
 	}, articleId );
     }
 
@@ -1389,24 +1388,25 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
-	    var out = request( { timeout: 30000 * ++retryCount, url: url }, function ( error, response, body ) {
+	    var out = request( { timeout: 200000 * ++retryCount, url: url }, function ( error, response, body ) {
 		if ( !error && response.statusCode == 200 ) {
 		    setTimeout( finished, 0, null, body );
 		} else {
 		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 		    console.error( message );
-		    setTimeout( finished, 50000, message );
+		    setTimeout( finished, 0, message );
 		}
 	    });
 	    out.on( 'error', function( error ) {
-                var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
+                var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
                 console.error( message );
-                setTimeout( finished, 50000, message );
+                setTimeout( finished, 0, message );
             });
 	},
 	function ( error, data ) {
 	    if ( error ) {
-		console.error( error );
+		console.error( "Absolutly unable to retrieve async. URL. " + error );
+		process.exit( 1 );
 	    }
 	    if ( callback ) {
 		setTimeout( callback, 0, data, var1, var2, var3 );
