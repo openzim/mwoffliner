@@ -1391,10 +1391,6 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	    var out = request( { timeout: 200000 * ++retryCount, url: url }, function ( error, response, body ) {
 		if ( !error && response.statusCode == 200 ) {
 		    setTimeout( finished, 0, null, body );
-		} else {
-		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
-		    console.error( message );
-		    setTimeout( finished, 0, message );
 		}
 	    });
 	    out.on( 'error', function( error ) {
