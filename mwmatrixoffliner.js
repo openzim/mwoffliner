@@ -137,7 +137,8 @@ function dump( finished ) {
 					'--format=', '--format=nopic', '--outputDirectory=' + localTmpDirectory, verbose ? '--verbose' : '' ],
 				      function( executionError ) {
 					  if ( executionError ) {
-					      finished( executionError );
+					      console.error( executionError );
+					      process.exit( 1 );
 					  } else {
 					      var cmd = 'mv ' + localTmpDirectory + '*.zim "' + outputDirectory + '"'; 
 					      console.log( 'Moving ZIM files (' + cmd + ')' );
