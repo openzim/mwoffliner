@@ -99,7 +99,7 @@ var articleList = argv.articleList;
 var filenamePrefix = argv.filenamePrefix || '';
 
 /* Number of parallel requests */
-var maxParallelRequests = argv.parallelRequests || 10;
+var maxParallelRequests = argv.parallelRequests || 40;
 if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
@@ -959,25 +959,34 @@ function saveArticles( finished ) {
 	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
     }
 
-    function saveArticle( articleId, finished ) {
+    /* Retrieve and save articles */
+    var saveArticleQueue = async.queue( function ( article, finished ) {
+	var articleId = article.id;
+	var html = article.html;
 	var articlePath = getArticlePath( articleId );
-	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
 
-	printLog( 'Downloading article from ' + articleUrl + ' at ' + articlePath + '...' );
-	loadUrlAsync( articleUrl, function( html, articleId, revId ) {
+	printLog( 'Treating and saving article ' + articleId + ' at ' + articlePath + '...' );
+	prepareAndSaveArticle( html, articleId, function ( error, result ) {
+	    if ( error ) {
+		console.error( 'Error by preparing and saving file ' + error );
+		process.exit( 1 );
+	    } else {
+		printLog( 'Dumped successfully article ' + articleId );
+		setTimeout( finished, 0 );
+	    }
+	});
+    }, maxParallelRequests );
+
+    function saveArticle( articleId, finished ) {
+	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
+
+	printLog( 'Downloading article from ' + articleUrl );
+	loadUrlAsync( articleUrl, function( html, articleId ) {
 	    if ( html ) {
-		printLog( 'Treating article ' + articleId + '...' );
-		prepareAndSaveArticle( html, articleId, function ( error, result ) {
-		    if ( error ) {
-			console.error( 'Error by preparing and saving file ' + error );
-			process.exit( 1 );
-		    } else {
-			printLog( 'Dumped successfully article ' + articleId );
-			printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
-			setTimeout( finished, ( downloadMediaQueue.length() + optimizationQueue.length() ) * 100 );
-		    }
-		});
+		saveArticleQueue.push( {html: html, id: articleId});
+		printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
+		setTimeout( finished, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) * 100 );
 	    } else {
 		delete articleIds[ articleId ];
 		setTimeout( finished, 0 );
@@ -1380,7 +1389,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
-	    request( { timeout: 10000 * ++retryCount, url: url }, function ( error, response, body ) {
+	    var out = request( { timeout: 30000 * ++retryCount, url: url }, function ( error, response, body ) {
 		if ( !error && response.statusCode == 200 ) {
 		    setTimeout( finished, 0, null, body );
 		} else {
@@ -1388,7 +1397,12 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 		    console.error( message );
 		    setTimeout( finished, 50000, message );
 		}
-	    })
+	    });
+	    out.on( 'error', function( error ) {
+                var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
+                console.error( message );
+                setTimeout( finished, 50000, message );
+            });
 	},
 	function ( error, data ) {
 	    if ( error ) {
