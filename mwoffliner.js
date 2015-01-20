@@ -1402,7 +1402,6 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 	function ( error, data ) {
 	    if ( error ) {
 		console.error( "Absolutly unable to retrieve async. URL. " + error );
-		process.exit( 1 );
 	    }
 	    if ( callback ) {
 		setTimeout( callback, 0, data, var1, var2, var3 );
