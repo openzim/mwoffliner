@@ -983,7 +983,7 @@ function saveArticles( finished ) {
 
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	loadUrlAsync( articleUrl, function( html, articleId ) {
+	setTimeout( loadUrlAsync, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length(), articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		saveArticleQueue.push( {html: html, id: articleId});
 	    } else {
