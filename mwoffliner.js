@@ -1388,7 +1388,7 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
-	    var out = request( { timeout: 200000 * ++retryCount, url: url }, function ( error, response, body ) {
+	    var out = request( { timeout: 50000 * ++retryCount, url: url }, function ( error, response, body ) {
 		if ( !error && response.statusCode == 200 ) {
 		    setTimeout( finished, 0, null, body );
 		}
