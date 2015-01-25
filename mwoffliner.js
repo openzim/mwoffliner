@@ -1388,15 +1388,23 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
+	    var calledCallback = false;
+
 	    var out = request( { timeout: 50000 * ++retryCount, url: url }, function ( error, response, body ) {
 		if ( !error && response.statusCode == 200 ) {
-		    setTimeout( finished, 0, null, body );
+		    if ( !calledCallback ) {
+			calledCallback = true;
+			setTimeout( finished, 0, null, body );
+		    }
 		}
 	    });
 	    out.on( 'error', function( error ) {
                 var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
                 console.error( message );
-                setTimeout( finished, 0, message );
+		    if ( !calledCallback ) {
+			calledCallback = true;
+			setTimeout( finished, 0, message );
+		    }
             });
 	},
 	function ( error, data ) {
