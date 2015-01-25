@@ -1396,15 +1396,22 @@ function loadUrlAsync( url, callback, var1, var2, var3 ) {
 			calledCallback = true;
 			setTimeout( finished, 0, null, body );
 		    }
+		} else {
+		    if ( !calledCallback ) {
+			calledCallback = true;
+			var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
+			console.error( message );
+			setTimeout( finished, 0, null, body );
+		    }
 		}
 	    });
 	    out.on( 'error', function( error ) {
-                var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
-                console.error( message );
-		    if ( !calledCallback ) {
-			calledCallback = true;
-			setTimeout( finished, 0, message );
-		    }
+		if ( !calledCallback ) {
+		    calledCallback = true;
+                    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
+                    console.error( message );
+		    setTimeout( finished, 0, message );
+		}
             });
 	},
 	function ( error, data ) {
@@ -1456,97 +1463,107 @@ function downloadFile( url, path, force, callback ) {
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
-
+	    
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
-
+	    
 	    var retryCount = 0;
 	    async.retry(
 		5,
 		function( finished ) {
 		    var tmpPathStream = fs.createWriteStream( tmpPath );
+		    var options = {
+			host: urlParser.parse(url).host,
+			port: 80,
+			path: urlParser.parse(url).pathname
+		    };
 
-		    request
-			.get( { timeout: 10000 * ++retryCount, url: url } )
+		    http.get( options, function( response ) {
+			if ( response.statusCode == 200 ) {
+			    response.on( 'data', function( data ) {
+				tmpPathStream.write( data );
+			    }).on( 'end', function() {
+				tmpPathStream.end();
+				printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
+				async.retry( 5,		
+					     function ( finished ) {
+						 fs.stat( path, function ( error, stats ) {
+						     if ( error ) {
+							 fs.rename( tmpPath, path, function( error ) {
+							     if ( error ) {
+								 setTimeout ( function() {
+								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
+								 }, 50000 );
+							     } else {
+								 fs.stat( path, function ( error, stats ) {
+								     if ( error ) {
+									 setTimeout ( function() {
+									     finished( 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
+									 }, 50000 );
+								     } else {
+									 optimizationQueue.push( {path: path, size: stats.size} );
+									 setTimeout( finished, 0 );
+								     }
+								 });
+							     }
+							 });
+						     } else {
+							 var targetSize = stats.size;
+							 fs.stat( tmpPath, function ( error, stats ) {
+							     if ( error ) {
+								 setTimeout ( function() {
+								     finished( 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
+								 }, 50000 );
+							     } else {
+								 if ( stats.size > targetSize ) {
+								     fs.rename( tmpPath, path, function( error ) {
+									 if ( error ) {
+									     setTimeout ( function() {
+										 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
+									     }, 50000 );
+									 } else {
+									     optimizationQueue.push( {path: path, size: stats.size} );
+									     setTimeout( finished, 0 );
+									 }
+								     });
+								 } else {
+								     printLog( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
+								     fs.unlink( tmpPath );
+								     setTimeout( finished, 0 );
+								 }
+							     }
+							 });
+						     }
+						 });
+					     },
+					     function ( error ) {
+						 setTimeout( finished, 0, error );
+					     });
+			    });
+			} else {
+			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')';
+			    console.error( message );
+			    setTimeout( finished, 50000, message );
+			}
+		    })
 			.on( 'error', function( error ) {
 			    fs.unlink( tmpPath, function() {
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 				console.error( message );
 				setTimeout( finished, 50000, message );
-			    })
-			})
-			.pipe( tmpPathStream );
-
-		    tmpPathStream.on('close', function () {
-			printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
-			
-			async.retry( 5,		
-				     function ( finished ) {
-					 fs.stat( path, function ( error, stats ) {
-					     if ( error ) {
-						 fs.rename( tmpPath, path, function( error ) {
-						     if ( error ) {
-							 setTimeout ( function() {
-							     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
-							 }, 50000 );
-						     } else {
-							 fs.stat( path, function ( error, stats ) {
-							     if ( error ) {
-								 setTimeout ( function() {
-								     finished( 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
-								 }, 50000 );
-							     } else {
-								 optimizationQueue.push( {path: path, size: stats.size} );
-								 setTimeout( finished, 0 );
-							     }
-							 });
-						     }
-						 });
-					     } else {
-						 var targetSize = stats.size;
-						 fs.stat( tmpPath, function ( error, stats ) {
-						     if ( error ) {
-							 setTimeout ( function() {
-							     finished( 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
-							 }, 50000 );
-						     } else {
-							 if ( stats.size > targetSize ) {
-							     fs.rename( tmpPath, path, function( error ) {
-								 if ( error ) {
-								     setTimeout ( function() {
-									 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
-								     }, 50000 );
-								 } else {
-								     optimizationQueue.push( {path: path, size: stats.size} );
-								     setTimeout( finished, 0 );
-								 }
-							     });
-							 } else {
-							     printLog( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
-							     fs.unlink( tmpPath );
-							     setTimeout( finished, 0 );
-							 }
-						     }
-						 });
-					     }
-					 });
-				     },
-				     function ( error ) {
-					 setTimeout( finished, 0, error );
-				     });
-		    });
+			    });
+			});
 		},
 		function ( error, data ) {
 		    if ( error ) {
 			console.error( error );
-			process.exit( 1 );
 		    }
 		    if ( callback ) {
 			setTimeout( callback, 0, true );
 		    } 		    
 		});
-	    }
-	});
+	}
+    });
 }
 
 /* Internal path/url functions */
