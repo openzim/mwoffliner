@@ -17,7 +17,6 @@ var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var rimraf = require( 'rimraf' );
 var countryLanguage = require( 'country-language' );
-var request = require( 'request' );
 var redis = require( 'redis' );
 var childProcess = require( 'child_process' );
 var exec = require( 'child_process' ).exec;
@@ -1387,7 +1386,7 @@ function getRequestOptionsFromUrl( url, timeout ) {
     return {
 	host: urlObj.hostname,
 	port: urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 ),
-	path: urlObj.pathname
+	path: urlObj.path
     };
 }
 
@@ -1397,31 +1396,45 @@ function downloadContent( url, callback, var1, var2, var3 ) {
     async.retry(
 	5,
 	function( finished ) {
-	    var calledCallback = false;
-
-	    var out = request( { timeout: 50000 * ++retryCount, url: url }, function ( error, response, body ) {
-		if ( !error && response.statusCode == 200 ) {
-		    if ( !calledCallback ) {
-			calledCallback = true;
-			setTimeout( finished, 0, null, body );
-		    }
+	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
+		if ( response.statusCode == 200 ) {
+		    var data = '';
+		    response.on( 'data', function ( chunk ) {
+			data += chunk;
+		    });
+		    response.on( 'end', function() {
+			setTimeout( finished, 0, null, data );
+		    });
 		} else {
-		    if ( !calledCallback ) {
-			calledCallback = true;
-			var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
-			console.error( message );
-			setTimeout( finished, 0, null, body );
-		    }
-		}
-	    });
-	    out.on( 'error', function( error ) {
-		if ( !calledCallback ) {
-		    calledCallback = true;
-                    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
-                    console.error( message );
+		    var message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').';
+		    console.error( message );
 		    setTimeout( finished, 0, message );
 		}
-            });
+	    })
+	    .on( 'error', function( error ) {
+                var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
+                console.error( message );
+		setTimeout( finished, 0, message );
+	    })
+	    .on( 'socket', function ( socket ) {
+		var req = this;
+		socket.setTimeout( 50000 * ++retryCount ); 
+		socket.custom = true;
+		if ( !socket.custom ) {
+		    socket.on( 'timeout', function() {
+			req.abort();
+			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
+			console.error( message );
+			setTimeout( finished, 50000, message );
+		    }); 
+		    socket.on( 'error', function( error ) {
+			req.abort();
+			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
+			console.error( message );
+			setTimeout( finished, 50000, message );
+		    });
+		}
+	    });
 	},
 	function ( error, data ) {
 	    if ( error ) {
@@ -1559,19 +1572,22 @@ function downloadFile( url, path, force, callback ) {
 		    })
 	            .on( 'socket', function ( socket ) {
 			var req = this;
-			socket.setTimeout( 50000 * ++retryCount ); 
-			socket.on( 'timeout', function() {
-			    req.abort();
-			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
-			    console.error( message );
-			    setTimeout( finished, 50000, message );
-			}); 
-			socket.on( 'error', function( error ) {
-			    req.abort();
-			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
-			    console.error( message );
-			    setTimeout( finished, 50000, message );
-			});
+			socket.setTimeout( 50000 * ++retryCount );
+			socket.custom = true;
+			if ( !socket.custom ) {
+			    socket.on( 'timeout', function() {
+				req.abort();
+				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
+				console.error( message );
+				setTimeout( finished, 50000, message );
+			    }); 
+			    socket.on( 'error', function( error ) {
+				req.abort();
+				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
+				console.error( message );
+				setTimeout( finished, 50000, message );
+			    });
+			}
 		    });
 		},
 		function ( error, data ) {

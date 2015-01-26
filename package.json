@@ -30,7 +30,6 @@
     "async": "*",
     "country-language": "*",
     "swig": "*",
-    "request": "*",
     "html-minifier": "*",
     "utf8-binary-cutter": "*",
     "redis": "*",
