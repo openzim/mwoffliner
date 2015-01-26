@@ -9,8 +9,8 @@ var fs = require( 'fs' );
 var domino = require( 'domino' );
 var jsdom = require( 'jsdom' );
 var async = require( 'async' );
-var http = require( 'http' );
-var https = require('https');
+var http = require('follow-redirects').http;
+var https = require('follow-redirects').https;
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
@@ -983,7 +983,7 @@ function saveArticles( finished ) {
 
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( loadUrlAsync, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length(), articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length(), articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		saveArticleQueue.push( {html: html, id: articleId});
 	    } else {
@@ -1028,7 +1028,7 @@ function saveJavascript( finished ) {
 	MutationEvents           : '2.0',
     }
 
-    loadUrlAsync( webUrl, function( html ) {
+    downloadContent( webUrl, function( html ) {
 	
 	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
 
@@ -1064,7 +1064,7 @@ function saveJavascript( finished ) {
 		    if ( url ) {
 			url = getFullUrl( url ).replace("debug=false", "debug=true");
 			printLog( 'Downloading javascript from ' + url );
-			loadUrlAsync( url, function( body) {
+			downloadContent( url, function( body) {
 			    fs.appendFile( javascriptPath, '\n' + munge_js(body) + '\n', function (err) {} );
 			});
 		    } else {
@@ -1104,7 +1104,7 @@ function saveStylesheet( finished ) {
 	    var cssDataUrlRegex = new RegExp( '^data' );
 	    
 	    printLog( 'Downloading CSS from ' + decodeURI( url ) );
-	    loadUrlAsync( url, function( body ) {
+	    downloadContent( url, function( body ) {
 		
 		/* Downloading CSS dependencies */
 		var match;
@@ -1141,7 +1141,7 @@ function saveStylesheet( finished ) {
     }, maxParallelRequests );
 
     /* Load main page to see which CSS files are needed */
-    loadUrlAsync( webUrl, function( html ) {
+    downloadContent( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var links = doc.getElementsByTagName( 'link' );
 
@@ -1183,7 +1183,7 @@ function getArticleIds( finished ) {
 	if ( articleId ) {
             printLog( 'Getting redirects for article ' + articleId + '...' );
 	    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
-	    loadUrlAsync( url, function( body ) {
+	    downloadContent( url, function( body ) {
 		try {
 		    if ( !JSON.parse( body )['error'] ) {
 			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
@@ -1244,7 +1244,7 @@ function getArticleIds( finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
-	    loadUrlAsync( url, function( body ) {
+	    downloadContent( url, function( body ) {
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
 		}
@@ -1276,7 +1276,7 @@ function getArticleIds( finished ) {
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=' + encodeURIComponent( next );
-		loadUrlAsync( url, function( body ) {
+		downloadContent( url, function( body ) {
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
 		    } else {
@@ -1382,7 +1382,16 @@ function writeFile( data, path, callback ) {
     });
 }
 
-function loadUrlAsync( url, callback, var1, var2, var3 ) {
+function getRequestOptionsFromUrl( url, timeout ) {
+    var urlObj = urlParser.parse( url );
+    return {
+	host: urlObj.hostname,
+	port: urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 ),
+	path: urlObj.pathname
+    };
+}
+
+function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 0;
 
     async.retry(
@@ -1472,13 +1481,8 @@ function downloadFile( url, path, force, callback ) {
 		5,
 		function( finished ) {
 		    var tmpPathStream = fs.createWriteStream( tmpPath );
-		    var options = {
-			host: urlParser.parse(url).host,
-			port: 80,
-			path: urlParser.parse(url).pathname
-		    };
 
-		    http.get( options, function( response ) {
+		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
 				tmpPathStream.write( data );
@@ -1546,13 +1550,29 @@ function downloadFile( url, path, force, callback ) {
 			    setTimeout( finished, 50000, message );
 			}
 		    })
-			.on( 'error', function( error ) {
-			    fs.unlink( tmpPath, function() {
-				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
-				console.error( message );
-				setTimeout( finished, 50000, message );
-			    });
+  	    	    .on( 'error', function( error ) {
+			fs.unlink( tmpPath, function() {
+			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
+			    console.error( message );
+			    setTimeout( finished, 50000, message );
 			});
+		    })
+	            .on( 'socket', function ( socket ) {
+			var req = this;
+			socket.setTimeout( 50000 * ++retryCount ); 
+			socket.on( 'timeout', function() {
+			    req.abort();
+			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
+			    console.error( message );
+			    setTimeout( finished, 50000, message );
+			}); 
+			socket.on( 'error', function( error ) {
+			    req.abort();
+			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
+			    console.error( message );
+			    setTimeout( finished, 50000, message );
+			});
+		    });
 		},
 		function ( error, data ) {
 		    if ( error ) {
@@ -1636,7 +1656,7 @@ function getArticleBase( articleId, escape ) {
 
 function getSubTitle( finished ) {
     printLog( 'Getting sub-title...' );
-    loadUrlAsync( webUrl, function( html ) {
+    downloadContent( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
@@ -1647,7 +1667,7 @@ function getSubTitle( finished ) {
 function getSiteInfo( finished ) {
     printLog( 'Getting web site name...' );
     var url = apiUrl + 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc';
-    loadUrlAsync( url, function( body ) {
+    downloadContent( url, function( body ) {
 	var entries = JSON.parse( body )['query']['general'];
 	name = entries['sitename'];
 	langIso2 = entries['lang'];
@@ -1671,7 +1691,7 @@ function saveFavicon( finished ) {
     printLog( 'Saving favicon.png...' );
     var faviconPath = htmlRootPath + '/favicon.png';
     
-    loadUrlAsync( apiUrl + 'action=query&meta=siteinfo&format=json', function( body ) {	
+    downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( body ) {	
 	var entries = JSON.parse( body )['query']['general'];
 	var logoUrl = entries['logo'];
 	logoUrl = urlParser.parse( logoUrl ).protocol ? logoUrl : 'http:' + logoUrl;
@@ -1706,7 +1726,7 @@ function getMainPage( finished ) {
     
     function retrieveMainPage( finished ) {
 	printLog( 'Getting main page...' );
-	loadUrlAsync( webUrl, function( body ) {
+	downloadContent( webUrl, function( body ) {
 	    var titleRegex = /\"wgPageName\"\:\"(.*?)\"/;
 	    var titleParts = titleRegex.exec( body );
 	    if ( titleParts[ 1 ] ) {
@@ -1734,7 +1754,7 @@ function getMainPage( finished ) {
 
 function getNamespaces( finished ) {
     var url = apiUrl + 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json';
-    var body = loadUrlAsync( url, function( body ) { 
+    var body = downloadContent( url, function( body ) { 
 	var types = [ 'namespaces', 'namespacealiases' ];
 	types.map( function( type ) {
 	    var entries = JSON.parse( body )['query'][type];
@@ -1770,7 +1790,7 @@ function getTextDirection( finished ) {
     printLog( 'Getting text direction...' );
     var path = htmlRootPath + '/index.html';
 
-    loadUrlAsync( webUrl, function( body ) {
+    downloadContent( webUrl, function( body ) {
 	var doc = domino.createDocument( body );
 	var contentNode = doc.getElementById( 'mw-content-text' );
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
