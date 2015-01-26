@@ -103,7 +103,8 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
-http.globalAgent.maxSockets = maxParallelRequests / 2;
+http.globalAgent.maxSockets = maxParallelRequests;
+https.globalAgent.maxSockets = maxParallelRequests;
 
 /* Verbose */
 var verbose = argv.verbose;
