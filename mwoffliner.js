@@ -103,8 +103,7 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
-http.globalAgent.maxSockets = maxParallelRequests;
-https.globalAgent.maxSockets = maxParallelRequests;
+http.globalAgent.maxSockets = maxParallelRequests / 2;
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -1419,19 +1418,20 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    .on( 'socket', function ( socket ) {
 		var req = this;
 		socket.setTimeout( 50000 * ++retryCount ); 
-		socket.custom = true;
+		socket.setKeepAlive( true, 60000 );
 		if ( !socket.custom ) {
+		    socket.custom = true;
 		    socket.on( 'timeout', function() {
-			req.abort();
 			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
 			console.error( message );
 			setTimeout( finished, 50000, message );
+			req.abort();
 		    }); 
 		    socket.on( 'error', function( error ) {
-			req.abort();
 			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
 			console.error( message );
 			setTimeout( finished, 50000, message );
+			req.abort();
 		    });
 		}
 	    });
@@ -1573,19 +1573,20 @@ function downloadFile( url, path, force, callback ) {
 	            .on( 'socket', function ( socket ) {
 			var req = this;
 			socket.setTimeout( 50000 * ++retryCount );
-			socket.custom = true;
+			socket.setKeepAlive( true, 60000 );
 			if ( !socket.custom ) {
+			    socket.custom = true;
 			    socket.on( 'timeout', function() {
-				req.abort();
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
 				console.error( message );
 				setTimeout( finished, 50000, message );
+				req.abort();
 			    }); 
 			    socket.on( 'error', function( error ) {
-				req.abort();
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
 				console.error( message );
 				setTimeout( finished, 50000, message );
+				req.abort();
 			    });
 			}
 		    });
