@@ -211,6 +211,7 @@ var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 )
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
+setInterval(redisClient.ping(), 1000 * 60 * 30).unref();
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
