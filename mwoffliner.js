@@ -1186,11 +1186,14 @@ function getArticleIds( finished ) {
 	    downloadContent( url, function( body ) {
 		try {
 		    if ( !JSON.parse( body )['error'] ) {
+			var values = new Array();
 			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
-			    redisClient.hset( redisRedirectsDatabase, entry['title'].replace( / /g, '_' ), articleId );
+			    values.push( entry['title'].replace( / /g, '_' ), articleId );
+			});
+			redisClient.mset( redisRedirectsDatabase, values, function ( errror ) {
+			    setTimeout( finished, 0 );
 			});
 		    }
-		    setTimeout( finished, 0 );
 		} catch( error ) {
 		    setTimeout( finished, 0, error );
 		}
@@ -1220,17 +1223,20 @@ function getArticleIds( finished ) {
 	try {
 	    var json = JSON.parse( body );
 	    var entries = json['query']['pages'];
+	    var redirectQueueValues = new Array();
+	    var values = new Array();
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		    redisClient.hset( redisArticleDetailsDatabase, entry['title'], entry['revisions'][0]['timestamp'] );
-		    redirectQueue.push( entry['title'] );
+		    values.push(  entry['title'], entry['revisions'][0]['timestamp'] );
+		    redirectQueueValues.push( entry['title'] );
 		}
 		next = json['query-continue'] ? json['query-continue']['allpages']['gapcontinue'] : undefined;
-
 	    });
+	    redirectQueue.push( redirectQueueValues );
+	    redisClient.mset( redisArticleDetailsDatabase, values );
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
 	    process.exit( 1 );
