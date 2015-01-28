@@ -988,11 +988,13 @@ function saveArticles( finished ) {
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
 	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length(), articleUrl, function( html, articleId ) {
 	    if ( html ) {
-		saveArticleQueue.push( {html: html, id: articleId});
+		saveArticleQueue.push( {html: html, id: articleId}, function() {
+		    setTimeout( finished, 0 );
+		});
 	    } else {
 		delete articleIds[ articleId ];
+		setTimeout( finished, 0 );
 	    }
-	    setTimeout( finished, 0 );
 	}, articleId );
     }
 
@@ -1760,7 +1762,9 @@ function getMainPage( finished ) {
 	    if ( titleParts[ 1 ] ) {
 		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
 					       target : getArticleBase( titleParts[1], true ) } );
-		writeFile( html, htmlRootPath + '/index.html' );
+		writeFile( html, htmlRootPath + '/index.html', function() {
+		    setTimeout( finished, 0 );
+		} );
 
 		/* We have to mirror the main page even if this is not
 		 * in a namespace to mirror */
@@ -1769,7 +1773,6 @@ function getMainPage( finished ) {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
 	    };
-	    setTimeout( finished, 0 );
 	});
     }
 
