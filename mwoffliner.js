@@ -567,7 +567,7 @@ function saveArticles( finished ) {
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
 		    var keepLink =
-			href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ?
+			href.indexOf( '/wiki/' ) == 0 || href.indexOf( './' ) == 0 ?
 			isMirrored( decodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
 		    
                     /* Under certain condition it seems that this is possible
