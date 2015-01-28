@@ -557,7 +557,8 @@ function saveArticles( finished ) {
 	    
 	    if ( ( !nopic || 
 		   img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) && 
-		 img.getAttribute( 'src' ) && img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
+		 img.getAttribute( 'src' ) && 
+		 img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
 	       ) {
 		
                 /* Remove image link */
@@ -566,9 +567,10 @@ function saveArticles( finished ) {
 		    
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
+		    var pathname = urlParser.parse( href, false, true ).pathname || '';
 		    var keepLink =
-			href.indexOf( '/wiki/' ) == 0 || href.indexOf( './' ) == 0 ?
-			isMirrored( decodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
+			pathname.indexOf( '/wiki/' ) == 0 || pathname.indexOf( './' ) == 0 ?
+			isMirrored( myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
 		    
                     /* Under certain condition it seems that this is possible
                      * to have parentNode == undefined, in this case this
@@ -689,7 +691,8 @@ function saveArticles( finished ) {
 	
 	function rewriteUrl( linkNode, finished ) {
 	    var rel = linkNode.getAttribute( 'rel' );
-	    var href = linkNode.getAttribute( 'href' );
+	    var href = linkNode.getAttribute( 'href' ) || '';
+	    var pathname = urlParser.parse( href, false, true ).pathname || '';
 	    
 	    if ( !href ) {
 		deleteNode( linkNode );
@@ -747,7 +750,7 @@ function saveArticles( finished ) {
 		    
 		    /* Remove internal links pointing to no mirrored articles */
 		    else if ( rel == 'mw:WikiLink' ) {
-			var targetId = decodeURIComponent( href.replace( /^\.\//, '' ) );
+			var targetId = myDecodeURIComponent( href.replace( /^\.\//, '' ) );
 			
 			/* Deal with local anchor */
 			var localAnchor = '';
@@ -784,8 +787,8 @@ function saveArticles( finished ) {
 			}
 		    }
 		} else {
-		    if ( href.indexOf( '/wiki/' ) == 0 || href.indexOf( './' ) == 0 ) {
-			var targetId = decodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
+		    if ( pathname.indexOf( '/wiki/' ) == 0 || pathname.indexOf( './' ) == 0 ) {
+			var targetId = myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
 			    setTimeout( finished, 0 );
@@ -1845,7 +1848,7 @@ function ucFirst( str ) {
     return f + str.substr( 1 );
 }
 
-function decodeURI( uri ) {
+function myDecodeURIComponent( uri ) {
     try {
 	return decodeURIComponent( uri );
     } catch ( error ) {
