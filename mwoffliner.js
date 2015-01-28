@@ -208,12 +208,10 @@ var redisClient = redis.createClient( '/tmp/redis.sock' );
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
 var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
-var redisKeepAliveTimer = setInterval( redisClient.ping(), 1000 * 60 * 30);
+var redisKeepAliveTimer = setInterval( function() { redisClient.ping() }, 1000 * 60 * 30 );
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
-
-
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
@@ -1403,7 +1401,7 @@ function getRequestOptionsFromUrl( url, timeout ) {
 }
 
 function downloadContent( url, callback, var1, var2, var3 ) {
-    var retryCount = 0;
+    var retryCount = 1;
 
     async.retry(
 	5,
@@ -1437,13 +1435,13 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    socket.on( 'timeout', function() {
 			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
 			console.error( message );
-			setTimeout( finished, 50000, message );
+			setTimeout( finished, 2000, message );
 			req.abort();
 		    }); 
 		    socket.on( 'error', function( error ) {
 			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
 			console.error( message );
-			setTimeout( finished, 50000, message );
+			setTimeout( finished, 2000, message );
 			req.abort();
 		    });
 		}
@@ -1502,7 +1500,7 @@ function downloadFile( url, path, force, callback ) {
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
 	    
-	    var retryCount = 0;
+	    var retryCount = 1;
 	    async.retry(
 		5,
 		function( finished ) {
@@ -1523,13 +1521,13 @@ function downloadFile( url, path, force, callback ) {
 							     if ( error ) {
 								 setTimeout ( function() {
 								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
-								 }, 50000 );
+								 }, 2000 );
 							     } else {
 								 fs.stat( path, function ( error, stats ) {
 								     if ( error ) {
 									 setTimeout ( function() {
 									     finished( 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
-									 }, 50000 );
+									 }, 2000 );
 								     } else {
 									 optimizationQueue.push( {path: path, size: stats.size} );
 									 setTimeout( finished, 0 );
@@ -1543,14 +1541,14 @@ function downloadFile( url, path, force, callback ) {
 							     if ( error ) {
 								 setTimeout ( function() {
 								     finished( 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
-								 }, 50000 );
+								 }, 2000 );
 							     } else {
 								 if ( stats.size > targetSize ) {
 								     fs.rename( tmpPath, path, function( error ) {
 									 if ( error ) {
 									     setTimeout ( function() {
 										 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
-									     }, 50000 );
+									     }, 2000 );
 									 } else {
 									     optimizationQueue.push( {path: path, size: stats.size} );
 									     setTimeout( finished, 0 );
@@ -1573,14 +1571,14 @@ function downloadFile( url, path, force, callback ) {
 			} else {
 			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')';
 			    console.error( message );
-			    setTimeout( finished, 50000, message );
+			    setTimeout( finished, 2000, message );
 			}
 		    })
   	    	    .on( 'error', function( error ) {
 			fs.unlink( tmpPath, function() {
 			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 			    console.error( message );
-			    setTimeout( finished, 50000, message );
+			    setTimeout( finished, 2000, message );
 			});
 		    })
 	            .on( 'socket', function ( socket ) {
@@ -1592,13 +1590,13 @@ function downloadFile( url, path, force, callback ) {
 			    socket.on( 'timeout', function() {
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
 				console.error( message );
-				setTimeout( finished, 50000, message );
+				setTimeout( finished, 2000, message );
 				req.abort();
 			    }); 
 			    socket.on( 'error', function( error ) {
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
 				console.error( message );
-				setTimeout( finished, 50000, message );
+				setTimeout( finished, 2000, message );
 				req.abort();
 			    });
 			}
