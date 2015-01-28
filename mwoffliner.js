@@ -568,7 +568,7 @@ function saveArticles( finished ) {
 		    var href = linkNode.getAttribute( 'href' ) || '';
 		    var keepLink =
 			href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ?
-			isMirrored( decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
+			isMirrored( decodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
 		    
                     /* Under certain condition it seems that this is possible
                      * to have parentNode == undefined, in this case this
@@ -747,7 +747,7 @@ function saveArticles( finished ) {
 		    
 		    /* Remove internal links pointing to no mirrored articles */
 		    else if ( rel == 'mw:WikiLink' ) {
-			var targetId = decodeURI( href.replace( /^\.\//, '' ) );
+			var targetId = decodeURIComponent( href.replace( /^\.\//, '' ) );
 			
 			/* Deal with local anchor */
 			var localAnchor = '';
@@ -784,8 +784,8 @@ function saveArticles( finished ) {
 			}
 		    }
 		} else {
-		    if ( href.indexOf( '/wiki/' ) != -1 || href.indexOf( './' ) != -1 ) {
-			var targetId = decodeURI( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
+		    if ( href.indexOf( '/wiki/' ) == 0 || href.indexOf( './' ) == 0 ) {
+			var targetId = decodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
 			    setTimeout( finished, 0 );
@@ -1391,22 +1391,13 @@ function writeFile( data, path, callback ) {
     });
 }
 
-function getRequestOptionsFromUrl( url, timeout ) {
-    var urlObj = urlParser.parse( url );
-    return {
-	host: urlObj.hostname,
-	port: urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 ),
-	path: urlObj.path
-    };
-}
-
 function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 1;
 
     async.retry(
 	5,
 	function( finished ) {
-	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
+	    http.get( url, function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
 		    response.on( 'data', function ( chunk ) {
@@ -1506,7 +1497,7 @@ function downloadFile( url, path, force, callback ) {
 		function( finished ) {
 		    var tmpPathStream = fs.createWriteStream( tmpPath );
 
-		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
+		    http.get( url, function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
 				tmpPathStream.write( data );
