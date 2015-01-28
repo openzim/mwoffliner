@@ -103,8 +103,8 @@ if ( isNaN( maxParallelRequests ) ) {
     console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
     process.exit( 1 );
 }
-http.globalAgent.maxSockets = maxParallelRequests;
-https.globalAgent.maxSockets = maxParallelRequests;
+http.globalAgent.maxSockets = maxParallelRequests * 2;
+https.globalAgent.maxSockets = maxParallelRequests * 2;
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -989,13 +989,11 @@ function saveArticles( finished ) {
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
 	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length(), articleUrl, function( html, articleId ) {
 	    if ( html ) {
-		saveArticleQueue.push( {html: html, id: articleId}, function() {
-		    setTimeout( finished, 0 );
-		});
+		saveArticleQueue.push( {html: html, id: articleId} );
 	    } else {
 		delete articleIds[ articleId ];
-		setTimeout( finished, 0 );
 	    }
+	    setTimeout( finished, 0 );
 	}, articleId );
     }
 
@@ -1394,31 +1392,53 @@ function writeFile( data, path, callback ) {
     });
 }
 
+function getRequestOptionsFromUrl( url, timeout ) {
+    var urlObj = urlParser.parse( url );
+    var headers = {
+	"user-agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
+    }; 
+
+    return {
+	host: urlObj.hostname,
+	port: urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 ),
+	headers: headers,
+	path: urlObj.path
+    };
+}
+
 function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 1;
 
     async.retry(
 	5,
 	function( finished ) {
-	    http.get( url, function( response ) {
+	    var calledFinished = false;
+	    function callFinished( timeout, message, data ) {
+		if ( !calledFinished ) {
+		    calledFinished = false;
+		    setTimeout( finished, timeout, message, data );
+		}
+	    }
+
+	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
 		    response.on( 'data', function ( chunk ) {
 			data += chunk;
 		    });
 		    response.on( 'end', function() {
-			setTimeout( finished, 0, null, data );
+			callFinished( 0, null, data );
 		    });
 		} else {
 		    var message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').';
 		    console.error( message );
-		    setTimeout( finished, 0, message );
+		    callFinished( 0, message );
 		}
 	    })
 	    .on( 'error', function( error ) {
                 var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
                 console.error( message );
-		setTimeout( finished, 0, message );
+		callFinished( 0, message );
 	    })
 	    .on( 'socket', function ( socket ) {
 		var req = this;
@@ -1426,17 +1446,15 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		socket.setKeepAlive( true, 60000 );
 		if ( !socket.custom ) {
 		    socket.custom = true;
-		    socket.on( 'timeout', function() {
+		    socket.addListener( 'timeout', function() {
 			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
 			console.error( message );
-			setTimeout( finished, 2000, message );
-			req.abort();
+			callFinished( 2000, message );
 		    }); 
-		    socket.on( 'error', function( error ) {
+		    socket.addListener( 'error', function( error ) {
 			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
 			console.error( message );
-			setTimeout( finished, 2000, message );
-			req.abort();
+			callFinished( 2000, message );
 		    });
 		}
 	    });
@@ -1498,9 +1516,16 @@ function downloadFile( url, path, force, callback ) {
 	    async.retry(
 		5,
 		function( finished ) {
-		    var tmpPathStream = fs.createWriteStream( tmpPath );
+		    var calledFinished = false;
+		    function callFinished( timeout, message ) {
+			if ( !calledFinished ) {
+			    calledFinished = false;
+			    setTimeout( finished, timeout, message );
+			}
+		    }
 
-		    http.get( url, function( response ) {
+		    var tmpPathStream = fs.createWriteStream( tmpPath );
+		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
 				tmpPathStream.write( data );
@@ -1513,18 +1538,14 @@ function downloadFile( url, path, force, callback ) {
 						     if ( error ) {
 							 fs.rename( tmpPath, path, function( error ) {
 							     if ( error ) {
-								 setTimeout ( function() {
-								     finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
-								 }, 2000 );
+								 callFinished( 2000, 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
 							     } else {
 								 fs.stat( path, function ( error, stats ) {
 								     if ( error ) {
-									 setTimeout ( function() {
-									     finished( 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
-									 }, 2000 );
+									 callFinished( 2000, 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
 								     } else {
 									 optimizationQueue.push( {path: path, size: stats.size} );
-									 setTimeout( finished, 0 );
+									 callFinished( 0 );
 								     }
 								 });
 							     }
@@ -1533,25 +1554,21 @@ function downloadFile( url, path, force, callback ) {
 							 var targetSize = stats.size;
 							 fs.stat( tmpPath, function ( error, stats ) {
 							     if ( error ) {
-								 setTimeout ( function() {
-								     finished( 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
-								 }, 2000 );
+								 callFinished( 2000, 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
 							     } else {
 								 if ( stats.size > targetSize ) {
 								     fs.rename( tmpPath, path, function( error ) {
 									 if ( error ) {
-									     setTimeout ( function() {
-										 finished( 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
-									     }, 2000 );
+									     callFinished( 2000, 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
 									 } else {
 									     optimizationQueue.push( {path: path, size: stats.size} );
-									     setTimeout( finished, 0 );
+									     callFinished( 0 );
 									 }
 								     });
 								 } else {
 								     printLog( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
 								     fs.unlink( tmpPath );
-								     setTimeout( finished, 0 );
+								     callFinished( 0 );
 								 }
 							     }
 							 });
@@ -1559,20 +1576,20 @@ function downloadFile( url, path, force, callback ) {
 						 });
 					     },
 					     function ( error ) {
-						 setTimeout( finished, 0, error );
+						 callFinished( 0, error );
 					     });
 			    });
 			} else {
 			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')';
 			    console.error( message );
-			    setTimeout( finished, 2000, message );
+			    callFinished( 2000, message );
 			}
 		    })
   	    	    .on( 'error', function( error ) {
 			fs.unlink( tmpPath, function() {
 			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
 			    console.error( message );
-			    setTimeout( finished, 2000, message );
+			    callFinished( 2000, message );
 			});
 		    })
 	            .on( 'socket', function ( socket ) {
@@ -1581,17 +1598,15 @@ function downloadFile( url, path, force, callback ) {
 			socket.setKeepAlive( true, 60000 );
 			if ( !socket.custom ) {
 			    socket.custom = true;
-			    socket.on( 'timeout', function() {
+			    socket.addListener( 'timeout', function() {
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
 				console.error( message );
-				setTimeout( finished, 2000, message );
-				req.abort();
+				callFinished( 2000, message );
 			    }); 
-			    socket.on( 'error', function( error ) {
+			    socket.addListener( 'error', function( error ) {
 				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
 				console.error( message );
-				setTimeout( finished, 2000, message );
-				req.abort();
+				callFinished( 2000, message );
 			    });
 			}
 		    });
