@@ -208,10 +208,12 @@ var redisClient = redis.createClient( '/tmp/redis.sock' );
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
 var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
+var redisKeepAliveTimer = setInterval( redisClient.ping(), 1000 * 60 * 30);
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
-setInterval(redisClient.ping(), 1000 * 60 * 30).unref();
+
+
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
@@ -355,6 +357,7 @@ async.series(
     ],
     function( error ) {
 	printLog( 'All dumping(s) finished with success.' );
+	redisKeepAliveTimer.unref();
 	redisClient.quit(); 
     }
 );
@@ -1190,7 +1193,7 @@ function getArticleIds( finished ) {
 			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
 			    values.push( entry['title'].replace( / /g, '_' ), articleId );
 			});
-			redisClient.mset( redisRedirectsDatabase, values, function ( errror ) {
+			redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
 			    setTimeout( finished, 0 );
 			});
 		    }
@@ -1236,7 +1239,7 @@ function getArticleIds( finished ) {
 		next = json['query-continue'] ? json['query-continue']['allpages']['gapcontinue'] : undefined;
 	    });
 	    redirectQueue.push( redirectQueueValues );
-	    redisClient.mset( redisArticleDetailsDatabase, values );
+	    redisClient.hmset( redisArticleDetailsDatabase, values );
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
 	    process.exit( 1 );
