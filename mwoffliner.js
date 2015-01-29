@@ -1009,7 +1009,7 @@ function saveArticles( finished ) {
     }
 
     printLog( 'Saving articles...' );
-    async.eachLimit( Object.keys( articleIds ), speed / 2, saveArticle, function( error ) {
+    async.eachLimit( Object.keys( articleIds ), speed, saveArticle, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
