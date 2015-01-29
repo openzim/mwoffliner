@@ -423,14 +423,20 @@ function computeFilenameRadical() {
 }
 
 function computeHtmlRootPath() {
-    var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve(  process.cwd(), outputDirectory ) + '/';
+    var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve( process.cwd(), outputDirectory ) + '/';
     htmlRootPath += computeFilenameRadical() + '/';
     return htmlRootPath;
 }
 
+function computeZimRootPath() {
+    var zimRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve( process.cwd(), outputDirectory ) + '/';
+    zimRootPath += computeFilenameRadical() + '.zim';
+    return zimRootPath;
+}
+
 function buildZIM( finished ) {
     if ( !nozim ) {
-	var zimPath = outputDirectory + filenameRadical + '.zim';
+	var zimPath = computeZimRootPath();
 	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
 	    + ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 	    + publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
