@@ -110,7 +110,7 @@ if ( isNaN( speed ) ) {
 
 /* Http user agents */
 var keepaliveHttpAgent = new httpAgent();
-var keepaliveHttpsAgent = new httpAgent();
+var keepaliveHttpsAgent = new httpsAgent();
 
 /* Verbose */
 var verbose = argv.verbose;
