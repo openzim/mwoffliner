@@ -1290,7 +1290,7 @@ function getArticleIds( finished ) {
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=' + encodeURIComponent( next );
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
 		downloadContent( url, function( body ) {
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
@@ -1403,7 +1403,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	'accept-encoding': compression ? 'gzip,deflate' : undefined,
 	"user-agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
     }; 
-    var port = urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 );
+    var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
 
     return {
 	host: urlObj.hostname,
