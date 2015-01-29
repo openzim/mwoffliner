@@ -29,6 +29,7 @@
     "expand-home-dir": "*",
     "html-minifier": "*",
     "jsdom": "*",
+    "follow-redirects": "*",
     "longjohn": "*",
     "redis": "*",
     "rimraf": "*",
