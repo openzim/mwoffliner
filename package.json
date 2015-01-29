@@ -22,18 +22,25 @@
     "url": "http://reportabug.kiwix.org"
   },
   "dependencies": {
-    "expand-home-dir": "*",
-    "rimraf": "*",
-    "yargs": "*",
-    "domino": "*",
-    "jsdom": "*",
+    "agentkeepalive": "^1.2.0",
     "async": "*",
     "country-language": "*",
-    "swig": "*",
+    "domino": "*",
+    "expand-home-dir": "*",
     "html-minifier": "*",
-    "utf8-binary-cutter": "*",
+    "jsdom": "*",
+    "longjohn": "*",
     "redis": "*",
-    "longjohn": "*"
+    "rimraf": "*",
+    "swig": "*",
+    "utf8-binary-cutter": "*",
+    "yargs": "*",
+    "agentkeepalive": "0.2.3,
+    "zlib": "*"
   },
-  "keywords": [ "mediawiki", "parsoid", "zim" ]
+  "keywords": [
+    "mediawiki",
+    "parsoid",
+    "zim"
+  ]
 }

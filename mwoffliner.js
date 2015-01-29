@@ -11,6 +11,7 @@ var jsdom = require( 'jsdom' );
 var async = require( 'async' );
 var http = require('follow-redirects').http;
 var https = require('follow-redirects').https;
+var zlib = require('zlib');
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
@@ -26,6 +27,8 @@ var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
 var longjohn = require('longjohn');
+var httpAgent = require('agentkeepalive');
+var httpsAgent = require('agentkeepalive').HttpsAgent;
 
 /************************************/
 /* COMMAND LINE PARSING *************/
@@ -34,7 +37,7 @@ var longjohn = require('longjohn');
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
     .require(['mwUrl', 'parsoidUrl'])
-    .options(['articleList', 'outputDirectory', 'parallelRequests', 'format', 'keepHtml', 'filePrefix'])
+    .options(['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix'])
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'articleList', 'File with one title (in UTF8) per line')
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
@@ -42,7 +45,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'mwWikiPath', 'Mediawiki API path (per default "/w/api.php")')
     .describe( 'mwApiPath', 'Mediawiki wiki base path (per default "/wiki/"')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
-    .describe( 'parallelRequests', 'Number of parallel HTTP requests')
+    .describe( 'speed', 'More or less the number of parallel HTTP requests (per default the number of core, reduce if stability problem)')
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory')
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
@@ -98,13 +101,16 @@ var articleList = argv.articleList;
 var filenamePrefix = argv.filenamePrefix || '';
 
 /* Number of parallel requests */
-var maxParallelRequests = argv.parallelRequests || 40;
-if ( isNaN( maxParallelRequests ) ) {
-    console.error( 'maxParallelRequests is not a number, please give a number value to --parallelRequests' );
+var cpuCount = os.cpus().length;
+var speed = argv.speed || cpuCount;
+if ( isNaN( speed ) ) {
+    console.error( 'speed is not a number, please give a number value to --speed' );
     process.exit( 1 );
 }
-http.globalAgent.maxSockets = maxParallelRequests * 2;
-https.globalAgent.maxSockets = maxParallelRequests * 2;
+
+/* Http user agents */
+var keepaliveHttpAgent = new httpAgent();
+var keepaliveHttpsAgent = new httpAgent();
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -162,7 +168,6 @@ var htmlTemplateCode = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
-var cpuCount = os.cpus().length;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
@@ -307,7 +312,7 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
     } else {
 	setTimeout( finished, 0 );
     }
-}, maxParallelRequests );
+}, speed );
 
 /* Get content */
 async.series(
@@ -521,7 +526,7 @@ function saveRedirects( finished ) {
 	    console.error( 'Unable to get redirect keys from redis: ' + error );
 	    process.exit( 1 );
 	} else {
-	    async.eachLimit( keys, maxParallelRequests, callback, function( error ) {
+	    async.eachLimit( keys, speed, callback, function( error ) {
 		if ( error ) {
 		    console.error( 'Unable to save a redirect: ' + error );
 		    process.exit( 1 );
@@ -817,7 +822,7 @@ function saveArticles( finished ) {
 	    }
 	}
 	
-	async.eachLimit( linkNodes, maxParallelRequests, rewriteUrl, function( error ) {
+	async.eachLimit( linkNodes, speed, rewriteUrl, function( error ) {
 	    if ( error ) {
 		console.error( 'Problem by rewriting urls: ' + error );
 		process.exit( 1 );
@@ -980,7 +985,7 @@ function saveArticles( finished ) {
 		setTimeout( finished, 0 );
 	    }
 	});
-    }, maxParallelRequests );
+    }, speed );
 
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
@@ -998,7 +1003,7 @@ function saveArticles( finished ) {
     }
 
     printLog( 'Saving articles...' );
-    async.eachLimit( Object.keys( articleIds ), maxParallelRequests, saveArticle, function( error ) {
+    async.eachLimit( Object.keys( articleIds ), speed / 2, saveArticle, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
@@ -1098,7 +1103,7 @@ function saveStylesheet( finished ) {
 	} else {
 	    setTimeout( finished, 0 );
 	}
-    }, maxParallelRequests );
+    }, speed );
 
     /* Take care to download CSS files */
     var downloadCSSQueue = async.queue( function ( url, finished ) {
@@ -1142,7 +1147,7 @@ function saveStylesheet( finished ) {
 	    setTimeout( finished, 0 );
 	}
 
-    }, maxParallelRequests );
+    }, speed );
 
     /* Load main page to see which CSS files are needed */
     downloadContent( webUrl, function( html ) {
@@ -1205,7 +1210,7 @@ function getArticleIds( finished ) {
 	} else {
 	    setTimeout( finished, 0 );
 	}
-    }, maxParallelRequests );
+    }, speed * 3 );
 
     function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
@@ -1267,7 +1272,7 @@ function getArticleIds( finished ) {
 
     function getArticleIdsForFile() {
 	var lines = fs.readFileSync( articleList ).toString().split( '\n' );
-	async.eachLimit( lines, maxParallelRequests, getArticleIdsForLine, function( error ) {
+	async.eachLimit( lines, speed, getArticleIdsForLine, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for a file: ' + error );
 		process.exit( 1 );
@@ -1392,17 +1397,20 @@ function writeFile( data, path, callback ) {
     });
 }
 
-function getRequestOptionsFromUrl( url, timeout ) {
+function getRequestOptionsFromUrl( url, compression ) {
     var urlObj = urlParser.parse( url );
     var headers = {
+	'accept-encoding': compression ? 'gzip,deflate' : undefined,
 	"user-agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
     }; 
+    var port = urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 );
 
     return {
 	host: urlObj.hostname,
-	port: urlObj.port ? urlObj.port : ( urlObj.scheme == 'https' ? 443 : 80 ),
+	port: port,
 	headers: headers,
-	path: urlObj.path
+	path: urlObj.path,
+	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent,
     };
 }
 
@@ -1423,6 +1431,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
+
 		    response.on( 'data', function ( chunk ) {
 			data += chunk;
 		    });
@@ -1443,7 +1452,6 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    .on( 'socket', function ( socket ) {
 		var req = this;
 		socket.setTimeout( 50000 * ++retryCount ); 
-		socket.setKeepAlive( true, 60000 );
 		if ( !socket.custom ) {
 		    socket.custom = true;
 		    socket.addListener( 'timeout', function() {
@@ -1595,7 +1603,6 @@ function downloadFile( url, path, force, callback ) {
 	            .on( 'socket', function ( socket ) {
 			var req = this;
 			socket.setTimeout( 50000 * ++retryCount );
-			socket.setKeepAlive( true, 60000 );
 			if ( !socket.custom ) {
 			    socket.custom = true;
 			    socket.addListener( 'timeout', function() {
