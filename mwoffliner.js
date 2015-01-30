@@ -1205,7 +1205,6 @@ function getArticleIds( finished ) {
 			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
 			    values.push( entry['title'].replace( / /g, '_' ), articleId );
 			});
-			console.log( values );
 			if ( values.length ) {
 			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
 				setTimeout( finished, 0 );
