@@ -443,9 +443,9 @@ function buildZIM( finished ) {
 	printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 
 	executeTransparently( 'zimwriterfs',
-			      [ '--welcome=index.html', '--favicon=favicon.png', '--language=' + langIso3, '--title="' + name + '"', 
-				'--description="' + ( subTitle || name ) + '"', '--creator="' + creator + '"', 
-				'--publisher="' + publisher+ '"', htmlRootPath, zimPath ], 
+			      [ '--welcome=index.html', '--favicon=favicon.png', '--language=' + langIso3, '--title=' + name , 
+				'--description=' + ( subTitle || name ), '--creator=' + creator, 
+				'--publisher=' + publisher, htmlRootPath, zimPath ], 
 			      function( error ) {
 				  if ( error ) {
 				      console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
@@ -998,7 +998,7 @@ function saveArticles( finished ) {
 
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() * 10, articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) * 100, articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		saveArticleQueue.push( {html: html, id: articleId} );
 	    } else {
@@ -1205,8 +1205,9 @@ function getArticleIds( finished ) {
 			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
 			    values.push( entry['title'].replace( / /g, '_' ), articleId );
 			});
-			redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
-			    setTimeout( finished, 0 );
+			if ( values.length )
+			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
+				setTimeout( finished, 0 );
 			});
 		    }
 		} catch( error ) {
@@ -1250,8 +1251,10 @@ function getArticleIds( finished ) {
 		}
 		next = json['query-continue'] ? json['query-continue']['allpages']['gapcontinue'] : undefined;
 	    });
-	    redirectQueue.push( redirectQueueValues );
-	    redisClient.hmset( redisArticleDetailsDatabase, values );
+	    if ( redirectQueueValues.length )
+		redirectQueue.push( redirectQueueValues );
+	    if ( values.length )
+		redisClient.hmset( redisArticleDetailsDatabase, values );
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
 	    process.exit( 1 );
