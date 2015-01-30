@@ -1205,10 +1205,14 @@ function getArticleIds( finished ) {
 			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
 			    values.push( entry['title'].replace( / /g, '_' ), articleId );
 			});
-			if ( values.length )
+			console.log( values );
+			if ( values.length ) {
 			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
 				setTimeout( finished, 0 );
-			});
+			    });
+			} else {
+			    setTimeout( finished, 0 );
+			}
 		    }
 		} catch( error ) {
 		    setTimeout( finished, 0, error );
