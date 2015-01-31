@@ -1729,7 +1729,7 @@ function getSiteInfo( finished ) {
 	langIso2 = entries['lang'];
 	countryLanguage.getLanguage( langIso2, function ( error, language ) {
 	    if ( error ) {
-		if ( langIso2.length == 3 ) {
+		if ( langIso2.length >= 3 ) {
 		    langIso3 = langIso2;
 		} else {
 		    printLog( error );
