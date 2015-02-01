@@ -7,6 +7,8 @@
 
 var fs = require( 'fs' );
 var async = require( 'async' );
+var http = require('follow-redirects').http;
+var https = require('follow-redirects').https;
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var countryLanguage = require( 'country-language' );
@@ -51,7 +53,8 @@ var tmpDirectory = getAbsoluteDirectoryPath( argv.tmpDirectory ? homeDirExpander
 var verbose = argv.verbose;
 var resume = argv.resume;
 var selections = new Array();
-var wpBlackList = [ 'be-x-old' ];
+var wpBlackList = [];
+var mediawikis = new Object();
 
 /************************************/
 /* MAIN *****************************/
@@ -60,6 +63,7 @@ var wpBlackList = [ 'be-x-old' ];
 async.series(
     [
 	function( finished ) { init( finished ) },
+	function( finished ) { loadMatrix( finished ) },
 	function( finished ) { loadSelections( finished ) },
 	function( finished ) { dump( finished ) }
     ],
@@ -67,7 +71,7 @@ async.series(
 	if ( error ) {
 	    console.error( 'Unable to dump correctly all mediawikis (' + error + ')' );
 	} else {
-	    console.log( 'All mediawikis dump successfuly' );
+	    printLog( 'All mediawikis dump successfuly' );
 	}
     }
 );
@@ -118,14 +122,17 @@ function dump( finished ) {
 	selections,
 	function ( language, finished ) {
 	    if ( wpBlackList.indexOf( language ) == -1 ) {
-		var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/' + language + 'wiki/';
 		var mwUrl = 'http://' + language + '.wikipedia.org/';
 		var articleList = directory + language;
 		var selectionName = pathParser.basename( directory );
 		var zimFilenamePrefix = 'wikipedia_' + language + '_' + selectionName;
-		var zimFullPath = outputDirectory + zimFilenamePrefix + '_' + date.getFullYear() + '-' + ( '0' + ( date.getMonth() ) ).slice( -2 ) + '.zim';
-		
-		console.log( zimFullPath );
+		var zimFullPath = outputDirectory + zimFilenamePrefix + '_' + date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 ) + '.zim';
+		var parsoidCode = mediawikis[ language ] && mediawikis[ language ].dbname ? mediawikis[ language ].dbname : undefined;
+		if ( !parsoidCode ) {
+		    console.error( 'Unable to compute parsoid URL for :' + mwUrl );
+		    process.exit( 1 );
+		}
+		var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/' + parsoidCode + '/';
 
 		if ( resume && fs.existsSync( zimFullPath ) ) {
 		    printLog( 'Dumping selection for language "' + language + '" already done. ZIM file available at ' + zimFullPath );
@@ -144,7 +151,7 @@ function dump( finished ) {
 						  process.exit( 1 );
 					      } else {
 						  var cmd = 'mv ' + tmpDirectory + '*.zim "' + outputDirectory + '"'; 
-						  console.log( 'Moving ZIM files (' + cmd + ')' );
+						  printLog( 'Moving ZIM files (' + cmd + ')' );
 						  exec( cmd, function( executionError, stdout, stderr ) {
 						      if ( executionError ) {
 							  finished( executionError );
@@ -173,14 +180,14 @@ function loadSelections( finished ) {
 }
 
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
-    console.log( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
+    printLog( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
 
     try {
         var proc = spawn( command, args );
 
 	if ( !nostdout ) {
             proc.stdout.on( 'data', function ( data ) {
-		console.log( String( data ).replace(/[\n\r]/g, '') );
+		printLog( String( data ).replace(/[\n\r]/g, '') );
             });
 	}
 
@@ -204,6 +211,95 @@ function printLog( msg ) {
     }
 }
 
+function loadMatrix( finished ) {
+    downloadContent( 'http://meta.wikimedia.org/w/api.php?action=sitematrix&format=json', function( json ) {
+	if ( !JSON.parse( json )['error'] ) {
+	    var entries = JSON.parse( json );
+	    var entryCount = entries['sitematrix']['count'];
+	    for ( var i=0; i<entryCount; i++ ) {
+		var entry = entries['sitematrix'][i];
+		if ( entry ) {
+		    var language = entry['code'];
+		    var sites = entry['site'];
+		    for ( var j=0; j<sites.length; j++) {
+			if ( sites[ j ].code == 'wiki' && sites[ j ].closed === undefined ) {
+			    mediawikis[ language ] = sites[ j ];
+			}
+		    }
+		}
+	    }
+	    console.log( 'Matrix loaded successfuly' );
+	    finished();
+	} else {
+	    console.error( 'Unable to parse the matrix JSON from ' + matrixUrl );
+	    process.exit( 1 );
+	}
+    });
+}
+
 function getAbsoluteDirectoryPath( directoryPath ) {
     return directoryPath[0] === '/' ? directoryPath : pathParser.resolve( process.cwd(), directoryPath ) + '/';
+}
+
+function downloadContent( url, callback, var1, var2, var3 ) {
+    var retryCount = 1;
+
+    async.retry(
+	5,
+	function( finished ) {
+	    var calledFinished = false;
+	    function callFinished( timeout, message, data ) {
+		if ( !calledFinished ) {
+		    calledFinished = true;
+		    setTimeout( finished, timeout, message, data );
+		}
+	    }
+	    
+	    http.get( url, function( response ) {
+		if ( response.statusCode == 200 ) {
+		    var data = '';
+
+		    response.on( 'data', function ( chunk ) {
+			data += chunk;
+		    });
+		    response.on( 'end', function() {
+			callFinished( 0, null, data );
+		    });
+		} else {
+		    var message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').';
+		    console.error( message );
+		    callFinished( 0, message );
+		}
+	    })
+	    .on( 'error', function( error ) {
+                var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
+                console.error( message );
+		callFinished( 0, message );
+	    })
+	    .on( 'socket', function ( socket ) {
+		var req = this;
+		socket.setTimeout( 50000 * ++retryCount ); 
+		if ( !socket.custom ) {
+		    socket.custom = true;
+		    socket.addListener( 'timeout', function() {
+			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
+			console.error( message );
+			callFinished( 2000, message );
+		    }); 
+		    socket.addListener( 'error', function( error ) {
+			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
+			console.error( message );
+			callFinished( 2000, message );
+		    });
+		}
+	    });
+	},
+	function ( error, data ) {
+	    if ( error ) {
+		console.error( "Absolutly unable to retrieve async. URL. " + error );
+	    }
+	    if ( callback ) {
+		setTimeout( callback, 0, data, var1, var2, var3 );
+	    } 		    
+	});
 }
