@@ -21,10 +21,11 @@ var spawn = require('child_process').spawn;
 var argv = yargs.usage('Given a directory, create for each selection list file belonging to it, the corresponding ZIM file against Wikipedia: $0'
 	   + '\nExample: node wpselectionsoffliner.js --directory=/tmp/wikiproject/ [--tmpDirectory=/tmp/] --outputDirectory=[/var/zim2index]')
     .require([ 'directory' ])
-    .options( ['verbose', 'tmpDirectory', 'outputDirectory'] )
+    .options( ['verbose', 'tmpDirectory', 'outputDirectory', 'resume'] )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'outputDirectory', 'Directory to write the ZIM files')
     .describe( 'verbose', 'Print debug information to the stdout' )
+    .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .strict()
     .argv;
 
@@ -43,11 +44,14 @@ optBinaries.forEach( function( cmd ) {
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
 
-var directory = homeDirExpander( argv.directory );
-var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : directory;
-var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/';
+var date = new Date();
+var directory = getAbsoluteDirectoryPath( homeDirExpander( argv.directory ) );
+var outputDirectory = getAbsoluteDirectoryPath( argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : directory );
+var tmpDirectory = getAbsoluteDirectoryPath( argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/' );
 var verbose = argv.verbose;
+var resume = argv.resume;
 var selections = new Array();
+var wpBlackList = [ 'be-x-old' ];
 
 /************************************/
 /* MAIN *****************************/
@@ -113,40 +117,52 @@ function dump( finished ) {
     async.eachSeries(
 	selections,
 	function ( language, finished ) {
-	    printLog( 'Dumping selection for language "' + language + '"' );
-	    
-	    var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/' + language + 'wiki/';
-	    var mwUrl = 'http://' + language + '.wikipedia.org/';
-	    var articleList = directory + language;
-	    var selectionName = pathParser.basename( directory );
+	    if ( wpBlackList.indexOf( language ) == -1 ) {
+		var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/' + language + 'wiki/';
+		var mwUrl = 'http://' + language + '.wikipedia.org/';
+		var articleList = directory + language;
+		var selectionName = pathParser.basename( directory );
+		var zimFilenamePrefix = 'wikipedia_' + language + '_' + selectionName;
+		var zimFullPath = outputDirectory + zimFilenamePrefix + '_' + date.getFullYear() + '-' + ( '0' + ( date.getMonth() ) ).slice( -2 ) + '.zim';
+		
+		console.log( zimFullPath );
 
-	    executeTransparently( 'node',
-				  [ './mwoffliner.js', '--mwUrl=' + mwUrl, '--parsoidUrl=' + parsoidUrl,
-				    '--outputDirectory=' + tmpDirectory, verbose ? '--verbose' : '',
-				    '--articleList=' + articleList, 
-				    '--filenamePrefix=wikipedia_' + language + '_' + selectionName
-				  ],
-				  function( executionError ) {
-				      if ( executionError ) {
-					  console.error( executionError );
-					  process.exit( 1 );
-				      } else {
-					  var cmd = 'mv ' + tmpDirectory + '*.zim "' + outputDirectory + '"'; 
-					  console.log( 'Moving ZIM files (' + cmd + ')' );
-					  exec( cmd, function( executionError, stdout, stderr ) {
+		if ( resume && fs.existsSync( zimFullPath ) ) {
+		    printLog( 'Dumping selection for language "' + language + '" already done. ZIM file available at ' + zimFullPath );
+		    finished();
+		} else {
+		    printLog( 'Dumping selection for language "' + language + '"' );
+		    executeTransparently( 'node',
+					  [ './mwoffliner.js', '--mwUrl=' + mwUrl, '--parsoidUrl=' + parsoidUrl,
+					    '--outputDirectory=' + tmpDirectory, verbose ? '--verbose' : '',
+					    '--articleList=' + articleList, 
+					    '--filenamePrefix=' + zimFilenamePrefix
+					  ],
+					  function( executionError ) {
 					      if ( executionError ) {
-						  finished( executionError );
+						  console.error( executionError );
+						  process.exit( 1 );
 					      } else {
-						  finished();
+						  var cmd = 'mv ' + tmpDirectory + '*.zim "' + outputDirectory + '"'; 
+						  console.log( 'Moving ZIM files (' + cmd + ')' );
+						  exec( cmd, function( executionError, stdout, stderr ) {
+						      if ( executionError ) {
+							  finished( executionError );
+						      } else {
+							  finished();
+						      }
+						  });
 					      }
 					  });
-				      }
-				  });
+		}
+	    } else {
+		printLog( language + '.wikipedia.org is blacklisted, dumping of this Wikipedia will be skiped' );
+		finished();
+	    }
 	},
 	function( error ) {
 	    finished( error );
-	}
-    )
+	});
 }
 
 function loadSelections( finished ) {
@@ -186,4 +202,8 @@ function printLog( msg ) {
     if ( verbose ) {
 	console.info( msg );
     }
+}
+
+function getAbsoluteDirectoryPath( directoryPath ) {
+    return directoryPath[0] === '/' ? directoryPath : pathParser.resolve( process.cwd(), directoryPath ) + '/';
 }
