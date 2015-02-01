@@ -273,7 +273,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						 }
 					     });
 					 } else {
-					     setTimeout( finished, 0 );
+					     process.nextTick( finished );
 					 }
 				     });
 				 },
@@ -286,21 +286,21 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				     } else {
 					 printLog( 'Successfuly optimized ' + path );
 				     }
-				     setTimeout( finished, 0 );
+				     process.nextTick( finished );
 				 }
 			       );
 		} else {
-		    setTimeout( finished, 0 );
+		    process.nextTick( finished );
 		}
 	    } else  {
 		if ( error ) {
 		    console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
 		}
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    }
 	});
     } else {
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     }
     
 }, cpuCount );
@@ -310,7 +310,7 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
     if ( url ) {
 	downloadMedia( url, finished );
     } else {
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     }
 }, speed );
 
@@ -348,12 +348,12 @@ async.series(
 			    function( finished ) { endProcess( finished ) }
 			],
 			function( error, result ) {
-			    setTimeout( finished, 0 );
+			    process.nextTick( finished );
 			}
 		    );
 		},
 		function( error ) {
-		    setTimeout( finished, 0 );
+		    process.nextTick( finished );
 		}
 	    )
 	}
@@ -373,7 +373,7 @@ function createOutputDirectory( finished ) {
     fs.mkdir( outputDirectory, undefined, function() {
 	fs.exists( outputDirectory, function ( exists ) {
 	    if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    } else {
 		console.error( 'Unable to create directory \'' + outputDirectory + '\'' );
 		process.exit( 1 );
@@ -419,9 +419,6 @@ function computeFilenameRadical() {
     var date = new Date();
     radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
     
-    console.log( radical );
-    process.exit( 1 );
-
     return radical;
 }
 
@@ -459,19 +456,19 @@ function buildZIM( finished ) {
 
 				  /* Delete the html directory ? */
 				  if ( keepHtml ) {
-				      setTimeout( finished, 0 );
+				      process.nextTick( finished );
 				  } else {
 				      rimraf( htmlRootPath, finished );
 				  }
 			      }, !verbose, !verbose);	
     } else {
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     }
 }
 
 function endProcess( finished ) {
     redisClient.flushdb( function( error, result) {
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     });
     printLog( "Dumping finished with success." );
 }
@@ -486,7 +483,7 @@ function drainDownloadMediaQueue( finished ) {
             if ( downloadMediaQueue.length() == 0 ) {
 		printLog( 'All images successfuly downloaded' );
 		downloadMediaQueue.drain = undefined;
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
             }
 	}
     };
@@ -503,7 +500,7 @@ function drainOptimizationQueue( finished ) {
 	    if ( optimizationQueue.length() == 0 ) {
 		printLog( 'All images successfuly optimized' );
 		optimizationQueue.drain = undefined;
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    }
 	}
     };
@@ -524,7 +521,7 @@ function saveRedirects( finished ) {
 						   target : getArticleUrl( target ) } );
 		    writeFile( html, getArticlePath( redirectId ), finished );
 		} else {
-		    setTimeout( finished, 0 );
+		    process.nextTick( finished );
 		}
 	    }
 	});
@@ -541,7 +538,7 @@ function saveRedirects( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'All redirects were saved successfuly.' );
-		    setTimeout( finished, 0 );
+		    process.nextTick( finished );
 		}
 	    });
 	}
@@ -710,7 +707,7 @@ function saveArticles( finished ) {
 	    
 	    if ( !href ) {
 		deleteNode( linkNode );
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    } else {
 		
 		/* Deal with custom geo. URL replacement, for example: 
@@ -759,7 +756,7 @@ function saveArticles( finished ) {
 			    }
 			    linkNode.parentNode.removeChild( linkNode );
 			}
-			setTimeout( finished, 0 );
+			process.nextTick( finished );
 		    }
 		    
 		    /* Remove internal links pointing to no mirrored articles */
@@ -775,7 +772,7 @@ function saveArticles( finished ) {
 			
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
-			    setTimeout( finished, 0 );
+			    process.nextTick( finished );
 			} else {
 			    try {
 				redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
@@ -792,7 +789,7 @@ function saveArticles( finished ) {
 					    linkNode.parentNode.removeChild( linkNode );
 					}
 				    }
-				    setTimeout( finished, 0 );
+				    process.nextTick( finished );
 				});
 			    } catch ( error ) {
 				console.error ( "Exception by requesting redis " + error );
@@ -805,7 +802,7 @@ function saveArticles( finished ) {
 			var targetId = myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-			    setTimeout( finished, 0 );
+			    process.nextTick( finished );
 			} else {
 			    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
 				if ( error ) {
@@ -821,11 +818,11 @@ function saveArticles( finished ) {
 					linkNode.parentNode.removeChild( linkNode );
 				    }
 				}
-				setTimeout( finished, 0 );
+				process.nextTick( finished );
 			    });
 			}
 		    } else {
-			setTimeout( finished, 0 );
+			process.nextTick( finished );
 		    }
 		}
 	    }
@@ -991,7 +988,7 @@ function saveArticles( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'Dumped successfully article ' + articleId );
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    }
 	});
     }, speed );
@@ -1007,7 +1004,7 @@ function saveArticles( finished ) {
 	    } else {
 		delete articleIds[ articleId ];
 	    }
-	    setTimeout( finished, 0 );
+	    process.nextTick( finished );
 	}, articleId );
     }
 
@@ -1018,7 +1015,7 @@ function saveArticles( finished ) {
 	    process.exit( 1 );
 	} else {
 	    printLog( 'All articles were retrieved and saved.' );
-	    setTimeout( finished, 0 );
+	    process.nextTick( finished );
 	}
     });
 }
@@ -1092,7 +1089,7 @@ function saveJavascript( finished ) {
 	    });
 	});
 	
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     });
 }
 
@@ -1110,7 +1107,7 @@ function saveStylesheet( finished ) {
 	if ( data.url && data.path ) {
 	    downloadFile( data.url, data.path, true, finished );
 	} else {
-	    setTimeout( finished, 0 );
+	    process.nextTick( finished );
 	}
     }, speed );
 
@@ -1150,10 +1147,10 @@ function saveStylesheet( finished ) {
 		}
 		
 		fs.appendFileSync( stylePath, rewrittenCss );
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    });
 	} else {
-	    setTimeout( finished, 0 );
+	    process.nextTick( finished );
 	}
 
     }, speed );
@@ -1183,7 +1180,7 @@ function saveStylesheet( finished ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
 		    } else {
-			setTimeout( finished, 0 );
+			process.nextTick( finished );
 		    }
 		};
 		downloadCSSMediaQueue.push( '' );
@@ -1210,10 +1207,10 @@ function getArticleIds( finished ) {
 			});
 			if ( values.length ) {
 			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
-				setTimeout( finished, 0 );
+				process.nextTick( finished );
 			    });
 			} else {
-			    setTimeout( finished, 0 );
+			    process.nextTick( finished );
 			}
 		    }
 		} catch( error ) {
@@ -1221,7 +1218,7 @@ function getArticleIds( finished ) {
 		}
 	    });
 	} else {
-	    setTimeout( finished, 0 );
+	    process.nextTick( finished );
 	}
     }, speed * 3 );
 
@@ -1232,7 +1229,7 @@ function getArticleIds( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'All redirect ids retrieve successfuly.' );
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    }
 	};
 	redirectQueue.push( '' );
@@ -1321,7 +1318,7 @@ function getArticleIds( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
-		    setTimeout( finished, 0 );
+		    process.nextTick( finished );
 		}
 	    }
 	);
@@ -1363,7 +1360,7 @@ function createSubDirectories( finished ) {
 		console.error( 'Unable to create mandatory directories : ' + error );
 		process.exit( 1 );
 	    } else {
-		setTimeout( finished, 0 );
+		process.nextTick( finished );
 	    }
 	});
 }
@@ -1406,7 +1403,7 @@ function writeFile( data, path, callback ) {
 	    console.error( 'Unable to write data at ' + path + " - " + error );
 	    process.exit( 1 );
 	} else if (callback) {
-	    setTimeout( callback, 0 );
+	    process.nextTick( callback );
 	}
     });
 }
@@ -1501,13 +1498,13 @@ function downloadMedia( url, callback ) {
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
 		downloadFile( url, getMediaPath( url ), true, function( ok ) {
 		    if ( callback ) {
-			setTimeout( callback, 0 );
+			process.nextTick( callback );
 		    }
 		});
 	    });
         } else {
 	    if ( callback ) {
-		setTimeout( callback, 0 );
+		process.nextTick( callback );
 	    }
         }
     });
@@ -1525,7 +1522,7 @@ function downloadFile( url, path, force, callback ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
 	    if (callback) {
-		setTimeout( callback, 0 );
+		process.nextTick( callback );
 	    }
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
@@ -1718,7 +1715,7 @@ function getSubTitle( finished ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     });
 }
 
@@ -1735,7 +1732,7 @@ function getSiteInfo( finished ) {
 	    } else {
 		langIso3 = language.iso639_3;
 	    }
-	    setTimeout( finished, 0 );
+	    process.nextTick( finished );
 	});
     });
 }
@@ -1774,7 +1771,7 @@ function getMainPage( finished ) {
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
 	
 	/* Write the static html file */
-	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
+	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { process.nextTick( finished ); } );
     }
     
     function retrieveMainPage( finished ) {
@@ -1786,7 +1783,7 @@ function getMainPage( finished ) {
 		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
 					       target : getArticleBase( titleParts[1], true ) } );
 		writeFile( html, htmlRootPath + '/index.html', function() {
-		    setTimeout( finished, 0 );
+		    process.nextTick( finished );
 		} );
 
 		/* We have to mirror the main page even if this is not
@@ -1836,7 +1833,7 @@ function getNamespaces( finished ) {
 	    });
 	});
 	
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     });
 }
 
@@ -1863,7 +1860,7 @@ function getTextDirection( finished ) {
 	revAutoAlign = ltr ? 'right' : 'left';
 
 	printLog( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
-	setTimeout( finished, 0 );
+	process.nextTick( finished );
     });
 }
 
