@@ -998,7 +998,7 @@ function saveArticles( finished ) {
 
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) * 100, articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) > 30 ? 1000 : 0, articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		saveArticleQueue.push( {html: html, id: articleId} );
 	    } else {
@@ -1009,7 +1009,7 @@ function saveArticles( finished ) {
     }
 
     printLog( 'Saving articles...' );
-    async.eachLimit( Object.keys( articleIds ), speed / 2, saveArticle, function( error ) {
+    async.eachLimit( Object.keys( articleIds ), speed / 2 + 1, saveArticle, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
