@@ -163,7 +163,7 @@ function dump( finished ) {
 }
 
 function loadMatrix( finished ) {
-    loadUrlAsync( matrixUrl, function( json ) {
+    downloadContent( matrixUrl, function( json ) {
 	if ( !JSON.parse( json )['error'] ) {
 	    var entries = JSON.parse( json );
 	    var entryCount = entries['sitematrix']['count'];
