@@ -403,7 +403,7 @@ function computeFilenameRadical() {
 	var langSuffix = langIso2;
 	for (var i=0; i<hostParts.length; i++) {
 	    if ( hostParts[i] === langIso3 ) {
-		langSuffix += hostParts[i];
+		langSuffix = hostParts[i];
 		break;
 	    }
 	}
@@ -418,7 +418,10 @@ function computeFilenameRadical() {
 
     var date = new Date();
     radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
- 
+    
+    console.log( radical );
+    process.exit( 1 );
+
     return radical;
 }
 
