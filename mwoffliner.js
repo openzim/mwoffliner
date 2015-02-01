@@ -1260,7 +1260,6 @@ function getArticleIds( finished ) {
 		redisClient.hmset( redisArticleDetailsDatabase, values );
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
-	    process.exit( 1 );
 	}
 
 	return next;
@@ -1728,13 +1727,8 @@ function getSiteInfo( finished ) {
 	name = entries['sitename'];
 	langIso2 = entries['lang'];
 	countryLanguage.getLanguage( langIso2, function ( error, language ) {
-	    if ( error ) {
-		if ( langIso2.length >= 3 ) {
-		    langIso3 = langIso2;
-		} else {
-		    printLog( error );
-		    process.exit( 1 );
-		}
+	    if ( error || !language.iso639_3 ) {
+		langIso3 = langIso2;
 	    } else {
 		langIso3 = language.iso639_3;
 	    }
