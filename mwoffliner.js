@@ -1434,7 +1434,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    var calledFinished = false;
 	    function callFinished( timeout, message, data ) {
 		if ( !calledFinished ) {
-		    calledFinished = false;
+		    calledFinished = true;
 		    setTimeout( finished, timeout, message, data );
 		}
 	    }
@@ -1538,7 +1538,7 @@ function downloadFile( url, path, force, callback ) {
 		    var calledFinished = false;
 		    function callFinished( timeout, message ) {
 			if ( !calledFinished ) {
-			    calledFinished = false;
+			    calledFinished = true;
 			    setTimeout( finished, timeout, message );
 			}
 		    }
