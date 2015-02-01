@@ -1274,10 +1274,10 @@ function getArticleIds( finished ) {
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
 		}
-		setTimeout( finished, 0 );
+		setTimeout( finished, redirectQueue.length() );
 	    });
 	} else {
-	    setTimeout( finished, 0 );
+	    setTimeout( finished, redirectQueue.length() );
         }
     }
 
@@ -1308,7 +1308,7 @@ function getArticleIds( finished ) {
 		    } else {
 			next = '';
 		    }
-		    setTimeout( finished, 0 );
+		    setTimeout( finished, redirectQueue.length() );
 		});
 	    },
 	    function () { return next },
