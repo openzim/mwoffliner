@@ -7,11 +7,12 @@
 
 var fs = require( 'fs' );
 var async = require( 'async' );
+var http = require('follow-redirects').http;
+var https = require('follow-redirects').https;
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var countryLanguage = require( 'country-language' );
-var request = require( 'request' );
 var yargs = require('yargs');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
@@ -188,25 +189,62 @@ function loadMatrix( finished ) {
     });
 }
 
-function loadUrlAsync( url, callback, var1, var2, var3 ) {
-    var retryCount = 0;
+function downloadContent( url, callback, var1, var2, var3 ) {
+    var retryCount = 1;
 
     async.retry(
 	5,
 	function( finished ) {
-	    request( { timeout: 10000 * ++retryCount, uri: url }, function ( error, response, body ) {
-		if ( !error && response.statusCode == 200 ) {
-		    setTimeout( finished, 0, null, body );
+	    var calledFinished = false;
+	    function callFinished( timeout, message, data ) {
+		if ( !calledFinished ) {
+		    calledFinished = true;
+		    setTimeout( finished, timeout, message, data );
+		}
+	    }
+
+	    http.get( url, function( response ) {
+		if ( response.statusCode == 200 ) {
+		    var data = '';
+
+		    response.on( 'data', function ( chunk ) {
+			data += chunk;
+		    });
+		    response.on( 'end', function() {
+			callFinished( 0, null, data );
+		    });
 		} else {
-		    var message = 'Unable to async retrieve [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
+		    var message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').';
 		    console.error( message );
-		    setTimeout( finished, 50000, message );
+		    callFinished( 0, message );
 		}
 	    })
+	    .on( 'error', function( error ) {
+                var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
+                console.error( message );
+		callFinished( 0, message );
+	    })
+	    .on( 'socket', function ( socket ) {
+		var req = this;
+		socket.setTimeout( 50000 * ++retryCount ); 
+		if ( !socket.custom ) {
+		    socket.custom = true;
+		    socket.addListener( 'timeout', function() {
+			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
+			console.error( message );
+			callFinished( 2000, message );
+		    }); 
+		    socket.addListener( 'error', function( error ) {
+			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
+			console.error( message );
+			callFinished( 2000, message );
+		    });
+		}
+	    });
 	},
 	function ( error, data ) {
 	    if ( error ) {
-		console.error( error );
+		console.error( "Absolutly unable to retrieve async. URL. " + error );
 	    }
 	    if ( callback ) {
 		setTimeout( callback, 0, data, var1, var2, var3 );
