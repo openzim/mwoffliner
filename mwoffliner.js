@@ -109,8 +109,18 @@ if ( isNaN( speed ) ) {
 }
 
 /* Http user agents */
-var keepaliveHttpAgent = new httpAgent();
-var keepaliveHttpsAgent = new httpsAgent();
+var keepaliveHttpAgent = new httpAgent({ 
+    maxSockets: 1024,
+    maxFreeSockets: 256,
+    keepAliveTimeout: 300000,
+    timeout: 600000,
+});
+var keepaliveHttpsAgent = new httpsAgent({
+    maxSockets: 1024,
+    maxFreeSockets: 256,
+    keepAliveTimeout: 300000,
+    timeout: 600000
+});
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -1212,6 +1222,8 @@ function getArticleIds( finished ) {
 			} else {
 			    process.nextTick( finished );
 			}
+		    } else {
+			setTimeout( finished, 0, JSON.parse( body )['error'] );
 		    }
 		} catch( error ) {
 		    setTimeout( finished, 0, error );
@@ -1220,7 +1232,7 @@ function getArticleIds( finished ) {
 	} else {
 	    process.nextTick( finished );
 	}
-    }, speed * 3 );
+    }, speed * 5 );
 
     function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
@@ -1270,14 +1282,14 @@ function getArticleIds( finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
-	    downloadContent( url, function( body ) {
+	    setTimeout( downloadContent, redirectQueue.length(), url, function( body ) {
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
 		}
 		setTimeout( finished, redirectQueue.length() );
 	    });
 	} else {
-	    setTimeout( finished, redirectQueue.length() );
+	    process.nextTick( finished );
         }
     }
 
@@ -1302,13 +1314,14 @@ function getArticleIds( finished ) {
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
-		downloadContent( url, function( body ) {
+		printLog( "Redirect queue size: " + redirectQueue.length() );
+		setTimeout( downloadContent, redirectQueue.length(), url, function( body ) {
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
 		    } else {
 			next = '';
 		    }
-		    setTimeout( finished, redirectQueue.length() );
+		    process.nextTick( finished );
 		});
 	    },
 	    function () { return next },
@@ -1426,7 +1439,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 }
 
 function downloadContent( url, callback, var1, var2, var3 ) {
-    var retryCount = 1;
+    var retryCount = 0;
 
     async.retry(
 	5,
@@ -1438,11 +1451,11 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    setTimeout( finished, timeout, message, data );
 		}
 	    }
-
+	    
+	    retryCount++;
 	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
-
 		    response.on( 'data', function ( chunk ) {
 			data += chunk;
 		    });
@@ -1461,8 +1474,6 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		callFinished( 0, message );
 	    })
 	    .on( 'socket', function ( socket ) {
-		var req = this;
-		socket.setTimeout( 50000 * ++retryCount ); 
 		if ( !socket.custom ) {
 		    socket.custom = true;
 		    socket.addListener( 'timeout', function() {
@@ -1531,7 +1542,7 @@ function downloadFile( url, path, force, callback ) {
 	    var tmpExt = '.' + randomString( 5 );
 	    var tmpPath = path + tmpExt;
 	    
-	    var retryCount = 1;
+	    var retryCount = 0;
 	    async.retry(
 		5,
 		function( finished ) {
@@ -1543,6 +1554,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    }
 
+		    retryCount++;
 		    var tmpPathStream = fs.createWriteStream( tmpPath );
 		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
@@ -1612,8 +1624,6 @@ function downloadFile( url, path, force, callback ) {
 			});
 		    })
 	            .on( 'socket', function ( socket ) {
-			var req = this;
-			socket.setTimeout( 50000 * ++retryCount );
 			if ( !socket.custom ) {
 			    socket.custom = true;
 			    socket.addListener( 'timeout', function() {
