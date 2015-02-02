@@ -26,12 +26,11 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
-var longjohn = require('longjohn');
-var httpAgent = require('agentkeepalive');
-var httpsAgent = require('agentkeepalive').HttpsAgent;
+var longjohn = require( 'longjohn' );
+var keepAliveAgent = require( 'keep-alive-agent' );
 
 /************************************/
-/* COMMAND LINE PARSING *************/
+/* Command Parsing *************/
 /************************************/
 
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
@@ -107,20 +106,6 @@ if ( isNaN( speed ) ) {
     console.error( 'speed is not a number, please give a number value to --speed' );
     process.exit( 1 );
 }
-
-/* Http user agents */
-var keepaliveHttpAgent = new httpAgent({ 
-    maxSockets: 1024,
-    maxFreeSockets: 256,
-    keepAliveTimeout: 300000,
-    timeout: 600000,
-});
-var keepaliveHttpsAgent = new httpsAgent({
-    maxSockets: 1024,
-    maxFreeSockets: 256,
-    keepAliveTimeout: 300000,
-    timeout: 600000
-});
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -1206,6 +1191,7 @@ function getArticleIds( finished ) {
     /* Get redirect ids given an article id */
     var redirectQueue = async.queue( function ( articleId, finished ) {
 	if ( articleId ) {
+	    printLog( "Redirect queue size: " + redirectQueue.length() );
             printLog( 'Getting redirects for article ' + articleId + '...' );
 	    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
 	    downloadContent( url, function( body ) {
@@ -1232,7 +1218,7 @@ function getArticleIds( finished ) {
 	} else {
 	    process.nextTick( finished );
 	}
-    }, speed * 5 );
+    }, speed * 2 );
 
     function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
@@ -1315,7 +1301,7 @@ function getArticleIds( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
 		printLog( "Redirect queue size: " + redirectQueue.length() );
-		setTimeout( downloadContent, redirectQueue.length(), url, function( body ) {
+		setTimeout( downloadContent, redirectQueue.length() > 50000 ? 10000 : 0, url, function( body ) {
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
 		    } else {
@@ -1434,7 +1420,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent,
+	agent: port == 443 ? new KeepAliveAgent.Secure() : new KeepAliveAgent(),
     };
 }
 
@@ -1453,7 +1439,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    }
 	    
 	    retryCount++;
-	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
+	    var request = http.get( getRequestOptionsFromUrl( url ), function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
 		    response.on( 'data', function ( chunk ) {
@@ -1492,6 +1478,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	function ( error, data ) {
 	    if ( error ) {
 		console.error( "Absolutly unable to retrieve async. URL. " + error );
+		process.exit( 1 );
 	    }
 	    if ( callback ) {
 		setTimeout( callback, 0, data, var1, var2, var3 );
@@ -1624,6 +1611,8 @@ function downloadFile( url, path, force, callback ) {
 			});
 		    })
 	            .on( 'socket', function ( socket ) {
+			var req = this;
+			socket.setTimeout( 50000 * ++retryCount );
 			if ( !socket.custom ) {
 			    socket.custom = true;
 			    socket.addListener( 'timeout', function() {
