@@ -993,7 +993,8 @@ function saveArticles( finished ) {
 
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) > 30 ? 1000 : 0, articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) > 30 ? 
+		    ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() - 30 * 1000 ) : 0, articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		saveArticleQueue.push( {html: html, id: articleId} );
 	    } else {
@@ -1300,7 +1301,7 @@ function getArticleIds( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
 		printLog( "Redirect queue size: " + redirectQueue.length() );
-		setTimeout( downloadContent, redirectQueue.length() > 50000 ? 10000 : 0, url, function( body ) {
+		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( body ) {
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
 		    } else {
@@ -1419,7 +1420,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	agent: port == 443 ? new KeepAliveAgent.Secure() : new KeepAliveAgent(),
+	agent: port == 443 ? new keepAliveAgent.Secure() : new keepAliveAgent(),
     };
 }
 
