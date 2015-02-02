@@ -1191,7 +1191,6 @@ function getArticleIds( finished ) {
     /* Get redirect ids given an article id */
     var redirectQueue = async.queue( function ( articleId, finished ) {
 	if ( articleId ) {
-	    printLog( "Redirect queue size: " + redirectQueue.length() );
             printLog( 'Getting redirects for article ' + articleId + '...' );
 	    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
 	    downloadContent( url, function( body ) {
