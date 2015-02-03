@@ -27,7 +27,8 @@ var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
 var longjohn = require( 'longjohn' );
-var keepAliveAgent = require( 'keep-alive-agent' );
+var httpAgent = require('agentkeepalive');
+var httpsAgent = require('agentkeepalive').HttpsAgent;
 
 /************************************/
 /* Command Parsing *************/
@@ -106,6 +107,23 @@ if ( isNaN( speed ) ) {
     console.error( 'speed is not a number, please give a number value to --speed' );
     process.exit( 1 );
 }
+
+/* Http user agents */
+var keepaliveHttpAgent = new httpAgent({ 
+    maxSockets: 1024,
+    maxFreeSockets: 256,
+    keepAliveTimeout: 300000,
+    timeout: 600000,
+});
+var keepaliveHttpsAgent = new httpsAgent({
+    maxSockets: 1024,
+    maxFreeSockets: 256,
+    keepAliveTimeout: 300000,
+    timeout: 600000
+});
+
+/* Necessary to avoid problems with https */
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -204,7 +222,7 @@ optBinaries.forEach( function( cmd ) {
 });
 
 /* Setup redis client */
-var redisClient = redis.createClient( '/tmp/redis.sock' );
+var redisClient = redis.createClient( '/dev/shm/redis.sock' );
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
 var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
@@ -470,36 +488,56 @@ function endProcess( finished ) {
 
 function drainDownloadMediaQueue( finished ) {
     printLog( downloadMediaQueue.length() + " images still to be downloaded." );
-    downloadMediaQueue.drain = function( error ) {
-	if ( error ) {
-	    console.error( 'Error by downloading images' + error );
-	    process.exit( 1 );
-	} else {
-            if ( downloadMediaQueue.length() == 0 ) {
-		printLog( 'All images successfuly downloaded' );
-		downloadMediaQueue.drain = undefined;
-		process.nextTick( finished );
-            }
-	}
-    };
-    downloadMediaQueue.push( '' );
+    async.doWhilst(
+	function( finished ) {
+	    if ( downloadMediaQueue.idle() ) {
+		printLog( 'Process still downloading images...' );
+	    }
+	    setTimeout( finished, 1000 );
+	},
+	function() { return !downloadMediaQueue.idle() },
+	function( error ) {
+	    downloadMediaQueue.drain = function( error ) {
+		if ( error ) {
+		    console.error( 'Error by downloading images' + error );
+		    process.exit( 1 );
+		} else {
+		    if ( downloadMediaQueue.length() == 0 ) {
+			printLog( 'All images successfuly downloaded' );
+			downloadMediaQueue.drain = undefined;
+			process.nextTick( finished );
+		    }
+		}
+	    };
+	    downloadMediaQueue.push( '' );
+	});
 }
 
 function drainOptimizationQueue( finished ) {
     printLog( optimizationQueue.length() + ' images still to be optimized.' );
-    optimizationQueue.drain = function( error ) {
-	if ( error ) {
-	    console.error( 'Error by optimizing images' + error );
-	    process.exit( 1 );
-	} else {
-	    if ( optimizationQueue.length() == 0 ) {
-		printLog( 'All images successfuly optimized' );
-		optimizationQueue.drain = undefined;
-		process.nextTick( finished );
+    async.doWhilst(
+	function( finished ) {
+	    if ( optimizationQueue.idle() ) {
+		printLog( 'Process still being optimizing images...' );
 	    }
-	}
-    };
-    optimizationQueue.push( {path: '', size: 0} );
+	    setTimeout( finished, 1000 );
+	},
+	function() { return !optimizationQueue.idle() },
+	function( error ) {
+	    optimizationQueue.drain = function( error ) {
+		if ( error ) {
+		    console.error( 'Error by optimizing images' + error );
+		    process.exit( 1 );
+		} else {
+		    if ( optimizationQueue.length() == 0 ) {
+			printLog( 'All images successfuly optimized' );
+			optimizationQueue.drain = undefined;
+			process.nextTick( finished );
+		    }
+		}
+	    };
+	    optimizationQueue.push( {path: '', size: 0} );
+	});
 }
 
 function saveRedirects( finished ) {
@@ -986,7 +1024,7 @@ function saveArticles( finished ) {
 		process.nextTick( finished );
 	    }
 	});
-    }, speed );
+    }, speed * 3 );
 
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
@@ -1005,7 +1043,7 @@ function saveArticles( finished ) {
     }
 
     printLog( 'Saving articles...' );
-    async.eachLimit( Object.keys( articleIds ), speed / 2 + 1, saveArticle, function( error ) {
+    async.eachLimit( Object.keys( articleIds ), speed, saveArticle, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
@@ -1218,7 +1256,7 @@ function getArticleIds( finished ) {
 	} else {
 	    process.nextTick( finished );
 	}
-    }, speed * 2 );
+    }, speed * 3 );
 
     function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
@@ -1268,7 +1306,7 @@ function getArticleIds( finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
-	    setTimeout( downloadContent, redirectQueue.length(), url, function( body ) {
+	    setTimeout( downloadContent, redirectQueue.length() > 5000 ? redirectQueue.length() - 5000 : 0, url, function( body ) {
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
 		}
@@ -1420,7 +1458,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	agent: port == 443 ? new keepAliveAgent.Secure() : new keepAliveAgent(),
+	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent
     };
 }
 
@@ -1432,14 +1470,17 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	function( finished ) {
 	    var calledFinished = false;
 	    function callFinished( timeout, message, data ) {
-		if ( !calledFinished ) {
+		if ( !calledFinished ) {		    
 		    calledFinished = true;
+		    if ( message ) {
+			console.error( message );
+		    }
 		    setTimeout( finished, timeout, message, data );
 		}
 	    }
 	    
 	    retryCount++;
-	    var request = http.get( getRequestOptionsFromUrl( url ), function( response ) {
+	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
 		    response.on( 'data', function ( chunk ) {
@@ -1449,28 +1490,25 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			callFinished( 0, null, data );
 		    });
 		} else {
-		    var message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').';
-		    console.error( message );
-		    callFinished( 0, message );
+		    callFinished( 0,  'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
 		}
 	    })
 	    .on( 'error', function( error ) {
-                var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).';
-                console.error( message );
-		callFinished( 0, message );
+		callFinished( 0, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).' );
 	    })
 	    .on( 'socket', function ( socket ) {
+		socket.setTimeout( 50000 * retryCount );
 		if ( !socket.custom ) {
 		    socket.custom = true;
 		    socket.addListener( 'timeout', function() {
-			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
-			console.error( message );
-			callFinished( 2000, message );
+			socket.emit( 'agentRemove' );
+			socket.destroy();
+			callFinished( 2000, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
 		    }); 
 		    socket.addListener( 'error', function( error ) {
-			var message = 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
-			console.error( message );
-			callFinished( 2000, message );
+			socket.emit( 'agentRemove' );
+			socket.destroy();
+			callFinished( 2000, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
 		    });
 		}
 	    });
@@ -1534,9 +1572,13 @@ function downloadFile( url, path, force, callback ) {
 		5,
 		function( finished ) {
 		    var calledFinished = false;
+
 		    function callFinished( timeout, message ) {
 			if ( !calledFinished ) {
 			    calledFinished = true;
+			    if ( message ) {
+				console.error( message );
+			    }
 			    setTimeout( finished, timeout, message );
 			}
 		    }
@@ -1598,32 +1640,27 @@ function downloadFile( url, path, force, callback ) {
 					     });
 			    });
 			} else {
-			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')';
-			    console.error( message );
-			    callFinished( 2000, message );
+			    callFinished( 2000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
 			}
 		    })
   	    	    .on( 'error', function( error ) {
 			fs.unlink( tmpPath, function() {
-			    var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )';
-			    console.error( message );
-			    callFinished( 2000, message );
+			    callFinished( 2000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
 			});
 		    })
 	            .on( 'socket', function ( socket ) {
-			var req = this;
-			socket.setTimeout( 50000 * ++retryCount );
+			socket.setTimeout( 50000 * retryCount );
 			if ( !socket.custom ) {
 			    socket.custom = true;
 			    socket.addListener( 'timeout', function() {
-				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)';
-				console.error( message );
-				callFinished( 2000, message );
+				socket.emit( 'agentRemove' );
+				socket.destroy();
+				callFinished( 2000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
 			    }); 
 			    socket.addListener( 'error', function( error ) {
-				var message = 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)';
-				console.error( message );
-				callFinished( 2000, message );
+				socket.emit( 'agentRemove' );
+				socket.destroy();
+				callFinished( 2000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
 			    });
 			}
 		    });
