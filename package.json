@@ -36,7 +36,7 @@
     "swig": "*",
     "utf8-binary-cutter": "*",
     "yargs": "*",
-    "keep-alive-agent": "*"
+    "agentkeepalive": "0.2.3"
   },
   "keywords": [
     "mediawiki",
