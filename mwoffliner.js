@@ -1218,6 +1218,11 @@ function saveStylesheet( finished ) {
 	    }
 	}
 
+	/* Push Mediawiki:Offline.css ( at the end) */
+	downloadCSSQueue.push( webUrl + 'Mediawiki:offline.css?action=raw' );
+	console.log( webUrl + 'Mediawiki:offline.css?action=raw' );
+	process.exit( 1 );
+
 	/* Set the drain method to be called one time everything is done */
 	downloadCSSQueue.drain = function( error ) {
 	    if ( error ) {
