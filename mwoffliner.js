@@ -361,20 +361,22 @@ async.series(
 			    function( finished ) { endProcess( finished ) }
 			],
 			function( error, result ) {
-			    process.nextTick( finished );
+			    setImmediate( finished );
 			}
 		    );
 		},
 		function( error ) {
-		    process.nextTick( finished );
+		    redisClient.flushdb( function( error, result) {
+			redisKeepAliveTimer.unref();
+			redisClient.quit(); 
+			setImmediate( finished );
+		    });
 		}
 	    )
 	}
     ],
     function( error ) {
 	printLog( 'All dumping(s) finished with success.' );
-	redisKeepAliveTimer.unref();
-	redisClient.quit(); 
     }
 );
 
@@ -480,10 +482,21 @@ function buildZIM( finished ) {
 }
 
 function endProcess( finished ) {
-    redisClient.flushdb( function( error, result) {
-	process.nextTick( finished );
+    printLog( 'Dumping finished with success.' );
+
+    /* Close all open sockets */
+    Object.keys( keepaliveHttpsAgent.sockets ).map( function( host ) {
+        keepaliveHttpsAgent.sockets[ host ].map( function( socket ) {
+            socket.end();
+        });
     });
-    printLog( "Dumping finished with success." );
+    Object.keys( keepaliveHttpAgent.sockets ).map( function( host ) {
+        keepaliveHttpAgent.sockets[ host ].map( function( socket ) {
+            socket.end();
+        });
+    });
+
+    setImmediate( finished );
 }
 
 function drainDownloadMediaQueue( finished ) {
