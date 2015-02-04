@@ -1082,47 +1082,64 @@ function saveJavascript( finished ) {
 
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
 	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
-	fs.writeFileSync(dummyPath, "printLog('mw.loader not supported');");
+	printLog( 'Writting dummy js at' + dummyPath );
+	fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
 	
-	// Backward compatibility for old version of jsdom
+	/* Backward compatibility for old version of jsdom */
 	var window;
 	try {
 	    window = jsdom.jsdom( html ).parentWindow;
 	} catch ( error ) {
+	    printLog( 'Unable to call jsdom.jsdom( html ).parentWindow without crashing, try an other way.' );
 	    window = jsdom.jsdom( html ).createWindow();
 	}
 	
+	/* Try to detect all javascript code included */
 	window.addEventListener('load', function () {
 	    var nodeNames = [ 'head', 'body' ];
-	    nodeNames.map( function( nodeName ) {
-		var node = window.document.getElementsByTagName( nodeName )[0];
-		var scripts = node.getElementsByTagName( 'script' );
-		var javascriptPath = htmlRootPath + javascriptDirectory + '/' + nodeName + '.js';
-		
-		fs.unlink( javascriptPath, function() {} );
-		for ( var i = 0; i < scripts.length ; i++ ) {
-		    var script = scripts[i];
-		    var url = script.getAttribute( 'src' );
-		    
-		    var munge_js = function(txt) {
-			txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
-			return txt;
-		    }
-		    
-		    if ( url ) {
-			url = getFullUrl( url ).replace("debug=false", "debug=true");
-			printLog( 'Downloading javascript from ' + url );
-			downloadContent( url, function( body) {
-			    fs.appendFile( javascriptPath, '\n' + munge_js(body) + '\n', function (err) {} );
-			});
-		    } else {
-			fs.appendFile( javascriptPath, '\n' + munge_js(script.innerHTML) + '\n', function (err) {} );
-		    }
-		}
-	    });
+	    async.map( nodeNames,
+		       function( nodeName, finished ) {
+			   var node = window.document.getElementsByTagName( nodeName )[0];
+			   var scripts = node.getElementsByTagName( 'script' );
+			   var javascriptPath = htmlRootPath + javascriptDirectory + '/' + nodeName + '.js';
+			   
+			   fs.unlink( javascriptPath, function() {
+			       var scriptIncrementor = 0;
+			       async.whilst(
+				   function() {
+				       scriptIncrementor < scripts.length;
+				   },
+				   function( finished ) {
+				       var script = scripts[ scriptIncrementor ];
+				       var url = script.getAttribute( 'src' );
+				       var munge_js = function( txt ) {
+					   txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
+					   return txt;
+				       }
+				       
+				       if ( url ) {
+					   url = getFullUrl( url ).replace("debug=false", "debug=true");
+					   printLog( 'Downloading javascript from ' + url );
+					   downloadContent( url, function( body) {
+					       fs.appendFile( javascriptPath, '\n' + munge_js( body ) + '\n', function ( error ) {
+						   process.nextTick( finished );
+					       } );
+					   });
+				       } else {
+					   fs.appendFile( javascriptPath, '\n' + munge_js( script.innerHTML ) + '\n', function ( error ) {
+					       process.nextTick( finished );
+					   } );
+				       }
+				   },
+				   function( error ) {
+				       process.nextTick( finished );
+				   });
+			   });
+		       },
+	               function( error, result ) {
+			   process.nextTick( finished );
+		       });
 	});
-	
-	process.nextTick( finished );
     });
 }
 
