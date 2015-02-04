@@ -299,7 +299,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				     } else {
 					 printLog( 'Successfuly optimized ' + path );
 				     }
-				     process.nextTick( finished );
+				     setImmediate( finished );
 				 }
 			       );
 		} else {
@@ -1028,18 +1028,18 @@ function saveArticles( finished ) {
 
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
-
+	
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
 	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) > 30 ? 
 		    ( ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() - 30 ) * 1000 ) : 0, articleUrl, function( html, articleId ) {
-	    if ( html ) {
-		saveArticleQueue.push( {html: html, id: articleId} );
-	    } else {
-		delete articleIds[ articleId ];
-	    }
-	    process.nextTick( finished );
-	}, articleId );
+			if ( html ) {
+			    saveArticleQueue.push( {html: html, id: articleId} );
+			} else {
+			    delete articleIds[ articleId ];
+			}
+			setImmediate( finished );
+		    }, articleId );
     }
 
     printLog( 'Saving articles...' );
