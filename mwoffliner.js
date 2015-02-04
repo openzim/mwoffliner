@@ -1090,6 +1090,7 @@ function saveJavascript( finished ) {
 	MutationEvents           : '2.0',
     }
 
+    printLog( 'Get the javascript from ' + webUrl );
     downloadContent( webUrl, function( html ) {
 	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
 
@@ -1108,7 +1109,9 @@ function saveJavascript( finished ) {
 	}
 	
 	/* Try to detect all javascript code included */
+	printLog( 'Adding load listener on window' );
 	window.addEventListener('load', function () {
+	    printLog( 'Going through scripts in head and body to dump javascript...' );
 	    var nodeNames = [ 'head', 'body' ];
 	    async.map( nodeNames,
 		       function( nodeName, finished ) {
@@ -1153,6 +1156,7 @@ function saveJavascript( finished ) {
 			   setImmediate( finished );
 		       });
 	});
+	printLog( 'Listener (to load javascript added to window...' );
     });
 }
 
