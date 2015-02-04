@@ -1386,7 +1386,7 @@ function getArticleIds( finished ) {
 		console.error( 'Unable to get all article ids for in a namespace: ' + error );
 		process.exit( 1 );
 	    } else {
-		printLog( 'All articles ids (with redirects) for all namespaces were successfuly retrieved.' );
+		printLog( 'All articles ids (but without redirect ids) for all namespaces were successfuly retrieved.' );
 		drainRedirectQueue( finished );
 	    }
 	});
