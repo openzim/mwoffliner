@@ -1078,7 +1078,6 @@ function saveJavascript( finished ) {
     }
 
     downloadContent( webUrl, function( html ) {
-	
 	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
 
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
@@ -1516,7 +1515,13 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	function ( error, data ) {
 	    if ( error ) {
 		console.error( "Absolutly unable to retrieve async. URL. " + error );
-		process.exit( 1 );
+
+		/* Unfortunately we can not do that because there are
+		 * article which simply won't be parsed correctly by
+		 * Parsoid. For example this one
+		 * http://parsoid-lb.eqiad.wikimedia.org/dewikivoyage/Via_Jutlandica/Gpx
+		 * and this stops the whole dumping process */
+		// process.exit( 1 );
 	    }
 	    if ( callback ) {
 		setTimeout( callback, 0, data, var1, var2, var3 );
