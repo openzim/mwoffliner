@@ -1135,22 +1135,22 @@ function saveJavascript( finished ) {
 					   printLog( 'Downloading javascript from ' + url );
 					   downloadContent( url, function( body) {
 					       fs.appendFile( javascriptPath, '\n' + munge_js( body ) + '\n', function ( error ) {
-						   process.nextTick( finished );
+						   setImmediate( finished );
 					       } );
 					   });
 				       } else {
 					   fs.appendFile( javascriptPath, '\n' + munge_js( script.innerHTML ) + '\n', function ( error ) {
-					       process.nextTick( finished );
+					       setImmediate( finished );
 					   } );
 				       }
 				   },
 				   function( error ) {
-				       process.nextTick( finished );
+				       setImmediate( finished );
 				   });
 			   });
 		       },
 	               function( error, result ) {
-			   process.nextTick( finished );
+			   setImmediate( finished );
 		       });
 	});
     });
@@ -1210,10 +1210,10 @@ function saveStylesheet( finished ) {
 		}
 		
 		fs.appendFileSync( stylePath, rewrittenCss );
-		process.nextTick( finished );
+		setImmediate( finished );
 	    });
 	} else {
-	    process.nextTick( finished );
+	    setImmediate( finished );
 	}
 
     }, speed );
@@ -1246,7 +1246,7 @@ function saveStylesheet( finished ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
 		    } else {
-			process.nextTick( finished );
+			setImmediate( finished );
 		    }
 		};
 		downloadCSSMediaQueue.push( '' );
