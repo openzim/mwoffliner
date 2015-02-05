@@ -109,18 +109,8 @@ if ( isNaN( speed ) ) {
 }
 
 /* Http user agents */
-var keepaliveHttpAgent = new httpAgent({ 
-    maxSockets: 1024,
-    maxFreeSockets: 256,
-    keepAliveTimeout: 300000,
-    timeout: 600000,
-});
-var keepaliveHttpsAgent = new httpsAgent({
-    maxSockets: 1024,
-    maxFreeSockets: 256,
-    keepAliveTimeout: 300000,
-    timeout: 600000
-});
+var keepaliveHttpAgent;
+var keepaliveHttpsAgent;
 
 /* Necessary to avoid problems with https */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
@@ -286,7 +276,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						 }
 					     });
 					 } else {
-					     setImmediate( finished );
+					     finished();
 					 }
 				     });
 				 },
@@ -331,6 +321,7 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 async.series(
     [
 	function( finished ) { createOutputDirectory( finished ) },
+	function( finished ) { initAgents( finished ) },
 	function( finished ) { getTextDirection( finished ) },
 	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getSiteInfo( finished ) },
@@ -349,6 +340,7 @@ async.series(
 		    async.series(
 			[
 			    function( finished ) { createSubDirectories( finished ) },
+			    function( finished ) { initAgents( finished ) },
 			    function( finished ) { saveJavascript( finished ) }, 
 			    function( finished ) { saveStylesheet( finished ) },
 			    function( finished ) { saveFavicon( finished ) },
@@ -383,6 +375,42 @@ async.series(
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function initAgents( finished ) {
+    closeAgents( function() {
+	keepaliveHttpAgent = new httpAgent({ 
+	    maxSockets: 1024,
+	    maxFreeSockets: 256,
+	    keepAliveTimeout: 300000,
+	    timeout: 600000,
+	});
+	keepaliveHttpsAgent = new httpsAgent({
+	    maxSockets: 1024,
+	    maxFreeSockets: 256,
+	    keepAliveTimeout: 300000,
+	    timeout: 600000
+	});
+	setImmediate( finished );
+    });
+}
+
+function closeAgents( finished ) {
+    if ( keepaliveHttpsAgent ) {
+	Object.keys( keepaliveHttpsAgent.sockets ).map( function( host ) {
+            keepaliveHttpsAgent.sockets[ host ].map( function( socket ) {
+		socket.end();
+            });
+	});
+    }
+    if ( keepaliveHttpAgent ) {
+	Object.keys( keepaliveHttpAgent.sockets ).map( function( host ) {
+            keepaliveHttpAgent.sockets[ host ].map( function( socket ) {
+		socket.end();
+            });
+	});
+    }
+    setImmediate( finished );
+}
 
 function createOutputDirectory( finished ) {
     fs.mkdir( outputDirectory, undefined, function() {
@@ -483,20 +511,7 @@ function buildZIM( finished ) {
 
 function endProcess( finished ) {
     printLog( 'Dumping finished with success.' );
-
-    /* Close all open sockets */
-    Object.keys( keepaliveHttpsAgent.sockets ).map( function( host ) {
-        keepaliveHttpsAgent.sockets[ host ].map( function( socket ) {
-            socket.end();
-        });
-    });
-    Object.keys( keepaliveHttpAgent.sockets ).map( function( host ) {
-        keepaliveHttpAgent.sockets[ host ].map( function( socket ) {
-            socket.end();
-        });
-    });
-
-    setImmediate( finished );
+    closeAgents( finished );
 }
 
 function drainDownloadMediaQueue( finished ) {
@@ -753,7 +768,7 @@ function saveArticles( finished ) {
 	    
 	    if ( !href ) {
 		deleteNode( linkNode );
-		setImmediate( finished );
+		finished();
 	    } else {
 		
 		/* Deal with custom geo. URL replacement, for example: 
@@ -802,7 +817,7 @@ function saveArticles( finished ) {
 			    }
 			    linkNode.parentNode.removeChild( linkNode );
 			}
-			setImmediate( finished );
+			finished();
 		    }
 		    
 		    /* Remove internal links pointing to no mirrored articles */
@@ -818,7 +833,7 @@ function saveArticles( finished ) {
 			
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
-			    setImmediate( finished );
+			    finished();
 			} else {
 			    try {
 				redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
@@ -835,7 +850,7 @@ function saveArticles( finished ) {
 					    linkNode.parentNode.removeChild( linkNode );
 					}
 				    }
-				    setImmediate( finished );
+				    finished();
 				});
 			    } catch ( error ) {
 				console.error ( "Exception by requesting redis " + error );
@@ -848,7 +863,7 @@ function saveArticles( finished ) {
 			var targetId = myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-			    setImmediate( finished );
+			    finished();
 			} else {
 			    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
 				if ( error ) {
@@ -864,11 +879,11 @@ function saveArticles( finished ) {
 					linkNode.parentNode.removeChild( linkNode );
 				    }
 				}
-				setImmediate( finished );
+				finished();
 			    });
 			}
 		    } else {
-			setImmediate( finished );
+			finished();
 		    }
 		}
 	    }
@@ -1034,7 +1049,7 @@ function saveArticles( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'Dumped successfully article ' + articleId );
-		setImmediate( finished );
+		finished();
 	    }
 	});
     }, speed * 3 );
@@ -1277,10 +1292,10 @@ function getArticleIds( finished ) {
 			});
 			if ( values.length ) {
 			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
-				setImmediate( finished );
+				finished();
 			    });
 			} else {
-			    setImmediate( finished );
+			    finished();
 			}
 		    } else {
 			setTimeout( finished, 0, JSON.parse( body )['error'] );
@@ -1290,9 +1305,9 @@ function getArticleIds( finished ) {
 		}
 	    });
 	} else {
-	    setImmediate( finished );
+	    finished();
 	}
-    }, speed * 3 );
+    }, speed * 5 );
 
     function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
@@ -1342,7 +1357,7 @@ function getArticleIds( finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
-	    setTimeout( downloadContent, redirectQueue.length() > 5000 ? redirectQueue.length() - 5000 : 0, url, function( body ) {
+	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( body ) {
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
 		}
