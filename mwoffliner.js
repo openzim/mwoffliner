@@ -276,7 +276,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						 }
 					     });
 					 } else {
-					     finished();
+					     setTimeout( finished, 0 );
 					 }
 				     });
 				 },
@@ -289,21 +289,21 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				     } else {
 					 printLog( 'Successfuly optimized ' + path );
 				     }
-				     setImmediate( finished );
+				     setTimeout( finished, 0 );
 				 }
 			       );
 		} else {
-		    setImmediate( finished );
+		    setTimeout( finished, 0 );
 		}
 	    } else  {
 		if ( error ) {
 		    console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
 		}
-		setImmediate( finished );
+		setTimeout( finished, 0 );
 	    }
 	});
     } else {
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     }
     
 }, cpuCount );
@@ -313,7 +313,7 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
     if ( url ) {
 	downloadMedia( url, finished );
     } else {
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     }
 }, speed );
 
@@ -353,7 +353,7 @@ async.series(
 			    function( finished ) { endProcess( finished ) }
 			],
 			function( error, result ) {
-			    setImmediate( finished );
+			    setTimeout( finished, 0 );
 			}
 		    );
 		},
@@ -361,7 +361,7 @@ async.series(
 		    redisClient.flushdb( function( error, result) {
 			redisKeepAliveTimer.unref();
 			redisClient.quit(); 
-			setImmediate( finished );
+			setTimeout( finished, 0 );
 		    });
 		}
 	    )
@@ -390,7 +390,7 @@ function initAgents( finished ) {
 	    keepAliveTimeout: 300000,
 	    timeout: 600000
 	});
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     });
 }
 
@@ -409,14 +409,14 @@ function closeAgents( finished ) {
             });
 	});
     }
-    setImmediate( finished );
+    setTimeout( finished, 0 );
 }
 
 function createOutputDirectory( finished ) {
     fs.mkdir( outputDirectory, undefined, function() {
 	fs.exists( outputDirectory, function ( exists ) {
 	    if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-		setImmediate( finished );
+		setTimeout( finished, 0 );
 	    } else {
 		console.error( 'Unable to create directory \'' + outputDirectory + '\'' );
 		process.exit( 1 );
@@ -499,13 +499,13 @@ function buildZIM( finished ) {
 
 				  /* Delete the html directory ? */
 				  if ( keepHtml ) {
-				      setImmediate( finished );
+				      setTimeout( finished, 0 );
 				  } else {
 				      rimraf( htmlRootPath, finished );
 				  }
 			      }, !verbose, !verbose);	
     } else {
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     }
 }
 
@@ -533,7 +533,7 @@ function drainDownloadMediaQueue( finished ) {
 		    if ( downloadMediaQueue.length() == 0 ) {
 			printLog( 'All images successfuly downloaded' );
 			downloadMediaQueue.drain = undefined;
-			setImmediate( finished );
+			setTimeout( finished, 0 );
 		    }
 		}
 	    };
@@ -560,7 +560,7 @@ function drainOptimizationQueue( finished ) {
 		    if ( optimizationQueue.length() == 0 ) {
 			printLog( 'All images successfuly optimized' );
 			optimizationQueue.drain = undefined;
-			setImmediate( finished );
+			setTimeout( finished, 0 );
 		    }
 		}
 	    };
@@ -582,7 +582,7 @@ function saveRedirects( finished ) {
 						   target : getArticleUrl( target ) } );
 		    writeFile( html, getArticlePath( redirectId ), finished );
 		} else {
-		    setImmediate( finished );
+		    setTimeout( finished, 0 );
 		}
 	    }
 	});
@@ -599,7 +599,7 @@ function saveRedirects( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'All redirects were saved successfuly.' );
-		    setImmediate( finished );
+		    setTimeout( finished, 0 );
 		}
 	    });
 	}
@@ -768,7 +768,7 @@ function saveArticles( finished ) {
 	    
 	    if ( !href ) {
 		deleteNode( linkNode );
-		finished();
+		setTimeout( finished, 0 );
 	    } else {
 		
 		/* Deal with custom geo. URL replacement, for example: 
@@ -817,7 +817,7 @@ function saveArticles( finished ) {
 			    }
 			    linkNode.parentNode.removeChild( linkNode );
 			}
-			finished();
+			setTimeout( finished, 0 );
 		    }
 		    
 		    /* Remove internal links pointing to no mirrored articles */
@@ -833,7 +833,7 @@ function saveArticles( finished ) {
 			
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
-			    finished();
+			    setTimeout( finished, 0 );
 			} else {
 			    try {
 				redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
@@ -850,7 +850,7 @@ function saveArticles( finished ) {
 					    linkNode.parentNode.removeChild( linkNode );
 					}
 				    }
-				    finished();
+				    setTimeout( finished, 0 );
 				});
 			    } catch ( error ) {
 				console.error ( "Exception by requesting redis " + error );
@@ -863,7 +863,7 @@ function saveArticles( finished ) {
 			var targetId = myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-			    finished();
+			    setTimeout( finished, 0 );
 			} else {
 			    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
 				if ( error ) {
@@ -879,11 +879,11 @@ function saveArticles( finished ) {
 					linkNode.parentNode.removeChild( linkNode );
 				    }
 				}
-				finished();
+				setTimeout( finished, 0 );
 			    });
 			}
 		    } else {
-			finished();
+			setTimeout( finished, 0 );
 		    }
 		}
 	    }
@@ -1049,7 +1049,7 @@ function saveArticles( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'Dumped successfully article ' + articleId );
-		finished();
+		setTimeout( finished, 0 );
 	    }
 	});
     }, speed * 3 );
@@ -1066,7 +1066,7 @@ function saveArticles( finished ) {
 			} else {
 			    delete articleIds[ articleId ];
 			}
-			setImmediate( finished );
+			setTimeout( finished, 0 );
 		    }, articleId );
     }
 
@@ -1077,7 +1077,7 @@ function saveArticles( finished ) {
 	    process.exit( 1 );
 	} else {
 	    printLog( 'All articles were retrieved and saved.' );
-	    setImmediate( finished );
+	    setTimeout( finished, 0 );
 	}
     });
 }
@@ -1153,22 +1153,22 @@ function saveJavascript( finished ) {
 					   printLog( 'Downloading javascript from ' + url );
 					   downloadContent( url, function( body) {
 					       fs.appendFile( javascriptPath, '\n' + munge_js( body ) + '\n', function ( error ) {
-						   setImmediate( finished );
+						   setTimeout( finished, 0 );
 					       } );
 					   });
 				       } else {
 					   fs.appendFile( javascriptPath, '\n' + munge_js( script.innerHTML ) + '\n', function ( error ) {
-					       setImmediate( finished );
+					       setTimeout( finished, 0 );
 					   } );
 				       }
 				   },
 				   function( error ) {
-				       setImmediate( finished );
+				       setTimeout( finished, 0 );
 				   });
 			   });
 		       },
 	               function( error, result ) {
-			   setImmediate( finished );
+			   setTimeout( finished, 0 );
 		       });
 	});
 	printLog( 'Listener (to load javascript added to window...' );
@@ -1189,7 +1189,7 @@ function saveStylesheet( finished ) {
 	if ( data.url && data.path ) {
 	    downloadFile( data.url, data.path, true, finished );
 	} else {
-	    setImmediate( finished );
+	    setTimeout( finished, 0 );
 	}
     }, speed );
 
@@ -1229,10 +1229,10 @@ function saveStylesheet( finished ) {
 		}
 		
 		fs.appendFileSync( stylePath, rewrittenCss );
-		setImmediate( finished );
+		setTimeout( finished, 0 );
 	    });
 	} else {
-	    setImmediate( finished );
+	    setTimeout( finished, 0 );
 	}
 
     }, speed );
@@ -1265,7 +1265,7 @@ function saveStylesheet( finished ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
 		    } else {
-			setImmediate( finished );
+			setTimeout( finished, 0 );
 		    }
 		};
 		downloadCSSMediaQueue.push( '' );
@@ -1292,10 +1292,10 @@ function getArticleIds( finished ) {
 			});
 			if ( values.length ) {
 			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
-				finished();
+				setTimeout( finished, 0 );
 			    });
 			} else {
-			    finished();
+			    setTimeout( finished, 0 );
 			}
 		    } else {
 			setTimeout( finished, 0, JSON.parse( body )['error'] );
@@ -1305,7 +1305,7 @@ function getArticleIds( finished ) {
 		}
 	    });
 	} else {
-	    finished();
+	    setTimeout( finished, 0 );
 	}
     }, speed * 5 );
 
@@ -1316,7 +1316,7 @@ function getArticleIds( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'All redirect ids retrieve successfuly.' );
-		setImmediate( finished );
+		setTimeout( finished, 0 );
 	    }
 	};
 	redirectQueue.push( '' );
@@ -1364,7 +1364,7 @@ function getArticleIds( finished ) {
 		setTimeout( finished, redirectQueue.length() );
 	    });
 	} else {
-	    setImmediate( finished );
+	    setTimeout( finished, 0 );
         }
     }
 
@@ -1396,7 +1396,7 @@ function getArticleIds( finished ) {
 		    } else {
 			next = '';
 		    }
-		    setImmediate( finished );
+		    setTimeout( finished, 0 );
 		});
 	    },
 	    function () { return next },
@@ -1406,7 +1406,7 @@ function getArticleIds( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
-		    setImmediate( finished );
+		    setTimeout( finished, 0 );
 		}
 	    }
 	);
@@ -1448,7 +1448,7 @@ function createSubDirectories( finished ) {
 		console.error( 'Unable to create mandatory directories : ' + error );
 		process.exit( 1 );
 	    } else {
-		setImmediate( finished );
+		setTimeout( finished, 0 );
 	    }
 	});
 }
@@ -1808,7 +1808,7 @@ function getSubTitle( finished ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     });
 }
 
@@ -1825,7 +1825,7 @@ function getSiteInfo( finished ) {
 	    } else {
 		langIso3 = language.iso639_3;
 	    }
-	    setImmediate( finished );
+	    setTimeout( finished, 0 );
 	});
     });
 }
@@ -1864,7 +1864,7 @@ function getMainPage( finished ) {
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
 	
 	/* Write the static html file */
-	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { setImmediate( finished ); } );
+	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
     }
     
     function retrieveMainPage( finished ) {
@@ -1876,7 +1876,7 @@ function getMainPage( finished ) {
 		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
 					       target : getArticleBase( titleParts[1], true ) } );
 		writeFile( html, htmlRootPath + '/index.html', function() {
-		    setImmediate( finished );
+		    setTimeout( finished, 0 );
 		} );
 
 		/* We have to mirror the main page even if this is not
@@ -1926,7 +1926,7 @@ function getNamespaces( finished ) {
 	    });
 	});
 	
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     });
 }
 
@@ -1953,7 +1953,7 @@ function getTextDirection( finished ) {
 	revAutoAlign = ltr ? 'right' : 'left';
 
 	printLog( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
-	setImmediate( finished );
+	setTimeout( finished, 0 );
     });
 }
 
