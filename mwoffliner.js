@@ -1070,7 +1070,7 @@ function saveArticles( finished ) {
 	
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() * 100, articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() * 10 + saveArticleQueue.length() * 100, articleUrl, function( html, articleId ) {
 			if ( html ) {
 			    saveArticleQueue.push( {html: html, id: articleId} );
 			} else {
