@@ -1652,6 +1652,9 @@ function downloadFile( url, path, force, callback ) {
 
 		    retryCount++;
 		    var tmpPathStream = fs.createWriteStream( tmpPath );
+		    tmpPathStream.on( 'error', function( error ) {
+                        callFinished( 2000, 'Writable stream error at "' + tmpPath + '" (' + error + ')' );
+                    });
 		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
