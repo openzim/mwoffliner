@@ -22,16 +22,17 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ [--project=wikivoyage] [--language=fr]')
-    .require([ 'mwUrl', 'parsoidUrl' ])
+	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
+    .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
     .options( ['project', 'language', 'tmpDirectory', 'outputDirectory'] )
-    .describe( 'project', 'Projects to dump')
+    .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'language', 'Language to dump')
     .describe( 'mwURL', 'Mediawiki API URL')
-    .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'parsoidUrl', 'Mediawiki Parsoid URL')
-    .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'outputDirectory', 'Directory to write the ZIM files')
+    .describe( 'project', 'Projects to dump')
+    .describe( 'tmpDirectory', 'Directory where files are temporary stored')
+    .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
     .argv;
 
@@ -61,6 +62,7 @@ var mediawikis = new Array();
 var project = argv.project;
 var language = argv.language;
 var verbose = argv.verbose;
+var adminEmail = argv.adminEmail;
 
 /************************************/
 /* MAIN *****************************/
@@ -134,7 +136,7 @@ function dump( finished ) {
 		var localLog = tmpDirectory + site.dbname + '.log';
 		console.log( 'Dumping ' + site.url );
 		executeTransparently( 'node',
-				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl,
+				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
 					'--format=', '--format=nopic', '--outputDirectory=' + localTmpDirectory, verbose ? '--verbose' : '' ],
 				      function( executionError ) {
 					  if ( executionError ) {

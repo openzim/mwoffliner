@@ -35,26 +35,37 @@ var httpsAgent = require('agentkeepalive').HttpsAgent;
 /************************************/
 
 var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/')
-    .require(['mwUrl', 'parsoidUrl'])
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --adminEmail=foo@bar.net')
+    .require(['mwUrl', 'parsoidUrl', 'adminEmail' ])
     .options(['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix'])
-    .describe( 'outputDirectory', 'Directory to write the downloaded content')
+    .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line')
+    .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
+    .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
     .describe( 'mwURL', 'Mediawiki base URL')
     .describe( 'mwWikiPath', 'Mediawiki API path (per default "/w/api.php")')
     .describe( 'mwApiPath', 'Mediawiki wiki base path (per default "/wiki/"')
+    .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
-    .describe( 'speed', 'More or less the number of parallel HTTP requests (per default the number of core, reduce if stability problem)')
-    .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory')
+    .describe( 'speed', 'More or less the number of parallel HTTP requests (per default the number of core, reduce if stability problem)' )
     .describe( 'verbose', 'Print debug information to the stdout' )
-    .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
     .strict()
     .argv;
 
 /************************************/
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
+
+/* HTTP user-agent string */
+var adminEmail = argv.adminEmail;
+var userAgentString = 'MWOffliner/HEAD';
+if ( validateEmail( adminEmail ) ) {
+    userAgentString += ' (' + adminEmail + ')';
+} else {
+    console.error( 'Admin email ' + adminEmail + ' is not valid' );
+    process.exit( 1 );
+}
 
 /* Formats */
 var dumps = [ '' ];
@@ -264,9 +275,9 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 					 if ( executionError ) {
 					     fs.stat( path, function ( error, stats ) {
 						 if ( !error && stats.size > file.size ) {
-						     setTimeout( finished, 0, null, true );
+						     finished( null, true );
 						 } else if ( !error && stats.size < file.size ) {
-						     setTimeout( finished, 0, 'File to optim is smaller (before optim) than it should.' );
+						     finished( 'File to optim is smaller (before optim) than it should.' );
 						 } else {
 						     exec( 'file -b --mime-type "' + path + '"', function( error, stdout, stderr ) {
 							 var type = stdout.replace( /image\//, '').replace( /[\n\r]/g, '' );
@@ -276,7 +287,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						 }
 					     });
 					 } else {
-					     setTimeout( finished, 0 );
+					     finished();
 					 }
 				     });
 				 },
@@ -289,21 +300,21 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 				     } else {
 					 printLog( 'Successfuly optimized ' + path );
 				     }
-				     setTimeout( finished, 0 );
+				     finished();
 				 }
 			       );
 		} else {
-		    setTimeout( finished, 0 );
+		    finished();
 		}
 	    } else  {
 		if ( error ) {
 		    console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
 		}
-		setTimeout( finished, 0 );
+		finished();
 	    }
 	});
     } else {
-	setTimeout( finished, 0 );
+	finished();
     }
     
 }, cpuCount );
@@ -313,9 +324,9 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
     if ( url ) {
 	downloadMedia( url, finished );
     } else {
-	setTimeout( finished, 0 );
+	finished();
     }
-}, speed );
+}, speed * 5 );
 
 /* Get content */
 async.series(
@@ -353,7 +364,7 @@ async.series(
 			    function( finished ) { endProcess( finished ) }
 			],
 			function( error, result ) {
-			    setTimeout( finished, 0 );
+			    finished();
 			}
 		    );
 		},
@@ -361,7 +372,7 @@ async.series(
 		    redisClient.flushdb( function( error, result) {
 			redisKeepAliveTimer.unref();
 			redisClient.quit(); 
-			setTimeout( finished, 0 );
+			finished();
 		    });
 		}
 	    )
@@ -390,7 +401,7 @@ function initAgents( finished ) {
 	    keepAliveTimeout: 300000,
 	    timeout: 600000
 	});
-	setTimeout( finished, 0 );
+	finished();
     });
 }
 
@@ -409,14 +420,14 @@ function closeAgents( finished ) {
             });
 	});
     }
-    setTimeout( finished, 0 );
+    finished();
 }
 
 function createOutputDirectory( finished ) {
     fs.mkdir( outputDirectory, undefined, function() {
 	fs.exists( outputDirectory, function ( exists ) {
 	    if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-		setTimeout( finished, 0 );
+		finished();
 	    } else {
 		console.error( 'Unable to create directory \'' + outputDirectory + '\'' );
 		process.exit( 1 );
@@ -499,13 +510,13 @@ function buildZIM( finished ) {
 
 				  /* Delete the html directory ? */
 				  if ( keepHtml ) {
-				      setTimeout( finished, 0 );
+				      finished();
 				  } else {
 				      rimraf( htmlRootPath, finished );
 				  }
 			      }, !verbose, !verbose);	
     } else {
-	setTimeout( finished, 0 );
+	finished();
     }
 }
 
@@ -533,7 +544,7 @@ function drainDownloadMediaQueue( finished ) {
 		    if ( downloadMediaQueue.length() == 0 ) {
 			printLog( 'All images successfuly downloaded' );
 			downloadMediaQueue.drain = undefined;
-			setTimeout( finished, 0 );
+			finished();
 		    }
 		}
 	    };
@@ -560,7 +571,7 @@ function drainOptimizationQueue( finished ) {
 		    if ( optimizationQueue.length() == 0 ) {
 			printLog( 'All images successfuly optimized' );
 			optimizationQueue.drain = undefined;
-			setTimeout( finished, 0 );
+			finished();
 		    }
 		}
 	    };
@@ -582,7 +593,7 @@ function saveRedirects( finished ) {
 						   target : getArticleUrl( target ) } );
 		    writeFile( html, getArticlePath( redirectId ), finished );
 		} else {
-		    setTimeout( finished, 0 );
+		    finished();
 		}
 	    }
 	});
@@ -599,7 +610,7 @@ function saveRedirects( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'All redirects were saved successfuly.' );
-		    setTimeout( finished, 0 );
+		    finished();
 		}
 	    });
 	}
@@ -610,7 +621,7 @@ function saveArticles( finished ) {
 
     function parseHtml( html, articleId, finished) {
 	try {
-	    setTimeout( finished, 0, null, domino.createDocument( html ), articleId );
+	    finished( null, domino.createDocument( html ), articleId );
 	} catch ( error ) {
 	    console.error( 'Crash by parsing ' + articleId );
 	    console.error( error );
@@ -751,7 +762,7 @@ function saveArticles( finished ) {
 	    }
 	}
 	
-	setTimeout( finished, 0, null, parsoidDoc, articleId );
+	finished( null, parsoidDoc, articleId );
     }
     
     function rewriteUrls( parsoidDoc, articleId, finished ) {
@@ -768,7 +779,7 @@ function saveArticles( finished ) {
 	    
 	    if ( !href ) {
 		deleteNode( linkNode );
-		setTimeout( finished, 0 );
+		finished();
 	    } else {
 		
 		/* Deal with custom geo. URL replacement, for example: 
@@ -817,7 +828,7 @@ function saveArticles( finished ) {
 			    }
 			    linkNode.parentNode.removeChild( linkNode );
 			}
-			setTimeout( finished, 0 );
+			finished();
 		    }
 		    
 		    /* Remove internal links pointing to no mirrored articles */
@@ -833,7 +844,7 @@ function saveArticles( finished ) {
 			
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
-			    setTimeout( finished, 0 );
+			    finished();
 			} else {
 			    try {
 				redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
@@ -850,7 +861,7 @@ function saveArticles( finished ) {
 					    linkNode.parentNode.removeChild( linkNode );
 					}
 				    }
-				    setTimeout( finished, 0 );
+				    finished();
 				});
 			    } catch ( error ) {
 				console.error ( "Exception by requesting redis " + error );
@@ -863,7 +874,7 @@ function saveArticles( finished ) {
 			var targetId = myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
-			    setTimeout( finished, 0 );
+			    finished();
 			} else {
 			    redisClient.hexists( redisRedirectsDatabase, targetId, function( error, res ) {
 				if ( error ) {
@@ -879,11 +890,11 @@ function saveArticles( finished ) {
 					linkNode.parentNode.removeChild( linkNode );
 				    }
 				}
-				setTimeout( finished, 0 );
+				finished();
 			    });
 			}
 		    } else {
-			setTimeout( finished, 0 );
+			finished();
 		    }
 		}
 	    }
@@ -894,7 +905,7 @@ function saveArticles( finished ) {
 		console.error( 'Problem by rewriting urls: ' + error );
 		process.exit( 1 );
 	    } else {
-		setTimeout( finished, 0, null, parsoidDoc, articleId );
+		finished( null, parsoidDoc, articleId );
 	    }
 	});
     }
@@ -1004,7 +1015,7 @@ function saveArticles( finished ) {
 	    });
 	}
 	
-	setTimeout( finished, 0 , null, parsoidDoc, articleId );
+	finished( null, parsoidDoc, articleId );
     }
     
     function setFooter( parsoidDoc, articleId, finished ) {
@@ -1020,19 +1031,19 @@ function saveArticles( finished ) {
 	var oldId = articleIds[ articleId ];
 	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
 	    if ( error ) {
-		setTimeout( finished, 0, 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
+		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
 		var date = new Date( timestamp );
 		div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
-		setTimeout( finished, 0, null, htmlTemplateDoc, articleId );
+		finished( null, htmlTemplateDoc, articleId );
 	    }
 	});
     }
     
     function writeArticle( doc, articleId, finished ) {
 	printLog( 'Saving article ' + articleId + '...' );
-	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), function() { setTimeout( finished, 0, null ); } );
+	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), finished );
     }
 
     /* Retrieve and save articles */
@@ -1049,7 +1060,7 @@ function saveArticles( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'Dumped successfully article ' + articleId );
-		setTimeout( finished, 0 );
+		finished();
 	    }
 	});
     }, speed * 3 );
@@ -1059,14 +1070,13 @@ function saveArticles( finished ) {
 	
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() ) > 30 ? 
-		    ( ( downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() - 30 ) * 1000 ) : 0, articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() + saveArticleQueue.length() * 100, articleUrl, function( html, articleId ) {
 			if ( html ) {
 			    saveArticleQueue.push( {html: html, id: articleId} );
 			} else {
 			    delete articleIds[ articleId ];
 			}
-			setTimeout( finished, 0 );
+			finished();
 		    }, articleId );
     }
 
@@ -1077,7 +1087,7 @@ function saveArticles( finished ) {
 	    process.exit( 1 );
 	} else {
 	    printLog( 'All articles were retrieved and saved.' );
-	    setTimeout( finished, 0 );
+	    finished();
 	}
     });
 }
@@ -1153,22 +1163,22 @@ function saveJavascript( finished ) {
 					   printLog( 'Downloading javascript from ' + url );
 					   downloadContent( url, function( body) {
 					       fs.appendFile( javascriptPath, '\n' + munge_js( body ) + '\n', function ( error ) {
-						   setTimeout( finished, 0 );
+						   finished();
 					       } );
 					   });
 				       } else {
 					   fs.appendFile( javascriptPath, '\n' + munge_js( script.innerHTML ) + '\n', function ( error ) {
-					       setTimeout( finished, 0 );
+					       finished();
 					   } );
 				       }
 				   },
 				   function( error ) {
-				       setTimeout( finished, 0 );
+				       finished();
 				   });
 			   });
 		       },
 	               function( error, result ) {
-			   setTimeout( finished, 0 );
+			   finished();
 		       });
 	});
 	printLog( 'Listener (to load javascript added to window...' );
@@ -1189,7 +1199,7 @@ function saveStylesheet( finished ) {
 	if ( data.url && data.path ) {
 	    downloadFile( data.url, data.path, true, finished );
 	} else {
-	    setTimeout( finished, 0 );
+	    finished();
 	}
     }, speed );
 
@@ -1229,10 +1239,10 @@ function saveStylesheet( finished ) {
 		}
 		
 		fs.appendFileSync( stylePath, rewrittenCss );
-		setTimeout( finished, 0 );
+		finished();
 	    });
 	} else {
-	    setTimeout( finished, 0 );
+	    finished();
 	}
 
     }, speed );
@@ -1265,7 +1275,7 @@ function saveStylesheet( finished ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
 		    } else {
-			setTimeout( finished, 0 );
+			finished();
 		    }
 		};
 		downloadCSSMediaQueue.push( '' );
@@ -1292,20 +1302,20 @@ function getArticleIds( finished ) {
 			});
 			if ( values.length ) {
 			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
-				setTimeout( finished, 0 );
+				finished();
 			    });
 			} else {
-			    setTimeout( finished, 0 );
+			    finished();
 			}
 		    } else {
-			setTimeout( finished, 0, JSON.parse( body )['error'] );
+			finished( JSON.parse( body )['error'] );
 		    }
 		} catch( error ) {
-		    setTimeout( finished, 0, error );
+		    finished( error );
 		}
 	    });
 	} else {
-	    setTimeout( finished, 0 );
+	    finished();
 	}
     }, speed * 5 );
 
@@ -1316,7 +1326,7 @@ function getArticleIds( finished ) {
 		process.exit( 1 );
 	    } else {
 		printLog( 'All redirect ids retrieve successfuly.' );
-		setTimeout( finished, 0 );
+		finished();
 	    }
 	};
 	redirectQueue.push( '' );
@@ -1364,7 +1374,7 @@ function getArticleIds( finished ) {
 		setTimeout( finished, redirectQueue.length() );
 	    });
 	} else {
-	    setTimeout( finished, 0 );
+	    finished();
         }
     }
 
@@ -1396,7 +1406,7 @@ function getArticleIds( finished ) {
 		    } else {
 			next = '';
 		    }
-		    setTimeout( finished, 0 );
+		    finished();
 		});
 	    },
 	    function () { return next },
@@ -1406,7 +1416,7 @@ function getArticleIds( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'List of article ids to mirror completed for namespace "' +  namespace + '"' );
-		    setTimeout( finished, 0 );
+		    finished();
 		}
 	    }
 	);
@@ -1448,7 +1458,7 @@ function createSubDirectories( finished ) {
 		console.error( 'Unable to create mandatory directories : ' + error );
 		process.exit( 1 );
 	    } else {
-		setTimeout( finished, 0 );
+		finished();
 	    }
 	});
 }
@@ -1491,17 +1501,17 @@ function writeFile( data, path, callback ) {
 	    console.error( 'Unable to write data at ' + path + " - " + error );
 	    process.exit( 1 );
 	} else if (callback) {
-	    process.nextTick( callback );
+	    setImmediate( callback );
 	}
     });
 }
 
 function getRequestOptionsFromUrl( url, compression ) {
     var urlObj = urlParser.parse( url );
-    var headers = {
-	'accept-encoding': compression ? 'gzip,deflate' : undefined,
-	"user-agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2",
-    }; 
+    var headers = (
+	{ name: 'accept-encoding', value: ( compression ? 'gzip,deflate' : undefined ) },
+	{ name: 'user-agent', value: userAgentString }
+    );
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
 
     return {
@@ -1576,7 +1586,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		// process.exit( 1 );
 	    }
 	    if ( callback ) {
-		setTimeout( callback, 0, data, var1, var2, var3 );
+		callback( data, var1, var2, var3 );
 	    } 		    
 	});
 }
@@ -1591,13 +1601,13 @@ function downloadMedia( url, callback ) {
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
 		downloadFile( url, getMediaPath( url ), true, function( ok ) {
 		    if ( callback ) {
-			process.nextTick( callback );
+			callback();
 		    }
 		});
 	    });
         } else {
 	    if ( callback ) {
-		process.nextTick( callback );
+		callback();
 	    }
         }
     });
@@ -1615,7 +1625,7 @@ function downloadFile( url, path, force, callback ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
 	    if (callback) {
-		process.nextTick( callback );
+		callback();
 	    }
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
@@ -1727,7 +1737,7 @@ function downloadFile( url, path, force, callback ) {
 			console.error( error );
 		    }
 		    if ( callback ) {
-			setTimeout( callback, 0, true );
+			callback( true );
 		    } 		    
 		});
 	}
@@ -1808,7 +1818,7 @@ function getSubTitle( finished ) {
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
-	setTimeout( finished, 0 );
+	finished();
     });
 }
 
@@ -1825,7 +1835,7 @@ function getSiteInfo( finished ) {
 	    } else {
 		langIso3 = language.iso639_3;
 	    }
-	    setTimeout( finished, 0 );
+	    finished();
 	});
     });
 }
@@ -1841,7 +1851,7 @@ function saveFavicon( finished ) {
 	downloadFile( logoUrl, faviconPath, true, function() {
 	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
 	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-		setTimeout( finished, 0, error );
+		finished( error );
 	    });
 	});
     });
@@ -1864,7 +1874,7 @@ function getMainPage( finished ) {
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
 	
 	/* Write the static html file */
-	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { setTimeout( finished, 0 ); } );
+	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { finished(); } );
     }
     
     function retrieveMainPage( finished ) {
@@ -1876,7 +1886,7 @@ function getMainPage( finished ) {
 		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
 					       target : getArticleBase( titleParts[1], true ) } );
 		writeFile( html, htmlRootPath + '/index.html', function() {
-		    setTimeout( finished, 0 );
+		    finished();
 		} );
 
 		/* We have to mirror the main page even if this is not
@@ -1926,7 +1936,7 @@ function getNamespaces( finished ) {
 	    });
 	});
 	
-	setTimeout( finished, 0 );
+	finished();
     });
 }
 
@@ -1953,7 +1963,7 @@ function getTextDirection( finished ) {
 	revAutoAlign = ltr ? 'right' : 'left';
 
 	printLog( 'Text direction is ' + ( ltr ? 'ltr' : 'rtl' ) );
-	setTimeout( finished, 0 );
+	finished();
     });
 }
 
@@ -2031,9 +2041,14 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	}
 	
 	proc.on( 'close', function ( code ) {
-	    setTimeout( callback, 0, code !== 0 ? 'Error by executing ' + command : undefined );
+	    callback( code !== 0 ? 'Error by executing ' + command : undefined );
 	});
     } catch ( error ) {
-	setTimeout( callback, 0, 'Error by executing ' + command );
+	callback( 'Error by executing ' + command );
     }
 }
+
+function validateEmail( email ) { 
+    var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test( email );
+} 
