@@ -1063,7 +1063,7 @@ function saveArticles( finished ) {
 		finished();
 	    }
 	});
-    }, speed * 3 );
+    }, speed * 5 );
 
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
