@@ -389,18 +389,8 @@ async.series(
 
 function initAgents( finished ) {
     closeAgents( function() {
-	keepaliveHttpAgent = new httpAgent({ 
-	    maxSockets: 1024,
-	    maxFreeSockets: 256,
-	    keepAliveTimeout: 300000,
-	    timeout: 600000,
-	});
-	keepaliveHttpsAgent = new httpsAgent({
-	    maxSockets: 1024,
-	    maxFreeSockets: 256,
-	    keepAliveTimeout: 300000,
-	    timeout: 600000
-	});
+	keepaliveHttpAgent = new httpAgent();
+	keepaliveHttpsAgent = new httpsAgent();
 	finished();
     });
 }
@@ -1046,42 +1036,34 @@ function saveArticles( finished ) {
 	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), finished );
     }
 
-    /* Retrieve and save articles */
-    var saveArticleQueue = async.queue( function ( article, finished ) {
-	var articleId = article.id;
-	var html = article.html;
-	var articlePath = getArticlePath( articleId );
-	var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
-
-	printLog( 'Treating and saving article ' + articleId + ' at ' + articlePath + '...' );
-	prepareAndSaveArticle( html, articleId, function ( error, result ) {
-	    if ( error ) {
-		console.error( 'Error by preparing and saving file ' + error );
-		process.exit( 1 );
-	    } else {
-		printLog( 'Dumped successfully article ' + articleId );
-		finished();
-	    }
-	});
-    }, speed * 5 );
-
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
-	
 	printLog( 'Downloading article from ' + articleUrl );
-	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + '] & Save article queue size [' + saveArticleQueue.length() + ']' );
-	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length() * 10 + saveArticleQueue.length() * 100, articleUrl, function( html, articleId ) {
-			if ( html ) {
-			    saveArticleQueue.push( {html: html, id: articleId} );
-			} else {
-			    delete articleIds[ articleId ];
-			}
+	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
+	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() ) * 10, articleUrl, function( html, articleId ) {
+	    if ( html ) {
+		var articlePath = getArticlePath( articleId );
+		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
+		
+		printLog( 'Treating and saving article ' + articleId + ' at ' + articlePath + '...' );
+		prepareAndSaveArticle( html, articleId, function ( error, result ) {
+		    if ( error ) {
+			console.error( 'Error by preparing and saving file ' + error );
+			process.exit( 1 );
+		    } else {
+			printLog( 'Dumped successfully article ' + articleId );
 			finished();
-		    }, articleId );
+		    }
+		});
+	    } else {
+		delete articleIds[ articleId ];
+		finished();
+	    }
+	}, articleId );
     }
 
     printLog( 'Saving articles...' );
-    async.eachLimit( Object.keys( articleIds ), speed / 2, saveArticle, function( error ) {
+    async.eachLimit( Object.keys( articleIds ), speed, saveArticle, function( error ) {
 	if ( error ) {
 	    console.error( 'Unable to retrieve an article correctly: ' + error );
 	    process.exit( 1 );
@@ -1508,11 +1490,11 @@ function writeFile( data, path, callback ) {
 
 function getRequestOptionsFromUrl( url, compression ) {
     var urlObj = urlParser.parse( url );
-    var headers = (
-	{ name: 'accept-encoding', value: ( compression ? 'gzip,deflate' : undefined ) },
-	{ name: 'user-agent', value: userAgentString }
-    );
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
+    var headers = {
+	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
+	'user-agent': userAgentString
+    };
 
     return {
 	host: urlObj.hostname,
@@ -1541,14 +1523,25 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    }
 	    
 	    retryCount++;
-	    http.get( getRequestOptionsFromUrl( url ), function( response ) {
+	    http.get( getRequestOptionsFromUrl( url, true ), function( response ) {
 		if ( response.statusCode == 200 ) {
-		    var data = '';
+		    var chunks = new Array();
 		    response.on( 'data', function ( chunk ) {
-			data += chunk;
+			chunks.push( chunk );
 		    });
 		    response.on( 'end', function() {
-			callFinished( 0, null, data );
+			var encoding = response.headers['content-encoding'];
+			if ( encoding == 'gzip' ) {
+			    zlib.gunzip( Buffer.concat( chunks ), function( error, decoded ) {
+				callFinished( 0, error, decoded && decoded.toString() );
+			    });
+			} else if ( encoding == 'deflate' ) {
+			    zlib.inflate( Buffer.concat( chunks ), function( error, decoded ) {
+				callFinished( 0, error, decoded && decoded.toString() );
+			    })
+			} else {
+			    callFinished( 0, null, Buffer.concat( chunks ).toString() );
+			} 
 		    });
 		} else {
 		    callFinished( 0,  'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );

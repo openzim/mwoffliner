@@ -34,9 +34,10 @@
     "redis": "*",
     "rimraf": "*",
     "swig": "*",
+    "zlib": "*",
     "utf8-binary-cutter": "*",
     "yargs": "*",
-    "agentkeepalive": "0.2.2"
+    "agentkeepalive": "*"
   },
   "keywords": [
     "mediawiki",
