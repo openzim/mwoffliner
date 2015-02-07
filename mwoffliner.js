@@ -17,6 +17,7 @@ var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var rimraf = require( 'rimraf' );
+var mkdirp = require( 'mkdirp' );
 var countryLanguage = require( 'country-language' );
 var redis = require( 'redis' );
 var childProcess = require( 'child_process' );
@@ -38,7 +39,7 @@ var clarify = require('clarify');
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --adminEmail=foo@bar.net' )
     .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
-    .options( ['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix', 'resume'] )
+    .options( ['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix', 'resume', 'tmpDirectory'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line')
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
@@ -51,6 +52,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'speed', 'More or less the number of parallel HTTP requests (per default the number of core, reduce if stability problem)' )
+    .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
     .argv;
@@ -98,8 +100,11 @@ if ( validateEmail( adminEmail ) ) {
     process.exit( 1 );
 }
 
-/* Directory wehre everything is saved */
+/* Directory wehre everything is saved at the end of the process */
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
+
+/* Directory where temporary data are saved */
+var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/';
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
@@ -244,7 +249,7 @@ var footerTemplate = swig.compile( footerTemplateCode );
 /* Get content */
 async.series(
     [
-	function( finished ) { createOutputDirectory( finished ) },
+	function( finished ) { createDirectories( finished ) },
 	function( finished ) { initAgents( finished ) },
 	function( finished ) { getTextDirection( finished ) },
 	function( finished ) { getSubTitle( finished ) },
@@ -449,17 +454,21 @@ function closeAgents( finished ) {
     }
 }
 
-function createOutputDirectory( finished ) {
-    fs.mkdir( outputDirectory, undefined, function() {
-	fs.exists( outputDirectory, function ( exists ) {
-	    if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-		finished();
-	    } else {
-		console.error( 'Unable to create directory \'' + outputDirectory + '\'' );
+function createDirectories( finished ) {
+    printLog( 'Creating base directories...' );
+    async.series(
+        [
+	    function( finished ) { mkdirp( outputDirectory, finished ) },
+	    function( finished ) { mkdirp( tmpDirectory, finished ) }
+	],
+	function( error ) {
+	    if ( error ) {
+		console.error( 'Unable to create mandatory directories : ' + error );
 		process.exit( 1 );
+	    } else {
+		finished();
 	    }
 	});
-    });
 }
 
 function randomString( len ) {
@@ -503,7 +512,14 @@ function computeFilenameRadical() {
 }
 
 function computeHtmlRootPath() {
-    var htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve( process.cwd(), outputDirectory ) + '/';
+    var htmlRootPath;
+
+    if ( nozim ) {
+	htmlRootPath = outputDirectory[0] === '/' ? outputDirectory : pathParser.resolve( process.cwd(), tmpDirectory ) + '/';
+    } else {
+	htmlRootPath = tmpDirectory[0] === '/' ? tmpDirectory : pathParser.resolve( process.cwd(), tmpDirectory ) + '/';
+    }
+
     htmlRootPath += computeFilenameRadical() + '/';
     return htmlRootPath;
 }
@@ -1462,7 +1478,7 @@ function getArticleIds( finished ) {
 
 /* Create directories for static files */
 function createSubDirectories( finished ) {
-    printLog( 'Creating directories at \'' + htmlRootPath + '\'...' );
+    printLog( 'Creating sub directories at \'' + htmlRootPath + '\'...' );
     async.series(
         [
 	    function( finished ) { rimraf( htmlRootPath, finished ) },

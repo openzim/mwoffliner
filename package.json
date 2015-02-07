@@ -34,6 +34,7 @@
     "clarify": "*",
     "redis": "*",
     "rimraf": "*",
+    "mkdirp": "*",
     "swig": "*",
     "utf8-binary-cutter": "*",
     "yargs": "*",

@@ -49,7 +49,7 @@ optBinaries.forEach( function( cmd ) {
 var date = new Date();
 var directory = getAbsoluteDirectoryPath( homeDirExpander( argv.directory ) );
 var outputDirectory = getAbsoluteDirectoryPath( argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : directory );
-var tmpDirectory = getAbsoluteDirectoryPath( argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/' );
+var tmpDirectory = argv.tmpDirectory;
 var verbose = argv.verbose;
 var resume = argv.resume;
 var selections = new Array();
@@ -81,40 +81,7 @@ async.series(
 /************************************/
 
 function init( finished ) {
-    async.series(
-	[
-	    function( finished ) {
-		fs.mkdir( outputDirectory, undefined, function() {
-		    fs.exists( outputDirectory, function ( exists ) {
-			if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-			    finished();
-			} else {
-			    finished( 'Unable to create directory \'' + outputDirectory + '\'' );
-			}
-		    });
-		});
-	    },
-	    function( finished ) {
-		fs.mkdir( tmpDirectory, undefined, function() {
-		    fs.exists( tmpDirectory, function ( exists ) {
-			if ( exists && fs.lstatSync( tmpDirectory ).isDirectory() ) {
-			    finished();
-			} else {
-			    finished( 'Unable to create directory \'' + tmpDirectory + '\'' );
-			}
-		    });
-		});
-	    },
-	],
-	function( error ) {
-	    if ( error ) {
-		console.error( error );
-		process.exit( 1  );
-	    } else {
-		finished();
-	    }
-	}
-    );
+    finished();
 }
 
 function dump( finished ) {
@@ -124,9 +91,6 @@ function dump( finished ) {
 	    if ( wpBlackList.indexOf( language ) == -1 ) {
 		var mwUrl = 'http://' + language + '.wikipedia.org/';
 		var articleList = directory + language;
-		var selectionName = pathParser.basename( directory );
-		var zimFilenamePrefix = 'wikipedia_' + language + '_' + selectionName;
-		var zimFullPath = outputDirectory + zimFilenamePrefix + '_' + date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 ) + '.zim';
 		var parsoidCode = mediawikis[ language ] && mediawikis[ language ].dbname ? mediawikis[ language ].dbname : undefined;
 		if ( !parsoidCode ) {
 		    console.error( 'Unable to compute parsoid URL for :' + mwUrl );
@@ -134,34 +98,24 @@ function dump( finished ) {
 		}
 		var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/' + parsoidCode + '/';
 
-		if ( resume && fs.existsSync( zimFullPath ) ) {
-		    printLog( 'Dumping selection for language "' + language + '" already done. ZIM file available at ' + zimFullPath );
-		    finished();
-		} else {
-		    printLog( 'Dumping selection for language "' + language + '"' );
-		    executeTransparently( 'node',
-					  [ './mwoffliner.js', '--mwUrl=' + mwUrl, '--parsoidUrl=' + parsoidUrl,
-					    '--outputDirectory=' + tmpDirectory, verbose ? '--verbose' : '',
-					    '--articleList=' + articleList, 
-					    '--filenamePrefix=' + zimFilenamePrefix
-					  ],
-					  function( executionError ) {
-					      if ( executionError ) {
-						  console.error( executionError );
-						  process.exit( 1 );
-					      } else {
-						  var cmd = 'mv ' + tmpDirectory + '*.zim "' + outputDirectory + '"'; 
-						  printLog( 'Moving ZIM files (' + cmd + ')' );
-						  exec( cmd, function( executionError, stdout, stderr ) {
-						      if ( executionError ) {
-							  finished( executionError );
-						      } else {
-							  finished();
-						      }
-						  });
-					      }
-					  });
-		}
+		printLog( 'Dumping selection for language "' + language + '"' );
+		executeTransparently( 'node',
+				      [ './mwoffliner.js', '--mwUrl=' + mwUrl, '--parsoidUrl=' + parsoidUrl,
+					'--outputDirectory=' + outputDirectory,
+					'--articleList=' + articleList, 
+					'--filenamePrefix=' + zimFilenamePrefix,
+					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
+					resume ? '--resume' + '',
+					verbose ? '--verbose' : '',
+				      ],
+				      function( executionError ) {
+					  if ( executionError ) {
+					      console.error( executionError );
+					      process.exit( 1 );
+					  } else {
+					      finished();
+					  }
+				      });
 	    } else {
 		printLog( language + '.wikipedia.org is blacklisted, dumping of this Wikipedia will be skiped' );
 		finished();

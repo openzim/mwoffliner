@@ -24,13 +24,14 @@ var spawn = require('child_process').spawn;
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
 	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
-    .options( ['project', 'language', 'tmpDirectory', 'outputDirectory'] )
+    .options( ['project', 'language', 'tmpDirectory', 'outputDirectory', 'resume'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'language', 'Language to dump')
     .describe( 'mwURL', 'Mediawiki API URL')
     .describe( 'parsoidUrl', 'Mediawiki Parsoid URL')
     .describe( 'outputDirectory', 'Directory to write the ZIM files')
     .describe( 'project', 'Projects to dump')
+    .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
@@ -63,6 +64,7 @@ var project = argv.project;
 var language = argv.language;
 var verbose = argv.verbose;
 var adminEmail = argv.adminEmail;
+var resume = argv.resume;
 
 /************************************/
 /* MAIN *****************************/
@@ -78,7 +80,7 @@ async.series(
 	if ( error ) {
 	    console.error( 'Unable to dump correctly all mediawikis (' + error + ')' );
 	} else {
-	    console.log( 'All mediawikis dump successfuly' );
+	    printLog( 'All mediawikis dump successfuly' );
 	}
     }
 );
@@ -88,40 +90,7 @@ async.series(
 /************************************/
 
 function init( finished ) {
-    async.series(
-	[
-	    function( finished ) {
-		fs.mkdir( outputDirectory, undefined, function() {
-		    fs.exists( outputDirectory, function ( exists ) {
-			if ( exists && fs.lstatSync( outputDirectory ).isDirectory() ) {
-			    finished();
-			} else {
-			    finished( 'Unable to create directory \'' + outputDirectory + '\'' );
-			}
-		    });
-		});
-	    },
-	    function( finished ) {
-		fs.mkdir( tmpDirectory, undefined, function() {
-		    fs.exists( tmpDirectory, function ( exists ) {
-			if ( exists && fs.lstatSync( tmpDirectory ).isDirectory() ) {
-			    finished();
-			} else {
-			    finished( 'Unable to create directory \'' + tmpDirectory + '\'' );
-			}
-		    });
-		});
-	    },
-	],
-	function( error ) {
-	    if ( error ) {
-		console.error( error );
-		process.exit( 1  );
-	    } else {
-		finished();
-	    }
-	}
-    );
+    finished();
 }
 
 function dump( finished ) {
@@ -132,26 +101,16 @@ function dump( finished ) {
 		 ( !language || site.lang == language ) ) {
 		var localMwUrl = site.url + '/';
 		var localParsoidUrl = parsoidUrl + site.dbname + '/';
-		var localTmpDirectory = tmpDirectory + site.dbname + '/';
-		var localLog = tmpDirectory + site.dbname + '.log';
-		console.log( 'Dumping ' + site.url );
+		printLog( 'Dumping ' + site.url );
 		executeTransparently( 'node',
 				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
-					'--format=', '--format=nopic', '--outputDirectory=' + localTmpDirectory, verbose ? '--verbose' : '' ],
+					'--format=', '--format=nopic', '--outputDirectory=' + outputDirectory, verbose ? '--verbose' : '', resume ? '--resume' : '' ],
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );
 					      process.exit( 1 );
 					  } else {
-					      var cmd = 'mv ' + localTmpDirectory + '*.zim "' + outputDirectory + '"'; 
-					      console.log( 'Moving ZIM files (' + cmd + ')' );
-					      exec( cmd, function( executionError, stdout, stderr ) {
-						  if ( executionError ) {
-						      finished( executionError );
-						  } else {
-						      finished();
-						  }
-					      });
+					      finished();
 					  }
 				      });
 	    } else {
@@ -182,7 +141,7 @@ function loadMatrix( finished ) {
 		    }
 		}
 	    }
-	    console.log( 'Matrix loaded successfuly' );
+	    printLog( 'Matrix loaded successfuly' );
 	    finished();
 	} else {
 	    console.error( 'Unable to parse the matrix JSON from ' + matrixUrl );
@@ -255,7 +214,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 }
 
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
-    console.log( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
+    printLog( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
 
     try {
         var proc = spawn( command, args );
@@ -277,5 +236,11 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	});
     } catch ( error ) {
 	callback( 'Error by executing ' + command );
+    }
+}
+
+function printLog( msg ) {
+    if ( verbose ) {
+	console.info( msg );
     }
 }
