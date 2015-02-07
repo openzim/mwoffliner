@@ -1545,6 +1545,7 @@ function getRequestOptionsFromUrl( url, compression ) {
     };
 
     return {
+	protocol: urlObj.protocol,
 	host: urlObj.hostname,
 	port: port,
 	headers: headers,
