@@ -236,7 +236,7 @@ var redisClient = redis.createClient( '/dev/shm/redis.sock' );
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
 var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
-var redisKeepAliveTimer = setInterval( function() { redisClient.ping() }, 1000 );
+var regularTimer = setInterval( regularTimerCallback, 1000 );
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
@@ -294,7 +294,7 @@ async.series(
     ],
     function( error ) {
 	redisClient.flushdb( function( error, result) {
-	    redisKeepAliveTimer.unref();
+	    regularTimer.unref();
 	    redisClient.quit(); 
 	    closeAgents( function() {
 		printLog( 'All dumping(s) finished with success.' );
@@ -323,14 +323,14 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 
 	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
-	    return 'jpegoptim --strip-all -m50 "' + path + '" && sync';
+	    return 'jpegoptim --strip-all -m50 "' + path + '"';
 	} else if ( type === 'png' || type === 'PNG' ) {
 	    return 'pngquant --verbose --nofs --force --ext="' + tmpExt + '" "' + path + 
 		'" && advdef -q -z -4 -i 5 "' + tmpPath + 
-		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi && sync';
+		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	} else if ( type === 'gif' || type === 'GIF' ) {
 	    return 'gifsicle --verbose -O3 "' + path + '" -o "' + tmpPath +
-		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi && sync';
+		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	}
     }
 
@@ -402,6 +402,11 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function regularTimerCallback() {
+    redisClient.ping();
+    exec( 'sync' );
+}
 
 function checkResume( finished ) {
     for( var i = 0; i<dumps.length; i++ ) {
