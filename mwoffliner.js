@@ -264,6 +264,7 @@ async.series(
 		    printLog( 'Starting a new dump...' );
 		    nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
 		    nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
+		    keepHtml = nozim ? true : keepHtml;
 		    filenameRadical = computeFilenameRadical();
 		    htmlRootPath = computeHtmlRootPath();
 		    
@@ -1481,7 +1482,6 @@ function createSubDirectories( finished ) {
     printLog( 'Creating sub directories at \'' + htmlRootPath + '\'...' );
     async.series(
         [
-	    function( finished ) { rimraf( htmlRootPath, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
