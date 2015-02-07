@@ -35,10 +35,10 @@ var clarify = require('clarify');
 /* Command Parsing *************/
 /************************************/
 
-var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --adminEmail=foo@bar.net')
-    .require(['mwUrl', 'parsoidUrl', 'adminEmail' ])
-    .options(['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix'])
+var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --adminEmail=foo@bar.net' )
+    .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
+    .options( ['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix', 'resume'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line')
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
@@ -49,6 +49,7 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
     .describe( 'mwApiPath', 'Mediawiki wiki base path (per default "/wiki/"')
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
+    .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'speed', 'More or less the number of parallel HTTP requests (per default the number of core, reduce if stability problem)' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
@@ -57,16 +58,6 @@ var argv = yargs.usage('Create a fancy HTML dump of a Mediawiki instance in a di
 /************************************/
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
-
-/* HTTP user-agent string */
-var adminEmail = argv.adminEmail;
-var userAgentString = 'MWOffliner/HEAD';
-if ( validateEmail( adminEmail ) ) {
-    userAgentString += ' (' + adminEmail + ')';
-} else {
-    console.error( 'Admin email ' + adminEmail + ' is not valid' );
-    process.exit( 1 );
-}
 
 /* Formats */
 var dumps = [ '' ];
@@ -96,6 +87,16 @@ var cssClassCallsBlackList = [ 'plainlinks' ];
 
 /* All nodes with one of these ids will be remove */
 var idBlackList = [ 'purgelink' ];
+
+/* HTTP user-agent string */
+var adminEmail = argv.adminEmail;
+var userAgentString = 'MWOffliner/HEAD';
+if ( validateEmail( adminEmail ) ) {
+    userAgentString += ' (' + adminEmail + ')';
+} else {
+    console.error( 'Admin email ' + adminEmail + ' is not valid' );
+    process.exit( 1 );
+}
 
 /* Directory wehre everything is saved */
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
@@ -129,6 +130,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 /* Verbose */
 var verbose = argv.verbose;
+
+/* Should we keep ZIM file generation if ZIM file already exists */
+var resume = argv.resume;
 
 /* ZIM publisher */
 var publisher = 'Kiwix';
@@ -237,6 +241,67 @@ redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( err
 var redirectTemplate = swig.compile( redirectTemplateCode );
 var footerTemplate = swig.compile( footerTemplateCode );
 
+/* Get content */
+async.series(
+    [
+	function( finished ) { createOutputDirectory( finished ) },
+	function( finished ) { initAgents( finished ) },
+	function( finished ) { getTextDirection( finished ) },
+	function( finished ) { getSubTitle( finished ) },
+	function( finished ) { getSiteInfo( finished ) },
+	function( finished ) { getNamespaces( finished ) },
+	function( finished ) { checkResume( finished ) },
+	function( finished ) { getArticleIds( finished ) },
+	function( finished ) { 
+	    async.eachSeries(
+		dumps,
+		function( dump, finished ) {
+		    printLog( 'Starting a new dump...' );
+		    nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
+		    nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
+		    filenameRadical = computeFilenameRadical();
+		    htmlRootPath = computeHtmlRootPath();
+		    
+		    async.series(
+			[
+			    function( finished ) { createSubDirectories( finished ) },
+			    function( finished ) { initAgents( finished ) },
+			    function( finished ) { saveJavascript( finished ) }, 
+			    function( finished ) { saveStylesheet( finished ) },
+			    function( finished ) { saveFavicon( finished ) },
+			    function( finished ) { getMainPage( finished ) },
+			    function( finished ) { saveRedirects( finished ) },
+			    function( finished ) { saveArticles( finished ) },
+			    function( finished ) { drainDownloadMediaQueue( finished ) },
+			    function( finished ) { drainOptimizationQueue( finished ) },
+			    function( finished ) { buildZIM( finished ) },
+			    function( finished ) { endProcess( finished ) }
+			],
+			function( error, result ) {
+			    finished();
+			});
+		},
+		function( error ) {
+		    finished();
+		}
+	    )
+	}
+    ],
+    function( error ) {
+	redisClient.flushdb( function( error, result) {
+	    redisKeepAliveTimer.unref();
+	    redisClient.quit(); 
+	    closeAgents( function() {
+		printLog( 'All dumping(s) finished with success.' );
+	    });
+	});
+    }
+);
+
+/************************************/
+/* MEDIA RELATED QUEUES *************/
+/************************************/
+
 /* Setting up media optimization queue */
 var optimizationQueue = async.queue( function ( file, finished ) {
     var path = file.path;
@@ -329,64 +394,32 @@ var downloadMediaQueue = async.queue( function ( url, finished ) {
     }
 }, speed * 5 );
 
-/* Get content */
-async.series(
-    [
-	function( finished ) { createOutputDirectory( finished ) },
-	function( finished ) { initAgents( finished ) },
-	function( finished ) { getTextDirection( finished ) },
-	function( finished ) { getSubTitle( finished ) },
-	function( finished ) { getSiteInfo( finished ) },
-	function( finished ) { getNamespaces( finished ) },
-	function( finished ) { getArticleIds( finished ) },
-	function( finished ) { 
-	    async.eachSeries(
-		dumps,
-		function( dump, finished ) {
-		    printLog( 'Starting a new dump...' );
-		    nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
-		    nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
-		    filenameRadical = computeFilenameRadical();
-		    htmlRootPath = computeHtmlRootPath();
-
-		    async.series(
-			[
-			    function( finished ) { createSubDirectories( finished ) },
-			    function( finished ) { initAgents( finished ) },
-			    function( finished ) { saveJavascript( finished ) }, 
-			    function( finished ) { saveStylesheet( finished ) },
-			    function( finished ) { saveFavicon( finished ) },
-			    function( finished ) { getMainPage( finished ) },
-			    function( finished ) { saveRedirects( finished ) },
-			    function( finished ) { saveArticles( finished ) },
-			    function( finished ) { drainDownloadMediaQueue( finished ) },
-			    function( finished ) { drainOptimizationQueue( finished ) },
-			    function( finished ) { buildZIM( finished ) },
-			    function( finished ) { endProcess( finished ) }
-			],
-			function( error, result ) {
-			    finished();
-			}
-		    );
-		},
-		function( error ) {
-		    redisClient.flushdb( function( error, result) {
-			redisKeepAliveTimer.unref();
-			redisClient.quit(); 
-			finished();
-		    });
-		}
-	    )
-	}
-    ],
-    function( error ) {
-	printLog( 'All dumping(s) finished with success.' );
-    }
-);
-
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function checkResume( finished ) {
+    for( var i = 0; i<dumps.length; i++ ) {
+	var dump = dumps[i];
+	nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
+	nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
+	htmlRootPath = computeHtmlRootPath();
+	
+	if ( fs.existsSync( htmlRootPath ) ) {
+	    console.error( htmlRootPath + ' already exists. To make a new dump, please remove it and restart mwoffliner.' );
+	    dumps.splice( i, 1 );
+	    i--;
+	} else if ( resume && !nozim ) {
+	    var zimPath = computeZimRootPath();
+	    if ( fs.existsSync( zimPath ) ) {
+		printLog( zimPath + ' is already done, skip dumping & ZIM file generation' );
+		dumps.splice( i, 1 );
+		i--;
+	    }
+	}
+    }
+    finished( dumps.length > 0 ? false : true );
+}
 
 function initAgents( finished ) {
     closeAgents( function() {
@@ -411,7 +444,9 @@ function closeAgents( finished ) {
             });
 	});
     }
-    finished();
+    if ( finished )  {
+	finished();
+    }
 }
 
 function createOutputDirectory( finished ) {
