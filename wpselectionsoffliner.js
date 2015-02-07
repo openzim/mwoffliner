@@ -104,9 +104,9 @@ function dump( finished ) {
 					'--outputDirectory=' + outputDirectory,
 					'--articleList=' + articleList, 
 					'--filenamePrefix=' + zimFilenamePrefix,
-					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
-					resume ? '--resume' + '',
-					verbose ? '--verbose' : '',
+					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : ' ',
+					resume ? '--resume' + ' ',
+					verbose ? '--verbose' : ' ',
 				      ],
 				      function( executionError ) {
 					  if ( executionError ) {

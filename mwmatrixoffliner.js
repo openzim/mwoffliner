@@ -104,7 +104,7 @@ function dump( finished ) {
 		printLog( 'Dumping ' + site.url );
 		executeTransparently( 'node',
 				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
-					'--format=', '--format=nopic', '--outputDirectory=' + outputDirectory, verbose ? '--verbose' : '', resume ? '--resume' : '' ],
+					'--format=', '--format=nopic', '--outputDirectory=' + outputDirectory, verbose ? '--verbose' : ' ', resume ? '--resume' : ' ' ],
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );
@@ -241,6 +241,6 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 
 function printLog( msg ) {
     if ( verbose ) {
-	console.info( msg );
+	console.log( msg );
     }
 }

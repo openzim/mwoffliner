@@ -30,7 +30,6 @@ var unicodeCutter = require( 'utf8-binary-cutter' );
 var httpAgent = require('agentkeepalive');
 var httpsAgent = require('agentkeepalive').HttpsAgent;
 var trace = require('trace');
-var clarify = require('clarify');
 
 /************************************/
 /* Command Parsing *************/
