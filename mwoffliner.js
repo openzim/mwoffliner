@@ -1666,11 +1666,10 @@ function downloadFile( url, path, force, callback ) {
 				    },
 				    function () { return !fileDescriptor; },
 				    function ( error ) {
+					printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
 					if ( error ) {
 					    console.error( 'Unable to fsync a file ' + error );
-					    process.exit( 1 );
 					} else {
-					    printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
 					    var tmpPathStat = fs.statSync( tmpPath );
 					    if ( fs.existsSync( path ) ) {
 						var pathStat =  fs.statSync( path );
@@ -1685,8 +1684,8 @@ function downloadFile( url, path, force, callback ) {
 						fs.renameSync( tmpPath, path );
 						optimizationQueue.push( {path: path, size: tmpPathStat.size} );
 					    }
-					    callFinished( 0 );
 					}
+					callFinished( 0 );
 				    });
 			    });
 			} else {
