@@ -50,7 +50,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'outputDirectory', 'Directory to write the downloaded content')
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
-    .describe( 'speed', 'More or less the number of parallel HTTP requests (per default the number of core, reduce if stability problem)' )
+    .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
@@ -119,11 +119,11 @@ var filenamePrefix = argv.filenamePrefix || '';
 
 /* Number of parallel requests */
 var cpuCount = os.cpus().length;
-var speed = argv.speed || cpuCount;
-if ( isNaN( speed ) ) {
+if ( argv.speed && isNaN( argv.speed ) ) {
     console.error( 'speed is not a number, please give a number value to --speed' );
     process.exit( 1 );
 }
+var speed = cpuCount * ( argv.speed || 1 );
 
 /* Http user agents */
 var keepaliveHttpAgent;
