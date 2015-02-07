@@ -26,9 +26,10 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
-var longjohn = require( 'longjohn' );
 var httpAgent = require('agentkeepalive');
 var httpsAgent = require('agentkeepalive').HttpsAgent;
+var trace = require('trace');
+var clarify = require('clarify');
 
 /************************************/
 /* Command Parsing *************/
@@ -252,14 +253,14 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 
 	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
-	    return 'jpegoptim --strip-all -m50 "' + path + '"';
+	    return 'jpegoptim --strip-all -m50 "' + path + '" && sync';
 	} else if ( type === 'png' || type === 'PNG' ) {
 	    return 'pngquant --verbose --nofs --force --ext="' + tmpExt + '" "' + path + 
 		'" && advdef -q -z -4 -i 5 "' + tmpPath + 
-		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
+		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi && sync';
 	} else if ( type === 'gif' || type === 'GIF' ) {
 	    return 'gifsicle --verbose -O3 "' + path + '" -o "' + tmpPath +
-		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
+		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi && sync';
 	}
     }
 
@@ -317,7 +318,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	finished();
     }
     
-}, cpuCount );
+}, cpuCount * 2 );
 
 /* Setting up the downloading queue */
 var downloadMediaQueue = async.queue( function ( url, finished ) {
@@ -1040,7 +1041,7 @@ function saveArticles( finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
-	setTimeout( downloadContent, ( downloadMediaQueue.length() + optimizationQueue.length() ) * 10, articleUrl, function( html, articleId ) {
+	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length(), articleUrl, function( html, articleId ) {
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
@@ -1478,14 +1479,10 @@ function writeFile( data, path, callback ) {
 	process.exit( 1 );
     }
 
-    fs.writeFile( path, data, function ( error ) {
-	if ( error ) {
-	    console.error( 'Unable to write data at ' + path + " - " + error );
-	    process.exit( 1 );
-	} else if (callback) {
-	    setImmediate( callback );
-	}
-    });
+    fs.writeFileSync( path, data );
+    if (callback) {
+	setImmediate( callback );
+    }
 }
 
 function getRequestOptionsFromUrl( url, compression ) {
@@ -1607,9 +1604,7 @@ function downloadMedia( url, callback ) {
 }
 
 process.on( 'uncaughtException', function( error ) {
-    console.trace( 'NODEJS FATAL EXCEPTION:' + error );
     console.error( error.stack );
-    throw error;
     process.exit( 42 );
 });
 
@@ -1632,6 +1627,7 @@ function downloadFile( url, path, force, callback ) {
 		5,
 		function( finished ) {
 		    var calledFinished = false;
+		    var fileDescriptor;
 
 		    function callFinished( timeout, message ) {
 			if ( !calledFinished ) {
@@ -1648,59 +1644,50 @@ function downloadFile( url, path, force, callback ) {
 		    tmpPathStream.on( 'error', function( error ) {
                         callFinished( 2000, 'Writable stream error at "' + tmpPath + '" (' + error + ')' );
                     });
+		    tmpPathStream.on( 'open', function( fd ) {
+			fileDescriptor = fd;
+                    });
 		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
 				tmpPathStream.write( data );
 			    }).on( 'end', function() {
-				tmpPathStream.end();
-				printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
-				async.retry( 5,		
-					     function ( finished ) {
-						 fs.stat( path, function ( error, stats ) {
-						     if ( error ) {
-							 fs.rename( tmpPath, path, function( error ) {
-							     if ( error ) {
-								 callFinished( 2000, 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), was a normal move after file download.' );
-							     } else {
-								 fs.stat( path, function ( error, stats ) {
-								     if ( error ) {
-									 callFinished( 2000, 'Unable to stat "' + path + '" (' + error + '), was a normal move after file download.' );
-								     } else {
-									 optimizationQueue.push( {path: path, size: stats.size} );
-									 callFinished( 0 );
-								     }
-								 });
-							     }
-							 });
-						     } else {
-							 var targetSize = stats.size;
-							 fs.stat( tmpPath, function ( error, stats ) {
-							     if ( error ) {
-								 callFinished( 2000, 'Unable to stat "' + tmpPath + '" (' + error + '), file was already downloaded and second download temporary file seems to be unavailable.' );
-							     } else {
-								 if ( stats.size > targetSize ) {
-								     fs.rename( tmpPath, path, function( error ) {
-									 if ( error ) {
-									     callFinished( 2000, 'Unable to move "' + tmpPath + '" to "' + path + '" (' + error + '), file was already downloaded but in a smaller version.' );
-									 } else {
-									     optimizationQueue.push( {path: path, size: stats.size} );
-									     callFinished( 0 );
-									 }
-								     });
-								 } else {
-								     printLog( path + ' was meanwhile downloaded and with a better quality. Download skipped.' );
-								     fs.unlink( tmpPath );
-								     callFinished( 0 );
-								 }
-							     }
-							 });
-						     }
-						 });
-					     },
-					     function ( error ) {
-						 callFinished( 0, error );
-					     });
+				async.doWhilst(
+				    function ( finished ) {
+					if ( fileDescriptor ) {
+					    tmpPathStream.end();
+					    fs.fsync( fileDescriptor, function( error ) {
+						finished( error )
+					    });
+					} else {
+					    printLog( 'Waiting to complete fs write of ' + tmpPath );
+					    setTimeout( finished, 1000 );
+					}
+				    },
+				    function () { return !fileDescriptor; },
+				    function ( error ) {
+					if ( error ) {
+					    console.error( 'Unable to fsync a file ' + error );
+					    process.exit( 1 );
+					} else {
+					    printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
+					    var tmpPathStat = fs.statSync( tmpPath );
+					    if ( fs.existsSync( path ) ) {
+						var pathStat =  fs.statSync( path );
+						if ( pathStat && tmpPathStat.size > pathStat.size ) {
+						    fs.renameSync( tmpPath, path );
+						    optimizationQueue.push( {path: path, size: tmpPathStat.size} );
+						} else {
+						    printLog( path + ' was meanwhile downloaded and with a better quality. Download abandonned.' );
+						    fs.unlink( tmpPath );
+						}
+					    } else {
+						fs.renameSync( tmpPath, path );
+						optimizationQueue.push( {path: path, size: tmpPathStat.size} );
+					    }
+					    callFinished( 0 );
+					}
+				    });
 			    });
 			} else {
 			    callFinished( 2000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
