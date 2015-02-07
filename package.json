@@ -34,7 +34,6 @@
     "redis": "*",
     "rimraf": "*",
     "swig": "*",
-    "zlib": "*",
     "utf8-binary-cutter": "*",
     "yargs": "*",
     "agentkeepalive": "*"
