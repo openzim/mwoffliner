@@ -293,11 +293,7 @@ async.series(
 		function( error ) {
 		    async.series(
 			[
-			    function( finished ) { printLog( 'Flushing redis database...' ); redisClient.flushdb( finished ) },
-			    function( finished ) { printLog( 'Quitting redis database...' ); redisClient.quit(); finished() },
-			    function( finished ) { printLog( 'Killing regular timer...' ); regularTimer.unref(); finished() },
 			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + 'ref" -exec rm {} \\;', finished ); },
-			    function( finished ) { printLog( 'Closing HTTP agents' ); closeAgents( finished ) }
 			],
 			function( error, result ) {
 			    finished();
@@ -307,6 +303,18 @@ async.series(
 	}
     ],
     function( error ) {
+	printLog( 'Flushing redis database...' );
+	redisClient.flushdb();
+	
+	printLog( 'Quitting redis database...' );
+	redisClient.quit();
+	
+	printLog( 'Killing regular timer...' );
+	regularTimer.unref();
+
+	printLog( 'Closing HTTP agents' );
+	closeAgents();
+
 	printLog( 'All dumping(s) finished with success.' );
     }
 );
@@ -401,7 +409,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 /* Setting up the downloading queue */
 var downloadMediaQueue = async.queue( function ( url, finished ) {
     if ( url ) {
-	downloadMedia( url, finished );
+	downloadMediaAndCache( url, finished );
     } else {
 	finished();
     }
@@ -689,7 +697,7 @@ function saveRedirects( finished ) {
 
 function saveArticles( finished ) {
 
-    function parseHtml( html, articleId, finished) {
+    function parseHtml( html, articleId, finished ) {
 	try {
 	    finished( null, domino.createDocument( html ), articleId );
 	} catch ( error ) {
@@ -1567,9 +1575,13 @@ function getRequestOptionsFromUrl( url, compression ) {
     };
 }
 
+function getArticleCachePath( url ) {
+    return cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
+}
+
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var go = false;
-    var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
+    var cachePath = getArticleCachePath( url );
     var cacheHeadersPath = cachePath + '.headers';
 
     try {
@@ -1671,32 +1683,42 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	});
 }
 
-function downloadMedia( url, callback ) {
+function getMediaCachePath( filename ) {
+    return cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filename ).digest( 'hex' );
+}
+
+function downloadMediaAndCache( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
+    var cachePath = getMediaCachePath( filenameBase );
+    var mediaPath = getMediaPath( url );
 
-    redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
-        if ( error || r_width < width) {
-	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-		downloadFile( url, getMediaPath( url ), true, function( ok ) {
-		    if ( callback ) {
+    if ( fs.existsSync( cachePath ) ) {
+	printLog( 'Cache hit for ' + url );
+	if ( fs.existsSync( mediaPath ) ) {
+	    fs.unlinkSync( mediaPath );
+	}
+        fs.linkSync( cachePath, mediaPath );
+	callback();
+    } else {
+	redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
+            if ( error || r_width < width) {
+	        redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
+		    downloadFile( url, mediaPath, true, function( ok ) {
+			if ( fs.existsSync( cachePath ) ) {
+			    fs.unlinkSync( cachePath );
+			}
+			fs.linkSync( mediaPath, cachePath );
 			callback();
-		    }
-		});
-	    });
-        } else {
-	    if ( callback ) {
-		callback();
-	    }
-        }
-    });
+		    });
+	        });
+             } else {
+                 callback();
+             }
+        });
+    }
 }
-
-process.on( 'uncaughtException', function( error ) {
-    console.error( error.stack );
-    process.exit( 42 );
-});
 
 function downloadFile( url, path, force, callback ) {
     fs.exists( path, function ( exists ) {
@@ -2125,3 +2147,8 @@ function validateEmail( email ) {
 function touch( path, delay ) {
     exec( 'touch  -c "' + path + '"' );
 }
+
+process.on( 'uncaughtException', function( error ) {
+    console.error( error.stack );
+    process.exit( 42 );
+});
