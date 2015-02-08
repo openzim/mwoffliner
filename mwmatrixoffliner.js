@@ -22,7 +22,7 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
+	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
     .options( ['project', 'language', 'tmpDirectory', 'outputDirectory', 'resume', 'languageInverter', 'projectInverter', 'speed'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
@@ -109,8 +109,8 @@ function dump( finished ) {
 		     var localMwUrl = site.url + '/';
 		     var localParsoidUrl = parsoidUrl + site.dbname + '/';
 		     printLog( 'Dumping ' + site.url );
-		executeTransparently( 'node',
-				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
+		executeTransparently( './mwoffliner.js',
+				      [ '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
 					'--format=', '--format=nopic', outputDirectory ? '--outputDirectory=' + outputDirectory : '', tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
 					verbose ? '--verbose' : ' ', resume ? '--resume' : ' ', speed ? '--speed=' + speed : ' ' ],
 				      function( executionError ) {

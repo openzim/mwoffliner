@@ -21,7 +21,7 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Given a directory, create for each selection list file belonging to it, the corresponding ZIM file against Wikipedia: $0'
-	   + '\nExample: node wpselectionsoffliner.js --directory=/tmp/wikiproject/ [--tmpDirectory=/tmp/] --outputDirectory=[/var/zim2index]')
+	   + '\nExample: ./wpselectionsoffliner.js --directory=/tmp/wikiproject/ [--tmpDirectory=/tmp/] --outputDirectory=[/var/zim2index]')
     .require([ 'directory' ])
     .options( ['verbose', 'tmpDirectory', 'outputDirectory', 'resume'] )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
@@ -99,8 +99,8 @@ function dump( finished ) {
 		var parsoidUrl = 'http://parsoid-lb.eqiad.wikimedia.org/' + parsoidCode + '/';
 
 		printLog( 'Dumping selection for language "' + language + '"' );
-		executeTransparently( 'node',
-				      [ './mwoffliner.js', '--mwUrl=' + mwUrl, '--parsoidUrl=' + parsoidUrl,
+		executeTransparently( './mwoffliner.js',
+				      [ '--mwUrl=' + mwUrl, '--parsoidUrl=' + parsoidUrl,
 					'--outputDirectory=' + outputDirectory,
 					'--articleList=' + articleList, 
 					'--filenamePrefix=' + zimFilenamePrefix,
