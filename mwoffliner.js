@@ -11,9 +11,9 @@ var fs = require( 'fs' );
 var domino = require( 'domino' );
 var jsdom = require( 'jsdom' );
 var async = require( 'async' );
-var http = require('follow-redirects').http;
-var https = require('follow-redirects').https;
-var zlib = require('zlib');
+var http = require( 'follow-redirects' ).http;
+var https = require( 'follow-redirects' ).https;
+var zlib = require( 'zlib' );
 var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
@@ -24,14 +24,14 @@ var countryLanguage = require( 'country-language' );
 var redis = require( 'redis' );
 var childProcess = require( 'child_process' );
 var exec = require( 'child_process' ).exec;
-var spawn = require('child_process').spawn;
+var spawn = require( 'child_process' ).spawn;
 var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
-var httpAgent = require('agentkeepalive');
-var httpsAgent = require('agentkeepalive').HttpsAgent;
-var trace = require('trace');
+var httpAgent = require( 'agentkeepalive' );
+var httpsAgent = require( 'agentkeepalive' ).HttpsAgent;
+var trace = require( 'trace' );
 
 /************************************/
 /* Command Parsing *************/
@@ -42,18 +42,18 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
     .options( ['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix', 'resume', 'tmpDirectory'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
-    .describe( 'articleList', 'File with one title (in UTF8) per line')
-    .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.')
-    .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"')
+    .describe( 'articleList', 'File with one title (in UTF8) per line' )
+    .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
+    .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"' )
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
-    .describe( 'mwURL', 'Mediawiki base URL')
-    .describe( 'mwWikiPath', 'Mediawiki API path (per default "/w/api.php")')
-    .describe( 'mwApiPath', 'Mediawiki wiki base path (per default "/wiki/"')
-    .describe( 'outputDirectory', 'Directory to write the downloaded content')
-    .describe( 'parsoidURL', 'Mediawiki Parsoid URL')
+    .describe( 'mwURL', 'Mediawiki base URL' )
+    .describe( 'mwWikiPath', 'Mediawiki API path (per default "/w/api.php")' )
+    .describe( 'mwApiPath', 'Mediawiki wiki base path (per default "/wiki/"' )
+    .describe( 'outputDirectory', 'Directory to write the downloaded content' )
+    .describe( 'parsoidURL', 'Mediawiki Parsoid URL' )
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
-    .describe( 'tmpDirectory', 'Directory where files are temporary stored')
+    .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
     .argv;
@@ -353,7 +353,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						     finished( 'File to optim is smaller (before optim) than it should.' );
 						 } else {
 						     exec( 'file -b --mime-type "' + path + '"', function( error, stdout, stderr ) {
-							 var type = stdout.replace( /image\//, '').replace( /[\n\r]/g, '' );
+							 var type = stdout.replace( /image\//, '' ).replace( /[\n\r]/g, '' );
 							 cmd = getOptimizationCommand( path, type );
 							 setTimeout( finished, 2000, executionError );
 						     });
@@ -695,7 +695,7 @@ function saveArticles( finished ) {
 		
                 /* Remove image link */
                 var linkNode = img.parentNode;
-                if ( linkNode.tagName === 'A') {
+                if ( linkNode.tagName === 'A' ) {
 		    
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
@@ -857,7 +857,7 @@ function saveArticles( finished ) {
 		    /* Add 'external' class to external links */
 		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
 			 rel === 'mw:WikiLink/Interwiki' ) {
-			linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class'), 'external' ) );
+			linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class' ), 'external' ) );
 		    }
 		    
 		    /* Check if the link is "valid" */
@@ -1136,7 +1136,7 @@ function saveArticles( finished ) {
 function isMirrored( id ) {
     var namespaceNumber = 0;
 
-    if ( id.indexOf(':') >= 0 ) {
+    if ( id.indexOf( ':' ) >= 0 ) {
 	var tmpNamespaceNumber = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
 	if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
 	    return true;
@@ -1158,12 +1158,12 @@ function saveJavascript( finished ) {
 
     printLog( 'Get the javascript from ' + webUrl );
     downloadContent( webUrl, function( html ) {
-	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />');
+	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />' );
 
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
 	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
 	printLog( 'Writting dummy js at' + dummyPath );
-	fs.writeFileSync(dummyPath, "console.log('mw.loader not supported');");
+	fs.writeFileSync(dummyPath, 'console.log( "mw.loader not supported" );' );
 	
 	/* Backward compatibility for old version of jsdom */
 	var window;
@@ -1176,7 +1176,7 @@ function saveJavascript( finished ) {
 	
 	/* Try to detect all javascript code included */
 	printLog( 'Adding load listener on window' );
-	window.addEventListener('load', function () {
+	window.addEventListener( 'load', function () {
 	    printLog( 'Going through scripts in head and body to dump javascript...' );
 	    var nodeNames = [ 'head', 'body' ];
 	    async.map( nodeNames,
@@ -1296,8 +1296,8 @@ function saveStylesheet( finished ) {
 	/* Go through all CSS links */
 	for ( var i = 0; i < links.length ; i++ ) {
 	    var link = links[i];
-	    if (link.getAttribute('rel') === 'stylesheet') {
-		downloadCSSQueue.push( getFullUrl( link.getAttribute('href') ) );
+	    if ( link.getAttribute( 'rel' ) === 'stylesheet' ) {
+		downloadCSSQueue.push( getFullUrl( link.getAttribute( 'href' ) ) );
 	    }
 	}
 
@@ -1485,7 +1485,7 @@ function getArticleIds( finished ) {
 
 /* Create directories for static files */
 function createSubDirectories( finished ) {
-    printLog( 'Creating sub directories at \'' + htmlRootPath + '\'...' );
+    printLog( 'Creating sub directories at \"' + htmlRootPath + '\"...' );
     async.series(
         [
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
@@ -1531,7 +1531,7 @@ function concatenateToAttribute( old, add ) {
 function writeFile( data, path, callback ) {
     printLog( 'Writing ' + path + '...' );
     
-    if ( pathParser.dirname( path ).indexOf('./') >= 0 ) {
+    if ( pathParser.dirname( path ).indexOf( './' ) >= 0 ) {
 	console.error( 'Wrong path ' + path );
 	process.exit( 1 );
     }
@@ -1627,7 +1627,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		console.error( "Absolutly unable to retrieve async. URL. " + error );
 
 		/* Unfortunately we can not do that because there are
-		 * article which simply won't be parsed correctly by
+		 * article which simply will not be parsed correctly by
 		 * Parsoid. For example this one
 		 * http://parsoid-lb.eqiad.wikimedia.org/dewikivoyage/Via_Jutlandica/Gpx
 		 * and this stops the whole dumping process */
@@ -1803,7 +1803,7 @@ function getMediaBase( url, escape ) {
     }
  
     if ( !root ) {
-        console.error( 'Unable to parse media url \'' + url + '\'' );
+        console.error( 'Unable to parse media url \"' + url + '\"' );
         return;
     }
 
@@ -1821,7 +1821,7 @@ function getMediaBase( url, escape ) {
     if ( unicodeCutter.getBinarySize( filename ) > 249 ) {
 	var ext = pathParser.extname( filename ).split( '.' )[1] || '';
         var basename = filename.substring( 0, filename.length - ext.length - 1) || '';
-	filename = unicodeCutter.truncateToBinarySize( basename, 239 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest('hex').substring( 0, 2) + "." + ext;
+	filename = unicodeCutter.truncateToBinarySize( basename, 239 - ext.length ) + crypto.createHash( 'md5' ).update( basename ).digest( 'hex' ).substring( 0, 2) + '.' + ext;
     }
 
     return mediaDirectory + '/' + e( filename );
@@ -1837,10 +1837,10 @@ function getArticlePath( articleId, escape ) {
 
 function getArticleBase( articleId, escape ) {
     var filename = articleId.replace( /\//g, '_' );
-    var dirBase = filename.replace( /\./g, '_');
+    var dirBase = filename.replace( /\./g, '_' );
     
     /* Filesystem is not able to handle with filename > 255 bytes */
-    while ( Buffer.byteLength( filename, 'utf8') > 250 ) {
+    while ( Buffer.byteLength( filename, 'utf8' ) > 250 ) {
 	filename = filename.substr( 0, filename.length - 1 );
     }
 
@@ -1954,7 +1954,7 @@ function getNamespaces( finished ) {
 	    var entries = JSON.parse( body )['query'][type];
 	    Object.keys(entries).map( function( key ) {
 		var entry = entries[key];
-		var name = entry['*'].replace( / /g, '_');
+		var name = entry['*'].replace( / /g, '_' );
 		var number =  entry['id'];
 		var isContent = entry['content'] != undefined ? true : false;
 		var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
