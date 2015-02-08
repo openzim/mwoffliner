@@ -37,4 +37,4 @@ $MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http
 $MWMATRIXOFFLINER --verbose --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/
 
 # Wikispecies
-$MWOFFLINER --verbose --mwUrl=http://species.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/species/ --format= --format=nopic --outputDirectory=species --filenamePrefix="wikispecies_en_all" ; mv species/*.zim $ZIM2INDEX/wikispecies
+$MWOFFLINER --verbose --mwUrl=http://species.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/specieswiki/ --format= --format=nopic --outputDirectory=species --filenamePrefix="wikispecies_en_all" ; mv species/*.zim $ZIM2INDEX/wikispecies
