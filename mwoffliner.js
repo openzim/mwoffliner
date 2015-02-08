@@ -208,6 +208,7 @@ var nopic = false;
 var nozim = false;
 var filenameRadical = '';
 var htmlRootPath = '';
+var cacheDirectory = '';
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -250,12 +251,12 @@ var footerTemplate = swig.compile( footerTemplateCode );
 /* Get content */
 async.series(
     [
-	function( finished ) { createDirectories( finished ) },
 	function( finished ) { initAgents( finished ) },
 	function( finished ) { getTextDirection( finished ) },
 	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getSiteInfo( finished ) },
 	function( finished ) { getNamespaces( finished ) },
+	function( finished ) { createDirectories( finished ) },
 	function( finished ) { checkResume( finished ) },
 	function( finished ) { getArticleIds( finished ) },
 	function( finished ) { 
@@ -463,10 +464,12 @@ function closeAgents( finished ) {
 
 function createDirectories( finished ) {
     printLog( 'Creating base directories...' );
+    cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
     async.series(
         [
 	    function( finished ) { mkdirp( outputDirectory, finished ) },
-	    function( finished ) { mkdirp( tmpDirectory, finished ) }
+	    function( finished ) { mkdirp( tmpDirectory, finished ) },
+	    function( finished ) { mkdirp( cacheDirectory + 'm/', finished ) },
 	],
 	function( error ) {
 	    if ( error ) {
@@ -488,11 +491,11 @@ function randomString( len ) {
     return randomString;
 }
 
-function computeFilenameRadical() {
+function computeFilenameRadical( generic ) {
     var radical;
-
+    
     if ( filenamePrefix ) {
-	radical = filenamePrefix + "_";
+	radical = filenamePrefix + '_';
     } else {
 	radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
 	var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
@@ -503,17 +506,23 @@ function computeFilenameRadical() {
 		break;
 	    }
 	}
-	radical += langSuffix + '_';
-	if ( articleList ) {
-	    radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
-	} else {
-	    radical += 'all_';
+	radical += langSuffix;
+	
+	if ( !generic ) {
+	    radical += '_';
+	    if ( articleList ) {
+		radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+            } else {
+		radical += 'all_';
+	    }
+	    radical += nopic ? 'nopic_' : '';
 	}
-	radical += nopic ? 'nopic_' : '';
     }
 
-    var date = new Date();
-    radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
+    if ( !generic ) {
+        var date = new Date();
+	radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
+    }
     
     return radical;
 }
@@ -1099,7 +1108,7 @@ function saveArticles( finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	printLog( 'Downloading article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
-	setTimeout( downloadContent, downloadMediaQueue.length() + optimizationQueue.length(), articleUrl, function( html, articleId ) {
+	setTimeout( downloadContentAndCache, downloadMediaQueue.length() + optimizationQueue.length(), articleUrl, function( html, responseHeaders, articleId ) {
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
@@ -1202,7 +1211,7 @@ function saveJavascript( finished ) {
 				       if ( url ) {
 					   url = getFullUrl( url ).replace("debug=false", "debug=true");
 					   printLog( 'Downloading javascript from ' + url );
-					   downloadContent( url, function( body) {
+					   downloadContent( url, function( body ) {
 					       fs.appendFile( javascriptPath, '\n' + munge_js( body ) + '\n', function ( error ) {
 						   finished();
 					       } );
@@ -1560,8 +1569,35 @@ function getRequestOptionsFromUrl( url, compression ) {
     };
 }
 
+function downloadContentAndCache( url, callback, var1, var2, var3 ) {
+    var go = false;
+    var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
+    var cacheHeadersPath = cachePath + '.headers';
+    
+    try {
+	printLog( 'Cache hit for ' + url );
+        if ( callback ) {
+            callback( fs.readFileSync( cachePath ).toString(), JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() ), var1, var2, var3 );
+        }
+    } catch ( error ) {
+        console.error( 'Unable to deal with cache ' + cachePath );
+        go = true;
+    }
+
+    if ( go ) {
+	downloadContent( url, function( html, responseHeaders ) {
+	    fs.writeFileSync( cacheHeadersPath, JSON.stringify( responseHeaders ) );
+	    fs.writeFileSync( cachePath, html );
+	    if ( callback ) {
+		callback( html, responseHeaders, var1, var2, var3 );
+	    }
+	});
+    }
+}
+
 function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 0;
+    var responseHeaders = {};
 
     async.retry(
 	5,
@@ -1585,7 +1621,8 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			chunks.push( chunk );
 		    });
 		    response.on( 'end', function() {
-			var encoding = response.headers['content-encoding'];
+			responseHeaders = response.headers;
+			var encoding = responseHeaders['content-encoding'];
 			if ( encoding == 'gzip' ) {
 			    zlib.gunzip( Buffer.concat( chunks ), function( error, decoded ) {
 				callFinished( 0, error, decoded && decoded.toString() );
@@ -1634,7 +1671,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		// process.exit( 1 );
 	    }
 	    if ( callback ) {
-		callback( data, var1, var2, var3 );
+		callback( data, responseHeaders, var1, var2, var3 );
 	    } 		    
 	});
 }
@@ -1948,7 +1985,7 @@ function getMainPage( finished ) {
 
 function getNamespaces( finished ) {
     var url = apiUrl + 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json';
-    var body = downloadContent( url, function( body ) { 
+    downloadContent( url, function( body ) { 
 	var types = [ 'namespaces', 'namespacealiases' ];
 	types.map( function( type ) {
 	    var entries = JSON.parse( body )['query'][type];
