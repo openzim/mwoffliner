@@ -296,7 +296,7 @@ async.series(
 			    function( finished ) { printLog( 'Flushing redis database...' ); redisClient.flushdb( finished ) },
 			    function( finished ) { printLog( 'Quitting redis database...' ); redisClient.quit(); finished() },
 			    function( finished ) { printLog( 'Killing regular timer...' ); regularTimer.unref(); finished() },
-			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + '" -exec rm {} \\;', finished ); },
+			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + 'ref" -exec rm {} \\;', finished ); },
 			    function( finished ) { printLog( 'Closing HTTP agents' ); closeAgents( finished ) }
 			],
 			function( error, result ) {
@@ -470,9 +470,10 @@ function closeAgents( finished ) {
 function prepareCache( finished ) {
     printLog( 'Preparing cache...' );
     cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
-    mkdirp( cacheDirectory + 'm/' );
-    touch( cacheDirectory );
-    finished();
+    mkdirp( cacheDirectory + 'm/', function() {
+        fs.writeFileSync( cacheDirectory + 'ref', "42" );
+	finished();
+    });
 }
 
 function createDirectories( finished ) {
@@ -1570,7 +1571,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var go = false;
     var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
     var cacheHeadersPath = cachePath + '.headers';
-    
+
     try {
 	var html = fs.readFileSync( cachePath ).toString();
 	var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
@@ -2121,6 +2122,6 @@ function validateEmail( email ) {
     return re.test( email );
 }
 
-function touch( path ) {
-    exec( 'touch -c "' + path + '"' );
+function touch( path, delay ) {
+    exec( 'touch  -c "' + path + '"' );
 }
