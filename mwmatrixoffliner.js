@@ -55,8 +55,8 @@ optBinaries.forEach( function( cmd ) {
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
 
-var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'zim/';
-var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/';
+var outputDirectory = argv.outputDirectory;
+var tmpDirectory = argv.tmpDirectory;
 var parsoidUrl = argv.parsoidUrl[ argv.parsoidUrl.length - 1 ] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/';
 var mwUrl = argv.mwUrl[ argv.mwUrl.length - 1 ] == '/' ? argv.mwUrl : argv.mwUrl + '/';
 var webUrl = mwUrl + 'wiki/';
@@ -111,7 +111,8 @@ function dump( finished ) {
 		     printLog( 'Dumping ' + site.url );
 		executeTransparently( 'node',
 				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
-					'--format=', '--format=nopic', '--outputDirectory=' + outputDirectory, verbose ? '--verbose' : ' ', resume ? '--resume' : ' ', speed ? '--speed=' + speed : ' ' ],
+					'--format=', '--format=nopic', outputDirectory ? '--outputDirectory=' + outputDirectory : '', tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
+					verbose ? '--verbose' : ' ', resume ? '--resume' : ' ', speed ? '--speed=' + speed : ' ' ],
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );

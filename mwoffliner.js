@@ -469,7 +469,6 @@ function closeAgents( finished ) {
 
 function prepareCache( finished ) {
     printLog( 'Preparing cache...' );
-    currentDate.setDate(currentDate.getDate());
     cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
     mkdirp( cacheDirectory + 'm/' );
     touch( cacheDirectory );
