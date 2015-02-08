@@ -102,10 +102,10 @@ if ( validateEmail( adminEmail ) ) {
 }
 
 /* Directory wehre everything is saved at the end of the process */
-var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'static/';
+var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'out/';
 
 /* Directory where temporary data are saved */
-var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'static/';
+var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'tmp/';
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
