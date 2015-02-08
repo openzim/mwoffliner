@@ -1,5 +1,5 @@
 #!/bin/sh
-":" //# comment; exec /usr/bin/env node --max-old-space-size=1900 --stack_size=4096 "$0" "$@"
+":" //# comment; exec /usr/bin/env node --max-old-space-size=1900 --stack-size=4096 "$0" "$@"
 
 "use strict";
 
