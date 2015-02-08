@@ -226,7 +226,7 @@ try {
 } catch(e) {
 }
 optBinaries.forEach( function( cmd ) {
-    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+    exec( cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
 	if ( error ) {
 	    console.error( 'Failed to find binary "' + cmd.split( ' ' )[0] + '": (' + error + ')' );
 	    process.exit( 1 );
@@ -257,6 +257,7 @@ async.series(
 	function( finished ) { getSiteInfo( finished ) },
 	function( finished ) { getNamespaces( finished ) },
 	function( finished ) { createDirectories( finished ) },
+	function( finished ) { prepareCache( finished ) },
 	function( finished ) { checkResume( finished ) },
 	function( finished ) { getArticleIds( finished ) },
 	function( finished ) { 
@@ -269,7 +270,7 @@ async.series(
 		    keepHtml = nozim ? true : keepHtml;
 		    filenameRadical = computeFilenameRadical();
 		    htmlRootPath = computeHtmlRootPath();
-		    
+
 		    async.series(
 			[
 			    function( finished ) { createSubDirectories( finished ) },
@@ -290,19 +291,23 @@ async.series(
 			});
 		},
 		function( error ) {
-		    finished();
+		    async.series(
+			[
+			    function( finished ) { printLog( 'Flushing redis database...' ); redisClient.flushdb( finished ) },
+			    function( finished ) { printLog( 'Quitting redis database...' ); redisClient.quit(); finished() },
+			    function( finished ) { printLog( 'Killing regular timer...' ); regularTimer.unref(); finished() },
+			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -not -newer "' + cacheDirectory + '" -exec rm {} \\;', finished ); },
+			    function( finished ) { printLog( 'Closing HTTP agents' ); closeAgents( finished ) }
+			],
+			function( error, result ) {
+			    finished();
+			});
 		}
 	    )
 	}
     ],
     function( error ) {
-	redisClient.flushdb( function( error, result) {
-	    regularTimer.unref();
-	    redisClient.quit(); 
-	    closeAgents( function() {
-		printLog( 'All dumping(s) finished with success.' );
-	    });
-	});
+	printLog( 'All dumping(s) finished with success.' );
     }
 );
 
@@ -462,14 +467,21 @@ function closeAgents( finished ) {
     }
 }
 
+function prepareCache( finished ) {
+    printLog( 'Preparing cache...' );
+    currentDate.setDate(currentDate.getDate());
+    cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
+    mkdirp( cacheDirectory + 'm/' );
+    touch( cacheDirectory );
+    finished();
+}
+
 function createDirectories( finished ) {
     printLog( 'Creating base directories...' );
-    cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
     async.series(
         [
 	    function( finished ) { mkdirp( outputDirectory, finished ) },
 	    function( finished ) { mkdirp( tmpDirectory, finished ) },
-	    function( finished ) { mkdirp( cacheDirectory + 'm/', finished ) },
 	],
 	function( error ) {
 	    if ( error ) {
@@ -1576,9 +1588,9 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     
     try {
 	printLog( 'Cache hit for ' + url );
-        if ( callback ) {
-            callback( fs.readFileSync( cachePath ).toString(), JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() ), var1, var2, var3 );
-        }
+	touch( cachePath );
+	touch( cacheHeadersPath );
+	callback( fs.readFileSync( cachePath ).toString(), JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() ), var1, var2, var3 );
     } catch ( error ) {
         console.error( 'Unable to deal with cache ' + cachePath );
         go = true;
@@ -1588,9 +1600,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 	downloadContent( url, function( html, responseHeaders ) {
 	    fs.writeFileSync( cacheHeadersPath, JSON.stringify( responseHeaders ) );
 	    fs.writeFileSync( cachePath, html );
-	    if ( callback ) {
-		callback( html, responseHeaders, var1, var2, var3 );
-	    }
+	    callback( html, responseHeaders, var1, var2, var3 );
 	});
     }
 }
@@ -1670,9 +1680,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		 * and this stops the whole dumping process */
 		// process.exit( 1 );
 	    }
-	    if ( callback ) {
-		callback( data, responseHeaders, var1, var2, var3 );
-	    } 		    
+	    callback( data, responseHeaders, var1, var2, var3 );
 	});
 }
 
@@ -2128,4 +2136,8 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 function validateEmail( email ) { 
     var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test( email );
-} 
+}
+
+function touch( path ) {
+    exec( 'touch "' + path + '"' );
+}
