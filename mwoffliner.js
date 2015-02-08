@@ -1,4 +1,6 @@
-#!/usr/bin/env node
+#!/bin/sh
+":" //# comment; exec /usr/bin/env node --max-old-space-size=1900 "$0" "$@"
+
 "use strict";
 
 /************************************/
