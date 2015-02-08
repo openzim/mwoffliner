@@ -24,7 +24,7 @@ var spawn = require('child_process').spawn;
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
 	   + '\nExample: node mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
-    .options( ['project', 'language', 'tmpDirectory', 'outputDirectory', 'resume', 'languageInverter', 'projectInverter'] )
+    .options( ['project', 'language', 'tmpDirectory', 'outputDirectory', 'resume', 'languageInverter', 'projectInverter', 'speed'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'language', 'Language to dump (regex)')
     .describe( 'languageInverter', 'If given, select languages *not* matching the --language regex')
@@ -34,6 +34,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .describe( 'project', 'Projects to dump')
     .describe( 'projectInverter', 'If given, select projects *not* matching the --project regex')
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
+    .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
@@ -70,6 +71,7 @@ var languageInverter = argv.projectInverter || argv.languageInverter;
 var verbose = argv.verbose;
 var adminEmail = argv.adminEmail;
 var resume = argv.resume;
+var speed = argv.speed;
 
 /************************************/
 /* MAIN *****************************/
@@ -107,10 +109,9 @@ function dump( finished ) {
 		     var localMwUrl = site.url + '/';
 		     var localParsoidUrl = parsoidUrl + site.dbname + '/';
 		     printLog( 'Dumping ' + site.url );
-		     finished();
 		executeTransparently( 'node',
 				      [ './mwoffliner.js', '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
-					'--format=', '--format=nopic', '--outputDirectory=' + outputDirectory, verbose ? '--verbose' : ' ', resume ? '--resume' : ' ' ],
+					'--format=', '--format=nopic', '--outputDirectory=' + outputDirectory, verbose ? '--verbose' : ' ', resume ? '--resume' : ' ', speed ? '--speed=' + speed : ' ' ],
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );
