@@ -296,7 +296,7 @@ async.series(
 			    function( finished ) { printLog( 'Flushing redis database...' ); redisClient.flushdb( finished ) },
 			    function( finished ) { printLog( 'Quitting redis database...' ); redisClient.quit(); finished() },
 			    function( finished ) { printLog( 'Killing regular timer...' ); regularTimer.unref(); finished() },
-			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -not -newer "' + cacheDirectory + '" -exec rm {} \\;', finished ); },
+			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + '" -exec rm {} \\;', finished ); },
 			    function( finished ) { printLog( 'Closing HTTP agents' ); closeAgents( finished ) }
 			],
 			function( error, result ) {
@@ -651,7 +651,7 @@ function drainOptimizationQueue( finished ) {
 function saveRedirects( finished ) {
     printLog( 'Saving redirects...' );
 
-    function callback( redirectId, finished ) {
+    function saveRedirect( redirectId, finished ) {
 	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
 	    if ( error ) {
 		console.error( 'Unable to get a redirect target from redis: ' + error );
@@ -660,7 +660,7 @@ function saveRedirects( finished ) {
 		if ( target ) {
 		    var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
 						   target : getArticleUrl( target ) } );
-		    writeFile( html, getArticlePath( redirectId ), finished );
+		    fs.writeFile( getArticlePath( redirectId ), html, finished );
 		} else {
 		    finished();
 		}
@@ -673,7 +673,7 @@ function saveRedirects( finished ) {
 	    console.error( 'Unable to get redirect keys from redis: ' + error );
 	    process.exit( 1 );
 	} else {
-	    async.eachLimit( keys, speed, callback, function( error ) {
+	    async.eachLimit( keys, speed, saveRedirect, function( error ) {
 		if ( error ) {
 		    console.error( 'Unable to save a redirect: ' + error );
 		    process.exit( 1 );
@@ -1112,7 +1112,7 @@ function saveArticles( finished ) {
     
     function writeArticle( doc, articleId, finished ) {
 	printLog( 'Saving article ' + articleId + '...' );
-	writeFile( doc.documentElement.outerHTML, getArticlePath( articleId ), finished );
+	fs.writeFile( getArticlePath( articleId ), doc.documentElement.outerHTML, finished );
     }
 
     function saveArticle( articleId, finished ) {
@@ -1183,7 +1183,7 @@ function saveJavascript( finished ) {
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
 	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
 	printLog( 'Writting dummy js at' + dummyPath );
-	fs.writeFileSync(dummyPath, 'console.log( "mw.loader not supported" );' );
+	fs.writeFileSync( dummyPath, 'console.log( "mw.loader not supported" );' );
 	
 	/* Backward compatibility for old version of jsdom */
 	var window;
@@ -1548,20 +1548,6 @@ function concatenateToAttribute( old, add ) {
     return old ? old + ' ' + add : add;
 }
 
-function writeFile( data, path, callback ) {
-    printLog( 'Writing ' + path + '...' );
-    
-    if ( pathParser.dirname( path ).indexOf( './' ) >= 0 ) {
-	console.error( 'Wrong path ' + path );
-	process.exit( 1 );
-    }
-
-    fs.writeFileSync( path, data );
-    if (callback) {
-	setImmediate( callback );
-    }
-}
-
 function getRequestOptionsFromUrl( url, compression ) {
     var urlObj = urlParser.parse( url );
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
@@ -1586,12 +1572,13 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var cacheHeadersPath = cachePath + '.headers';
     
     try {
+	var html = fs.readFileSync( cachePath ).toString();
+	var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
 	printLog( 'Cache hit for ' + url );
 	touch( cachePath );
 	touch( cacheHeadersPath );
-	callback( fs.readFileSync( cachePath ).toString(), JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() ), var1, var2, var3 );
+	callback( html, responseHeaders, var1, var2, var3 );
     } catch ( error ) {
-        console.error( 'Unable to deal with cache ' + cachePath );
         go = true;
     }
 
@@ -1958,7 +1945,7 @@ function getMainPage( finished ) {
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
 	
 	/* Write the static html file */
-	writeFile( doc.documentElement.outerHTML, htmlRootPath + '/index.html', function() { finished(); } );
+	fs.writeFile( htmlRootPath + '/index.html', doc.documentElement.outerHTML, finished );
     }
     
     function retrieveMainPage( finished ) {
@@ -1967,15 +1954,12 @@ function getMainPage( finished ) {
 	    var titleRegex = /\"wgPageName\"\:\"(.*?)\"/;
 	    var titleParts = titleRegex.exec( body );
 	    if ( titleParts[ 1 ] ) {
-		var html = redirectTemplate( { title:  titleParts[1].replace( /_/g, ' ' ), 
-					       target : getArticleBase( titleParts[1], true ) } );
-		writeFile( html, htmlRootPath + '/index.html', function() {
-		    finished();
-		} );
-
 		/* We have to mirror the main page even if this is not
 		 * in a namespace to mirror */
 		articleIds[ titleParts[ 1 ] ] = '';
+		var html = redirectTemplate( { title: titleParts[ 1 ].replace( /_/g, ' ' ),
+					       target : getArticleBase( titleParts[ 1 ], true ) } );
+		fs.writeFile( htmlRootPath + '/index.html', html, finished );
 	    } else {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
@@ -2138,5 +2122,5 @@ function validateEmail( email ) {
 }
 
 function touch( path ) {
-    exec( 'touch "' + path + '"' );
+    exec( 'touch -c "' + path + '"' );
 }
