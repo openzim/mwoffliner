@@ -1601,7 +1601,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		}
 	    })
 	    .on( 'error', function( error ) {
-		callFinished( 60000, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).' );
+		callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).' );
 	    })
 	    .on( 'socket', function ( socket ) {
 		socket.setTimeout( 50000 * retryCount );
@@ -1610,12 +1610,12 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    socket.addListener( 'timeout', function() {
 			socket.emit( 'agentRemove' );
 			socket.destroy();
-			callFinished( 60000, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
+			callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
 		    }); 
 		    socket.addListener( 'error', function( error ) {
 			socket.emit( 'agentRemove' );
 			socket.destroy();
-			callFinished( 60000, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
+			callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
 		    });
 		}
 	    });
@@ -1745,12 +1745,12 @@ function downloadFile( url, path, force, callback ) {
 				    });
 			    });
 			} else {
-			    callFinished( 60000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
+			    callFinished( 0, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
 			}
 		    })
   	    	    .on( 'error', function( error ) {
 			fs.unlink( tmpPath, function() {
-			    callFinished( 60000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
+			    callFinished( 10000 * retryCount, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
 			});
 		    })
 	            .on( 'socket', function ( socket ) {
@@ -1760,12 +1760,12 @@ function downloadFile( url, path, force, callback ) {
 			    socket.addListener( 'timeout', function() {
 				socket.emit( 'agentRemove' );
 				socket.destroy();
-				callFinished( 60000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
+				callFinished( 10000 * retryCount, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
 			    }); 
 			    socket.addListener( 'error', function( error ) {
 				socket.emit( 'agentRemove' );
 				socket.destroy();
-				callFinished( 60000, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
+				callFinished( 10000 * retryCount, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
 			    });
 			}
 		    });
