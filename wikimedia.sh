@@ -3,8 +3,8 @@
 ZIM2INDEX=`readlink -f $1 2> /dev/null`
 SCRIPT=`readlink -f $0`
 SCRIPT_DIR=`dirname "$SCRIPT"`
-MWOFFLINER="node --max-old-space-size=1900 $SCRIPT_DIR/mwoffliner.js"
-MWMATRIXOFFLINER="node --max-old-space-size=1900 $SCRIPT_DIR/mwmatrixoffliner.js"
+MWOFFLINER="$SCRIPT_DIR/mwoffliner.js"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js"
 
 # Few checks
 if [ $# -lt 1 ]
