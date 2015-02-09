@@ -1784,15 +1784,11 @@ function downloadFileAndCache( url, callback ) {
 	/* Download the file if necessayr */
 	if ( toDownload ) {
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-		downloadFile( url, mediaPath, true, function( ok ) {
+		downloadFile( url, cachePath, true, function( ok ) {
 		    callback();
 		    printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
-		    fs.unlink( cachePath, function( error ) {
-			fs.unlink( cacheHeadersPath, function( error ) {
-			    fs.link( mediaPath, cachePath, function( error ) {
-				fs.writeFile( cacheHeadersPath, JSON.stringify( { width: width } ), function( error ) {
-				});
-			    }); 
+		    fs.symlink( cachePath, mediaPath, function( error ) {
+			fs.writeFile( cacheHeadersPath, JSON.stringify( { width: width } ), function( error ) {
 			});
 		    });
 		});
