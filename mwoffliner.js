@@ -193,6 +193,7 @@ var htmlTemplateCode = function(){/*
 /* SYSTEM VARIABLE SECTION **********/
 /************************************/
 
+var INFINITY_WIDTH = 9999999;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
@@ -238,7 +239,8 @@ optBinaries.forEach( function( cmd ) {
 var redisClient = redis.createClient( '/dev/shm/redis.sock' );
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
-var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
+var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'articleDetails';
+var redisCachedMediaToCheckDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'cachedMediaToCheck';
 var regularTimer = setInterval( regularTimerCallback, 5000 );
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
@@ -281,7 +283,7 @@ async.series(
 			    function( finished ) { getMainPage( finished ) },
 			    function( finished ) { saveRedirects( finished ) },
 			    function( finished ) { saveArticles( finished ) },
-			    function( finished ) { drainDownloadMediaQueue( finished ) },
+			    function( finished ) { drainDownloadFileQueue( finished ) },
 			    function( finished ) { drainOptimizationQueue( finished ) },
 			    function( finished ) { buildZIM( finished ) },
 			    function( finished ) { endProcess( finished ) }
@@ -407,9 +409,9 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 }, cpuCount * 2 );
 
 /* Setting up the downloading queue */
-var downloadMediaQueue = async.queue( function ( url, finished ) {
+var downloadFileQueue = async.queue( function ( url, finished ) {
     if ( url ) {
-	downloadMediaAndCache( url, finished );
+	downloadFileAndCache( url, finished );
     } else {
 	finished();
     }
@@ -603,30 +605,30 @@ function endProcess( finished ) {
     closeAgents( finished );
 }
 
-function drainDownloadMediaQueue( finished ) {
-    printLog( downloadMediaQueue.length() + " images still to be downloaded." );
+function drainDownloadFileQueue( finished ) {
+    printLog( downloadFileQueue.length() + " images still to be downloaded." );
     async.doWhilst(
 	function( finished ) {
-	    if ( downloadMediaQueue.idle() ) {
+	    if ( downloadFileQueue.idle() ) {
 		printLog( 'Process still downloading images...' );
 	    }
 	    setTimeout( finished, 1000 );
 	},
-	function() { return !downloadMediaQueue.idle() },
+	function() { return !downloadFileQueue.idle() },
 	function( error ) {
-	    downloadMediaQueue.drain = function( error ) {
+	    downloadFileQueue.drain = function( error ) {
 		if ( error ) {
 		    console.error( 'Error by downloading images' + error );
 		    process.exit( 1 );
 		} else {
-		    if ( downloadMediaQueue.length() == 0 ) {
+		    if ( downloadFileQueue.length() == 0 ) {
 			printLog( 'All images successfuly downloaded' );
-			downloadMediaQueue.drain = undefined;
+			downloadFileQueue.drain = undefined;
 			finished();
 		    }
 		}
 	    };
-	    downloadMediaQueue.push( '' );
+	    downloadFileQueue.push( '' );
 	});
 }
 
@@ -757,7 +759,7 @@ function saveArticles( finished ) {
 			/* Download image, but avoid duplicate calls */
 			if ( !imgSrcCache.hasOwnProperty( src ) ) {
                             imgSrcCache[src] = true;
-                            downloadMediaQueue.push( src );
+                            downloadFileQueue.push( src );
 			}
 			
 			/* Change image source attribute to point to the local image */
@@ -1126,9 +1128,9 @@ function saveArticles( finished ) {
 
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
-	printLog( 'Downloading article from ' + articleUrl );
-	printLog( 'Download media queue size [' + downloadMediaQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
-	setTimeout( downloadContentAndCache, downloadMediaQueue.length() + optimizationQueue.length(), articleUrl, function( html, responseHeaders, articleId ) {
+	printLog( 'Getting article from ' + articleUrl );
+	printLog( 'Download media queue size [' + downloadFileQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
+	setTimeout( downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( html, responseHeaders, articleId ) {
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
@@ -1265,7 +1267,7 @@ function saveStylesheet( finished ) {
     fs.unlink( stylePath, function() {} );
 
     /* Take care to download medias */
-    var downloadCSSMediaQueue = async.queue( function ( data, finished ) {
+    var downloadCSSFileQueue = async.queue( function ( data, finished ) {
 	if ( data.url && data.path ) {
 	    downloadFile( data.url, data.path, true, finished );
 	} else {
@@ -1303,7 +1305,7 @@ function saveStylesheet( finished ) {
 			/* Download CSS dependency, but avoid duplicate calls */
 			if ( !urlCache.hasOwnProperty( url ) ) {
 			    urlCache[url] = true;
-			    downloadCSSMediaQueue.push( { url: url, path: htmlRootPath + styleDirectory + '/' + filename } );
+			    downloadCSSFileQueue.push( { url: url, path: htmlRootPath + styleDirectory + '/' + filename } );
 			}
 		    }
 		}
@@ -1318,7 +1320,7 @@ function saveStylesheet( finished ) {
     }, speed );
 
     /* Load main page to see which CSS files are needed */
-    downloadContent( webUrl, function( html ) {
+    downloadContentAndCache( webUrl, function( html ) {
 	var doc = domino.createDocument( html );
 	var links = doc.getElementsByTagName( 'link' );
 
@@ -1340,7 +1342,7 @@ function saveStylesheet( finished ) {
 		process.exit( 1 );
 	    } else {
 		
-		downloadCSSMediaQueue.drain = function( error ) {
+		downloadCSSFileQueue.drain = function( error ) {
 		    if ( error ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
@@ -1348,7 +1350,7 @@ function saveStylesheet( finished ) {
 			finished();
 		    }
 		};
-		downloadCSSMediaQueue.push( '' );
+		downloadCSSFileQueue.push( '' );
 	    }
 	};
 	downloadCSSQueue.push( '' );
@@ -1416,7 +1418,7 @@ function getArticleIds( finished ) {
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		    values.push(  entry['title'], entry['revisions'][0]['timestamp'] );
+		    values.push( entry['title'], entry['revisions'][0]['timestamp'] );
 		    redirectQueueValues.push( entry['title'] );
 		}
 		next = json['query-continue'] ? json['query-continue']['allpages']['gapcontinue'] : undefined;
@@ -1582,7 +1584,7 @@ function getArticleCachePath( url ) {
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var go = false;
     var cachePath = getArticleCachePath( url );
-    var cacheHeadersPath = cachePath + '.headers';
+    var cacheHeadersPath = cachePath + '.head';
 
     try {
 	var html = fs.readFileSync( cachePath ).toString();
@@ -1687,37 +1689,120 @@ function getMediaCachePath( filename ) {
     return cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filename ).digest( 'hex' );
 }
 
-function downloadMediaAndCache( url, callback ) {
+function downloadFileAndCache( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
-    var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || 9999999;
-    var cachePath = getMediaCachePath( filenameBase );
-    var mediaPath = getMediaPath( url );
 
-    if ( fs.existsSync( cachePath ) ) {
-	printLog( 'Cache hit for ' + url );
-	if ( fs.existsSync( mediaPath ) ) {
-	    fs.unlinkSync( mediaPath );
-	}
-        fs.linkSync( cachePath, mediaPath );
-	callback();
-    } else {
-	redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
-            if ( error || r_width < width) {
-	        redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-		    downloadFile( url, mediaPath, true, function( ok ) {
-			if ( fs.existsSync( cachePath ) ) {
-			    fs.unlinkSync( cachePath );
+    /* Check if we have already met this image during this dumping process */
+    redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
+	var toDownload = false;
+	var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || INFINITY_WIDTH;
+	var mediaPath = getMediaPath( url );
+
+	/* Image was never met during this dumping process */
+        if ( !r_width || error ) {
+	    var cachePath = getMediaCachePath( filenameBase );
+	    var cacheHeadersPath = cachePath + ".head";
+
+	    try {
+		/* Check if the file exists in the cache */
+		if ( fs.existsSync( cachePath ) ) {
+		    var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
+		    
+		    /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
+		    if ( responseHeaders.width < width ) {
+			toDownload = true;
+		    } else {
+			touch( cachePath );
+			touch( cacheHeadersPath );
+			if ( !fs.existsSync( mediaPath ) ) {
+			    fs.linkSync( cachePath, mediaPath );
 			}
-			fs.linkSync( mediaPath, cachePath );
-			callback();
-		    });
-	        });
-             } else {
-                 callback();
-             }
-        });
-    }
+			redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
+			    if ( responseHeaders.width == width ) {
+				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase, function() {
+				    callback();
+				});
+			    } else {
+				redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width, function() {
+				    callback();
+				});
+			    }
+			});
+		    }
+		}
+
+		/* File is not in the cache */
+		else {
+		    toDownload = true;
+		}
+	    } catch( error ) {
+		console.error( error );
+		toDownload = true;
+	    }
+	}
+	
+	/* Image was already met, but in a lower resolution */
+	else if ( r_width < width) {
+	    var cachePath = getMediaCachePath( filenameBase );
+	    var cacheHeadersPath = cachePath + ".head";
+
+	    try {
+		/* We need to check if we don't have a higher resolution version in the cache */
+		if ( fs.existsSync( cachePath ) ) {
+		    var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
+		    if ( responseHeaders.width < width ) {
+			toDownload = true;
+		    } else {
+			redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
+			    if ( responseHeaders.width == width ) {
+				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase, function() {
+				    callback();
+				});
+			    } else {
+				redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width, function() {
+				    callback();
+				});
+			    }
+			});
+		    }
+		} else {
+		    toDownload = true;
+		}
+	    } catch( error ) {
+		console.error( error );
+		toDownload = true;
+	    }
+	}
+
+	/* We already have this image with a resolution equal or higher to what we need */ 
+	else {
+            callback();
+        }
+
+	/* Download the file if necessayr */
+	if ( toDownload ) {
+	    var cachePath = getMediaCachePath( filenameBase );
+	    var cacheHeadersPath = cachePath + ".head";
+
+	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
+		downloadFile( url, mediaPath, true, function( ok ) {
+		    printLog( 'Caching ' + filenameBase + ' at ' + cachePath );
+		    if ( fs.existsSync( cachePath ) ) {
+			fs.unlinkSync( cachePath );
+		    }	
+		    fs.linkSync( mediaPath, cachePath );
+		    if ( fs.existsSync( cacheHeadersPath ) ) {
+			fs.unlinkSync( cacheHeadersPath );
+		    }
+		    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
+		    callback();
+		});
+	    });
+        } else {
+	    printLog( 'Cache hit for ' + url );
+	}
+    });
 }
 
 function downloadFile( url, path, force, callback ) {
