@@ -1778,6 +1778,7 @@ function downloadFileAndCache( url, callback ) {
 	/* We already have this image with a resolution equal or higher to what we need */ 
 	else {
             callback();
+	    return;
         }
 
 	/* Download the file if necessayr */
