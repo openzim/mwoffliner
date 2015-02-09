@@ -1582,26 +1582,29 @@ function getArticleCachePath( url ) {
 }
 
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
-    var go = false;
     var cachePath = getArticleCachePath( url );
     var cacheHeadersPath = cachePath + '.head';
+    var toDownload = false;
 
     try {
 	var html = fs.readFileSync( cachePath ).toString();
 	var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
+	callback( html, responseHeaders, var1, var2, var3 );
 	printLog( 'Cache hit for ' + url );
 	touch( cachePath );
 	touch( cacheHeadersPath );
-	callback( html, responseHeaders, var1, var2, var3 );
     } catch ( error ) {
-        go = true;
+        toDownload = true;
     }
 
-    if ( go ) {
+    if ( toDownload ) {
 	downloadContent( url, function( html, responseHeaders ) {
-	    fs.writeFileSync( cacheHeadersPath, JSON.stringify( responseHeaders ) );
-	    fs.writeFileSync( cachePath, html );
 	    callback( html, responseHeaders, var1, var2, var3 );
+	    printLog( 'Caching ' + url + ' at ' + cachePath + '...' );
+	    fs.writeFile( cacheHeadersPath, JSON.stringify( responseHeaders ), function( error ) {
+		fs.writeFile( cachePath, html, function( error ) {
+		});
+	    });
 	});
     }
 }
@@ -1610,6 +1613,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 0;
     var responseHeaders = {};
 
+    printLog( 'Downloading ' + decodeURI( url ) + '...' );
     async.retry(
 	5,
 	function( finished ) {
@@ -1692,18 +1696,17 @@ function getMediaCachePath( filename ) {
 function downloadFileAndCache( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
+    var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || INFINITY_WIDTH;
+    var mediaPath = getMediaPath( url );
+    var cachePath = getMediaCachePath( filenameBase );
+    var cacheHeadersPath = cachePath + ".head";
+    var toDownload = false;
 
     /* Check if we have already met this image during this dumping process */
     redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
-	var toDownload = false;
-	var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || INFINITY_WIDTH;
-	var mediaPath = getMediaPath( url );
 
 	/* Image was never met during this dumping process */
         if ( !r_width || error ) {
-	    var cachePath = getMediaCachePath( filenameBase );
-	    var cacheHeadersPath = cachePath + ".head";
-
 	    try {
 		/* Check if the file exists in the cache */
 		if ( fs.existsSync( cachePath ) ) {
@@ -1744,9 +1747,6 @@ function downloadFileAndCache( url, callback ) {
 	
 	/* Image was already met, but in a lower resolution */
 	else if ( r_width < width) {
-	    var cachePath = getMediaCachePath( filenameBase );
-	    var cacheHeadersPath = cachePath + ".head";
-
 	    try {
 		/* We need to check if we don't have a higher resolution version in the cache */
 		if ( fs.existsSync( cachePath ) ) {
@@ -1783,23 +1783,18 @@ function downloadFileAndCache( url, callback ) {
 
 	/* Download the file if necessayr */
 	if ( toDownload ) {
-	    var cachePath = getMediaCachePath( filenameBase );
-	    var cacheHeadersPath = cachePath + ".head";
-
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
 		downloadFile( url, mediaPath, true, function( ok ) {
-		    printLog( 'Caching ' + filenameBase + ' at ' + cachePath );
-		    if ( fs.existsSync( cachePath ) ) {
-			fs.unlinkSync( cachePath );
-		    }
-		    if ( fs.existsSync( mediaPath ) ) {
-			fs.linkSync( mediaPath, cachePath );
-		    }
-		    if ( fs.existsSync( cacheHeadersPath ) ) {
-			fs.unlinkSync( cacheHeadersPath );
-		    }
-		    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
 		    callback();
+		    printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
+		    fs.unlink( cachePath, function( error ) {
+			fs.unlink( cacheHeadersPath, function( error ) {
+			    fs.link( mediaPath, cachePath, function( error ) {
+				fs.writeFile( cacheHeadersPath, JSON.stringify( { width: width } ), function( error ) {
+				});
+			    }); 
+			});
+		    });
 		});
 	    });
         } else {
@@ -1852,40 +1847,39 @@ function downloadFile( url, path, force, callback ) {
 			    response.on( 'data', function( data ) {
 				tmpPathStream.write( data );
 			    }).on( 'end', function() {
-				async.doWhilst(
+				async.forever(
 				    function ( finished ) {
 					if ( fileDescriptor ) {
 					    tmpPathStream.end();
 					    fs.fsync( fileDescriptor, function( error ) {
-						finished( error )
+						finished( true );
 					    });
 					} else {
 					    printLog( 'Waiting to complete fs write of ' + tmpPath );
 					    setTimeout( finished, 1000 );
 					}
 				    },
-				    function () { return !fileDescriptor; },
 				    function ( error ) {
 					printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
-					if ( error ) {
-					    console.error( 'Unable to fsync a file ' + error );
-					} else {
-					    var tmpPathStat = fs.statSync( tmpPath );
-					    if ( fs.existsSync( path ) ) {
-						var pathStat =  fs.statSync( path );
-						if ( pathStat && tmpPathStat.size > pathStat.size ) {
-						    fs.renameSync( tmpPath, path );
+					var tmpPathStat = fs.statSync( tmpPath );
+					if ( fs.existsSync( path ) ) {
+					    var pathStat =  fs.statSync( path );
+					    if ( pathStat && tmpPathStat.size > pathStat.size ) {
+						fs.rename( tmpPath, path, function( error ) {
+						    callFinished( 0 );
 						    optimizationQueue.push( {path: path, size: tmpPathStat.size} );
-						} else {
-						    printLog( path + ' was meanwhile downloaded and with a better quality. Download abandonned.' );
-						    fs.unlink( tmpPath );
-						}
+						});
 					    } else {
-						fs.renameSync( tmpPath, path );
-						optimizationQueue.push( {path: path, size: tmpPathStat.size} );
+						callFinished( 0 );
+						printLog( path + ' was meanwhile downloaded and with a better quality. Download abandonned.' );
+						fs.unlink( tmpPath );
 					    }
+					} else {
+					    fs.rename( tmpPath, path, function( error ) {
+						callFinished( 0 );
+						optimizationQueue.push( {path: path, size: tmpPathStat.size} );
+					    });
 					}
-					callFinished( 0 );
 				    });
 			    });
 			} else {
@@ -2232,8 +2226,12 @@ function validateEmail( email ) {
     return re.test( email );
 }
 
-function touch( path, delay ) {
-    exec( 'touch  -c "' + path + '"' );
+function touch( path, callback ) {
+    exec( 'touch  -c "' + path + '"', function( error ) {
+	if ( callback ) {
+	    callback();
+	}
+    });
 }
 
 process.on( 'uncaughtException', function( error ) {
