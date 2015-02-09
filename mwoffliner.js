@@ -1790,8 +1790,10 @@ function downloadFileAndCache( url, callback ) {
 		    printLog( 'Caching ' + filenameBase + ' at ' + cachePath );
 		    if ( fs.existsSync( cachePath ) ) {
 			fs.unlinkSync( cachePath );
-		    }	
-		    fs.linkSync( mediaPath, cachePath );
+		    }
+		    if ( fs.existsSync( mediaPath ) ) {
+			fs.linkSync( mediaPath, cachePath );
+		    }
 		    if ( fs.existsSync( cacheHeadersPath ) ) {
 			fs.unlinkSync( cacheHeadersPath );
 		    }
