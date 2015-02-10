@@ -1597,7 +1597,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 		});
 	    }
 	],
-	function( error, html, responseHeaders ) {
+	function( error, results ) {
 	    if ( error ) {
 		downloadContent( url, function( html, responseHeaders ) {
 		    callback( html, responseHeaders, var1, var2, var3 );
@@ -1608,7 +1608,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 		    });
 		});
 	    } else {
-		callback( html, responseHeaders, var1, var2, var3 );
+		callback( results[0], results[1], var1, var2, var3 );
 		printLog( 'Cache hit for ' + url );
 		touch( cachePath );
 		touch( cacheHeadersPath );
