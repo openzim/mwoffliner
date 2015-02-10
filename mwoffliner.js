@@ -395,9 +395,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 		    finished();
 		}
 	    } else  {
-		if ( error ) {
-		    console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + ' (' + error + ')' );
-		}
+		console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + '(' + stats.size + ')' );
 		finished();
 	    }
 	});
@@ -1600,18 +1598,18 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 	function( error, results ) {
 	    if ( error ) {
 		downloadContent( url, function( html, responseHeaders ) {
-		    callback( html, responseHeaders, var1, var2, var3 );
 		    printLog( 'Caching ' + url + ' at ' + cachePath + '...' );
 		    fs.writeFile( cacheHeadersPath, JSON.stringify( responseHeaders ), function( error ) {
 			fs.writeFile( cachePath, html, function( error ) {
+			    callback( html, responseHeaders, var1, var2, var3 );
 			});
 		    });
 		});
 	    } else {
-		callback( results[0], results[1], var1, var2, var3 );
 		printLog( 'Cache hit for ' + url );
 		touch( cachePath );
 		touch( cacheHeadersPath );
+		callback( results[0], results[1], var1, var2, var3 );
 	    }
 	}
     );
@@ -1709,13 +1707,13 @@ function downloadFileAndCache( url, callback ) {
 
 	/* Quickly set the redis entry if necessary */
 	if ( !r_width || error || r_width < width ) {
-	    var mediaPath = getMediaPath( url );
-	    var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
-	    var cacheHeadersPath = cachePath + ".head";
-	    var toDownload = false;
 
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function( error ) {
-
+		var mediaPath = getMediaPath( url );
+		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
+		var cacheHeadersPath = cachePath + ".head";
+		var toDownload = false;
+		
 		/* Check if the file exists in the cache */
 		if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
 		    var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
@@ -1724,7 +1722,6 @@ function downloadFileAndCache( url, callback ) {
 		    if ( responseHeaders.width < width ) {
 			toDownload = true;
 		    } else {
-			callback();
 			if ( !fs.existsSync( mediaPath ) ) {
 			    fs.symlinkSync( cachePath, mediaPath );
 			}
@@ -1735,6 +1732,7 @@ function downloadFileAndCache( url, callback ) {
 			} else {
 			    redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width );
 			}
+			callback();
 		    }
 		} else {
 		    toDownload = true;
@@ -1743,10 +1741,10 @@ function downloadFileAndCache( url, callback ) {
 		/* Download the file if necessayr */
 		if ( toDownload ) {
 		    downloadFile( url, cachePath, true, function() {
-			callback();
 			printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
 			fs.symlink( cachePath, mediaPath, function( error ) {
 			    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
+			    callback();
 			});
 		    });
 		} else {
@@ -1778,7 +1776,7 @@ function downloadFile( url, path, force, callback ) {
 		5,
 		function( finished ) {
 		    var calledFinished = false;
-		    var fileDescriptor;
+		    var streamFlushed = false;
 
 		    function callFinished( timeout, message ) {
 			if ( !calledFinished ) {
@@ -1795,39 +1793,26 @@ function downloadFile( url, path, force, callback ) {
 		    pathStream.on( 'error', function( error ) {
                         callFinished( 2000, 'Writable stream error at "' + path + '" (' + error + ')' );
                     });
-		    pathStream.on( 'open', function( fd ) {
-			fileDescriptor = fd;
+		    pathStream.on( 'finish', function( error ) {
+			streamFlushed = true;
                     });
 		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
 				pathStream.write( data );
 			    }).on( 'end', function() {
-				async.retry(
-				    5,
-				    function ( finished ) {
-					if ( fileDescriptor ) {
-					    pathStream.end();
-					    fs.fsync( fileDescriptor, function( error ) {
-						finished( error );
-					    });
-					} else {
-					    printLog( 'Waiting to complete fs write of ' + path );
-					    setTimeout( finished, 1000 );
-					}
+				pathStream.end();
+				async.whilst(
+				    function() { return !streamFlushed },
+				    function( finished ) {
+					printLog( 'Waiting to complete fs write of ' + path );
+					setTimeout( finished, 1000 );
 				    },
 				    function ( error ) {
-					if ( error ) {
+					printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
+					optimizationQueue.push( {path: path, size: pathStream.bytesWritten}, function() {
 					    callFinished( 0, error );
-					} else {
-					    fs.stat( path, function( error, pathStat ) {
-						callFinished( 0, error );
-						if ( !error ) {
-						    optimizationQueue.push( {path: path, size: pathStat.size} );
-						    printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
-						}
-					    });
-					}
+					});
 				    });
 			    });
 			} else {
@@ -1858,7 +1843,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    });
 		},
-		function ( error, data ) {
+		function ( error ) {
 		    if ( error ) {
 			console.error( error );
 		    }
@@ -2146,8 +2131,6 @@ function printLog( msg ) {
 }
 
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
-    console.log( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
-
     try {
 	var proc = spawn( command, args );
 	
