@@ -1584,13 +1584,13 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 	[
 	    function( finished ) {
 		fs.readFile( cachePath, function( error, data ) {
-		    finished( error, data.toString() );
+		    finished( error, error ? undefined : data.toString() );
 		})
 	    },
 	    function( finished ) {
 		fs.readFile( cacheHeadersPath, function( error, data ) {
 		    try {
-			finished( error, JSON.parse( data.toString() ) );
+			finished( error, error ? undefined : JSON.parse( data.toString() ) );
 		    } catch ( error ) {
 			finished( 'Error in JSON parsing' );
 		    }
