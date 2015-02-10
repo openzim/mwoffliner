@@ -31,7 +31,7 @@ var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
 var httpAgent = require( 'agentkeepalive' );
 var httpsAgent = require( 'agentkeepalive' ).HttpsAgent;
-var trace = require( 'trace' );
+//var trace = require( 'trace' );
 
 /************************************/
 /* Command Parsing *************/
