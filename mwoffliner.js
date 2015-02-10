@@ -1778,7 +1778,7 @@ function downloadFile( url, path, force, callback ) {
 		    retryCount++;
 		    var pathStream = fs.createWriteStream( path );
 		    pathStream.on( 'error', function( error ) {
-                        callFinished( 2000, 'Writable stream error at "' + tmpPath + '" (' + error + ')' );
+                        callFinished( 2000, 'Writable stream error at "' + path + '" (' + error + ')' );
                     });
 		    pathStream.on( 'open', function( fd ) {
 			fileDescriptor = fd;
@@ -1820,7 +1820,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    })
   	    	    .on( 'error', function( error ) {
-			fs.unlink( tmpPath, function() {
+			fs.unlink( path, function() {
 			    callFinished( 10000 * retryCount, 'Unable to download [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
 			});
 		    })
