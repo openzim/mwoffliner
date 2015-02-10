@@ -31,7 +31,6 @@ var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
 var httpAgent = require( 'agentkeepalive' );
 var httpsAgent = require( 'agentkeepalive' ).HttpsAgent;
-//var trace = require( 'trace' );
 
 /************************************/
 /* Command Parsing *************/
@@ -1580,29 +1579,42 @@ function getRequestOptionsFromUrl( url, compression ) {
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
     var cacheHeadersPath = cachePath + '.head';
-    var toDownload = false;
 
-    try {
-	var html = fs.readFileSync( cachePath ).toString();
-	var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
-	callback( html, responseHeaders, var1, var2, var3 );
-	printLog( 'Cache hit for ' + url );
-	touch( cachePath );
-	touch( cacheHeadersPath );
-    } catch ( error ) {
-        toDownload = true;
-    }
-
-    if ( toDownload ) {
-	downloadContent( url, function( html, responseHeaders ) {
-	    callback( html, responseHeaders, var1, var2, var3 );
-	    printLog( 'Caching ' + url + ' at ' + cachePath + '...' );
-	    fs.writeFile( cacheHeadersPath, JSON.stringify( responseHeaders ), function( error ) {
-		fs.writeFile( cachePath, html, function( error ) {
+    async.series( 
+	[
+	    function( finished ) {
+		fs.readFile( cachePath, function( error, data ) {
+		    finished( error, data.toString() );
+		})
+	    },
+	    function( finished ) {
+		fs.readFile( cacheHeadersPath, function( error, data ) {
+		    try {
+			finished( error, JSON.parse( data.toString() ) );
+		    } catch ( error ) {
+			finished( 'Error in JSON parsing' );
+		    }
 		});
-	    });
-	});
-    }
+	    }
+	],
+	function( error, html, responseHeaders ) {
+	    if ( error ) {
+		downloadContent( url, function( html, responseHeaders ) {
+		    callback( html, responseHeaders, var1, var2, var3 );
+		    printLog( 'Caching ' + url + ' at ' + cachePath + '...' );
+		    fs.writeFile( cacheHeadersPath, JSON.stringify( responseHeaders ), function( error ) {
+			fs.writeFile( cachePath, html, function( error ) {
+			});
+		    });
+		});
+	    } else {
+		callback( html, responseHeaders, var1, var2, var3 );
+		printLog( 'Cache hit for ' + url );
+		touch( cachePath );
+		touch( cacheHeadersPath );
+	    }
+	}
+    );
 }
 
 function downloadContent( url, callback, var1, var2, var3 ) {
