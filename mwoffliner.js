@@ -433,11 +433,7 @@ function checkResume( finished ) {
 	nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
 	htmlRootPath = computeHtmlRootPath();
 	
-	if ( fs.existsSync( htmlRootPath ) ) {
-	    console.error( htmlRootPath + ' already exists. To make a new dump, please remove it and restart mwoffliner.' );
-	    dumps.splice( i, 1 );
-	    i--;
-	} else if ( resume && !nozim ) {
+	if ( resume && !nozim ) {
 	    var zimPath = computeZimRootPath();
 	    if ( fs.existsSync( zimPath ) ) {
 		printLog( zimPath + ' is already done, skip dumping & ZIM file generation' );
@@ -570,31 +566,33 @@ function computeZimRootPath() {
 
 function buildZIM( finished ) {
     if ( !nozim ) {
-	var zimPath = computeZimRootPath();
-	var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
-	    + ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
-	    + publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
-	printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
-
-	executeTransparently( 'zimwriterfs',
-			      [ '--welcome=index.html', '--favicon=favicon.png', '--language=' + langIso3, '--title=' + name , 
-				'--description=' + ( subTitle || name ), '--creator=' + creator, 
-				'--publisher=' + publisher, htmlRootPath, zimPath ], 
-			      function( error ) {
-				  if ( error ) {
-				      console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
-				      process.exit( 1 );
-				  } else {
-				      printLog( 'ZIM file built at ' + zimPath );
-				  }
-
-				  /* Delete the html directory ? */
-				  if ( keepHtml ) {
-				      finished();
-				  } else {
-				      rimraf( htmlRootPath, finished );
-				  }
-			      }, !verbose, !verbose);	
+	exec( 'sync', function( error ) {
+	    var zimPath = computeZimRootPath();
+	    var cmd = 'zimwriterfs --welcome=index.html --favicon=favicon.png --language=' + langIso3 
+		+ ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
+		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
+	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
+	    
+	    executeTransparently( 'zimwriterfs',
+				  [ '--welcome=index.html', '--favicon=favicon.png', '--language=' + langIso3, '--title=' + name , 
+				    '--description=' + ( subTitle || name ), '--creator=' + creator, 
+				    '--publisher=' + publisher, htmlRootPath, zimPath ], 
+				  function( error ) {
+				      if ( error ) {
+					  console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
+					  process.exit( 1 );
+				      } else {
+					  printLog( 'ZIM file built at ' + zimPath );
+				      }
+				      
+				      /* Delete the html directory ? */
+				      if ( keepHtml ) {
+					  finished();
+				      } else {
+					  rimraf( htmlRootPath, finished );
+				      }
+				  }, !verbose, !verbose);	
+	});
     } else {
 	finished();
     }
@@ -1519,6 +1517,7 @@ function createSubDirectories( finished ) {
     printLog( 'Creating sub directories at \"' + htmlRootPath + '\"...' );
     async.series(
         [
+	    function( finished ) { rimraf( htmlRootPath, finished ); },
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
@@ -1577,12 +1576,8 @@ function getRequestOptionsFromUrl( url, compression ) {
     };
 }
 
-function getArticleCachePath( url ) {
-    return cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
-}
-
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
-    var cachePath = getArticleCachePath( url );
+    var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
     var cacheHeadersPath = cachePath + '.head';
     var toDownload = false;
 
@@ -1689,112 +1684,65 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	});
 }
 
-function getMediaCachePath( filename ) {
-    return cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filename ).digest( 'hex' );
-}
-
 function downloadFileAndCache( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
     var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || INFINITY_WIDTH;
-    var mediaPath = getMediaPath( url );
-    var cachePath = getMediaCachePath( filenameBase );
-    var cacheHeadersPath = cachePath + ".head";
-    var toDownload = false;
 
     /* Check if we have already met this image during this dumping process */
     redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
 
-	/* Image was never met during this dumping process */
-        if ( !r_width || error ) {
-	    try {
+	/* Quickly set the redis entry if necessary */
+	if ( !r_width || error || r_width < width ) {
+	    var mediaPath = getMediaPath( url );
+	    var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
+	    var cacheHeadersPath = cachePath + ".head";
+	    var toDownload = false;
+
+	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function( error ) {
+
 		/* Check if the file exists in the cache */
-		if ( fs.existsSync( cachePath ) ) {
+		if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
 		    var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
 		    
 		    /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
 		    if ( responseHeaders.width < width ) {
 			toDownload = true;
 		    } else {
+			callback();
+			if ( !fs.existsSync( mediaPath ) ) {
+			    fs.symlinkSync( cachePath, mediaPath );
+			}
 			touch( cachePath );
 			touch( cacheHeadersPath );
-			if ( !fs.existsSync( mediaPath ) ) {
-			    fs.linkSync( cachePath, mediaPath );
+			if ( responseHeaders.width == width ) {
+			    redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase );
+			} else {
+			    redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width );
 			}
-			redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-			    if ( responseHeaders.width == width ) {
-				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase, function() {
-				    callback();
-				});
-			    } else {
-				redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width, function() {
-				    callback();
-				});
-			    }
-			});
-		    }
-		}
-
-		/* File is not in the cache */
-		else {
-		    toDownload = true;
-		}
-	    } catch( error ) {
-		console.error( error );
-		toDownload = true;
-	    }
-	}
-	
-	/* Image was already met, but in a lower resolution */
-	else if ( r_width < width) {
-	    try {
-		/* We need to check if we don't have a higher resolution version in the cache */
-		if ( fs.existsSync( cachePath ) ) {
-		    var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
-		    if ( responseHeaders.width < width ) {
-			toDownload = true;
-		    } else {
-			redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-			    if ( responseHeaders.width == width ) {
-				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase, function() {
-				    callback();
-				});
-			    } else {
-				redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width, function() {
-				    callback();
-				});
-			    }
-			});
 		    }
 		} else {
 		    toDownload = true;
 		}
-	    } catch( error ) {
-		console.error( error );
-		toDownload = true;
-	    }
+		
+		/* Download the file if necessayr */
+		if ( toDownload ) {
+		    downloadFile( url, cachePath, true, function() {
+			callback();
+			printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
+			fs.symlink( cachePath, mediaPath, function( error ) {
+			    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
+			});
+		    });
+		} else {
+		    printLog( 'Cache hit for ' + url );
+		}
+	    });
 	}
-
+	
 	/* We already have this image with a resolution equal or higher to what we need */ 
 	else {
             callback();
-	    return;
-        }
-
-	/* Download the file if necessayr */
-	if ( toDownload ) {
-	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function() {
-		downloadFile( url, cachePath, true, function( ok ) {
-		    callback();
-		    printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
-		    fs.symlink( cachePath, mediaPath, function( error ) {
-			fs.writeFile( cacheHeadersPath, JSON.stringify( { width: width } ), function( error ) {
-			});
-		    });
-		});
-	    });
-        } else {
-	    printLog( 'Cache hit for ' + url );
 	}
     });
 }
@@ -1809,9 +1757,6 @@ function downloadFile( url, path, force, callback ) {
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    url = url.replace( /^https\:\/\//, 'http://' );
-	    
-	    var tmpExt = '.' + randomString( 5 );
-	    var tmpPath = path + tmpExt;
 	    
 	    var retryCount = 0;
 	    async.retry(
@@ -1831,49 +1776,41 @@ function downloadFile( url, path, force, callback ) {
 		    }
 
 		    retryCount++;
-		    var tmpPathStream = fs.createWriteStream( tmpPath );
-		    tmpPathStream.on( 'error', function( error ) {
+		    var pathStream = fs.createWriteStream( path );
+		    pathStream.on( 'error', function( error ) {
                         callFinished( 2000, 'Writable stream error at "' + tmpPath + '" (' + error + ')' );
                     });
-		    tmpPathStream.on( 'open', function( fd ) {
+		    pathStream.on( 'open', function( fd ) {
 			fileDescriptor = fd;
                     });
 		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
-				tmpPathStream.write( data );
+				pathStream.write( data );
 			    }).on( 'end', function() {
-				async.forever(
+				async.retry(
+				    5,
 				    function ( finished ) {
 					if ( fileDescriptor ) {
-					    tmpPathStream.end();
+					    pathStream.end();
 					    fs.fsync( fileDescriptor, function( error ) {
-						finished( true );
+						finished( error );
 					    });
 					} else {
-					    printLog( 'Waiting to complete fs write of ' + tmpPath );
+					    printLog( 'Waiting to complete fs write of ' + path );
 					    setTimeout( finished, 1000 );
 					}
 				    },
 				    function ( error ) {
-					printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + tmpPath );
-					var tmpPathStat = fs.statSync( tmpPath );
-					if ( fs.existsSync( path ) ) {
-					    var pathStat =  fs.statSync( path );
-					    if ( pathStat && tmpPathStat.size > pathStat.size ) {
-						fs.rename( tmpPath, path, function( error ) {
-						    callFinished( 0 );
-						    optimizationQueue.push( {path: path, size: tmpPathStat.size} );
-						});
-					    } else {
-						callFinished( 0 );
-						printLog( path + ' was meanwhile downloaded and with a better quality. Download abandonned.' );
-						fs.unlink( tmpPath );
-					    }
+					if ( error ) {
+					    callFinished( 0, error );
 					} else {
-					    fs.rename( tmpPath, path, function( error ) {
-						callFinished( 0 );
-						optimizationQueue.push( {path: path, size: tmpPathStat.size} );
+					    fs.stat( path, function( error, pathStat ) {
+						callFinished( 0, error );
+						if ( !error ) {
+						    optimizationQueue.push( {path: path, size: pathStat.size} );
+						    printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
+						}
 					    });
 					}
 				    });
@@ -1909,7 +1846,7 @@ function downloadFile( url, path, force, callback ) {
 			console.error( error );
 		    }
 		    if ( callback ) {
-			callback( true );
+			callback();
 		    } 		    
 		});
 	}
