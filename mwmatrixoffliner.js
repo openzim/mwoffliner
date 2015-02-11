@@ -134,21 +134,27 @@ function dump( finished ) {
 function loadMatrix( finished ) {
     downloadContent( matrixUrl, function( json ) {
 	if ( !JSON.parse( json )['error'] ) {
-	    var entries = JSON.parse( json );
-	    var entryCount = entries['sitematrix']['count'];
-	    for ( var i=0; i<entryCount; i++ ) {
-		var entry = entries['sitematrix'][i];
-		if ( entry ) {
-		    var language = entry['code'];
-		    var sites = entry['site'];
-		    for ( var j=0; j<sites.length; j++) {
-			if (  sites[ j ].closed === undefined ) {
-			    sites[ j ].lang = language;
-			    mediawikis.push( sites[ j ] );
-			}
+	    var entries = JSON.parse( json )['sitematrix'];
+	    Object.keys( entries ).map( function( entryKey ) {
+		var entry = entries[ entryKey ];
+		if ( isNaN( entryKey ) ) {
+		    if ( entryKey == 'specials' ) {
+			entry.map( function( site ) {
+			    if ( site.closed === undefined ) {
+				site.lan = 'en';
+				mediawikis.push( site );
+			    }
+			});
 		    }
+		} else {
+		    entry.site.map( function( site ) {
+			if ( site.closed === undefined ) {
+			    site.lang = entry.code;
+			    mediawikis.push( site );
+			}
+		    });
 		}
-	    }
+	    });
 	    printLog( 'Matrix loaded successfuly' );
 	    finished();
 	} else {
