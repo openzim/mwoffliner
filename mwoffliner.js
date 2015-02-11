@@ -1606,7 +1606,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 		    });
 		});
 	    } else {
-		printLog( 'Cache hit for ' + url );
+		printLog( 'Cache hit for ' + url + ' (' + cachePath + ')' );
 		touch( cachePath );
 		touch( cacheHeadersPath );
 		callback( results[0], results[1], var1, var2, var3 );
@@ -1706,11 +1706,12 @@ function downloadFileAndCache( url, callback ) {
     redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
 
 	/* Quickly set the redis entry if necessary */
-	if ( !r_width || error || r_width < width ) {
+	if ( error || !r_width || r_width < width ) {
 
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function( error ) {
 		var mediaPath = getMediaPath( url );
-		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
+		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + 
+		    ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
 		var cacheHeadersPath = cachePath + ".head";
 		var toDownload = false;
 		
