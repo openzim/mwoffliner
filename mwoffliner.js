@@ -1806,36 +1806,51 @@ function downloadFile( url, path, force, callback ) {
 			    response.on( 'data', function( data ) {
 				pathStream.write( data );
 			    }).on( 'end', function() {
-				async.series([
-				    function( finished ) { 
-					async.whilst(
-					    function() { return pathStream.bytesWritten ? false : true },
-					    function( finished ) {
-						printLog( 'Waiting to start fs write of ' + path );
-						setTimeout( finished, 1000 );
-					    },
-					    function( error ) {
-						finished();
-					    }
-					);
-				    },
-				    function( finished ) {
-					pathStream.end();
-					async.whilst(
-					    function() { return !streamFlushed },
-					    function( finished ) {
-						printLog( 'Waiting to complete fs write of ' + path );
-						setTimeout( finished, 1000 );
-					    },
-					    function ( error ) {
-						printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
-						optimizationQueue.push( {path: path, size: pathStream.bytesWritten}, function() {
-						    callFinished( 0, error );
-						});
-					    }
-					);
+				async.series(
+				    [
+					function( finished ) { 
+					    var retryCount = 0;
+					    async.whilst(
+						function() { return pathStream.bytesWritten || ( retryCount++ < 120 ) ? false : true },
+						function( finished ) {
+						    printLog( 'Waiting to start fs [' + retryCount + '] write of ' + path );
+						    setTimeout( finished, 1000 );
+						},
+						function( error ) {
+						    if ( retryCount >= 120 ) {
+							finished( 'Unable to start to write ' + path );
+						    } else {
+							finished();
+						    }
+						}
+					    );
+					},
+					function( finished ) {
+					    pathStream.end();
+					    var retryCount = 0;
+					    async.whilst(
+						function() { return !streamFlushed && ( retryCount++ < 120 ) },
+						function( finished ) {
+						    printLog( 'Waiting to complete fs [' + retryCount + '] write of ' + path );
+						    setTimeout( finished, 1000 );
+						},
+						function ( error ) {
+						    if ( retryCount >= 120 ) {
+							finished( 'Unable to finish to write ' + path );
+						    } else {
+							printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
+							optimizationQueue.push( {path: path, size: pathStream.bytesWritten}, function() {
+							    finished();
+							});
+						    }
+						}
+					    );
+					}
+				    ],
+				    function ( error, results ) {
+					callFinished( 0, error );
 				    }
-				]);
+				)
 			    });
 			} else {
 			    callFinished( 0, 'Unable to download file [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
