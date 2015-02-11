@@ -395,7 +395,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 		    finished();
 		}
 	    } else  {
-		console.error( 'Failed to start to optim ' + path + ', with size=' + file.size + '(' + ( error ? 'file was probably deleted, here the error: ' + error : ( stats ? stats.size : 'No stats information' ) ) + ')' );
+		console.error( 'Failed to start to optim ' + path + '. Size should be ' + file.size + ' (' + ( error ? 'file was probably deleted, here the error: ' + error : ( stats ? stats.size : 'No stats information' ) ) + ')' );
 		finished();
 	    }
 	});
