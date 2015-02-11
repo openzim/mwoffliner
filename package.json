@@ -30,8 +30,6 @@
     "html-minifier": "*",
     "jsdom": "*",
     "follow-redirects": "*",
-    "trace": "*",
-    "clarify": "*",
     "redis": "*",
     "rimraf": "*",
     "mkdirp": "*",
