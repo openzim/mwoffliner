@@ -1778,6 +1778,7 @@ function downloadFile( url, path, force, callback ) {
 		    var calledFinished = false;
 		    var streamFlushed = false;
 
+		    /* Unique function to call to end the HTTP request */
 		    function callFinished( timeout, message ) {
 			if ( !calledFinished ) {
 			    calledFinished = true;
@@ -1788,7 +1789,7 @@ function downloadFile( url, path, force, callback ) {
 			}
 		    }
 
-		    retryCount++;
+		    /* Create the fs writeable stream */
 		    var pathStream = fs.createWriteStream( path );
 		    pathStream.on( 'error', function( error ) {
                         callFinished( 2000, 'Writable stream error at "' + path + '" (' + error + ')' );
@@ -1796,24 +1797,44 @@ function downloadFile( url, path, force, callback ) {
 		    pathStream.on( 'finish', function( error ) {
 			streamFlushed = true;
                     });
+
+		    /* Launche the HTTP request */
+		    retryCount++;
 		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
 			if ( response.statusCode == 200 ) {
 			    response.on( 'data', function( data ) {
 				pathStream.write( data );
 			    }).on( 'end', function() {
-				pathStream.end();
-				async.whilst(
-				    function() { return !streamFlushed },
-				    function( finished ) {
-					printLog( 'Waiting to complete fs write of ' + path );
-					setTimeout( finished, 1000 );
+				async.series([
+				    function( finished ) { 
+					async.whilst(
+					    function() { return pathStream.bytesWritten ? false : true },
+					    function( finished ) {
+						printLog( 'Waiting to start fs write of ' + path );
+						setTimeout( finished, 1000 );
+					    },
+					    function( error ) {
+						finished();
+					    }
+					);
 				    },
-				    function ( error ) {
-					printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
-					optimizationQueue.push( {path: path, size: pathStream.bytesWritten}, function() {
-					    callFinished( 0, error );
-					});
-				    });
+				    function( finished ) {
+					pathStream.end();
+					async.whilst(
+					    function() { return !streamFlushed },
+					    function( finished ) {
+						printLog( 'Waiting to complete fs write of ' + path );
+						setTimeout( finished, 1000 );
+					    },
+					    function ( error ) {
+						printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
+						optimizationQueue.push( {path: path, size: pathStream.bytesWritten}, function() {
+						    callFinished( 0, error );
+						});
+					    }
+					);
+				    }
+				]);
 			    });
 			} else {
 			    callFinished( 0, 'Unable to download file [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
