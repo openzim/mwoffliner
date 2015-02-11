@@ -1984,7 +1984,11 @@ function saveFavicon( finished ) {
 	downloadFile( logoUrl, faviconPath, true, function() {
 	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
 	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-		finished( error );
+		fs.stat( faviconPath, function( error, stats ) {
+		    optimizationQueue.push( {path: faviconPath, size: stats.size}, function() {
+			finished( error );
+                    });
+		});
 	    });
 	});
     });
