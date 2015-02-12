@@ -1558,7 +1558,6 @@ function getRequestOptionsFromUrl( url, compression ) {
     var urlObj = urlParser.parse( url );
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
     var headers = {
-	'connection': 'Keep-Alive',
 	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
 	'user-agent': userAgentString
     };
