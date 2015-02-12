@@ -1,4 +1,6 @@
-#!/usr/bin/env node
+#!/bin/sh
+":" //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=1900 --stack-size=4096 "$0" "$@"
+
 "use strict";
 
 /************************************/
@@ -110,9 +112,16 @@ function dump( finished ) {
 		     var localParsoidUrl = parsoidUrl + site.dbname + '/';
 		     printLog( 'Dumping ' + site.url );
 		executeTransparently( './mwoffliner.js',
-				      [ '--mwUrl=' + localMwUrl, '--parsoidUrl=' + localParsoidUrl, '--adminEmail=' + adminEmail,
-					'--format=', '--format=nopic', outputDirectory ? '--outputDirectory=' + outputDirectory : '', tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
-					verbose ? '--verbose' : ' ', resume ? '--resume' : ' ', speed ? '--speed=' + speed : ' ' ],
+				      [ '--mwUrl=' + localMwUrl,
+					'--parsoidUrl=' + localParsoidUrl,
+					'--adminEmail=' + adminEmail,
+					'--format=', '--format=nopic',
+					outputDirectory ? '--outputDirectory=' + outputDirectory : '',
+					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
+					verbose ? '--verbose' : ' ',
+					resume ? '--resume' : ' ',
+					speed ? '--speed=' + speed : ' ',
+					site.prefix ? '--prefix=' + site.prefix : ' ' ],
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );
@@ -142,6 +151,11 @@ function loadMatrix( finished ) {
 			entry.map( function( site ) {
 			    if ( site.closed === undefined ) {
 				site.lan = 'en';
+				if ( site.code == 'species' ) {
+				    site.prefix = 'wikispecies_en_all';
+				} else {
+				    site.prefix = site.dbname + '_en_all';
+				}
 				mediawikis.push( site );
 			    }
 			});
