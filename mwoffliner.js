@@ -39,7 +39,6 @@ var httpsAgent = require( 'agentkeepalive' ).HttpsAgent;
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --adminEmail=foo@bar.net' )
     .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
-    .options( ['articleList', 'outputDirectory', 'speed', 'format', 'keepHtml', 'filePrefix', 'resume', 'tmpDirectory'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
@@ -1514,7 +1513,7 @@ function createSubDirectories( finished ) {
     printLog( 'Creating sub directories at \"' + htmlRootPath + '\"...' );
     async.series(
         [
-	    function( finished ) { rimraf( htmlRootPath, finished ); },
+	    function( finished ) { rimraf( htmlRootPath, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
