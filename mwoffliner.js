@@ -1568,7 +1568,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent
+//	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent
     };
 }
 
