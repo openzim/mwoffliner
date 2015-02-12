@@ -22,12 +22,10 @@
     "url": "http://reportabug.kiwix.org"
   },
   "dependencies": {
-    "agentkeepalive": "^1.2.0",
     "async": "*",
     "country-language": "*",
     "domino": "*",
     "expand-home-dir": "*",
-    "html-minifier": "*",
     "jsdom": "*",
     "follow-redirects": "*",
     "redis": "*",
