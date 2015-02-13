@@ -1664,13 +1664,11 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).' );
 	    })
 	    .on( 'socket', function ( socket ) {
-		socket.setTimeout( 50000 * retryCount );
 		if ( !socket.custom ) {
 		    socket.custom = true;
 		    socket.addListener( 'timeout', function() {
 			socket.emit( 'agentRemove' );
-			socket.destroy();
-			callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket timeout)' );
+			socket.end();
 		    }); 
 		    socket.addListener( 'error', function( error ) {
 			socket.emit( 'agentRemove' );
