@@ -1673,7 +1673,6 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    socket.addListener( 'error', function( error ) {
 			socket.emit( 'agentRemove' );
 			socket.destroy();
-			callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
 		    });
 		}
 	    });
@@ -1869,7 +1868,6 @@ function downloadFile( url, path, force, callback ) {
 			    socket.addListener( 'error', function( error ) {
 				socket.emit( 'agentRemove' );
 				socket.destroy();
-				callFinished( 10000 * retryCount, 'Unable to download file [' + retryCount + '] ' + decodeURI( url ) + ' (socket error)' );
 			    });
 			}
 		    });
