@@ -1560,24 +1560,6 @@ function concatenateToAttribute( old, add ) {
     return old ? old + ' ' + add : add;
 }
 
-function getRequestOptionsFromUrl( url, compression ) {
-    var urlObj = urlParser.parse( url );
-    var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
-    var headers = {
-	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
-	'user-agent': userAgentString
-    };
-
-    return {
-	protocol: urlObj.protocol,
-	hostname: urlObj.hostname,
-	port: port,
-	headers: headers,
-	path: urlObj.path,
-//	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent
-    };
-}
-
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
     var cacheHeadersPath = cachePath + '.head';
@@ -1619,6 +1601,24 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     );
 }
 
+function getRequestOptionsFromUrl( url, compression ) {
+    var urlObj = urlParser.parse( url );
+    var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
+    var headers = {
+	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
+	'user-agent': userAgentString
+    };
+
+    return {
+	protocol: urlObj.protocol,
+	hostname: urlObj.hostname,
+	port: port,
+	headers: headers,
+	path: urlObj.path,
+//	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent
+    };
+}
+
 function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 0;
     var responseHeaders = {};
@@ -1639,7 +1639,8 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    }
 	    
 	    retryCount++;
-	    http.get( getRequestOptionsFromUrl( url, true ), function( response ) {
+	    var options = getRequestOptionsFromUrl( url, true );
+	    ( options.protocol == 'http:' ? http : https ).get( getRequestOptionsFromUrl( url, true ), function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var chunks = new Array();
 		    response.on( 'data', function ( chunk ) {
