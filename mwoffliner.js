@@ -1124,7 +1124,8 @@ function saveArticles( finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	printLog( 'Getting article from ' + articleUrl );
 	printLog( 'Download media queue size [' + downloadFileQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
-	setTimeout( downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( html, responseHeaders, articleId ) {
+	setTimeout( downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
+	    var html = content.toString();
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
@@ -1182,8 +1183,8 @@ function saveJavascript( finished ) {
     }
 
     printLog( 'Get the javascript from ' + webUrl );
-    downloadContent( webUrl, function( html ) {
-	html = html.replace( '<head>', '<head><base href="' + mwUrl + '" />' );
+    downloadContent( webUrl, function( content, responseHeaders ) {
+	var html = content.toString().replace( '<head>', '<head><base href="' + mwUrl + '" />' );
 
 	// Create a dummy JS file to be executed asynchronously in place of loader.php
 	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
@@ -1227,8 +1228,8 @@ function saveJavascript( finished ) {
 				       if ( url ) {
 					   url = getFullUrl( url ).replace("debug=false", "debug=true");
 					   printLog( 'Downloading javascript from ' + url );
-					   downloadContent( url, function( body ) {
-					       fs.appendFile( javascriptPath, '\n' + munge_js( body ) + '\n', function ( error ) {
+					   downloadContent( url, function( content, responseHeaders ) {
+					       fs.appendFile( javascriptPath, '\n' + munge_js( content.toString() ) + '\n', function ( error ) {
 						   finished();
 					       } );
 					   });
@@ -1277,8 +1278,9 @@ function saveStylesheet( finished ) {
 	    var cssDataUrlRegex = new RegExp( '^data' );
 	    
 	    printLog( 'Downloading CSS from ' + decodeURI( url ) );
-	    downloadContent( url, function( body ) {
-		
+	    downloadContent( url, function( content, responseHeaders ) {
+		var body = content.toString();
+
 		/* Downloading CSS dependencies */
 		var match;
 		var rewrittenCss = body;
@@ -1314,7 +1316,8 @@ function saveStylesheet( finished ) {
     }, speed );
 
     /* Load main page to see which CSS files are needed */
-    downloadContentAndCache( webUrl, function( html ) {
+    downloadContentAndCache( webUrl, function( content, responseHeaders ) {
+	var html = content.toString();
 	var doc = domino.createDocument( html );
 	var links = doc.getElementsByTagName( 'link' );
 
@@ -1359,7 +1362,8 @@ function getArticleIds( finished ) {
 	if ( articleId ) {
             printLog( 'Getting redirects for article ' + articleId + '...' );
 	    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
-	    downloadContent( url, function( body ) {
+	    downloadContent( url, function( content, responseHeaders ) {
+		var body = content.toString();
 		try {
 		    if ( !JSON.parse( body )['error'] ) {
 			var values = new Array();
@@ -1433,7 +1437,8 @@ function getArticleIds( finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
-	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( body ) {
+	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
+		var body = content.toString();
 		if ( body && body.length > 2 ) {
 		    parseJson( body );
 		}
@@ -1466,7 +1471,8 @@ function getArticleIds( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
 		printLog( "Redirect queue size: " + redirectQueue.length() );
-		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( body ) {
+		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
+		    var body = content.toString();
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
 		    } else {
@@ -1595,11 +1601,11 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 	],
 	function( error, results ) {
 	    if ( error ) {
-		downloadContent( url, function( html, responseHeaders ) {
+		downloadContent( url, function( content, responseHeaders ) {
 		    printLog( 'Caching ' + url + ' at ' + cachePath + '...' );
 		    fs.writeFile( cacheHeadersPath, JSON.stringify( responseHeaders ), function( error ) {
-			fs.writeFile( cachePath, html, function( error ) {
-			    callback( html, responseHeaders, var1, var2, var3 );
+			fs.writeFile( cachePath, content, function( error ) {
+			    callback( content, responseHeaders, var1, var2, var3 );
 			});
 		    });
 		});
@@ -1651,7 +1657,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 				callFinished( 0, error, decoded && decoded.toString() );
 			    })
 			} else {
-			    callFinished( 0, null, Buffer.concat( chunks ).toString() );
+			    callFinished( 0, null, Buffer.concat( chunks ) );
 			} 
 		    });
 		} else {
@@ -1688,7 +1694,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		 * and this stops the whole dumping process */
 		// process.exit( 1 );
 	    }
-	    callback( data, responseHeaders, var1, var2, var3 );
+	    callback( data || new Buffer(0), responseHeaders, var1, var2, var3 );
 	});
 }
 
@@ -1760,126 +1766,20 @@ function downloadFile( url, path, force, callback ) {
     fs.exists( path, function ( exists ) {
 	if ( exists && !force ) {
 	    printLog( path + ' already downloaded, download will be skipped.' );
-	    if (callback) {
-		callback();
-	    }
+	    callback();
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
-	    url = url.replace( /^https\:\/\//, 'http://' );
-	    
-	    var retryCount = 0;
-	    async.retry(
-		5,
-		function( finished ) {
-		    var calledFinished = false;
-		    var streamFlushed = false;
-
-		    /* Unique function to call to end the HTTP request */
-		    function callFinished( timeout, message ) {
-			if ( !calledFinished ) {
-			    calledFinished = true;
-			    if ( message ) {
-				console.error( message );
-			    }
-			    setTimeout( finished, timeout, message );
-			}
+	    downloadContent( url, function( content, responseHeaders ) {
+		try {
+		    if ( content ) {
+			fs.writeFileSync( path, content );
+			optimizationQueue.push( {path: path, size: content.length } );
 		    }
-
-		    /* Create the fs writeable stream */
-		    var pathStream = fs.createWriteStream( path );
-		    pathStream.on( 'error', function( error ) {
-                        callFinished( 2000, 'Writable stream error at "' + path + '" (' + error + ')' );
-                    });
-		    pathStream.on( 'finish', function( error ) {
-			streamFlushed = true;
-                    });
-
-		    /* Launche the HTTP request */
-		    retryCount++;
-		    http.get( getRequestOptionsFromUrl( url ), function( response ) {
-			if ( response.statusCode == 200 ) {
-			    response.on( 'data', function( data ) {
-				pathStream.write( data );
-			    }).on( 'end', function() {
-				async.series(
-				    [
-					function( finished ) { 
-					    var retryCount = 0;
-					    async.whilst(
-						function() { return pathStream.bytesWritten || ( retryCount++ < 120 ) ? false : true },
-						function( finished ) {
-						    printLog( 'Waiting to start fs [' + retryCount + '] write of ' + path );
-						    setTimeout( finished, 1000 );
-						},
-						function( error ) {
-						    if ( retryCount >= 120 ) {
-							finished( 'Unable to start to write ' + path );
-						    } else {
-							finished();
-						    }
-						}
-					    );
-					},
-					function( finished ) {
-					    pathStream.end();
-					    var retryCount = 0;
-					    async.whilst(
-						function() { return !streamFlushed && ( retryCount++ < 120 ) },
-						function( finished ) {
-						    printLog( 'Waiting to complete fs [' + retryCount + '] write of ' + path );
-						    setTimeout( finished, 1000 );
-						},
-						function ( error ) {
-						    if ( retryCount >= 120 ) {
-							finished( 'Unable to finish to write ' + path );
-						    } else {
-							printLog( 'Successfuly downloaded ' + decodeURI( url ) + ' to ' + path );
-							optimizationQueue.push( {path: path, size: pathStream.bytesWritten}, function() {
-							    finished();
-							});
-						    }
-						}
-					    );
-					}
-				    ],
-				    function ( error, results ) {
-					callFinished( 0, error );
-				    }
-				)
-			    });
-			} else {
-			    callFinished( 0, 'Unable to download file [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ')' );
-			}
-		    })
-  	    	    .on( 'error', function( error ) {
-			this.socket.emit( 'agentRemove' );
-			this.socket.destroy();
-			fs.unlink( path, function() {
-			    callFinished( 10000 * retryCount, 'Unable to download file [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' )' );
-			});
-		    })
-	            .on( 'socket', function ( socket ) {
-			if ( !socket.custom ) {
-			    socket.custom = true;
-			    socket.addListener( 'timeout', function() {
-				socket.emit( 'agentRemove' );
-				socket.end();
-			    }); 
-			    socket.addListener( 'error', function( error ) {
-				socket.emit( 'agentRemove' );
-				socket.destroy();
-			    });
-			}
-		    });
-		},
-		function ( error ) {
-		    if ( error ) {
-			console.error( error );
-		    }
-		    if ( callback ) {
-			callback();
-		    } 		    
-		});
+		} catch( error ) {
+		    console.error( 'Unable to write ' + path + ' (' + url + ')' );
+		}
+		callback();
+	    });
 	}
     });
 }
@@ -1954,7 +1854,8 @@ function getArticleBase( articleId, escape ) {
 
 function getSubTitle( finished ) {
     printLog( 'Getting sub-title...' );
-    downloadContent( webUrl, function( html ) {
+    downloadContent( webUrl, function( content, responseHeaders ) {
+	var html = content.toString();
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
 	subTitle = subTitleNode.innerHTML;
@@ -1965,7 +1866,8 @@ function getSubTitle( finished ) {
 function getSiteInfo( finished ) {
     printLog( 'Getting web site name...' );
     var url = apiUrl + 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc';
-    downloadContent( url, function( body ) {
+    downloadContent( url, function( content, responseHeaders ) {
+	var body = content.toString();
 	var entries = JSON.parse( body )['query']['general'];
 	name = entries['sitename'];
 	langIso2 = entries['lang'];
@@ -1984,7 +1886,8 @@ function saveFavicon( finished ) {
     printLog( 'Saving favicon.png...' );
     var faviconPath = htmlRootPath + '/favicon.png';
     
-    downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( body ) {	
+    downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {	
+	var body = content.toString();
 	var entries = JSON.parse( body )['query']['general'];
 	var logoUrl = entries['logo'];
 	logoUrl = urlParser.parse( logoUrl ).protocol ? logoUrl : 'http:' + logoUrl;
@@ -2023,7 +1926,8 @@ function getMainPage( finished ) {
     
     function retrieveMainPage( finished ) {
 	printLog( 'Getting main page...' );
-	downloadContent( webUrl, function( body ) {
+	downloadContent( webUrl, function( content, responseHeaders ) {
+	    var body = content.toString();
 	    var titleRegex = /\"wgPageName\"\:\"(.*?)\"/;
 	    var titleParts = titleRegex.exec( body );
 	    if ( titleParts[ 1 ] ) {
@@ -2049,7 +1953,8 @@ function getMainPage( finished ) {
 
 function getNamespaces( finished ) {
     var url = apiUrl + 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json';
-    downloadContent( url, function( body ) { 
+    downloadContent( url, function( content, responseHeaders ) { 
+	var body = content.toString();
 	var types = [ 'namespaces', 'namespacealiases' ];
 	types.map( function( type ) {
 	    var entries = JSON.parse( body )['query'][type];
@@ -2085,7 +1990,8 @@ function getTextDirection( finished ) {
     printLog( 'Getting text direction...' );
     var path = htmlRootPath + '/index.html';
 
-    downloadContent( webUrl, function( body ) {
+    downloadContent( webUrl, function( content, responseHeaders ) {
+	var body = content.toString();
 	var doc = domino.createDocument( body );
 	var contentNode = doc.getElementById( 'mw-content-text' );
 	var languageDirectionRegex = /\"pageLanguageDir\"\:\"(.*?)\"/;
