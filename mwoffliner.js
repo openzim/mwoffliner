@@ -1622,6 +1622,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 0;
     var responseHeaders = {};
+    var options = getRequestOptionsFromUrl( url, true );
 
     printLog( 'Downloading ' + decodeURI( url ) + '...' );
     async.retry(
@@ -1639,8 +1640,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    }
 	    
 	    retryCount++;
-	    var options = getRequestOptionsFromUrl( url, true );
-	    ( options.protocol == 'http:' ? http : https ).get( getRequestOptionsFromUrl( url, true ), function( response ) {
+	    ( options.protocol == 'http:' ? http : https ).get( options, function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var chunks = new Array();
 		    response.on( 'data', function ( chunk ) {
