@@ -33,8 +33,7 @@
     "mkdirp": "*",
     "swig": "*",
     "utf8-binary-cutter": "*",
-    "yargs": "*",
-    "agentkeepalive": "*"
+    "yargs": "*"
   },
   "keywords": [
     "mediawiki",
