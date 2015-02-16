@@ -1597,7 +1597,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	agent: false
+	keepAlive: true
     };
 }
 
@@ -1652,6 +1652,8 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (response error: ' + response.statusCode + ').' );
 		    });
 		} else {
+		    socket.emit( 'agentRemove' );
+		    socket.destroy();
 		    callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
 		}
 	    });
