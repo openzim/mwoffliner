@@ -1660,13 +1660,13 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			console.error( 'Socket timeout' );
 			socket.emit( 'agentRemove' );
 			socket.destroy();
-			if ( request ) { request.emit( 'error' ); }
+			if ( request ) { request.emit( 'error', 'Socket timeout' ); }
 		    });
 		    socket.on( 'timeout', function( error ) {
 			console.error( 'Socket error' );
 			socket.emit( 'agentRemove' );
 			socket.end();
-			if ( request ) { request.emit( 'error' ); }
+			if ( request ) { request.emit( 'error', 'Socket error' ); }
 		    });
 		}
 	    });
