@@ -1597,7 +1597,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	keepAlive: true
+	agent: false
     };
 }
 
@@ -1646,12 +1646,17 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			    callFinished( 0, null, Buffer.concat( chunks ) );
 			} 
 		    });
+		    response.on( 'error', function( error) {
+			socket.emit( 'agentRemove' );
+			socket.destroy();
+			callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (response error: ' + response.statusCode + ').' );
+		    });
 		} else {
 		    callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
 		}
 	    });
 	    request.on( 'error', function( error ) {
-		callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).' );
+		callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (request error: ' + error + ' ).' );
 	    });
 	    request.on( 'socket', function ( socket ) {
 		if ( !socket.custom ) {
