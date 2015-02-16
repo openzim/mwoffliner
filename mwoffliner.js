@@ -29,11 +29,9 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
-var httpAgent = require( 'agentkeepalive' );
-var httpsAgent = require( 'agentkeepalive' ).HttpsAgent;
 
 /************************************/
-/* Command Parsing *************/
+/* Command Parsing ******************/
 /************************************/
 
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
@@ -125,12 +123,8 @@ if ( argv.speed && isNaN( argv.speed ) ) {
 }
 var speed = cpuCount * ( argv.speed || 1 );
 
-/* Http user agents */
-var keepaliveHttpAgent;
-var keepaliveHttpsAgent;
-
 /* Necessary to avoid problems with https */
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 /* Verbose */
 var verbose = argv.verbose;
@@ -251,7 +245,6 @@ var footerTemplate = swig.compile( footerTemplateCode );
 /* Get content */
 async.series(
     [
-	function( finished ) { initAgents( finished ) },
 	function( finished ) { getTextDirection( finished ) },
 	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getSiteInfo( finished ) },
@@ -274,7 +267,6 @@ async.series(
 		    async.series(
 			[
 			    function( finished ) { createSubDirectories( finished ) },
-			    function( finished ) { initAgents( finished ) },
 			    function( finished ) { saveJavascript( finished ) }, 
 			    function( finished ) { saveStylesheet( finished ) },
 			    function( finished ) { saveFavicon( finished ) },
@@ -418,6 +410,7 @@ var downloadFileQueue = async.queue( function ( url, finished ) {
 /************************************/
 
 function regularTimerCallback() {
+    printLog( 'DMQ=' + downloadFileQueue.length() + ', OMQ=' + optimizationQueue.length() + ', RQ=' + redirectQueue.length() );
     redisClient.ping();
     exec( 'sync' );
 }
@@ -441,30 +434,18 @@ function checkResume( finished ) {
     finished( dumps.length > 0 ? false : true );
 }
 
-function initAgents( finished ) {
-    closeAgents( function() {
-	keepaliveHttpAgent = new httpAgent();
-	keepaliveHttpsAgent = new httpsAgent();
-	finished();
-    });
-}
-
 function closeAgents( finished ) {
-    if ( keepaliveHttpsAgent ) {
-	Object.keys( keepaliveHttpsAgent.sockets ).map( function( host ) {
-            keepaliveHttpsAgent.sockets[ host ].map( function( socket ) {
-		socket.end();
-            });
+    Object.keys( http.globalAgent.sockets ).map( function( host ) {
+	http.globalAgent.sockets[ host ].map( function( socket ) {
+	    socket.end();
 	});
-    }
-    if ( keepaliveHttpAgent ) {
-	Object.keys( keepaliveHttpAgent.sockets ).map( function( host ) {
-            keepaliveHttpAgent.sockets[ host ].map( function( socket ) {
-		socket.end();
-            });
+    });
+    Object.keys( https.globalAgent.sockets ).map( function( host ) {
+	https.globalAgent.sockets[ host ].map( function( socket ) {
+	    socket.end();
 	});
-    }
-    if ( finished )  {
+    });
+    if ( finished ) {
 	finished();
     }
 }
@@ -473,7 +454,7 @@ function prepareCache( finished ) {
     printLog( 'Preparing cache...' );
     cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
     mkdirp( cacheDirectory + 'm/', function() {
-        fs.writeFileSync( cacheDirectory + 'ref', "42" );
+        fs.writeFileSync( cacheDirectory + 'ref', '42' );
 	finished();
     });
 }
@@ -596,7 +577,7 @@ function buildZIM( finished ) {
 
 function endProcess( finished ) {
     printLog( 'Dumping finished with success.' );
-    closeAgents( finished );
+    finished();
 }
 
 function drainDownloadFileQueue( finished ) {
@@ -663,6 +644,7 @@ function saveRedirects( finished ) {
 		process.exit( 1 );
 	    } else {
 		if ( target ) {
+		    printLog( 'Writing redirect ' + redirectId + ' (to '+ target + ')...' );
 		    var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
 						   target : getArticleUrl( target ) } );
 		    fs.writeFile( getArticlePath( redirectId ), html, finished );
@@ -1108,7 +1090,7 @@ function saveArticles( finished ) {
 		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
 		var date = new Date( timestamp );
-		div.innerHTML = footerTemplate({ articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") });
+		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 		finished( null, htmlTemplateDoc, articleId );
 	    }
@@ -1123,7 +1105,6 @@ function saveArticles( finished ) {
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	printLog( 'Getting article from ' + articleUrl );
-	printLog( 'Download media queue size [' + downloadFileQueue.length() + '] & Optimization media queue size [' + optimizationQueue.length() + ']' );
 	setTimeout( downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
 	    var html = content.toString();
 	    if ( html ) {
@@ -1226,7 +1207,7 @@ function saveJavascript( finished ) {
 				       }
 				       
 				       if ( url ) {
-					   url = getFullUrl( url ).replace("debug=false", "debug=true");
+					   url = getFullUrl( url ).replace( 'debug=false', 'debug=true' );
 					   printLog( 'Downloading javascript from ' + url );
 					   downloadContent( url, function( content, responseHeaders ) {
 					       fs.appendFile( javascriptPath, '\n' + munge_js( content.toString() ) + '\n', function ( error ) {
@@ -1248,7 +1229,7 @@ function saveJavascript( finished ) {
 			   finished();
 		       });
 	});
-	printLog( 'Listener (to load javascript added to window...' );
+	printLog( 'Listener (to load javascript added to window)...' );
     });
 }
 
@@ -1338,7 +1319,6 @@ function saveStylesheet( finished ) {
 		console.error( 'Error by CSS dependencies: ' + error );
 		process.exit( 1 );
 	    } else {
-		
 		downloadCSSFileQueue.drain = function( error ) {
 		    if ( error ) {
 			console.error( 'Error by CSS medias: ' + error );
@@ -1355,39 +1335,39 @@ function saveStylesheet( finished ) {
 }
 
 /* Get ids */
-function getArticleIds( finished ) {
-
-    /* Get redirect ids given an article id */
-    var redirectQueue = async.queue( function ( articleId, finished ) {
-	if ( articleId ) {
-            printLog( 'Getting redirects for article ' + articleId + '...' );
-	    var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
-	    downloadContent( url, function( content, responseHeaders ) {
-		var body = content.toString();
-		try {
-		    if ( !JSON.parse( body )['error'] ) {
-			var values = new Array();
-			JSON.parse( body )['query']['backlinks'].map( function( entry ) {
-			    values.push( entry['title'].replace( / /g, '_' ), articleId );
-			});
-			if ( values.length ) {
-			    redisClient.hmset( redisRedirectsDatabase, values, function ( errror ) {
-				finished();
-			    });
-			} else {
+var redirectQueue = async.queue( function( articleId, finished ) {
+    if ( articleId ) {
+        printLog( 'Getting redirects for article ' + articleId + '...' );
+	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
+	downloadContent( url, function( content, responseHeaders ) {
+	    var body = content.toString();
+	    try {
+		if ( !JSON.parse( body )['error'] ) {
+		    var values = new Array();
+		    JSON.parse( body )['query']['backlinks'].map( function( entry ) {
+			values.push( entry['title'].replace( / /g, '_' ), articleId );
+		    });
+		    printLog( values.length + ' redirect(s) found for ' + articleId );
+		    if ( values.length ) {
+			redisClient.hmset( redisRedirectsDatabase, values, function ( error ) {
 			    finished();
-			}
+			});
 		    } else {
-			finished( JSON.parse( body )['error'] );
+			finished();
 		    }
-		} catch( error ) {
-		    finished( error );
+		} else {
+		    finished( JSON.parse( body )['error'] );
 		}
-	    });
-	} else {
-	    finished();
-	}
-    }, speed * 5 );
+	    } catch( error ) {
+		finished( error );
+	    }
+	});
+    } else {
+	finished();
+    }
+}, speed * 3 );
+
+function getArticleIds( finished ) {
 
     function drainRedirectQueue( finished ) {
 	redirectQueue.drain = function( error ) {
@@ -1470,8 +1450,8 @@ function getArticleIds( finished ) {
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
-		printLog( "Redirect queue size: " + redirectQueue.length() );
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
+		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
@@ -1615,32 +1595,35 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-//	agent: port == 443 ? keepaliveHttpsAgent : keepaliveHttpAgent
+	agent: false
     };
 }
 
 function downloadContent( url, callback, var1, var2, var3 ) {
     var retryCount = 0;
     var responseHeaders = {};
-    var options = getRequestOptionsFromUrl( url, true );
 
     printLog( 'Downloading ' + decodeURI( url ) + '...' );
     async.retry(
 	5,
 	function( finished ) {
+	    var request;
 	    var calledFinished = false;
 	    function callFinished( timeout, message, data ) {
 		if ( !calledFinished ) {		    
 		    calledFinished = true;
 		    if ( message ) {
 			console.error( message );
+			request.abort();
 		    }
+		    request = undefined;
 		    setTimeout( finished, timeout, message, data );
 		}
 	    }
 	    
 	    retryCount++;
-	    ( options.protocol == 'http:' ? http : https ).get( options, function( response ) {
+	    var options = getRequestOptionsFromUrl( url, true );
+	    request = ( options.protocol == 'http:' ? http : https ).get( options, function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var chunks = new Array();
 		    response.on( 'data', function ( chunk ) {
@@ -1662,31 +1645,34 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			} 
 		    });
 		} else {
-		    callFinished( 0,  'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
+		    callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
 		}
-	    })
-	    .on( 'error', function( error ) {
-		this.socket.emit( 'agentRemove' );
-		this.socket.destroy();
+	    });
+	    request.on( 'error', function( error ) {
 		callFinished( 10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' ( ' + error + ' ).' );
-	    })
-	    .on( 'socket', function ( socket ) {
+	    });
+	    request.on( 'socket', function ( socket ) {
 		if ( !socket.custom ) {
 		    socket.custom = true;
-		    socket.addListener( 'timeout', function() {
-			socket.emit( 'agentRemove' );
-			socket.end();
-		    }); 
 		    socket.addListener( 'error', function( error ) {
+			console.error( 'Socket timeout' );
 			socket.emit( 'agentRemove' );
 			socket.destroy();
+			if ( request ) { request.emit( 'error' ); }
+		    });
+		    socket.addListener( 'timeout', function( error ) {
+			console.error( 'Socket error' );
+			socket.emit( 'agentRemove' );
+			socket.end();
+			if ( request ) { request.emit( 'error' ); }
 		    });
 		}
 	    });
+	    request.setTimeout( 30000 * retryCount );
 	},
 	function ( error, data ) {
 	    if ( error ) {
-		console.error( "Absolutly unable to retrieve async. URL. " + error );
+		console.error( 'Absolutly unable to retrieve async. URL: ' + error );
 
 		/* Unfortunately we can not do that because there are
 		 * article which simply will not be parsed correctly by
@@ -1707,14 +1693,15 @@ function downloadFileAndCache( url, callback ) {
     /* Check if we have already met this image during this dumping process */
     redisClient.hget( redisMediaIdsDatabase, filenameBase, function( error, r_width ) {
 
-	/* Quickly set the redis entry if necessary */
+	/* If no redis entry */
 	if ( error || !r_width || r_width < width ) {
 
+	    /* Set the redis entry if necessary */
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function( error ) {
 		var mediaPath = getMediaPath( url );
 		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + 
 		    ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
-		var cacheHeadersPath = cachePath + ".head";
+		var cacheHeadersPath = cachePath + '.head';
 		var toDownload = false;
 		
 		/* Check if the file exists in the cache */
@@ -1741,14 +1728,18 @@ function downloadFileAndCache( url, callback ) {
 		    toDownload = true;
 		}
 		
-		/* Download the file if necessayr */
+		/* Download the file if necessary */
 		if ( toDownload ) {
-		    downloadFile( url, cachePath, true, function() {
-			printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
-			fs.symlink( cachePath, mediaPath, function( error ) {
-			    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
+		    downloadFile( url, cachePath, true, function( error, responseHeaders ) {
+			if ( error ) {
 			    callback();
-			});
+			} else {
+			    printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
+			    fs.symlink( cachePath, mediaPath, function( error ) {
+				fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
+				callback();
+			    });
+			}
 		    });
 		} else {
 		    printLog( 'Cache hit for ' + url );
@@ -1771,15 +1762,14 @@ function downloadFile( url, path, force, callback ) {
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    downloadContent( url, function( content, responseHeaders ) {
-		try {
-		    if ( content ) {
-			fs.writeFileSync( path, content );
-			optimizationQueue.push( {path: path, size: content.length } );
-		    }
-		} catch( error ) {
-		    console.error( 'Unable to write ' + path + ' (' + url + ')' );
-		}
-		callback();
+		    fs.writeFile( path, content, function( error ) {
+			if ( error ) {
+			    console.error( 'Unable to write ' + path + ' (' + url + ')' );
+			} else {
+			    optimizationQueue.push( {path: path, size: content.length } );
+			}
+			callback( error, responseHeaders );
+		    });
 	    });
 	}
     });
@@ -2076,13 +2066,13 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	
 	if ( !nostdout ) {
 	    proc.stdout.on( 'data', function ( data ) {
-		printLog( String( data ).replace(/[\n\r]/g, '') );
+		printLog( data .toString().replace( /[\n\r]/g, '' ) );
 	    });
 	}
 	
 	if ( !nostderr ) {
 	    proc.stderr.on( 'data', function ( data ) {
-		console.error( String( data ).replace(/[\n\r]/g, '') );
+		console.error( data.toString().replace( /[\n\r]/g, '' ) );
 	    });
 	}
 	
@@ -2095,8 +2085,8 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 }
 
 function validateEmail( email ) { 
-    var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test( email );
+    var emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return emailRegex.test( email );
 }
 
 function touch( path, callback ) {
