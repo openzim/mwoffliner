@@ -248,15 +248,23 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
         var proc = spawn( command, args );
 
 	if ( !nostdout ) {
-            proc.stdout.on( 'data', function ( data ) {
-		console.log( String( data ).replace(/[\n\r]/g, '') );
-            });
+            proc.stdout
+		.on( 'data', function ( data ) {
+		    console.log( String( data ).replace(/[\n\r]/g, '') );
+		})
+		.on( 'error', function ( error ) {
+		    console.error( 'STDOUT output error: ' + error );
+		});
 	}
 
         if ( !nostderr ) {
-            proc.stderr.on( 'data', function ( data ) {
-		console.error( String( data ).replace(/[\n\r]/g, '') );
-            });
+            proc.stderr
+		.on( 'data', function ( data ) {
+		    console.error( String( data ).replace(/[\n\r]/g, '') );
+		})
+		.on( 'error', function ( error ) {
+		    console.error( 'STDERR output error: ' + error );
+		});
 	}
 
         proc.on( 'close', function ( code ) {
