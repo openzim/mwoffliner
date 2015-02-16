@@ -295,10 +295,10 @@ async.series(
 	}
     ],
     function( error ) {
-	printLog( 'Flushing redis database...' );
+	printLog( 'Flushing redis databases...' );
 	redisClient.flushdb();
 	
-	printLog( 'Quitting redis database...' );
+	printLog( 'Quitting redis databases...' );
 	redisClient.quit();
 	
 	printLog( 'Killing regular timer...' );
@@ -1343,13 +1343,15 @@ var redirectQueue = async.queue( function( articleId, finished ) {
 	    var body = content.toString();
 	    try {
 		if ( !JSON.parse( body )['error'] ) {
-		    var values = new Array();
+		    var redirects = new Object();
+		    var redirectsCount = 0;
 		    JSON.parse( body )['query']['backlinks'].map( function( entry ) {
-			values.push( entry['title'].replace( / /g, '_' ), articleId );
+			redirects[ entry['title'].replace( / /g, '_' ) ] = articleId;
+			redirectsCount++;
 		    });
-		    printLog( values.length + ' redirect(s) found for ' + articleId );
-		    if ( values.length ) {
-			redisClient.hmset( redisRedirectsDatabase, values, function ( error ) {
+		    printLog( redirectsCount + ' redirect(s) found for ' + articleId );
+		    if ( redirectsCount ) {
+			redisClient.hmset( redisRedirectsDatabase, redirects, function ( error ) {
 			    finished();
 			});
 		    } else {
@@ -1595,7 +1597,7 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	agent: false
+	keepAlive: true
     };
 }
 
@@ -1654,13 +1656,13 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    request.on( 'socket', function ( socket ) {
 		if ( !socket.custom ) {
 		    socket.custom = true;
-		    socket.addListener( 'error', function( error ) {
+		    socket.on( 'error', function( error ) {
 			console.error( 'Socket timeout' );
 			socket.emit( 'agentRemove' );
 			socket.destroy();
 			if ( request ) { request.emit( 'error' ); }
 		    });
-		    socket.addListener( 'timeout', function( error ) {
+		    socket.on( 'timeout', function( error ) {
 			console.error( 'Socket error' );
 			socket.emit( 'agentRemove' );
 			socket.end();
@@ -2065,15 +2067,23 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	var proc = spawn( command, args );
 	
 	if ( !nostdout ) {
-	    proc.stdout.on( 'data', function ( data ) {
-		printLog( data .toString().replace( /[\n\r]/g, '' ) );
-	    });
+	    proc.stdout
+		.on( 'data', function ( data ) {
+		    printLog( data .toString().replace( /[\n\r]/g, '' ) );
+		})
+		.on( 'error', function ( error ) {
+		    console.error( 'STDOUT output error: ' + error );
+		});
 	}
 	
 	if ( !nostderr ) {
-	    proc.stderr.on( 'data', function ( data ) {
-		console.error( data.toString().replace( /[\n\r]/g, '' ) );
-	    });
+	    proc.stderr
+		.on( 'data', function ( data ) {
+		    console.error( data.toString().replace( /[\n\r]/g, '' ) );
+		})
+		.on( 'error', function ( error ) {
+		    console.error( 'STDERR output error: ' + error );
+		});
 	}
 	
 	proc.on( 'close', function ( code ) {
