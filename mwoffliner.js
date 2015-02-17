@@ -1652,8 +1652,8 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (response error: ' + response.statusCode + ').' );
 		    });
 		} else {
-		    socket.emit( 'agentRemove' );
-		    socket.destroy();
+		    response.socket.emit( 'agentRemove' );
+		    response.socket.destroy();
 		    callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
 		}
 	    });
