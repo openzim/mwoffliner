@@ -242,10 +242,14 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 }
 
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
-    printLog( 'Executing command: ' + command + ' ' + args.join( ' ' ) ); 
+    printLog( 'Executing command: ' + command + ' ' + args.join( ' ' ) );
 
     try {
-        var proc = spawn( command, args );
+        var proc = spawn( command, args )
+	    .on( 'error', function( error ) { 
+		console.error( error );
+		process.exit( 1 );
+	    });
 
 	if ( !nostdout ) {
             proc.stdout

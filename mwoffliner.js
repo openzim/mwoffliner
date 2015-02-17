@@ -412,7 +412,7 @@ var downloadFileQueue = async.queue( function ( url, finished ) {
 function regularTimerCallback() {
     printLog( 'DMQ=' + downloadFileQueue.length() + ', OMQ=' + optimizationQueue.length() + ', RQ=' + redirectQueue.length() );
     redisClient.ping();
-    exec( 'sync' ).on( 'error', function( error ) { console.log( error ) });
+    exec( 'sync' ).on( 'error', function( error ) { console.error( error ) });
 }
 
 function checkResume( finished ) {
@@ -569,7 +569,7 @@ function buildZIM( finished ) {
 					  rimraf( htmlRootPath, finished );
 				      }
 				  }, !verbose, !verbose);	
-	}).on( 'error', function( error ) { console.log( error ) });
+	}).on( 'error', function( error ) { console.error( error ) });
     } else {
 	finished();
     }
@@ -1899,7 +1899,7 @@ function saveFavicon( finished ) {
 			finished( error );
                     });
 		});
-	    }).on( 'error', function( error ) { console.log( error ) });
+	    }).on( 'error', function( error ) { console.error( error ) });
 	});
     });
 }
@@ -2071,7 +2071,8 @@ function printLog( msg ) {
 
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
     try {
-	var proc = spawn( command, args ).on( 'error', function( error ) { console.log( error ) });
+	var proc = spawn( command, args )
+	    .on( 'error', function( error ) { console.error( error ) });
 	
 	if ( !nostdout ) {
 	    proc.stdout
@@ -2111,7 +2112,7 @@ function touch( path, callback ) {
 	if ( callback ) {
 	    callback();
 	}
-    }).on( 'error', function( error ) { console.log( error ) });
+    }).on( 'error', function( error ) { console.error( error ) });
 }
 
 process.on( 'uncaughtException', function( error ) {
