@@ -2072,7 +2072,10 @@ function printLog( msg ) {
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
     try {
 	var proc = spawn( command, args )
-	    .on( 'error', function( error ) { console.error( error ) });
+	    .on( 'error', function( error ) { 
+		console.error( 'Error in executeTransparently(), ' + error );
+		process.exit( 1 );
+	    });
 	
 	if ( !nostdout ) {
 	    proc.stdout

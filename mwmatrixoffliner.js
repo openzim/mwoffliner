@@ -26,7 +26,6 @@ var spawn = require('child_process').spawn;
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
 	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
-    .options( ['project', 'language', 'tmpDirectory', 'outputDirectory', 'resume', 'languageInverter', 'projectInverter', 'speed'] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'language', 'Language to dump (regex)')
     .describe( 'languageInverter', 'If given, select languages *not* matching the --language regex')
@@ -247,7 +246,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
     try {
         var proc = spawn( command, args )
 	    .on( 'error', function( error ) { 
-		console.error( error );
+		console.error( 'Error in executeTransparently(), ' + error );
 		process.exit( 1 );
 	    });
 
