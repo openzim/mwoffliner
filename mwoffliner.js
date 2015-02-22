@@ -196,6 +196,7 @@ var langIso3 = 'eng';
 var articleIds = {};
 var namespaces = {};
 var webUrl = mwUrl + ( argv.mwWikiPath ? argv.mwWikiPath : 'wiki' ) + '/';
+var webUrlHost =  urlParser.parse( webUrl ).host;
 var apiUrl = mwUrl + ( argv.mwApiPath ? argv.mwApiPath : 'w/api.php' ) + '?';
 var nopic = false;
 var nozim = false;
@@ -1252,21 +1253,21 @@ function saveStylesheet( finished ) {
     }, speed );
 
     /* Take care to download CSS files */
-    var downloadCSSQueue = async.queue( function ( url, finished ) {
+    var downloadCSSQueue = async.queue( function ( cssUrl, finished ) {
 
-	if ( url ) {
+	if ( cssUrl ) {
 	    var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
 	    var cssDataUrlRegex = new RegExp( '^data' );
 	    
-	    printLog( 'Downloading CSS from ' + decodeURI( url ) );
-	    downloadContent( url, function( content, responseHeaders ) {
+	    printLog( 'Downloading CSS from ' + decodeURI( cssUrl ) );
+	    downloadContent( cssUrl, function( content, responseHeaders ) {
 		var body = content.toString();
 
 		/* Downloading CSS dependencies */
 		var match;
 		var rewrittenCss = body;
 		
-		while (match = cssUrlRegexp.exec( body ) ) {
+		while ( match = cssUrlRegexp.exec( body ) ) {
 		    var url = match[1];
 		    
 		    /* Avoid 'data', so no url dependency */
@@ -1277,7 +1278,7 @@ function saveStylesheet( finished ) {
 			rewrittenCss = rewrittenCss.replace( url, filename );
 			
 			/* Need a rewrite if url doesn't include protocol */
-			url = getFullUrl( url );
+			url = getFullUrl( url, cssUrl );
 			
 			/* Download CSS dependency, but avoid duplicate calls */
 			if ( !urlCache.hasOwnProperty( url ) ) {
@@ -1518,12 +1519,21 @@ function createSubDirectories( finished ) {
 }
 
 /* Multiple developer friendly functions */
-function getFullUrl( url ) {
-    if ( ! urlParser.parse( url, false, true ).protocol ) {
-	var protocol = urlParser.parse( url, false, true ).protocol || 'http:';
-	var host = urlParser.parse( url, false, true ).host || urlParser.parse( webUrl ).host;
-	var path = urlParser.parse( url, false, true ).path;
-	url = protocol + '//' + host + path;
+function getFullUrl( url, baseUrl ) {
+    var urlObject = urlParser.parse( url, false, true );
+
+    if ( ! urlObject.protocol ) {
+
+	var baseUrlObject = baseUrl ? urlParser.parse( baseUrl, false, true ) : {};
+	urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
+	urlObject.host = urlObject.host || baseUrlObject.host || webUrlHost;
+
+	/* Relative path */
+	if ( urlObject.pathname.indexOf( '/' ) != 0 && baseUrlObject.pathname ) {
+	    urlObject.pathname = pathParser.dirname( baseUrlObject.pathname ) + '/' + urlObject.pathname;
+	}
+
+	url = urlParser.format( urlObject );
     }
 
     return url;
