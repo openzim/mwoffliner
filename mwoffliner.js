@@ -1934,18 +1934,20 @@ function getMainPage( finished ) {
 	fs.writeFile( htmlRootPath + '/index.html', doc.documentElement.outerHTML, finished );
     }
     
+    /* We have to mirror the main page even if this is not
+     * in a namespace to mirror */
     function retrieveMainPage( finished ) {
 	printLog( 'Getting main page...' );
-	downloadContent( webUrl, function( content, responseHeaders ) {
+	downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {
 	    var body = content.toString();
-	    var titleRegex = /\"wgPageName\"\:\"(.*?)\"/;
-	    var titleParts = titleRegex.exec( body );
-	    if ( titleParts[ 1 ] ) {
-		/* We have to mirror the main page even if this is not
-		 * in a namespace to mirror */
-		articleIds[ titleParts[ 1 ] ] = '';
-		var html = redirectTemplate( { title: titleParts[ 1 ].replace( /_/g, ' ' ),
-					       target : getArticleBase( titleParts[ 1 ], true ) } );
+	    var entries = JSON.parse( body )['query']['general'];
+	    var mainPage = entries['mainpage'];
+
+	    if ( mainPage ) {
+		var mainPageId = mainPage.replace( / /g, '_' );
+		articleIds[ mainPageId ] = '';
+		var html = redirectTemplate( { title: mainPage,
+					       target : getArticleBase( mainPageId, true ) } );
 		fs.writeFile( htmlRootPath + '/index.html', html, finished );
 	    } else {
 		console.error( 'Unable to get the main page' );
