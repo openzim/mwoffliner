@@ -29,6 +29,7 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
+require( 'trace' );
 
 /************************************/
 /* Command Parsing ******************/
@@ -764,7 +765,7 @@ function saveArticles( finished ) {
 	    
 	    if ( !nopic && imageNode && image ) {
 		var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
-		var imageNodeTypeof = imageNode.getAttribute( 'typeof' );
+		var imageNodeTypeof = imageNode.getAttribute( 'typeof' ) || '';
 		
 		if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
 		    var description = imageNode.getElementsByTagName( 'figcaption' )[0];
@@ -1144,7 +1145,7 @@ function saveArticles( finished ) {
 function isMirrored( id ) {
     var namespaceNumber = 0;
 
-    if ( id.indexOf( ':' ) >= 0 ) {
+    if ( id && id.indexOf( ':' ) >= 0 ) {
 	var tmpNamespaceNumber = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
 	if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
 	    return true;
@@ -1529,7 +1530,7 @@ function getFullUrl( url, baseUrl ) {
 	urlObject.host = urlObject.host || baseUrlObject.host || webUrlHost;
 
 	/* Relative path */
-	if ( urlObject.pathname.indexOf( '/' ) != 0 && baseUrlObject.pathname ) {
+	if ( urlObject.pathname && urlObject.pathname.indexOf( '/' ) != 0 && baseUrlObject.pathname ) {
 	    urlObject.pathname = pathParser.dirname( baseUrlObject.pathname ) + '/' + urlObject.pathname;
 	}
 
