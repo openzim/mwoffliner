@@ -1176,7 +1176,7 @@ function saveJavascript( finished ) {
 	/* Backward compatibility for old version of jsdom */
 	var window;
 	try {
-	    window = jsdom.jsdom( html ).parentWindow;
+	    window = jsdom.jsdom( html ).parentView || jsdom.jsdom( html ).defaultView;
 	} catch ( error ) {
 	    printLog( 'Unable to call jsdom.jsdom( html ).parentWindow without crashing, try an other way.' );
 	    window = jsdom.jsdom( html ).createWindow();
