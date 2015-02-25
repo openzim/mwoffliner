@@ -235,7 +235,7 @@ var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'r
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
 var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'articleDetails';
 var redisCachedMediaToCheckDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'cachedMediaToCheck';
-var regularTimer = setInterval( regularTimerCallback, 10000 );
+var regularTimer = setInterval( regularTimerCallback, 30000 );
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
@@ -412,7 +412,7 @@ var downloadFileQueue = async.queue( function ( url, finished ) {
 /************************************/
 
 function regularTimerCallback() {
-    printLog( 'DMQ=' + downloadFileQueue.length() + ', OMQ=' + optimizationQueue.length() + ', RQ=' + redirectQueue.length() );
+    // printLog( 'DMQ=' + downloadFileQueue.length() + ', OMQ=' + optimizationQueue.length() + ', RQ=' + redirectQueue.length() );
     redisClient.ping();
     exec( 'sync' ).on( 'error', function( error ) { console.error( error ) });
 }
