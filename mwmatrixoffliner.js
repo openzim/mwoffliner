@@ -38,6 +38,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'verbose', 'Print debug information to the stdout' )
+    .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
     .strict()
     .argv;
 
@@ -73,6 +74,7 @@ var verbose = argv.verbose;
 var adminEmail = argv.adminEmail;
 var resume = argv.resume;
 var speed = argv.speed;
+var skipHtmlCache = argv.skipHtmlCache;
 
 /************************************/
 /* MAIN *****************************/
@@ -119,6 +121,7 @@ function dump( finished ) {
 					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
 					verbose ? '--verbose' : ' ',
 					resume ? '--resume' : ' ',
+					skipHtmlCache ? '--skipHtmlCache' : ' ',
 					speed ? '--speed=' + speed : ' ',
 					site.prefix ? '--prefix=' + site.prefix : ' ' ],
 				      function( executionError ) {
