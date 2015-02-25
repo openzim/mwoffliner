@@ -29,7 +29,6 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
-require( 'trace' );
 
 /************************************/
 /* Command Parsing ******************/
@@ -52,6 +51,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'verbose', 'Print debug information to the stdout' )
+    .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
     .strict()
     .argv;
 
@@ -129,6 +129,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 /* Verbose */
 var verbose = argv.verbose;
+
+/* Cache strategy */
+var skipHtmlCache = argv.skipHtmlCache;
 
 /* Should we keep ZIM file generation if ZIM file already exists */
 var resume = argv.resume;
@@ -1107,7 +1110,7 @@ function saveArticles( finished ) {
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
 	printLog( 'Getting article from ' + articleUrl );
-	setTimeout( downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
+	setTimeout( skipHtmlCache ? downloadContent : downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
 	    var html = content.toString();
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
