@@ -441,7 +441,7 @@ function checkResume( finished ) {
 
 function closeAgents( finished ) {
     http.globalAgent.destroy();
-    http.globalAgent.destroy();
+    https.globalAgent.destroy();
     if ( finished ) {
 	finished();
     }
