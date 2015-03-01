@@ -1581,8 +1581,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 		});
 	    } else {
 		printLog( 'Cache hit for ' + url + ' (' + cachePath + ')' );
-		touch( cachePath );
-		touch( cacheHeadersPath );
+		touch( cachePath, cacheHeadersPath );
 		callback( results[0], results[1], var1, var2, var3 );
 	    }
 	}
@@ -1730,8 +1729,7 @@ function downloadFileAndCache( url, callback ) {
 			if ( !fs.existsSync( mediaPath ) ) {
 			    fs.symlinkSync( cachePath, mediaPath );
 			}
-			touch( cachePath );
-			touch( cacheHeadersPath );
+			touch( cachePath, cacheHeadersPath );
 			if ( responseHeaders.width == width ) {
 			    redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase );
 			} else {
@@ -2118,12 +2116,12 @@ function validateEmail( email ) {
     return emailRegex.test( email );
 }
 
-function touch( path, callback ) {
-    exec( 'touch  -c "' + path + '"', function( error ) {
-	if ( callback ) {
-	    callback();
-	}
-    }).on( 'error', function( error ) { console.error( error ) });
+function touch( paths ) {
+    var currentDate = Date.now();
+    paths = paths instanceof Array ? paths : [paths] 
+    paths.map( function( path ) {
+	fs.utimes( path, currentDate, currentDate );
+    });
 }
 
 process.on( 'uncaughtException', function( error ) {
