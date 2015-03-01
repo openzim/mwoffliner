@@ -1199,7 +1199,7 @@ function saveJavascript( finished ) {
 				       var script = scripts[ scriptIncrementor ];
 				       var url = script.getAttribute( 'src' );
 				       var munge_js = function( txt ) {
-					   txt = txt.replace(RegExp("//bits.wikimedia.org/.*.wikipedia.org/load.php", "g"), "../../../../../js/local.js");
+					   txt = txt.replace( RegExp( '//bits.wikimedia.org/.*.wikipedia.org/load.php', 'g' ), javascriptDirectory + '/local.js' );
 					   return txt;
 				       }
 				       
