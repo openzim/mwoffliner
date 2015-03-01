@@ -440,16 +440,8 @@ function checkResume( finished ) {
 }
 
 function closeAgents( finished ) {
-    Object.keys( http.globalAgent.sockets ).map( function( host ) {
-	http.globalAgent.sockets[ host ].map( function( socket ) {
-	    socket.end();
-	});
-    });
-    Object.keys( https.globalAgent.sockets ).map( function( host ) {
-	https.globalAgent.sockets[ host ].map( function( socket ) {
-	    socket.end();
-	});
-    });
+    http.globalAgent.destroy();
+    http.globalAgent.destroy();
     if ( finished ) {
 	finished();
     }
