@@ -1701,7 +1701,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 
 function downloadFileAndCache( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
-    var filenameBase = (parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ));
+    var filenameBase = ( parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ) );
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || INFINITY_WIDTH;
 
     /* Check if we have already met this image during this dumping process */
@@ -1818,9 +1818,9 @@ function getMediaBase( url, escape ) {
 
     var filenameFirstVariant = parts[2];
     var filenameSecondVariant = parts[5] + parts[6] + ( parts[7] || '' );
-    var filename = filenameFirstVariant.length > filenameSecondVariant.length ?
-        filenameFirstVariant : filenameSecondVariant ;
-
+    var filename = myDecodeURIComponent( filenameFirstVariant.length > filenameSecondVariant.length ?
+					 filenameFirstVariant : filenameSecondVariant );
+    
     /* Need to shorten the file due to filesystem limitations */
     if ( unicodeCutter.getBinarySize( filename ) > 249 ) {
 	var ext = pathParser.extname( filename ).split( '.' )[1] || '';
