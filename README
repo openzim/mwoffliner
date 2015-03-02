@@ -13,6 +13,8 @@ You need also a redis server correctly configured and listening to
 image size: jpegoptim, advdef, gifsicle, pngquant. You also need
 imagemagick, in particular the 'convert' tool.
 
+We recommend also to use a DNS cache like nscd.
+
 One time you have done this, you should be able to start the tool with
 ./mwoffliner.js and see the usage() for more details.
 
