@@ -1398,12 +1398,19 @@ function getArticleIds( finished ) {
 		    values.push( entry['title'], entry['revisions'][0]['timestamp'] );
 		    redirectQueueValues.push( entry['title'] );
 		}
-		next = json['query-continue'] ? json['query-continue']['allpages']['gapcontinue'] : undefined;
 	    });
 	    if ( redirectQueueValues.length )
 		redirectQueue.push( redirectQueueValues );
 	    if ( values.length )
 		redisClient.hmset( redisArticleDetailsDatabase, values );
+
+	    // get continue parameters from 'query-continue'
+	    var continueHash = json['query-continue'] && json['query-continue']['allpages'];
+	    if ( continueHash ) {
+		for ( var key in continueHash ) {
+		    next += '&' + key + '=' + encodeURIComponent( continueHash[key] );
+		}
+	    }
 	} catch ( error ) {
 	    console.error( 'Unable to parse JSON and redirects: '  + error );
 	}
@@ -1447,8 +1454,8 @@ function getArticleIds( finished ) {
 	
 	async.doWhilst(
 	    function ( finished ) {
-		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next ? ' (from ' + ( namespace ? namespace + ':' : '') + next  + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json&gapcontinue=' + encodeURIComponent( next ) + '&rawcontinue=';
+		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split('=')[1] + ')' : '' ) + '...' );
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
