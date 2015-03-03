@@ -483,6 +483,15 @@ function randomString( len ) {
     return randomString;
 }
 
+function hrefTargetId( path ) {
+    var wikiPath = urlParser.parse(webUrl).pathname;
+    var targetId = null;
+    if ( path.indexOf( wikiPath ) == 0 || path.indexOf( './' ) == 0 ) {
+	targetId = myDecodeURIComponent( path.slice(path.indexOf( './' ) == 0 ? 2 : wikiPath.length) );
+    }
+    return targetId
+}
+
 function computeFilenameRadical( generic ) {
     var radical;
     
@@ -704,9 +713,8 @@ function saveArticles( finished ) {
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
 		    var pathname = urlParser.parse( href, false, true ).pathname || '';
-		    var keepLink =
-			pathname.indexOf( '/wiki/' ) == 0 || pathname.indexOf( './' ) == 0 ?
-			isMirrored( myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) ) ) : false;
+		    var targetId = hrefTargetId( pathname );
+		    var keepLink = targetId != null && isMirrored( targetId );
 		    
                     /* Under certain condition it seems that this is possible
                      * to have parentNode == undefined, in this case this
@@ -923,8 +931,8 @@ function saveArticles( finished ) {
 			}
 		    }
 		} else {
-		    if ( pathname.indexOf( '/wiki/' ) == 0 || pathname.indexOf( './' ) == 0 ) {
-			var targetId = myDecodeURIComponent( href.replace( /^(\/wiki\/|\.\/)/, '' ) );
+		    var targetId = hrefTargetId( pathname );
+		    if ( targetId ) {
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
 			    finished();
