@@ -199,8 +199,11 @@ var langIso2 = 'en';
 var langIso3 = 'eng';
 var articleIds = {};
 var namespaces = {};
-var webUrl = mwUrl + ( argv.mwWikiPath ? argv.mwWikiPath : 'wiki' ) + '/';
+var mwWikiPath = argv.mwWikiPath ? argv.mwWikiPath : 'wiki';
+var webUrl = mwUrl + mwWikiPath + '/';
 var webUrlHost =  urlParser.parse( webUrl ).host;
+var webUrlPath = urlParser.parse( webUrl ).pathname;
+var mwApiPath = argv.mwApiPath ? argv.mwApiPath : 'w/api.php';
 var apiUrl = mwUrl + ( argv.mwApiPath ? argv.mwApiPath : 'w/api.php' ) + '?';
 var nopic = false;
 var nozim = false;
@@ -483,13 +486,12 @@ function randomString( len ) {
     return randomString;
 }
 
-function hrefTargetId( path ) {
-    var wikiPath = urlParser.parse(webUrl).pathname;
-    var targetId = null;
-    if ( path.indexOf( wikiPath ) == 0 || path.indexOf( './' ) == 0 ) {
-	targetId = myDecodeURIComponent( path.slice(path.indexOf( './' ) == 0 ? 2 : wikiPath.length) );
+function extractTargetIdFromHref( href ) {
+    if ( href.indexOf( './' ) == 0 ) {
+	return myDecodeURIComponent( href.substr( 2 ) );
+    } else if ( href.indexOf( webUrlPath ) == 0 ) {
+	return myDecodeURIComponent( href.substr( webUrlPath.length ) );
     }
-    return targetId
 }
 
 function computeFilenameRadical( generic ) {
@@ -713,8 +715,8 @@ function saveArticles( finished ) {
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
 		    var pathname = urlParser.parse( href, false, true ).pathname || '';
-		    var targetId = hrefTargetId( pathname );
-		    var keepLink = targetId != null && isMirrored( targetId );
+		    var targetId = extractTargetIdFromHref( pathname );
+		    var keepLink = targetId && isMirrored( targetId );
 		    
                     /* Under certain condition it seems that this is possible
                      * to have parentNode == undefined, in this case this
@@ -931,7 +933,7 @@ function saveArticles( finished ) {
 			}
 		    }
 		} else {
-		    var targetId = hrefTargetId( pathname );
+		    var targetId = extractTargetIdFromHref( pathname );
 		    if ( targetId ) {
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
