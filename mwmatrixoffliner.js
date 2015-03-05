@@ -123,7 +123,7 @@ function dump( finished ) {
 					resume ? '--resume' : ' ',
 					skipHtmlCache ? '--skipHtmlCache' : ' ',
 					speed ? '--speed=' + speed : ' ',
-					site.prefix ? '--prefix=' + site.prefix : ' ' ],
+					site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : ' ' ],
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );
@@ -154,9 +154,9 @@ function loadMatrix( finished ) {
 			    if ( site.closed === undefined ) {
 				site.lan = 'en';
 				if ( site.code == 'species' ) {
-				    site.prefix = 'wikispecies_en_all';
+				    site.filenamePrefix = 'wikispecies_en_all';
 				} else {
-				    site.prefix = site.dbname + '_en_all';
+				    site.filenamePrefix = site.dbname + '_en_all';
 				}
 				mediawikis.push( site );
 			    }
