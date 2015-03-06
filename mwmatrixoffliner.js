@@ -27,6 +27,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
 	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
+    .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
     .describe( 'language', 'Language to dump (regex)')
     .describe( 'languageInverter', 'If given, select languages *not* matching the --language regex')
     .describe( 'mwURL', 'Mediawiki API URL')
@@ -75,6 +76,7 @@ var adminEmail = argv.adminEmail;
 var resume = argv.resume;
 var speed = argv.speed;
 var skipHtmlCache = argv.skipHtmlCache;
+var keepHtml = argv.keepHtml;
 
 /************************************/
 /* MAIN *****************************/
@@ -122,6 +124,7 @@ function dump( finished ) {
 					verbose ? '--verbose' : ' ',
 					resume ? '--resume' : ' ',
 					skipHtmlCache ? '--skipHtmlCache' : ' ',
+					keepHtml ? '--keepHtml' : ' ',
 					speed ? '--speed=' + speed : ' ',
 					site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : ' ' ],
 				      function( executionError ) {
