@@ -498,7 +498,7 @@ function computeFilenameRadical( generic ) {
     var radical;
     
     if ( filenamePrefix ) {
-	radical = filenamePrefix + '_';
+	radical = filenamePrefix + ( generic ? '' : '_' );
     } else {
 	radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
 	var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
