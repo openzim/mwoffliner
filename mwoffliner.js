@@ -420,7 +420,7 @@ var downloadFileQueue = async.queue( function ( url, finished ) {
 function regularTimerCallback() {
     // printLog( 'DMQ=' + downloadFileQueue.length() + ', OMQ=' + optimizationQueue.length() + ', RQ=' + redirectQueue.length() );
     redisClient.ping();
-    exec( 'sync' ).on( 'error', function( error ) { console.error( error ) });
+    //exec( 'sync' ).on( 'error', function( error ) { console.error( error ) });
 }
 
 function checkResume( finished ) {
