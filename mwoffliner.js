@@ -687,8 +687,8 @@ function saveArticles( finished ) {
 	try {
 	    finished( null, domino.createDocument( html ), articleId );
 	} catch ( error ) {
-	    console.error( 'Crash by parsing ' + articleId );
-	    console.error( error );
+	    console.error( 'Crash while parsing ' + articleId );
+	    console.error( error.stack );
 	    process.exit( 1 );
 	}
     }
