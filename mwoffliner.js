@@ -487,10 +487,16 @@ function randomString( len ) {
 }
 
 function extractTargetIdFromHref( href ) {
-    if ( href.indexOf( './' ) == 0 ) {
-	return myDecodeURIComponent( href.substr( 2 ) );
-    } else if ( href.indexOf( webUrlPath ) == 0 ) {
-	return myDecodeURIComponent( href.substr( webUrlPath.length ) );
+    try {
+	var pathname = urlParser.parse( href, false, true ).pathname || '';
+	if ( pathname.indexOf( './' ) == 0 ) {
+	    return myDecodeURIComponent( pathname.substr( 2 ) );
+	} else if ( pathname.indexOf( webUrlPath ) == 0 ) {
+	    return myDecodeURIComponent( pathname.substr( webUrlPath.length ) );
+	}
+    } catch ( error ) {
+	console.error( 'Unable to parse href ' + href );
+	return '';
     }
 }
 
@@ -714,8 +720,7 @@ function saveArticles( finished ) {
 		    
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
-		    var pathname = urlParser.parse( href, false, true ).pathname || '';
-		    var targetId = extractTargetIdFromHref( pathname );
+		    var targetId = extractTargetIdFromHref( href );
 		    var keepLink = targetId && isMirrored( targetId );
 		    
                     /* Under certain condition it seems that this is possible
@@ -838,7 +843,6 @@ function saveArticles( finished ) {
 	function rewriteUrl( linkNode, finished ) {
 	    var rel = linkNode.getAttribute( 'rel' );
 	    var href = linkNode.getAttribute( 'href' ) || '';
-	    var pathname = urlParser.parse( href, false, true ).pathname || '';
 	    
 	    if ( !href ) {
 		deleteNode( linkNode );
@@ -896,7 +900,7 @@ function saveArticles( finished ) {
 		    
 		    /* Remove internal links pointing to no mirrored articles */
 		    else if ( rel == 'mw:WikiLink' ) {
-			var targetId = myDecodeURIComponent( href.replace( /^\.\//, '' ) );
+			var targetId = extractTargetIdFromHref( href );
 			
 			/* Deal with local anchor */
 			var localAnchor = '';
@@ -933,7 +937,7 @@ function saveArticles( finished ) {
 			}
 		    }
 		} else {
-		    var targetId = extractTargetIdFromHref( pathname );
+		    var targetId = extractTargetIdFromHref( href );
 		    if ( targetId ) {
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) );
