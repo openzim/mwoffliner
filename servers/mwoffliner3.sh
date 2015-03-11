@@ -21,5 +21,5 @@ else
     fi
 fi
 
-# Wikisource
-$MWMATRIXOFFLINER --project=wiktionary --outputDirectory=$ZIM2INDEX/wiktionary/
+# A few Wikipedias
+$MWMATRIXOFFLINER --project=wiki --language="(ar|id|ko|eo|fa|my)" --outputDirectory=$ZIM2INDEX/wikipedia/

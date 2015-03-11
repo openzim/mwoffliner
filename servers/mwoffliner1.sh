@@ -39,5 +39,5 @@ $MWMATRIXOFFLINER --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/
 # Wikispecies
 $MWMATRIXOFFLINER --project=species --outputDirectory=$ZIM2INDEX/wikispecies/
 
-# A few Wikipedias
-$MWMATRIXOFFLINER --project=wiki --language="(ar|id|ko|eo|fa|my)" --outputDirectory=$ZIM2INDEX/wikipedia/
+# Wikisource
+$MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/

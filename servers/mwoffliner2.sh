@@ -21,5 +21,5 @@ else
     fi
 fi
 
-# Wikisource
-$MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/
+# Wiktionary
+$MWMATRIXOFFLINER --project=wiktionary --outputDirectory=$ZIM2INDEX/wiktionary/
