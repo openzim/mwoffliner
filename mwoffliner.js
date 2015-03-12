@@ -504,7 +504,7 @@ function computeFilenameRadical( generic ) {
     var radical;
     
     if ( filenamePrefix ) {
-	radical = filenamePrefix + ( generic ? '' : '_' );
+	radical = filenamePrefix;
     } else {
 	radical = creator.charAt( 0 ).toLowerCase() + creator.substr( 1 ) + '_';
 	var hostParts = urlParser.parse( webUrl ).hostname.split( '.' );
@@ -516,20 +516,18 @@ function computeFilenameRadical( generic ) {
 	    }
 	}
 	radical += langSuffix;
-	
-	if ( !generic ) {
-	    radical += '_';
-	    if ( articleList ) {
-		radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
-            } else {
-		radical += 'all_';
-	    }
-	    radical += nopic ? 'nopic_' : '';
-	}
     }
 
     if ( !generic ) {
-        var date = new Date();
+	radical += '_';
+	if ( articleList ) {
+	    radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+        } else {
+	    radical += 'all_';
+	}
+	radical += nopic ? 'nopic_' : '';
+
+	var date = new Date();
 	radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
     }
     
