@@ -854,19 +854,46 @@ function saveArticles( finished ) {
 		 * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
 		 */
 		if ( rel != 'mw:WikiLink' ) {
-		    var piomapUrlRegexp = new RegExp( '.*poimap2\.php[^\"]*', 'gi' );
-		    var match = piomapUrlRegexp.exec( href );
-		    if ( match ) {
-			var latRegexp = new RegExp( '.*lat=([\\d\\.]+).*', 'gi' );
-			var lonRegexp = new RegExp( '.*lon=([\\d\\.]+).*', 'gi' );
-			match = latRegexp.exec( href );
-			var lat = match ? match[1] : undefined;
-			match = lonRegexp.exec( href );
-			var lon = match ? match[1] : undefined;
-			if ( lat && lon ) {
-			    href = 'geo:' + lat + ',' + lon;
-			    linkNode.setAttribute( 'href', href );
+		    var lat, lon;
+		    if ( /poimap2\.php/i.test(href) ) {
+			var hrefQuery = urlParser.parse(href, true).query;
+			lat = 0 + hrefQuery.lat;
+			lon = 0 + hrefQuery.lon;
+		    } else if ( /geohack\.php/i.test(href) ) {
+			var params = urlParser.parse(href, true).query.params;
+			if ( params ) {
+			    // see https://bitbucket.org/magnusmanske/geohack/src public_html geo_param.php
+			    var pieces = params.toUpperCase().split('_');
+			    var semiPieces = pieces[0].split(';');
+			    if ( semiPieces.length == 2 ) {
+				lat = semiPieces[0];
+				lon = semiPieces[1];
+			    } else {
+				var factors = [1, 60, 3600];
+				var offs = 0;
+
+				var deg = function (hemiHash) {
+				    var out = 0;
+				    for (var i = 0; i < 4 && (i + offs) < pieces.length; i++) {
+					var v = pieces[i + offs];
+					var hemiSign = hemiHash[v];
+					if (hemiSign) {
+					    offs = i + 1;
+					    break;
+					}
+					out += v / factors[i];
+				    }
+				    return out * hemiSign;
+				}
+
+				lat = deg({N:1, S:-1});
+				lon = deg({E:1, W:-1, O:1});
+			    }
 			}
+		    }
+		    if ( !isNaN(lat) && !isNaN(lon) ) {
+			href = 'geo:' + lat + ',' + lon;
+			linkNode.setAttribute( 'href', href );
 		    }
 		}
 		
