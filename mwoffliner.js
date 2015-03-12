@@ -50,6 +50,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
+    .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
     .strict()
@@ -210,6 +211,7 @@ var nozim = false;
 var filenameRadical = '';
 var htmlRootPath = '';
 var cacheDirectory = '';
+var cacheDirectory = ( argv.cacheDirectory ? argv.cacheDirectory : pathParser.resolve( process.cwd(), 'cac' ) ) + '/';
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -452,7 +454,7 @@ function closeAgents( finished ) {
 
 function prepareCache( finished ) {
     printLog( 'Preparing cache...' );
-    cacheDirectory = pathParser.resolve( process.cwd(), 'cac' ) + '/' + computeFilenameRadical( true ) + '/';
+    cacheDirectory = cacheDirectory + computeFilenameRadical( true ) + '/';
     mkdirp( cacheDirectory + 'm/', function() {
         fs.writeFileSync( cacheDirectory + 'ref', '42' );
 	finished();
