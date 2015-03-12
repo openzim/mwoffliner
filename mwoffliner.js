@@ -53,6 +53,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
+    .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
     .strict()
     .argv;
 
@@ -107,6 +108,13 @@ var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
+
+/* ZIM custom Favicon */
+var customZimFavicon = argv.customZimFavicon;
+if ( customZimFavicon && !fs.existsSync( customZimFavicon ) ) {
+    console.error( 'Path "' + customZimFavicon + '" is not a valid PNG file.' );
+    process.exit( 1 );    
+}
 
 /* If ZIM is built, should temporary HTML directory be kept */
 var keepHtml = argv.keepHtml;
@@ -1897,22 +1905,32 @@ function saveFavicon( finished ) {
     printLog( 'Saving favicon.png...' );
     var faviconPath = htmlRootPath + '/favicon.png';
     
-    downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {	
-	var body = content.toString();
-	var entries = JSON.parse( body )['query']['general'];
-	var logoUrl = entries['logo'];
-	logoUrl = urlParser.parse( logoUrl ).protocol ? logoUrl : 'http:' + logoUrl;
-	downloadFile( logoUrl, faviconPath, true, function() {
-	    var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
-	    exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
-		fs.stat( faviconPath, function( error, stats ) {
-		    optimizationQueue.push( {path: faviconPath, size: stats.size}, function() {
-			finished( error );
-                    });
-		});
-	    }).on( 'error', function( error ) { console.error( error ) });
+    function resizeFavicon( finished ) {
+	var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
+	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+	    fs.stat( faviconPath, function( error, stats ) {
+		optimizationQueue.push( {path: faviconPath, size: stats.size}, function() {
+		    finished( error );
+                });
+	    });
+	}).on( 'error', function( error ) { console.error( error ) });
+    }
+    
+    if ( customZimFavicon ) {
+	var content = fs.readFileSync( customZimFavicon );
+	fs.writeFileSync( faviconPath, content );
+	resizeFavicon( finished );
+    } else {
+	downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {	
+	    var body = content.toString();
+	    var entries = JSON.parse( body )['query']['general'];
+	    var logoUrl = entries['logo'];
+	    logoUrl = urlParser.parse( logoUrl ).protocol ? logoUrl : 'http:' + logoUrl;
+	    downloadFile( logoUrl, faviconPath, true, function() {
+		resizeFavicon( finished );
+	    });
 	});
-    });
+    }
 }
 
 function getMainPage( finished ) {
