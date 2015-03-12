@@ -1460,10 +1460,11 @@ function getArticleIds( finished ) {
 		    var body = content.toString();
 		    if ( body && body.length > 2 ) {
 			next = parseJson( body );
+			finished();
 		    } else {
 			next = '';
+			finished( 'error by retrieving ' + url );
 		    }
-		    finished();
 		});
 	    },
 	    function () { return next },
