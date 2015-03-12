@@ -1275,7 +1275,7 @@ function saveStylesheet( finished ) {
 
 		/* Downloading CSS dependencies */
 		var match;
-		var rewrittenCss = body;
+		var rewrittenCss = '\n/* start ' + cssUrl + ' */\n\n' + body + '\n/* end   ' + cssUrl + ' */\n\n';
 		
 		while ( match = cssUrlRegexp.exec( body ) ) {
 		    var url = match[1];
