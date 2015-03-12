@@ -1418,7 +1418,9 @@ function getArticleIds( finished ) {
 	    if ( values.length )
 		redisClient.hmset( redisArticleDetailsDatabase, values );
 
-	    // get continue parameters from 'query-continue'
+	    /* Get continue parameters from 'query-continue',
+	     * unfortunately old MW version does not use the same way
+	     * than recent */
 	    var continueHash = json['query-continue'] && json['query-continue']['allpages'];
 	    if ( continueHash ) {
 		for ( var key in continueHash ) {
@@ -1468,7 +1470,7 @@ function getArticleIds( finished ) {
 	
 	async.doWhilst(
 	    function ( finished ) {
-		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split('=')[1] + ')' : '' ) + '...' );
+		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
