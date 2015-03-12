@@ -38,6 +38,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
+    .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
     .strict()
@@ -121,6 +122,7 @@ function dump( finished ) {
 					'--format=', '--format=nopic',
 					outputDirectory ? '--outputDirectory=' + outputDirectory : '',
 					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
+					cacheDirectory ? '--cacheDirectory=' + cacheDirectory : '',
 					verbose ? '--verbose' : ' ',
 					resume ? '--resume' : ' ',
 					skipHtmlCache ? '--skipHtmlCache' : ' ',
