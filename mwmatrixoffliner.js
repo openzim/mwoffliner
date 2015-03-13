@@ -160,9 +160,9 @@ function loadMatrix( finished ) {
 			    if ( site.closed === undefined ) {
 				site.lan = 'en';
 				if ( site.code == 'species' ) {
-				    site.filenamePrefix = 'wikispecies_en_all';
+				    site.filenamePrefix = 'wikispecies_en';
 				} else {
-				    site.filenamePrefix = site.dbname + '_en_all';
+				    site.filenamePrefix = site.dbname + '_en';
 				}
 				mediawikis.push( site );
 			    }
