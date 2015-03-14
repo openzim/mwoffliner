@@ -61,7 +61,7 @@ optBinaries.forEach( function( cmd ) {
 
 var outputDirectory = argv.outputDirectory;
 var tmpDirectory = argv.tmpDirectory;
-var cacheDirectory = argv.cacheDirectoryDirectory;
+var cacheDirectory = argv.cacheDirectory;
 var parsoidUrl = argv.parsoidUrl[ argv.parsoidUrl.length - 1 ] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/';
 var mwUrl = argv.mwUrl[ argv.mwUrl.length - 1 ] == '/' ? argv.mwUrl : argv.mwUrl + '/';
 var webUrl = mwUrl + 'wiki/';
