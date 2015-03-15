@@ -54,6 +54,9 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
     .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
+    .describe( 'redisSocket', 'Path to Redis socket file' )
+    .describe( 'requestTimeout', 'Request timeout (in seconds)' )
+    .describe( 'removeUselessHeaders', 'Remove useless headers - which have no content under' )
     .strict()
     .argv;
 
@@ -144,6 +147,15 @@ var skipHtmlCache = argv.skipHtmlCache;
 
 /* Should we keep ZIM file generation if ZIM file already exists */
 var resume = argv.resume;
+
+/* Path to a Redis socket */
+var redisSocket = argv.redisSocket ? argv.redisSocket : '/dev/shm/redis.sock';
+
+/* Default request timeout */
+var requestTimeout = argv.requestTimeout ? argv.requestTimeout : 60;
+
+/* Remove useless headers */
+var removeUselessHeaders = argv.removeUselessHeaders;
 
 /* ZIM publisher */
 var publisher = 'Kiwix';
@@ -246,7 +258,7 @@ optBinaries.forEach( function( cmd ) {
 });
 
 /* Setup redis client */
-var redisClient = redis.createClient( '/dev/shm/redis.sock' );
+var redisClient = redis.createClient( redisSocket );
 var redisRedirectsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'redirects';
 var redisMediaIdsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'mediaIds';
 var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 10000000 ) + 1 ) + 'articleDetails';
@@ -1085,6 +1097,34 @@ function saveArticles( finished ) {
 	for ( var i = 0; i < inputNodes.length ; i++ ) {
 	    deleteNode( inputNodes[i] );
 	};
+
+    /* Remove useless headers - headers which have no content under them */
+    if (removeUselessHeaders) {
+        for ( var headerLevel = 1; headerLevel <= 5; headerLevel++) {
+            var tagName = 'h' + headerLevel;
+            var headerNodes = parsoidDoc.getElementsByTagName( tagName );
+            for ( var i = 0; i < headerNodes.length ; i++ ) {
+                var headerNode = headerNodes[i];
+                var nextElementNode = getNextSiblingElement(headerNode)
+                if ( !nextElementNode ) {
+                    // no nodes after that header node - consider useless
+                    deleteNode(headerNode);
+                } else {
+                    var nextElementNodeTag = nextElementNode.tagName.toLowerCase();
+                    if (nextElementNodeTag.length > 0 && nextElementNodeTag[0] == 'h') {
+                        var nextElementLevel = nextElementNodeTag.substr(1);
+                        // check if that is a node with level >= current level
+                        for ( var j = 1; j <= headerLevel; j++ ) {
+                            if ( nextElementLevel == j ) {
+                                deleteNode(headerNode);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 	
 	/* Clean the DOM of all uncessary code */
 	var allNodes = parsoidDoc.getElementsByTagName( '*' );
@@ -1703,12 +1743,12 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    response.on( 'error', function( error) {
 			socket.emit( 'agentRemove' );
 			socket.destroy();
-			callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (response error: ' + response.statusCode + ').' );
+			callFinished( 0, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (response error: ' + response.statusCode + ').' );
 		    });
 		} else {
 		    response.socket.emit( 'agentRemove' );
 		    response.socket.destroy();
-		    callFinished( 0, 'Unable to donwload content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
+		    callFinished( 0, 'Unable to download content [' + retryCount + '] ' + decodeURI( url ) + ' (statusCode=' + response.statusCode + ').' );
 		}
 	    });
 	    request.on( 'error', function( error ) {
@@ -1731,7 +1771,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    });
 		}
 	    });
-	    request.setTimeout( 30000 * retryCount );
+	    request.setTimeout( requestTimeout * 1000 * retryCount );
 	},
 	function ( error, data ) {
 	    if ( error ) {
@@ -2181,6 +2221,16 @@ function touch( paths ) {
     paths.map( function( path ) {
 	fs.utimes( path, currentDate, currentDate );
     });
+}
+
+function getNextSiblingElement( node )
+{
+    var sibling = node.nextSibling;
+    var nodeTypeElementNode = 1;
+    while (sibling && sibling.nodeType != nodeTypeElementNode) {
+        sibling = sibling.nextSibling;
+    }
+    return sibling;
 }
 
 process.on( 'uncaughtException', function( error ) {
