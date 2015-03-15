@@ -56,7 +56,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
     .describe( 'redisSocket', 'Path to Redis socket file' )
     .describe( 'requestTimeout', 'Request timeout (in seconds)' )
-    .describe( 'removeUselessHeaders', 'Remove useless headers - which have no content under' )
+    .describe( 'keepEmptyParagraphs', 'Keep all paragraphs, even empty ones.' )
     .strict()
     .argv;
 
@@ -154,8 +154,8 @@ var redisSocket = argv.redisSocket ? argv.redisSocket : '/dev/shm/redis.sock';
 /* Default request timeout */
 var requestTimeout = argv.requestTimeout ? argv.requestTimeout : 60;
 
-/* Remove useless headers */
-var removeUselessHeaders = argv.removeUselessHeaders;
+/* Keep empty paragraphs */
+var keepEmptyParagraphs = argv.keepEmptyParagraphs;
 
 /* ZIM publisher */
 var publisher = 'Kiwix';
@@ -1098,33 +1098,29 @@ function saveArticles( finished ) {
 	    deleteNode( inputNodes[i] );
 	};
 
-    /* Remove useless headers - headers which have no content under them */
-    if (removeUselessHeaders) {
-        for ( var headerLevel = 1; headerLevel <= 5; headerLevel++) {
-            var tagName = 'h' + headerLevel;
-            var headerNodes = parsoidDoc.getElementsByTagName( tagName );
-            for ( var i = 0; i < headerNodes.length ; i++ ) {
-                var headerNode = headerNodes[i];
-                var nextElementNode = getNextSiblingElement(headerNode)
-                if ( !nextElementNode ) {
-                    // no nodes after that header node - consider useless
-                    deleteNode(headerNode);
-                } else {
-                    var nextElementNodeTag = nextElementNode.tagName.toLowerCase();
-                    if (nextElementNodeTag.length > 0 && nextElementNodeTag[0] == 'h') {
-                        var nextElementLevel = nextElementNodeTag.substr(1);
-                        // check if that is a node with level >= current level
-                        for ( var j = 1; j <= headerLevel; j++ ) {
-                            if ( nextElementLevel == j ) {
-                                deleteNode(headerNode);
-                                break;
-                            }
-                        }
+	/* Remove empty paragraphs */
+	if ( !keepEmptyParagraphs ) {
+            for ( var level = 5; level > 0; level-- ) {
+		var paragraphNodes = parsoidDoc.getElementsByTagName( 'h' + level );
+		for ( var i = 0; i < paragraphNodes.length ; i++ ) {
+		    var paragraphNode = paragraphNodes[i];
+                    var nextElementNode = getNextSiblingElement( paragraphNode );
+
+		    /* No nodes */
+                    if ( !nextElementNode ) {
+			deleteNode( paragraphNode );
+                    } else {
+
+                        /* Delete if nextElementNode is a paragraph with <= level */
+			var nextElementNodeTag = nextElementNode.tagName.toLowerCase();
+			if ( nextElementNodeTag.length > 1 && nextElementNodeTag[0] == 'h' && 
+			     !isNaN( nextElementNodeTag[1] ) && nextElementNodeTag[1] <= level ) {
+                            deleteNode( paragraphNode );
+			}
                     }
-                }
+		}
             }
-        }
-    }
+	}
 	
 	/* Clean the DOM of all uncessary code */
 	var allNodes = parsoidDoc.getElementsByTagName( '*' );
@@ -2223,11 +2219,9 @@ function touch( paths ) {
     });
 }
 
-function getNextSiblingElement( node )
-{
+function getNextSiblingElement( node ) {
     var sibling = node.nextSibling;
-    var nodeTypeElementNode = 1;
-    while (sibling && sibling.nodeType != nodeTypeElementNode) {
+    while ( sibling && sibling.nodeType != 1 /* ELEMENT_NODE */ ) {
         sibling = sibling.nextSibling;
     }
     return sibling;
