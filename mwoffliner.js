@@ -492,8 +492,8 @@ function randomString( len ) {
     var randomString = '';
     var charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
     for ( var i = 0; i < len; i++ ) {
-	var randomPoz = Math.floor(Math.random() * charSet.length);
-	randomString += charSet.substring(randomPoz,randomPoz+1);
+	var randomPoz = Math.floor( Math.random() * charSet.length );
+	randomString += charSet.substring( randomPoz, randomPoz+1 );
     }
     return randomString;
 }
@@ -1634,8 +1634,8 @@ function concatenateToAttribute( old, add ) {
 }
 
 function downloadContentAndCache( url, callback, var1, var2, var3 ) {
-    var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' );
-    var cacheHeadersPath = cachePath + '.head';
+    var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' ).substr( 0, 20 );
+    var cacheHeadersPath = cachePath + '.h';
 
     async.series( 
 	[
@@ -1798,9 +1798,9 @@ function downloadFileAndCache( url, callback ) {
 	    /* Set the redis entry if necessary */
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function( error ) {
 		var mediaPath = getMediaPath( url );
-		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ) + 
+		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ).substr( 0, 20 ) + 
 		    ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
-		var cacheHeadersPath = cachePath + '.head';
+		var cacheHeadersPath = cachePath + '.h';
 		var toDownload = false;
 		
 		/* Check if the file exists in the cache */
