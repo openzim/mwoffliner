@@ -18,7 +18,6 @@ var swig = require( 'swig' );
 var urlParser = require( 'url' );
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
-var rimraf = require( 'rimraf' );
 var mkdirp = require( 'mkdirp' );
 var countryLanguage = require( 'country-language' );
 var redis = require( 'redis' );
@@ -590,7 +589,7 @@ function buildZIM( finished ) {
 				      if ( keepHtml ) {
 					  finished();
 				      } else {
-					  rimraf( htmlRootPath, finished );
+					  exec( 'rm -rf \"' + htmlRootPath + '\"', finished );
 				      }
 				  }, !verbose, !verbose);	
 	}).on( 'error', function( error ) { console.error( error ) });
@@ -1583,7 +1582,7 @@ function createSubDirectories( finished ) {
     printLog( 'Creating sub directories at \"' + htmlRootPath + '\"...' );
     async.series(
         [
-	    function( finished ) { rimraf( htmlRootPath, finished ) },
+	    function( finished ) { exec( 'rm -rf \"' + htmlRootPath + '\"', finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
