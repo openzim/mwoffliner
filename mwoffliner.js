@@ -1323,7 +1323,11 @@ function saveStylesheet( finished ) {
     }, speed );
 
     /* Take care to download CSS files */
-    var downloadCSSQueue = async.queue( function ( cssUrl, finished ) {
+    var downloadCSSQueue = async.queue( function ( link, finished ) {
+
+	/* link might be a 'link' DOM node or an URL */
+	var cssUrl = typeof link == 'object' ? getFullUrl( link.getAttribute( 'href' ) ) : link;
+	var linkMedia = typeof link == 'object' ? link.getAttribute( 'media' ) : null;
 
 	if ( cssUrl ) {
 	    var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
@@ -1333,10 +1337,14 @@ function saveStylesheet( finished ) {
 	    downloadContent( cssUrl, function( content, responseHeaders ) {
 		var body = content.toString();
 
+		var rewrittenCss = '\n/* start ' + cssUrl + ' */\n\n';
+		rewrittenCss += linkMedia ? '@media ' + linkMedia + '  {\n' : '\n';
+		rewrittenCss += body + '\n';
+		rewrittenCss += linkMedia ? '} /* @media ' + linkMedia + ' */\n' : '\n';
+		rewrittenCss += '\n/* end   ' + cssUrl + ' */\n';
+
 		/* Downloading CSS dependencies */
 		var match;
-		var rewrittenCss = '\n/* start ' + cssUrl + ' */\n\n' + body + '\n/* end   ' + cssUrl + ' */\n\n';
-		
 		while ( match = cssUrlRegexp.exec( body ) ) {
 		    var url = match[1];
 		    
@@ -1377,7 +1385,7 @@ function saveStylesheet( finished ) {
 	for ( var i = 0; i < links.length ; i++ ) {
 	    var link = links[i];
 	    if ( link.getAttribute( 'rel' ) === 'stylesheet' ) {
-		downloadCSSQueue.push( getFullUrl( link.getAttribute( 'href' ) ) );
+		downloadCSSQueue.push( link );
 	    }
 	}
 
