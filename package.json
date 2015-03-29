@@ -29,7 +29,6 @@
     "jsdom": "3.x.x",
     "follow-redirects": "*",
     "redis": "*",
-    "rimraf": "*",
     "mkdirp": "*",
     "swig": "*",
     "utf8-binary-cutter": "*",
