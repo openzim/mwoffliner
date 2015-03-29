@@ -33,7 +33,7 @@
     "swig": "*",
     "utf8-binary-cutter": "*",
     "yargs": "*",
-    "html-minifier", "*"
+    "html-minifier": "*"
   },
   "keywords": [
     "mediawiki",
