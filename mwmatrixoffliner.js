@@ -24,7 +24,7 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
+	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
     .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
@@ -113,9 +113,9 @@ function dump( finished ) {
 	function ( site, finished ) {
 	    if ( ( !projectInverter && projectRegexp.test( site.code ) || ( projectInverter && !projectRegexp.test( site.code ) ) ) &&
 		 ( !languageInverter && languageRegexp.test( site.lang ) || ( languageInverter && !languageRegexp.test( site.lang ) ) ) ) {
-		     var localMwUrl = site.url + '/';
-		     var localParsoidUrl = parsoidUrl + site.dbname + '/';
-		     printLog( 'Dumping ' + site.url );
+		var localMwUrl = site.url + '/';
+		var localParsoidUrl = parsoidUrl.indexOf( 'rest.wikimedia.org' ) < 0 ? parsoidUrl + site.dbname + '/' : parsoidUrl + urlParser.parse( site.url ).hostname + '/v1/page/html/';
+		printLog( 'Dumping ' + site.url );
 		executeTransparently( './mwoffliner.js',
 				      [ '--mwUrl=' + localMwUrl,
 					'--parsoidUrl=' + localParsoidUrl,
