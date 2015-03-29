@@ -28,6 +28,7 @@ var yargs = require( 'yargs' );
 var os = require( 'os' );
 var crypto = require( 'crypto' );
 var unicodeCutter = require( 'utf8-binary-cutter' );
+var htmlMinifier = require('html-minifier');
 
 /************************************/
 /* Command Parsing ******************/
@@ -1170,7 +1171,15 @@ function saveArticles( finished ) {
     
     function writeArticle( doc, articleId, finished ) {
 	printLog( 'Saving article ' + articleId + '...' );
-	fs.writeFile( getArticlePath( articleId ), doc.documentElement.outerHTML, finished );
+	fs.writeFile( getArticlePath( articleId ), 
+		      htmlMinifier.minify( doc.documentElement.outerHTML, { 
+			  removeComments: true,
+			  conservativeCollapse: true,
+			  collapseBooleanAttributes: true,
+			  removeRedundantAttributes: true,
+			  removeEmptyAttributes: true,
+			  minifyCSS: true
+		      } ), finished );
     }
 
     function saveArticle( articleId, finished ) {

@@ -32,7 +32,8 @@
     "mkdirp": "*",
     "swig": "*",
     "utf8-binary-cutter": "*",
-    "yargs": "*"
+    "yargs": "*",
+    "html-minifier", "*"
   },
   "keywords": [
     "mediawiki",
