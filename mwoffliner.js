@@ -34,7 +34,7 @@ var unicodeCutter = require( 'utf8-binary-cutter' );
 /************************************/
 
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/enwiki/ --adminEmail=foo@bar.net' )
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://rest.wikimedia.org/en.wikipedia.org/v1/page/html/ --adminEmail=foo@bar.net' )
     .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
@@ -1174,7 +1174,7 @@ function saveArticles( finished ) {
     }
 
     function saveArticle( articleId, finished ) {
-	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + '?oldid=' + articleIds[ articleId ];
+	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + ( parsoidUrl.indexOf( 'rest.wikimedia.org' ) < 0 ? '?oldid=' : '/' ) + articleIds[ articleId ];
 	printLog( 'Getting article from ' + articleUrl );
 	setTimeout( skipHtmlCache ? downloadContent : downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
 	    var html = content.toString();
@@ -2041,10 +2041,21 @@ function getMainPage( finished ) {
 
 	    if ( mainPage ) {
 		var mainPageId = mainPage.replace( / /g, '_' );
-		articleIds[ mainPageId ] = '';
-		var html = redirectTemplate( { title: mainPage,
-					       target : getArticleBase( mainPageId, true ) } );
-		fs.writeFile( htmlRootPath + '/index.html', html, finished );
+
+		downloadContent( apiUrl + 'action=query&titles=' + encodeURIComponent( mainPageId ) + '&prop=revisions&format=json', function( content, responseHeaders ) {
+		    try {
+			var body = content.toString();
+			var entries = JSON.parse( body )['query']['pages'];
+			var pageIds = Object.keys( entries );
+			articleIds[ mainPageId ] = entries[ pageIds[0] ]['revisions'][0]['revid'];
+			var html = redirectTemplate( { title: mainPage,
+						       target : getArticleBase( mainPageId, true ) } );
+			fs.writeFile( htmlRootPath + '/index.html', html, finished );
+		    } catch ( error ) {
+			console.error( 'Unable to get the main page revision id for "' + mainPageId + '": ' + error );
+			process.exit( 1 );
+		    }
+		});
 	    } else {
 		console.error( 'Unable to get the main page' );
 		process.exit( 1 );
