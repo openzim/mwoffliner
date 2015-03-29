@@ -1471,20 +1471,21 @@ function getArticleIds( finished ) {
 	    var json = JSON.parse( body );
 	    var entries = json['query']['pages'];
 	    var redirectQueueValues = new Array();
-	    var values = new Array();
+	    var details = new Object();
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		    values.push( entry['title'], entry['revisions'][0]['timestamp'] );
+		    details[entry['title']] = entry['revisions'][0]['timestamp'];
 		    redirectQueueValues.push( entry['title'] );
 		}
 	    });
 	    if ( redirectQueueValues.length )
 		redirectQueue.push( redirectQueueValues );
-	    if ( values.length )
-		redisClient.hmset( redisArticleDetailsDatabase, values );
+	    if ( Object.keys( details ).length ) {
+		redisClient.hmset( redisArticleDetailsDatabase, details );
+	    }
 
 	    /* Get continue parameters from 'query-continue',
 	     * unfortunately old MW version does not use the same way
@@ -2047,7 +2048,16 @@ function getMainPage( finished ) {
 			var body = content.toString();
 			var entries = JSON.parse( body )['query']['pages'];
 			var pageIds = Object.keys( entries );
+
+			/* Add article to mirror list */
 			articleIds[ mainPageId ] = entries[ pageIds[0] ]['revisions'][0]['revid'];
+
+			/* Save details about the article */
+			var details = new Object();
+			details[ mainPageId ] = entries[ pageIds[0] ]['revisions'][0]['timestamp'];
+			redisClient.hmset( redisArticleDetailsDatabase, details );
+			
+			/* Create redirection html page for index.html */
 			var html = redirectTemplate( { title: mainPage,
 						       target : getArticleBase( mainPageId, true ) } );
 			fs.writeFile( htmlRootPath + '/index.html', html, finished );
