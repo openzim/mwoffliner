@@ -1151,8 +1151,9 @@ function saveArticles( finished ) {
 	
 	/* Create final document by merging template and parsoid documents */
 	htmlTemplateDoc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
-	htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = articleId.replace( /_/g, ' ' );
-	htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML = articleId.replace( /_/g, ' ' );
+	htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML =
+	    parsoidDoc.getElementsByTagName( 'title' ) ? parsoidDoc.getElementsByTagName( 'title' )[0].innerHTML : articleId.replace( /_/g, ' ' );
+	htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML;
 	
 	/* Set footer */
 	var div = htmlTemplateDoc.createElement( 'div' );
