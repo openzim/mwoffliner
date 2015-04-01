@@ -1522,7 +1522,7 @@ function getArticleIds( finished ) {
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
 	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		var body = content.toString();
-		if ( body && body.length > 2 ) {
+		if ( body && body.length > 1 ) {
 		    parseJson( body );
 		}
 		setTimeout( finished, redirectQueue.length() );
