@@ -780,7 +780,8 @@ function saveArticles( finished ) {
 	var imageNodes = Array.prototype.slice.call( figures ).concat( Array.prototype.slice.call( spans ) );
 	for ( var i = 0; i < imageNodes.length ; i++ ) {
 	    var imageNode = imageNodes[i];
-	    var image = imageNode.getElementsByTagName( 'img' )[0];
+	    var images = imageNode.getElementsByTagName( 'img' );
+	    var image = images.length > 0 ? images[0] : undefined;
 	    var isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
 	    
 	    if ( !nopic && imageNode && image ) {
@@ -788,7 +789,8 @@ function saveArticles( finished ) {
 		var imageNodeTypeof = imageNode.getAttribute( 'typeof' ) || '';
 		
 		if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
-		    var description = imageNode.getElementsByTagName( 'figcaption' )[0];
+		    var descriptions = imageNode.getElementsByTagName( 'figcaption' )
+		    var description = descriptions.length > 0 ? descriptions[0] : undefined;
 		    var imageWidth = parseInt( image.getAttribute( 'width' ) );
 		    
 		    var thumbDiv = parsoidDoc.createElement( 'div' );
@@ -874,8 +876,8 @@ function saveArticles( finished ) {
 			if ( params ) {
 			    // see https://bitbucket.org/magnusmanske/geohack/src public_html geo_param.php
 			    var pieces = params.toUpperCase().split('_');
-			    var semiPieces = pieces[0].split(';');
-			    if ( semiPieces.length == 2 ) {
+			    var semiPieces = pieces.length > 0 ? pieces[0].split(';') : undefined;
+			    if ( semiPieces && semiPieces.length == 2 ) {
 				lat = semiPieces[0];
 				lon = semiPieces[1];
 			    } else {
