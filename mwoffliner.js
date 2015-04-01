@@ -1556,7 +1556,7 @@ function getArticleIds( finished ) {
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
-		    if ( body && body.length > 2 ) {
+		    if ( body && body.length > 1 ) {
 			next = parseJson( body );
 			finished();
 		    } else {
