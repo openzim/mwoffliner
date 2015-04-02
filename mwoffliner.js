@@ -1825,10 +1825,16 @@ function downloadFileAndCache( url, callback ) {
 		
 		/* Check if the file exists in the cache */
 		if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
-		    var responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
-		    
+		    var responseHeaders;
+		    try {
+			reponseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
+		    } catch ( error ) {
+			console.error( 'Error in JSON parsing' );
+			responseHeaders = undefined;
+		    }
+
 		    /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
-		    if ( responseHeaders.width < width ) {
+		    if ( !responseHeaders || responseHeaders.width < width ) {
 			toDownload = true;
 		    } else {
 			if ( !fs.existsSync( mediaPath ) ) {
