@@ -24,20 +24,21 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]')
-    .require([ 'mwUrl', 'parsoidUrl', 'adminEmail' ])
+	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]' )
+    .require( [ 'mwUrl', 'parsoidUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
-    .describe( 'language', 'Language to dump (regex)')
-    .describe( 'languageInverter', 'If given, select languages *not* matching the --language regex')
-    .describe( 'mwURL', 'Mediawiki API URL')
-    .describe( 'outputDirectory', 'Directory to write the ZIM files')
-    .describe( 'parsoidUrl', 'Mediawiki Parsoid URL')
-    .describe( 'project', 'Projects to dump')
-    .describe( 'projectInverter', 'If given, select projects *not* matching the --project regex')
+    .describe( 'language', 'Language to dump (regex)' )
+    .describe( 'languageInverter', 'If given, select languages *not* matching the --language regex' )
+    .describe( 'languageTrigger', 'Ignore everything until this language is found' )
+    .describe( 'mwURL', 'Mediawiki API URL' )
+    .describe( 'outputDirectory', 'Directory to write the ZIM files' )
+    .describe( 'parsoidUrl', 'Mediawiki Parsoid URL' )
+    .describe( 'project', 'Projects to dump' )
+    .describe( 'projectInverter', 'If given, select projects *not* matching the --project regex' )
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
-    .describe( 'tmpDirectory', 'Directory where files are temporary stored')
+    .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
@@ -73,6 +74,7 @@ var projectRegexp = new RegExp( '^' + ( argv.project || '.*' ) + '$' );
 var projectInverter = argv.projectInverter || argv.projectInverter;
 var languageRegexp = new RegExp( '^' + ( argv.language || '.*' ) + '$' );
 var languageInverter = argv.projectInverter || argv.languageInverter;
+var languageTrigger = argv.languageTrigger;
 var verbose = argv.verbose;
 var adminEmail = argv.adminEmail;
 var resume = argv.resume;
@@ -112,7 +114,10 @@ function dump( finished ) {
 	mediawikis,
 	function ( site, finished ) {
 	    if ( ( !projectInverter && projectRegexp.test( site.code ) || ( projectInverter && !projectRegexp.test( site.code ) ) ) &&
-		 ( !languageInverter && languageRegexp.test( site.lang ) || ( languageInverter && !languageRegexp.test( site.lang ) ) ) ) {
+		 ( !languageInverter && languageRegexp.test( site.lang ) || ( languageInverter && !languageRegexp.test( site.lang ) ) ) &&
+		 ( !languageTrigger || languageTrigger == site.lang )
+	       ) {
+		languageTrigger = undefined;
 		var localMwUrl = site.url + '/';
 		var localParsoidUrl = parsoidUrl.indexOf( 'rest.wikimedia.org' ) < 0 ? parsoidUrl + site.dbname + '/' : parsoidUrl + urlParser.parse( site.url ).hostname + '/v1/page/html/';
 		printLog( 'Dumping ' + site.url );
