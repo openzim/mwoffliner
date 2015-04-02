@@ -412,7 +412,8 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 		    finished();
 		}
 	    } else  {
-		console.error( 'Failed to start to optim ' + path + '. Size should be ' + file.size + ' (' + ( error ? 'file was probably deleted, here the error: ' + error : ( stats ? stats.size : 'No stats information' ) ) + ')' );
+		console.error( 'Failed to start to optim ' + path + '. Size should be ' + file.size + 
+			       ' (' + ( error ? 'file was probably deleted, here the error: ' + error : ( stats ? stats.size : 'No stats information' ) ) + ')' );
 		finished();
 	    }
 	});
@@ -1669,7 +1670,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 		    try {
 			finished( error, error ? undefined : JSON.parse( data.toString() ) );
 		    } catch ( error ) {
-			finished( 'Error in downloadContentAndCache() JSON parsing of ' + cacheHeadersPath );
+			finished( 'Error in downloadContentAndCache() JSON parsing of ' + cacheHeadersPath + ', error is: ' + error );
 		    }
 		});
 	    }
@@ -1827,9 +1828,9 @@ function downloadFileAndCache( url, callback ) {
 		if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
 		    var responseHeaders;
 		    try {
-			reponseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
+			responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
 		    } catch ( error ) {
-			console.error( 'Error in downloadFileAndCache() JSON parsing of ' + cacheHeadersPath );
+			console.error( 'Error in downloadFileAndCache() JSON parsing of ' + cacheHeadersPath + ', error is: ' + error );
 			responseHeaders = undefined;
 		    }
 
