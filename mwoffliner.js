@@ -1669,7 +1669,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
 		    try {
 			finished( error, error ? undefined : JSON.parse( data.toString() ) );
 		    } catch ( error ) {
-			finished( 'Error in JSON parsing' );
+			finished( 'Error in downloadContentAndCache() JSON parsing of ' + cacheHeadersPath, );
 		    }
 		});
 	    }
@@ -1829,7 +1829,7 @@ function downloadFileAndCache( url, callback ) {
 		    try {
 			reponseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
 		    } catch ( error ) {
-			console.error( 'Error in JSON parsing' );
+			console.error( 'Error in downloadFileAndCache() JSON parsing of ' + cacheHeadersPath );
 			responseHeaders = undefined;
 		    }
 
