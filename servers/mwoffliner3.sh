@@ -22,4 +22,4 @@ else
 fi
 
 # A few Wikipedias
-$MWMATRIXOFFLINER --project=wiki --language="(ar|id|ko|eo|fa|my)" --outputDirectory=$ZIM2INDEX/wikipedia/
+$MWMATRIXOFFLINER --project=wiki --language="(ar|id|ko|eo|fa|my|ku|tr)" --outputDirectory=$ZIM2INDEX/wikipedia/
