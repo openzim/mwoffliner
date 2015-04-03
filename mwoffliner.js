@@ -1158,6 +1158,24 @@ function saveArticles( finished ) {
 	    parsoidDoc.getElementsByTagName( 'title' ) ? parsoidDoc.getElementsByTagName( 'title' )[0].innerHTML : articleId.replace( /_/g, ' ' );
 	htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML;
 	
+	/* Subpage */
+	if ( isSubpage( articleId ) ) {
+	    var contentNode = htmlTemplateDoc.getElementById( 'content' );
+	    var headingNode = htmlTemplateDoc.getElementById( 'mw-content-text' );
+	    var subpagesNode = htmlTemplateDoc.createElement( 'span' );
+	    var parents = articleId.split( '/' ); parents.pop();
+	    var subpages = '';
+	    parents.map( function( parent ) {
+		var label = parent.replace( /_/g, ' ' );
+		var isParentMirrored = isMirrored( parent );
+		subpages += '&lt; ' + ( isParentMirrored ? '<a href="' + getArticleUrl( parent ) + '" title="' + label + '">' : '' ) 
+		    + label + ( isParentMirrored ? '</a> ' : ' ' );
+	    });
+	    subpagesNode.innerHTML = subpages;
+	    subpagesNode.setAttribute( 'class', 'subpages' );
+	    contentNode.insertBefore( subpagesNode, headingNode );
+	}
+
 	/* Set footer */
 	var div = htmlTemplateDoc.createElement( 'div' );
 	var oldId = articleIds[ articleId ];
@@ -1225,19 +1243,24 @@ function saveArticles( finished ) {
 }
 
 function isMirrored( id ) {
-    var namespaceNumber = 0;
-
     if ( id && id.indexOf( ':' ) >= 0 ) {
-	var tmpNamespace = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
-	if ( tmpNamespace != undefined ) {
-	    var tmpNamespaceNumber = tmpNamespaceNumber = tmpNamespace.number;
-	    if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
-		return true;
-	    }
+	var namespace = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
+	if ( namespace != undefined ) {
+	    return namespace.isContent
 	}
     }
-
     return ( id in articleIds );
+}
+
+function isSubpage( id ) {
+    if ( id && id.indexOf( '/' ) >= 0 ) {
+	var namespace = id.indexOf( ':' ) >= 0 ? id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) : "";
+	var namespace = namespaces[ namespace ];
+	if ( namespace != undefined ) {
+	    return namespace.allowedSubpages;
+	}
+    }
+    return false;
 }
 
 /* Grab and concatenate javascript files */
@@ -2116,7 +2139,7 @@ function getNamespaces( finished ) {
 		var allowedSubpages = ( 'subpages' in entry );
 		var isContent = entry['content'] != undefined ? true : false;
 		var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
-		var details = { 'number': number, 'allowedSubpages': allowedSubpages };
+		var details = { 'number': number, 'allowedSubpages': allowedSubpages, 'isContent': isContent };
 
 		/* Namespaces in local language */
 		namespaces[ lcFirst( name ) ] = details;
