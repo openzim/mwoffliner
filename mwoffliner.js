@@ -183,7 +183,6 @@ var footerTemplateCode = '<div style="clear:both; background-image:linear-gradie
 
 var styleDirectory = 's';
 var mediaDirectory = 'm';
-var systemDirectory = 'd';
 var javascriptDirectory = 'j';
 var mediaRegex = /^(.*\/)([^\/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6})(\.[A-Za-z0-9]{2,6}|)$/;
 var htmlTemplateCode = function(){/*
@@ -571,13 +570,13 @@ function buildZIM( finished ) {
     if ( !nozim ) {
 	exec( 'sync', function( error ) {
 	    var zimPath = computeZimRootPath();
-	    var cmd = 'zimwriterfs --welcome=' + systemDirectory + '/index.html --favicon=favicon.png --language=' + langIso3
+	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 		+ ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 	    
 	    executeTransparently( 'zimwriterfs',
-				  [ '--welcome=' + systemDirectory + '/index.html', '--favicon=favicon.png', '--language=' + langIso3, '--title=' + name,
+				  [ '--welcome=index.htm', '--favicon=favicon.png', '--language=' + langIso3, '--title=' + name,
 				    '--description=' + ( subTitle || name ), '--creator=' + creator,
 				    '--publisher=' + publisher, htmlRootPath, zimPath ], 
 				  function( error ) {
@@ -1609,7 +1608,6 @@ function createSubDirectories( finished ) {
 	    function( finished ) { fs.mkdir( htmlRootPath, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + styleDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + mediaDirectory, undefined, finished ) },
-	    function( finished ) { fs.mkdir( htmlRootPath + systemDirectory, undefined, finished ) },
 	    function( finished ) { fs.mkdir( htmlRootPath + javascriptDirectory, undefined, finished ) }
 	],
 	function( error ) {
@@ -2033,7 +2031,7 @@ function saveFavicon( finished ) {
 }
 
 function getMainPage( finished ) {
-    var mainPagePath = htmlRootPath + '/' + systemDirectory + '/index.html';
+    var mainPagePath = htmlRootPath + '/index.htm';
     
     function createMainPage( finished ) {
 	printLog( 'Creating main page...' );
@@ -2080,7 +2078,7 @@ function getMainPage( finished ) {
 			
 			/* Create redirection html page for index.html */
 			var html = redirectTemplate( { title: mainPage,
-						       target : '../' + getArticleBase( mainPageId, true ) } );
+						       target : getArticleBase( mainPageId, true ) } );
 			fs.writeFile( mainPagePath, html, finished );
 		    } catch ( error ) {
 			console.error( 'Unable to get the main page revision id for "' + mainPageId + '": ' + error );
