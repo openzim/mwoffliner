@@ -1228,9 +1228,12 @@ function isMirrored( id ) {
     var namespaceNumber = 0;
 
     if ( id && id.indexOf( ':' ) >= 0 ) {
-	var tmpNamespaceNumber = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
-	if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
-	    return true;
+	var tmpNamespace = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
+	if ( tmpNamespace != undefined ) {
+	    var tmpNamespaceNumber = tmpNamespaceNumber = tmpNamespace.number;
+	    if ( tmpNamespaceNumber && tmpNamespaceNumber in namespaces ) {
+		return true;
+	    }
 	}
     }
 
@@ -1553,7 +1556,7 @@ function getArticleIds( finished ) {
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ] + '&format=json' + '&rawcontinue=' + next;
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
@@ -2109,18 +2112,20 @@ function getNamespaces( finished ) {
 	    Object.keys(entries).map( function( key ) {
 		var entry = entries[key];
 		var name = entry['*'].replace( / /g, '_' );
-		var number =  entry['id'];
+		var number = entry['id'];
+		var allowedSubpages = ( 'subpages' in entry );
 		var isContent = entry['content'] != undefined ? true : false;
 		var canonical = entry['canonical'] ? entry['canonical'].replace( / /g, '_' ) : '';
+		var details = { 'number': number, 'allowedSubpages': allowedSubpages };
 
 		/* Namespaces in local language */
-		namespaces[ lcFirst( name ) ] = number;
-		namespaces[ ucFirst( name ) ] = number;
+		namespaces[ lcFirst( name ) ] = details;
+		namespaces[ ucFirst( name ) ] = details;
 
 		/* Namespaces in English (if available) */
 		if ( canonical ) {
-		    namespaces[ lcFirst( canonical ) ] = number;
-		    namespaces[ ucFirst( canonical ) ] = number;
+		    namespaces[ lcFirst( canonical ) ] = details;
+		    namespaces[ ucFirst( canonical ) ] = details;
 		}
 
 		/* Is content to mirror */
