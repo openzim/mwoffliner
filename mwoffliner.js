@@ -1165,11 +1165,13 @@ function saveArticles( finished ) {
 	    var subpagesNode = htmlTemplateDoc.createElement( 'span' );
 	    var parents = articleId.split( '/' ); parents.pop();
 	    var subpages = '';
+	    var parentPath = '';
 	    parents.map( function( parent ) {
 		var label = parent.replace( /_/g, ' ' );
-		var isParentMirrored = isMirrored( parent );
-		subpages += '&lt; ' + ( isParentMirrored ? '<a href="' + getArticleUrl( parent ) + '" title="' + label + '">' : '' ) 
+		var isParentMirrored = isMirrored( parentPath + parent );
+		subpages += '&lt; ' + ( isParentMirrored ? '<a href="' + getArticleUrl( parentPath + parent ) + '" title="' + label + '">' : '' ) 
 		    + label + ( isParentMirrored ? '</a> ' : ' ' );
+		parentPath += parent + '/';
 	    });
 	    subpagesNode.innerHTML = subpages;
 	    subpagesNode.setAttribute( 'class', 'subpages' );
