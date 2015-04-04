@@ -22,22 +22,22 @@ else
 fi
 
 # Wikivoyage
-$MWMATRIXOFFLINER --project=wikivoyage --outputDirectory=$ZIM2INDEX/wikivoyage/
+$MWMATRIXOFFLINER --project=wikivoyage --outputDirectory=$ZIM2INDEX/wikivoyage/ --tmpDirectory=/dev/shm/
 
 # Wikinews
-$MWMATRIXOFFLINER --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/
+$MWMATRIXOFFLINER --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/ --tmpDirectory=/dev/shm/
 
 # Wikiquote
-$MWMATRIXOFFLINER --project=wikiquote --outputDirectory=$ZIM2INDEX/wikiquote/
+$MWMATRIXOFFLINER --project=wikiquote --outputDirectory=$ZIM2INDEX/wikiquote/ --tmpDirectory=/dev/shm/
 
 # Wikiversity
-$MWMATRIXOFFLINER --project=wikiversity --outputDirectory=$ZIM2INDEX/wikiversity/
+$MWMATRIXOFFLINER --project=wikiversity --outputDirectory=$ZIM2INDEX/wikiversity/ --tmpDirectory=/dev/shm/
 
 # Wikibooks
-$MWMATRIXOFFLINER --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/
+$MWMATRIXOFFLINER --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/ --tmpDirectory=/dev/shm/
 
 # Wikispecies
-$MWMATRIXOFFLINER --project=species --outputDirectory=$ZIM2INDEX/wikispecies/
+$MWMATRIXOFFLINER --project=species --outputDirectory=$ZIM2INDEX/wikispecies/ --tmpDirectory=/dev/shm/
 
 # Wikisource
 $MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/
