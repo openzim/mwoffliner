@@ -39,24 +39,25 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
+    .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
+    .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
+    .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"' )
+    .describe( 'keepEmptyParagraphs', 'Keep all paragraphs, even empty ones.' )
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
     .describe( 'mwURL', 'Mediawiki base URL' )
     .describe( 'mwWikiPath', 'Mediawiki wiki base path (per default "/wiki/"' )
     .describe( 'mwApiPath',  'Mediawiki API path (per default "/w/api.php"' )
     .describe( 'outputDirectory', 'Directory to write the downloaded content' )
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL' )
-    .describe( 'resume', 'Do not overwrite if ZIM file already created' )
-    .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
-    .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
-    .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
-    .describe( 'verbose', 'Print debug information to the stdout' )
-    .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
-    .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
     .describe( 'redisSocket', 'Path to Redis socket file' )
     .describe( 'requestTimeout', 'Request timeout (in seconds)' )
-    .describe( 'keepEmptyParagraphs', 'Keep all paragraphs, even empty ones.' )
+    .describe( 'resume', 'Do not overwrite if ZIM file already created' )
+    .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
+    .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
+    .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
+    .describe( 'verbose', 'Print debug information to the stdout' )
     .strict()
     .argv;
 
@@ -108,6 +109,7 @@ var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirecto
 
 /* Directory where temporary data are saved */
 var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'tmp/';
+var deflateTmpHtml = argv.deflateTmpHtml;
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
@@ -1155,7 +1157,7 @@ function saveArticles( finished ) {
 	/* Create final document by merging template and parsoid documents */
 	htmlTemplateDoc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
 	htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML =
-	    parsoidDoc.getElementsByTagName( 'title' ) ? parsoidDoc.getElementsByTagName( 'title' )[0].innerHTML : articleId.replace( /_/g, ' ' );
+	    parsoidDoc.getElementsByTagName( 'title' ) ? parsoidDoc.getElementsByTagName( 'title' )[0].innerHTML.replace( /_/g, ' ' ) : articleId.replace( /_/g, ' ' );
 	htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML;
 	
 	/* Subpage */
@@ -1195,15 +1197,22 @@ function saveArticles( finished ) {
     
     function writeArticle( doc, articleId, finished ) {
 	printLog( 'Saving article ' + articleId + '...' );
-	fs.writeFile( getArticlePath( articleId ), 
-		      htmlMinifier.minify( doc.documentElement.outerHTML, { 
-			  removeComments: true,
-			  conservativeCollapse: true,
-			  collapseBooleanAttributes: true,
-			  removeRedundantAttributes: true,
-			  removeEmptyAttributes: true,
-			  minifyCSS: true
-		      } ), finished );
+	var html = htmlMinifier.minify( doc.documentElement.outerHTML, {
+            removeComments: true,
+            conservativeCollapse: true,
+            collapseBooleanAttributes: true,
+            removeRedundantAttributes: true,
+            removeEmptyAttributes: true,
+            minifyCSS: true
+        } );
+
+	if ( deflateTmpHtml ) {
+	    zlib.deflate( html, function( error, deflatedHtml ) {
+		fs.writeFile( getArticlePath( articleId ), deflatedHtml, finished );
+	    });
+	} else {
+	    fs.writeFile( getArticlePath( articleId ), html, finished );
+	}
     }
 
     function saveArticle( articleId, finished ) {
