@@ -573,14 +573,22 @@ function buildZIM( finished ) {
 	exec( 'sync', function( error ) {
 	    var zimPath = computeZimRootPath();
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
+	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 		+ ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 	    
 	    executeTransparently( 'zimwriterfs',
-				  [ '--welcome=index.htm', '--favicon=favicon.png', '--language=' + langIso3, '--title=' + name,
-				    '--description=' + ( subTitle || name ), '--creator=' + creator,
-				    '--publisher=' + publisher, htmlRootPath, zimPath ], 
+				  [ deflateTmpHtml ? '--inflateHtml' : '', 
+				    '--welcome=index.htm', 
+				    '--favicon=favicon.png', 
+				    '--language=' + langIso3, 
+				    '--title=' + name,
+				    '--description=' + ( subTitle || name ), 
+				    '--creator=' + creator,
+				    '--publisher=' + publisher, 
+				    htmlRootPath, 
+				    zimPath ], 
 				  function( error ) {
 				      if ( error ) {
 					  console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
@@ -674,7 +682,14 @@ function saveRedirects( finished ) {
 		    printLog( 'Writing redirect ' + redirectId + ' (to '+ target + ')...' );
 		    var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
 						   target : getArticleUrl( target ) } );
-		    fs.writeFile( getArticlePath( redirectId ), html, finished );
+
+		    if ( deflateTmpHtml ) {
+			zlib.deflate( html, function( error, deflatedHtml ) {
+			    fs.writeFile( getArticlePath( redirectId ), deflatedHtml, finished );
+			});
+		    } else {
+			fs.writeFile( getArticlePath( redirectId ), html, finished );
+		    }
 		} else {
 		    finished();
 		}
@@ -2068,8 +2083,18 @@ function saveFavicon( finished ) {
 }
 
 function getMainPage( finished ) {
-    var mainPagePath = htmlRootPath + '/index.htm';
     
+    function writeMainPage( html, finished ) {
+	var mainPagePath = htmlRootPath + '/index.htm';
+	if ( deflateTmpHtml ) {
+	    zlib.deflate( html, function( error, deflatedHtml ) {
+		fs.writeFile( mainPagePath, deflatedHtml, finished );
+	    });
+	} else {
+	    fs.writeFile( mainPagePath, html, finished );
+	}
+    }
+
     function createMainPage( finished ) {
 	printLog( 'Creating main page...' );
 	var doc = domino.createDocument( htmlTemplateCode );
@@ -2084,7 +2109,7 @@ function getMainPage( finished ) {
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
 	
 	/* Write the static html file */
-	fs.writeFile( mainPagePath, doc.documentElement.outerHTML, finished );
+	writeMainPage( doc.documentElement.outerHTML, finished );
     }
     
     /* We have to mirror the main page even if this is not
@@ -2116,7 +2141,7 @@ function getMainPage( finished ) {
 			/* Create redirection html page for index.html */
 			var html = redirectTemplate( { title: mainPage,
 						       target : getArticleBase( mainPageId, true ) } );
-			fs.writeFile( mainPagePath, html, finished );
+			writeMainPage( html, finished );
 		    } catch ( error ) {
 			console.error( 'Unable to get the main page revision id for "' + mainPageId + '": ' + error );
 			process.exit( 1 );
