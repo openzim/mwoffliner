@@ -1243,7 +1243,7 @@ function saveArticles( finished ) {
 }
 
 function isMirrored( id ) {
-    if ( id && id.indexOf( ':' ) >= 0 ) {
+    if ( !articleList && id && id.indexOf( ':' ) >= 0 ) {
 	var namespace = namespaces[ id.substring( 0, id.indexOf( ':' ) ).replace( / /g, '_' ) ];
 	if ( namespace != undefined ) {
 	    return namespace.isContent
