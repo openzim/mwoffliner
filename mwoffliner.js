@@ -49,6 +49,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'mwURL', 'Mediawiki base URL' )
     .describe( 'mwWikiPath', 'Mediawiki wiki base path (per default "/wiki/"' )
     .describe( 'mwApiPath',  'Mediawiki API path (per default "/w/api.php"' )
+    .describe( 'minifyHtml', 'Try to reduce the size of the HTML' )
     .describe( 'outputDirectory', 'Directory to write the downloaded content' )
     .describe( 'parsoidURL', 'Mediawiki Parsoid URL' )
     .describe( 'redisSocket', 'Path to Redis socket file' )
@@ -143,6 +144,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 /* Verbose */
 var verbose = argv.verbose;
+
+/* Optimize HTML */
+var minifyHtml = argv.minifyHtml;
 
 /* Cache strategy */
 var skipHtmlCache = argv.skipHtmlCache;
@@ -1212,14 +1216,18 @@ function saveArticles( finished ) {
     
     function writeArticle( doc, articleId, finished ) {
 	printLog( 'Saving article ' + articleId + '...' );
-	var html = htmlMinifier.minify( doc.documentElement.outerHTML, {
-            removeComments: true,
-            conservativeCollapse: true,
-            collapseBooleanAttributes: true,
-            removeRedundantAttributes: true,
-            removeEmptyAttributes: true,
-            minifyCSS: true
-        } );
+	var html = doc.documentElement.outerHTML;
+
+	if ( minifyHtml ) {
+	    html = htmlMinifier.minify( html, {
+		removeComments: true,
+		conservativeCollapse: true,
+		collapseBooleanAttributes: true,
+		removeRedundantAttributes: true,
+		removeEmptyAttributes: true,
+		minifyCSS: true
+            } );
+	}
 
 	if ( deflateTmpHtml ) {
 	    zlib.deflate( html, function( error, deflatedHtml ) {
