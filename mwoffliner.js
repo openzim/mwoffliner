@@ -616,7 +616,7 @@ function buildZIM( finished ) {
 
 function endProcess( finished ) {
     printLog( 'Dumping finished with success.' );
-    finished();
+    redisClient.del( redisMediaIdsDatabase, finished );
 }
 
 function drainDownloadFileQueue( finished ) {
