@@ -895,10 +895,20 @@ function saveArticles( finished ) {
 			lon = 0 + hrefQuery.lon;
 		    } else if ( /geohack\.php/i.test(href) ) {
 			var params = urlParser.parse(href, true).query.params;
+
+			/* "params" might be an array, try to detect the geo localization one */
+			if ( params instanceof Array ) {
+			    var i = 0;
+			    while ( params[i] && isNaN( params[i][0] ) ) {
+				i++
+			    };
+			    params = params[i];
+			}
+
 			if ( params ) {
 			    // see https://bitbucket.org/magnusmanske/geohack/src public_html geo_param.php
-			    var pieces = params.toUpperCase().split('_');
-			    var semiPieces = pieces.length > 0 ? pieces[0].split(';') : undefined;
+			    var pieces = params.toUpperCase().split( '_' );
+			    var semiPieces = pieces.length > 0 ? pieces[0].split( ';' ) : undefined;
 			    if ( semiPieces && semiPieces.length == 2 ) {
 				lat = semiPieces[0];
 				lon = semiPieces[1];
