@@ -255,7 +255,7 @@ try {
 } catch(e) {
 }
 optBinaries.forEach( function( cmd ) {
-    exec( cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+    exec( cmd, function( error, stdout, stderr ) {
 	if ( error ) {
 	    console.error( 'Failed to find binary "' + cmd.split( ' ' )[0] + '": (' + error + ')' );
 	    process.exit( 1 );
@@ -2064,7 +2064,7 @@ function saveFavicon( finished ) {
     
     function resizeFavicon( finished ) {
 	var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
-	exec(cmd + ' 2>&1 > /dev/null', function( error, stdout, stderr ) {
+	exec( cmd, function( error, stdout, stderr ) {
 	    fs.stat( faviconPath, function( error, stats ) {
 		optimizationQueue.push( {path: faviconPath, size: stats.size}, function() {
 		    finished( error );
