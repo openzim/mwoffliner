@@ -1212,13 +1212,28 @@ function saveArticles( finished ) {
 	/* Set footer */
 	var div = htmlTemplateDoc.createElement( 'div' );
 	var oldId = articleIds[ articleId ];
-	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, timestamp ) {
+	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, details ) {
 	    if ( error ) {
 		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
+		details = JSON.parse( details );
+
+		/* Revision date */
+		var timestamp = details['ts'];
 		var date = new Date( timestamp );
 		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+
+		/* Geo-coordinates */
+		var longitude = details['lg'];
+		if ( longitude ) {
+		    var latitude = details['lt'];
+		    var metaNode = htmlTemplateDoc.createElement( 'meta' );
+		    metaNode.name = 'geo.position';
+		    metaNode.content = latitude + ';' + longitude;
+		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
+		}
+
 		finished( null, htmlTemplateDoc, articleId );
 	    }
 	});
@@ -1560,8 +1575,15 @@ function getArticleIds( finished ) {
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		    details[entry['title']] = entry['revisions'][0]['timestamp'];
+
 		    redirectQueueValues.push( entry['title'] );
+
+		    var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
+		    if ( entry['coordinates'] ) {
+			articleDetails['lt'] = entry['coordinates'][0]['lat'];
+			articleDetails['lg'] = entry['coordinates'][0]['lon'];
+		    }
+		    details[entry['title']] = JSON.stringify( articleDetails );
 		}
 	    });
 	    if ( redirectQueueValues.length )
@@ -1590,7 +1612,7 @@ function getArticleIds( finished ) {
     function getArticleIdsForLine( line, finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
-	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
+	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions|coordinates&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
 	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		var body = content.toString();
 		if ( body && body.length > 1 ) {
@@ -1623,7 +1645,7 @@ function getArticleIds( finished ) {
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions|coordinates&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
