@@ -393,7 +393,12 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 						     exec( 'file -b --mime-type "' + path + '"', function( error, stdout, stderr ) {
 							 var type = stdout.replace( /image\//, '' ).replace( /[\n\r]/g, '' );
 							 cmd = getOptimizationCommand( path, type );
-							 setTimeout( finished, 2000, executionError );
+
+							 if ( cmd ) {
+							     setTimeout( finished, 2000, executionError );
+							 } else {
+							     finished( 'Unable to find optimization command.' );
+							 }
 						     });
 						 }
 					     });
@@ -1455,7 +1460,8 @@ function saveStylesheet( finished ) {
 			
 			/* Need a rewrite if url doesn't include protocol */
 			url = getFullUrl( url, cssUrl );
-			
+			url = url.indexOf( '%' ) < 0 ? encodeURI( url ) : url;
+
 			/* Download CSS dependency, but avoid duplicate calls */
 			if ( !urlCache.hasOwnProperty( url ) ) {
 			    urlCache[url] = true;
