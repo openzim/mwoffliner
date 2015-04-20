@@ -1223,22 +1223,25 @@ function saveArticles( finished ) {
 	    } else {
 		details = JSON.parse( details );
 
-		/* Revision date */
-		var timestamp = details['ts'];
-		var date = new Date( timestamp );
-		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
-		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+		if ( details ) {
 
-		/* Geo-coordinates */
-		var longitude = details['lg'];
-		if ( longitude ) {
-		    var latitude = details['lt'];
-		    var metaNode = htmlTemplateDoc.createElement( 'meta' );
-		    metaNode.name = 'geo.position';
-		    metaNode.content = latitude + ';' + longitude;
-		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
+		    /* Revision date */
+		    var timestamp = details['ts'];
+		    var date = new Date( timestamp );
+		    div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
+		    htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+		    
+		    /* Geo-coordinates */
+		    var longitude = details['lg'];
+		    if ( longitude ) {
+			var latitude = details['lt'];
+			var metaNode = htmlTemplateDoc.createElement( 'meta' );
+			metaNode.name = 'geo.position';
+			metaNode.content = latitude + ';' + longitude;
+			htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
+		    }
 		}
-
+		
 		finished( null, htmlTemplateDoc, articleId );
 	    }
 	});
