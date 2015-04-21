@@ -1221,7 +1221,11 @@ function saveArticles( finished ) {
 	    if ( error ) {
 		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
-		details = JSON.parse( details );
+		try {
+		    details = JSON.parse( details );
+		} catch ( error ) {
+		    console.error( 'Unable to parse details JSON for "' + articleId + '" (' + error + ' )' );
+		}
 
 		if ( details ) {
 
@@ -2184,7 +2188,7 @@ function getMainPage( finished ) {
 
 			/* Save details about the article */
 			var details = new Object();
-			details[ mainPageId ] = entries[ pageIds[0] ]['revisions'][0]['timestamp'];
+			details[ mainPageId ] =  JSON.stringify( { 'ts': entries[ pageIds[0] ]['revisions'][0]['timestamp'] } );
 			redisClient.hmset( redisArticleDetailsDatabase, details );
 			
 			/* Create redirection html page for index.html */
