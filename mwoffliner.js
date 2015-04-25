@@ -200,11 +200,11 @@ var htmlTemplateCode = function(){/*
     <link rel="stylesheet" href="s/style.css" />
     <script src="j/head.js"></script>
   </head>
-  <body class="mw-body mw-body-content mediawiki" style="background-color: white; margin: 1em 0.5em 0 0; border-width: 0px; padding: 0px;">
-    <div id="content" class="mw-body" style="margin: 0 1em; border-width: 0px;">
+  <body class="mw-body mw-body-content mediawiki" style="background-color: white; margin: 0; border-width: 0px; padding: 0px;">
+    <div id="content" class="mw-body" style="margin: 0; padding: 1em; border-width: 0px;">
       <a id="top"></a>
-      <h1 id="titleHeading" style="background-color: white;"></h1>
-      <div id="mw-content-text" style="padding-top: 1em;">
+      <h1 id="titleHeading" style="background-color: white; margin: 0;"></h1>
+      <div id="mw-content-text">
       </div>
     </div>
     <script src="j/body.js"></script>
