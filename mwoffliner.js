@@ -222,6 +222,7 @@ var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
 var subTitle = 'From Wikipedia, the free encyclopedia';
 var name = '';
+var mainPageId = '';
 var langIso2 = 'en';
 var langIso3 = 'eng';
 var articleIds = {};
@@ -1221,29 +1222,22 @@ function saveArticles( finished ) {
 	    if ( error ) {
 		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
-		try {
-		    details = JSON.parse( details );
-		} catch ( error ) {
-		    console.error( 'Unable to parse details JSON for "' + articleId + '" (' + error + ' )' );
-		}
+		details = JSON.parse( details );
 
-		if ( details ) {
+		/* Revision date */
+		var timestamp = details['ts'];
+		var date = new Date( timestamp );
+		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
+		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 
-		    /* Revision date */
-		    var timestamp = details['ts'];
-		    var date = new Date( timestamp );
-		    div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
-		    htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
-		    
-		    /* Geo-coordinates */
-		    var longitude = details['lg'];
-		    if ( longitude ) {
-			var latitude = details['lt'];
-			var metaNode = htmlTemplateDoc.createElement( 'meta' );
-			metaNode.name = 'geo.position';
-			metaNode.content = latitude + ';' + longitude;
-			htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
-		    }
+		/* Geo-coordinates */
+		var longitude = details['lg'];
+		if ( longitude ) {
+		    var latitude = details['lt'];
+		    var metaNode = htmlTemplateDoc.createElement( 'meta' );
+		    metaNode.name = 'geo.position';
+		    metaNode.content = latitude + ';' + longitude;
+		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
 		}
 		
 		finished( null, htmlTemplateDoc, articleId );
@@ -1638,7 +1632,7 @@ function getArticleIds( finished ) {
         }
     }
 
-    function getArticleIdsForFile() {
+    function getArticleIdsForFile( finished ) {
 	var lines = fs.readFileSync( articleList ).toString().split( '\n' );
 	async.eachLimit( lines, speed, getArticleIdsForLine, function( error ) {
 	    if ( error ) {
@@ -1698,9 +1692,22 @@ function getArticleIds( finished ) {
 	
     /* Get list of article ids */
     if ( articleList ) {
-	getArticleIdsForFile();
+	getArticleIdsForFile( finished );
     } else {
-	getArticleIdsForNamespaces();
+	async.series(
+	    [
+		function( finished ) { getArticleIdsForLine( mainPageId, finished ) },
+		function( finished ) { getArticleIdsForNamespaces( finished ) },
+	    ],
+	    function( error ) {
+		if ( error ) {
+		    console.error( 'Unable retrive article ids: ' + error );
+		    process.exit( 1 );
+		} else {
+		    finished();
+		}
+	    }
+	);
     }
 }
 
@@ -2090,7 +2097,14 @@ function getSiteInfo( finished ) {
     downloadContent( url, function( content, responseHeaders ) {
 	var body = content.toString();
 	var entries = JSON.parse( body )['query']['general'];
+
+	/* Welcome page */
+	mainPageId = entries['mainpage'].replace( / /g, '_' );
+
+	/* Site name */
 	name = entries['sitename'];
+
+	/* Language */
 	langIso2 = entries['lang'];
 	countryLanguage.getLanguage( langIso2, function ( error, language ) {
 	    if ( error || !language.iso639_3 ) {
@@ -2168,43 +2182,10 @@ function getMainPage( finished ) {
     /* We have to mirror the main page even if this is not
      * in a namespace to mirror */
     function retrieveMainPage( finished ) {
-	printLog( 'Getting main page...' );
-	downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {
-	    var body = content.toString();
-	    var entries = JSON.parse( body )['query']['general'];
-	    var mainPage = entries['mainpage'];
-
-	    if ( mainPage ) {
-		var mainPageId = mainPage.replace( / /g, '_' );
-
-		downloadContent( apiUrl + 'action=query&titles=' + encodeURIComponent( mainPageId ) + '&prop=revisions&format=json', function( content, responseHeaders ) {
-		    try {
-			var body = content.toString();
-			var entries = JSON.parse( body )['query']['pages'];
-			var pageIds = Object.keys( entries );
-
-			/* Add article to mirror list */
-			articleIds[ mainPageId ] = entries[ pageIds[0] ]['revisions'][0]['revid'];
-
-			/* Save details about the article */
-			var details = new Object();
-			details[ mainPageId ] =  JSON.stringify( { 'ts': entries[ pageIds[0] ]['revisions'][0]['timestamp'] } );
-			redisClient.hmset( redisArticleDetailsDatabase, details );
-			
-			/* Create redirection html page for index.html */
-			var html = redirectTemplate( { title: mainPage,
-						       target : getArticleBase( mainPageId, true ) } );
-			writeMainPage( html, finished );
-		    } catch ( error ) {
-			console.error( 'Unable to get the main page revision id for "' + mainPageId + '": ' + error );
-			process.exit( 1 );
-		    }
-		});
-	    } else {
-		console.error( 'Unable to get the main page' );
-		process.exit( 1 );
-	    };
-	});
+	printLog( 'Writting main page redirection...' );
+	var html = redirectTemplate( { title: mainPageId.replace( /_/g, ' ' ),
+				       target : getArticleBase( mainPageId, true ) } );
+	writeMainPage( html, finished );
     }
 
     if ( articleList ) {
