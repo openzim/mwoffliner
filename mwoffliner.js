@@ -1571,39 +1571,42 @@ function getArticleIds( finished ) {
     /* Parse article list given by API */
     function parseJson( body ) {
 	var next = '';
-
 	try {
 	    var json = JSON.parse( body );
-	    var entries = json['query']['pages'];
-	    var redirectQueueValues = new Array();
-	    var details = new Object();
-	    Object.keys( entries ).map( function( key ) {
-		var entry = entries[key];
-		entry['title'] = entry['title'].replace( / /g, '_' );
-		if ( entry['revisions'] !== undefined ) {
-		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		    redirectQueueValues.push( entry['title'] );
-		    var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
-		    if ( entry['coordinates'] ) {
-			articleDetails['lt'] = entry['coordinates'][0]['lat'];
-			articleDetails['lg'] = entry['coordinates'][0]['lon'];
-		    }
-		    details[entry['title']] = JSON.stringify( articleDetails );
-		}
-	    });
-	    if ( redirectQueueValues.length )
-		redirectQueue.push( redirectQueueValues );
-	    if ( Object.keys( details ).length ) {
-		redisClient.hmset( redisArticleDetailsDatabase, details );
-	    }
+	    var entries = json['query'] && json['query']['pages'];
 
-	    /* Get continue parameters from 'query-continue',
-	     * unfortunately old MW version does not use the same way
-	     * than recent */
-	    var continueHash = json['query-continue'] && json['query-continue']['allpages'];
-	    if ( continueHash ) {
-		for ( var key in continueHash ) {
-		    next += '&' + key + '=' + encodeURIComponent( continueHash[key] );
+	    if ( entries ) {
+		var redirectQueueValues = new Array();
+		var details = new Object();
+		Object.keys( entries ).map( function( key ) {
+		    var entry = entries[key];
+		    entry['title'] = entry['title'].replace( / /g, '_' );
+		    if ( entry['revisions'] !== undefined ) {
+			articleIds[entry['title']] = entry['revisions'][0]['revid'];
+			redirectQueueValues.push( entry['title'] );
+			var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
+			if ( entry['coordinates'] ) {
+			    articleDetails['lt'] = entry['coordinates'][0]['lat'];
+			    articleDetails['lg'] = entry['coordinates'][0]['lon'];
+			}
+			details[entry['title']] = JSON.stringify( articleDetails );
+		    }
+		});
+
+		if ( redirectQueueValues.length )
+		    redirectQueue.push( redirectQueueValues );
+		if ( Object.keys( details ).length ) {
+		    redisClient.hmset( redisArticleDetailsDatabase, details );
+		}
+
+		/* Get continue parameters from 'query-continue',
+		 * unfortunately old MW version does not use the same way
+		 * than recent */
+		var continueHash = json['query-continue'] && json['query-continue']['allpages'];
+		if ( continueHash ) {
+		    for ( var key in continueHash ) {
+			next += '&' + key + '=' + encodeURIComponent( continueHash[key] );
+		    }
 		}
 	    }
 	} catch ( error ) {
@@ -1617,7 +1620,7 @@ function getArticleIds( finished ) {
     function getArticleIdsForLine( line, finished ) {
 	if ( line ) {
 	    var title = line.replace( / /g, '_' );
-	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions|coordinates&titles=' + encodeURIComponent( title ) + '&rawcontinue=';
+	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions|coordinates&titles=' + encodeURIComponent( title );
 	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		var body = content.toString();
 		if ( body && body.length > 1 ) {
