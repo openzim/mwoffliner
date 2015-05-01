@@ -1522,7 +1522,7 @@ function saveStylesheet( finished ) {
 var redirectQueue = async.queue( function( articleId, finished ) {
     if ( articleId ) {
         printLog( 'Getting redirects for article ' + articleId + '...' );
-	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=500&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
+	var url = apiUrl + 'action=query&list=backlinks&blfilterredir=redirects&bllimit=max&format=json&bltitle=' + encodeURIComponent( articleId ) + '&rawcontinue=';
 	downloadContent( url, function( content, responseHeaders ) {
 	    var body = content.toString();
 	    try {
@@ -1652,7 +1652,7 @@ function getArticleIds( finished ) {
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=500&prop=revisions|coordinates&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&prop=revisions|coordinates&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
