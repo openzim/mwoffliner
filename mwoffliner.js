@@ -1582,9 +1582,7 @@ function getArticleIds( finished ) {
 		entry['title'] = entry['title'].replace( / /g, '_' );
 		if ( entry['revisions'] !== undefined ) {
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-
 		    redirectQueueValues.push( entry['title'] );
-
 		    var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
 		    if ( entry['coordinates'] ) {
 			articleDetails['lt'] = entry['coordinates'][0]['lat'];
@@ -1652,7 +1650,7 @@ function getArticleIds( finished ) {
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
-		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&prop=revisions|coordinates&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
+		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
