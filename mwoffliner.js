@@ -1222,22 +1222,28 @@ function saveArticles( finished ) {
 	    if ( error ) {
 		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
-		details = JSON.parse( details );
 
-		/* Revision date */
-		var timestamp = details['ts'];
-		var date = new Date( timestamp );
-		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
-		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+		/* Is seems that sporadically this goes wrong */
+		try {
+		    details = JSON.parse( details );
 
-		/* Geo-coordinates */
-		var longitude = details['lg'];
-		if ( longitude ) {
-		    var latitude = details['lt'];
-		    var metaNode = htmlTemplateDoc.createElement( 'meta' );
-		    metaNode.name = 'geo.position';
-		    metaNode.content = latitude + ';' + longitude;
-		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
+		    /* Revision date */
+		    var timestamp = details['ts'];
+		    var date = new Date( timestamp );
+		    div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
+		    htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+
+		    /* Geo-coordinates */
+		    var longitude = details['lg'];
+		    if ( longitude ) {
+			var latitude = details['lt'];
+			var metaNode = htmlTemplateDoc.createElement( 'meta' );
+			metaNode.name = 'geo.position';
+			metaNode.content = latitude + ';' + longitude;
+			htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
+		    }
+		} catch ( error ) {
+		    console.error( 'Unable to retrieve correctly the page details for "' + articleId + '": ' + error );
 		}
 		
 		finished( null, htmlTemplateDoc, articleId );
