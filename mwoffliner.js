@@ -41,6 +41,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
     .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
+    .describe( 'customMainPage', 'Allow to configure a custom page as welcome page.' )
     .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"' )
@@ -222,9 +223,9 @@ var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
 var subTitle = 'From Wikipedia, the free encyclopedia';
 var name = '';
-var mainPageId = '';
 var langIso2 = 'en';
 var langIso3 = 'eng';
+var mainPageId = argv.customMainPage ? argv.customMainPage : '';
 var articleIds = {};
 var namespaces = {};
 var mwWikiPath = argv.mwWikiPath ? argv.mwWikiPath : 'wiki';
@@ -1698,24 +1699,26 @@ function getArticleIds( finished ) {
     }
 	
     /* Get list of article ids */
-    if ( articleList ) {
-	getArticleIdsForFile( finished );
-    } else {
-	async.series(
-	    [
-		function( finished ) { getArticleIdsForLine( mainPageId, finished ) },
-		function( finished ) { getArticleIdsForNamespaces( finished ) },
-	    ],
-	    function( error ) {
-		if ( error ) {
-		    console.error( 'Unable retrive article ids: ' + error );
-		    process.exit( 1 );
+    async.series(
+	[
+	    function( finished ) { getArticleIdsForLine( mainPageId, finished ) },
+	    function( finished ) {
+		if ( articleList ) {
+		    getArticleIdsForFile( finished );
 		} else {
-		    finished();
+		    getArticleIdsForNamespaces( finished )
 		}
+	    },
+	],
+	function( error ) {
+	    if ( error ) {
+		console.error( 'Unable retrive article ids: ' + error );
+		process.exit( 1 );
+	    } else {
+		finished();
 	    }
-	);
-    }
+	}
+    );
 }
 
 /* Create directories for static files */
