@@ -2109,7 +2109,9 @@ function getSiteInfo( finished ) {
 	var entries = JSON.parse( body )['query']['general'];
 
 	/* Welcome page */
-	mainPageId = entries['mainpage'].replace( / /g, '_' );
+	if ( !mainPageId && !articleList ) {
+	    mainPageId = entries['mainpage'].replace( / /g, '_' );
+	}
 
 	/* Site name */
 	name = entries['sitename'];
@@ -2189,19 +2191,17 @@ function getMainPage( finished ) {
 	writeMainPage( doc.documentElement.outerHTML, finished );
     }
     
-    /* We have to mirror the main page even if this is not
-     * in a namespace to mirror */
-    function retrieveMainPage( finished ) {
-	printLog( 'Writting main page redirection...' );
+    function createMainPageRedirect( finished ) {
+	printLog( 'Create main page redirection...' );
 	var html = redirectTemplate( { title: mainPageId.replace( /_/g, ' ' ),
 				       target : getArticleBase( mainPageId, true ) } );
 	writeMainPage( html, finished );
     }
 
-    if ( articleList ) {
-	createMainPage( finished );
+    if ( mainPageId ) {
+	createMainPageRedirect( finished );
     } else {
-	retrieveMainPage( finished );
+	createMainPage( finished );
     }
 }
 
