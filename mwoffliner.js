@@ -41,6 +41,8 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
     .describe( 'customZimFavicon', 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.' )
+    .describe( 'customZimTitle', 'Allow to configure a custom ZIM file title.' )
+    .describe( 'customZimDescription', 'Allow to configure a custom ZIM file description.' )
     .describe( 'customMainPage', 'Allow to configure a custom page as welcome page.' )
     .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
@@ -221,10 +223,11 @@ var INFINITY_WIDTH = 9999999;
 var ltr = true;
 var autoAlign = ltr ? 'left' : 'right';
 var revAutoAlign = ltr ? 'right' : 'left';
-var subTitle = 'From Wikipedia, the free encyclopedia';
-var name = '';
+var subTitle = '';
 var langIso2 = 'en';
 var langIso3 = 'eng';
+var name = argv.customZimTitle ? argv.customZimTitle : '';
+var description = argv.customZimDescription ? argv.customZimDescription : '';
 var mainPageId = argv.customMainPage ? argv.customMainPage : '';
 var articleIds = {};
 var namespaces = {};
@@ -585,7 +588,7 @@ function buildZIM( finished ) {
 	    var zimPath = computeZimRootPath();
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
-		+ ' --title="' + name + '" --description="' + ( subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
+		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 	    
@@ -595,7 +598,7 @@ function buildZIM( finished ) {
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
 				    '--title=' + name,
-				    '--description=' + ( subTitle || name ), 
+				    '--description=' + ( description || subTitle || name ), 
 				    '--creator=' + creator,
 				    '--publisher=' + publisher, 
 				    htmlRootPath, 
@@ -2114,7 +2117,9 @@ function getSiteInfo( finished ) {
 	}
 
 	/* Site name */
-	name = entries['sitename'];
+	if ( !name ) {
+	    name = entries['sitename'];
+	}
 
 	/* Language */
 	langIso2 = entries['lang'];
