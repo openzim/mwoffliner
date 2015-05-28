@@ -22,4 +22,4 @@ else
 fi
 
 # Wikipedia
-$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language="(ar|bg|cs|da|et|el|eo|eu|gl|hy|hi|hr|ms|min|nn|no|uz|kk|ro|simple|sk|sl|sr|sh|fi|uk|tr|vo)"
+$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language="(ar|bg|cs|da|et|el|eo|eu|gl|he|hy|hi|hr|id|fa|lt|la|ms|min|nn|no|uz|kk|ro|simple|sk|sl|sr|sh|fi|uk|tr|vo)"

@@ -4,7 +4,7 @@ ZIM2INDEX=`readlink -f $1 2> /dev/null`
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --cacheDirectory=/data/project/cac/ --tmpDirectory=/dev/shm/"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --cacheDirectory=/data/project/cac/ --tmpDirectory=/dev/shm/"
 
 # Few checks
 if [ $# -lt 1 ]
@@ -22,7 +22,10 @@ else
 fi
 
 # Wikispecies
-$MWMATRIXOFFLINER --project=species --outputDirectory=$ZIM2INDEX/wikispecies/ &&
+$MWMATRIXOFFLINER --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=species --outputDirectory=$ZIM2INDEX/wikispecies/ &&
 
 # Wikisource
-$MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language=fr --languageInverter --deflateTmpHtml
+$MWMATRIXOFFLINER  --parsoidUrl=http://rest.wikimedia.org/ --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language=fr --languageInverter --deflateTmpHtml &&
+
+# Wiktionary
+$MWMATRIXOFFLINER  --parsoidUrl=http://rest.wikimedia.org/ --project=wiktionary --outputDirectory=$ZIM2INDEX/wiktionary/ --deflateTmpHtml
