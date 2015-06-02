@@ -41,6 +41,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
+    .describe( 'skipCacheCleaning', 'Do not search for old/outdated files in the cache' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
     .strict()
@@ -81,6 +82,7 @@ var adminEmail = argv.adminEmail;
 var resume = argv.resume;
 var speed = argv.speed;
 var skipHtmlCache = argv.skipHtmlCache;
+var skipCacheCleaning = argv.skipCacheCleaning;
 var keepHtml = argv.keepHtml;
 var deflateTmpHtml = argv.deflateTmpHtml;
 
@@ -135,6 +137,7 @@ function dump( finished ) {
 					resume ? '--resume' : ' ',
 					deflateTmpHtml ? '--deflateTmpHtml' : ' ',
 					skipHtmlCache ? '--skipHtmlCache' : ' ',
+					skipCacheCleaning ? '--skipCacheCleaning' : ' ',
 					keepHtml ? '--keepHtml' : ' ',
 					speed ? '--speed=' + speed : ' ',
 					site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : ' ' ],
