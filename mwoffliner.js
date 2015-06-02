@@ -1228,26 +1228,22 @@ function saveArticles( finished ) {
 	    } else {
 
 		/* Is seems that sporadically this goes wrong */
-		try {
-		    details = JSON.parse( details );
+		details = JSON.parse( details );
 
-		    /* Revision date */
-		    var timestamp = details['ts'];
-		    var date = new Date( timestamp );
-		    div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
-		    htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+		/* Revision date */
+		var timestamp = details['ts'];
+		var date = new Date( timestamp );
+		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
+		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 
-		    /* Geo-coordinates */
-		    var longitude = details['lg'];
-		    if ( longitude ) {
-			var latitude = details['lt'];
-			var metaNode = htmlTemplateDoc.createElement( 'meta' );
-			metaNode.name = 'geo.position';
-			metaNode.content = latitude + ';' + longitude;
-			htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
-		    }
-		} catch ( error ) {
-		    console.error( 'Unable to retrieve correctly the page details for "' + articleId + '": ' + error );
+		/* Geo-coordinates */
+		var longitude = details['lg'];
+		var latitude = details['lt'];
+		if ( longitude && latitude ) {
+		    var metaNode = htmlTemplateDoc.createElement( 'meta' );
+		    metaNode.name = 'geo.position';
+		    metaNode.content = latitude + ';' + longitude;
+		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
 		}
 		
 		finished( null, htmlTemplateDoc, articleId );
