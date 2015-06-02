@@ -560,7 +560,7 @@ function computeFilenameRadical( generic ) {
     if ( !generic ) {
 	radical += '_';
 	if ( articleList ) {
-	    radical += pathParser.basename( articleList, pathParser.extname( articleList ) ) + '_';
+	    radical += pathParser.basename( articleList, pathParser.extname( articleList ) ).toLowerCase().replace( / /g, '_' ) + '_';
         } else {
 	    radical += 'all_';
 	}
