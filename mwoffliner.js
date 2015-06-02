@@ -59,6 +59,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'requestTimeout', 'Request timeout (in seconds)' )
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
+    .describe( 'skipCacheCleaning', 'Do not search for old/outdated files in the cache' )
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'verbose', 'Print debug information to the stdout' )
@@ -153,6 +154,7 @@ var minifyHtml = argv.minifyHtml;
 
 /* Cache strategy */
 var skipHtmlCache = argv.skipHtmlCache;
+var skipCacheCleaning = argv.skipCacheCleaning;
 
 /* Should we keep ZIM file generation if ZIM file already exists */
 var resume = argv.resume;
@@ -325,7 +327,15 @@ async.series(
 		function( error ) {
 		    async.series(
 			[
-			    function( finished ) { printLog( 'Cleaning cache' ); exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + 'ref" -exec rm {} \\;', finished ); },
+			    function( finished ) {
+				if ( skipCacheCleaning ) {
+				    printLog( 'Skipping cache cleaning...' );
+				    finished();
+				} else {
+				    printLog( 'Cleaning cache' );
+				    exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + 'ref" -exec rm {} \\;', finished );
+				}
+			    },
 			],
 			function( error, result ) {
 			    finished();

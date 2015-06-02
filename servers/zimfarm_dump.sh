@@ -4,7 +4,7 @@ ZIM2INDEX=`readlink -f $1 2> /dev/null`
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --deflateTmpHtml"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --deflateTmpHtml --skipCacheCleaning"
 
 # Few checks
 if [ $# -lt 1 ]
