@@ -201,6 +201,7 @@ var htmlTemplateCode = function(){/*
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0 />
     <title></title>
     <link rel="stylesheet" href="s/style.css" />
     <script src="j/head.js"></script>
