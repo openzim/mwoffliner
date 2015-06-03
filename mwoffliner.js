@@ -1635,46 +1635,47 @@ function getArticleIds( finished ) {
     /* Parse article list given by API */
     function parseJson( body ) {
 	var next = '';
-	try {
-	    var json = JSON.parse( body );
-	    var entries = json['query'] && json['query']['pages'];
-
-	    if ( entries ) {
-		var redirectQueueValues = new Array();
-		var details = new Object();
-		Object.keys( entries ).map( function( key ) {
-		    var entry = entries[key];
-		    entry['title'] = entry['title'].replace( / /g, '_' );
-		    if ( entry['revisions'] !== undefined ) {
-			articleIds[entry['title']] = entry['revisions'][0]['revid'];
-			redirectQueueValues.push( entry['title'] );
-			var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
-			if ( entry['coordinates'] ) {
-			    articleDetails['lt'] = entry['coordinates'][0]['lat'];
-			    articleDetails['lg'] = entry['coordinates'][0]['lon'];
-			}
-			details[entry['title']] = JSON.stringify( articleDetails );
+	var json = JSON.parse( body );
+	var entries = json['query'] && json['query']['pages'];
+	
+	if ( entries ) {
+	    var redirectQueueValues = new Array();
+	    var details = new Object();
+	    Object.keys( entries ).map( function( key ) {
+		var entry = entries[key];
+		entry['title'] = entry['title'].replace( / /g, '_' );
+		if ( entry['revisions'] !== undefined ) {
+		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
+		    redirectQueueValues.push( entry['title'] );
+		    var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
+		    if ( entry['coordinates'] ) {
+			articleDetails['lt'] = entry['coordinates'][0]['lat'];
+			articleDetails['lg'] = entry['coordinates'][0]['lon'];
+		    }
+		    details[entry['title']] = JSON.stringify( articleDetails );
+		}
+	    });
+	    
+	    if ( redirectQueueValues.length )
+		redirectQueue.push( redirectQueueValues );
+	    if ( Object.keys( details ).length ) {
+		redisClient.hmset( redisArticleDetailsDatabase, details, function( error ) {
+		    if ( error ) {
+			console.error( 'Unable to save article detail information to redis: ' + error );
+			process.exit( 1 );
 		    }
 		});
-
-		if ( redirectQueueValues.length )
-		    redirectQueue.push( redirectQueueValues );
-		if ( Object.keys( details ).length ) {
-		    redisClient.hmset( redisArticleDetailsDatabase, details );
-		}
-
-		/* Get continue parameters from 'query-continue',
-		 * unfortunately old MW version does not use the same way
-		 * than recent */
-		var continueHash = json['query-continue'] && json['query-continue']['allpages'];
-		if ( continueHash ) {
-		    for ( var key in continueHash ) {
-			next += '&' + key + '=' + encodeURIComponent( continueHash[key] );
-		    }
+	    }
+	    
+	    /* Get continue parameters from 'query-continue',
+	     * unfortunately old MW version does not use the same way
+	     * than recent */
+	    var continueHash = json['query-continue'] && json['query-continue']['allpages'];
+	    if ( continueHash ) {
+		for ( var key in continueHash ) {
+		    next += '&' + key + '=' + encodeURIComponent( continueHash[key] );
 		}
 	    }
-	} catch ( error ) {
-	    console.error( 'Unable to parse JSON and redirects: '  + error );
 	}
 
 	return next;
