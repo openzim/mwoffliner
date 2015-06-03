@@ -1278,13 +1278,14 @@ function saveArticles( finished ) {
 	/* Set footer */
 	var div = htmlTemplateDoc.createElement( 'div' );
 	var oldId = articleIds[ articleId ];
-	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, details ) {
+	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, detailsJson ) {
 	    if ( error ) {
 		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
 	    } else {
 
 		/* Is seems that sporadically this goes wrong */
-		details = JSON.parse( details );
+		var details = JSON.parse( detailsJson );
+		printLog( 'Details for ' + articleId + ' are ' + details + '(' + detailsJson + ')' );
 
 		/* Revision date */
 		var timestamp = details['ts'];
