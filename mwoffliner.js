@@ -63,6 +63,9 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'verbose', 'Print debug information to the stdout' )
+    .describe( 'mwUsername', 'Mediawiki username (thought for private wikis)' )
+    .describe( 'mwDomain', 'Mediawiki user domain (thought for private wikis)' )
+    .describe( 'mwPassword', 'Mediawiki user password (thought for private wikis)' )
     .strict()
     .argv;
 
@@ -108,6 +111,7 @@ if ( validateEmail( adminEmail ) ) {
     console.error( 'Admin email ' + adminEmail + ' is not valid' );
     process.exit( 1 );
 }
+var loginCookie = '';
 
 /* Directory wehre everything is saved at the end of the process */
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'out/';
@@ -201,8 +205,8 @@ var htmlTemplateCode = function(){/*
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0 />
     <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0 />
     <link rel="stylesheet" href="s/style.css" />
     <script src="j/head.js"></script>
   </head>
@@ -246,6 +250,9 @@ var filenameRadical = '';
 var htmlRootPath = '';
 var cacheDirectory = '';
 var cacheDirectory = ( argv.cacheDirectory ? argv.cacheDirectory : pathParser.resolve( process.cwd(), 'cac' ) ) + '/';
+var mwUsername = argv.mwUsername ? argv.mwUsername : '';
+var mwDomain = argv.mwDomain ? argv.mwDomain : '';
+var mwPassword = argv.mwPassword ? argv.mwPassword : '';
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -288,6 +295,7 @@ var footerTemplate = swig.compile( footerTemplateCode );
 /* Get content */
 async.series(
     [
+	function( finished ) { login( finished ) },
 	function( finished ) { getTextDirection( finished ) },
 	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getSiteInfo( finished ) },
@@ -462,6 +470,41 @@ var downloadFileQueue = async.queue( function ( url, finished ) {
 /************************************/
 /* FUNCTIONS ************************/
 /************************************/
+
+function login( finished ) {
+    if ( mwUsername != '' && mwPassword != '' ) {
+        var url = apiUrl + 'action=login&format=json&lgname=' + mwUsername + '&lgpassword=' + mwPassword;
+        if (mwDomain != '') {
+            url = url + '&lgdomain=' + mwDomain;
+        }
+ 
+        downloadContent( url, function( content, responseHeaders ) {
+            var body = content.toString();
+            var jsonResponse = JSON.parse( body )['login'];
+            loginCookie = jsonResponse['cookieprefix'] + '_session=' + jsonResponse['sessionid'];
+
+            if ( jsonResponse['result'] == 'SUCCESS') {
+                finished();
+            } else {
+                url = url + '&lgtoken=' + jsonResponse['token'];
+                downloadContent( url, function( content, responseHeaders ) {
+                    body = content.toString();
+                    jsonResponse = JSON.parse( body )['login'];
+
+                    if ( jsonResponse['result'] == 'Success' ) {
+                        loginCookie = jsonResponse['cookieprefix'] + '_session=' + jsonResponse['sessionid'];
+                        finished();
+                    }  else {
+                        console.error( 'Login failed' );
+			process.exit( 1 );
+                    }
+                });
+            }
+        });
+    } else {
+        finished();
+    }
+}
 
 function checkResume( finished ) {
     for( var i = 0; i<dumps.length; i++ ) {
@@ -1453,7 +1496,7 @@ function saveStylesheet( finished ) {
 	if ( cssUrl ) {
 	    var cssUrlRegexp = new RegExp( 'url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi' );
 	    var cssDataUrlRegex = new RegExp( '^data' );
-	    
+
 	    printLog( 'Downloading CSS from ' + decodeURI( cssUrl ) );
 	    downloadContent( cssUrl, function( content, responseHeaders ) {
 		var body = content.toString();
@@ -1831,7 +1874,8 @@ function getRequestOptionsFromUrl( url, compression ) {
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
     var headers = {
 	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
-	'user-agent': userAgentString
+	'user-agent': userAgentString,
+	'cookie': loginCookie
     };
 
     return {
@@ -1840,7 +1884,8 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	keepAlive: true
+	keepAlive: true,
+	method: url.indexOf('action=login') > -1 ? 'POST' : 'GET'
     };
 }
 
