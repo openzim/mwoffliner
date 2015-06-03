@@ -694,6 +694,7 @@ function drainDownloadFileQueue( finished ) {
 	},
 	function() { return !downloadFileQueue.idle() },
 	function( error ) {
+	    var drainBackup = downloadFileQueue.drain;
 	    downloadFileQueue.drain = function( error ) {
 		if ( error ) {
 		    console.error( 'Error by downloading images' + error );
@@ -701,7 +702,7 @@ function drainDownloadFileQueue( finished ) {
 		} else {
 		    if ( downloadFileQueue.length() == 0 ) {
 			printLog( 'All images successfuly downloaded' );
-			downloadFileQueue.drain = undefined;
+			downloadFileQueue.drain = drainBackup;
 			finished();
 		    }
 		}
@@ -721,6 +722,7 @@ function drainOptimizationQueue( finished ) {
 	},
 	function() { return !optimizationQueue.idle() },
 	function( error ) {
+	    var drainBackup = optimizationQueue.drain;
 	    optimizationQueue.drain = function( error ) {
 		if ( error ) {
 		    console.error( 'Error by optimizing images' + error );
@@ -728,7 +730,7 @@ function drainOptimizationQueue( finished ) {
 		} else {
 		    if ( optimizationQueue.length() == 0 ) {
 			printLog( 'All images successfuly optimized' );
-			optimizationQueue.drain = undefined;
+			optimizationQueue.drain = drainBackup;
 			finished();
 		    }
 		}
@@ -1563,11 +1565,13 @@ function saveStylesheet( finished ) {
 		console.error( 'Error by CSS dependencies: ' + error );
 		process.exit( 1 );
 	    } else {
+		var drainBackup = downloadCSSQueue.drain;
 		downloadCSSFileQueue.drain = function( error ) {
 		    if ( error ) {
 			console.error( 'Error by CSS medias: ' + error );
 			process.exit( 1 );
 		    } else {
+			downloadCSSQueue.drain = drainBackup;
 			finished();
 		    }
 		};
