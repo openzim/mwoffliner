@@ -4,7 +4,7 @@ ZIM2INDEX=/srv/upload/zim2index/
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --cacheDirectory=/data/project/cac/ --tmpDirectory=/dev/shm/ --skipHtmlCacheCleaning --skipCacheCleaning"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --cacheDirectory=/data/project/cac/ --tmpDirectory=/dev/shm/ --skipCacheCleaning"
 
 # Wikispecies
 $MWMATRIXOFFLINER --parsoidUrl=http://parsoid-lb.eqiad.wikimedia.org/ --project=species --outputDirectory=$ZIM2INDEX/wikispecies/ &&
