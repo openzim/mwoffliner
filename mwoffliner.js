@@ -294,9 +294,6 @@ var redisRedirectsDatabase = process.pid + 'r';
 var redisMediaIdsDatabase = process.pid + 'm';
 var redisArticleDetailsDatabase = process.pid + 'd';
 var redisCachedMediaToCheckDatabase = process.pid + 'c';
-redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
-redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
-redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
