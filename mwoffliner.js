@@ -1678,6 +1678,7 @@ function getArticleIds( finished ) {
 
 			/* Save as JSON string */
 			details[entry['title']] = JSON.stringify( articleDetails );
+			printLog( 'Saving details for ' + entry['title'] + ': ' + details[entry['title']] );
 		    } else {
 			console.error( 'Unable to get revisions for ' + entry['title'] );
 			console.error( 'JSON was ' + body );
