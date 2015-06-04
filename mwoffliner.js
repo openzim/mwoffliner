@@ -182,7 +182,17 @@ var hostParts = urlParser.parse( mwUrl ).hostname.split( '.' );
 /* ZIM (content) creator */
 var creator = hostParts[0];
 if ( hostParts.length > 1 ) {
-    creator = hostParts[0].length > hostParts[1].length ? hostParts[0] : hostParts[1];
+    creator =
+	hostParts[1] != 'wikipedia' &&
+	hostParts[1] != 'wikisource' &&
+	hostParts[1] != 'wikibooks' &&
+	hostParts[1] != 'wikiquote' &&
+	hostParts[1] != 'wikivoyage' &&
+	hostParts[1] != 'wikiversity' &&
+	hostParts[1] != 'wikinews' &&
+	hostParts[1] != 'wiktionary' &&
+	hostParts[0].length > hostParts[1].length
+	? hostParts[0] : hostParts[1];
 }
 creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 
@@ -613,7 +623,7 @@ function computeFilenameRadical( generic ) {
 	var date = new Date();
 	radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
     }
-    
+
     return radical;
 }
 
