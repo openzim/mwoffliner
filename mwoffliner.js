@@ -1645,27 +1645,34 @@ function getArticleIds( finished ) {
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
-		redirectQueueValues.push( entry['title'] );
 
-		if ( entry['revisions'] ) {
-
-		    /* Get last revision id */
-		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-
-		    /* Get last revision id timestamp */
-		    var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
-
-		    /* Get article geo coordinates */
-		    if ( entry['coordinates'] ) {
-			articleDetails['lt'] = entry['coordinates'][0]['lat'];
-			articleDetails['lg'] = entry['coordinates'][0]['lon'];
-		    }
-
-		    /* Save as JSON string */
-		    details[entry['title']] = JSON.stringify( articleDetails );
+		if ( 'missing' in entry ) {
+		    console.error( 'Article ' + entry['title'] + ' is not available on this wiki.' );
+		    delete articleIds[entry['title']];
 		} else {
-		    console.error( 'Unable to get revisions for ' + entry['title'] );
-		    process.exit( 1 );
+		    redirectQueueValues.push( entry['title'] );
+
+		    if ( entry['revisions'] ) {
+
+			/* Get last revision id */
+			articleIds[entry['title']] = entry['revisions'][0]['revid'];
+
+			/* Get last revision id timestamp */
+			var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
+
+			/* Get article geo coordinates */
+			if ( entry['coordinates'] ) {
+			    articleDetails['lt'] = entry['coordinates'][0]['lat'];
+			    articleDetails['lg'] = entry['coordinates'][0]['lon'];
+			}
+
+			/* Save as JSON string */
+			details[entry['title']] = JSON.stringify( articleDetails );
+		    } else {
+			console.error( 'Unable to get revisions for ' + entry['title'] );
+			console.error( 'JSON was ' + body );
+			process.exit( 1 );
+		    }
 		}
 	    });
 	    
@@ -1697,7 +1704,7 @@ function getArticleIds( finished ) {
     /* Get ids from file */
     function getArticleIdsForLine( line, finished ) {
 	if ( line ) {
-	    var title = line.replace( / /g, '_' );
+	    var title = line.replace( / /g, '_' ).replace( '\r', '');
 	    var url = apiUrl + 'action=query&redirects&format=json&prop=revisions|coordinates&titles=' + encodeURIComponent( title );
 	    setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
 		var body = content.toString();
@@ -1740,7 +1747,7 @@ function getArticleIds( finished ) {
 			finished();
 		    } else {
 			next = '';
-			finished( 'error by retrieving ' + url );
+			finished( 'Error by retrieving ' + url );
 		    }
 		});
 	    },
