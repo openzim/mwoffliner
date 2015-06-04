@@ -280,10 +280,10 @@ optBinaries.forEach( function( cmd ) {
 
 /* Setup redis client */
 var redisClient = redis.createClient( redisSocket );
-var redisRedirectsDatabase = Math.floor( ( Math.random() * 100000 ) + 1 ) + 'r';
-var redisMediaIdsDatabase = Math.floor( ( Math.random() * 100000 ) + 1 ) + 'm';
-var redisArticleDetailsDatabase = Math.floor( ( Math.random() * 100000 ) + 1 ) + 'd';
-var redisCachedMediaToCheckDatabase = Math.floor( ( Math.random() * 100000 ) + 1 ) + 'c';
+var redisRedirectsDatabase = process.pid + 'r';
+var redisMediaIdsDatabase = process.pid + 'm';
+var redisArticleDetailsDatabase = process.pid + 'd';
+var redisCachedMediaToCheckDatabase = process.pid + 'c';
 redisClient.expire( redisRedirectsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisMediaIdsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
 redisClient.expire( redisArticleDetailsDatabase, 60 * 60 *24 * 30, function( error, result) {} );
