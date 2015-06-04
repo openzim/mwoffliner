@@ -1289,7 +1289,7 @@ function saveArticles( finished ) {
 
 		/* Revision date */
 		var timestamp = details['ts'];
-		var date = new Date( timestamp );
+		var date = new Date( timestamp * 1000 );
 		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 
@@ -1658,7 +1658,7 @@ function getArticleIds( finished ) {
 			articleIds[entry['title']] = entry['revisions'][0]['revid'];
 
 			/* Get last revision id timestamp */
-			var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
+			var articleDetails = { 'ts': parseInt( new Date( entry['revisions'][0]['timestamp'] ).getTime() / 1000 ) };
 
 			/* Get article geo coordinates */
 			if ( entry['coordinates'] ) {
@@ -1686,7 +1686,7 @@ function getArticleIds( finished ) {
 		    }
 		});
 	    }
-	    
+
 	    /* Get continue parameters from 'query-continue',
 	     * unfortunately old MW version does not use the same way
 	     * than recent */
