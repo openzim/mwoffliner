@@ -1645,15 +1645,27 @@ function getArticleIds( finished ) {
 	    Object.keys( entries ).map( function( key ) {
 		var entry = entries[key];
 		entry['title'] = entry['title'].replace( / /g, '_' );
-		if ( entry['revisions'] !== undefined ) {
+		redirectQueueValues.push( entry['title'] );
+
+		if ( entry['revisions'] ) {
+
+		    /* Get last revision id */
 		    articleIds[entry['title']] = entry['revisions'][0]['revid'];
-		    redirectQueueValues.push( entry['title'] );
+
+		    /* Get last revision id timestamp */
 		    var articleDetails = { 'ts': entry['revisions'][0]['timestamp'] };
+
+		    /* Get article geo coordinates */
 		    if ( entry['coordinates'] ) {
 			articleDetails['lt'] = entry['coordinates'][0]['lat'];
 			articleDetails['lg'] = entry['coordinates'][0]['lon'];
 		    }
+
+		    /* Save as JSON string */
 		    details[entry['title']] = JSON.stringify( articleDetails );
+		} else {
+		    console.error( 'Unable to get revisions for ' + entry['title'] );
+		    process.exit( 1 );
 		}
 	    });
 	    
