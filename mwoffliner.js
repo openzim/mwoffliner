@@ -1295,18 +1295,17 @@ function saveArticles( finished ) {
 		printLog( 'Details for ' + articleId + ' are ' + details + '(' + detailsJson + ')' );
 
 		/* Revision date */
-		var timestamp = details['ts'];
+		var timestamp = details['t'];
 		var date = new Date( timestamp * 1000 );
 		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 
 		/* Geo-coordinates */
-		var longitude = details['lg'];
-		var latitude = details['lt'];
-		if ( longitude && latitude ) {
+		var geoCoordinates = details['g'];
+		if ( geoCoordinates ) {
 		    var metaNode = htmlTemplateDoc.createElement( 'meta' );
 		    metaNode.name = 'geo.position';
-		    metaNode.content = latitude + ';' + longitude;
+		    metaNode.content = geoCoordinates // latitude + ';' + longitude;
 		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
 		}
 		
@@ -1670,12 +1669,11 @@ function getArticleIds( finished ) {
 			articleIds[entry['title']] = entry['revisions'][0]['revid'];
 
 			/* Get last revision id timestamp */
-			var articleDetails = { 'ts': parseInt( new Date( entry['revisions'][0]['timestamp'] ).getTime() / 1000 ) };
+			var articleDetails = { 't': parseInt( new Date( entry['revisions'][0]['timestamp'] ).getTime() / 1000 ) };
 
 			/* Get article geo coordinates */
 			if ( entry['coordinates'] ) {
-			    articleDetails['lt'] = entry['coordinates'][0]['lat'];
-			    articleDetails['lg'] = entry['coordinates'][0]['lon'];
+			    articleDetails['g'] = entry['coordinates'][0]['lat'] + ';' + entry['coordinates'][0]['lon'];
 			}
 
 			/* Save as JSON string */
@@ -2065,8 +2063,10 @@ function downloadFileAndCache( url, callback ) {
 				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase );
 			    } else {
 				redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width, function( error ) {
-				    console.error( 'Unable to delete redis cache media to check ' + filenameBase + ': ' + error );
-				    process.exit( 1 );
+				    if ( error ) {
+					console.error( 'Unable to set redis cache media to check ' + filenameBase + ': ' + error );
+					process.exit( 1 );
+				    }
 				});
 			    }
 			    callback();
