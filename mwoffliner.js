@@ -930,7 +930,7 @@ function saveArticles( finished ) {
 			div.setAttribute( 'class', concatenateToAttribute( div.getAttribute( 'class' ), 'center' ) );
 		    }
 		    div.appendChild( isStillLinked ? image.parentNode : image );
-		    imageNode.parentNode.replaceChild(div, imageNode);
+		    imageNode.parentNode.replaceChild( div, imageNode );
 		}
 	    } else {
 		deleteNode( imageNode );
@@ -1608,7 +1608,12 @@ var redirectQueue = async.queue( function( articleId, finished ) {
 		    printLog( redirectsCount + ' redirect(s) found for ' + articleId );
 		    if ( redirectsCount ) {
 			redisClient.hmset( redisRedirectsDatabase, redirects, function ( error ) {
-			    finished();
+			    if ( error ) {
+				console.error( 'Unable to set redirects: ' + error );
+				process.exit( 1 );
+			    } else {
+				finished();
+			    }
 			});
 		    } else {
 			finished();
@@ -2028,56 +2033,64 @@ function downloadFileAndCache( url, callback ) {
 
 	    /* Set the redis entry if necessary */
 	    redisClient.hset( redisMediaIdsDatabase, filenameBase, width, function( error ) {
-		var mediaPath = getMediaPath( url );
-		var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ).substr( 0, 20 ) + 
-		    ( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
-		var cacheHeadersPath = cachePath + '.h';
-		var toDownload = false;
-		
-		/* Check if the file exists in the cache */
-		if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
-		    var responseHeaders;
-		    try {
-			responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
-		    } catch ( error ) {
-			console.error( 'Error in downloadFileAndCache() JSON parsing of ' + cacheHeadersPath + ', error is: ' + error );
-			responseHeaders = undefined;
-		    }
-
-		    /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
-		    if ( !responseHeaders || responseHeaders.width < width ) {
-			toDownload = true;
-		    } else {
-			if ( !fs.existsSync( mediaPath ) ) {
-			    fs.symlinkSync( cachePath, mediaPath );
-			}
-			touch( cachePath, cacheHeadersPath );
-			if ( responseHeaders.width == width ) {
-			    redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase );
-			} else {
-			    redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width );
-			}
-			callback();
-		    }
+		if ( error ) {
+		    console.error( 'Unable to set redis entry for file to download ' + filenameBase + ': ' + error );
+		    process.exit( 1 );
 		} else {
-		    toDownload = true;
-		}
-		
-		/* Download the file if necessary */
-		if ( toDownload ) {
-		    downloadFile( url, cachePath, true, function( error, responseHeaders ) {
-			if ( error ) {
+		    var mediaPath = getMediaPath( url );
+		    var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ).substr( 0, 20 ) + 
+			( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
+		    var cacheHeadersPath = cachePath + '.h';
+		    var toDownload = false;
+		    
+		    /* Check if the file exists in the cache */
+		    if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
+			var responseHeaders;
+			try {
+			    responseHeaders = JSON.parse( fs.readFileSync( cacheHeadersPath ).toString() );
+			} catch ( error ) {
+			    console.error( 'Error in downloadFileAndCache() JSON parsing of ' + cacheHeadersPath + ', error is: ' + error );
+			    responseHeaders = undefined;
+			}
+			
+			/* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
+			if ( !responseHeaders || responseHeaders.width < width ) {
+			    toDownload = true;
+			} else {
+			    if ( !fs.existsSync( mediaPath ) ) {
+				fs.symlinkSync( cachePath, mediaPath );
+			    }
+			    touch( cachePath, cacheHeadersPath );
+			    if ( responseHeaders.width == width ) {
+				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase );
+			    } else {
+				redisClient.hset( redisCachedMediaToCheckDatabase, filenameBase, width, function( error ) {
+				    console.error( 'Unable to delete redis cache media to check ' + filenameBase + ': ' + error );
+				    process.exit( 1 );
+				});
+			    }
 			    callback();
-			} else {
-			    printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
-			    fs.symlink( cachePath, mediaPath, function( error ) {
-				fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
-				callback();
-			    });
 			}
-		    });
-		} else {
-		    printLog( 'Cache hit for ' + url );
+		    } else {
+			toDownload = true;
+		    }
+		    
+		    /* Download the file if necessary */
+		    if ( toDownload ) {
+			downloadFile( url, cachePath, true, function( error, responseHeaders ) {
+			    if ( error ) {
+				callback();
+			    } else {
+				printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
+				fs.symlink( cachePath, mediaPath, function( error ) {
+				    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
+				    callback();
+				});
+			    }
+			});
+		    } else {
+			printLog( 'Cache hit for ' + url );
+		    }
 		}
 	    });
 	}
