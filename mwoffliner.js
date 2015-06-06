@@ -860,6 +860,9 @@ function saveArticles( finished ) {
 			
 			/* Remove useless 'resource' attribute */
 			img.removeAttribute( 'resource' );
+
+			/* Remove srcset */
+			img.removeAttribute( 'srcset' );
                     } else {
 			deleteNode( img );
                     }
