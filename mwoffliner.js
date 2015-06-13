@@ -96,6 +96,9 @@ var cssClassBlackList = [ 'noprint', 'metadata', 'ambox', 'stub', 'topicon', 'ma
 /* All DOM node with these styles will be deleted if no A node is included in the sub-tree */
 var cssClassBlackListIfNoLink = [ 'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote' ];
 
+/* All DOM nodes which we should for to display */
+var cssClassDisplayList = [ 'thumb' ];
+
 /* List of style to be removed */
 var cssClassCallsBlackList = [ 'plainlinks' ];
 
@@ -892,7 +895,6 @@ function saveArticles( finished ) {
 		    var imageWidth = parseInt( image.getAttribute( 'width' ) );
 		    
 		    var thumbDiv = parsoidDoc.createElement( 'div' );
-		    thumbDiv.setAttribute
 		    thumbDiv.setAttribute( 'class', 'thumb' );
 		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 'tright' ) );
@@ -1185,6 +1187,14 @@ function saveArticles( finished ) {
 	    }
 	});
 	
+	/* Force display of element with that CSS class */
+	cssClassDisplayList.map( function( classname ) {
+	    var nodes = parsoidDoc.getElementsByClassName( classname );
+	    for ( var i = 0; i < nodes.length ; i++ ) {
+		nodes[i].style.removeProperty( 'display' );
+	    }
+	});
+
 	/* Remove link tags */
 	var links = parsoidDoc.getElementsByTagName( 'link' );
 	for ( var i = 0; i < links.length ; i++ ) {
