@@ -349,7 +349,7 @@ async.series(
 			    function( finished ) {
 				if ( skipCacheCleaning ) {
 				    printLog( 'Skipping cache cleaning...' );
-				    finished();
+				    exec( 'rm -f "' + cacheDirectory + 'ref"', finished );
 				} else {
 				    printLog( 'Cleaning cache' );
 				    exec( 'find "' + cacheDirectory + '" -type f -not -newer "' + cacheDirectory + 'ref" -exec rm {} \\;', finished );
