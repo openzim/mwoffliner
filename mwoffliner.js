@@ -293,10 +293,11 @@ optBinaries.forEach( function( cmd ) {
 
 /* Setup redis client */
 var redisClient = redis.createClient( redisSocket );
-var redisRedirectsDatabase = process.pid + 'r';
-var redisMediaIdsDatabase = process.pid + 'm';
-var redisArticleDetailsDatabase = process.pid + 'd';
-var redisCachedMediaToCheckDatabase = process.pid + 'c';
+var redisNamePrefix = (new Date).getTime();
+var redisRedirectsDatabase = redisNamePrefix + 'r';
+var redisMediaIdsDatabase = redisNamePrefix + 'm';
+var redisArticleDetailsDatabase = redisNamePrefix + 'd';
+var redisCachedMediaToCheckDatabase = redisNamePrefix + 'c';
 
 /* Compile templates */
 var redirectTemplate = swig.compile( redirectTemplateCode );
