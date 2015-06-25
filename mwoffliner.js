@@ -1301,7 +1301,7 @@ function saveArticles( finished ) {
 	var oldId = articleIds[ articleId ];
 	redisClient.hget( redisArticleDetailsDatabase, articleId, function( error, detailsJson ) {
 	    if ( error ) {
-		finished( 'Unable to get the timestamp from redis for article ' + articleId + ': ' + error );
+		finished( 'Unable to get the details from redis for article ' + articleId + ': ' + error );
 	    } else {
 
 		/* Is seems that sporadically this goes wrong */
@@ -1323,7 +1323,14 @@ function saveArticles( finished ) {
 		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
 		}
 		
-		finished( null, htmlTemplateDoc, articleId );
+		/* Delete details from redis */
+		redisClient.hdel( redisArticleDetailsDatabase, articleId, function( error ) {
+		    if ( error ) {
+			finished( 'Unable to delete details from redis for article ' + articleId + ': ' + error );
+		    } else {
+			finished( null, htmlTemplateDoc, articleId );
+		    }
+		});
 	    }
 	});
     }
