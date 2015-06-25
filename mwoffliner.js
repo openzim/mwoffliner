@@ -1305,8 +1305,8 @@ function saveArticles( finished ) {
 	    } else {
 
 		/* Is seems that sporadically this goes wrong */
+		printLog( 'Details for ' + articleId + ' are (' + detailsJson + ')' );
 		var details = JSON.parse( detailsJson );
-		printLog( 'Details for ' + articleId + ' are ' + details + '(' + detailsJson + ')' );
 
 		/* Revision date */
 		var timestamp = details['t'];
