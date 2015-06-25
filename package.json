@@ -26,14 +26,15 @@
     "country-language": "*",
     "domino": "*",
     "expand-home-dir": "*",
-    "jsdom": "3.x.x",
     "follow-redirects": "*",
-    "redis": "*",
+    "html-minifier": "*",
+    "jsdom": "3.x.x",
+    "jsoncompress": "^0.1.3",
     "mkdirp": "*",
+    "redis": "*",
     "swig": "*",
     "utf8-binary-cutter": "*",
-    "yargs": "*",
-    "html-minifier": "*"
+    "yargs": "*"
   },
   "keywords": [
     "mediawiki",
