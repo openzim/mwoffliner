@@ -1323,14 +1323,7 @@ function saveArticles( finished ) {
 		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
 		}
 		
-		/* Delete details from redis */
-		redisClient.hdel( redisArticleDetailsDatabase, articleId, function( error ) {
-		    if ( error ) {
-			finished( 'Unable to delete details from redis for article ' + articleId + ': ' + error );
-		    } else {
-			finished( null, htmlTemplateDoc, articleId );
-		    }
-		});
+		finished( null, htmlTemplateDoc, articleId );
 	    }
 	});
     }
