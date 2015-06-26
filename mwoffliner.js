@@ -366,11 +366,11 @@ async.series(
     ],
     function( error ) {
 	printLog( 'Flushing redis databases...' );
-	redisClient.flushdb();
+	redisClient.del( redisRedirectsDatabase, redisMediaIdsDatabase, redisArticleDetailsDatabase, redisCachedMediaToCheckDatabase, function() {
+	    printLog( 'Quitting redis databases...' );
+	    redisClient.quit();
+	});
 	
-	printLog( 'Quitting redis databases...' );
-	redisClient.quit();
-
 	printLog( 'Closing HTTP agents' );
 	closeAgents();
 
