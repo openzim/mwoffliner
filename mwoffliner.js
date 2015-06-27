@@ -1274,10 +1274,14 @@ function saveArticles( finished ) {
 	htmlTemplateDoc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
 	htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML =
 	    parsoidDoc.getElementsByTagName( 'title' ) ? parsoidDoc.getElementsByTagName( 'title' )[0].innerHTML.replace( /_/g, ' ' ) : articleId.replace( /_/g, ' ' );
-	htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML;
+	if ( mainPageId != articleId ) {
+	    htmlTemplateDoc.getElementById( 'titleHeading' ).innerHTML = htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML;
+	} else {
+	    deleteNode( htmlTemplateDoc.getElementById( 'titleHeading' ) );
+	}
 	
 	/* Subpage */
-	if ( isSubpage( articleId ) ) {
+	if ( isSubpage( articleId ) && mainPageId != articleId ) {
 	    var contentNode = htmlTemplateDoc.getElementById( 'content' );
 	    var headingNode = htmlTemplateDoc.getElementById( 'mw-content-text' );
 	    var subpagesNode = htmlTemplateDoc.createElement( 'span' );
