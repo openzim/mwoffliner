@@ -12,5 +12,8 @@ $MWMATRIXOFFLINER --project=species --outputDirectory=$ZIM2INDEX/wikispecies/ &&
 # Wikisource
 $MWMATRIXOFFLINER  --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language=fr --languageInverter --deflateTmpHtml &&
 
+# Wikibooks
+$MWMATRIXOFFLINER --project=wikibooks --outputDirectory=$ZIM2INDEX/wikibooks/ &&
+
 # Wiktionary
 $MWMATRIXOFFLINER  --project=wiktionary --outputDirectory=$ZIM2INDEX/wiktionary/  --language="(en|fr|mg)" --languageInverter --deflateTmpHtml
