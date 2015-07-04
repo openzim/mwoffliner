@@ -4,7 +4,7 @@ ZIM2INDEX=/srv/upload/zim2index/
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js --speed=3 --verbose --skipHtmlCache --skipCacheCleaning  --adminEmail=kelson@kiwix.org"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --deflateTmpHtml --skipCacheCleaning"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=https://meta.wikimedia.org/ --parsoidUrl=https://rest.wikimedia.org/ --deflateTmpHtml --skipCacheCleaning"
 
 # Wikipedia medicine
 /srv/kiwix-tools/tools/scripts/listCategoryEntries.pl --host=en.wikipedia.org --category=WikiProject_Medicine_articles --path=w --exploration=5 --namespace=1 | sed 's/Talk://' | sort -u > "$SCRIPT_DIR/medicine" &&
@@ -24,7 +24,7 @@ echo "Book:Psychiatry" >> "$SCRIPT_DIR/medicine" &&
 echo "Book:Rheumatology" >> "$SCRIPT_DIR/medicine" &&
 echo "Book:Women's_health" >> "$SCRIPT_DIR/medicine" &&
 wget "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Wiki_Project_Med_Foundation_logo.svg/335px-Wiki_Project_Med_Foundation_logo.svg.png" -O "$SCRIPT_DIR/medicine.png" &&
-$MWOFFLINER --mwUrl="http://en.wikipedia.org/" --parsoidUrl="http://rest.wikimedia.org/en.wikipedia.org/v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customMainPage="Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/
+$MWOFFLINER --mwUrl="https://en.wikipedia.org/" --parsoidUrl="https://rest.wikimedia.org/en.wikipedia.org/v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customMainPage="Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/
 
 # Wikipedia
 $MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language='(en|fr)'
