@@ -7,23 +7,22 @@
 
 var fs = require( 'fs' );
 var async = require( 'async' );
-var http = require('follow-redirects').http;
-var https = require('follow-redirects').https;
+var http = require( 'follow-redirects' ).http;
+var https = require( 'follow-redirects').https;
 var pathParser = require( 'path' );
 var homeDirExpander = require( 'expand-home-dir' );
 var countryLanguage = require( 'country-language' );
-var yargs = require('yargs');
-var exec = require('child_process').exec;
-var spawn = require('child_process').spawn;
+var yargs = require( 'yargs' );
+var exec = require( 'child_process' ).exec;
+var spawn = require( 'child_process' ).spawn;
 
 /************************************/
 /* COMMAND LINE PARSING *************/
 /************************************/
 
 var argv = yargs.usage('Given a directory, create for each selection list file belonging to it, the corresponding ZIM file against Wikipedia: $0'
-	   + '\nExample: ./wpselectionsoffliner.js --directory=/tmp/wikiproject/ [--tmpDirectory=/tmp/] --outputDirectory=[/var/zim2index]')
-    .require([ 'directory' ])
-    .options( ['verbose', 'tmpDirectory', 'outputDirectory', 'resume'] )
+	   + '\nExample: ./wpselectionsoffliner.js --directory=/tmp/wikiproject/ [--tmpDirectory=/tmp/] --outputDirectory=[/var/zim2index]' )
+    .require( [ 'directory' ] )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored')
     .describe( 'outputDirectory', 'Directory to write the ZIM files')
     .describe( 'verbose', 'Print debug information to the stdout' )
@@ -105,7 +104,7 @@ function dump( finished ) {
 					'--articleList=' + articleList, 
 					'--filenamePrefix=' + zimFilenamePrefix,
 					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : ' ',
-					resume ? '--resume' + ' ',
+					resume ? '--resume' : ' ',
 					verbose ? '--verbose' : ' ',
 				      ],
 				      function( executionError ) {
