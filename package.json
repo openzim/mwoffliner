@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "Parsoid HTML dump utility",
   "main": "mwoffliner.js",
-  "license": "GPLv3",
+  "license": "GPL-3.0",
   "author": {
     "name": "Emmanuel Engelhart",
     "email": "kelson@kiwix.org",
