@@ -1929,7 +1929,8 @@ function getRequestOptionsFromUrl( url, compression ) {
     var headers = {
 	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
 	'user-agent': userAgentString,
-	'cookie': loginCookie
+	'cookie': loginCookie,
+	'connection': 'keep-alive'
     };
 
     return {
