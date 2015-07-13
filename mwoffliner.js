@@ -36,7 +36,7 @@ var htmlMinifier = require('html-minifier');
 
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://rest.wikimedia.org/en.wikipedia.org/v1/page/html/ --adminEmail=foo@bar.net' )
-    .require( ['mwUrl', 'parsoidUrl', 'adminEmail' ] )
+    .require( [ 'mwUrl', 'parsoidUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
@@ -115,6 +115,8 @@ if ( validateEmail( adminEmail ) ) {
     process.exit( 1 );
 }
 var loginCookie = '';
+http.globalAgent.maxSockets = 25;
+https.globalAgent.maxSockets = 25;
 
 /* Directory wehre everything is saved at the end of the process */
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'out/';
@@ -809,7 +811,6 @@ function saveArticles( finished ) {
     }
     
     function treatMedias( parsoidDoc, articleId, finished ) {
-	
 	/* Clean/rewrite image tags */
 	var imgs = parsoidDoc.getElementsByTagName( 'img' );
  	var imgSrcCache = new Object();
@@ -947,7 +948,6 @@ function saveArticles( finished ) {
     }
     
     function rewriteUrls( parsoidDoc, articleId, finished ) {
-	
 	/* Go through all links */
 	var as = parsoidDoc.getElementsByTagName( 'a' );
 	var areas = parsoidDoc.getElementsByTagName( 'area' );
@@ -1021,7 +1021,6 @@ function saveArticles( finished ) {
 		}
 		
 		if ( rel ) {
-		    
 		    /* Add 'external' class to external links */
 		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
 			 rel === 'mw:WikiLink/Interwiki' ) {
@@ -1051,7 +1050,7 @@ function saveArticles( finished ) {
 		    /* Remove internal links pointing to no mirrored articles */
 		    else if ( rel == 'mw:WikiLink' ) {
 			var targetId = extractTargetIdFromHref( href );
-			
+
 			/* Deal with local anchor */
 			var localAnchor = '';
 			if ( targetId.lastIndexOf("#") != -1 ) {
@@ -1085,6 +1084,8 @@ function saveArticles( finished ) {
 				process.exit( 1 );
 			    }
 			}
+		    } else {
+			finished();
 		    }
 		} else {
 		    var targetId = extractTargetIdFromHref( href );
@@ -1128,7 +1129,6 @@ function saveArticles( finished ) {
     }
     
     function applyOtherTreatments( parsoidDoc, articleId, finished ) {
-	
 	/* Go through gallerybox */
 	var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
 	for ( var i = 0; i < galleryboxes.length ; i++ ) {
@@ -2021,6 +2021,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		}
 	    });
 	    request.setTimeout( requestTimeout * 1000 * retryCount );
+	    request.end();
 	},
 	function ( error, data ) {
 	    if ( error ) {
