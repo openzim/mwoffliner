@@ -115,8 +115,6 @@ if ( validateEmail( adminEmail ) ) {
     process.exit( 1 );
 }
 var loginCookie = '';
-http.globalAgent.maxSockets = 25;
-https.globalAgent.maxSockets = 25;
 
 /* Directory wehre everything is saved at the end of the process */
 var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirectory ) + '/' : 'out/';
