@@ -1695,9 +1695,13 @@ function getArticleIds( finished ) {
 			/* Save as JSON string */
 			details[entry['title']] = JSON.stringify( articleDetails );
 			printLog( 'Saving details for ' + entry['title'] + ': ' + details[entry['title']] );
-		    } else {
+		    } else if ( entry['pageid'] ) {
 			printLog( 'Unable to get revisions for ' + entry['title'] + ', but entry exists in the database. Article was probably deleted meanwhile.');
 			delete articleIds[entry['title']];
+		    } else {
+			console.error( 'Unable to get revisions for ' + entry['title'] );
+			console.error( 'JSON was ' + body );
+			process.exit( 1 );
 		    }
 		}
 	    });
