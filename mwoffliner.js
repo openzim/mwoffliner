@@ -968,8 +968,8 @@ function saveArticles( finished ) {
 		    var lat, lon;
 		    if ( /poimap2\.php/i.test(href) ) {
 			var hrefQuery = urlParser.parse(href, true).query;
-			lat = 0 + hrefQuery.lat;
-			lon = 0 + hrefQuery.lon;
+			lat = parseFloat(hrefQuery.lat);
+			lon = parseFloat(hrefQuery.lon);
 		    } else if ( /geohack\.php/i.test(href) ) {
 			var params = urlParser.parse(href, true).query.params;
 
@@ -1012,6 +1012,7 @@ function saveArticles( finished ) {
 			    }
 			}
 		    }
+
 		    if ( !isNaN(lat) && !isNaN(lon) ) {
 			href = 'geo:' + lat + ',' + lon;
 			linkNode.setAttribute( 'href', href );
