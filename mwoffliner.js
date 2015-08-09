@@ -1769,7 +1769,6 @@ function getArticleIds( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
 		var url = apiUrl + 'action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=' + namespaces[ namespace ].number + '&format=json' + '&rawcontinue=' + next;
 		setTimeout( downloadContent, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, function( content, responseHeaders ) {
-		    printLog( 'Redirect queue size: ' + redirectQueue.length() );
 		    var body = content.toString();
 		    if ( body && body.length > 1 ) {
 			next = parseJson( body );
