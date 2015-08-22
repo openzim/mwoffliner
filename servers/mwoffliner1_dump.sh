@@ -12,5 +12,3 @@ $MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --langu
 # Wiktionary
 $MWMATRIXOFFLINER  --project=wiktionary --outputDirectory=$ZIM2INDEX/wiktionary/  --language="(en|fr|mg)" &&
 
-# Wikisource
-$MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language=fr
