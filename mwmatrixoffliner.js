@@ -182,6 +182,9 @@ function loadMatrix( finished ) {
 		} else {
 		    entry.site.map( function( site ) {
 			if ( site.closed === undefined ) {
+			    if (  entry.code == 'simple' ) {
+				site.filenamePrefix = site.sitename.toLowerCase() + '_en_simple';
+			    }
 			    site.lang = entry.code;
 			    mediawikis.push( site );
 			}
