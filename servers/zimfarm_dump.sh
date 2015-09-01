@@ -27,7 +27,7 @@ wget "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Wiki_Project_Med
 $MWOFFLINER --mwUrl="https://en.wikipedia.org/" --parsoidUrl="http://rest.wikimedia.org/en.wikipedia.org/v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customMainPage="Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 # Wikipedia in Hebrew
-$MWOFFLINER --mwUrl="https://he.wikipedia.org" --parsoidUrl="http://rest.wikimedia.org/he.wikipedia.org/v1/page/html/" --customMainPage="ויקיפדיה:עמוד_ראשי/לא-מקוון" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+$MWOFFLINER --mwUrl="https://he.wikipedia.org/" --parsoidUrl="http://rest.wikimedia.org/he.wikipedia.org/v1/page/html/" --customMainPage="ויקיפדיה:עמוד_ראשי/לא-מקוון" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 # Wikivoyage in english
 $MWOFFLINER --mwUrl="https://en.wikivoyage.org/" --parsoidUrl="http://rest.wikimedia.org/en.wikivoyage.org/v1/page/html/" --customMainPage="Wikivoyage:Offline_reader_Expedition/Home_page" --outputDirectory=$ZIM2INDEX/wikivoyage/ &&
