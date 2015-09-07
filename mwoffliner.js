@@ -377,13 +377,13 @@ async.series(
 		function( finished ) {
 		    printLog( 'Quitting redis databases...' );
 		    redisClient.quit();
-		    printLog( 'Closing HTTP agents' );
+		    printLog( 'Closing HTTP agents...' );
 		    closeAgents();
-		    printLog( 'All dumping(s) finished with success.' );
 		    finished();
 		}
 	    ],
 	    function( error, result ) {
+		printLog( 'All dumping(s) finished with success.' );
 	    }
 	)
     }
