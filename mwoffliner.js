@@ -365,16 +365,27 @@ async.series(
 	}
     ],
     function( error ) {
-	printLog( 'Flushing redis databases...' );
-	redisClient.del( redisRedirectsDatabase, redisMediaIdsDatabase, redisArticleDetailsDatabase, redisCachedMediaToCheckDatabase, function() {
-	    printLog( 'Quitting redis databases...' );
-	    redisClient.quit();
-	});
-	
-	printLog( 'Closing HTTP agents' );
-	closeAgents();
-
-	printLog( 'All dumping(s) finished with success.' );
+	async.series(
+	    [
+		function( finished ) {
+		    printLog( 'Flushing redis databases...' );
+		    redisClient.del( redisRedirectsDatabase, redisMediaIdsDatabase, redisArticleDetailsDatabase, redisCachedMediaToCheckDatabase, function() {
+			printLog( 'Redis databases flushed.' );
+			finished();
+		    })
+		},
+		function( finished ) {
+		    printLog( 'Quitting redis databases...' );
+		    redisClient.quit();
+		    printLog( 'Closing HTTP agents' );
+		    closeAgents();
+		    printLog( 'All dumping(s) finished with success.' );
+		    finished();
+		}
+	    ],
+	    function( error, result ) {
+	    }
+	)
     }
 );
 
