@@ -35,8 +35,8 @@ var htmlMinifier = require('html-minifier');
 /************************************/
 
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --parsoidUrl=http://rest.wikimedia.org/en.wikipedia.org/v1/page/html/ --adminEmail=foo@bar.net' )
-    .require( [ 'mwUrl', 'parsoidUrl', 'adminEmail' ] )
+	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --adminEmail=foo@bar.net' )
+    .require( [ 'mwUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
@@ -54,7 +54,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'mwApiPath',  'Mediawiki API path (per default "/w/api.php"' )
     .describe( 'minifyHtml', 'Try to reduce the size of the HTML' )
     .describe( 'outputDirectory', 'Directory to write the downloaded content' )
-    .describe( 'parsoidURL', 'Mediawiki Parsoid URL' )
+    .describe( 'parsoidUrl', 'Mediawiki Parsoid URL' )
     .describe( 'redisSocket', 'Path to Redis socket file' )
     .describe( 'requestTimeout', 'Request timeout (in seconds)' )
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
@@ -257,6 +257,11 @@ var webUrlHost =  urlParser.parse( webUrl ).host;
 var webUrlPath = urlParser.parse( webUrl ).pathname;
 var mwApiPath = argv.mwApiPath ? argv.mwApiPath : 'w/api.php';
 var apiUrl = mwUrl + ( argv.mwApiPath ? argv.mwApiPath : 'w/api.php' ) + '?';
+var parsoidContentType = 'html';
+if ( !parsoidUrl ) {
+    parsoidUrl = apiUrl + "action=visualeditor&format=json&paction=parse&page=";
+    parsoidContentType = 'json';
+}
 var nopic = false;
 var nozim = false;
 var filenameRadical = '';
@@ -308,8 +313,8 @@ async.series(
     [
 	function( finished ) { login( finished ) },
 	function( finished ) { getTextDirection( finished ) },
-	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getSiteInfo( finished ) },
+	function( finished ) { getSubTitle( finished ) },
 	function( finished ) { getNamespaces( finished ) },
 	function( finished ) { createDirectories( finished ) },
 	function( finished ) { prepareCache( finished ) },
@@ -1366,10 +1371,21 @@ function saveArticles( finished ) {
     }
 
     function saveArticle( articleId, finished ) {
-	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + ( parsoidUrl.indexOf( 'rest.wikimedia.org' ) < 0 ? '?oldid=' : '/' ) + articleIds[ articleId ];
+	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + ( parsoidUrl.indexOf( '/rest' ) < 0 ? '&oldid=' : '/' ) + articleIds[ articleId ];
 	printLog( 'Getting article from ' + articleUrl );
 	setTimeout( skipHtmlCache ? downloadContent : downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
-	    var html = content.toString();
+	    var html = '';
+	    if ( parsoidContentType == 'json' ) {
+		var json = JSON.parse( content.toString() );
+		if ( json['visualeditor'] ) {
+		    html = json['visualeditor']['content'];
+		} else {
+		    console.error( 'Error by retrieving article: ' + json['error']['info'] );
+		}
+	    } else {
+		html = content.toString();
+	    }
+
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
@@ -2227,7 +2243,7 @@ function getSubTitle( finished ) {
 	var html = content.toString();
 	var doc = domino.createDocument( html );
 	var subTitleNode = doc.getElementById( 'siteSub' );
-	subTitle = subTitleNode.innerHTML;
+	subTitle = subTitleNode ? subTitleNode.innerHTML : '';
 	finished();
     });
 }
