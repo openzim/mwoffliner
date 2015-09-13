@@ -4,7 +4,7 @@ ZIM2INDEX=/srv/upload/zim2index/
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js --speed=5 --verbose --skipCacheCleaning --adminEmail=kelson@kiwix.org --format= --format=nopic"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=5 --verbose --adminEmail=contact@kiwix.org --mwUrl=https://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --skipCacheCleaning"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=5 --verbose --adminEmail=contact@kiwix.org --mwUrl=https://meta.wikimedia.org/ --skipCacheCleaning"
 
 # Wikipedia medicine
 /srv/kiwix-tools/tools/scripts/listCategoryEntries.pl --host=en.wikipedia.org --category=WikiProject_Medicine_articles --path=w --exploration=5 --namespace=1 | sed 's/Talk://' | sort -u > "$SCRIPT_DIR/medicine" &&
