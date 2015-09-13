@@ -24,8 +24,8 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=http://meta.wikimedia.org/ --parsoidUrl=http://rest.wikimedia.org/ --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]' )
-    .require( [ 'mwUrl', 'parsoidUrl', 'adminEmail' ] )
+	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ --adminEmail=foo@bar.net [--parsoidUrl=https://rest.wikimedia.org/] --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]' )
+    .require( [ 'mwUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
@@ -65,7 +65,7 @@ optBinaries.forEach( function( cmd ) {
 var outputDirectory = argv.outputDirectory;
 var tmpDirectory = argv.tmpDirectory;
 var cacheDirectory = argv.cacheDirectory;
-var parsoidUrl = argv.parsoidUrl[ argv.parsoidUrl.length - 1 ] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/';
+var parsoidUrl = parsoidUrl ? ( argv.parsoidUrl[ argv.parsoidUrl.length - 1 ] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/' ) : '';
 var mwUrl = argv.mwUrl[ argv.mwUrl.length - 1 ] == '/' ? argv.mwUrl : argv.mwUrl + '/';
 var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
@@ -123,7 +123,14 @@ function dump( finished ) {
 	       ) {
 		languageTrigger = undefined;
 		var localMwUrl = site.url + '/';
-		var localParsoidUrl = parsoidUrl.indexOf( 'rest.wikimedia.org' ) < 0 ? parsoidUrl + site.dbname + '/' : parsoidUrl + urlParser.parse( site.url ).hostname + '/v1/page/html/';
+		var localParsoidUrl = '';
+		if ( parsoidUrl ) {
+		    localParsoidUrl = parsoidUrl.indexOf( 'rest.wikimedia.org' ) < 0 ?
+			parsoidUrl + site.dbname + '/' : parsoidUrl + urlParser.parse( site.url ).hostname + '/v1/page/html/';
+		} else {
+		    localParsoidUrl = site.url + '/api/rest_v1/page/html/';
+		}
+
 		printLog( 'Dumping ' + site.url );
 		executeTransparently( './mwoffliner.js',
 				      [ '--mwUrl=' + localMwUrl,
@@ -214,7 +221,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		}
 	    }
 
-	    http.get( url, function( response ) {
+	    https.get( url, function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var data = '';
 
