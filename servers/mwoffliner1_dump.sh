@@ -10,7 +10,7 @@ MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=3 --verbose --skipHtml
 $MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language=fr &&
 
 # Wikipedia
-$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language="(de|es|sh)" &&
+$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language="(de|es|it)" &&
 
 # Wiktionary
 $MWMATRIXOFFLINER  --project=wiktionary --outputDirectory=$ZIM2INDEX/wiktionary/  --language="(en|es|fr|mg)"
