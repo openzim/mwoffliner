@@ -251,7 +251,7 @@ var description = argv.customZimDescription ? argv.customZimDescription : '';
 var mainPageId = argv.customMainPage ? argv.customMainPage : '';
 var articleIds = {};
 var namespaces = {};
-var mwWikiPath = argv.mwWikiPath ? argv.mwWikiPath : 'wiki';
+var mwWikiPath = argv.mwWikiPath !== undefined && argv.mwWikiPath !== true ? argv.mwWikiPath : 'wiki';
 var webUrl = mwUrl + mwWikiPath + '/';
 var webUrlHost =  urlParser.parse( webUrl ).host;
 var webUrlPath = urlParser.parse( webUrl ).pathname;
