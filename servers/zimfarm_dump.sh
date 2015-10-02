@@ -43,4 +43,4 @@ $MWOFFLINER --speed=5 --mwUrl="https://he.wikipedia.org/" --parsoidUrl="http://r
 $MWOFFLINER --speed=5 --mwUrl="https://en.wikivoyage.org/" --parsoidUrl="http://rest.wikimedia.org/en.wikivoyage.org/v1/page/html/" --customMainPage="Wikivoyage:Offline_reader_Expedition/Home_page" --outputDirectory=$ZIM2INDEX/wikivoyage/ &&
 
 # Wikipedia
-$MWMATRIXOFFLINER --speed=5 --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language='(en|fr)'
+$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language='(en|fr)'
