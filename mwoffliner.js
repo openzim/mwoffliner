@@ -1976,7 +1976,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 
     printLog( 'Downloading ' + decodeURI( url ) + '...' );
     async.retry(
-	5,
+	3,
 	function( finished ) {
 	    var request;
 	    var calledFinished = false;
