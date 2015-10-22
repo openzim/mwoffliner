@@ -15,9 +15,6 @@ $MWMATRIXOFFLINER  --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/
 # Wikivoyage
 $MWMATRIXOFFLINER --project=wikivoyage --outputDirectory=$ZIM2INDEX/wikivoyage/ --languageInverter --language="(en)" &&
 
-# Wikinews
-$MWMATRIXOFFLINER --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/ &&
-
 # Wikiquote
 $MWMATRIXOFFLINER --project=wikiquote --outputDirectory=$ZIM2INDEX/wikiquote/ &&
 
