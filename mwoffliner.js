@@ -389,6 +389,9 @@ async.series(
 	    ],
 	    function( error, result ) {
 		printLog( 'All dumping(s) finished with success.' );
+
+		/* Time to time the script hungs here. Forcing the exit */
+		process.exit( 0 );
 	    }
 	)
     }
