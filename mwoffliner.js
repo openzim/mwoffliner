@@ -35,7 +35,7 @@ var htmlMinifier = require('html-minifier');
 /************************************/
 
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=http://en.wikipedia.org/ --adminEmail=foo@bar.net' )
+	   + '\nExample: node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net' )
     .require( [ 'mwUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
@@ -1486,10 +1486,10 @@ function saveJavascript( finished ) {
 			       var scriptIncrementor = 0;
 			       async.whilst(
 				   function() {
-				       scriptIncrementor < scripts.length;
+				       return scriptIncrementor < scripts.length;
 				   },
 				   function( finished ) {
-				       var script = scripts[ scriptIncrementor ];
+				       var script = scripts[ scriptIncrementor++ ];
 				       var url = script.getAttribute( 'src' );
 				       var munge_js = function( txt ) {
 					   txt = txt.replace( RegExp( '//bits.wikimedia.org/.*.wikipedia.org/load.php', 'g' ), javascriptDirectory + '/local.js' );
@@ -1511,6 +1511,11 @@ function saveJavascript( finished ) {
 				       }
 				   },
 				   function( error ) {
+				       if ( error ) {
+					   console.error( 'Error by downloading CSS/JS dependencies: ' + error );
+				       } else {
+					   printLog( 'All CSS/JS dependencies downloaded successfuly.' );
+				       }
 				       finished();
 				   });
 			   });
