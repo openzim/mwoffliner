@@ -1783,7 +1783,13 @@ function getArticleIds( finished ) {
     }
 
     function getArticleIdsForFile( finished ) {
-	var lines = fs.readFileSync( articleList ).toString().split( '\n' );
+	try {
+	    var lines = fs.readFileSync( articleList ).toString().split( '\n' );
+	} catch ( error ){
+	    console.error( 'Unable to open article list file: ' + error );
+	    process.exit( 1 );
+	}
+
 	async.eachLimit( lines, speed, getArticleIdsForLine, function( error ) {
 	    if ( error ) {
 		console.error( 'Unable to get all article ids for a file: ' + error );
