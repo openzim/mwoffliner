@@ -255,6 +255,7 @@ var mwWikiPath = argv.mwWikiPath !== undefined && argv.mwWikiPath !== true ? arg
 var webUrl = mwUrl + mwWikiPath + '/';
 var webUrlHost =  urlParser.parse( webUrl ).host;
 var webUrlPath = urlParser.parse( webUrl ).pathname;
+var webUrlPort = getRequestOptionsFromUrl( webUrl ).port;
 var mwApiPath = argv.mwApiPath ? argv.mwApiPath : 'w/api.php';
 var apiUrl = mwUrl + ( argv.mwApiPath ? argv.mwApiPath : 'w/api.php' ) + '?';
 var parsoidContentType = 'html';
@@ -2007,8 +2008,31 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    }
 	    
 	    retryCount++;
+
+	    /* Analyse url */
 	    var options = getRequestOptionsFromUrl( url, true );
-	    request = ( options.protocol == 'http:' ? http : https ).get( options, function( response ) {
+
+	    /* Protocol detection */
+	    var protocol;
+	    if ( options.protocol == 'http:' ) {
+		protocol = http;
+	    } else if ( options.protocol == 'https:' ) {
+		protocol = https;
+	    } else {
+		console.error( 'Unable to determine the protocol of the following url, switched back to ' + ( webUrlPort == 443 ? 'https' : 'http' ) + ': ' + url );
+		if ( webUrlPort == 443 ) {
+		    protocol = https;
+		    url.replace( options.protocol, 'https:' );
+		} else {
+		    protocol = http;
+		    url.replace( options.protocol, 'http:' );
+		}
+		console.error( 'New url is: ' + url );
+	    }
+
+	    /* Downloading */
+	    options = getRequestOptionsFromUrl( url, true );
+	    request = ( protocol ).get( options, function( response ) {
 		if ( response.statusCode == 200 ) {
 		    var chunks = new Array();
 		    response.on( 'data', function ( chunk ) {
