@@ -2019,7 +2019,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    } else if ( options.protocol == 'https:' ) {
 		protocol = https;
 	    } else {
-		console.error( 'Unable to determine the protocol of the following url, switched back to ' + ( webUrlPort == 443 ? 'https' : 'http' ) + ': ' + url );
+		console.error( 'Unable to determine the protocol of the following url (' + options.protocol + '), switched back to ' + ( webUrlPort == 443 ? 'https' : 'http' ) + ': ' + url );
 		if ( webUrlPort == 443 ) {
 		    protocol = https;
 		    url.replace( options.protocol, 'https:' );
