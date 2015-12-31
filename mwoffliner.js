@@ -148,7 +148,11 @@ if ( argv.speed && isNaN( argv.speed ) ) {
     console.error( 'speed is not a number, please give a number value to --speed' );
     process.exit( 1 );
 }
-var speed = cpuCount * ( argv.speed || 1 );
+var speed = (cpuCount / 2 ) * ( argv.speed || 1 );
+
+/* Max number of socket open */
+https.globalAgent.maxSockets = speed;
+http.globalAgent.maxSockets = speed;
 
 /* Necessary to avoid problems with https */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
