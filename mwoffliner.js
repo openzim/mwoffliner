@@ -422,7 +422,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 
 	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
-	    return 'jpegoptim --strip-all -m50 "' + path + '"';
+	    return 'jpegoptim --strip-all -m60 "' + path + '"';
 	} else if ( type === 'png' || type === 'PNG' ) {
 	    return 'pngquant --verbose --nofs --force --ext="' + tmpExt + '" "' + path + 
 		'" && advdef -q -z -4 -i 5 "' + tmpPath + 
