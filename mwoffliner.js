@@ -44,6 +44,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'customZimTitle', 'Allow to configure a custom ZIM file title.' )
     .describe( 'customZimDescription', 'Allow to configure a custom ZIM file description.' )
     .describe( 'customMainPage', 'Allow to configure a custom page as welcome page.' )
+    .describe( 'writeHtmlRedirects', 'Write redirect as HTML files' )
     .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"' )
@@ -162,6 +163,9 @@ var verbose = argv.verbose;
 
 /* Optimize HTML */
 var minifyHtml = argv.minifyHtml;
+
+/* How to write redirects */
+var writeHtmlRedirects = argv.writeHtmlRedirects;
 
 /* Cache strategy */
 var skipHtmlCache = argv.skipHtmlCache;
@@ -776,6 +780,7 @@ function drainOptimizationQueue( finished ) {
 
 function saveRedirects( finished ) {
     printLog( 'Saving redirects...' );
+    var data = '';
 
     function saveRedirect( redirectId, finished ) {
 	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
@@ -785,15 +790,19 @@ function saveRedirects( finished ) {
 	    } else {
 		if ( target ) {
 		    printLog( 'Writing redirect ' + redirectId + ' (to '+ target + ')...' );
-		    var html = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ), 
+		    if ( writeHtmlRedirects ) {
+			data = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ),
 						   target : getArticleUrl( target ) } );
-
-		    if ( deflateTmpHtml ) {
-			zlib.deflate( html, function( error, deflatedHtml ) {
-			    fs.writeFile( getArticlePath( redirectId ), deflatedHtml, finished );
-			});
+			if ( deflateTmpHtml ) {
+			    zlib.deflate( data, function( error, deflatedHtml ) {
+				fs.writeFile( getArticlePath( redirectId ), deflatedHtml, finished );
+			    });
+			} else {
+			    fs.writeFile( getArticlePath( redirectId ), data, finished );
+			}
 		    } else {
-			fs.writeFile( getArticlePath( redirectId ), html, finished );
+			data += getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) + '\t' + getArticleUrl( target ) + '\n';
+			finished();
 		    }
 		} else {
 		    finished();
@@ -813,7 +822,7 @@ function saveRedirects( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'All redirects were saved successfuly.' );
-		    finished();
+		    writeHtmlRedirects ? finished() : fs.writeFile( cacheDirectory + 'redirects', data, finished );
 		}
 	    });
 	}
