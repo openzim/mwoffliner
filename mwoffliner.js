@@ -680,20 +680,22 @@ function buildZIM( finished ) {
 	exec( 'sync', function( error ) {
 	    var zimPath = computeZimRootPath();
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
+	        + ( !writeHtmlRedirects ? ' --redirects="' + cacheDirectory + 'redirects"' : '' )
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 	    
 	    executeTransparently( 'zimwriterfs',
-				  [ deflateTmpHtml ? '--inflateHtml' : '', 
+				  [ !writeHtmlRedirects ? '--redirects=' + cacheDirectory + 'redirects' : '',
+				    deflateTmpHtml ? '--inflateHtml' : '',
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
 				    '--title=' + name,
 				    '--description=' + ( description || subTitle || name ), 
 				    '--creator=' + creator,
-				    '--publisher=' + publisher, 
+				    '--publisher=' + publisher,
 				    htmlRootPath, 
 				    zimPath ], 
 				  function( error ) {
@@ -792,7 +794,7 @@ function saveRedirects( finished ) {
 		    printLog( 'Writing redirect ' + redirectId + ' (to '+ target + ')...' );
 		    if ( writeHtmlRedirects ) {
 			data = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ),
-						   target : getArticleUrl( target ) } );
+						   target: getArticleUrl( target ) } );
 			if ( deflateTmpHtml ) {
 			    zlib.deflate( data, function( error, deflatedHtml ) {
 				fs.writeFile( getArticlePath( redirectId ), deflatedHtml, finished );
@@ -801,7 +803,7 @@ function saveRedirects( finished ) {
 			    fs.writeFile( getArticlePath( redirectId ), data, finished );
 			}
 		    } else {
-			data += getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) + '\t' + getArticleUrl( target ) + '\n';
+			data += getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) + '\t' + getArticleBase( target, false ) + '\n';
 			finished();
 		    }
 		} else {
