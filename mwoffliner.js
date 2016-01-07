@@ -801,7 +801,7 @@ function saveRedirects( finished ) {
 			    fs.writeFile( getArticlePath( redirectId ), data, finished );
 			}
 		    } else {
-			data += getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) + '\t' + getArticleUrl( target ) + '\n';
+			data += 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) + '\t' + getArticleUrl( target ) + '\n';
 			finished();
 		    }
 		} else {
