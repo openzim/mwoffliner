@@ -149,11 +149,14 @@ if ( argv.speed && isNaN( argv.speed ) ) {
     console.error( 'speed is not a number, please give a number value to --speed' );
     process.exit( 1 );
 }
-var speed = (cpuCount / 2 ) * ( argv.speed || 1 );
+//var speed = ( cpuCount / 2 ) * ( argv.speed || 1 );
+var speed = cpuCount * ( argv.speed || 1 );
 
 /* Max number of socket open */
+/*
 https.globalAgent.maxSockets = speed;
 http.globalAgent.maxSockets = speed;
+*/
 
 /* Necessary to avoid problems with https */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -681,12 +684,14 @@ function buildZIM( finished ) {
 	    var zimPath = computeZimRootPath();
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
+	        + ' --redirects="' + cacheDirectory + 'redirects"'
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 	    
 	    executeTransparently( 'zimwriterfs',
-				  [ deflateTmpHtml ? '--inflateHtml' : '', 
+				  [ deflateTmpHtml ? '--inflateHtml' : '',
+				    '--redirects=' + cacheDirectory + 'redirects',
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
@@ -780,7 +785,7 @@ function drainOptimizationQueue( finished ) {
 
 function saveRedirects( finished ) {
     printLog( 'Saving redirects...' );
-    var data = '';
+    fs.unlinkSync( cacheDirectory + 'redirects' );
 
     function saveRedirect( redirectId, finished ) {
 	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
@@ -801,8 +806,9 @@ function saveRedirects( finished ) {
 			    fs.writeFile( getArticlePath( redirectId ), data, finished );
 			}
 		    } else {
-			data += 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) + '\t' + getArticleUrl( target ) + '\n';
-			finished();
+			var line = 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) +
+			    '\t' + getArticleUrl( target ) + '\n';
+			fs.appendFile( cacheDirectory + 'redirects', line, finished );
 		    }
 		} else {
 		    finished();
@@ -822,7 +828,7 @@ function saveRedirects( finished ) {
 		    process.exit( 1 );
 		} else {
 		    printLog( 'All redirects were saved successfuly.' );
-		    writeHtmlRedirects ? finished() : fs.writeFile( cacheDirectory + 'redirects', data, finished );
+		    finished();
 		}
 	    });
 	}
