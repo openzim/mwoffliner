@@ -784,9 +784,12 @@ function drainOptimizationQueue( finished ) {
 }
 
 function saveRedirects( finished ) {
-    printLog( 'Saving redirects...' );
-    fs.unlinkSync( cacheDirectory + 'redirects' );
+    printLog( 'Removing old redirects file (if necessary)...' );
+    if (fs.existsSync( cacheDirectory + 'redirects' )) {
+	fs.unlinkSync( cacheDirectory + 'redirects' );
+    }
 
+    printLog( 'Saving redirects...' );
     function saveRedirect( redirectId, finished ) {
 	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
 	    if ( error ) {
