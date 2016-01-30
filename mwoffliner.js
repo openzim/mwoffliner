@@ -812,7 +812,7 @@ function saveRedirects( finished ) {
 			}
 		    } else {
 			var line = 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) +
-			    '\t' + getArticleUrl( target ) + '\n';
+			    '\t' + getArticleBase( target, false ) + '\n';
 			fs.appendFile( cacheDirectory + 'redirects', line, finished );
 		    }
 		} else {
