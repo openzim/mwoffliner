@@ -684,6 +684,7 @@ function buildZIM( finished ) {
 	    var zimPath = computeZimRootPath();
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
+	        + ( verbose ? ' --verbose ' : '' )
 	        + ' --redirects="' + cacheDirectory + 'redirects"'
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
@@ -691,6 +692,7 @@ function buildZIM( finished ) {
 	    
 	    executeTransparently( 'zimwriterfs',
 				  [ deflateTmpHtml ? '--inflateHtml' : '',
+				    verbose ? '--verbose' : '',
 				    '--redirects=' + cacheDirectory + 'redirects',
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
@@ -810,7 +812,7 @@ function saveRedirects( finished ) {
 			}
 		    } else {
 			var line = 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) +
-			    '\t' + getArticleUrl( target ) + '\n';
+			    '\t' + getArticleBase( target, false ) + '\n';
 			fs.appendFile( cacheDirectory + 'redirects', line, finished );
 		    }
 		} else {
