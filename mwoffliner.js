@@ -153,10 +153,8 @@ if ( argv.speed && isNaN( argv.speed ) ) {
 var speed = cpuCount * ( argv.speed || 1 );
 
 /* Max number of socket open */
-/*
 https.globalAgent.maxSockets = speed;
 http.globalAgent.maxSockets = speed;
-*/
 
 /* Necessary to avoid problems with https */
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
