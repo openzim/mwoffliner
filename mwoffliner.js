@@ -236,7 +236,7 @@ var htmlTemplateCode = function(){/*
     <script src="j/head.js"></script>
   </head>
   <body class="mw-body mw-body-content mediawiki" style="background-color: white; margin: 0; border-width: 0px; padding: 0px;">
-    <div id="content" class="mw-body" style="margin: 0; padding: 1em; border-width: 0px;">
+    <div id="content" class="mw-body" style="padding: 1em; border-width: 0px; max-width: 55.8em; margin: 0 auto 0 auto">
       <a id="top"></a>
       <h1 id="titleHeading" style="background-color: white; margin: 0;"></h1>
       <div id="mw-content-text">
