@@ -168,6 +168,9 @@ var minifyHtml = argv.minifyHtml;
 /* How to write redirects */
 var writeHtmlRedirects = argv.writeHtmlRedirects;
 
+/* File where redirects might be save if --writeHtmlRedirects is not set */
+var redirectsFile;
+
 /* Cache strategy */
 var skipHtmlCache = argv.skipHtmlCache;
 var skipCacheCleaning = argv.skipCacheCleaning;
@@ -340,6 +343,7 @@ async.series(
 		    keepHtml = nozim ? true : keepHtml;
 		    filenameRadical = computeFilenameRadical();
 		    htmlRootPath = computeHtmlRootPath();
+		    redirectsFile = computeRedirectsFilePath();
 
 		    async.series(
 			[
@@ -676,6 +680,11 @@ function computeZimRootPath() {
     return zimRootPath;
 }
 
+function computeRedirectsFilePath() {
+    var redirectsFilePath = cacheDirectory + computeFilenameRadical(true) + '.redirects';
+    return redirectsFilePath;
+}
+
 function buildZIM( finished ) {
     if ( !nozim ) {
 	exec( 'sync', function( error ) {
@@ -683,7 +692,7 @@ function buildZIM( finished ) {
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 	        + ( verbose ? ' --verbose ' : '' )
-	        + ' --redirects="' + cacheDirectory + 'redirects"'
+	        + ( writeHtmlRedirects ? '' : ' --redirects="' + redirectsFile + '"' )
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
@@ -691,7 +700,7 @@ function buildZIM( finished ) {
 	    executeTransparently( 'zimwriterfs',
 				  [ deflateTmpHtml ? '--inflateHtml' : '',
 				    verbose ? '--verbose' : '',
-				    '--redirects=' + cacheDirectory + 'redirects',
+				    writeHtmlRedirects ? '' : '--redirects=' + redirectsFile,
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
@@ -784,10 +793,8 @@ function drainOptimizationQueue( finished ) {
 }
 
 function saveRedirects( finished ) {
-    printLog( 'Removing old redirects file (if necessary)...' );
-    if (fs.existsSync( cacheDirectory + 'redirects' )) {
-	fs.unlinkSync( cacheDirectory + 'redirects' );
-    }
+    printLog( 'Reset redirects file (or create it)' );
+    fs.openSync( redirectsFile, 'w' )
 
     printLog( 'Saving redirects...' );
     function saveRedirect( redirectId, finished ) {
@@ -811,7 +818,7 @@ function saveRedirects( finished ) {
 		    } else {
 			var line = 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) +
 			    '\t' + getArticleBase( target, false ) + '\n';
-			fs.appendFile( cacheDirectory + 'redirects', line, finished );
+			fs.appendFile( redirectsFile, line, finished );
 		    }
 		} else {
 		    finished();
