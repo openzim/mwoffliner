@@ -169,7 +169,7 @@ var minifyHtml = argv.minifyHtml;
 var writeHtmlRedirects = argv.writeHtmlRedirects;
 
 /* File where redirects might be save if --writeHtmlRedirects is not set */
-var redirectsFile;
+var redirectsCacheFile;
 
 /* Cache strategy */
 var skipHtmlCache = argv.skipHtmlCache;
@@ -333,6 +333,7 @@ async.series(
 	function( finished ) { prepareCache( finished ) },
 	function( finished ) { checkResume( finished ) },
 	function( finished ) { getArticleIds( finished ) },
+	function( finished ) { cacheRedirects( finished ) },
 	function( finished ) { 
 	    async.eachSeries(
 		dumps,
@@ -343,7 +344,6 @@ async.series(
 		    keepHtml = nozim ? true : keepHtml;
 		    filenameRadical = computeFilenameRadical();
 		    htmlRootPath = computeHtmlRootPath();
-		    redirectsFile = computeRedirectsFilePath();
 
 		    async.series(
 			[
@@ -352,7 +352,7 @@ async.series(
 			    function( finished ) { saveStylesheet( finished ) },
 			    function( finished ) { saveFavicon( finished ) },
 			    function( finished ) { getMainPage( finished ) },
-			    function( finished ) { saveRedirects( finished ) },
+			    function( finished ) { writeHtmlRedirects ? saveHtmlRedirects( finished ) : finished() },
 			    function( finished ) { saveArticles( finished ) },
 			    function( finished ) { drainDownloadFileQueue( finished ) },
 			    function( finished ) { drainOptimizationQueue( finished ) },
@@ -579,11 +579,13 @@ function closeAgents( finished ) {
 
 function prepareCache( finished ) {
     printLog( 'Preparing cache...' );
-    cacheDirectory = cacheDirectory + computeFilenameRadical( true ) + '/';
+    cacheDirectory = cacheDirectory + computeFilenameRadical( true, true, true ) + '/';
+    redirectsCacheFile = computeRedirectsCacheFilePath();
     mkdirp( cacheDirectory + 'm/', function() {
         fs.writeFileSync( cacheDirectory + 'ref', '42' );
 	finished();
     });
+
 }
 
 function createDirectories( finished ) {
@@ -627,7 +629,7 @@ function extractTargetIdFromHref( href ) {
     }
 }
 
-function computeFilenameRadical( generic ) {
+function computeFilenameRadical( withoutSelection, withoutPictureStatus, withoutDate ) {
     var radical;
     
     if ( filenamePrefix ) {
@@ -645,17 +647,21 @@ function computeFilenameRadical( generic ) {
 	radical += langSuffix;
     }
 
-    if ( !generic ) {
-	radical += '_';
+    if ( !withoutSelection ) {
 	if ( articleList ) {
-	    radical += pathParser.basename( articleList, pathParser.extname( articleList ) ).toLowerCase().replace( / /g, '_' ) + '_';
+	    radical += '_' + pathParser.basename( articleList, pathParser.extname( articleList ) ).toLowerCase().replace( / /g, '_' );
         } else {
-	    radical += 'all_';
+	    radical += '_all';
 	}
-	radical += nopic ? 'nopic_' : '';
+    }
 
+    if ( !withoutPictureStatus ) {
+	radical += nopic ? '_nopic' : '';
+    }
+
+    if ( !withoutDate ) {
 	var date = new Date();
-	radical += date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
+	radical += '_' + date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
     }
 
     return radical;
@@ -680,9 +686,9 @@ function computeZimRootPath() {
     return zimRootPath;
 }
 
-function computeRedirectsFilePath() {
-    var redirectsFilePath = cacheDirectory + computeFilenameRadical(true) + '.redirects';
-    return redirectsFilePath;
+function computeRedirectsCacheFilePath() {
+    var redirectsCacheFilePath = cacheDirectory + computeFilenameRadical(false, true, true) + '.redirects';
+    return redirectsCacheFilePath;
 }
 
 function buildZIM( finished ) {
@@ -692,7 +698,7 @@ function buildZIM( finished ) {
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 	        + ( verbose ? ' --verbose ' : '' )
-	        + ( writeHtmlRedirects ? '' : ' --redirects="' + redirectsFile + '"' )
+	        + ( writeHtmlRedirects ? '' : ' --redirects="' + redirectsCacheFile + '"' )
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
@@ -700,7 +706,7 @@ function buildZIM( finished ) {
 	    executeTransparently( 'zimwriterfs',
 				  [ deflateTmpHtml ? '--inflateHtml' : '',
 				    verbose ? '--verbose' : '',
-				    writeHtmlRedirects ? '' : '--redirects=' + redirectsFile,
+				    writeHtmlRedirects ? '' : '--redirects=' + redirectsCacheFile,
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
@@ -792,33 +798,66 @@ function drainOptimizationQueue( finished ) {
 	});
 }
 
-function saveRedirects( finished ) {
-    printLog( 'Reset redirects file (or create it)' );
-    fs.openSync( redirectsFile, 'w' )
+function cacheRedirects( finished ) {
+    printLog( 'Reset redirects cache file (or create it)' );
+    fs.openSync( redirectsCacheFile, 'w' )
 
-    printLog( 'Saving redirects...' );
-    function saveRedirect( redirectId, finished ) {
+    printLog( 'Caching redirects...' );
+    function cacheRedirect( redirectId, finished ) {
 	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
 	    if ( error ) {
-		console.error( 'Unable to get a redirect target from redis: ' + error );
+		console.error( 'Unable to get a redirect target from redis for caching: ' + error );
 		process.exit( 1 );
 	    } else {
 		if ( target ) {
-		    printLog( 'Writing redirect ' + redirectId + ' (to '+ target + ')...' );
-		    if ( writeHtmlRedirects ) {
-			data = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ),
-						   target : getArticleUrl( target ) } );
-			if ( deflateTmpHtml ) {
-			    zlib.deflate( data, function( error, deflatedHtml ) {
-				fs.writeFile( getArticlePath( redirectId ), deflatedHtml, finished );
-			    });
-			} else {
-			    fs.writeFile( getArticlePath( redirectId ), data, finished );
-			}
+		    printLog( 'Caching redirect ' + redirectId + ' (to '+ target + ')...' );
+		    var line = 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) +
+			'\t' + getArticleBase( target, false ) + '\n';
+		    fs.appendFile( redirectsCacheFile, line, finished );
+		} else {
+		    finished();
+		}
+	    }
+	});
+    }
+
+    redisClient.hkeys( redisRedirectsDatabase, function ( error, keys ) {
+	if ( error ) {
+	    console.error( 'Unable to get redirect keys from redis for caching: ' + error );
+	    process.exit( 1 );
+	} else {
+	    async.eachLimit( keys, speed, cacheRedirect, function( error ) {
+		if ( error ) {
+		    console.error( 'Unable to cache a redirect: ' + error );
+		    process.exit( 1 );
+		} else {
+		    printLog( 'All redirects were cached successfuly.' );
+		    finished();
+		}
+	    });
+	}
+    });
+}
+
+function saveHtmlRedirects( finished ) {
+    printLog( 'Saving HTML redirects...' );
+
+    function saveHtmlRedirect( redirectId, finished ) {
+	redisClient.hget( redisRedirectsDatabase, redirectId, function( error, target ) {
+	    if ( error ) {
+		console.error( 'Unable to get a redirect target from redis for saving: ' + error );
+		process.exit( 1 );
+	    } else {
+		if ( target ) {
+		    printLog( 'Writing HTML redirect ' + redirectId + ' (to '+ target + ')...' );
+		    data = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ),
+					       target : getArticleUrl( target ) } );
+		    if ( deflateTmpHtml ) {
+			zlib.deflate( data, function( error, deflatedHtml ) {
+			    fs.writeFile( getArticlePath( redirectId ), deflatedHtml, finished );
+			});
 		    } else {
-			var line = 'A\t' + getArticleBase( redirectId ) + '\t' + redirectId.replace( /_/g, ' ' ) +
-			    '\t' + getArticleBase( target, false ) + '\n';
-			fs.appendFile( redirectsFile, line, finished );
+			fs.writeFile( getArticlePath( redirectId ), data, finished );
 		    }
 		} else {
 		    finished();
@@ -829,15 +868,15 @@ function saveRedirects( finished ) {
 
     redisClient.hkeys( redisRedirectsDatabase, function ( error, keys ) {
 	if ( error ) {
-	    console.error( 'Unable to get redirect keys from redis: ' + error );
+	    console.error( 'Unable to get redirect keys from redis for saving: ' + error );
 	    process.exit( 1 );
 	} else {
-	    async.eachLimit( keys, speed, saveRedirect, function( error ) {
+	    async.eachLimit( keys, speed, saveHtmlRedirect, function( error ) {
 		if ( error ) {
-		    console.error( 'Unable to save a redirect: ' + error );
+		    console.error( 'Unable to save a HTML redirect: ' + error );
 		    process.exit( 1 );
 		} else {
-		    printLog( 'All redirects were saved successfuly.' );
+		    printLog( 'All redirects were saved successfuly as HTML files.' );
 		    finished();
 		}
 	    });
@@ -2347,7 +2386,7 @@ function getSiteInfo( finished ) {
 
 function saveFavicon( finished ) {
     printLog( 'Saving favicon.png...' );
-    var faviconPath = htmlRootPath + '/favicon.png';
+    var faviconPath = htmlRootPath + 'favicon.png';
     
     function resizeFavicon( finished ) {
 	var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
@@ -2380,7 +2419,7 @@ function saveFavicon( finished ) {
 function getMainPage( finished ) {
     
     function writeMainPage( html, finished ) {
-	var mainPagePath = htmlRootPath + '/index.htm';
+	var mainPagePath = htmlRootPath + 'index.htm';
 	if ( deflateTmpHtml ) {
 	    zlib.deflate( html, function( error, deflatedHtml ) {
 		fs.writeFile( mainPagePath, deflatedHtml, finished );
@@ -2410,7 +2449,7 @@ function getMainPage( finished ) {
     function createMainPageRedirect( finished ) {
 	printLog( 'Create main page redirection...' );
 	var html = redirectTemplate( { title: mainPageId.replace( /_/g, ' ' ),
-				       target : getArticleBase( mainPageId, true ) } );
+				       target: getArticleBase( mainPageId, true ) } );
 	writeMainPage( html, finished );
     }
 
