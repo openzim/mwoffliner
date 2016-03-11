@@ -59,6 +59,20 @@ optBinaries.forEach( function( cmd ) {
 });
 
 /************************************/
+/* NEW PROTOTYPE ********************/
+/************************************/
+
+Array.prototype.clean = function( deleteValue ) {
+    for ( var i = 0; i < this.length; i++ ) {
+	if ( this[i] == deleteValue ) {
+	    this.splice( i, 1 );
+	    i--;
+	}
+    }
+    return this;
+};
+
+/************************************/
 /* CUSTOM VARIABLE SECTION **********/
 /************************************/
 
@@ -133,21 +147,23 @@ function dump( finished ) {
 
 		printLog( 'Dumping ' + site.url );
 		executeTransparently( './mwoffliner.js',
-				      [ '--mwUrl=' + localMwUrl,
-					'--parsoidUrl=' + localParsoidUrl,
-					'--adminEmail=' + adminEmail,
-					'--format=', '--format=nopic',
-					outputDirectory ? '--outputDirectory=' + outputDirectory : '',
-					tmpDirectory ? '--tmpDirectory=' + tmpDirectory : '',
-					cacheDirectory ? '--cacheDirectory=' + cacheDirectory : '',
-					verbose ? '--verbose' : ' ',
-					resume ? '--resume' : ' ',
-					deflateTmpHtml ? '--deflateTmpHtml' : ' ',
-					skipHtmlCache ? '--skipHtmlCache' : ' ',
-					skipCacheCleaning ? '--skipCacheCleaning' : ' ',
-					keepHtml ? '--keepHtml' : ' ',
-					speed ? '--speed=' + speed : ' ',
-					site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : ' ' ],
+				      [
+					  '--mwUrl=' + localMwUrl,
+					  '--parsoidUrl=' + localParsoidUrl,
+					  '--adminEmail=' + adminEmail,
+					  '--format=', '--format=nopic',
+					  outputDirectory ? '--outputDirectory=' + outputDirectory : undefined,
+					  tmpDirectory ? '--tmpDirectory=' + tmpDirectory : undefined,
+					  cacheDirectory ? '--cacheDirectory=' + cacheDirectory : undefined,
+					  verbose ? '--verbose' : undefined,
+					  resume ? '--resume' : undefined,
+					  deflateTmpHtml ? '--deflateTmpHtml' : undefined,
+					  skipHtmlCache ? '--skipHtmlCache' : undefined,
+					  skipCacheCleaning ? '--skipCacheCleaning' : undefined,
+					  keepHtml ? '--keepHtml' : undefined,
+					  speed ? '--speed=' + speed : undefined,
+					  site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : undefined
+				      ].clean( undefined ),
 				      function( executionError ) {
 					  if ( executionError ) {
 					      console.error( executionError );
@@ -283,7 +299,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	if ( !nostdout ) {
             proc.stdout
 		.on( 'data', function ( data ) {
-		    console.log( String( data ).replace(/[\n\r]/g, '') );
+		    console.log( String( data ) );
 		})
 		.on( 'error', function ( error ) {
 		    console.error( 'STDOUT output error: ' + error );
@@ -293,7 +309,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
         if ( !nostderr ) {
             proc.stderr
 		.on( 'data', function ( data ) {
-		    console.error( String( data ).replace(/[\n\r]/g, '') );
+		    console.error( String( data ) );
 		})
 		.on( 'error', function ( error ) {
 		    console.error( 'STDERR output error: ' + error );
