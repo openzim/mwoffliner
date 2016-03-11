@@ -299,7 +299,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	if ( !nostdout ) {
             proc.stdout
 		.on( 'data', function ( data ) {
-		    console.log( String( data ) );
+		    console.log( String( data ).replace(/[\n\r]$/g, '') );
 		})
 		.on( 'error', function ( error ) {
 		    console.error( 'STDOUT output error: ' + error );
@@ -309,7 +309,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
         if ( !nostderr ) {
             proc.stderr
 		.on( 'data', function ( data ) {
-		    console.error( String( data ) );
+		    console.error( String( data ).replace(/[\n\r]$/g, '') );
 		})
 		.on( 'error', function ( error ) {
 		    console.error( 'STDERR output error: ' + error );
