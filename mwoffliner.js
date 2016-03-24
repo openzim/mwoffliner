@@ -2036,6 +2036,7 @@ function getRequestOptionsFromUrl( url, compression ) {
     var urlObj = urlParser.parse( url );
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
     var headers = {
+	'accept': 'text/html; charset=utf-8; profile="mediawiki.org/specs/html/1.2.0"',
 	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
 	'user-agent': userAgentString,
 	'cookie': loginCookie,
