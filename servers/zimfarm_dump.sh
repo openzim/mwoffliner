@@ -98,6 +98,9 @@ $MWOFFLINER --speed=5 --mwUrl="https://fa.wikipedia.org/" --parsoidUrl="https://
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tfr\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
 $MWOFFLINER --speed=5 --mwUrl="https://fr.wikipedia.org/" --parsoidUrl="https://fr.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Encyclopédie médicale WikiMed" --customZimDescription="L'Encyclopédie médicale de Wikipédia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
+cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tit\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
+$MWOFFLINER --speed=5 --mwUrl="https://it.wikipedia.org/" --parsoidUrl="https://it.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikimed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+
 # Wikipedia in Hebrew
 $MWOFFLINER --speed=5 --mwUrl="https://he.wikipedia.org/" --parsoidUrl="https://he.wikipedia.org/api/rest_v1/page/html/" --customMainPage="ויקיפדיה:עמוד_ראשי/לא-מקוון" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
