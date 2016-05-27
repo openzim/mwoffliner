@@ -6,6 +6,9 @@ SCRIPT_DIR=`dirname "$SCRIPT"`
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js"
 MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --speed=5 --verbose --skipHtmlCache --adminEmail=contact@kiwix.org --mwUrl=https://meta.wikimedia.org/ --cacheDirectory=/data/scratch/mwoffliner/cac/ --tmpDirectory=/dev/shm/ --skipCacheCleaning"
 
+# Wikibooks
+$MWMATRIXOFFLINER --project=wikibooks --deflateTmpHtml --outputDirectory=$ZIM2INDEX/wikibooks/ &&
+
 # Wikinews
 $MWMATRIXOFFLINER --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/ &&
 
