@@ -1403,6 +1403,7 @@ function saveArticles( finished ) {
 		var date = new Date( timestamp * 1000 );
 		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
+		addNoIndexCommentToElement(div);
 
 		/* Geo-coordinates */
 		var geoCoordinates = details['g'];
@@ -1412,12 +1413,12 @@ function saveArticles( finished ) {
 		    metaNode.content = geoCoordinates // latitude + ';' + longitude;
 		    htmlTemplateDoc.getElementsByTagName( 'head' )[0].appendChild( metaNode );
 		}
-		
+
 		finished( null, htmlTemplateDoc, articleId );
 	    }
 	});
     }
-    
+
     function writeArticle( doc, articleId, finished ) {
 	printLog( 'Saving article ' + articleId + '...' );
 	var html = doc.documentElement.outerHTML;
@@ -1461,7 +1462,7 @@ function saveArticles( finished ) {
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
 		var prepareAndSaveArticle = async.compose( writeArticle, setFooter, applyOtherTreatments, rewriteUrls, treatMedias, parseHtml );
-		
+
 		printLog( 'Treating and saving article ' + articleId + ' at ' + articlePath + '...' );
 		prepareAndSaveArticle( html, articleId, function ( error, result ) {
 		    if ( error ) {
@@ -1489,6 +1490,11 @@ function saveArticles( finished ) {
 	    finished();
 	}
     });
+}
+
+function addNoIndexCommentToElement( element ) {
+	var slices = element.parentElement.innerHTML.split(element.outerHTML);
+	element.parentElement.innerHTML = slices[0] + "<!--htdig_noindex-->" + element.outerHTML + "<!--/htdig_noindex-->" + slices[1];
 }
 
 function isMirrored( id ) {
