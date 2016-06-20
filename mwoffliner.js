@@ -1403,7 +1403,6 @@ function saveArticles( finished ) {
 		var date = new Date( timestamp * 1000 );
 		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
-		addNoIndexCommentToElement(div);
 
 		/* Geo-coordinates */
 		var geoCoordinates = details['g'];
@@ -1490,11 +1489,6 @@ function saveArticles( finished ) {
 	    finished();
 	}
     });
-}
-
-function addNoIndexCommentToElement( element ) {
-	var slices = element.parentElement.innerHTML.split(element.outerHTML);
-	element.parentElement.innerHTML = slices[0] + "<!--htdig_noindex-->" + element.outerHTML + "<!--/htdig_noindex-->" + slices[1];
 }
 
 function isMirrored( id ) {
