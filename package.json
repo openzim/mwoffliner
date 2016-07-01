@@ -1,7 +1,7 @@
 {
   "name": "mwoffliner",
   "version": "0.0.0",
-  "description": "Parsoid HTML dump utility",
+  "description": "Parsoid HTML dump utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
   "author": {
@@ -16,10 +16,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://git.code.sf.net/p/kiwix/other"
+    "url": "https://github.com/kiwix/mwoffliner.git"
   },
   "bugs": {
-    "url": "http://reportabug.kiwix.org"
+    "url": "https://github.com/kiwix/mwoffliner/issues"
   },
   "dependencies": {
     "async": "^1.5.2",
