@@ -102,7 +102,8 @@ cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tit\t' | cut -f3 | grep -v -P '
 $MWOFFLINER --speed=5 --mwUrl="https://it.wikipedia.org/" --parsoidUrl="https://it.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikimed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tzh\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
-$MWOFFLINER --speed=5 --mwUrl="https://zh.wikipedia.org/" --parsoidUrl="https://zh.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikimed Medical Encyclopedia" --customMainPage="Wikipedia:医学专题/醫學開放教科書" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+wget "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Traditional_Chinese.png/362px-Traditional_Chinese.png" -O "$SCRIPT_DIR/medicinezh.png" &&
+$MWOFFLINER --speed=5 --mwUrl="https://zh.wikipedia.org/" --parsoidUrl="https://zh.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="醫學維基百科" --customMainPage="Wikipedia:医学专题/醫學開放教科書" --customZimDescription="醫學維基百科" --customZimFavicon="$SCRIPT_DIR/medicinezh.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tar\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
 $MWOFFLINER --speed=5 --mwUrl="https://ar.wikipedia.org/" --parsoidUrl="https://ar.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikimed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
