@@ -44,6 +44,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
     .describe( 'skipCacheCleaning', 'Do not search for old/outdated files in the cache' )
     .describe( 'verbose', 'Print debug information to the stdout' )
     .describe( 'skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)' )
+    .describe( 'withZimFullTextIndex', 'Include a fulltext search index to the ZIM' )
     .strict()
     .argv;
 
@@ -99,6 +100,7 @@ var skipHtmlCache = argv.skipHtmlCache;
 var skipCacheCleaning = argv.skipCacheCleaning;
 var keepHtml = argv.keepHtml;
 var deflateTmpHtml = argv.deflateTmpHtml;
+var withZimFullTextIndex = argv.withZimFullTextIndex;
 
 /************************************/
 /* MAIN *****************************/
@@ -159,6 +161,7 @@ function dump( finished ) {
 					  resume ? '--resume' : undefined,
 					  deflateTmpHtml ? '--deflateTmpHtml' : undefined,
 					  skipHtmlCache ? '--skipHtmlCache' : undefined,
+					  withZimFullTextIndex ? '--withZimFullTextIndex' : undefined,
 					  skipCacheCleaning ? '--skipCacheCleaning' : undefined,
 					  keepHtml ? '--keepHtml' : undefined,
 					  speed ? '--speed=' + speed : undefined,

@@ -67,6 +67,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'mwUsername', 'Mediawiki username (thought for private wikis)' )
     .describe( 'mwDomain', 'Mediawiki user domain (thought for private wikis)' )
     .describe( 'mwPassword', 'Mediawiki user password (thought for private wikis)' )
+    .describe( 'withZimFullTextIndex', 'Include a fulltext search index to the ZIM' )
     .strict()
     .argv;
 
@@ -186,6 +187,9 @@ var requestTimeout = argv.requestTimeout ? argv.requestTimeout : 60;
 
 /* Keep empty paragraphs */
 var keepEmptyParagraphs = argv.keepEmptyParagraphs;
+
+/* Include fulltext index in ZIM file */
+var withZimFullTextIndex = argv.withZimFullTextIndex;
 
 /* ZIM publisher */
 var publisher = 'Kiwix';
@@ -698,6 +702,7 @@ function buildZIM( finished ) {
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 	        + ( verbose ? ' --verbose ' : '' )
+		+ ( withZimFullTextIndex ? '--withFullTextIndex' : '' )
 	        + ( writeHtmlRedirects ? '' : ' --redirects="' + redirectsCacheFile + '"' )
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
@@ -707,6 +712,7 @@ function buildZIM( finished ) {
 				  [ deflateTmpHtml ? '--inflateHtml' : '',
 				    verbose ? '--verbose' : '',
 				    writeHtmlRedirects ? '' : '--redirects=' + redirectsCacheFile,
+				    withZimFullTextIndex ? '--withFullTextIndex' : '',
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
