@@ -114,7 +114,8 @@ wget "https://upload.wikimedia.org/wikipedia/commons/2/25/Wiki_Offline_Spanish_l
 $MWOFFLINER --speed=5 --mwUrl="https://es.wikipedia.org/" --parsoidUrl="https://es.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikipedia Médica" --customMainPage="Wikiproyecto:Medicina/Open_Textbook_of_Medicine" --customZimDescription="La Enciclopedia medical de Wikipedia" --customZimFavicon="$SCRIPT_DIR/medicinees.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tpt\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
-$MWOFFLINER --speed=5 --mwUrl="https://pt.wikipedia.org/" --parsoidUrl="https://pt.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikimed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+wget "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Wiki_Project_Med_Foundation_logo_pt.svg/450px-Wiki_Project_Med_Foundation_logo_pt.svg.png" -O "$SCRIPT_DIR/medicinept.png" &&
+$MWOFFLINER --speed=5 --mwUrl="https://pt.wikipedia.org/" --parsoidUrl="https://pt.wikipedia.org/api/rest_v1/page/html/" --customMainPage="Wikipédia:WikiProject_Medicine/Open_Textbook_of_Medicine" --customZimTitle="Medical Wikipedia" --customZimDescription="Artigos de assistência médica, em todo lugar, de graça!" --customZimFavicon="$SCRIPT_DIR/medicinept.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 # Wikipedia in Hebrew
 $MWOFFLINER --speed=5 --mwUrl="https://he.wikipedia.org/" --parsoidUrl="https://he.wikipedia.org/api/rest_v1/page/html/" --customMainPage="ויקיפדיה:עמוד_ראשי/לא-מקוון" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
