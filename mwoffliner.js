@@ -1450,7 +1450,7 @@ function saveArticles( finished ) {
     }
 
     function saveArticle( articleId, finished ) {
-	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + ( parsoidUrl.indexOf( '/rest' ) < 0 ? '&oldid=' : '/' ) + articleIds[ articleId ];
+	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + ( parsoidUrl.indexOf( '/rest' ) < 0 ? '?oldid=' : '/' ) + articleIds[ articleId ];
 	printLog( 'Getting article from ' + articleUrl );
 	setTimeout( skipHtmlCache ? downloadContent : downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
 	    var html = '';
