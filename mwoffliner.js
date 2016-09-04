@@ -93,7 +93,7 @@ var redirectTemplateCode = '<html><head><meta charset="UTF-8" /><title>{{ title 
 
 /* All DOM nodes with on of these styles will be removed */
 /* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */
-var cssClassBlackList = [ 'noprint', 'metadata', 'ambox', 'stub', 'topicon', 'magnify', 'navbar' ]; 
+var cssClassBlackList = [ 'noprint', 'metadata', 'ambox', 'stub', 'topicon', 'magnify', 'navbar', 'mwe-math-mathml-inline' ];
 
 /* All DOM node with these styles will be deleted if no A node is included in the sub-tree */
 var cssClassBlackListIfNoLink = [ 'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote' ];
@@ -228,7 +228,7 @@ var footerTemplateCode = '<div style="clear:both; background-image:linear-gradie
 var styleDirectory = 's';
 var mediaDirectory = 'm';
 var javascriptDirectory = 'j';
-var mediaRegex = /^(.*\/)([^\/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6})(\.[A-Za-z0-9]{2,6}|)$/;
+var mediaRegex = /^(.*\/)([^\/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6}|)(\.[A-Za-z0-9]{2,6}|)$/;
 var htmlTemplateCode = function(){/*
 <!DOCTYPE html>
 <html>
@@ -910,8 +910,10 @@ function saveArticles( finished ) {
 	for ( var i = 0; i < imgs.length ; i++ ) {
 	    var img = imgs[i];
 	    
-	    if ( ( !nopic || 
-		   img.getAttribute( 'typeof' ) == 'mw:Extension/math' ) && 
+	    if ((!nopic ||
+		 img.getAttribute( 'class' ).search( 'mwe-math-fallback-image-inline' ) >= 0 ||
+		 img.getAttribute( 'typeof' ) == 'mw:Extension/math'
+		) &&
 		 img.getAttribute( 'src' ) && 
 		 img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
 	       ) {
@@ -924,7 +926,7 @@ function saveArticles( finished ) {
 		    var href = linkNode.getAttribute( 'href' ) || '';
 		    var targetId = extractTargetIdFromHref( href );
 		    var keepLink = targetId && isMirrored( targetId );
-		    
+
                     /* Under certain condition it seems that this is possible
                      * to have parentNode == undefined, in this case this
                      * seems preferable to remove the whole link+content than
@@ -2185,7 +2187,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 
 function downloadFileAndCache( url, callback ) {
     var parts = mediaRegex.exec( decodeURI( url ) );
-    var filenameBase = ( parts[2].length > parts[5].length ? parts[2] : parts[5] + parts[6] + ( parts[7] || '' ) );
+    var filenameBase = ( parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || ".svg") + ( parts[7] || '' ) );
     var width = parseInt( parts[4].replace( /px\-/g, '' ) ) || INFINITY_WIDTH;
 
     /* Check if we have already met this image during this dumping process */
@@ -2303,7 +2305,7 @@ function getMediaBase( url, escape ) {
 
     var parts = mediaRegex.exec( decodeURI( url ) );
     if ( parts ) {
-        root = parts[2].length > parts[5].length ? parts[2] : parts[5];
+	root = parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || ".svg") + ( parts[7] || '' );
     }
  
     if ( !root ) {
@@ -2317,7 +2319,7 @@ function getMediaBase( url, escape ) {
     }
 
     var filenameFirstVariant = parts[2];
-    var filenameSecondVariant = parts[5] + parts[6] + ( parts[7] || '' );
+    var filenameSecondVariant = parts[5] + (parts[6] || ".svg") + ( parts[7] || '' );
     var filename = myDecodeURIComponent( filenameFirstVariant.length > filenameSecondVariant.length ?
 					 filenameFirstVariant : filenameSecondVariant );
     
