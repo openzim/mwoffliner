@@ -690,6 +690,10 @@ function computeZimRootPath() {
     return zimRootPath;
 }
 
+function computeZimName() {
+    return (publisher ? publisher.toLowerCase() + '_' : '' ) + computeFilenameRadical(false, true, true);
+}
+
 function computeRedirectsCacheFilePath() {
     var redirectsCacheFilePath = cacheDirectory + computeFilenameRadical(false, true, true) + '.redirects';
     return redirectsCacheFilePath;
@@ -702,21 +706,25 @@ function buildZIM( finished ) {
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 	        + ( verbose ? ' --verbose ' : '' )
-		+ ( withZimFullTextIndex ? '--withFullTextIndex' : '' )
+	        + ( nopic ? ' --tags=nopic' : '' )
+                + ' --name="' + computeZimName() + '"'
+		+ ( withZimFullTextIndex ? ' --withFullTextIndex' : '' )
 	        + ( writeHtmlRedirects ? '' : ' --redirects="' + redirectsCacheFile + '"' )
 		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
-	    
+	    printLog( 'RAID: ' + computeZimName() );
 	    executeTransparently( 'zimwriterfs',
 				  [ deflateTmpHtml ? '--inflateHtml' : '',
 				    verbose ? '--verbose' : '',
 				    writeHtmlRedirects ? '' : '--redirects=' + redirectsCacheFile,
 				    withZimFullTextIndex ? '--withFullTextIndex' : '',
+				    nopic ? '--tags=nopic' : '',
 				    '--welcome=index.htm', 
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
 				    '--title=' + name,
+                                    '--name=' + computeZimName(),
 				    '--description=' + ( description || subTitle || name ), 
 				    '--creator=' + creator,
 				    '--publisher=' + publisher, 
@@ -909,9 +917,10 @@ function saveArticles( finished ) {
 	
 	for ( var i = 0; i < imgs.length ; i++ ) {
 	    var img = imgs[i];
+	    var imageNodeClass = img.getAttribute( 'class' ) || '';
 	    
 	    if ((!nopic ||
-		 img.getAttribute( 'class' ).search( 'mwe-math-fallback-image-inline' ) >= 0 ||
+		 imageNodeClass.search( 'mwe-math-fallback-image-inline' ) >= 0 ||
 		 img.getAttribute( 'typeof' ) == 'mw:Extension/math'
 		) &&
 		 img.getAttribute( 'src' ) && 
