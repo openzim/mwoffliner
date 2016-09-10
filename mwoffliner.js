@@ -691,7 +691,7 @@ function computeZimRootPath() {
 }
 
 function computeZimName() {
-    return (publisher ? publisher.toLowerCase() + '_' : '' ) + computeFilenameRadical(false, true, true);
+    return (publisher ? publisher.toLowerCase() + '.' : '' ) + computeFilenameRadical(false, true, true);
 }
 
 function computeRedirectsCacheFilePath() {
