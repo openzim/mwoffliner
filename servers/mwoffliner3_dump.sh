@@ -118,4 +118,5 @@ cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tpt\t' | cut -f3 | grep -v -P '
 wget "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Wiki_Project_Med_Foundation_logo_pt.svg/450px-Wiki_Project_Med_Foundation_logo_pt.svg.png" -O "$SCRIPT_DIR/medicinept.png" &&
 $MWOFFLINER --speed=5 --mwUrl="https://pt.wikipedia.org/" --parsoidUrl="https://pt.wikipedia.org/api/rest_v1/page/html/" --customMainPage="Wikipédia:WikiProject_Medicine/Open_Textbook_of_Medicine" --customZimTitle="Medical Wikipedia" --customZimDescription="Artigos de assistência médica, em todo lugar, de graça!" --customZimFavicon="$SCRIPT_DIR/medicinept.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
-
+# Wikinews
+$MWMATRIXOFFLINER --project=wikinews --outputDirectory=$ZIM2INDEX/wikinews/
