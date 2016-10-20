@@ -81,8 +81,9 @@ $MWOFFLINER --speed=5 --mwUrl="https://bpy.wikipedia.org/" --parsoidUrl="https:/
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tmr\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
 $MWOFFLINER --speed=5 --mwUrl="https://mr.wikipedia.org/" --parsoidUrl="https://mr.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
+wget "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/OdiaOfflineMed.png/447px-OdiaOfflineMed.png" -O "$SCRIPT_DIR/medicineor.png" &&
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tor\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
-$MWOFFLINER --speed=5 --mwUrl="https://or.wikipedia.org/" --parsoidUrl="https://or.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+$MWOFFLINER --speed=5 --mwUrl="https://or.wikipedia.org/" --parsoidUrl="https://or.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="ମେଡିକାଲ ଉଇକିପିଡିଆ" --customZimDescription="ନିଃଶୁଳ୍କ ସ୍ୱାସ୍ଥ୍ୟସେବା ସମ୍ବନ୍ଧୀୟ ବିଷୟମାନ ପ୍ରତ୍ୟେକ ସ୍ଥାନରେ ଅଫଲାଇନରେ ଉପଲବ୍ଧ ।" --customMainPage="ବ୍ୟବହାରକାରୀ:Doc_James/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicineor.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tpa\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
 $MWOFFLINER --speed=5 --mwUrl="https://pa.wikipedia.org/" --parsoidUrl="https://pa.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
