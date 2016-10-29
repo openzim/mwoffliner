@@ -51,7 +51,7 @@ wget "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Wiki_Project_Med
 $MWOFFLINER --speed=5 --mwUrl="https://en.wikipedia.org/" --parsoidUrl="https://en.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="50.000 healthcare from Wikipedia" --customMainPage="Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 # Wikipedia EN medicine langlinks
-cat "$SCRIPT_DIR/medicine" | /srv/kiwix-tools/tools/scripts/listLangLinks.pl --host=en.wikipedia.org --path=w --readFromStdin --language=as --language=bn --language=gu --language=hi --language=kn --language=ml --language=de --language=bpy --language=mr --language=or --language=pa --language=ta --language=te --language=ur --language=fa --language=fr --language=zh --language=pt --language=ar --language=es --language=it > "$SCRIPT_DIR/medicine.langlinks"
+cat "$SCRIPT_DIR/medicine" | /srv/kiwix-tools/tools/scripts/listLangLinks.pl --host=en.wikipedia.org --path=w --readFromStdin --language=ja --language=as --language=bn --language=gu --language=hi --language=kn --language=ml --language=de --language=bpy --language=mr --language=or --language=pa --language=ta --language=te --language=ur --language=fa --language=fr --language=zh --language=pt --language=ar --language=es --language=it > "$SCRIPT_DIR/medicine.langlinks"
 
 wget "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Wiki_Project_Med_Foundation_logo_DACH.svg/1024px-Wiki_Project_Med_Foundation_logo_DACH.svg.png" -O "$SCRIPT_DIR/medicinede.png" &&
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tde\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine" &&
@@ -84,6 +84,10 @@ $MWOFFLINER --speed=5 --mwUrl="https://mr.wikipedia.org/" --parsoidUrl="https://
 wget "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/OdiaOfflineMed.png/447px-OdiaOfflineMed.png" -O "$SCRIPT_DIR/medicineor.png" &&
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tor\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
 $MWOFFLINER --speed=5 --mwUrl="https://or.wikipedia.org/" --parsoidUrl="https://or.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="ମେଡିକାଲ ଉଇକିପିଡିଆ" --customZimDescription="ନିଃଶୁଳ୍କ ସ୍ୱାସ୍ଥ୍ୟସେବା ସମ୍ବନ୍ଧୀୟ ବିଷୟମାନ ପ୍ରତ୍ୟେକ ସ୍ଥାନରେ ଅଫଲାଇନରେ ଉପଲବ୍ଧ ।" --customMainPage="ବ୍ୟବହାରକାରୀ:Doc_James/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicineor.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+
+wget "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Wiki_Project_Med_Foundation_logo.svg/400px-Wiki_Project_Med_Foundation_logo.svg.png" -O "$SCRIPT_DIR/medicineja.png" &&
+cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tja\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine" &&
+$MWOFFLINER --speed=5 --mwUrl="https://ja.wikipedia.org/" --parsoidUrl="https://ja.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="医療ウィキペディア" --customZimDescription="どこでも利用可能な無料オフラインのヘルスケア記事!" --customMainPage="プロジェクト:医学/Open_Textbook_of_Medicine" --customZimFavicon="$SCRIPT_DIR/medicineja.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tpa\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
 $MWOFFLINER --speed=5 --mwUrl="https://pa.wikipedia.org/" --parsoidUrl="https://pa.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
