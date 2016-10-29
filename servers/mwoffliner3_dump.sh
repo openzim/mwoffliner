@@ -102,7 +102,7 @@ cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tur\t' | cut -f3 | grep -v -P '
 $MWOFFLINER --speed=5 --mwUrl="https://ur.wikipedia.org/" --parsoidUrl="https://ur.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="WikiMed Medical Encyclopedia" --customZimDescription="The Wikipedia Medical Encyclopedia" --customZimFavicon="$SCRIPT_DIR/medicine.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tfa\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine"
-wget "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Wiki_Project_Med_Foundation_logo_Persian.svg/410px-Wiki_Project_Med_Foundation_logo_Persian.svg.png" -O "$SCRIPT_DIR/medicinefa.png" &&
+wget "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Wiki_Project_Med_Foundation_logo_Persian.svg/1024px-Wiki_Project_Med_Foundation_logo_Persian.svg.png" -O "$SCRIPT_DIR/medicinefa.png" &&
 $MWOFFLINER --speed=5 --mwUrl="https://fa.wikipedia.org/" --parsoidUrl="https://fa.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="ویکی‌پدیای پزشکی" --customMainPage="ویکی‌پدیا:ویکی‌پروژه_پزشکی/کتابچه_آزاد_پزشکی" --customZimDescription="مقالات پزشکی قابل دسترس به صورت آفلاین و در هر کجا، کاملاً رایگان" --customZimFavicon="$SCRIPT_DIR/medicinefa.png" --articleList="$SCRIPT_DIR/medicine" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
 cat "$SCRIPT_DIR/medicine.langlinks" | grep -P '\tfr\t' | cut -f3 | grep -v -P '^$' > "$SCRIPT_DIR/medicine_fr" &&
