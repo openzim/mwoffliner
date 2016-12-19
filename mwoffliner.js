@@ -56,6 +56,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'minifyHtml', 'Try to reduce the size of the HTML' )
     .describe( 'outputDirectory', 'Directory to write the downloaded content' )
     .describe( 'parsoidUrl', 'Mediawiki Parsoid URL' )
+    .describe( 'useClassicParseAPI', 'Whether to use the old "action=parse" instead of the Parsoid service to retrieve the HTML' )
     .describe( 'redisSocket', 'Path to Redis socket file' )
     .describe( 'requestTimeout', 'Request timeout (in seconds)' )
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
@@ -124,6 +125,9 @@ var outputDirectory = argv.outputDirectory ? homeDirExpander( argv.outputDirecto
 /* Directory where temporary data are saved */
 var tmpDirectory = argv.tmpDirectory ? homeDirExpander( argv.tmpDirectory ) + '/' : 'tmp/';
 var deflateTmpHtml = argv.deflateTmpHtml;
+
+/* Use classic "action=parse" API endpoint */
+var useClassicParseAPI = argv.useClassicParseAPI ? true : false;
 
 /* Parsoid URL */
 var parsoidUrl = argv.parsoidUrl;
@@ -1457,6 +1461,9 @@ function saveArticles( finished ) {
 
     function saveArticle( articleId, finished ) {
 	var articleUrl = parsoidUrl + encodeURIComponent( articleId ) + ( parsoidUrl.indexOf( '/rest' ) < 0 ? (parsoidUrl.indexOf( '?' ) < 0 ? '?' : '&' ) + 'oldid=' : '/' ) + articleIds[ articleId ];
+	if( useClassicParseAPI ) {
+		articleUrl = apiUrl + 'action=parse&format=json&page=' + articleId;
+	}
 	printLog( 'Getting article from ' + articleUrl );
 	setTimeout( skipHtmlCache ? downloadContent : downloadContentAndCache, downloadFileQueue.length() + optimizationQueue.length(), articleUrl, function( content, responseHeaders, articleId ) {
 	    var html = '';
@@ -1464,12 +1471,25 @@ function saveArticles( finished ) {
 		var json = JSON.parse( content.toString() );
 		if ( json['visualeditor'] ) {
 		    html = json['visualeditor']['content'];
-		} else {
+		} else if( !useClassicParseAPI ) {
 		    console.error( 'Error by retrieving article: ' + json['error']['info'] );
 		}
 	    } else {
 		html = content.toString();
 	    }
+		if( useClassicParseAPI ) {
+			if( json['parse'] ){
+				html = json['parse']['text']['*'];
+				/* Add some HTML needed for further processing */
+				html = '<html><head><title>'
+					+  json['parse']['title']
+					+ '</title></head><body><div class="mwoffliner">'
+					+ html
+					+ '</div></body></html>';
+			} else {
+				console.error( 'Error by retrieving article: ' + json['error']['info'] );
+			}
+		}
 
 	    if ( html ) {
 		var articlePath = getArticlePath( articleId );
