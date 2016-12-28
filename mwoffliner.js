@@ -2225,10 +2225,20 @@ function downloadFileAndCache( url, callback ) {
 			if ( !responseHeaders || responseHeaders.width < width ) {
 			    toDownload = true;
 			} else {
-			    if ( !fs.existsSync( mediaPath ) ) {
-				fs.symlinkSync( cachePath, mediaPath );
-			    }
-			    touch( cachePath, cacheHeadersPath );
+			    fs.symlink( cachePath, mediaPath, 'file', function( error ) {
+				if ( error ) {
+				    if ( error.code != 'EEXIST' ) {
+					console.error( 'Unable to create symlink to ' + mediaPath + ' at ' + cachePath + ': ' + error );
+					process.exit( 1 );
+				    } else if ( !skipCacheCleaning ) {
+					touch( cachePath );
+				    }
+				}
+
+				if ( !skipCacheCleaning ) {
+				    touch( cacheHeadersPath );
+				}
+			    });
 			    if ( responseHeaders.width == width ) {
 				redisClient.hdel( redisCachedMediaToCheckDatabase, filenameBase );
 			    } else {
@@ -2252,9 +2262,18 @@ function downloadFileAndCache( url, callback ) {
 				callback();
 			    } else {
 				printLog( 'Caching ' + filenameBase + ' at ' + cachePath + '...' );
-				fs.symlink( cachePath, mediaPath, function( error ) {
-				    fs.writeFileSync( cacheHeadersPath, JSON.stringify( { width: width } ) );
-				    callback();
+				fs.symlink( cachePath, mediaPath, 'file', function( error ) {
+				    if ( error && error.code != 'EEXIST' ) {
+					console.error( 'Unable to create symlink to ' + mediaPath + ' at ' + cachePath + ': ' + error );
+					process.exit( 1 );
+				    }
+				    fs.writeFile( cacheHeadersPath, JSON.stringify( { width: width } ), function( error ) {
+					if ( error ) {
+					    console.error( 'Unable to write cache header at ' + cacheHeadersPath + ': ' + error );
+					    process.exit( 1 );
+					}
+					callback();
+				    });
 				});
 			    }
 			});
@@ -2273,16 +2292,22 @@ function downloadFileAndCache( url, callback ) {
 }
 
 function downloadFile( url, path, force, callback ) {
-    fs.exists( path, function ( exists ) {
-	if ( exists && !force ) {
-	    printLog( path + ' already downloaded, download will be skipped.' );
-	    callback();
+    fs.stat( path, function ( error, stats ) {
+	if ( error && !force ) {
+	    if ( error.code == 'ENOENT' ) {
+		printLog( path + ' already downloaded, download will be skipped.' );
+		callback();
+	    } else {
+		printLog( 'Impossible to stat() ' + path + ': ' + error );
+		process.exit(1);
+	    }
 	} else {
 	    printLog( 'Downloading ' + decodeURI( url ) + ' at ' + path + '...' );
 	    downloadContent( url, function( content, responseHeaders ) {
 		    fs.writeFile( path, content, function( error ) {
 			if ( error ) {
 			    console.error( 'Unable to write ' + path + ' (' + url + ')' );
+			    process.exit(1);
 			} else {
 			    optimizationQueue.push( {path: path, size: content.length } );
 			}
