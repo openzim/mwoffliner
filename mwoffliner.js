@@ -68,6 +68,7 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'mwDomain', 'Mediawiki user domain (thought for private wikis)' )
     .describe( 'mwPassword', 'Mediawiki user password (thought for private wikis)' )
     .describe( 'withZimFullTextIndex', 'Include a fulltext search index to the ZIM' )
+    .describe( 'publisher', 'ZIM publisher meta data, per default \'Kiwix\'' )
     .strict()
     .argv;
 
@@ -187,7 +188,7 @@ var keepEmptyParagraphs = argv.keepEmptyParagraphs;
 var withZimFullTextIndex = argv.withZimFullTextIndex;
 
 /* ZIM publisher */
-var publisher = 'Kiwix';
+var publisher = argv.publisher || 'Kiwix';
 
 /* Wikipedia/... URL */
 var mwUrl = argv.mwUrl;
@@ -214,7 +215,7 @@ creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 var namespacesToMirror = new Array();
 
 /* License footer template code */
-var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em; direction: ltr;">This article is issued from <a class="external text" href="{{ webUrl }}{{ articleId }}?oldid={{ oldId }}">{{ name }}</a>{% if date %} - version of the {{ date }}{% endif %}. The text is available under the <a class="external text" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution/Share Alike</a> but additional terms may apply for the media files.</div>';
+var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em; direction: ltr;">This article is issued from <a class="external text" href="{{ webUrl }}{{ articleId }}?oldid={{ oldId }}">{{ creator }}</a>{% if date %} - version of the {{ date }}{% endif %}. The text is available under the <a class="external text" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution/Share Alike</a> but additional terms may apply for the media files.</div>';
 
 /************************************/
 /* CONSTANT VARIABLE SECTION ********/
@@ -257,9 +258,9 @@ var revAutoAlign = ltr ? 'right' : 'left';
 var subTitle = '';
 var langIso2 = 'en';
 var langIso3 = 'eng';
-var name = argv.customZimTitle ? argv.customZimTitle : '';
-var description = argv.customZimDescription ? argv.customZimDescription : '';
-var mainPageId = argv.customMainPage ? argv.customMainPage : '';
+var name = argv.customZimTitle || '';
+var description = argv.customZimDescription || '';
+var mainPageId = argv.customMainPage || '';
 var articleIds = {};
 var namespaces = {};
 var mwWikiPath = argv.mwWikiPath !== undefined && argv.mwWikiPath !== true ? argv.mwWikiPath : 'wiki';
@@ -267,8 +268,8 @@ var webUrl = mwUrl + mwWikiPath + '/';
 var webUrlHost =  urlParser.parse( webUrl ).host;
 var webUrlPath = urlParser.parse( webUrl ).pathname;
 var webUrlPort = getRequestOptionsFromUrl( webUrl ).port;
-var mwApiPath = argv.mwApiPath ? argv.mwApiPath : 'w/api.php';
-var apiUrl = mwUrl + ( argv.mwApiPath ? argv.mwApiPath : 'w/api.php' ) + '?';
+var mwApiPath = argv.mwApiPath || 'w/api.php';
+var apiUrl = mwUrl + mwApiPath + '?';
 var parsoidContentType = 'html';
 if ( !parsoidUrl ) {
     parsoidUrl = apiUrl + "action=visualeditor&format=json&paction=parse&page=";
@@ -280,9 +281,9 @@ var filenameRadical = '';
 var htmlRootPath = '';
 var cacheDirectory = '';
 var cacheDirectory = ( argv.cacheDirectory ? argv.cacheDirectory : pathParser.resolve( process.cwd(), 'cac' ) ) + '/';
-var mwUsername = argv.mwUsername ? argv.mwUsername : '';
-var mwDomain = argv.mwDomain ? argv.mwDomain : '';
-var mwPassword = argv.mwPassword ? argv.mwPassword : '';
+var mwUsername = argv.mwUsername || '';
+var mwDomain = argv.mwDomain || '';
+var mwPassword = argv.mwPassword || '';
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -430,13 +431,13 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 
 	if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
-	    return 'jpegoptim --strip-all -m60 "' + path + '"';
+	    return 'jpegoptim --strip-all --force --all-normal -m60 "' + path + '"';
 	} else if ( type === 'png' || type === 'PNG' ) {
-	    return 'pngquant --verbose --nofs --force --ext="' + tmpExt + '" "' + path + 
+	    return 'pngquant --verbose --strip --nofs --force --ext="' + tmpExt + '" "' + path +
 		'" && advdef -q -z -4 -i 5 "' + tmpPath + 
 		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	} else if ( type === 'gif' || type === 'GIF' ) {
-	    return 'gifsicle --verbose -O3 "' + path + '" -o "' + tmpPath +
+	    return 'gifsicle --verbose --colors 64 -O3 "' + path + '" -o "' + tmpPath +
 		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	}
     }
@@ -1413,7 +1414,7 @@ function saveArticles( finished ) {
 		/* Revision date */
 		var timestamp = details['t'];
 		var date = new Date( timestamp * 1000 );
-		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, name: name, oldId: oldId, date: date.toLocaleDateString("en-US") } );
+		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, creator: creator, oldId: oldId, date: date.toLocaleDateString("en-US") } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 		addNoIndexCommentToElement(div);
 
@@ -2055,7 +2056,8 @@ function getRequestOptionsFromUrl( url, compression ) {
     var port = urlObj.port ? urlObj.port : ( urlObj.protocol && urlObj.protocol.substring( 0, 5 ) == 'https' ? 443 : 80 );
     var headers = {
 	'accept': 'text/html; charset=utf-8; profile="mediawiki.org/specs/html/1.2.0"',
-	'accept-encoding': ( compression ? 'gzip,deflate' : '' ),
+	'accept-encoding': ( compression ? 'gzip, deflate' : '' ),
+	'cache-control': 'public, max-stale=2678400',
 	'user-agent': userAgentString,
 	'cookie': loginCookie
     };
@@ -2066,7 +2068,6 @@ function getRequestOptionsFromUrl( url, compression ) {
 	port: port,
 	headers: headers,
 	path: urlObj.path,
-	keepAlive: true,
 	method: url.indexOf('action=login') > -1 ? 'POST' : 'GET'
     };
 }
