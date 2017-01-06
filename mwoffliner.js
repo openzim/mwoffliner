@@ -37,6 +37,7 @@ var htmlMinifier = require('html-minifier');
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
 	   + '\nExample: node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net' )
     .require( [ 'mwUrl', 'adminEmail' ] )
+    .describe( 'mwUrl', 'Mediawiki base URL' )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'articleList', 'File with one title (in UTF8) per line' )
     .describe( 'cacheDirectory', 'Directory where files are permanently cached' )
@@ -44,18 +45,20 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'customZimTitle', 'Allow to configure a custom ZIM file title.' )
     .describe( 'customZimDescription', 'Allow to configure a custom ZIM file description.' )
     .describe( 'customMainPage', 'Allow to configure a custom page as welcome page.' )
-    .describe( 'writeHtmlRedirects', 'Write redirect as HTML files' )
     .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
     .describe( 'filenamePrefix', 'For the part of the ZIM filename which is before the date part.' )
     .describe( 'format', 'To custom the output with comma separated values : "nopic,nozim"' )
     .describe( 'keepEmptyParagraphs', 'Keep all paragraphs, even empty ones.' )
     .describe( 'keepHtml', 'If ZIM built, keep the temporary HTML directory' )
-    .describe( 'mwURL', 'Mediawiki base URL' )
     .describe( 'mwWikiPath', 'Mediawiki wiki base path (per default "/wiki/"' )
     .describe( 'mwApiPath',  'Mediawiki API path (per default "/w/api.php"' )
+    .describe( 'mwDomain', 'Mediawiki user domain (thought for private wikis)' )
+    .describe( 'mwUsername', 'Mediawiki username (thought for private wikis)' )
+    .describe( 'mwPassword', 'Mediawiki user password (thought for private wikis)' )
     .describe( 'minifyHtml', 'Try to reduce the size of the HTML' )
     .describe( 'outputDirectory', 'Directory to write the downloaded content' )
     .describe( 'parsoidUrl', 'Mediawiki Parsoid URL' )
+    .describe( 'publisher', 'ZIM publisher meta data, per default \'Kiwix\'' )
     .describe( 'redisSocket', 'Path to Redis socket file' )
     .describe( 'requestTimeout', 'Request timeout (in seconds)' )
     .describe( 'resume', 'Do not overwrite if ZIM file already created' )
@@ -64,11 +67,8 @@ var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a d
     .describe( 'speed', 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.' )
     .describe( 'tmpDirectory', 'Directory where files are temporary stored' )
     .describe( 'verbose', 'Print debug information to the stdout' )
-    .describe( 'mwUsername', 'Mediawiki username (thought for private wikis)' )
-    .describe( 'mwDomain', 'Mediawiki user domain (thought for private wikis)' )
-    .describe( 'mwPassword', 'Mediawiki user password (thought for private wikis)' )
     .describe( 'withZimFullTextIndex', 'Include a fulltext search index to the ZIM' )
-    .describe( 'publisher', 'ZIM publisher meta data, per default \'Kiwix\'' )
+    .describe( 'writeHtmlRedirects', 'Write redirect as HTML files' )
     .strict()
     .argv;
 
@@ -284,6 +284,13 @@ var cacheDirectory = ( argv.cacheDirectory ? argv.cacheDirectory : pathParser.re
 var mwUsername = argv.mwUsername || '';
 var mwDomain = argv.mwDomain || '';
 var mwPassword = argv.mwPassword || '';
+
+/************************************/
+/* CONTENT DATE *********************/
+/************************************/
+
+var date = new Date();
+var contentDate = date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
 
 /************************************/
 /* RUNNING CODE *********************/
@@ -660,8 +667,7 @@ function computeFilenameRadical( withoutSelection, withoutPictureStatus, without
     }
 
     if ( !withoutDate ) {
-	var date = new Date();
-	radical += '_' + date.getFullYear() + '-' + ( '0' + ( date.getMonth() + 1 ) ).slice( -2 );
+	radical += '_' + contentDate;
     }
 
     return radical;
