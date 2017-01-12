@@ -26,6 +26,13 @@ $MWOFFLINER --mwUrl="https://fr.wikipedia.org/" --parsoidUrl="https://fr.wikiped
 wget "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Flag_of_Venezuela.svg/320px-Flag_of_Venezuela.svg.png" -O "$SCRIPT_DIR/venezuela.png" &&
 $MWOFFLINER --mwUrl="https://es.wikipedia.org/" --parsoidUrl="https://es.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Enciclopedia de Venezuela" --customZimDescription="Selección de artículos de Wikipedia para Venezuela" --customMainPage="Wikipedia:Wikipedia_en_CD/Selección_de_artículos_para_Venezuela/Main" --customZimFavicon="$SCRIPT_DIR/venezuela.png" --articleList="$SCRIPT_DIR/selections/venezuela.lst" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
 
+# Bollywood
+/srv/kiwix-tools/tools/scripts/listCategoryEntries.pl --host=en.wikipedia.org --path=w --exploration=5 --namespace=1 --category="WikiProject_Film_articles" | sed 's/Talk://' | sort -u > "$SCRIPT_DIR/films" &&
+/srv/kiwix-tools/tools/scripts/listCategoryEntries.pl --host=en.wikipedia.org --path=w --exploration=5 --namespace=1 --category="WikiProject_India_articles" | sed 's/Talk://' | sort -u > "$SCRIPT_DIR/india" &&
+/srv/kiwix-tools/tools/scripts/compareLists.pl --file1=india --file2=films --mode=inter > boolywood &&
+wget "https://upload.wikimedia.org/wikipedia/commons/0/01/Bollywoodbarnstar.png" -O "$SCRIPT_DIR/bollywood.png" &&
+$MWOFFLINER --mwUrl="https://en.wikipedia.org/" --parsoidUrl="https://en.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Bollywood" --customZimDescription="All Wikipedia article about Indian cinema" --customMainPage="Bollywood" --customZimFavicon="$SCRIPT_DIR/bollywood.png" --articleList="$SCRIPT_DIR/bollywood" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
+
 # Wikipedia EN WP1 0.8
 wget "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/WP1_0_Icon.svg/240px-WP1_0_Icon.svg.png" -O "$SCRIPT_DIR/wp1.png" &&
 $MWOFFLINER --mwUrl="https://en.wikipedia.org/" --parsoidUrl="https://en.wikipedia.org/api/rest_v1/page/html/" --customZimTitle="Wikipedia 0.8" --customZimDescription="Wikipedia 45.000 best articles with pictures" --customMainPage="Wikipedia:Version_0.8" --customZimFavicon="$SCRIPT_DIR/wp1.png" --articleList="$SCRIPT_DIR/selections/wp1-0.8.lst" --outputDirectory=$ZIM2INDEX/wikipedia/ &&
