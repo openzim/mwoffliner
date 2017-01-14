@@ -866,7 +866,7 @@ function saveHtmlRedirects( finished ) {
 	    } else {
 		if ( target ) {
 		    printLog( 'Writing HTML redirect ' + redirectId + ' (to '+ target + ')...' );
-		    data = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ),
+		    var data = redirectTemplate( { title: redirectId.replace( /_/g, ' ' ),
 					       target : getArticleUrl( target ) } );
 		    if ( deflateTmpHtml ) {
 			zlib.deflate( data, function( error, deflatedHtml ) {
