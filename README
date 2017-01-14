@@ -6,7 +6,8 @@ the HTML/pictures to local files.
 
 To use it, you need a recent version of nodejs and a POSIX system
 (like GNU/Linux). You need also to install all necessary nodejs
-packages with "npm install" in this directory.
+packages with "npm install" (without any package name) in this
+directory.
 
 You need also a redis server correctly configured and listening on a
 socket (to /dev/shm/redis.sock per default). Following console
