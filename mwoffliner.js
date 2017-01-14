@@ -1950,6 +1950,17 @@ function getArticleIds( finished ) {
 		    getArticleIdsForNamespaces( finished )
 		}
 	    },
+	    function( finished ) {
+		if ( articleList ) {
+		    finished()
+		} else {
+		    if ( !isMirrored( mainPageId ) ) {
+			getArticleIdsForLine( mainPageId, finished )
+		    } else {
+			finished();
+		    }
+		}
+	    }
 	],
 	function( error ) {
 	    if ( error ) {
