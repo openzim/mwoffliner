@@ -42,6 +42,4 @@ function skimImage(filename) {
 
 }
 
-console.log('skimming image');
 skimImage(process.argv[2]);
-console.log('skimmed');
