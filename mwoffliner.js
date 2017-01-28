@@ -438,13 +438,13 @@ var optimizationQueue = async.queue( function ( file, finished ) {
   tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 
   if ( type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG' ) {
-      return 'jpegoptim --strip-all --force --all-normal -m60 "' + path + '"';
+      return 'node mwImageSkimmer.js' + path + ' && jpegoptim --strip-all --force --all-normal -m60 "' + path + '"';
   } else if ( type === 'png' || type === 'PNG' ) {
-      return 'pngquant --verbose --strip --nofs --force --ext="' + tmpExt + '" "' + path +
+      return 'node mwImageSkimmer.js' + path + ' && pngquant --verbose --strip --nofs --force --ext="' + tmpExt + '" "' + path +
     '" && advdef -q -z -4 -i 5 "' + tmpPath + 
     '" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
   } else if ( type === 'gif' || type === 'GIF' ) {
-      return 'gifsicle --verbose --colors 64 -O3 "' + path + '" -o "' + tmpPath +
+      return 'node mwImageSkimmer.js' + path + ' && gifsicle --verbose --colors 64 -O3 "' + path + '" -o "' + tmpPath +
     '" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
   }
     }
