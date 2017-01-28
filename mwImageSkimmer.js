@@ -3,16 +3,6 @@ var im = require('imagemagick');
 
 console.log('1');
 
-function identify(filename) {
-  console.log('identifying()');
-  return new Promise(function(resolve, reject) {
-    im.identify(filename, function(err, features) {
-      if (err) reject(err);
-      resolve(features);
-    })
-  })
-}
-
 function convert(imageArgs) {
   return new Promise(function(resolve, reject) {
     im.convert(imageArgs, function(err, stdout) {
@@ -30,77 +20,97 @@ function getExtension(filename) {
   return filename.match(/[0-9a-z]+$/)[0];
 }
 
-function isNewSmaller(originalFilename) {
-  console.log('isnewsmaller()');
-  var original = fs.statSync(originalFilename).size;
-  var converted = fs.statSync(originalFilename + '.out').size;
-  return original > converted ? true : false;
-}
-
 function deleteFile(filename) {
   console.log('deleting()');
   return fs.unlinkSync(filename);
 }
 
-function overwriteImage(originalFilename) {
-  setTimeout(function() { // Delay fixes bug where file isn't done writing yet
-    fs.rename(originalFilename + '.out', originalFilename, function() {
-      // console.log('renamed: ', originalFilename);
-    });
-  },1000);
+function findBest(filename) {
+  var shortFilename = getFilenameNoExtension(filename);
+
+  var original = fs.statSync(filename).size; 
+  var jpg = fs.statSync(shortFilename + '.out.jpg').size;
+  var png = fs.statSync(shortFilename + '.out.png').size;
+  var gif = fs.statSync(shortFilename + '.out.gif').size;
+
+  var sizes = {
+    original: fs.statSync(filename).size,
+    jpg: fs.statSync(shortFilename + '.out.jpg').size,
+    png: fs.statSync(shortFilename + '.out.png').size,
+    gif: fs.statSync(shortFilename + '.out.gif').size
+  }
+
+  var best = 'original';
+  for (var key in sizes) {
+    if (sizes[key] < sizes[best]) best = key;
+  }
+  return best;
 }
 
-function processImage(filename) {
-  return new Promise(function(resolve, reject) {
-    var imgArgs = [filename];
-    identify(filename)
-    .catch(function(err) {
-      console.log('Error in identification: ', err);
-      resolve();
-    })
-    .then(function(meta) {
-      if (meta.format == 'PNG') imgArgs.push('-define', 'png:compression-level=9');
-      if (meta.colorspace != 'sRGB') imgArgs.push('-colorspace', 'sRGB');
-      if (meta.depth > 8) imgArgs.push('-depth', '8');
-      if (meta.interlace != 'None') imgArgs.push('-interlace', 'none');
-      if (meta.width > 50) imgArgs.push('-posterize', '32'); // remove from if and compare icons before/after
-      imgArgs.push('-dither', 'Riemersma');
-      imgArgs.push('-quality', '82'); // dont move. needs to be second to last
-      imgArgs.push(filename + '.jpg');
-    })
-    .then(function() {
-      console.log('converting()');
-      return convert(imgArgs)
-    })
-    .then(function() {
-      if (!isNewSmaller(filename) && imgArgs[imgArgs.length - 3] == '-quality') {
-        // Retry without '-quality 82' setting
-        console.log('Result B');
-        imgArgs.splice(imgArgs.length - 3, 2);
-        convert(imgArgs).then(function() {
-          if (!isNewSmaller(filename)) {
-            console.log('Result C');
-            deleteFile(filename + '.jpg');
-          }
-        });
-      } 
-      else { console.log('Result A'); return; }
-    })
-    .then(function() {
-      console.log('overwrite image');
-      return overwriteImage(filename);
-    })
-    .then(function() {console.log('resolving the very end'),resolve()})
+function deleteOthers(filename, shortFilename, fileNotToDelete) {
+  var list = [
+    filename,
+    shortFilename + '.out.jpg',
+    shortFilename + '.out.png',
+    shortFilename + '.out.gif',
+  ]
+  if (fileNotToDelete === 'original') list.splice(0, 1);
+  if (fileNotToDelete === 'jpg') list.splice(1, 1);
+  if (fileNotToDelete === 'png') list.splice(2, 1);
+  if (fileNotToDelete === 'gif') list.splice(3, 1);
+  list.forEach(function(item) {deleteFile(item)});
+}
+
+function renameImage(shortFilename, smallestFileType) {
+  return fs.rename(
+    shortFilename + '.out.' + smallestFileType,
+    shortFilename + '.' + smallestFileType
+  )
+}
+
+function skimImage(filename) {
+  var shortFilename = getFilenameNoExtension(filename);
+  var ext = getExtension(filename);
+  var imgArgs = [
+    filename, 
+    '-define', 'png:compression-level=9',
+    '-colorspace', 'sRGB',
+    '-depth', '8',
+    '-interlace', 'none',
+    '-posterize', '32',
+    '-dither', 'Riemersma',
+    '-quality', '82',
+    shortFilename + '.out.png'
+  ]
+
+  convert(imgArgs)
+  .then(function() {
+    console.log('4');
+    imgArgs[imgArgs.length-1] = shortFilename + '.out.jpg';
+    return convert(imgArgs);
+  })
+  .then(function() {
+    console.log('5');
+    imgArgs[imgArgs.length-1] = shortFilename + '.out.gif';
+    return convert(imgArgs);
+  })
+  .then(function() {
+    console.log('finding the best one...');
+    var smallestFileType = findBest(filename);
+    deleteOthers(filename, shortFilename, smallestFileType);
+    renameImage(shortFilename, smallestFileType);
   })
 
 }
 
-function toJpeg(filename) {
-  
-}
+
+
+
+
 
 console.log('2');
 
-processImage(__dirname + '/logo.png')
+// processImage(__dirname + '/logo.png')
+skimImage(__dirname + '/logo.png');
 
 console.log('3');
