@@ -1,0 +1,15 @@
+image: node0.10
+script:
+  - npm config set ca ""
+  - npm install
+  - npm test
+notify:
+  email:
+    recipients:
+      - drone@clever.com
+  hipchat:
+    room: Clever-Dev-CI
+    token: {{hipchatToken}}
+    on_started: true
+    on_success: true
+    on_failure: true

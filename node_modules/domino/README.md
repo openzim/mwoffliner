@@ -1,0 +1,86 @@
+# Server-side DOM implementation based on Mozilla's dom.js
+
+[![Build Status][1]][2] [![dependency status][3]][4] [![dev dependency status][5]][6]
+
+As the name might suggest, domino's goal is to provide a <b>DOM in No</b>de.
+
+In contrast to the original [dom.js](https://github.com/andreasgal/dom.js) project, domino was not designed to run untrusted code. Hence it doesn't have to hide its internals behind a proxy facade which makes the code not only simpler, but also [more performant](https://github.com/fgnass/dombench).
+
+Domino currently doesn't use any harmony features like proxies or WeakMaps and therefore also runs in older Node versions.
+
+## Speed over Compliance
+
+Domino is intended for _building_ pages rather than scraping them. Hence Domino doesn't execute scripts nor does it download external resources.
+
+Also Domino doesn't implement any properties which have been deprecated in HTML5.
+
+Domino sticks to the [DOM level 4](http://dvcs.w3.org/hg/domcore/raw-file/tip/Overview.html#interface-attr) working draft, which means that Attributes do not inherit the Node interface. Also [Element.attributes](http://dvcs.w3.org/hg/domcore/raw-file/tip/Overview.html#dom-element-attributes) returns a read-only array instead of a NamedNodeMap.
+
+<b>Note that</b> because domino does not use proxies,
+`Element.attributes` is not a true JavaScript array; it is an object
+with a `length` property and an `item(n)` accessor method.  See
+[github issue #27](https://github.com/fgnass/domino/issues/27) for
+further discussion.
+
+## CSS Selector Support
+
+Domino provides support for `querySelector()`, `querySelectorAll()`, and `matches()` backed by the [Zest](https://github.com/chjj/zest) selector engine.
+
+## Usage
+
+Domino supports the DOM level 4 API, and thus API documentation can be
+found on standard reference sites.  For example, you could start from
+MDN's documentation for
+[Document](https://developer.mozilla.org/en-US/docs/Web/API/Document) and
+[Node](https://developer.mozilla.org/en-US/docs/Web/API/Node).
+
+The only exception is the initial creation of a document:
+```javascript
+var domino = require('domino');
+var Element = domino.impl.Element; // etc
+
+var window = domino.createWindow('<h1>Hello world</h1>', 'http://example.com');
+var document = window.document;
+
+// alternatively: document = domino.createDocument(htmlString, true)
+
+var h1 = document.querySelector('h1');
+console.log(h1.innerHTML);
+console.log(h1 instanceof Element);
+```
+
+If you want a more standards-compliant way to create a `Document`, you can
+also use [DOMImplementation](https://developer.mozilla.org/en-US/docs/Web/API/DOMImplementation):
+```javascript
+var domino = require('domino');
+var domimpl = domino.createDOMImplementation();
+var doc = domimpl.createHTMLDocument();
+```
+
+By default many domino methods will be stored in writable properties, to
+allow polyfills (as browsers do).  You can lock down the implementation
+if desired as follows:
+```javascript
+global.__domino_frozen__ = true; // Must precede any `require('domino')`
+var domino = require('domino');
+```
+
+## Tests
+
+Domino includes test from the [W3C DOM Conformance Suites](http://www.w3.org/DOM/Test/)
+as well as tests from [HTML Working Group](http://www.w3.org/html/wg/wiki/Testing).
+
+The tests can be run via `npm test` or directly though the [Mocha](http://visionmedia.github.com/mocha/) command line:
+
+![Screenshot](http://fgnass.github.com/images/domino.png)
+
+## License and Credits
+
+The majority of the code was written by [Andreas Gal](https://github.com/andreasgal/) and [David Flanagan](https://github.com/davidflanagan) as part of the [dom.js](https://github.com/andreasgal/dom.js) project. Please refer to the included LICENSE file for the original copyright notice and disclaimer.
+
+[1]: https://travis-ci.org/fgnass/domino.png
+[2]: https://travis-ci.org/fgnass/domino
+[3]: https://david-dm.org/fgnass/domino.png
+[4]: https://david-dm.org/fgnass/domino
+[5]: https://david-dm.org/fgnass/domino/dev-status.png
+[6]: https://david-dm.org/fgnass/domino#info=devDependencies
