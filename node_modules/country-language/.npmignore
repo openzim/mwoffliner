@@ -1,0 +1,11 @@
+.git*
+test/
+puppet/
+dataCompilation/
+Vagrantfile
+.vagrant
+.DS_Store
+coverage.html
+lib-cov
+.travis.yml
+Makefile
