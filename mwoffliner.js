@@ -706,6 +706,7 @@ function buildZIM( finished ) {
 	exec( 'sync', function( error ) {
 	    var zimPath = computeZimRootPath();
 	    var cmd = 'zimwriterfs --welcome=index.htm --favicon=favicon.png --language=' + langIso3
+	        + ( mainPageId ? '--welcome=' + getArticleBase( mainPageId ) : '--welcome=index.htm' )
 	        + ( deflateTmpHtml ? ' --inflateHtml ' : '' )
 	        + ( verbose ? ' --verbose ' : '' )
 	        + ( nopic ? ' --tags=nopic' : '' )
@@ -722,7 +723,7 @@ function buildZIM( finished ) {
 				    writeHtmlRedirects ? '' : '--redirects=' + redirectsCacheFile,
 				    withZimFullTextIndex ? '--withFullTextIndex' : '',
 				    nopic ? '--tags=nopic' : '',
-				    '--welcome=index.htm', 
+				    mainPageId ? '--welcome=' + getArticleBase( mainPageId ) : '--welcome=index.htm',
 				    '--favicon=favicon.png', 
 				    '--language=' + langIso3, 
 				    '--title=' + name,
