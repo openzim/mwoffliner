@@ -10,4 +10,4 @@ MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --verbose --adminEmail=contact
 $MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language="(en|fr)" &&
 
 # Wikipedia
-$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language="(de|it|sv|vi)"
+$MWMATRIXOFFLINER --project=wiki --outputDirectory=$ZIM2INDEX/wikipedia/ --language="(sv|vi)"
