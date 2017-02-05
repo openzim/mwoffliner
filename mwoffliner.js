@@ -1074,12 +1074,12 @@ function saveArticles( finished ) {
 		 */
 		if ( rel != 'mw:WikiLink' ) {
 		    var lat, lon;
-		    if ( /poimap2\.php/i.test(href) ) {
-			var hrefQuery = urlParser.parse(href, true).query;
-			lat = parseFloat(hrefQuery.lat);
-			lon = parseFloat(hrefQuery.lon);
+		    if ( /poimap2\.php/i.test( href ) ) {
+			var hrefQuery = urlParser.parse( href, true ).query;
+			lat = parseFloat( hrefQuery.lat );
+			lon = parseFloat( hrefQuery.lon );
 		    } else if ( /geohack\.php/i.test(href) ) {
-			var params = urlParser.parse(href, true).query.params;
+			var params = urlParser.parse( href, true ).query.params;
 
 			/* "params" might be an array, try to detect the geo localization one */
 			if ( params instanceof Array ) {
@@ -1119,6 +1119,10 @@ function saveArticles( finished ) {
 				lon = deg({E:1, W:-1, O:1});
 			    }
 			}
+		    } else if ( /Special:Map/i.test( href ) ) {
+			var parts = href.split( '/' );
+			lat = parts[4];
+			lon = parts[5];
 		    }
 
 		    if ( !isNaN(lat) && !isNaN(lon) ) {
