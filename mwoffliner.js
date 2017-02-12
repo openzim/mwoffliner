@@ -215,7 +215,7 @@ creator = creator.charAt( 0 ).toUpperCase() + creator.substr( 1 );
 var namespacesToMirror = new Array();
 
 /* License footer template code */
-var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em; direction: ltr;">This article is issued from <a class="external text" href="{{ webUrl }}{{ articleId }}?oldid={{ oldId }}">{{ creator }}</a>{% if date %} - last edited on {{ date }}{% endif %}. The text is licensed under <a class="external text" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons - Attribution - Sharealike</a>. Additional terms may apply for the media files.</div>';
+var footerTemplateCode = '<div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 2em 0.5em; margin-top: 1em; direction: ltr;">This article is issued from <a class="external text"{% if date %} title="last edited on {{ date }}"{% endif %} href="{{ webUrl }}{{ articleId }}?oldid={{ oldId }}">{{ creator }}</a>. The text is licensed under <a class="external text" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons - Attribution - Sharealike</a>. Additional terms may apply for the media files.</div>';
 
 /************************************/
 /* CONSTANT VARIABLE SECTION ********/
@@ -1425,7 +1425,7 @@ function saveArticles( finished ) {
 		/* Revision date */
 		var timestamp = details['t'];
 		var date = new Date( timestamp * 1000 );
-		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, creator: creator, oldId: oldId, date: date.toLocaleDateString("en-US") } );
+		div.innerHTML = footerTemplate( { articleId: encodeURIComponent( articleId ), webUrl: webUrl, creator: creator, oldId: oldId, date: date.toISOString().substring( 0, 10 ) } );
 		htmlTemplateDoc.getElementById( 'mw-content-text' ).appendChild( div );
 		addNoIndexCommentToElement(div);
 
