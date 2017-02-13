@@ -1751,8 +1751,13 @@ var redirectQueue = async.queue( function( articleId, finished ) {
 		    var redirects = new Object();
 		    var redirectsCount = 0;
 		    JSON.parse( body )['query']['backlinks'].map( function( entry ) {
-			redirects[ entry['title'].replace( / /g, '_' ) ] = articleId;
+			var title = entry['title'].replace( / /g, '_' )
+			redirects[ title ] = articleId;
 			redirectsCount++;
+
+			if ( title == mainPageId ) {
+			    mainPageId = articleId;
+			}
 		    });
 		    printLog( redirectsCount + ' redirect(s) found for ' + articleId );
 		    if ( redirectsCount ) {
