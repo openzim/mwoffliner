@@ -5,7 +5,7 @@ SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
 ARGS="--withZimFullTextIndex --adminEmail=contact@kiwix.org --deflateTmpHtml --verbose --skipHtmlCache --skipCacheCleaning --format= --format=nopic"
 MWOFFLINER="$SCRIPT_DIR/mwoffliner.js $ARGS"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js $ARGS"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ $ARGS"
 
 # Vikidia
 $MWOFFLINER --speed=1 --mwUrl=https://fr.vikidia.org/ --outputDirectory=$ZIM2INDEX/vikidia/ &&
