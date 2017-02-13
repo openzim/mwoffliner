@@ -3,8 +3,8 @@
 ZIM2INDEX=/srv/upload/zim2index/
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
-ARGS="--deflateTmpHtml --format= --format=nopic --verbose --adminEmail=contact@kiwix.org --skipCacheCleaning --skipHtmlCache"
-MWOFFLINER="$SCRIPT_DIR/mwoffliner.js $ARGS"
+ARGS="--deflateTmpHtml --verbose --adminEmail=contact@kiwix.org --skipCacheCleaning --skipHtmlCache"
+MWOFFLINER="$SCRIPT_DIR/mwoffliner.js --format= --format=nopic $ARGS"
 MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ $ARGS"
 
 # Wikibooks
