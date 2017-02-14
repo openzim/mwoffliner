@@ -3,8 +3,9 @@
 ZIM2INDEX=/srv/upload/zim2index/
 SCRIPT=`readlink -f $0/../`
 SCRIPT_DIR=`dirname "$SCRIPT"`
-MWOFFLINER="$SCRIPT_DIR/mwoffliner.js --adminEmail=contact@kiwix.org --deflateTmpHtml --verbose --skipCacheCleaning --format= --format=nopic --cacheDirectory=/data/scratch/mwoffliner/cac/"
-MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --verbose --adminEmail=contact@kiwix.org --mwUrl=https://meta.wikimedia.org/ --cacheDirectory=/data/scratch/mwoffliner/cac/ --deflateTmpHtml --skipCacheCleaning"
+ARGS="--adminEmail=contact@kiwix.org --deflateTmpHtml --verbose --skipHtmlCache --skipCacheCleaning"
+MWOFFLINER="$SCRIPT_DIR/mwoffliner.js --format= --format=nopic $ARGS"
+MWMATRIXOFFLINER="$SCRIPT_DIR/mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ $ARGS"
 
 # Wikisource
 $MWMATRIXOFFLINER --project=wikisource --outputDirectory=$ZIM2INDEX/wikisource/ --language="(en|fr)" &&
