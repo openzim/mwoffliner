@@ -1683,7 +1683,7 @@ function saveStylesheet( finished ) {
 			url = url.indexOf( '%' ) < 0 ? encodeURI( url ) : url;
 
 			/* Download CSS dependency, but avoid duplicate calls */
-			if ( !urlCache.hasOwnProperty( url ) ) {
+			if ( !urlCache.hasOwnProperty( url ) && filename ) {
 			    urlCache[url] = true;
 			    downloadCSSFileQueue.push( { url: url, path: htmlRootPath + styleDirectory + '/' + filename } );
 			}
