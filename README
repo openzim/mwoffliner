@@ -35,3 +35,5 @@ $ apt-get install jpegoptim, advdef, gifsicle, pngquant, imagekick
 We also recommend you to use a DNS cache like nscd.
 
 When you have done this, you should be able to start the tool with ./mwoffliner.js and see the usage() for more details.
+
+MWoffliner does not export anything right now. You need to call it as CLI usage desribed in the usage()
