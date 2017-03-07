@@ -133,7 +133,7 @@ var parsoidUrl = argv.parsoidUrl;
 var customZimFavicon = argv.customZimFavicon;
 if ( customZimFavicon && !fs.existsSync( customZimFavicon ) ) {
     console.error( 'Path "' + customZimFavicon + '" is not a valid PNG file.' );
-    process.exit( 1 );    
+    process.exit( 1 );
 }
 
 /* If ZIM is built, should temporary HTML directory be kept */
@@ -341,7 +341,7 @@ async.series(
 	function( finished ) { checkResume( finished ) },
 	function( finished ) { getArticleIds( finished ) },
 	function( finished ) { cacheRedirects( finished ) },
-	function( finished ) { 
+	function( finished ) {
 	    async.eachSeries(
 		dumps,
 		function( dump, finished ) {
@@ -355,7 +355,7 @@ async.series(
 		    async.series(
 			[
 			    function( finished ) { createSubDirectories( finished ) },
-			    function( finished ) { saveJavascript( finished ) }, 
+			    function( finished ) { saveJavascript( finished ) },
 			    function( finished ) { saveStylesheet( finished ) },
 			    function( finished ) { saveFavicon( finished ) },
 			    function( finished ) { getMainPage( finished ) },
@@ -425,14 +425,14 @@ async.series(
 /* Setting up media optimization queue */
 var optimizationQueue = async.queue( function ( file, finished ) {
     var path = file.path;
-    
+
     function getOptimizationCommand( path, forcedType ) {
 	var ext = pathParser.extname( path ).split( '.' )[1] || '';
 	var basename = path.substring( 0, path.length - ext.length - 1) || '';
 	var tmpExt = '.' + randomString( 5 ) + '.' + ext;
 	var tmpPath = basename + tmpExt;
 	var type = forcedType || ext;
-	
+
 	/* Escape paths */
 	path = path.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
 	tmpPath = tmpPath.replace( /"/g, '\\"' ).replace( /\$/g, '\\$' ).replace( /`/g, '\\`' );
@@ -441,7 +441,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	    return 'jpegoptim --strip-all --force --all-normal -m60 "' + path + '"';
 	} else if ( type === 'png' || type === 'PNG' ) {
 	    return 'pngquant --verbose --strip --nofs --force --ext="' + tmpExt + '" "' + path +
-		'" && advdef -q -z -4 -i 5 "' + tmpPath + 
+		'" && advdef -q -z -4 -i 5 "' + tmpPath +
 		'" && if [ $(stat -c%s "' + tmpPath + '") -lt $(stat -c%s "' + path + '") ]; then mv "' + tmpPath + '" "' + path + '"; else rm "' + tmpPath + '"; fi';
 	} else if ( type === 'gif' || type === 'GIF' ) {
 	    return 'gifsicle --verbose --colors 64 -O3 "' + path + '" -o "' + tmpPath +
@@ -453,7 +453,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 	fs.stat( path, function ( error, stats ) {
 	    if ( !error && stats.size == file.size ) {
 		var cmd = getOptimizationCommand( path );
-		
+
 		if ( cmd ) {
 		    async.retry( 5,
 				 function( finished, skip ) {
@@ -498,7 +498,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
 		    finished();
 		}
 	    } else  {
-		console.error( 'Failed to start to optim ' + path + '. Size should be ' + file.size + 
+		console.error( 'Failed to start to optim ' + path + '. Size should be ' + file.size +
 			       ' (' + ( error ? 'file was probably deleted, here the error: ' + error : ( stats ? stats.size : 'No stats information' ) ) + ')' );
 		finished();
 	    }
@@ -506,7 +506,7 @@ var optimizationQueue = async.queue( function ( file, finished ) {
     } else {
 	finished();
     }
-    
+
 }, cpuCount * 2 );
 
 /* Setting up the downloading queue */
@@ -528,7 +528,7 @@ function login( finished ) {
         if (mwDomain != '') {
             url = url + '&lgdomain=' + mwDomain;
         }
- 
+
         downloadContent( url, function( content, responseHeaders ) {
             var body = content.toString();
             var jsonResponse = JSON.parse( body )['login'];
@@ -563,7 +563,7 @@ function checkResume( finished ) {
 	nopic = dump.toString().search( 'nopic' ) >= 0 ? true : false;
 	nozim = dump.toString().search( 'nozim' ) >= 0 ? true : false;
 	htmlRootPath = computeHtmlRootPath();
-	
+
 	if ( resume && !nozim ) {
 	    var zimPath = computeZimRootPath();
 	    if ( fs.existsSync( zimPath ) ) {
@@ -638,7 +638,7 @@ function extractTargetIdFromHref( href ) {
 
 function computeFilenameRadical( withoutSelection, withoutPictureStatus, withoutDate ) {
     var radical;
-    
+
     if ( filenamePrefix ) {
 	radical = filenamePrefix;
     } else {
@@ -713,7 +713,7 @@ function buildZIM( finished ) {
                 + ' --name="' + computeZimName() + '"'
 		+ ( withZimFullTextIndex ? ' --withFullTextIndex' : '' )
 	        + ( writeHtmlRedirects ? '' : ' --redirects="' + redirectsCacheFile + '"' )
-		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="' 
+		+ ' --title="' + name + '" --description="' + ( description || subTitle || name ) + '" --creator="' + creator + '" --publisher="'
 		+ publisher+ '" "' + htmlRootPath + '" "' + zimPath + '"';
 	    printLog( 'Building ZIM file ' + zimPath + ' (' + cmd + ')...' );
 	    printLog( 'RAID: ' + computeZimName() );
@@ -724,15 +724,15 @@ function buildZIM( finished ) {
 				    withZimFullTextIndex ? '--withFullTextIndex' : '',
 				    nopic ? '--tags=nopic' : '',
 				    mainPageId ? '--welcome=' + getArticleBase( mainPageId ) : '--welcome=index.htm',
-				    '--favicon=favicon.png', 
-				    '--language=' + langIso3, 
+				    '--favicon=favicon.png',
+				    '--language=' + langIso3,
 				    '--title=' + name,
                                     '--name=' + computeZimName(),
-				    '--description=' + ( description || subTitle || name ), 
+				    '--description=' + ( description || subTitle || name ),
 				    '--creator=' + creator,
-				    '--publisher=' + publisher, 
-				    htmlRootPath, 
-				    zimPath ], 
+				    '--publisher=' + publisher,
+				    htmlRootPath,
+				    zimPath ],
 				  function( error ) {
 				      if ( error ) {
 					  console.error( 'Failed to build successfuly the ZIM file ' + zimPath + ' (' + error + ')' );
@@ -740,14 +740,14 @@ function buildZIM( finished ) {
 				      } else {
 					  printLog( 'ZIM file built at ' + zimPath );
 				      }
-				      
+
 				      /* Delete the html directory ? */
 				      if ( keepHtml ) {
 					  finished();
 				      } else {
 					  exec( 'rm -rf \"' + htmlRootPath + '\"', finished );
 				      }
-				  }, !verbose, !verbose);	
+				  }, !verbose, !verbose);
 	}).on( 'error', function( error ) { console.error( error ) });
     } else {
 	finished();
@@ -912,28 +912,28 @@ function saveArticles( finished ) {
 	    process.exit( 1 );
 	}
     }
-    
+
     function treatMedias( parsoidDoc, articleId, finished ) {
 	/* Clean/rewrite image tags */
 	var imgs = parsoidDoc.getElementsByTagName( 'img' );
  	var imgSrcCache = new Object();
-	
+
 	for ( var i = 0; i < imgs.length ; i++ ) {
 	    var img = imgs[i];
 	    var imageNodeClass = img.getAttribute( 'class' ) || '';
-	    
+
 	    if ((!nopic ||
 		 imageNodeClass.search( 'mwe-math-fallback-image-inline' ) >= 0 ||
 		 img.getAttribute( 'typeof' ) == 'mw:Extension/math'
 		) &&
-		 img.getAttribute( 'src' ) && 
+		 img.getAttribute( 'src' ) &&
 		 img.getAttribute( 'src' ).indexOf( './Special:FilePath/' ) != 0
 	       ) {
-		
+
                 /* Remove image link */
                 var linkNode = img.parentNode;
                 if ( linkNode.tagName === 'A' ) {
-		    
+
 		    /* Check if the target is mirrored */
 		    var href = linkNode.getAttribute( 'href' ) || '';
 		    var targetId = extractTargetIdFromHref( href );
@@ -951,24 +951,24 @@ function saveArticles( finished ) {
 			    deleteNode( img );
                         }
 		    }
-                } 
-		
+                }
+
                 /* Rewrite image src attribute */
                 if ( img ) {
                     var src = getFullUrl( img.getAttribute( 'src' ) );
                     var newSrc = getMediaUrl( src );
-                    
+
                     if ( newSrc ) {
-			
+
 			/* Download image, but avoid duplicate calls */
 			if ( !imgSrcCache.hasOwnProperty( src ) ) {
                             imgSrcCache[src] = true;
                             downloadFileQueue.push( src );
 			}
-			
+
 			/* Change image source attribute to point to the local image */
 			img.setAttribute( 'src', newSrc );
-			
+
 			/* Remove useless 'resource' attribute */
 			img.removeAttribute( 'resource' );
 
@@ -982,7 +982,7 @@ function saveArticles( finished ) {
 		deleteNode( img );
 	    }
 	}
-	
+
 	/* Improve image frames */
 	var figures = parsoidDoc.getElementsByTagName( 'figure' );
 	var spans = parsoidDoc.querySelectorAll("span[typeof=mw:Image/Frameless]");
@@ -992,16 +992,16 @@ function saveArticles( finished ) {
 	    var images = imageNode.getElementsByTagName( 'img' );
 	    var image = images.length > 0 ? images[0] : undefined;
 	    var isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
-	    
+
 	    if ( !nopic && imageNode && image ) {
 		var imageNodeClass = imageNode.getAttribute( 'class' ) || '';
 		var imageNodeTypeof = imageNode.getAttribute( 'typeof' ) || '';
-		
+
 		if ( imageNodeTypeof.indexOf( 'mw:Image/Thumb' ) >= 0 ) {
 		    var descriptions = imageNode.getElementsByTagName( 'figcaption' )
 		    var description = descriptions.length > 0 ? descriptions[0] : undefined;
 		    var imageWidth = parseInt( image.getAttribute( 'width' ) );
-		    
+
 		    var thumbDiv = parsoidDoc.createElement( 'div' );
 		    thumbDiv.setAttribute( 'class', 'thumb' );
 		    if ( imageNodeClass.search( 'mw-halign-right' ) >= 0 ) {
@@ -1016,22 +1016,22 @@ function saveArticles( finished ) {
 		    } else {
 			thumbDiv.setAttribute( 'class', concatenateToAttribute( thumbDiv.getAttribute( 'class' ), 't' + revAutoAlign ) );
 		    }
-		    
+
 		    var thumbinnerDiv = parsoidDoc.createElement( 'div' );
 		    thumbinnerDiv.setAttribute( 'class', 'thumbinner' );
 		    thumbinnerDiv.setAttribute( 'style', 'width:' + ( imageWidth + 2) + 'px' );
-		    
+
 		    var thumbcaptionDiv = parsoidDoc.createElement( 'div' );
 		    thumbcaptionDiv.setAttribute( 'class', 'thumbcaption' );
 		    thumbcaptionDiv.setAttribute( 'style', 'text-align: ' + autoAlign );
 		    if ( description ) {
 			thumbcaptionDiv.innerHTML = description.innerHTML
 		    }
-		    
+
 		    thumbinnerDiv.appendChild( isStillLinked ? image.parentNode : image );
 		    thumbinnerDiv.appendChild( thumbcaptionDiv );
 		    thumbDiv.appendChild( thumbinnerDiv );
-		    
+
 		    imageNode.parentNode.replaceChild(thumbDiv, imageNode);
 		} else if ( imageNodeTypeof.indexOf( 'mw:Image' ) >= 0 ) {
 		    var div = parsoidDoc.createElement( 'div' );
@@ -1049,26 +1049,26 @@ function saveArticles( finished ) {
 		deleteNode( imageNode );
 	    }
 	}
-	
+
 	finished( null, parsoidDoc, articleId );
     }
-    
+
     function rewriteUrls( parsoidDoc, articleId, finished ) {
 	/* Go through all links */
 	var as = parsoidDoc.getElementsByTagName( 'a' );
 	var areas = parsoidDoc.getElementsByTagName( 'area' );
 	var linkNodes = Array.prototype.slice.call( as ).concat( Array.prototype.slice.call( areas ) );
-	
+
 	function rewriteUrl( linkNode, finished ) {
 	    var rel = linkNode.getAttribute( 'rel' );
 	    var href = linkNode.getAttribute( 'href' ) || '';
-	    
+
 	    if ( !href ) {
 		deleteNode( linkNode );
 		finished();
 	    } else {
-		
-		/* Deal with custom geo. URL replacement, for example: 
+
+		/* Deal with custom geo. URL replacement, for example:
 		 * http://maps.wikivoyage-ev.org/w/poimap2.php?lat=44.5044943&lon=34.1969633&zoom=15&layer=M&lang=ru&name=%D0%9C%D0%B0%D1%81%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0
 		 * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
 		 */
@@ -1130,21 +1130,21 @@ function saveArticles( finished ) {
 			linkNode.setAttribute( 'href', href );
 		    }
 		}
-		
+
 		if ( rel ) {
 		    /* Add 'external' class to external links */
-		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || 
+		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' ||
 			 rel === 'mw:WikiLink/Interwiki' ) {
 			linkNode.setAttribute( 'class', concatenateToAttribute( linkNode.getAttribute( 'class' ), 'external' ) );
 		    }
-		    
+
 		    /* Check if the link is "valid" */
 		    if ( ! href ) {
 			console.error( 'No href attribute in the following code, in article ' + articleId );
 			console.error( linkNode.outerHTML );
 			process.exit(1);
 		    }
-		    
+
 		    /* Rewrite external links starting with // */
 		    if ( rel.substring( 0, 10 ) === 'mw:ExtLink' || rel == 'nofollow' ) {
 			if ( href.substring( 0, 1 ) === '/' ) {
@@ -1157,7 +1157,7 @@ function saveArticles( finished ) {
 			}
 			finished();
 		    }
-		    
+
 		    /* Remove internal links pointing to no mirrored articles */
 		    else if ( rel == 'mw:WikiLink' ) {
 			var targetId = extractTargetIdFromHref( href );
@@ -1168,7 +1168,7 @@ function saveArticles( finished ) {
 			    localAnchor = targetId.substr( targetId.lastIndexOf( '#' ) );
 			    targetId = targetId.substr( 0, targetId.lastIndexOf( '#' ) );
 			}
-			
+
 			if ( isMirrored( targetId ) ) {
 			    linkNode.setAttribute( 'href', getArticleUrl( targetId ) + localAnchor );
 			    finished();
@@ -1228,7 +1228,7 @@ function saveArticles( finished ) {
 		}
 	    }
 	}
-	
+
 	async.eachLimit( linkNodes, speed, rewriteUrl, function( error ) {
 	    if ( error ) {
 		console.error( 'Problem by rewriting urls: ' + error );
@@ -1238,7 +1238,7 @@ function saveArticles( finished ) {
 	    }
 	});
     }
-    
+
     function applyOtherTreatments( parsoidDoc, articleId, finished ) {
 	/* Go through gallerybox */
 	var galleryboxes = parsoidDoc.getElementsByClassName( 'gallerybox' );
@@ -1247,7 +1247,7 @@ function saveArticles( finished ) {
 		deleteNode( galleryboxes[i] );
 	    }
 	}
-	
+
 	/* Remove "map" tags if necessary */
 	if ( nopic ) {
 	    var maps = parsoidDoc.getElementsByTagName( 'map' );
@@ -1255,7 +1255,7 @@ function saveArticles( finished ) {
 		deleteNode( maps[i] );
 	    }
 	}
-	
+
 	/* Go through all reference calls */
 	var spans = parsoidDoc.getElementsByTagName( 'span' );
 	for ( var i = 0; i < spans.length ; i++ ) {
@@ -1272,7 +1272,7 @@ function saveArticles( finished ) {
 		}
 	    }
 	}
-	
+
 	/* Remove element with id in the blacklist */
 	idBlackList.map( function( id ) {
 	    var node = parsoidDoc.getElementById( id );
@@ -1280,7 +1280,7 @@ function saveArticles( finished ) {
 		deleteNode( node );
 	    }
 	});
-	
+
 	/* Remove element with black listed CSS classes */
 	cssClassBlackList.map( function( classname ) {
 	    var nodes = parsoidDoc.getElementsByClassName( classname );
@@ -1288,7 +1288,7 @@ function saveArticles( finished ) {
 		deleteNode( nodes[i] );
 	    }
 	});
-	
+
 	/* Remove element with black listed CSS classes and no link */
 	cssClassBlackListIfNoLink.map( function( classname ) {
 	    var nodes = parsoidDoc.getElementsByClassName( classname );
@@ -1298,7 +1298,7 @@ function saveArticles( finished ) {
 		}
 	    }
 	});
-	
+
 	/* Force display of element with that CSS class */
 	cssClassDisplayList.map( function( classname ) {
 	    var nodes = parsoidDoc.getElementsByClassName( classname );
@@ -1312,7 +1312,7 @@ function saveArticles( finished ) {
 	for ( var i = 0; i < links.length ; i++ ) {
 	    deleteNode( links[i] );
 	};
-	
+
 	/* Remove useless DOM nodes without children */
 	var tagNames = [ 'li', 'span' ];
 	tagNames.map( function( tagName ) {
@@ -1323,7 +1323,7 @@ function saveArticles( finished ) {
 		}
 	    };
 	});
-	
+
 	/* Remove useless input nodes */
 	var inputNodes = parsoidDoc.getElementsByTagName( 'input' );
 	for ( var i = 0; i < inputNodes.length ; i++ ) {
@@ -1345,7 +1345,7 @@ function saveArticles( finished ) {
 
                         /* Delete if nextElementNode is a paragraph with <= level */
 			var nextElementNodeTag = nextElementNode.tagName.toLowerCase();
-			if ( nextElementNodeTag.length > 1 && nextElementNodeTag[0] == 'h' && 
+			if ( nextElementNodeTag.length > 1 && nextElementNodeTag[0] == 'h' &&
 			     !isNaN( nextElementNodeTag[1] ) && nextElementNodeTag[1] <= level ) {
                             deleteNode( paragraphNode );
 			}
@@ -1353,20 +1353,20 @@ function saveArticles( finished ) {
 		}
             }
 	}
-	
+
 	/* Clean the DOM of all uncessary code */
 	var allNodes = parsoidDoc.getElementsByTagName( '*' );
-	for ( var i = 0; i < allNodes.length ; i++ ) {                                                                                
+	for ( var i = 0; i < allNodes.length ; i++ ) {
 	    var node = allNodes[i];
 	    node.removeAttribute( 'data-parsoid' );
 	    node.removeAttribute( 'typeof' );
 	    node.removeAttribute( 'about' );
 	    node.removeAttribute( 'data-mw' );
-	    
+
 	    if ( node.getAttribute( 'rel' ) && node.getAttribute( 'rel' ).substr( 0, 3 ) === 'mw:' ) {
 		node.removeAttribute( 'rel' );
 	    }
-	    
+
 	    /* Remove a few css calls */
 	    cssClassCallsBlackList.map( function( classname )  {
 		if ( node.getAttribute( 'class' ) ) {
@@ -1374,13 +1374,13 @@ function saveArticles( finished ) {
 		}
 	    });
 	}
-	
+
 	finished( null, parsoidDoc, articleId );
     }
-    
+
     function setFooter( parsoidDoc, articleId, finished ) {
 	var htmlTemplateDoc = domino.createDocument( htmlTemplateCode );
-	
+
 	/* Create final document by merging template and parsoid documents */
 	htmlTemplateDoc.getElementById( 'mw-content-text' ).innerHTML = parsoidDoc.getElementsByTagName( 'body' )[0].innerHTML;
 	htmlTemplateDoc.getElementsByTagName( 'title' )[0].innerHTML =
@@ -1390,7 +1390,7 @@ function saveArticles( finished ) {
 	} else {
 	    deleteNode( htmlTemplateDoc.getElementById( 'titleHeading' ) );
 	}
-	
+
 	/* Subpage */
 	if ( isSubpage( articleId ) && mainPageId != articleId ) {
 	    var contentNode = htmlTemplateDoc.getElementById( 'content' );
@@ -1402,7 +1402,7 @@ function saveArticles( finished ) {
 	    parents.map( function( parent ) {
 		var label = parent.replace( /_/g, ' ' );
 		var isParentMirrored = isMirrored( parentPath + parent );
-		subpages += '&lt; ' + ( isParentMirrored ? '<a href="' + getArticleUrl( parentPath + parent ) + '" title="' + label + '">' : '' ) 
+		subpages += '&lt; ' + ( isParentMirrored ? '<a href="' + getArticleUrl( parentPath + parent ) + '" title="' + label + '">' : '' )
 		    + label + ( isParentMirrored ? '</a> ' : ' ' );
 		parentPath += parent + '/';
 	    });
@@ -1545,7 +1545,7 @@ function isSubpage( id ) {
 /* Grab and concatenate javascript files */
 function saveJavascript( finished ) {
     printLog( 'Creating javascript...' );
-    
+
     jsdom.defaultDocumentFeatures = {
 	FetchExternalResources   : ['script'],
 	ProcessExternalResources : ['script'],
@@ -1560,7 +1560,7 @@ function saveJavascript( finished ) {
 	var dummyPath = htmlRootPath + javascriptDirectory + '/local.js';
 	printLog( 'Writting dummy js at' + dummyPath );
 	fs.writeFileSync( dummyPath, 'console.log( "mw.loader not supported" );' );
-	
+
 	/* Backward compatibility for old version of jsdom */
 	var window;
 	try {
@@ -1569,7 +1569,7 @@ function saveJavascript( finished ) {
 	    printLog( 'Unable to call jsdom.jsdom( html ).parentWindow without crashing, try an other way.' );
 	    window = jsdom.jsdom( html ).createWindow();
 	}
-	
+
 	/* Try to detect all javascript code included */
 	printLog( 'Adding load listener on window' );
 	window.addEventListener( 'load', function () {
@@ -1580,7 +1580,7 @@ function saveJavascript( finished ) {
 			   var node = window.document.getElementsByTagName( nodeName )[0];
 			   var scripts = node.getElementsByTagName( 'script' );
 			   var javascriptPath = htmlRootPath + javascriptDirectory + '/' + nodeName + '.js';
-			   
+
 			   fs.unlink( javascriptPath, function() {
 			       var scriptIncrementor = 0;
 			       async.whilst(
@@ -1594,7 +1594,7 @@ function saveJavascript( finished ) {
 					   txt = txt.replace( RegExp( '//bits.wikimedia.org/.*.wikipedia.org/load.php', 'g' ), javascriptDirectory + '/local.js' );
 					   return txt;
 				       }
-				       
+
 				       if ( url ) {
 					   url = getFullUrl( url ).replace( 'debug=false', 'debug=true' );
 					   printLog( 'Downloading javascript from ' + url );
@@ -1621,7 +1621,8 @@ function saveJavascript( finished ) {
 		       },
 	               function( error, result ) {
 			   finished();
-		       });
+		       }
+            );
 	});
 	printLog( 'Listener (to load javascript added to window)...' );
     });
@@ -1670,14 +1671,14 @@ function saveStylesheet( finished ) {
 		var match;
 		while ( match = cssUrlRegexp.exec( body ) ) {
 		    var url = match[1];
-		    
+
 		    /* Avoid 'data', so no url dependency */
 		    if ( ! url.match( '^data' ) ) {
 			var filename = pathParser.basename( urlParser.parse( url, false, true ).pathname );
-			
+
 			/* Rewrite the CSS */
 			rewrittenCss = rewrittenCss.replace( url, filename );
-			
+
 			/* Need a rewrite if url doesn't include protocol */
 			url = getFullUrl( url, cssUrl );
 			url = url.indexOf( '%' ) < 0 ? encodeURI( url ) : url;
@@ -1689,7 +1690,7 @@ function saveStylesheet( finished ) {
 			}
 		    }
 		}
-		
+
 		fs.appendFileSync( stylePath, rewrittenCss );
 		finished();
 	    });
@@ -1798,13 +1799,13 @@ function getArticleIds( finished ) {
 	};
 	redirectQueue.push( '' );
     }
-    
+
     /* Parse article list given by API */
     function parseJson( body ) {
 	var next = '';
 	var json = JSON.parse( body );
 	var entries = json['query'] && json['query']['pages'];
-	
+
 	if ( entries ) {
 	    var redirectQueueValues = new Array();
 	    var details = new Object();
@@ -1843,7 +1844,7 @@ function getArticleIds( finished ) {
 		    }
 		}
 	    });
-	    
+
 	    if ( redirectQueueValues.length )
 		redirectQueue.push( redirectQueueValues );
 	    if ( Object.keys( details ).length ) {
@@ -1908,7 +1909,7 @@ function getArticleIds( finished ) {
     /* Get ids from Mediawiki API */
     function getArticleIdsForNamespace( namespace, finished ) {
 	var next = '';
-	
+
 	async.doWhilst(
 	    function ( finished ) {
 		printLog( 'Getting article ids for namespace "' + namespace + '" ' + ( next != '' ? ' (from ' + ( namespace ? namespace + ':' : '') + next.split( '=' )[1] + ')' : '' ) + '...' );
@@ -1936,7 +1937,7 @@ function getArticleIds( finished ) {
 	    }
 	);
     }
-    
+
     function getArticleIdsForNamespaces() {
 	async.eachLimit( namespacesToMirror, namespacesToMirror.length, getArticleIdsForNamespace, function( error ) {
 	    if ( error ) {
@@ -1948,7 +1949,7 @@ function getArticleIds( finished ) {
 	    }
 	});
     }
-	
+
     /* Get list of article ids */
     async.series(
 	[
@@ -2042,7 +2043,7 @@ function downloadContentAndCache( url, callback, var1, var2, var3 ) {
     var cachePath = cacheDirectory + crypto.createHash( 'sha1' ).update( url ).digest( 'hex' ).substr( 0, 20 );
     var cacheHeadersPath = cachePath + '.h';
 
-    async.series( 
+    async.series(
 	[
 	    function( finished ) {
 		fs.readFile( cachePath, function( error, data ) {
@@ -2110,7 +2111,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 	    var request;
 	    var calledFinished = false;
 	    function callFinished( timeout, message, data ) {
-		if ( !calledFinished ) {		    
+		if ( !calledFinished ) {
 		    calledFinished = true;
 		    if ( message ) {
 			console.error( message );
@@ -2120,7 +2121,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 		    setTimeout( finished, timeout, message, data );
 		}
 	    }
-	    
+
 	    retryCount++;
 
 	    /* Analyse url */
@@ -2165,7 +2166,7 @@ function downloadContent( url, callback, var1, var2, var3 ) {
 			    })
 			} else {
 			    callFinished( 0, null, Buffer.concat( chunks ) );
-			} 
+			}
 		    });
 		    response.on( 'error', function( error) {
 			socket.emit( 'agentRemove' );
@@ -2234,11 +2235,11 @@ function downloadFileAndCache( url, callback ) {
 		    process.exit( 1 );
 		} else {
 		    var mediaPath = getMediaPath( url );
-		    var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ).substr( 0, 20 ) + 
+		    var cachePath = cacheDirectory + 'm/' + crypto.createHash( 'sha1' ).update( filenameBase ).digest( 'hex' ).substr( 0, 20 ) +
 			( pathParser.extname( urlParser.parse( url, false, true ).pathname || '' ) || '' );
 		    var cacheHeadersPath = cachePath + '.h';
 		    var toDownload = false;
-		    
+
 		    /* Check if the file exists in the cache */
 		    if ( fs.existsSync( cacheHeadersPath ) && fs.existsSync( cachePath ) ) {
 			var responseHeaders;
@@ -2248,7 +2249,7 @@ function downloadFileAndCache( url, callback ) {
 			    console.error( 'Error in downloadFileAndCache() JSON parsing of ' + cacheHeadersPath + ', error is: ' + error );
 			    responseHeaders = undefined;
 			}
-			
+
 			/* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
 			if ( !responseHeaders || responseHeaders.width < width ) {
 			    toDownload = true;
@@ -2282,7 +2283,7 @@ function downloadFileAndCache( url, callback ) {
 		    } else {
 			toDownload = true;
 		    }
-		    
+
 		    /* Download the file if necessary */
 		    if ( toDownload ) {
 			downloadFile( url, cachePath, true, function( error, responseHeaders ) {
@@ -2311,8 +2312,8 @@ function downloadFileAndCache( url, callback ) {
 		}
 	    });
 	}
-	
-	/* We already have this image with a resolution equal or higher to what we need */ 
+
+	/* We already have this image with a resolution equal or higher to what we need */
 	else {
             callback();
 	}
@@ -2363,7 +2364,7 @@ function getMediaBase( url, escape ) {
     if ( parts ) {
 	root = parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || ".svg") + ( parts[7] || '' );
     }
- 
+
     if ( !root ) {
         console.error( 'Unable to parse media url \"' + url + '\"' );
         return;
@@ -2378,7 +2379,7 @@ function getMediaBase( url, escape ) {
     var filenameSecondVariant = parts[5] + (parts[6] || ".svg") + ( parts[7] || '' );
     var filename = myDecodeURIComponent( filenameFirstVariant.length > filenameSecondVariant.length ?
 					 filenameFirstVariant : filenameSecondVariant );
-    
+
     /* Need to shorten the file due to filesystem limitations */
     if ( unicodeCutter.getBinarySize( filename ) > 249 ) {
 	var ext = pathParser.extname( filename ).split( '.' )[1] || '';
@@ -2400,7 +2401,7 @@ function getArticlePath( articleId, escape ) {
 function getArticleBase( articleId, escape ) {
     var filename = articleId.replace( /\//g, '_' );
     var dirBase = filename.replace( /\./g, '_' );
-    
+
     /* Filesystem is not able to handle with filename > 255 bytes */
     while ( Buffer.byteLength( filename, 'utf8' ) > 250 ) {
 	filename = filename.substr( 0, filename.length - 1 );
@@ -2458,7 +2459,7 @@ function getSiteInfo( finished ) {
 function saveFavicon( finished ) {
     printLog( 'Saving favicon.png...' );
     var faviconPath = htmlRootPath + 'favicon.png';
-    
+
     function resizeFavicon( finished ) {
 	var cmd = 'convert -thumbnail 48 "' + faviconPath + '" "' + faviconPath + '.tmp" ; mv  "' + faviconPath + '.tmp" "' + faviconPath + '" ';
 	exec( cmd, function( error, stdout, stderr ) {
@@ -2469,13 +2470,13 @@ function saveFavicon( finished ) {
 	    });
 	}).on( 'error', function( error ) { console.error( error ) });
     }
-    
+
     if ( customZimFavicon ) {
 	var content = fs.readFileSync( customZimFavicon );
 	fs.writeFileSync( faviconPath, content );
 	resizeFavicon( finished );
     } else {
-	downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {	
+	downloadContent( apiUrl + 'action=query&meta=siteinfo&format=json', function( content, responseHeaders ) {
 	    var body = content.toString();
 	    var entries = JSON.parse( body )['query']['general'];
 	    var logoUrl = entries['logo'];
@@ -2488,7 +2489,7 @@ function saveFavicon( finished ) {
 }
 
 function getMainPage( finished ) {
-    
+
     function writeMainPage( html, finished ) {
 	var mainPagePath = htmlRootPath + 'index.htm';
 	if ( deflateTmpHtml ) {
@@ -2505,18 +2506,18 @@ function getMainPage( finished ) {
 	var doc = domino.createDocument( htmlTemplateCode );
 	doc.getElementById( 'titleHeading' ).innerHTML = 'Summary';
 	doc.getElementsByTagName( 'title' )[0].innerHTML = 'Summary';
-	
+
 	var html = '<ul>\n';
 	Object.keys(articleIds).sort().map( function( articleId ) {
 	    html = html + '<li><a href="' + getArticleBase( articleId, true ) + '"\>' + articleId.replace( /_/g, ' ' ) + '<a></li>\n';
 	});
 	html = html + '</ul>\n';
 	doc.getElementById( 'mw-content-text' ).innerHTML = html;
-	
+
 	/* Write the static html file */
 	writeMainPage( doc.documentElement.outerHTML, finished );
     }
-    
+
     function createMainPageRedirect( finished ) {
 	printLog( 'Create main page redirection...' );
 	var html = redirectTemplate( { title: mainPageId.replace( /_/g, ' ' ),
@@ -2533,7 +2534,7 @@ function getMainPage( finished ) {
 
 function getNamespaces( finished ) {
     var url = apiUrl + 'action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json';
-    downloadContent( url, function( content, responseHeaders ) { 
+    downloadContent( url, function( content, responseHeaders ) {
 	var body = content.toString();
 	var types = [ 'namespaces', 'namespacealiases' ];
 	types.map( function( type ) {
@@ -2563,7 +2564,7 @@ function getNamespaces( finished ) {
 		}
 	    });
 	});
-	
+
 	finished();
     });
 }
@@ -2653,11 +2654,11 @@ function printLog( msg ) {
 function executeTransparently( command, args, callback, nostdout, nostderr ) {
     try {
 	var proc = spawn( command, args )
-	    .on( 'error', function( error ) { 
+	    .on( 'error', function( error ) {
 		console.error( 'Error in executeTransparently(), ' + error );
 		process.exit( 1 );
 	    });
-	
+
 	if ( !nostdout ) {
 	    proc.stdout
 		.on( 'data', function ( data ) {
@@ -2667,7 +2668,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 		    console.error( 'STDOUT output error: ' + error );
 		});
 	}
-	
+
 	if ( !nostderr ) {
 	    proc.stderr
 		.on( 'data', function ( data ) {
@@ -2677,7 +2678,7 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 		    console.error( 'STDERR output error: ' + error );
 		});
 	}
-	
+
 	proc.on( 'close', function ( code ) {
 	    callback( code !== 0 ? 'Error by executing ' + command : undefined );
 	});
@@ -2686,14 +2687,14 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
     }
 }
 
-function validateEmail( email ) { 
+function validateEmail( email ) {
     var emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return emailRegex.test( email );
 }
 
 function touch( paths ) {
     var currentDate = Date.now();
-    paths = paths instanceof Array ? paths : [paths] 
+    paths = paths instanceof Array ? paths : [paths]
     paths.map( function( path ) {
 	fs.utimes( path, currentDate, currentDate );
     });
