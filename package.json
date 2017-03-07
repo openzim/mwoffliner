@@ -14,6 +14,9 @@
     "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "mwoffliner": "./mwoffliner.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kiwix/mwoffliner.git"
