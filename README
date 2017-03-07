@@ -27,10 +27,14 @@ $ make
 redis should listen, by default, on a socket /dev/shm/redis.sock
 
 ### Utilities
-Following console binaries are necessary to reduce image size
+You need the following binaries: jpegoptim, advdef, gifsicle, pngquant, imagekick
+
+To install them, run:
 ```
-$ apt-get install jpegoptim, advdef, gifsicle, pngquant, imagekick
+$ apt-get install jpegoptim, advancecomp, gifsicle, pngquant, imagekick
 ```
+
+You also need ZimWriterFs. See https://github.com/wikimedia/openzim/tree/master/zimwriterfs for install documentation.
 
 We also recommend you to use a DNS cache like nscd.
 
@@ -39,7 +43,7 @@ When you have done this, you should be able to start the tool with ./mwoffliner.
 #### Usage
 MWoffliner does not export anything right now. You need to call it as an executable in an npm script.
 
-Exemple, in your package.json :
+Exemple, in your package.json:
 ```
 "scripts": {
   "create_custom_archive": "mwoffliner",
@@ -47,7 +51,7 @@ Exemple, in your package.json :
   ...
 }
 ```
-Respective usage of npm scripts in exemple above :
+Respective usage of npm scripts in exemple above:
 ```
 $ npm run create_custom_archive -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
 $ npm run create_archive
