@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Parsoid HTML dump utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
@@ -10,8 +10,8 @@
     "url": "http://www.kiwix.org"
   },
   "scripts": {
-    "mwoffliner": "node mwoffliner.js",
-    "mwmatrixoffliner": "node mwmatrixoffliner.js",
+    "mwoffliner": "node mwoffliner",
+    "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

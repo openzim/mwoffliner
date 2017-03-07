@@ -35,7 +35,10 @@ var htmlMinifier = require('html-minifier');
 /************************************/
 
 var argv = yargs.usage( 'Create a fancy HTML dump of a Mediawiki instance in a directory\nUsage: $0'
-	   + '\nExample: node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net' )
+	   + '\nExample, as a node script: '
+           + '\n  node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net'
+           + '\nOr, as a npm script: '
+           + '\n  npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net')
     .require( [ 'mwUrl', 'adminEmail' ] )
     .describe( 'mwUrl', 'Mediawiki base URL' )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
