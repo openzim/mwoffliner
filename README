@@ -1,22 +1,37 @@
-mwoffliner is a tool which allows to "dump" a Wikimedia project
-(Wikipedia, Wiktionary, ...) to a local storage. It should also work
-for any Mediawiki instance having parsoid installed. It goes through
-all articles (or a selection if specified) of the project and write
-the HTML/pictures to local files.
+# MWoffliner
+MWoffliner is a tool which allows to "dump" a Wikimedia project (Wikipedia, Wiktionary, ...) to a local storage.
+It should also work for any Mediawiki instance having parsoid installed.
+It goes through all articles (or a selection if specified) of the project and write the HTML/pictures to local files.
 
-To use it, you need a recent version of nodejs and a POSIX system
-(like GNU/Linux). You need also to install all necessary nodejs
-packages with "npm install" (without any package name) in this
-directory.
+## Installation
+You need a POSIX system (like GNU/Linux)
 
-You need also a redis server correctly configured and listening on a
-socket (to /dev/shm/redis.sock per default). Following console
-binaries are necessary to reduce image size: jpegoptim, advdef,
-gifsicle, pngquant. You also need imagemagick, in particular the
-'convert' tool.
+### Node and npm
+```
+$ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+$ sudo apt-get install -y nodejs
+```
 
-We recommend also to use a DNS cache like nscd.
+### Download dependencies
+```
+$ npm install
+```
 
-One time you have done this, you should be able to start the tool with
-./mwoffliner.js and see the usage() for more details.
+### Redis
+```
+$ wget http://download.redis.io/releases/redis-3.2.8.tar.gz
+$ tar xzf redis-3.2.8.tar.gz
+$ cd redis-3.2.8
+$ make
+```
+redis should listen, by default, on a socket /dev/shm/redis.sock
 
+### Utilities
+Following console binaries are necessary to reduce image size
+```
+$ apt-get install jpegoptim, advdef, gifsicle, pngquant, imagekick
+```
+
+We also recommend you to use a DNS cache like nscd.
+
+When you have done this, you should be able to start the tool with ./mwoffliner.js and see the usage() for more details.
