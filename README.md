@@ -1,21 +1,46 @@
-# MWoffliner
-MWoffliner is a tool which allows to "dump" a Wikimedia project (Wikipedia, Wiktionary, ...) to a local storage.
+# mwoffliner
+mwoffliner is a tool which allows to "dump" a Wikimedia project (Wikipedia, Wiktionary, ...) to a local storage.
+
 It should also work for any Mediawiki instance having parsoid installed.
+
 It goes through all articles (or a selection if specified) of the project and write the HTML/pictures to local files.
 
 ## Installation
-You need a POSIX system (like GNU/Linux)
 
-### Node and npm
+To use mwoffliner, you need a recent version of nodejs and a POSIX system (like GNU/Linux).
+
+There are also other dependencies  descrbed below
+
+### Node and JS dependencies
+
 ```
 $ curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 $ sudo apt-get install -y nodejs
 ```
 
-### Download dependencies
+Then, install dependencies:
+
 ```
 $ npm install
 ```
+
+### Image manipulation dependencies
+
+mwoffliner make some treatments on downloaded images, so the following binaries are required : `jpegoptim, advdef, gifsicle, pngquant, imagekick`
+
+On a debian-based OS, they can be install using apt :
+
+```
+$ apt-get install jpegoptim, advancecomp, gifsicle, pngquant, imagekick
+```
+
+### Zimwriterfs
+
+mwoffliner uses the zim archive format for locally store data; this is done using the zimwriterfs binary.
+
+Zimwriterfs is a sub-project of OpenZim which locally stores an archive of a remote website.
+
+Installation can be processed by following official installation documentation : https://github.com/wikimedia/openzim/tree/master/zimwriterfs for install documentation.
 
 ### Redis
 ```
@@ -26,33 +51,45 @@ $ make
 ```
 redis should listen, by default, on a socket /dev/shm/redis.sock
 
-### Utilities
-You need the following binaries: jpegoptim, advdef, gifsicle, pngquant, imagekick
+### Other (optionnal) dependencies
 
-To install them, run:
-```
-$ apt-get install jpegoptim, advancecomp, gifsicle, pngquant, imagekick
-```
+We also recommend to use a DNS cache like nscd.
 
-You also need ZimWriterFs. See https://github.com/wikimedia/openzim/tree/master/zimwriterfs for install documentation.
+## Usage
 
-We also recommend you to use a DNS cache like nscd.
+When you are done with the installation, you can start mwoffliner. There are two ways to use mwoffliner.
 
-When you have done this, you should be able to start the tool with ./mwoffliner.js and see the usage() for more details.
+### Basic usage
 
-#### Usage
-MWoffliner does not export anything right now. You need to call it as an executable in an npm script.
+By default, mwoffliner does not export anything, so the way to execute it is the following one:
 
-Exemple, in your package.json:
+    node ./node_packages/mwoffliner.js
+
+This will show the usage() of the command.
+
+### Advanced usage (the npm way)
+
+If you want to run mwoffliner the npm way, you must export some npm scripts through package.json definition. Add a `package.json` file to your project, with (for example) the following scripts part:
+
 ```
 "scripts": {
-  "create_custom_archive": "mwoffliner",
-  "create_archive": "mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net"
-  ...
+  "mwoffliner": "mwoffliner",
+  "create_archive": "mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net",
+  "create_mywiki_archive": "mwoffliner --mwUrl=https://my.wiki.url/ --adminEmail=foo@bar.net"
 }
 ```
-Respective usage of npm scripts in exemple above:
+
+Now you are able to run mwoffliner through npm:
+
 ```
-$ npm run create_custom_archive -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
-$ npm run create_archive
+$ npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
 ```
+The first "--" is meant to pass the following arguments to the npm mwoffliner module. [Learn more about --](http://unix.stackexchange.com/questions/52167/what-does-mean-in-linux-unix-command-line)
+
+You can also execute it with preconfigured commands *create_archive* or *create_mywiki_archive* :
+
+```
+$ npm run create_mywiki_archive
+```
+
+Of course, you are free to add/adapt preconfigured commands to your needs.
