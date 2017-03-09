@@ -15,7 +15,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "mwoffliner": "./mwoffliner.js"
+    "mwoffliner": "./bin/mwoffliner.script.js"
   },
   "repository": {
     "type": "git",

@@ -67,7 +67,9 @@ By default, mwoffliner does not export anything, so the way to execute it is the
 
 This will show the usage() of the command.
 
-### Advanced usage (the npm way)
+### Advanced usage
+
+#### As a npm script
 
 If you want to run mwoffliner the npm way, you must export some npm scripts through package.json definition. Add a `package.json` file to your project, with (for example) the following scripts part:
 
@@ -93,3 +95,14 @@ $ npm run create_mywiki_archive
 ```
 
 Of course, you are free to add/adapt preconfigured commands to your needs.
+
+#### As a js module
+
+```
+const mwoffliner = require('mwoffliner')
+const parameters = {
+    mwUrl: 'https://en.wikipedia.org/',
+    adminEmail: 'foo@bar.net'
+}
+mwoffliner.execute(parameters)
+```
