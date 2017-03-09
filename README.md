@@ -9,7 +9,7 @@ It goes through all articles (or a selection if specified) of the project and wr
 
 To use mwoffliner, you need a recent version of nodejs and a POSIX system (like GNU/Linux).
 
-There are also other dependencies  descrbed below
+There are also other dependencies described below
 
 ### Node and JS dependencies
 
@@ -21,8 +21,9 @@ $ sudo apt-get install -y nodejs
 Then, install dependencies:
 
 ```
-$ npm install
+$ npm install mwoffliner
 ```
+Note : add --save for a developpement project and -g for a system wide installation.
 
 ### Image manipulation dependencies
 
@@ -61,9 +62,7 @@ When you are done with the installation, you can start mwoffliner. There are two
 
 ### Basic usage
 
-By default, mwoffliner does not export anything, so the way to execute it is the following one:
-
-    node ./node_packages/mwoffliner.js
+    node ./node_modules/mwoffliner/bin/mwoffliner.script.js
 
 This will show the usage() of the command.
 
@@ -71,7 +70,7 @@ This will show the usage() of the command.
 
 #### As a npm script
 
-If you want to run mwoffliner the npm way, you must export some npm scripts through package.json definition. Add a `package.json` file to your project, with (for example) the following scripts part:
+If you want to run mwoffliner the npm way, you must create some npm scripts through package.json definition. Add, for example, the following scripts part in your package.json:
 
 ```
 "scripts": {
@@ -97,6 +96,8 @@ $ npm run create_mywiki_archive
 Of course, you are free to add/adapt preconfigured commands to your needs.
 
 #### As a js module
+
+Include this script to the .js file of your project:
 
 ```
 const mwoffliner = require('mwoffliner')

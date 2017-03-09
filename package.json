@@ -24,6 +24,12 @@
   "bugs": {
     "url": "https://github.com/kiwix/mwoffliner/issues"
   },
+  "engines": {
+    "node": ">=6.10.0"
+  },
+  "engine-strict": {
+    "node": ">=6.4.0"
+  },
   "dependencies": {
     "async": "^1.5.2",
     "country-language": "^0.1.7",
