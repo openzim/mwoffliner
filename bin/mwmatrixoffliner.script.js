@@ -24,7 +24,7 @@ var spawn = require('child_process').spawn;
 /************************************/
 
 var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
-	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ --adminEmail=foo@bar.net [--parsoidUrl=https://rest.wikimedia.org/] --adminEmail=foo@bar.net [--project=wikivoyage] [--language=fr]' )
+	   + '\nExample: ./mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ --adminEmail=foo@bar.net [--parsoidUrl=https://rest.wikimedia.org/] [--project=wikivoyage] [--language=fr]' )
     .require( [ 'mwUrl', 'adminEmail' ] )
     .describe( 'adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string' )
     .describe( 'deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.' )
@@ -148,7 +148,7 @@ function dump( finished ) {
 		}
 
 		printLog( 'Dumping ' + site.url );
-		executeTransparently( './mwoffliner.js',
+		executeTransparently(__dirname + '/mwoffliner.script.js',
 				      [
 					  '--mwUrl=' + localMwUrl,
 					  '--parsoidUrl=' + localParsoidUrl,
