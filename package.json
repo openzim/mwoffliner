@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "0.0.0",
+  "version": "1.1.1",
   "description": "Parsoid HTML dump utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
@@ -10,9 +10,12 @@
     "url": "http://www.kiwix.org"
   },
   "scripts": {
-    "mwoffliner": "node mwoffliner.js",
-    "mwmatrixoffliner": "node mwmatrixoffliner.js",
+    "mwoffliner": "node mwoffliner",
+    "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "mwoffliner": "./bin/mwoffliner.script.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +24,12 @@
   "bugs": {
     "url": "https://github.com/kiwix/mwoffliner/issues"
   },
+  "engines": {
+    "node": ">=6.10.0"
+  },
+  "engine-strict": {
+    "node": ">=6.4.0"
+  },
   "dependencies": {
     "async": "^1.5.2",
     "country-language": "^0.1.7",
@@ -28,7 +37,7 @@
     "expand-home-dir": "^0.0.3",
     "follow-redirects": "^0.2.0",
     "html-minifier": "^2.1.6",
-    "jsdom": "^3.1.2",
+    "jsdom": "^9.11.0",
     "jsoncompress": "^0.1.3",
     "mkdirp": "^0.5.1",
     "redis": "^2.6.2",
