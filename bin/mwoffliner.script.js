@@ -12,7 +12,7 @@ const mwofflinerLib = require('../lib/mwoffliner.lib.js')
 
 const parametersList = mwofflinerLib.getParametersList()
 
-const argv = yargs
+let argv = yargs
     .usage(`Create a fancy HTML dump of a Mediawiki instance in a directory
 Usage: $0'
 Example, as a node script:
@@ -23,6 +23,6 @@ Or, as a npm script: '
 
 parametersList.forEach(param => argv.describe(param.name, param.description))
 
-argv.strict().argv
+argv = argv.strict().argv
 
 mwofflinerLib.execute(argv)
