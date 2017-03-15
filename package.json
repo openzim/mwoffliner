@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Parsoid HTML dump utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
@@ -15,7 +15,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "mwoffliner": "./bin/mwoffliner.script.js"
+    "mwoffliner": "./bin/mwoffliner.script.js",
+    "mwmatrixoffliner": "./bin/mwmatrixoffliner.script.js"
   },
   "repository": {
     "type": "git",
