@@ -41,6 +41,7 @@
     "jsdom": "^9.11.0",
     "jsoncompress": "^0.1.3",
     "mkdirp": "^0.5.1",
+    "node-fetch": "^1.6.3",
     "redis": "^2.6.2",
     "swig": "^1.4.2",
     "utf8-binary-cutter": "^0.9.1",
@@ -50,5 +51,6 @@
     "mediawiki",
     "parsoid",
     "zim"
-  ]
+  ],
+  "devDependencies": {}
 }
