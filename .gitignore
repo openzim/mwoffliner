@@ -1,5 +1,9 @@
 /node_modules
+/docker
 /cac
+*/cac
 /out
+*/out
 /tmp
+*/tmp
 npm-debug.log
