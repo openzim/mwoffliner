@@ -13,7 +13,7 @@ const mwofflinerLib = require('../lib/mwoffliner.lib.js')
 const parametersList = mwofflinerLib.getParametersList()
 
 let argv = yargs
-    .usage(`Create a fancy HTML dump of a Mediawiki instance in a directory
+    .usage(`Create a fancy HTML dump of a Mediawiki instance in a directory or as a ZIM file
 Usage: $0'
 Example, as a node script:
     node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
