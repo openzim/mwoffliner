@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "1.1.6",
+  "version": "1.2.0",
   "description": "Parsoid HTML dump utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
