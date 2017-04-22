@@ -1,7 +1,7 @@
 # mwoffliner
 mwoffliner is a tool which allows to "dump" a Wikimedia project (Wikipedia, Wiktionary, ...) to a local storage.
 
-It should also work for any Mediawiki instance having parsoid installed.
+It should also work for any recent Mediawiki.
 
 It goes through all articles (or a selection if specified) of the project and write the HTML/pictures to local files.
 
