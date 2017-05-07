@@ -22,10 +22,10 @@ RUN cd gifsicle-1.88 && make all install
 
 # Install npm & nodejs
 RUN apt-get install -y python
-RUN wget https://nodejs.org/dist/v6.10.1/node-v6.10.1.tar.gz
-RUN tar xvf node-v6.10.1.tar.gz
-RUN cd node-v6.10.1 && ./configure
-RUN cd node-v6.10.1 && make all install
+RUN wget https://nodejs.org/dist/v6.10.3/node-v6.10.3.tar.gz
+RUN tar xvf node-v6.10.3.tar.gz
+RUN cd node-v6.10.3 && ./configure
+RUN cd node-v6.10.3 && make all install
 
 # Configure Redis
 RUN apt-get install -y redis-server
