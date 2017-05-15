@@ -1,5 +1,8 @@
 FROM openzim/zimwriterfs:latest
 
+# Basics
+RUN apt-get update
+
 # Install jpegoptim
 RUN apt-get install -y libjpeg-dev
 RUN wget http://www.kokkonen.net/tjko/src/jpegoptim-1.4.4.tar.gz
@@ -43,4 +46,7 @@ RUN apt-get install -y advancecomp
 RUN npm install -g mwoffliner
 
 # Boot commands
-CMD service redis-server restart && /bin/bash
+RUN echo "service redis-server start" >  boot.sh
+RUN echo "mwoffliner" >> boot.sh
+ENTRYPOINT  ["/bin/bash", "--init-file", "boot.sh"]
+CMD ["-i"]
