@@ -1,0 +1,44 @@
+/**
+ * Custom style meant to match the design of mwoffliner mobile version to the mobile version of wikipedia
+ */
+.mw-body-content {
+    font-family: 'Helvetica Neue','Helvetica','Nimbus Sans L','Arial','Liberation Sans',sans-serif;
+    font-size: 16px;
+    line-height: 26px;
+}
+.mw-body-content p {
+    margin: 0.5em 0 1em 0;
+}
+.mw-body h2, .mw-body h3, .mw-body h4, .mw-body h5, .mw-body h6 {
+    padding: 0.5em 0;
+}
+.mw-body h3, .mw-body h2 {
+    clear: both;
+    width: 100%;
+    margin-bottom: 0.5em;
+    border-bottom: solid 1px #eaecf0;
+    font-family: 'Linux Libertine','Georgia','Times',serif;
+}
+.mw-body h1 {
+    font-size: 42px;
+}
+.mw-body h2 {
+    font-size: 24px;
+}
+.mw-body h3 {
+    border-bottom: 0px solid #eaecf0;
+    font-size: 19px;
+    font-weight: bold;
+}
+.mw-body h4 {
+    border-bottom: 0px solid #eaecf0;
+    font-size: 16px;
+}
+h1[tabindex="0"].collapsible-heading > .indicator {
+  display: none; /* hide the "v" icone for the main title */
+}
+@media all and (min-width: 720px) {
+  .client-js .collapsible-heading .indicator {
+    display: none !important; /* this is to hide to "v" icone next to titles in desktop */
+  }
+}
