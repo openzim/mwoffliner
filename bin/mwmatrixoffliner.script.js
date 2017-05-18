@@ -320,10 +320,10 @@ function executeTransparently( command, args, callback, nostdout, nostderr ) {
 	}
 
         proc.on( 'close', function ( code ) {
-            callback( code !== 0 ? 'Error by executing ' + command : undefined );
+            callback( code !== 0 ? 'Error when executing ' + command : undefined );
 	});
     } catch ( error ) {
-	callback( 'Error by executing ' + command );
+	callback( 'Error when executing ' + command );
     }
 }
 
