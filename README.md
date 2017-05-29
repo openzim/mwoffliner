@@ -100,7 +100,7 @@ Of course, you are free to add/adapt preconfigured commands to your needs.
 Include this script to the .js file of your project:
 
 ```
-const mwoffliner = require('mwoffliner')
+const mwoffliner = require('./lib/mwoffliner.lib.js')
 const parameters = {
     mwUrl: 'https://en.wikipedia.org/',
     adminEmail: 'foo@bar.net'
