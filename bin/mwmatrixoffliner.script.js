@@ -155,7 +155,7 @@ function dump( finished ) {
 					  '--mwUrl=' + localMwUrl,
 					  '--parsoidUrl=' + localParsoidUrl,
 					  '--adminEmail=' + adminEmail,
-					  '--format=', '--format=nopic',
+					  '--format=novid', '--format=nopic',
 					  outputDirectory ? '--outputDirectory=' + outputDirectory : undefined,
 					  tmpDirectory ? '--tmpDirectory=' + tmpDirectory : undefined,
 					  cacheDirectory ? '--cacheDirectory=' + cacheDirectory : undefined,
