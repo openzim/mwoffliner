@@ -1,13 +1,13 @@
 {
   "name": "mwoffliner",
   "version": "1.3.3",
-  "description": "Parsoid HTML dump utility and ZIM file builder",
+  "description": "Mediawiki/Parsoid HTML snapshot utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
   "author": {
     "name": "Emmanuel Engelhart",
     "email": "kelson@kiwix.org",
-    "url": "http://www.kiwix.org"
+    "url": "http://www.kiwix.org/"
   },
   "scripts": {
     "mwoffliner": "node mwoffliner",
@@ -20,10 +20,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kiwix/mwoffliner.git"
+    "url": "https://github.com/openzim/mwoffliner.git"
   },
   "bugs": {
-    "url": "https://github.com/kiwix/mwoffliner/issues"
+    "url": "https://github.com/openzim/mwoffliner/issues"
   },
   "engines": {
     "node": ">=7.4.0"
