@@ -84,7 +84,7 @@ appendfsync no
 
 ### Nscd
 
-We also recommend to use a DNS cache like nscd.
+We also recommend to use a DNS cache like `nscd`.
 
 ## Installation
 
