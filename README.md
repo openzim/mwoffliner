@@ -1,8 +1,8 @@
 # mwoffliner
 
 `mwoffliner` is a tool which allows to make a local HTML snapshot of
-any online Mediawiki instance. It goes through all articles (or a
-selection if specified) and write the HTML/pictures to a local
+any online (recent) Mediawiki instance. It goes through all articles
+(or a selection if specified) and write the HTML/pictures to a local
 directory. It has mainly been tested against Wikimedia projects like
 Wikipedia, Wiktionary, ... But it should also work for any recent
 Mediawiki.
@@ -70,10 +70,11 @@ $make
 or directly from the repository:
 
 ```
-$redis-server
+$sudo apt-get install redis-server
 ```
 
-Here is the important configuration:
+Here are the important parts of the configuration
+(/etc/redis/redis.conf):
 
 ```
 unixsocket /dev/shm/redis.sock
