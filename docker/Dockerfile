@@ -30,15 +30,8 @@ RUN tar xvf node-v6.10.3.tar.gz
 RUN cd node-v6.10.3 && ./configure
 RUN cd node-v6.10.3 && make all install
 
-# Configure Redis
-RUN apt-get install -y redis-server
-RUN echo "" >> /etc/redis/redis.conf
-RUN echo "unixsocket /dev/shm/redis.sock" >> /etc/redis/redis.conf 
-RUN echo "unixsocketperm 777" >> /etc/redis/redis.conf
-RUN echo "save \"\"" >> /etc/redis/redis.conf
-RUN echo "appendfsync no" >> /etc/redis/redis.conf
-
 # Install mwoffliner
+RUN apt-get update
 RUN apt-get install -y nscd
 RUN apt-get install -y file
 RUN apt-get install -y imagemagick
@@ -46,7 +39,5 @@ RUN apt-get install -y advancecomp
 RUN npm install -g mwoffliner
 
 # Boot commands
-RUN echo "service redis-server start" >  boot.sh
-RUN echo "mwoffliner" >> boot.sh
-ENTRYPOINT  ["/bin/bash", "--init-file", "boot.sh"]
-CMD ["-i"]
+COPY .custom-bashrc /root/
+CMD mwoffliner; bash --init-file /root/.custom-bashrc

@@ -1,0 +1,12 @@
+version: "2"
+services:
+    redis:
+        image: "redis"
+    mwoffliner:
+        stdin_open: true
+        tty: true
+        build:
+            dockerfile: Dockerfile
+            context: ./
+        links:
+            - redis

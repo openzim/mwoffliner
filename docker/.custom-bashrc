@@ -1,0 +1,2 @@
+source ~/.bashrc
+alias mwoffliner='mwoffliner --redisSocket="redis://redis"'
