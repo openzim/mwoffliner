@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "Mediawiki/Parsoid HTML snapshot utility and ZIM file builder",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
