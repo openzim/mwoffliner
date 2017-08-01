@@ -1,2 +1,2 @@
 source ~/.bashrc
-alias mwoffliner='mwoffliner --redisSocket="redis://redis"'
+alias mwoffliner='mwoffliner --redis="redis://redis"'
