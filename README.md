@@ -40,7 +40,7 @@ $sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
 format. See http://www.openzim.org/ for more details.
 
 ```
-$sudo apt-get install liblzma-dev libmagic-dev zlib1g-dev libgumbo-dev
+$sudo apt-get install liblzma-dev libmagic-dev zlib1g-dev libgumbo-dev libzim-dev libicu-dev
 $git clone https://github.com/openzim/zimwriterfs.git
 $cd zimwriterfs
 $./autogen.sh
@@ -55,7 +55,7 @@ https://raw.githubusercontent.com/openzim/zimwriterfs/master/README.md
 
 ### Redis
 
-Redis a software daemon to store huge quantity of key=values. It is
+Redis a software daemon to store huge quantity of key=value pairs. It is
 used as a cache by `mwoffliner`.
 
 You can install it from the source:
