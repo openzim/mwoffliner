@@ -28,10 +28,10 @@ $sudo apt-get install -y nodejs
 
 `mwoffliner` makes some treatments on downloaded images, so the
 following binaries are required : `jpegoptim, advdef, gifsicle,
-pngquant, imagekick`.
+pngquant, imagemagick`.
 
 ```
-$apt-get install jpegoptim advancecomp gifsicle pngquant imagekick
+$sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
 ```
 
 ### Zimwriterfs
