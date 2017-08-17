@@ -36,6 +36,11 @@ $sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
 
 ### Zimwriterfs
 
+------------------------------------------------------------------
+FIXME: These instructions are insufficient to build zimwriterfs
+Please follow instructions in https://github.com/openzim/zimwriterfs/blob/master/docker/Dockerfile
+------------------------------------------------------------------
+
 `mwoffliner` is thought to write the snapshots in the ZIM archive file
 format. See http://www.openzim.org/ for more details.
 
