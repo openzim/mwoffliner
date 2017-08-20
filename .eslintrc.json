@@ -19,10 +19,16 @@
     "sourceType": "module"
   },
   "rules": {
-    "no-use-before-define": "off",
     "no-case-declarations": "off",
-    "no-underscore-dangle": "off",
     "no-console": "warn",
-    "no-unused-vars": "warn"
+    "no-unused-vars": "warn",
+    "no-var": "warn",
+    "prefer-const": "warn",
+    "camelcase": "warn",
+    "object-shorthand": "off",
+    "no-use-before-define": "warn",
+    "eqeqeq": "warn",
+    "dot-notation": "warn",
+    "default-case": "warn"
   }
 }
