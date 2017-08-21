@@ -19,8 +19,8 @@
     "sourceType": "module"
   },
   "rules": {
+    "no-console": "off",
     "no-case-declarations": "off",
-    "no-console": "warn",
     "no-unused-vars": "warn",
     "no-var": "warn",
     "prefer-const": "warn",
