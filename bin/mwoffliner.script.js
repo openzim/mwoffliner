@@ -1,5 +1,5 @@
 #!/bin/sh
-':'; //# -*- mode: js -*-; exec /usr/bin/env node --max_inlined_source_size=100000 --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
+':' //# -*- mode: js -*-; exec /usr/bin/env node --max_inlined_source_size=100000 --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
 
 "use strict";
 
