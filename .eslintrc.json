@@ -22,7 +22,7 @@
     "no-use-before-define": "off",
     "no-case-declarations": "off",
     "no-underscore-dangle": "off",
-    "no-console": "warn",
+    "no-console": "off",
     "no-unused-vars": "warn"
   }
 }
