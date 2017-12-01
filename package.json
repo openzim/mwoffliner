@@ -12,7 +12,9 @@
   "scripts": {
     "mwoffliner": "node mwoffliner",
     "mwmatrixoffliner": "node mwmatrixoffliner",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "npm run eslint",
+    "eslint": "eslint bin lib"
   },
   "bin": {
     "mwoffliner": "./bin/mwoffliner.script.js",
@@ -52,5 +54,7 @@
     "parsoid",
     "zim"
   ],
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^4.12.1"
+  }
 }
