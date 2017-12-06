@@ -2,6 +2,6 @@
     <span class="mw-headline" id="{{ section_anchor  }} }}">{{ section_line }}</span>
 </h{{ section_toclevel }}>
 <div id="mf-section-{{ section_id }}" class="mf-section-{{ section_id }} collapsible-block open-block" id="content-collapsible-block-0" aria-pressed="true" aria-expanded="true">
-    {{ section_text }}
+    {% autoescape false %}{{ section_text }}{% endautoescape %}
 </div>
 __SUB_LEVEL_SECTION_{{ section_id }}__
