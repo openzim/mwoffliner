@@ -45,7 +45,7 @@
     "node-fetch": "^1.6.3",
     "parsoid": "^0.8.0",
     "redis": "^2.6.2",
-    "swig": "^1.4.2",
+    "swig-templates": "^2.0.2",
     "utf8-binary-cutter": "^0.9.1",
     "yargs": "^4.7.1"
   },
