@@ -29,6 +29,16 @@
         if (id === 0) return // do not allow to hide the main section
         $('#mf-section-'+id).toggleClass('open-block').prev().toggleClass('open-block')
       }
+
+      window.onload = function () {
+        $('.mw-ref').on({
+          click: function () {
+            var ref = $('#References').closest('h2');
+            ref.addClass('open-block');
+            ref.next().addClass('open-block');
+          }
+        })
+      }
     </script>
     __ARTICLE_CONFIGVARS_LIST__
     __ARTICLE_JS_LIST__
