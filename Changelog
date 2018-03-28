@@ -1,0 +1,3 @@
+1.4.1:
+* FIX: Sporadic wrong redirects #258
+* FIX: Remove empty tags #259
