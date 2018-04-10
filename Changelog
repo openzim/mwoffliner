@@ -1,4 +1,5 @@
 1.4.1:
+* FIX: Fix support of nodejs versions with V8 core #281
 * FIX: Missing external link icon with desktop layout #279
 * FIX: Sporadic wrong redirects #258
 * FIX: Remove empty tags #259
