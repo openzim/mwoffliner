@@ -35,28 +35,12 @@ $sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
 ```
 
 ### Zimwriterfs
-
-------------------------------------------------------------------
-FIXME: These instructions are insufficient to build zimwriterfs
-Please follow instructions in https://github.com/openzim/zimwriterfs/blob/master/docker/Dockerfile
 ------------------------------------------------------------------
 
 `mwoffliner` is thought to write the snapshots in the ZIM archive file
-format. See http://www.openzim.org/ for more details.
-
-```
-$sudo apt-get install liblzma-dev libmagic-dev zlib1g-dev libgumbo-dev libzim-dev libicu-dev
-$git clone https://github.com/openzim/zimwriterfs.git
-$cd zimwriterfs
-$./autogen.sh
-$./configure
-$make
-$sudo make install
-```
-
-Installation can be processed by following official installation
-documentation :
-https://raw.githubusercontent.com/openzim/zimwriterfs/master/README.md
+format. One time the files written on the hard disk, this is done by
+`zimwriterfs`. See https://github.com/openzim/zimwriterfs for more
+details.
 
 ### Redis
 
