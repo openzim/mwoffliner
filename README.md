@@ -35,7 +35,6 @@ $sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
 ```
 
 ### Zimwriterfs
-------------------------------------------------------------------
 
 `mwoffliner` is thought to write the snapshots in the ZIM archive file
 format. One time the files written on the hard disk, this is done by
