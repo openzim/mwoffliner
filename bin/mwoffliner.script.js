@@ -24,7 +24,8 @@ Or, as a npm script: '
     npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net`
   )
   .require(parameterList.filter(param => param.required).map(param => param.name));
-yargs.version()  // Enable --version using value from package.json
+yargs.version();  // Enable --version using value from package.json
+yargs.help();
 
 parameterList.forEach(param => argv.describe(param.name, param.description));
 
