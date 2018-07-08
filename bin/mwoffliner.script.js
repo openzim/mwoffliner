@@ -15,7 +15,7 @@ const { parameterList } = require('../lib/parameterList');
 let argv = yargs
   .usage(
     `Create a fancy HTML dump of a Mediawiki instance in a directory or as a ZIM file
-Usage: $0'
+Usage: $0
 Example, as a system tool:
     mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
 Or, as a node script:
