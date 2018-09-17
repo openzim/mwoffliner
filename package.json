@@ -45,7 +45,7 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.21.0",
     "node-fetch": "^1.7.3",
-    "parsoid": "^0.9.0",
+    "parsoid": "^0.8.1",
     "redis": "^2.6.2",
     "swig-templates": "^2.0.2",
     "utf8-binary-cutter": "^0.9.1",
