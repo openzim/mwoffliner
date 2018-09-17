@@ -1,28 +1,5 @@
 {
-  "root": true,
-  "env": {
-    "es6": true,
-    "browser": true,
-    "node": true,
-    "mocha": true,
-    "jest": true,
-    "jquery": true
-  },
   "extends": [
-    "eslint:recommended"
-  ],
-  "parserOptions": {
-    "ecmaVersion": 2017,
-    "ecmaFeatures": {
-      "experimentalObjectRestSpread": true
-    },
-    "sourceType": "module"
-  },
-  "rules": {
-    "no-use-before-define": "off",
-    "no-case-declarations": "off",
-    "no-underscore-dangle": "off",
-    "no-console": "off",
-    "no-unused-vars": "warn"
-  }
+    "airbnb"
+  ]
 }
