@@ -140,7 +140,7 @@ The first "--" is meant to pass the following arguments to
 Include this script to the .js file of your project:
 
 ```
-const mwoffliner = require('./lib/mwoffliner.lib.js')
+const mwoffliner = require('./bin/lib/mwoffliner.lib.js')
 const parameters = {
     mwUrl: 'https://en.wikipedia.org/',
     adminEmail: 'foo@bar.net'
