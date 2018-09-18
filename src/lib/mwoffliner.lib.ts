@@ -259,9 +259,9 @@ function execute(argv) {
     }
   }
 
-  /** ********************************* */
+  /* ********************************* */
   /* RUNNING CODE ******************** */
-  /** ********************************* */
+  /* ********************************* */
 
   /* Check if opt. binaries are available */
   const optBinaries = [
@@ -322,9 +322,9 @@ function execute(argv) {
   const sectionTemplate = swig.compile(readTemplate(config.output.templates.section_wrapper));
   const subSectionTemplate = swig.compile(readTemplate(config.output.templates.subsection_wrapper));
 
-  /** ********************************* */
-  /* CONSTANT VARIABLE SECTION ******* */
-  /** ********************************* */
+  /* ********************************** */
+  /* CONSTANT VARIABLE SECTION ******** */
+  /* ********************************** */
 
   const genericJsModules = config.output.mw.js;
   const genericCssModules = zim.mobileLayout ? config.output.mw.css.mobile : config.output.mw.css.desktop;
@@ -419,9 +419,9 @@ function execute(argv) {
     },
   );
 
-  /** ********************************* */
+  /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
-  /** ********************************* */
+  /* ********************************* */
 
   /* Setting up media optimization queue */
   const optimizationQueue = async.queue((file: any, finished) => {
@@ -526,9 +526,9 @@ function execute(argv) {
     downloadFileAndCache(url, finished);
   }, speed * 5);
 
-  /** ********************************* */
+  /* ********************************* */
   /* FUNCTIONS *********************** */
-  /** ********************************* */
+  /* ********************************* */
 
   function closeAgents(finished) {
     http.globalAgent.destroy();
