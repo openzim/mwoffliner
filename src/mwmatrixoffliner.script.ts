@@ -8,11 +8,11 @@
 /* ********************************** */
 
 import * as async from 'async';
+import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { http, https } from 'follow-redirects';
 import urlParser from 'url';
 import yargs from 'yargs';
-import { exec } from 'child_process';
-import { spawn } from 'child_process';
 
 /* ********************************** */
 /* COMMAND LINE PARSING ************* */
@@ -45,7 +45,7 @@ const { argv } = yargs.usage('Mirror many mediawikis instances base on the matri
 	.strict();
 
 /* Check if opt. binaries are available */
-var optBinaries = ['xz --version', 'mv --version'];
+const optBinaries = ['xz --version', 'mv --version'];
 optBinaries.forEach(function (cmd) {
 	exec(cmd + ' 2>&1 > /dev/null', function (error, stdout, stderr) {
 		if (error) {
@@ -59,9 +59,9 @@ optBinaries.forEach(function (cmd) {
 /* NEW PROTOTYPE ******************** */
 /* ********************************** */
 
-(<any>Array.prototype).clean = function (deleteValue) {
-	for (var i = 0; i < this.length; i++) {
-		if (this[i] == deleteValue) {
+(Array.prototype as any).clean = function (deleteValue) {
+	for (let i = 0; i < this.length; i++) {
+		if (this[i] === deleteValue) {
 			this.splice(i, 1);
 			i--;
 		}
@@ -76,8 +76,8 @@ optBinaries.forEach(function (cmd) {
 const outputDirectory = argv.outputDirectory;
 const tmpDirectory = argv.tmpDirectory;
 const cacheDirectory = argv.cacheDirectory;
-const parsoidUrl = (argv.parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
-const mwUrl = argv.mwUrl[argv.mwUrl.length - 1] == '/' ? argv.mwUrl : argv.mwUrl + '/';
+const parsoidUrl = (argv.parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] === '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
+const mwUrl = argv.mwUrl[argv.mwUrl.length - 1] === '/' ? argv.mwUrl : argv.mwUrl + '/';
 const webUrl = mwUrl + 'wiki/';
 const apiUrl = mwUrl + 'w/api.php?';
 const matrixUrl = apiUrl + 'action=sitematrix&format=json';
@@ -105,9 +105,9 @@ const withMobileLayout = argv.mobileLayout;
 
 async.series(
 	[
-		function (finished) { init(finished) },
-		function (finished) { loadMatrix(finished) },
-		function (finished) { dump(finished) }
+		function (finished) { init(finished); },
+		function (finished) { loadMatrix(finished); },
+		function (finished) { dump(finished); },
 	],
 	function (error) {
 		if (error) {
@@ -115,7 +115,7 @@ async.series(
 		} else {
 			printLog('All mediawikis dump successfuly');
 		}
-	}
+	},
 );
 
 /************************************/
@@ -132,11 +132,11 @@ function dump(finished) {
 		function (site, finished) {
 			if ((!projectInverter && projectRegexp.test(site.code) || (projectInverter && !projectRegexp.test(site.code))) &&
 				(!languageInverter && languageRegexp.test(site.lang) || (languageInverter && !languageRegexp.test(site.lang))) &&
-				(!languageTrigger || languageTrigger == site.lang)
+				(!languageTrigger || languageTrigger === site.lang)
 			) {
 				languageTrigger = undefined;
-				var localMwUrl = site.url + '/';
-				var localParsoidUrl = '';
+				const localMwUrl = site.url + '/';
+				let localParsoidUrl = '';
 				if (parsoidUrl) {
 					localParsoidUrl = parsoidUrl.indexOf('rest.wikimedia.org') < 0 ?
 						parsoidUrl + site.dbname + '/' : parsoidUrl + urlParser.parse(site.url).hostname + '/v1/page/html/';
@@ -146,7 +146,7 @@ function dump(finished) {
 
 				printLog('Dumping ' + site.url);
 				executeTransparently(__dirname + '/mwoffliner.script.js',
-					(<any>[
+					([
 						'--mwUrl=' + localMwUrl,
 						'--parsoidUrl=' + localParsoidUrl,
 						'--adminEmail=' + adminEmail,
@@ -163,8 +163,8 @@ function dump(finished) {
 						skipCacheCleaning ? '--skipCacheCleaning' : undefined,
 						keepHtml ? '--keepHtml' : undefined,
 						speed ? '--speed=' + speed : undefined,
-						site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : undefined
-					]).clean(undefined),
+						site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : undefined,
+					] as any).clean(undefined),
 					function (executionError) {
 						if (executionError) {
 							console.error(executionError);
@@ -174,27 +174,27 @@ function dump(finished) {
 						}
 					});
 			} else {
-				finished()
+				finished();
 			}
 		},
 		function (error) {
 			finished(error);
-		}
-	)
+		},
+	);
 }
 
 function loadMatrix(finished) {
 	downloadContent(matrixUrl, function (json) {
-		if (!JSON.parse(json)['error']) {
-			var entries = JSON.parse(json)['sitematrix'];
+		if (!JSON.parse(json).error) {
+			const entries = JSON.parse(json).sitematrix;
 			Object.keys(entries).map(function (entryKey) {
-				var entry = entries[entryKey];
+				const entry = entries[entryKey];
 				if (typeof entryKey === 'string') {
-					if (entryKey == 'specials') {
+					if (entryKey === 'specials') {
 						entry.map(function (site) {
 							if (site.closed === undefined) {
 								site.lan = 'en';
-								if (site.code == 'species') {
+								if (site.code === 'species') {
 									site.filenamePrefix = 'wikispecies_en';
 								} else {
 									site.filenamePrefix = site.dbname + '_en';
@@ -206,7 +206,7 @@ function loadMatrix(finished) {
 				} else {
 					entry.site.map(function (site) {
 						if (site.closed === undefined) {
-							if (entry.code == 'simple') {
+							if (entry.code === 'simple') {
 								site.filenamePrefix = site.sitename.toLowerCase() + '_en_simple';
 							}
 							site.lang = entry.code;
@@ -225,12 +225,12 @@ function loadMatrix(finished) {
 }
 
 function downloadContent(url, callback) {
-	var retryCount = 1;
+	let retryCount = 1;
 
 	async.retry(
 		5,
 		function (finished) {
-			var calledFinished = false;
+			let calledFinished = false;
 			function callFinished(timeout, message, data?) {
 				if (!calledFinished) {
 					calledFinished = true;
@@ -239,8 +239,8 @@ function downloadContent(url, callback) {
 			}
 
 			https.get(url, function (response) {
-				if (response.statusCode == 200) {
-					var data = '';
+				if (response.statusCode === 200) {
+					let data = '';
 
 					response.on('data', function (chunk) {
 						data += chunk;
@@ -249,28 +249,28 @@ function downloadContent(url, callback) {
 						callFinished(0, null, data);
 					});
 				} else {
-					var message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI(url) + ' (statusCode=' + response.statusCode + ').';
+					const message = 'Unable to donwload content [' + retryCount + '] ' + decodeURI(url) + ' (statusCode=' + response.statusCode + ').';
 					console.error(message);
 					callFinished(0, message);
 				}
 			})
 				.on('error', function (error) {
-					var message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' ( ' + error + ' ).';
+					const message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' ( ' + error + ' ).';
 					console.error(message);
 					callFinished(0, message);
 				})
 				.on('socket', function (socket) {
-					var req = this;
+					const req = this;
 					socket.setTimeout(50000 * ++retryCount);
 					if (!socket.custom) {
 						socket.custom = true;
 						socket.addListener('timeout', function () {
-							var message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (socket timeout)';
+							const message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (socket timeout)';
 							console.error(message);
 							callFinished(2000, message);
 						});
 						socket.addListener('error', function (error) {
-							var message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (socket error)';
+							const message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (socket error)';
 							console.error(message);
 							callFinished(2000, message);
 						});
@@ -279,7 +279,7 @@ function downloadContent(url, callback) {
 		},
 		function (error, data) {
 			if (error) {
-				console.error("Absolutly unable to retrieve async. URL. " + error);
+				console.error('Absolutly unable to retrieve async. URL. ' + error);
 			}
 			if (callback) {
 				setTimeout(callback, 0, data);
@@ -291,7 +291,7 @@ function executeTransparently(command, args, callback, nostdout?, nostderr?) {
 	printLog('Executing command: ' + command + ' ' + args.join(' '));
 
 	try {
-		var proc = spawn(command, args)
+		const proc = spawn(command, args)
 			.on('error', function (error) {
 				console.error('Error in executeTransparently(), ' + error);
 				process.exit(1);

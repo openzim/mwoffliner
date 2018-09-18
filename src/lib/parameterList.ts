@@ -41,7 +41,7 @@ const parameterList = [
   { name: 'minifyHtml', description: 'Try to reduce the size of the HTML', required: false },
   { name: 'outputDirectory', description: 'Directory to write the downloaded content', required: false },
   { name: 'parsoidUrl', description: 'Mediawiki Parsoid URL', required: false },
-  { name: 'publisher', description: "ZIM publisher meta data, per default 'Kiwix'", required: false },
+  { name: 'publisher', description: `ZIM publisher meta data, per default 'Kiwix'`, required: false },
   {
     name: 'redis',
     description: 'Redis configuration (https://github.com/NodeRedis/node_redis#rediscreateclient)',

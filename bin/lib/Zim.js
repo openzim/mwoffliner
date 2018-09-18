@@ -4,14 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var async_1 = __importDefault(require("async"));
-var domino_1 = __importDefault(require("domino"));
-var mkdirp_1 = __importDefault(require("mkdirp"));
-var expand_home_dir_1 = __importDefault(require("expand-home-dir"));
-var child_process_1 = require("child_process");
-var path_1 = __importDefault(require("path"));
-var fs_1 = __importDefault(require("fs"));
-var url_1 = __importDefault(require("url"));
 var case_insensitive_1 = __importDefault(require("case-insensitive"));
+var child_process_1 = require("child_process");
+var domino_1 = __importDefault(require("domino"));
+var expand_home_dir_1 = __importDefault(require("expand-home-dir"));
+var fs_1 = __importDefault(require("fs"));
+var mkdirp_1 = __importDefault(require("mkdirp"));
+var path_1 = __importDefault(require("path"));
+var url_1 = __importDefault(require("url"));
 var Utils_1 = __importDefault(require("./Utils"));
 var Zim = /** @class */ (function () {
     function Zim(config, args) {

@@ -1,15 +1,15 @@
-import redis from 'redis';
 import * as async from 'async';
+import redis from 'redis';
 import U from './Utils';
 
 class Redis {
-  env: any;
-  redisClient: any;
-  redisRedirectsDatabase: string;
-  redisMediaIdsDatabase: string;
-  redisArticleDetailsDatabase: string;
-  redisModuleDatabase: string;
-  redisCachedMediaToCheckDatabase: string;
+  public env: any;
+  public redisClient: any;
+  public redisRedirectsDatabase: string;
+  public redisMediaIdsDatabase: string;
+  public redisArticleDetailsDatabase: string;
+  public redisModuleDatabase: string;
+  public redisCachedMediaToCheckDatabase: string;
   constructor(env, argv, config) {
     this.env = env;
     this.redisClient = redis.createClient(argv.redis || config.defaults.redisConfig);
@@ -21,12 +21,12 @@ class Redis {
     this.redisCachedMediaToCheckDatabase = `${redisNamePrefix}c`;
   }
 
-  quit() {
+  public quit() {
     this.env.logger.log('Quitting redis databases...');
     this.redisClient.quit();
   }
 
-  flushDBs(finished) {
+  public flushDBs(finished) {
     const { logger } = this.env;
     this.redisClient.del(
       this.redisRedirectsDatabase,
@@ -41,7 +41,7 @@ class Redis {
   }
 
   /* ------------ Redirect methods -------------- */
-  getRedirect(redirectId, finished, cb) {
+  public getRedirect(redirectId, finished, cb) {
     this.redisClient.hget(this.redisRedirectsDatabase, redirectId, (error, target) => {
       U.exitIfError(error, `Unable to get a redirect target from redis: ${error}`);
       if (target) {
@@ -52,7 +52,7 @@ class Redis {
     });
   }
 
-  saveRedirects(numRedirects, redirects, finished) {
+  public saveRedirects(numRedirects, redirects, finished) {
     if (numRedirects > 0) {
       this.redisClient.hmset(this.redisRedirectsDatabase, redirects, (error) => {
         U.exitIfError(error, `Unable to set redirects: ${error}`);
@@ -63,7 +63,7 @@ class Redis {
     }
   }
 
-  processAllRedirects(speed, keyProcessor, errorMsg, successMsg, finished) {
+  public processAllRedirects(speed, keyProcessor, errorMsg, successMsg, finished) {
     const { logger } = this.env;
     this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
       U.exitIfError(error, `Unable to get redirect keys from redis: ${error}`);
@@ -75,7 +75,7 @@ class Redis {
     });
   }
 
-  processRedirectIfExists(targetId, processor) {
+  public processRedirectIfExists(targetId, processor) {
     try {
       this.redisClient.hexists(this.redisRedirectsDatabase, targetId, (error, res) => {
         U.exitIfError(error, `Unable to check redirect existence with redis: ${error}`);
@@ -87,11 +87,11 @@ class Redis {
   }
 
   /* ------------ Article methods -------------- */
-  getArticle(articleId, cb) {
+  public getArticle(articleId, cb) {
     this.redisClient.hget(this.redisArticleDetailsDatabase, articleId, cb);
   }
 
-  saveArticles(articles) {
+  public saveArticles(articles) {
     if (Object.keys(articles).length) {
       this.redisClient.hmset(this.redisArticleDetailsDatabase, articles, (error) => {
         U.exitIfError(error, `Unable to save article detail information to redis: ${error}`);
@@ -100,7 +100,7 @@ class Redis {
   }
 
   /* ------------ Module methods -------------- */
-  saveModuleIfNotExists(dump, module, moduleUri, type) {
+  public saveModuleIfNotExists(dump, module, moduleUri, type) {
     const self = this;
     return new Promise((resolve, reject) => {
       // hsetnx() store in redis only if key doesn't already exists
@@ -109,18 +109,18 @@ class Redis {
   }
 
   /* ------------ Media methods -------------- */
-  getMedia(fileName, cb) {
+  public getMedia(fileName, cb) {
     this.redisClient.hget(this.redisMediaIdsDatabase, fileName, cb);
   }
 
-  saveMedia(fileName, width, cb) {
+  public saveMedia(fileName, width, cb) {
     this.redisClient.hset(this.redisMediaIdsDatabase, fileName, width, (error) => {
       U.exitIfError(error, `Unable to set redis entry for file to download ${fileName}: ${error}`);
       cb();
     });
   }
 
-  deleteOrCacheMedia(del, width, fileName) {
+  public deleteOrCacheMedia(del, width, fileName) {
     if (del) {
       this.redisClient.hdel(this.redisCachedMediaToCheckDatabase, fileName);
     } else {
@@ -130,7 +130,7 @@ class Redis {
     }
   }
 
-  delMediaDB(finished) {
+  public delMediaDB(finished) {
     this.env.logger.log('Dumping finished with success.');
     this.redisClient.del(this.redisMediaIdsDatabase, finished);
   }

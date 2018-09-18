@@ -1,2 +1,2 @@
-var mwoffliner = require('./lib/mwoffliner.lib.js')
+var mwoffliner = require('./bin/lib/mwoffliner.lib.js')
 module.exports = mwoffliner;

@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = __importDefault(require("fs"));
-var url_1 = __importDefault(require("url"));
 var path_1 = __importDefault(require("path"));
+var url_1 = __importDefault(require("url"));
 var Utils = {
     isValidEmail: function (email) {
         var emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -34,7 +34,7 @@ var Utils = {
         var currentDate = Date.now();
         paths = paths instanceof Array ? paths : [paths];
         paths.forEach(function (path) {
-            fs_1.default.utimes(path, currentDate, currentDate, function () { });
+            fs_1.default.utimes(path, currentDate, currentDate, function () { return null; });
         });
     },
     getFullUrl: function (webUrlHost, url, baseUrl) {
@@ -66,7 +66,7 @@ var Utils = {
         }
         return str;
     },
-    /**
+    /*
        * Move 'from'.childNodes to 'to' adding them before 'beforeNode'
        * If 'beforeNode' is null, the nodes are appended at the end.
        */
@@ -80,3 +80,7 @@ var Utils = {
     },
 };
 exports.default = Utils;
+function contains(arr, value) {
+    return arr.some(function (v) { return v === value; });
+}
+exports.contains = contains;

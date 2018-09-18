@@ -2,32 +2,32 @@
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 
-import fs from 'fs';
-import domino from 'domino';
 import async from 'async';
+import { exec } from 'child_process';
+import crypto from 'crypto';
+import domino from 'domino';
 import { http, https } from 'follow-redirects';
-import zlib from 'zlib';
+import fs from 'fs';
+import htmlMinifier from 'html-minifier';
+import fetch from 'node-fetch';
+import os from 'os';
+import parsoid from 'parsoid';
+import pathParser from 'path';
 import swig from 'swig-templates';
 import urlParser from 'url';
-import pathParser from 'path';
-import { exec } from 'child_process';
-import os from 'os';
-import crypto from 'crypto';
 import unicodeCutter from 'utf8-binary-cutter';
-import htmlMinifier from 'html-minifier';
-import parsoid from 'parsoid';
-import fetch from 'node-fetch';
+import zlib from 'zlib';
 
-import MediaWiki from './MediaWiki';
-import Logger from './Logger';
-import Downloader from './Downloader';
 import config from './config';
 import DU from './DOMUtils';
-import Redis from './redis';
-import U from './Utils';
-import Zim from './Zim';
+import Downloader from './Downloader';
+import Logger from './Logger';
+import MediaWiki from './MediaWiki';
 import OfflinerEnv from './OfflinerEnv';
 import parameterList from './parameterList';
+import Redis from './redis';
+import { contains, default as U } from './Utils';
+import Zim from './Zim';
 
 type DominoElement = any;
 
@@ -42,6 +42,7 @@ function execute(argv) {
   /* ********************************* */
 
   const {
+    // tslint:disable-next-line:variable-name
     speed: _speed,
     adminEmail,
     localParsoid,
@@ -75,6 +76,7 @@ function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
+    // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
   } = argv;
 
@@ -102,13 +104,13 @@ function execute(argv) {
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki(logger, {
-    base: mwUrl,
-    wikiPath: mwWikiPath,
     apiPath: mwApiPath,
+    base: mwUrl,
     domain: mwDomain,
-    username: mwUsername,
     password: mwPassword,
     spaceDelimiter: '_',
+    username: mwUsername,
+    wikiPath: mwWikiPath,
   });
 
   /* Download helpers; TODO: Merge with something else / expand this. */
@@ -138,7 +140,7 @@ function execute(argv) {
       'wikinews',
       'wiktionary',
     ];
-    if (!!~wmProjects.indexOf(hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+    if (contains(wmProjects, hostParts[1]) || hostParts[0].length < hostParts[1].length) {
       creator = hostParts[1]; // Name of the wikimedia project
     }
   }
@@ -286,7 +288,7 @@ function execute(argv) {
       cmd,
       (error) => {
         U.exitIfError(error, `Failed to find binary "${cmd.split(' ')[0]}": (' + error + ')`);
-      }
+      },
     );
   });
 
@@ -333,16 +335,16 @@ function execute(argv) {
   /* Get content */
   async.series(
     [
-      finished => mw.login(downloader, finished),
-      finished => mw.getTextDirection(env, finished),
-      finished => mw.getSiteInfo(env, finished),
-      finished => zim.getSubTitle(finished),
-      finished => mw.getNamespaces(addNamespaces, downloader, finished),
-      finished => zim.createDirectories(finished),
-      finished => zim.prepareCache(finished),
-      finished => env.checkResume(finished),
-      finished => getArticleIds(finished),
-      finished => cacheRedirects(finished),
+      (finished) => mw.login(downloader, finished),
+      (finished) => mw.getTextDirection(env, finished),
+      (finished) => mw.getSiteInfo(env, finished),
+      (finished) => zim.getSubTitle(finished),
+      (finished) => mw.getNamespaces(addNamespaces, downloader, finished),
+      (finished) => zim.createDirectories(finished),
+      (finished) => zim.prepareCache(finished),
+      (finished) => env.checkResume(finished),
+      (finished) => getArticleIds(finished),
+      (finished) => cacheRedirects(finished),
       (finished) => {
         async.eachSeries(
           env.dumps,
@@ -357,19 +359,19 @@ function execute(argv) {
 
             async.series(
               [
-                finishedTask => zim.createSubDirectories(finishedTask),
-                finishedTask => (zim.mobileLayout ? saveStaticFiles(finishedTask) : finishedTask()),
-                finishedTask => saveStylesheet(finishedTask),
-                finishedTask => saveFavicon(finishedTask),
-                finishedTask => getMainPage(finishedTask),
-                finishedTask => (env.writeHtmlRedirects ? saveHtmlRedirects(finishedTask) : finishedTask()),
-                finishedTask => saveArticles(dump, finishedTask),
-                finishedTask => drainDownloadFileQueue(finishedTask),
-                finishedTask => drainOptimizationQueue(finishedTask),
-                finishedTask => zim.buildZIM(finishedTask),
-                finishedTask => redis.delMediaDB(finishedTask),
+                (finishedTask) => zim.createSubDirectories(finishedTask),
+                (finishedTask) => (zim.mobileLayout ? saveStaticFiles(finishedTask) : finishedTask()),
+                (finishedTask) => saveStylesheet(finishedTask),
+                (finishedTask) => saveFavicon(finishedTask),
+                (finishedTask) => getMainPage(finishedTask),
+                (finishedTask) => (env.writeHtmlRedirects ? saveHtmlRedirects(finishedTask) : finishedTask()),
+                (finishedTask) => saveArticles(dump, finishedTask),
+                (finishedTask) => drainDownloadFileQueue(finishedTask),
+                (finishedTask) => drainOptimizationQueue(finishedTask),
+                (finishedTask) => zim.buildZIM(finishedTask),
+                (finishedTask) => redis.delMediaDB(finishedTask),
               ],
-              error => finishedDump(error),
+              (error) => finishedDump(error),
             );
           },
           () => {
@@ -388,7 +390,7 @@ function execute(argv) {
                   }
                 },
               ],
-              error => finished(error),
+              (error) => finished(error),
             );
           },
         );
@@ -438,13 +440,15 @@ function execute(argv) {
 
       if (type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG') {
         return `jpegoptim --strip-all --force --all-normal -m60 "${path}"`;
-      } if (type === 'png' || type === 'PNG') {
+      }
+      if (type === 'png' || type === 'PNG') {
         return (
           `pngquant --verbose --strip --nofs --force --ext="${tmpExt}" "${path}" &&\
           advdef -q -z -4 -i 5 "${tmpPath}" &&\
           if [ $(stat -c%s "${tmpPath}") -lt $(stat -c%s "${path}") ]; then mv "${tmpPath}" "${path}"; else rm "${tmpPath}"; fi`
         );
-      } if (type === 'gif' || type === 'GIF') {
+      }
+      if (type === 'gif' || type === 'GIF') {
         return (
           `gifsicle --verbose --colors 64 -O3 "${path}" -o "${tmpPath}" &&\
           if [ $(stat -c%s "${tmpPath}") -lt $(stat -c%s "${path}") ]; then mv "${tmpPath}" "${path}"; else rm "${tmpPath}"; fi`
@@ -537,7 +541,7 @@ function execute(argv) {
   function saveStaticFiles(finished) {
     config.output.cssResources.forEach((css) => {
       try {
-        fs.readFile(pathParser.resolve(__dirname, `../${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => { }));
+        fs.readFile(pathParser.resolve(__dirname, `../${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
       } catch (error) {
         console.error(`Could not create ${css} file : ${error}`);
       }
@@ -557,14 +561,14 @@ function execute(argv) {
       () => !downloadFileQueue.idle(),
       () => {
         const drainBackup = downloadFileQueue.drain;
-        downloadFileQueue.drain = <any>function (error) {
+        downloadFileQueue.drain = function (error) {
           U.exitIfError(error, `Error by downloading images ${error}`);
           if (downloadFileQueue.length() === 0) {
             logger.log('All images successfuly downloaded');
             downloadFileQueue.drain = drainBackup;
             finished();
           }
-        };
+        } as any;
         downloadFileQueue.push('');
       },
     );
@@ -582,14 +586,14 @@ function execute(argv) {
       () => !optimizationQueue.idle(),
       () => {
         const drainBackup = optimizationQueue.drain;
-        optimizationQueue.drain = <any>function (error) {
+        optimizationQueue.drain = function (error) {
           U.exitIfError(error, `Error by optimizing images ${error}`);
           if (optimizationQueue.length() === 0) {
             logger.log('All images successfuly optimized');
             optimizationQueue.drain = drainBackup;
             finished();
           }
-        };
+        } as any;
         optimizationQueue.push({ path: '', size: 0 });
       },
     );
@@ -624,8 +628,8 @@ function execute(argv) {
       redis.getRedirect(redirectId, finished, (target) => {
         logger.log(`Writing HTML redirect ${redirectId} (to ${target})...`);
         const data = redirectTemplate({
-          title: redirectId.replace(/_/g, ' '),
           target: env.getArticleUrl(target),
+          title: redirectId.replace(/_/g, ' '),
         });
         if (env.deflateTmpHtml) {
           zlib.deflate(data, (error, deflatedHtml) => {
@@ -661,20 +665,20 @@ function execute(argv) {
       const articleApiUrl = mw.articleApiUrl(articleId);
 
       fetch(articleApiUrl, {
-        method: 'GET',
         headers: { Accept: 'application/json' },
+        method: 'GET',
       })
-        .then(response => response.json())
+        .then((response) => response.json())
         .then(({
           parse: {
             modules, modulescripts, modulestyles, headhtml,
           },
         }) => {
-          jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter(a => a);
-          styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter(a => a);
+          jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a);
+          styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a);
 
           styleDependenciesList = styleDependenciesList.filter(
-            oneStyleDep => !~config.filters.blackListCssModules.indexOf(oneStyleDep),
+            (oneStyleDep) => contains(config.filters.blackListCssModules, oneStyleDep),
           );
 
           logger.log(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
@@ -685,12 +689,13 @@ function execute(argv) {
             { type: 'css', moduleList: styleDependenciesList },
           ];
 
-          allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach(oneModule => downloadAndSaveModule(oneModule, type)));
+          allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(oneModule, type)));
 
           // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
           // the script below extracts the config with a regex executed on the page header returned from the api
           const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script');
           const regex = /mw\.config\.set\(\{.*?\}\);/mg;
+          // tslint:disable-next-line:prefer-for-of
           for (let i = 0; i < scriptTags.length; i += 1) {
             if (scriptTags[i].text.includes('mw.config.set')) {
               jsConfigVars = regex.exec(scriptTags[i].text);
@@ -726,7 +731,7 @@ function execute(argv) {
         // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
         function hackStartUpModule(jsCode) {
           return jsCode.replace(
-            "script=document.createElement('script');",
+            'script=document.createElement(\'script\');',
             `
                         document.body.addEventListener('fireStartUp', function () { startUp() }, false);
                         return;
@@ -761,7 +766,7 @@ function execute(argv) {
                 method: 'GET',
                 headers: { Accept: 'text/plain' },
               })
-                .then(response => response.text())
+                .then((response) => response.text())
                 .then((text) => {
                   if (module === 'startup' && type === 'js') {
                     text = hackStartUpModule(text);
@@ -776,11 +781,11 @@ function execute(argv) {
                     console.error(`Error writing file ${moduleUri} ${e}`);
                   }
                 })
-                .catch(e => console.error(`Error fetching load.php for ${articleId} ${e}`));
+                .catch((e) => console.error(`Error fetching load.php for ${articleId} ${e}`));
             }
             return Promise.resolve();
           })
-          .catch(e => console.error(e));
+          .catch((e) => console.error(e));
       };
     }
 
@@ -815,7 +820,7 @@ function execute(argv) {
           return;
         }
 
-        if (posterUrl) videoEl.setAttribute('poster', newVideoPosterUrl);
+        if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
         videoEl.removeAttribute('resource');
 
         if (!srcCache.hasOwnProperty(videoPosterUrl)) {
@@ -861,6 +866,7 @@ function execute(argv) {
         sourceEl.setAttribute('src', newUrl);
       });
 
+      // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < imgs.length; i += 1) {
         const img = imgs[i];
         const imageNodeClass = img.getAttribute('class') || '';
@@ -927,6 +933,7 @@ function execute(argv) {
       const figures = parsoidDoc.getElementsByTagName('figure');
       const spans = parsoidDoc.querySelectorAll('span[typeof=mw:Image/Frameless]');
       const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans));
+      // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < imageNodes.length; i += 1) {
         const imageNode = imageNodes[i];
         let image;
@@ -950,7 +957,7 @@ function execute(argv) {
           ) {
             const descriptions = imageNode.getElementsByTagName('figcaption');
             const description = descriptions.length > 0 ? descriptions[0] : undefined;
-            const imageWidth = parseInt(image.getAttribute('width'));
+            const imageWidth = parseInt(image.getAttribute('width'), 10);
 
             let thumbDiv = parsoidDoc.createElement('div');
             thumbDiv.setAttribute('class', 'thumb');
@@ -1020,7 +1027,7 @@ function execute(argv) {
 
         if (isMirrored(title)) {
           /* Deal with local anchor */
-          const localAnchor = href.lastIndexOf('#') == -1 ? '' : href.substr(href.lastIndexOf('#'));
+          const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
           linkNode.setAttribute('href', env.getArticleUrl(title) + localAnchor);
           setImmediate(() => cb());
         } else {
@@ -1055,8 +1062,8 @@ function execute(argv) {
             let lon;
             if (/poimap2\.php/i.test(href)) {
               const hrefQuery = urlParser.parse(href, true).query;
-              lat = parseFloat(<string>hrefQuery.lat);
-              lon = parseFloat(<string>hrefQuery.lon);
+              lat = parseFloat(hrefQuery.lat as string);
+              lon = parseFloat(hrefQuery.lon as string);
             } else if (/geohack\.php/i.test(href)) {
               let { params } = urlParser.parse(href, true).query;
 
@@ -1092,7 +1099,7 @@ function execute(argv) {
                       out += +v / factors[i];
                     }
                     return out * hemiSign;
-                  }
+                  };
 
                   lat = deg({ N: 1, S: -1 });
                   lon = deg({ E: 1, W: -1, O: 1 });
@@ -1150,7 +1157,7 @@ function execute(argv) {
       const filtersConfig = config.filters;
 
       /* Don't need <link> and <input> tags */
-      const nodesToDelete: { class?: string, tag?: string, filter?: (n) => boolean }[] = [{ tag: 'link' }, { tag: 'input' }];
+      const nodesToDelete: Array<{ class?: string, tag?: string, filter?: (n) => boolean }> = [{ tag: 'link' }, { tag: 'input' }];
 
       /* Remove "map" tags if necessary */
       if (env.nopic) {
@@ -1213,6 +1220,7 @@ function execute(argv) {
         }
 
         const f = t.filter;
+        // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < nodes.length; i += 1) {
           if (!f || f(nodes[i])) {
             DU.deleteNode(nodes[i]);
@@ -1222,6 +1230,7 @@ function execute(argv) {
 
       /* Go through all reference calls */
       const spans = parsoidDoc.getElementsByTagName('span');
+      // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < spans.length; i += 1) {
         const span = spans[i];
         const rel = span.getAttribute('rel');
@@ -1248,6 +1257,7 @@ function execute(argv) {
       /* Force display of element with that CSS class */
       filtersConfig.cssClassDisplayList.map((classname) => {
         const nodes = parsoidDoc.getElementsByClassName(classname);
+        // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < nodes.length; i += 1) {
           nodes[i].style.removeProperty('display');
         }
@@ -1257,6 +1267,7 @@ function execute(argv) {
       if (!keepEmptyParagraphs) {
         for (let level = 5; level > 0; level--) {
           const paragraphNodes = parsoidDoc.getElementsByTagName(`h${level}`);
+          // tslint:disable-next-line:prefer-for-of
           for (let i = 0; i < paragraphNodes.length; i += 1) {
             const paragraphNode = paragraphNodes[i];
             const nextElementNode = DU.nextElementSibling(paragraphNode);
@@ -1282,6 +1293,7 @@ function execute(argv) {
 
       /* Clean the DOM of all uncessary code */
       const allNodes = parsoidDoc.getElementsByTagName('*');
+      // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < allNodes.length; i += 1) {
         const node = allNodes[i];
         node.removeAttribute('data-parsoid');
@@ -1311,13 +1323,13 @@ function execute(argv) {
           .replace(
             '__ARTICLE_JS_LIST__',
             jsDependenciesList.length !== 0
-              ? jsDependenciesList.map(oneJsDep => genHeaderScript(oneJsDep)).join('\n')
+              ? jsDependenciesList.map((oneJsDep) => genHeaderScript(oneJsDep)).join('\n')
               : '',
           )
           .replace(
             '__ARTICLE_CSS_LIST__',
             styleDependenciesList.length !== 0
-              ? styleDependenciesList.map(oneCssDep => genHeaderCSSLink(oneCssDep)).join('\n')
+              ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(oneCssDep)).join('\n')
               : '',
           ),
       );
@@ -1442,7 +1454,7 @@ function execute(argv) {
           method: 'GET',
           headers: { Accept: 'application/json' },
         })
-          .then(response => response.json())
+          .then((response) => response.json())
           .then((json) => {
             // set the first section (open by default)
             html += leadSectionTemplate({
@@ -1591,7 +1603,7 @@ function execute(argv) {
     const stylePath = `${env.htmlRootPath}${dirs.style}/style.css`;
 
     /* Remove if exists */
-    fs.unlink(stylePath, () => { });
+    fs.unlink(stylePath, () => null);
 
     /* Take care to download medias */
     const downloadCSSFileQueue = async.queue((data: any, finished) => {
@@ -1619,6 +1631,7 @@ function execute(argv) {
 
           /* Downloading CSS dependencies */
           let match;
+          // tslint:disable-next-line:no-conditional-assignment
           while ((match = cssUrlRegexp.exec(body))) {
             let url = match[1];
 
@@ -1656,6 +1669,7 @@ function execute(argv) {
       const links = doc.getElementsByTagName('link');
 
       /* Go through all CSS links */
+      // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < links.length; i += 1) {
         const link = links[i];
         if (link.getAttribute('rel') === 'stylesheet') {
@@ -1669,16 +1683,16 @@ function execute(argv) {
       downloadCSSQueue.push(offlineCssUrl);
 
       /* Set the drain method to be called one time everything is done */
-      downloadCSSQueue.drain = <any>function drain(error) {
+      downloadCSSQueue.drain = function drain(error) {
         U.exitIfError(error, `Error by CSS dependencies: ${error}`);
         const drainBackup = downloadCSSQueue.drain;
-        downloadCSSFileQueue.drain = <any>function downloadCSSFileQueueDrain(error) {
+        downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
           U.exitIfError(error, `Error by CSS medias: ${error}`);
           downloadCSSQueue.drain = drainBackup;
           finished();
-        };
+        } as any;
         downloadCSSFileQueue.push('');
-      };
+      } as any;
       downloadCSSQueue.push('');
     });
   }
@@ -1721,11 +1735,11 @@ function execute(argv) {
 
   function getArticleIds(finished) {
     function drainRedirectQueue(finished) {
-      redirectQueue.drain = <any>function drain(error) {
+      redirectQueue.drain = function drain(error) {
         U.exitIfError(error, `Unable to retrieve redirects for an article: ${error}`);
         logger.log('All redirect ids retrieve successfuly.');
         finished();
-      };
+      } as any;
       redirectQueue.push('');
     }
 
@@ -1771,7 +1785,7 @@ function execute(argv) {
           }
         });
 
-        if (redirectQueueValues.length) redirectQueue.push(redirectQueueValues);
+        if (redirectQueueValues.length) { redirectQueue.push(redirectQueueValues); }
         redis.saveArticles(details);
       }
 
@@ -1843,7 +1857,7 @@ function execute(argv) {
             }
           });
         },
-        () => <any>next,
+        () => next as any,
         (error) => {
           U.exitIfError(error, `Unable to download article ids: ${error}`);
           logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
@@ -1863,7 +1877,7 @@ function execute(argv) {
     /* Get list of article ids */
     async.series(
       [
-        finished => getArticleIdsForLine(zim.mainPageId, finished),
+        (finished) => getArticleIdsForLine(zim.mainPageId, finished),
         (finished) => {
           if (zim.articleList) {
             getArticleIdsForFile(finished);
@@ -2028,11 +2042,11 @@ function execute(argv) {
       return '';
     }
 
-    function e(string) {
-      if (typeof string === 'undefined') {
+    function e(str: string) {
+      if (typeof str === 'undefined') {
         return undefined;
       }
-      return escape ? encodeURIComponent(string) : string;
+      return escape ? encodeURIComponent(str) : str;
     }
 
     const filenameFirstVariant = parts[2];

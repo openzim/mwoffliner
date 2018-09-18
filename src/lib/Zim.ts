@@ -1,34 +1,34 @@
 import async from 'async';
-import domino from 'domino';
-import mkdirp from 'mkdirp';
-import homeDirExpander from 'expand-home-dir';
-import { exec, spawn } from 'child_process';
-import pathParser from 'path';
-import fs from 'fs';
-import urlParser from 'url';
 import ci from 'case-insensitive';
+import { exec, spawn } from 'child_process';
+import domino from 'domino';
+import homeDirExpander from 'expand-home-dir';
+import fs from 'fs';
+import mkdirp from 'mkdirp';
+import pathParser from 'path';
+import urlParser from 'url';
 
 import U from './Utils';
 
 class Zim {
-  config: any;
-  outputDirectory: string;
-  tmpDirectory: string;
-  env: any;
-  cacheDirectory: string;
-  redirectsCacheFile: string;
-  publisher: any;
-  tags: any;
-  langIso3: any;
-  mainPageId: any;
-  withZimFullTextIndex: any;
-  name: any;
-  description: any;
-  subTitle: any;
-  creator: any;
-  mobileLayout: boolean;
-  articleList: any;
-  
+  public config: any;
+  public outputDirectory: string;
+  public tmpDirectory: string;
+  public env: any;
+  public cacheDirectory: string;
+  public redirectsCacheFile: string;
+  public publisher: any;
+  public tags: any;
+  public langIso3: any;
+  public mainPageId: any;
+  public withZimFullTextIndex: any;
+  public name: any;
+  public description: any;
+  public subTitle: any;
+  public creator: any;
+  public mobileLayout: boolean;
+  public articleList: any;
+
   constructor(config, args) {
     this.config = config;
     Object.assign(this, args);
@@ -37,7 +37,7 @@ class Zim {
     this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : 'tmp/';
   }
 
-  createDirectories(cb) {
+  public createDirectories(cb) {
     this.env.logger.log('Creating base directories...');
     const self = this;
     async.series([
@@ -50,25 +50,25 @@ class Zim {
   }
 
   /* Create directories for static files */
-  createSubDirectories(cb) {
+  public createSubDirectories(cb) {
     const { env, config } = this;
     const { dirs } = config.output;
     env.logger.log(`Creating sub directories at "${env.htmlRootPath}"...`);
     async.series([
-      finished => exec(`rm -rf "${env.htmlRootPath}"`, finished),
-      finished => fs.mkdir(env.htmlRootPath, undefined, finished),
-      finished => fs.mkdir(env.htmlRootPath + dirs.style, undefined, finished),
-      finished => fs.mkdir(`${env.htmlRootPath + dirs.style}/${dirs.styleModules}`, undefined, finished),
-      finished => fs.mkdir(env.htmlRootPath + dirs.media, undefined, finished),
-      finished => fs.mkdir(env.htmlRootPath + dirs.javascript, undefined, finished),
-      finished => fs.mkdir(`${env.htmlRootPath + dirs.javascript}/${dirs.jsModules}`, undefined, finished),
+      (finished) => exec(`rm -rf "${env.htmlRootPath}"`, finished),
+      (finished) => fs.mkdir(env.htmlRootPath, undefined, finished),
+      (finished) => fs.mkdir(env.htmlRootPath + dirs.style, undefined, finished),
+      (finished) => fs.mkdir(`${env.htmlRootPath + dirs.style}/${dirs.styleModules}`, undefined, finished),
+      (finished) => fs.mkdir(env.htmlRootPath + dirs.media, undefined, finished),
+      (finished) => fs.mkdir(env.htmlRootPath + dirs.javascript, undefined, finished),
+      (finished) => fs.mkdir(`${env.htmlRootPath + dirs.javascript}/${dirs.jsModules}`, undefined, finished),
     ], (error) => {
       U.exitIfError(error, `Unable to create mandatory directories : ${error}`);
       cb();
     });
   }
 
-  prepareCache(cb) {
+  public prepareCache(cb) {
     const { env } = this;
     const self = this;
     env.logger.log('Preparing cache...');
@@ -80,7 +80,7 @@ class Zim {
     });
   }
 
-  getSubTitle(cb) {
+  public getSubTitle(cb) {
     const { env } = this;
     env.logger.log('Getting sub-title...');
     env.downloader.downloadContent(env.mw.webUrl, (content) => {
@@ -92,17 +92,17 @@ class Zim {
     });
   }
 
-  computeZimRootPath() {
+  public computeZimRootPath() {
     let zimRootPath = this.outputDirectory[0] === '/' ? this.outputDirectory : `${pathParser.resolve(process.cwd(), this.outputDirectory)}/`;
     zimRootPath += `${this.env.computeFilenameRadical()}.zim`;
     return zimRootPath;
   }
 
-  computeZimName() {
+  public computeZimName() {
     return (this.publisher ? `${this.publisher.toLowerCase()}.` : '') + this.env.computeFilenameRadical(false, true, true);
   }
 
-  computeZimTags() {
+  public computeZimTags() {
     let tags = this.tags.split(';');
     /* Mediawiki hostname radical */
     const mwUrlHostParts = urlParser.parse(this.env.mw.base).host.split('.');
@@ -121,11 +121,11 @@ class Zim {
     /* nodet */
     if (this.env.nodet) { tags.push('nodet'); }
     /* Remove empty elements */
-    tags = tags.filter(x => (x !== (undefined || null || '')));
+    tags = tags.filter((x) => (x !== (undefined || null || '')));
     return tags.join(';');
   }
 
-  executeTransparently(command, args, callback, nostdout, nostderr) {
+  public executeTransparently(command, args, callback, nostdout, nostderr) {
     const { logger } = this.env;
     try {
       const proc = spawn(command, args).on('error', (error) => {
@@ -155,7 +155,7 @@ class Zim {
     }
   }
 
-  buildZIM(cb) {
+  public buildZIM(cb) {
     const { env } = this;
     const zim = this;
     const { logger } = this.env;

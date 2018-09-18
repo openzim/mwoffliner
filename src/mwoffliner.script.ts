@@ -3,7 +3,7 @@
 
 'use strict';
 
-import { usage, version, help, Argv, Arguments } from 'yargs';
+import { Arguments, Argv, help, usage, version } from 'yargs';
 import { execute } from './lib/mwoffliner.lib';
 
 /* ********************************** */
@@ -23,14 +23,16 @@ Or, as a npm script: '
     npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net`
 );
 
-parameterList.filter(param => param.required).reduce((argv, param) => {
-    return argv.require(param.name, param.description);
-}, argv);
+parameterList
+    .filter((param) => param.required)
+    .reduce((argv, param) => {
+        return argv.require(param.name, param.description);
+    }, argv);
 
 version(); // Enable --version using value from package.json
 help();
 
-parameterList.forEach(param => argv.describe(param.name, param.description));
+parameterList.forEach((param) => argv.describe(param.name, param.description));
 
 argv = argv.strict().argv;
 

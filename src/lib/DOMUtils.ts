@@ -11,7 +11,7 @@ const DOMUtils = {
   appendToAttr(node, attr: string, val: any) {
     const oldVal = node.getAttribute(attr);
     const valToSet = oldVal ? `${oldVal} ${val}` : oldVal;
-    node.setAttribute(attr, <any>valToSet);
+    node.setAttribute(attr, valToSet as any);
   },
 
   nextElementSibling(node) {

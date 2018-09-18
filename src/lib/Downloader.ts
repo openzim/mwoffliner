@@ -1,23 +1,23 @@
-import fs from 'fs';
 import * as async from 'async';
-import urlParser, { UrlWithStringQuery } from 'url';
 import { http, https } from 'follow-redirects';
+import fs from 'fs';
+import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
-import U from './Utils.js';
 import Logger from './Logger.js';
 import MediaWiki from './MediaWiki.js';
+import U from './Utils.js';
 
 function getPort(urlObj: UrlWithStringQuery) {
   return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
 }
 
 class Downloader {
-  logger: Logger;
-  uaString: string;
-  loginCookie: string = '';
-  requestTimeout: any;
-  webUrlPort: string | number;
-  optionalUrls: Set<string>;
+  public logger: Logger;
+  public uaString: string;
+  public loginCookie: string = '';
+  public requestTimeout: any;
+  public webUrlPort: string | number;
+  public optionalUrls: Set<string>;
 
   constructor(logger: Logger, mw: MediaWiki, uaString: string, reqTimeout: any) {
     this.logger = logger;
@@ -35,18 +35,18 @@ class Downloader {
   // than 200.
   // Note that this also means that only a single attempt to download them
   // will be made if a status code other than 200 is returned.
-  registerOptionalUrl(url) {
+  public registerOptionalUrl(url) {
     this.optionalUrls.add(url);
   }
 
-  getRequestOptionsFromUrl(url, compression) {
+  public getRequestOptionsFromUrl(url, compression) {
     const urlObj = urlParser.parse(url);
     const headers = {
-      accept: 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
       'cache-control': 'public, max-stale=2678400',
       'accept-encoding': (compression ? 'gzip, deflate' : ''),
       'user-agent': this.uaString,
-      cookie: this.loginCookie,
+      'cookie': this.loginCookie,
     };
     return {
       protocol: urlObj.protocol,
@@ -58,7 +58,7 @@ class Downloader {
     };
   }
 
-  downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
+  public downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
     let retryCount = 0;
     let responseHeaders = {};
     const self = this;
@@ -178,7 +178,7 @@ class Downloader {
     });
   }
 
-  downloadMediaFile(url, path, force, optQueue, callback) {
+  public downloadMediaFile(url, path, force, optQueue, callback) {
     if (!url || !path) {
       callback();
       return;

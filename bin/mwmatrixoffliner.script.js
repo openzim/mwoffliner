@@ -16,11 +16,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 var async = __importStar(require("async"));
+var child_process_1 = require("child_process");
+var child_process_2 = require("child_process");
 var follow_redirects_1 = require("follow-redirects");
 var url_1 = __importDefault(require("url"));
 var yargs_1 = __importDefault(require("yargs"));
-var child_process_1 = require("child_process");
-var child_process_2 = require("child_process");
 /* ********************************** */
 /* COMMAND LINE PARSING ************* */
 /* ********************************** */
@@ -64,7 +64,7 @@ optBinaries.forEach(function (cmd) {
 /* ********************************** */
 Array.prototype.clean = function (deleteValue) {
     for (var i = 0; i < this.length; i++) {
-        if (this[i] == deleteValue) {
+        if (this[i] === deleteValue) {
             this.splice(i, 1);
             i--;
         }
@@ -77,8 +77,8 @@ Array.prototype.clean = function (deleteValue) {
 var outputDirectory = argv.outputDirectory;
 var tmpDirectory = argv.tmpDirectory;
 var cacheDirectory = argv.cacheDirectory;
-var parsoidUrl = (argv.parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
-var mwUrl = argv.mwUrl[argv.mwUrl.length - 1] == '/' ? argv.mwUrl : argv.mwUrl + '/';
+var parsoidUrl = (argv.parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] === '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
+var mwUrl = argv.mwUrl[argv.mwUrl.length - 1] === '/' ? argv.mwUrl : argv.mwUrl + '/';
 var webUrl = mwUrl + 'wiki/';
 var apiUrl = mwUrl + 'w/api.php?';
 var matrixUrl = apiUrl + 'action=sitematrix&format=json';
@@ -105,7 +105,7 @@ var withMobileLayout = argv.mobileLayout;
 async.series([
     function (finished) { init(finished); },
     function (finished) { loadMatrix(finished); },
-    function (finished) { dump(finished); }
+    function (finished) { dump(finished); },
 ], function (error) {
     if (error) {
         console.error('Unable to dump correctly all mediawikis (' + error + ')');
@@ -124,7 +124,7 @@ function dump(finished) {
     async.eachSeries(mediawikis, function (site, finished) {
         if ((!projectInverter && projectRegexp.test(site.code) || (projectInverter && !projectRegexp.test(site.code))) &&
             (!languageInverter && languageRegexp.test(site.lang) || (languageInverter && !languageRegexp.test(site.lang))) &&
-            (!languageTrigger || languageTrigger == site.lang)) {
+            (!languageTrigger || languageTrigger === site.lang)) {
             languageTrigger = undefined;
             var localMwUrl = site.url + '/';
             var localParsoidUrl = '';
@@ -153,7 +153,7 @@ function dump(finished) {
                 skipCacheCleaning ? '--skipCacheCleaning' : undefined,
                 keepHtml ? '--keepHtml' : undefined,
                 speed ? '--speed=' + speed : undefined,
-                site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : undefined
+                site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : undefined,
             ].clean(undefined), function (executionError) {
                 if (executionError) {
                     console.error(executionError);
@@ -173,16 +173,16 @@ function dump(finished) {
 }
 function loadMatrix(finished) {
     downloadContent(matrixUrl, function (json) {
-        if (!JSON.parse(json)['error']) {
-            var entries = JSON.parse(json)['sitematrix'];
-            Object.keys(entries).map(function (entryKey) {
-                var entry = entries[entryKey];
+        if (!JSON.parse(json).error) {
+            var entries_1 = JSON.parse(json).sitematrix;
+            Object.keys(entries_1).map(function (entryKey) {
+                var entry = entries_1[entryKey];
                 if (typeof entryKey === 'string') {
-                    if (entryKey == 'specials') {
+                    if (entryKey === 'specials') {
                         entry.map(function (site) {
                             if (site.closed === undefined) {
                                 site.lan = 'en';
-                                if (site.code == 'species') {
+                                if (site.code === 'species') {
                                     site.filenamePrefix = 'wikispecies_en';
                                 }
                                 else {
@@ -196,7 +196,7 @@ function loadMatrix(finished) {
                 else {
                     entry.site.map(function (site) {
                         if (site.closed === undefined) {
-                            if (entry.code == 'simple') {
+                            if (entry.code === 'simple') {
                                 site.filenamePrefix = site.sitename.toLowerCase() + '_en_simple';
                             }
                             site.lang = entry.code;
@@ -225,13 +225,13 @@ function downloadContent(url, callback) {
             }
         }
         follow_redirects_1.https.get(url, function (response) {
-            if (response.statusCode == 200) {
-                var data = '';
+            if (response.statusCode === 200) {
+                var data_1 = '';
                 response.on('data', function (chunk) {
-                    data += chunk;
+                    data_1 += chunk;
                 });
                 response.on('end', function () {
-                    callFinished(0, null, data);
+                    callFinished(0, null, data_1);
                 });
             }
             else {
@@ -264,7 +264,7 @@ function downloadContent(url, callback) {
         });
     }, function (error, data) {
         if (error) {
-            console.error("Absolutly unable to retrieve async. URL. " + error);
+            console.error('Absolutly unable to retrieve async. URL. ' + error);
         }
         if (callback) {
             setTimeout(callback, 0, data);

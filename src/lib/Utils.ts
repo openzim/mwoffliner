@@ -1,7 +1,6 @@
-
 import fs from 'fs';
-import urlParser, { UrlWithStringQuery } from 'url';
 import pathParser from 'path';
+import urlParser, { UrlWithStringQuery } from 'url';
 
 const Utils = {
   isValidEmail(email) {
@@ -34,14 +33,14 @@ const Utils = {
     const currentDate = Date.now();
     paths = paths instanceof Array ? paths : [paths];
     paths.forEach((path) => {
-      fs.utimes(path, currentDate, currentDate, () => { });
+      fs.utimes(path, currentDate, currentDate, () => null);
     });
   },
 
   getFullUrl(webUrlHost, url, baseUrl?) {
     const urlObject = urlParser.parse(url, false, true);
     if (!urlObject.protocol) {
-      const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : <UrlWithStringQuery>{};
+      const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
       urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
       urlObject.host = urlObject.host || baseUrlObject.host || webUrlHost;
 
@@ -73,7 +72,7 @@ const Utils = {
     return str;
   },
 
-  /**
+  /*
 	 * Move 'from'.childNodes to 'to' adding them before 'beforeNode'
 	 * If 'beforeNode' is null, the nodes are appended at the end.
 	 */
@@ -88,3 +87,7 @@ const Utils = {
 };
 
 export default Utils;
+
+export function contains(arr, value) {
+  return arr.some((v) => v === value);
+}

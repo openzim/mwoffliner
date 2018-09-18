@@ -2,11 +2,18 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var url_1 = __importDefault(require("url"));
 var country_language_1 = __importDefault(require("country-language"));
 var domino_1 = __importDefault(require("domino"));
-var Utils_1 = __importDefault(require("./Utils"));
+var url_1 = __importDefault(require("url"));
+var Utils_1 = __importStar(require("./Utils"));
 // Stub for now
 var MediaWiki = /** @class */ (function () {
     function MediaWiki(logger, config) {
@@ -135,11 +142,11 @@ var MediaWiki = /** @class */ (function () {
                 Object.keys(entries).forEach(function (key) {
                     var entry = entries[key];
                     var name = entry['*'].replace(/ /g, self.spaceDelimiter);
-                    var number = entry.id;
+                    var num = entry.id;
                     var allowedSubpages = ('subpages' in entry);
-                    var isContent = !!(entry.content !== undefined || !!~addNamespaces.indexOf(number));
+                    var isContent = !!(entry.content !== undefined || Utils_1.contains(addNamespaces, num));
                     var canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
-                    var details = { number: number, allowedSubpages: allowedSubpages, isContent: isContent };
+                    var details = { num: num, allowedSubpages: allowedSubpages, isContent: isContent };
                     /* Namespaces in local language */
                     self.namespaces[Utils_1.default.lcFirst(name)] = details;
                     self.namespaces[Utils_1.default.ucFirst(name)] = details;

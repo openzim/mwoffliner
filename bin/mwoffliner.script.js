@@ -12,7 +12,9 @@ var mwoffliner_lib_1 = require("./lib/mwoffliner.lib");
 /* ********************************** */
 var parameterList_1 = __importDefault(require("./lib/parameterList"));
 var argv = yargs_1.usage("Create a fancy HTML dump of a Mediawiki instance in a directory or as a ZIM file\nUsage: $0\nExample, as a system tool:\n    mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net\nOr, as a node script:\n    node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net\nOr, as a npm script: '\n    npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net");
-parameterList_1.default.filter(function (param) { return param.required; }).reduce(function (argv, param) {
+parameterList_1.default
+    .filter(function (param) { return param.required; })
+    .reduce(function (argv, param) {
     return argv.require(param.name, param.description);
 }, argv);
 yargs_1.version(); // Enable --version using value from package.json

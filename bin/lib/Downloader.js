@@ -1,7 +1,4 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -9,11 +6,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs_1 = __importDefault(require("fs"));
 var async = __importStar(require("async"));
-var url_1 = __importDefault(require("url"));
 var follow_redirects_1 = require("follow-redirects");
+var fs_1 = __importDefault(require("fs"));
+var url_1 = __importDefault(require("url"));
 var zlib_1 = __importDefault(require("zlib"));
 var Utils_js_1 = __importDefault(require("./Utils.js"));
 function getPort(urlObj) {
@@ -42,11 +42,11 @@ var Downloader = /** @class */ (function () {
     Downloader.prototype.getRequestOptionsFromUrl = function (url, compression) {
         var urlObj = url_1.default.parse(url);
         var headers = {
-            accept: 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+            'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
             'cache-control': 'public, max-stale=2678400',
             'accept-encoding': (compression ? 'gzip, deflate' : ''),
             'user-agent': this.uaString,
-            cookie: this.loginCookie,
+            'cookie': this.loginCookie,
         };
         return {
             protocol: urlObj.protocol,

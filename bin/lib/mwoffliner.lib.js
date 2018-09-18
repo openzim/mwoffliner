@@ -5,32 +5,39 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs_1 = __importDefault(require("fs"));
-var domino_1 = __importDefault(require("domino"));
 var async_1 = __importDefault(require("async"));
+var child_process_1 = require("child_process");
+var crypto_1 = __importDefault(require("crypto"));
+var domino_1 = __importDefault(require("domino"));
 var follow_redirects_1 = require("follow-redirects");
-var zlib_1 = __importDefault(require("zlib"));
+var fs_1 = __importDefault(require("fs"));
+var html_minifier_1 = __importDefault(require("html-minifier"));
+var node_fetch_1 = __importDefault(require("node-fetch"));
+var os_1 = __importDefault(require("os"));
+var parsoid_1 = __importDefault(require("parsoid"));
+var path_1 = __importDefault(require("path"));
 var swig_templates_1 = __importDefault(require("swig-templates"));
 var url_1 = __importDefault(require("url"));
-var path_1 = __importDefault(require("path"));
-var child_process_1 = require("child_process");
-var os_1 = __importDefault(require("os"));
-var crypto_1 = __importDefault(require("crypto"));
 var utf8_binary_cutter_1 = __importDefault(require("utf8-binary-cutter"));
-var html_minifier_1 = __importDefault(require("html-minifier"));
-var parsoid_1 = __importDefault(require("parsoid"));
-var node_fetch_1 = __importDefault(require("node-fetch"));
-var MediaWiki_1 = __importDefault(require("./MediaWiki"));
-var Logger_1 = __importDefault(require("./Logger"));
-var Downloader_1 = __importDefault(require("./Downloader"));
+var zlib_1 = __importDefault(require("zlib"));
 var config_1 = __importDefault(require("./config"));
 var DOMUtils_1 = __importDefault(require("./DOMUtils"));
-var redis_1 = __importDefault(require("./redis"));
-var Utils_1 = __importDefault(require("./Utils"));
-var Zim_1 = __importDefault(require("./Zim"));
+var Downloader_1 = __importDefault(require("./Downloader"));
+var Logger_1 = __importDefault(require("./Logger"));
+var MediaWiki_1 = __importDefault(require("./MediaWiki"));
 var OfflinerEnv_1 = __importDefault(require("./OfflinerEnv"));
 var parameterList_1 = __importDefault(require("./parameterList"));
+var redis_1 = __importDefault(require("./redis"));
+var Utils_1 = __importStar(require("./Utils"));
+var Zim_1 = __importDefault(require("./Zim"));
 function getParametersList() {
     // Want to remove this anonymous function. Need to investigate to see if it's needed
     return parameterList_1.default;
@@ -40,7 +47,11 @@ function execute(argv) {
     /* ********************************* */
     /* CUSTOM VARIABLE SECTION ********* */
     /* ********************************* */
-    var _speed = argv.speed, adminEmail = argv.adminEmail, localParsoid = argv.localParsoid, customZimFavicon = argv.customZimFavicon, verbose = argv.verbose, minifyHtml = argv.minifyHtml, skipHtmlCache = argv.skipHtmlCache, skipCacheCleaning = argv.skipCacheCleaning, keepEmptyParagraphs = argv.keepEmptyParagraphs, mwUrl = argv.mwUrl, mwWikiPath = argv.mwWikiPath, mwApiPath = argv.mwApiPath, mwDomain = argv.mwDomain, mwUsername = argv.mwUsername, mwPassword = argv.mwPassword, requestTimeout = argv.requestTimeout, publisher = argv.publisher, articleList = argv.articleList, customMainPage = argv.customMainPage, customZimTitle = argv.customZimTitle, customZimDescription = argv.customZimDescription, customZimTags = argv.customZimTags, cacheDirectory = argv.cacheDirectory, mobileLayout = argv.mobileLayout, outputDirectory = argv.outputDirectory, tmpDirectory = argv.tmpDirectory, withZimFullTextIndex = argv.withZimFullTextIndex, format = argv.format, filenamePrefix = argv.filenamePrefix, keepHtml = argv.keepHtml, resume = argv.resume, deflateTmpHtml = argv.deflateTmpHtml, writeHtmlRedirects = argv.writeHtmlRedirects, _addNamespaces = argv.addNamespaces;
+    var 
+    // tslint:disable-next-line:variable-name
+    _speed = argv.speed, adminEmail = argv.adminEmail, localParsoid = argv.localParsoid, customZimFavicon = argv.customZimFavicon, verbose = argv.verbose, minifyHtml = argv.minifyHtml, skipHtmlCache = argv.skipHtmlCache, skipCacheCleaning = argv.skipCacheCleaning, keepEmptyParagraphs = argv.keepEmptyParagraphs, mwUrl = argv.mwUrl, mwWikiPath = argv.mwWikiPath, mwApiPath = argv.mwApiPath, mwDomain = argv.mwDomain, mwUsername = argv.mwUsername, mwPassword = argv.mwPassword, requestTimeout = argv.requestTimeout, publisher = argv.publisher, articleList = argv.articleList, customMainPage = argv.customMainPage, customZimTitle = argv.customZimTitle, customZimDescription = argv.customZimDescription, customZimTags = argv.customZimTags, cacheDirectory = argv.cacheDirectory, mobileLayout = argv.mobileLayout, outputDirectory = argv.outputDirectory, tmpDirectory = argv.tmpDirectory, withZimFullTextIndex = argv.withZimFullTextIndex, format = argv.format, filenamePrefix = argv.filenamePrefix, keepHtml = argv.keepHtml, resume = argv.resume, deflateTmpHtml = argv.deflateTmpHtml, writeHtmlRedirects = argv.writeHtmlRedirects, 
+    // tslint:disable-next-line:variable-name
+    _addNamespaces = argv.addNamespaces;
     var parsoidUrl = argv.parsoidUrl;
     /* HTTP user-agent string */
     // const adminEmail = argv.adminEmail;
@@ -57,13 +68,13 @@ function execute(argv) {
     var logger = new Logger_1.default(verbose);
     /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
     var mw = new MediaWiki_1.default(logger, {
-        base: mwUrl,
-        wikiPath: mwWikiPath,
         apiPath: mwApiPath,
+        base: mwUrl,
         domain: mwDomain,
-        username: mwUsername,
         password: mwPassword,
         spaceDelimiter: '_',
+        username: mwUsername,
+        wikiPath: mwWikiPath,
     });
     /* Download helpers; TODO: Merge with something else / expand this. */
     var downloader = new Downloader_1.default(logger, mw, config_1.default.userAgent + " (" + adminEmail + ")", requestTimeout || config_1.default.defaults.requestTimeout);
@@ -86,7 +97,7 @@ function execute(argv) {
             'wikinews',
             'wiktionary',
         ];
-        if (!!~wmProjects.indexOf(hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+        if (Utils_1.contains(wmProjects, hostParts[1]) || hostParts[0].length < hostParts[1].length) {
             creator = hostParts[1]; // Name of the wikimedia project
         }
     }
@@ -408,7 +419,7 @@ function execute(argv) {
     function saveStaticFiles(finished) {
         config_1.default.output.cssResources.forEach(function (css) {
             try {
-                fs_1.default.readFile(path_1.default.resolve(__dirname, "../" + css + ".css"), function (err, data) { return fs_1.default.writeFile(path_1.default.resolve(env.htmlRootPath, cssPath(css)), data, function () { }); });
+                fs_1.default.readFile(path_1.default.resolve(__dirname, "../" + css + ".css"), function (err, data) { return fs_1.default.writeFile(path_1.default.resolve(env.htmlRootPath, cssPath(css)), data, function () { return null; }); });
             }
             catch (error) {
                 console.error("Could not create " + css + " file : " + error);
@@ -478,8 +489,8 @@ function execute(argv) {
             redis.getRedirect(redirectId, finished, function (target) {
                 logger.log("Writing HTML redirect " + redirectId + " (to " + target + ")...");
                 var data = redirectTemplate({
-                    title: redirectId.replace(/_/g, ' '),
                     target: env.getArticleUrl(target),
+                    title: redirectId.replace(/_/g, ' '),
                 });
                 if (env.deflateTmpHtml) {
                     zlib_1.default.deflate(data, function (error, deflatedHtml) {
@@ -509,15 +520,15 @@ function execute(argv) {
         function storeDependencies(parsoidDoc, articleId, finished) {
             var articleApiUrl = mw.articleApiUrl(articleId);
             node_fetch_1.default(articleApiUrl, {
-                method: 'GET',
                 headers: { Accept: 'application/json' },
+                method: 'GET',
             })
                 .then(function (response) { return response.json(); })
                 .then(function (_a) {
                 var _b = _a.parse, modules = _b.modules, modulescripts = _b.modulescripts, modulestyles = _b.modulestyles, headhtml = _b.headhtml;
                 jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter(function (a) { return a; });
                 styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter(function (a) { return a; });
-                styleDependenciesList = styleDependenciesList.filter(function (oneStyleDep) { return !~config_1.default.filters.blackListCssModules.indexOf(oneStyleDep); });
+                styleDependenciesList = styleDependenciesList.filter(function (oneStyleDep) { return Utils_1.contains(config_1.default.filters.blackListCssModules, oneStyleDep); });
                 logger.log("Js dependencies of " + articleId + " : " + jsDependenciesList);
                 logger.log("Css dependencies of " + articleId + " : " + styleDependenciesList);
                 var allDependenciesWithType = [
@@ -532,6 +543,7 @@ function execute(argv) {
                 // the script below extracts the config with a regex executed on the page header returned from the api
                 var scriptTags = domino_1.default.createDocument(headhtml['*'] + "</body></html>").getElementsByTagName('script');
                 var regex = /mw\.config\.set\(\{.*?\}\);/mg;
+                // tslint:disable-next-line:prefer-for-of
                 for (var i = 0; i < scriptTags.length; i += 1) {
                     if (scriptTags[i].text.includes('mw.config.set')) {
                         jsConfigVars = regex.exec(scriptTags[i].text);
@@ -564,7 +576,7 @@ function execute(argv) {
                 // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
                 // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
                 function hackStartUpModule(jsCode) {
-                    return jsCode.replace("script=document.createElement('script');", "\n                        document.body.addEventListener('fireStartUp', function () { startUp() }, false);\n                        return;\n                        script=document.createElement('script');");
+                    return jsCode.replace('script=document.createElement(\'script\');', "\n                        document.body.addEventListener('fireStartUp', function () { startUp() }, false);\n                        return;\n                        script=document.createElement('script');");
                 }
                 function hackMediaWikiModule(jsCode) {
                     jsCode += "(function () {\n                const startUpEvent = new CustomEvent('fireStartUp');\n                document.body.dispatchEvent(startUpEvent);\n            })()";
@@ -636,8 +648,9 @@ function execute(argv) {
                     DOMUtils_1.default.deleteNode(videoEl);
                     return;
                 }
-                if (posterUrl)
+                if (posterUrl) {
                     videoEl.setAttribute('poster', newVideoPosterUrl);
+                }
                 videoEl.removeAttribute('resource');
                 if (!srcCache.hasOwnProperty(videoPosterUrl)) {
                     srcCache[videoPosterUrl] = true;
@@ -672,6 +685,7 @@ function execute(argv) {
                 }
                 sourceEl.setAttribute('src', newUrl);
             });
+            // tslint:disable-next-line:prefer-for-of
             for (var i = 0; i < imgs.length; i += 1) {
                 var img = imgs[i];
                 var imageNodeClass = img.getAttribute('class') || '';
@@ -731,6 +745,7 @@ function execute(argv) {
             var figures = parsoidDoc.getElementsByTagName('figure');
             var spans = parsoidDoc.querySelectorAll('span[typeof=mw:Image/Frameless]');
             var imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans));
+            // tslint:disable-next-line:prefer-for-of
             for (var i = 0; i < imageNodes.length; i += 1) {
                 var imageNode = imageNodes[i];
                 var image = void 0;
@@ -751,7 +766,7 @@ function execute(argv) {
                         || zim.mobileLayout) {
                         var descriptions = imageNode.getElementsByTagName('figcaption');
                         var description = descriptions.length > 0 ? descriptions[0] : undefined;
-                        var imageWidth = parseInt(image.getAttribute('width'));
+                        var imageWidth = parseInt(image.getAttribute('width'), 10);
                         var thumbDiv = parsoidDoc.createElement('div');
                         thumbDiv.setAttribute('class', 'thumb');
                         if (imageNodeClass.search('mw-halign-right') >= 0) {
@@ -819,7 +834,7 @@ function execute(argv) {
                 }
                 if (isMirrored(title)) {
                     /* Deal with local anchor */
-                    var localAnchor = href.lastIndexOf('#') == -1 ? '' : href.substr(href.lastIndexOf('#'));
+                    var localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
                     linkNode.setAttribute('href', env.getArticleUrl(title) + localAnchor);
                     setImmediate(function () { return cb(); });
                 }
@@ -1003,6 +1018,7 @@ function execute(argv) {
                     return; /* throw error? */
                 }
                 var f = t.filter;
+                // tslint:disable-next-line:prefer-for-of
                 for (var i = 0; i < nodes.length; i += 1) {
                     if (!f || f(nodes[i])) {
                         DOMUtils_1.default.deleteNode(nodes[i]);
@@ -1011,6 +1027,7 @@ function execute(argv) {
             });
             /* Go through all reference calls */
             var spans = parsoidDoc.getElementsByTagName('span');
+            // tslint:disable-next-line:prefer-for-of
             for (var i = 0; i < spans.length; i += 1) {
                 var span = spans[i];
                 var rel = span.getAttribute('rel');
@@ -1036,6 +1053,7 @@ function execute(argv) {
             /* Force display of element with that CSS class */
             filtersConfig.cssClassDisplayList.map(function (classname) {
                 var nodes = parsoidDoc.getElementsByClassName(classname);
+                // tslint:disable-next-line:prefer-for-of
                 for (var i = 0; i < nodes.length; i += 1) {
                     nodes[i].style.removeProperty('display');
                 }
@@ -1044,6 +1062,7 @@ function execute(argv) {
             if (!keepEmptyParagraphs) {
                 for (var level = 5; level > 0; level--) {
                     var paragraphNodes = parsoidDoc.getElementsByTagName("h" + level);
+                    // tslint:disable-next-line:prefer-for-of
                     for (var i = 0; i < paragraphNodes.length; i += 1) {
                         var paragraphNode = paragraphNodes[i];
                         var nextElementNode = DOMUtils_1.default.nextElementSibling(paragraphNode);
@@ -1082,6 +1101,7 @@ function execute(argv) {
                     }
                 });
             };
+            // tslint:disable-next-line:prefer-for-of
             for (var i = 0; i < allNodes.length; i += 1) {
                 _loop_1(i);
             }
@@ -1336,7 +1356,7 @@ function execute(argv) {
         var urlCache = {};
         var stylePath = "" + env.htmlRootPath + dirs.style + "/style.css";
         /* Remove if exists */
-        fs_1.default.unlink(stylePath, function () { });
+        fs_1.default.unlink(stylePath, function () { return null; });
         /* Take care to download medias */
         var downloadCSSFileQueue = async_1.default.queue(function (data, finished) {
             downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue, finished);
@@ -1358,6 +1378,7 @@ function execute(argv) {
                     rewrittenCss += "\n/* end   " + cssUrl + " */\n";
                     /* Downloading CSS dependencies */
                     var match;
+                    // tslint:disable-next-line:no-conditional-assignment
                     while ((match = cssUrlRegexp_1.exec(body))) {
                         var url = match[1];
                         /* Avoid 'data', so no url dependency */
@@ -1389,6 +1410,7 @@ function execute(argv) {
             var doc = domino_1.default.createDocument(html);
             var links = doc.getElementsByTagName('link');
             /* Go through all CSS links */
+            // tslint:disable-next-line:prefer-for-of
             for (var i = 0; i < links.length; i += 1) {
                 var link = links[i];
                 if (link.getAttribute('rel') === 'stylesheet') {
@@ -1496,8 +1518,9 @@ function execute(argv) {
                         }
                     }
                 });
-                if (redirectQueueValues_1.length)
+                if (redirectQueueValues_1.length) {
                     redirectQueue.push(redirectQueueValues_1);
+                }
                 redis.saveArticles(details_1);
             }
             /* Get continue parameters from 'query-continue',
@@ -1731,11 +1754,11 @@ function execute(argv) {
             console.error("Unable to parse media url \"" + url + "\"");
             return '';
         }
-        function e(string) {
-            if (typeof string === 'undefined') {
+        function e(str) {
+            if (typeof str === 'undefined') {
                 return undefined;
             }
-            return escape ? encodeURIComponent(string) : string;
+            return escape ? encodeURIComponent(str) : str;
         }
         var filenameFirstVariant = parts[2];
         var filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');

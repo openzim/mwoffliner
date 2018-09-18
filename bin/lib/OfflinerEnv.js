@@ -4,8 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = __importDefault(require("fs"));
-var url_1 = __importDefault(require("url"));
 var path_1 = __importDefault(require("path"));
+var url_1 = __importDefault(require("url"));
 var Utils_1 = __importDefault(require("./Utils"));
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
@@ -51,6 +51,7 @@ var OfflinerEnv = /** @class */ (function () {
             radical = this.zim.creator.charAt(0).toLowerCase() + this.zim.creator.substr(1) + "_";
             var hostParts = url_1.default.parse(this.mw.webUrl).hostname.split('.');
             var langSuffix = this.zim.langIso2;
+            // tslint:disable-next-line:prefer-for-of
             for (var i = 0; i < hostParts.length; i += 1) {
                 if (hostParts[i] === this.zim.langIso3) {
                     langSuffix = hostParts[i];
@@ -105,11 +106,11 @@ var OfflinerEnv = /** @class */ (function () {
         while (Buffer.byteLength(filename, 'utf8') > 250) {
             filename = filename.substr(0, filename.length - 1);
         }
-        function e(string) {
-            if (typeof string === 'undefined') {
+        function e(str) {
+            if (typeof str === 'undefined') {
                 return undefined;
             }
-            return escape ? encodeURIComponent(string) : string;
+            return escape ? encodeURIComponent(str) : str;
         }
         return e(filename) + ".html";
     };

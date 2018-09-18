@@ -1,27 +1,27 @@
 import fs from 'fs';
-import urlParser from 'url';
 import pathParser from 'path';
+import urlParser from 'url';
 import U from './Utils';
 
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
 class OfflinerEnv {
-  nopic: boolean;
-  novid: boolean;
-  nozim: boolean;
-  nodet: boolean;
-  ltr: boolean;
-  htmlRootPath: string;
-  contentDate: string;
-  dumps: string[];
-  zim: any;
-  mw: any;
-  filenamePrefix: any;
-  resume: boolean;
-  logger: any;
-  keepHtml: any;
-  writeHtmlRedirects: any;
-  deflateTmpHtml: any;
+  public nopic: boolean;
+  public novid: boolean;
+  public nozim: boolean;
+  public nodet: boolean;
+  public ltr: boolean;
+  public htmlRootPath: string;
+  public contentDate: string;
+  public dumps: string[];
+  public zim: any;
+  public mw: any;
+  public filenamePrefix: any;
+  public resume: boolean;
+  public logger: any;
+  public keepHtml: any;
+  public writeHtmlRedirects: any;
+  public deflateTmpHtml: any;
 
   constructor(format, envObjs) {
     Object.assign(this, envObjs);
@@ -55,7 +55,7 @@ class OfflinerEnv {
     this.zim.env = this;
   }
 
-  computeFilenameRadical(withoutSelection?, withoutContentSpecifier?, withoutDate?) {
+  public computeFilenameRadical(withoutSelection?, withoutContentSpecifier?, withoutDate?) {
     let radical;
     if (this.filenamePrefix) {
       radical = this.filenamePrefix;
@@ -63,6 +63,7 @@ class OfflinerEnv {
       radical = `${this.zim.creator.charAt(0).toLowerCase() + this.zim.creator.substr(1)}_`;
       const hostParts = urlParser.parse(this.mw.webUrl).hostname.split('.');
       let langSuffix = this.zim.langIso2;
+      // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < hostParts.length; i += 1) {
         if (hostParts[i] === this.zim.langIso3) {
           langSuffix = hostParts[i];
@@ -92,7 +93,7 @@ class OfflinerEnv {
     return radical;
   }
 
-  computeHtmlRootPath() {
+  public computeHtmlRootPath() {
     let htmlRootPath;
     const { zim } = this;
     if (this.nozim) {
@@ -104,30 +105,30 @@ class OfflinerEnv {
     return htmlRootPath;
   }
 
-  getArticleUrl(articleId) {
+  public getArticleUrl(articleId) {
     return this.getArticleBase(articleId, true);
   }
 
-  getArticlePath(articleId, escape?) {
+  public getArticlePath(articleId, escape?) {
     return this.htmlRootPath + this.getArticleBase(articleId, escape);
   }
 
-  getArticleBase(articleId, escape?) {
+  public getArticleBase(articleId, escape?) {
     let filename = articleId.replace(/\//g, this.mw.spaceDelimiter);
     /* Filesystem is not able to handle with filename > 255 bytes */
     while (Buffer.byteLength(filename, 'utf8') > 250) {
       filename = filename.substr(0, filename.length - 1);
     }
-    function e(string) {
-      if (typeof string === 'undefined') {
+    function e(str) {
+      if (typeof str === 'undefined') {
         return undefined;
       }
-      return escape ? encodeURIComponent(string) : string;
+      return escape ? encodeURIComponent(str) : str;
     }
     return `${e(filename)}.html`;
   }
 
-  checkResume(cb) {
+  public checkResume(cb) {
     for (let i = 0; i < this.dumps.length; i += 1) {
       const dump = this.dumps[i];
       this.nopic = dump.toString().search('nopic') >= 0;
