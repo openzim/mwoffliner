@@ -1,29 +1,25 @@
 #!/bin/sh
-":" //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=1900 --stack-size=42000 "$0" "$@"
 
-"use strict";
+':'; // # -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=1900 --stack-size=42000 "$0" "$@"
 
-/************************************/
-/* MODULE VARIABLE SECTION **********/
-/************************************/
+'use strict';
 
-var fs = require('fs');
-var async = require('async');
-var http = require('follow-redirects').http;
-var https = require('follow-redirects').https;
-var urlParser = require('url');
-var pathParser = require('path');
-var homeDirExpander = require('expand-home-dir');
-var countryLanguage = require('country-language');
-var yargs = require('yargs');
-var exec = require('child_process').exec;
-var spawn = require('child_process').spawn;
+/* ********************************** */
+/* MODULE VARIABLE SECTION ********** */
+/* ********************************** */
 
-/************************************/
-/* COMMAND LINE PARSING *************/
-/************************************/
+const async = require('async');
+const { http, https } = require('follow-redirects');
+const urlParser = require('url');
+const yargs = require('yargs');
+const { exec } = require('child_process');
+const { spawn } = require('child_process');
 
-var argv = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
+/* ********************************** */
+/* COMMAND LINE PARSING ************* */
+/* ********************************** */
+
+const { argv } = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
 	+ '\nExample: ./mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ --adminEmail=foo@bar.net [--parsoidUrl=https://rest.wikimedia.org/] [--project=wikivoyage] [--language=fr]')
 	.require(['mwUrl', 'adminEmail'])
 	.describe('adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string')
@@ -46,8 +42,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
 	.describe('skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)')
 	.describe('withZimFullTextIndex', 'Include a fulltext search index to the ZIM')
 	.describe('mobileLayout', 'HTML optimised for mobile mobile use')
-	.strict()
-	.argv;
+	.strict();
 
 /* Check if opt. binaries are available */
 var optBinaries = ['xz --version', 'mv --version'];
@@ -60,9 +55,9 @@ optBinaries.forEach(function (cmd) {
 	});
 });
 
-/************************************/
-/* NEW PROTOTYPE ********************/
-/************************************/
+/* ********************************** */
+/* NEW PROTOTYPE ******************** */
+/* ********************************** */
 
 Array.prototype.clean = function (deleteValue) {
 	for (var i = 0; i < this.length; i++) {
@@ -74,35 +69,35 @@ Array.prototype.clean = function (deleteValue) {
 	return this;
 };
 
-/************************************/
-/* CUSTOM VARIABLE SECTION **********/
-/************************************/
+/* ********************************** */
+/* CUSTOM VARIABLE SECTION ********** */
+/* ********************************** */
 
-var outputDirectory = argv.outputDirectory;
-var tmpDirectory = argv.tmpDirectory;
-var cacheDirectory = argv.cacheDirectory;
-var parsoidUrl = (parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
-var mwUrl = argv.mwUrl[argv.mwUrl.length - 1] == '/' ? argv.mwUrl : argv.mwUrl + '/';
-var webUrl = mwUrl + 'wiki/';
-var apiUrl = mwUrl + 'w/api.php?';
-var matrixUrl = apiUrl + 'action=sitematrix&format=json';
-var mediawikis = new Array();
-var project = argv.project;
-var projectRegexp = new RegExp('^' + (argv.project || '.*') + '$');
-var projectInverter = argv.projectInverter || argv.projectInverter;
-var languageRegexp = new RegExp('^' + (argv.language || '.*') + '$');
-var languageInverter = argv.projectInverter || argv.languageInverter;
-var languageTrigger = argv.languageTrigger;
-var verbose = argv.verbose;
-var adminEmail = argv.adminEmail;
-var resume = argv.resume;
-var speed = argv.speed;
-var skipHtmlCache = argv.skipHtmlCache;
-var skipCacheCleaning = argv.skipCacheCleaning;
-var keepHtml = argv.keepHtml;
-var deflateTmpHtml = argv.deflateTmpHtml;
-var withZimFullTextIndex = argv.withZimFullTextIndex;
-var withMobileLayout = argv.mobileLayout;
+const outputDirectory = argv.outputDirectory;
+const tmpDirectory = argv.tmpDirectory;
+const cacheDirectory = argv.cacheDirectory;
+const parsoidUrl = (parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
+const mwUrl = argv.mwUrl[argv.mwUrl.length - 1] == '/' ? argv.mwUrl : argv.mwUrl + '/';
+const webUrl = mwUrl + 'wiki/';
+const apiUrl = mwUrl + 'w/api.php?';
+const matrixUrl = apiUrl + 'action=sitematrix&format=json';
+const mediawikis = new Array();
+const project = argv.project;
+const projectRegexp = new RegExp('^' + (argv.project || '.*') + '$');
+const projectInverter = argv.projectInverter || argv.projectInverter;
+const languageRegexp = new RegExp('^' + (argv.language || '.*') + '$');
+const languageInverter = argv.projectInverter || argv.languageInverter;
+const languageTrigger = argv.languageTrigger;
+const verbose = argv.verbose;
+const adminEmail = argv.adminEmail;
+const resume = argv.resume;
+const speed = argv.speed;
+const skipHtmlCache = argv.skipHtmlCache;
+const skipCacheCleaning = argv.skipCacheCleaning;
+const keepHtml = argv.keepHtml;
+const deflateTmpHtml = argv.deflateTmpHtml;
+const withZimFullTextIndex = argv.withZimFullTextIndex;
+const withMobileLayout = argv.mobileLayout;
 
 /************************************/
 /* MAIN *****************************/
