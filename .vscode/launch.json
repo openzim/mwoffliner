@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceFolder}/tmpbin/bin/mwoffliner.script.js",
+            "program": "${workspaceFolder}/bin/mwoffliner.script.js",
             "args": [
                 "--mwUrl=https://es.wikipedia.org/",
                 "--adminEmail=admin@kiwix.com",

@@ -4,13 +4,13 @@
 'use strict';
 
 import { usage, version, help, Argv, Arguments } from 'yargs';
-import { execute } from '../lib/mwoffliner.lib';
+import { execute } from './lib/mwoffliner.lib';
 
 /* ********************************** */
 /* Command Parsing ****************** */
 /* ********************************** */
 
-import parameterList from '../lib/parameterList';
+import parameterList from './lib/parameterList';
 
 let argv: Argv | Arguments = usage(
     `Create a fancy HTML dump of a Mediawiki instance in a directory or as a ZIM file
