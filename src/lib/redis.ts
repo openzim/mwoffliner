@@ -3,6 +3,13 @@ import * as async from 'async';
 import U from './Utils';
 
 class Redis {
+  env: any;
+  redisClient: any;
+  redisRedirectsDatabase: string;
+  redisMediaIdsDatabase: string;
+  redisArticleDetailsDatabase: string;
+  redisModuleDatabase: string;
+  redisCachedMediaToCheckDatabase: string;
   constructor(env, argv, config) {
     this.env = env;
     this.redisClient = redis.createClient(argv.redis || config.defaults.redisConfig);

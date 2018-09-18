@@ -1,5 +1,5 @@
 #!/bin/sh
-':' //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 --experimental-modules "$0" "$@"
+':' //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
 
 'use strict';
 
@@ -7,12 +7,12 @@
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 
-const async = require('async');
-const { http, https } = require('follow-redirects');
-const urlParser = require('url');
-const yargs = require('yargs');
-const { exec } = require('child_process');
-const { spawn } = require('child_process');
+import * as async from 'async';
+import { http, https } from 'follow-redirects';
+import urlParser from 'url';
+import yargs from 'yargs';
+import { exec } from 'child_process';
+import { spawn } from 'child_process';
 
 /* ********************************** */
 /* COMMAND LINE PARSING ************* */
@@ -20,7 +20,8 @@ const { spawn } = require('child_process');
 
 const { argv } = yargs.usage('Mirror many mediawikis instances base on the matrix extension: $0'
 	+ '\nExample: ./mwmatrixoffliner.js --mwUrl=https://meta.wikimedia.org/ --adminEmail=foo@bar.net [--parsoidUrl=https://rest.wikimedia.org/] [--project=wikivoyage] [--language=fr]')
-	.require(['mwUrl', 'adminEmail'])
+	.require('mwUrl', '')
+	.require('adminEmail', '')
 	.describe('adminEmail', 'Email of the mwoffliner user which will be put in the HTTP user-agent string')
 	.describe('deflateTmpHtml', 'To reduce I/O, HTML pages might be deflated in tmpDirectory.')
 	.describe('keepHtml', 'If ZIM built, keep the temporary HTML directory')
@@ -58,7 +59,7 @@ optBinaries.forEach(function (cmd) {
 /* NEW PROTOTYPE ******************** */
 /* ********************************** */
 
-Array.prototype.clean = function (deleteValue) {
+(<any>Array.prototype).clean = function (deleteValue) {
 	for (var i = 0; i < this.length; i++) {
 		if (this[i] == deleteValue) {
 			this.splice(i, 1);
@@ -75,7 +76,7 @@ Array.prototype.clean = function (deleteValue) {
 const outputDirectory = argv.outputDirectory;
 const tmpDirectory = argv.tmpDirectory;
 const cacheDirectory = argv.cacheDirectory;
-const parsoidUrl = (parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
+const parsoidUrl = (argv.parsoidUrl ? (argv.parsoidUrl[argv.parsoidUrl.length - 1] == '/' ? argv.parsoidUrl : argv.parsoidUrl + '/') : '');
 const mwUrl = argv.mwUrl[argv.mwUrl.length - 1] == '/' ? argv.mwUrl : argv.mwUrl + '/';
 const webUrl = mwUrl + 'wiki/';
 const apiUrl = mwUrl + 'w/api.php?';
@@ -86,7 +87,7 @@ const projectRegexp = new RegExp('^' + (argv.project || '.*') + '$');
 const projectInverter = argv.projectInverter || argv.projectInverter;
 const languageRegexp = new RegExp('^' + (argv.language || '.*') + '$');
 const languageInverter = argv.projectInverter || argv.languageInverter;
-const languageTrigger = argv.languageTrigger;
+let languageTrigger = argv.languageTrigger;
 const verbose = argv.verbose;
 const adminEmail = argv.adminEmail;
 const resume = argv.resume;
@@ -145,7 +146,7 @@ function dump(finished) {
 
 				printLog('Dumping ' + site.url);
 				executeTransparently(__dirname + '/mwoffliner.script.js',
-					[
+					(<any>[
 						'--mwUrl=' + localMwUrl,
 						'--parsoidUrl=' + localParsoidUrl,
 						'--adminEmail=' + adminEmail,
@@ -163,7 +164,7 @@ function dump(finished) {
 						keepHtml ? '--keepHtml' : undefined,
 						speed ? '--speed=' + speed : undefined,
 						site.filenamePrefix ? '--filenamePrefix=' + site.filenamePrefix : undefined
-					].clean(undefined),
+					]).clean(undefined),
 					function (executionError) {
 						if (executionError) {
 							console.error(executionError);
@@ -188,7 +189,7 @@ function loadMatrix(finished) {
 			var entries = JSON.parse(json)['sitematrix'];
 			Object.keys(entries).map(function (entryKey) {
 				var entry = entries[entryKey];
-				if (isNaN(entryKey)) {
+				if (typeof entryKey === 'string') {
 					if (entryKey == 'specials') {
 						entry.map(function (site) {
 							if (site.closed === undefined) {
@@ -223,14 +224,14 @@ function loadMatrix(finished) {
 	});
 }
 
-function downloadContent(url, callback, var1, var2, var3) {
+function downloadContent(url, callback) {
 	var retryCount = 1;
 
 	async.retry(
 		5,
 		function (finished) {
 			var calledFinished = false;
-			function callFinished(timeout, message, data) {
+			function callFinished(timeout, message, data?) {
 				if (!calledFinished) {
 					calledFinished = true;
 					setTimeout(finished, timeout, message, data);
@@ -281,12 +282,12 @@ function downloadContent(url, callback, var1, var2, var3) {
 				console.error("Absolutly unable to retrieve async. URL. " + error);
 			}
 			if (callback) {
-				setTimeout(callback, 0, data, var1, var2, var3);
+				setTimeout(callback, 0, data);
 			}
 		});
 }
 
-function executeTransparently(command, args, callback, nostdout, nostderr) {
+function executeTransparently(command, args, callback, nostdout?, nostderr?) {
 	printLog('Executing command: ' + command + ' ' + args.join(' '));
 
 	try {

@@ -14,7 +14,8 @@
     "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npm run eslint",
-    "eslint": "eslint bin lib"
+    "eslint": "eslint bin lib",
+    "build": "./build.sh"
   },
   "bin": {
     "mwoffliner": "./bin/mwoffliner.script.js",
@@ -34,6 +35,9 @@
     "node": ">=6.4.0"
   },
   "dependencies": {
+    "@types/async": "^2.0.49",
+    "@types/node": "^10.10.1",
+    "@types/yargs": "^12.0.0",
     "async": "^1.5.2",
     "case-insensitive": "^1.0.0",
     "country-language": "^0.1.7",

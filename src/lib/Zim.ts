@@ -11,6 +11,24 @@ import ci from 'case-insensitive';
 import U from './Utils';
 
 class Zim {
+  config: any;
+  outputDirectory: string;
+  tmpDirectory: string;
+  env: any;
+  cacheDirectory: string;
+  redirectsCacheFile: string;
+  publisher: any;
+  tags: any;
+  langIso3: any;
+  mainPageId: any;
+  withZimFullTextIndex: any;
+  name: any;
+  description: any;
+  subTitle: any;
+  creator: any;
+  mobileLayout: boolean;
+  articleList: any;
+  
   constructor(config, args) {
     this.config = config;
     Object.assign(this, args);
@@ -181,7 +199,4 @@ class Zim {
   }
 }
 
-
-module.exports = {
-  Zim,
-};
+export default Zim;

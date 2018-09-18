@@ -8,9 +8,10 @@ const DOMUtils = {
     node = undefined;
   },
 
-  appendToAttr(node, attr, val) {
+  appendToAttr(node, attr: string, val: any) {
     const oldVal = node.getAttribute(attr);
-    node.setAttribute(attr, oldVal ? `${oldVal} ${val}` : oldVal);
+    const valToSet = oldVal ? `${oldVal} ${val}` : oldVal;
+    node.setAttribute(attr, <any>valToSet);
   },
 
   nextElementSibling(node) {

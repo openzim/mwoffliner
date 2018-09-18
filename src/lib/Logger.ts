@@ -1,4 +1,5 @@
 class Logger {
+  verbose: boolean;
   constructor(verbose) {
     this.verbose = verbose;
   }

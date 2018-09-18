@@ -29,6 +29,8 @@ import Zim from './Zim';
 import OfflinerEnv from './OfflinerEnv';
 import parameterList from './parameterList';
 
+type DominoElement = any;
+
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
   return parameterList;
@@ -136,8 +138,8 @@ function execute(argv) {
       'wikinews',
       'wiktionary',
     ];
-    if (wmProjects.contains(hostParts[1]) || hostParts[0].length < hostParts[1].length) {
-      [_, creator] = hostParts; // Name of the wikimedia project
+    if (!!~wmProjects.indexOf(hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+      creator = hostParts[1]; // Name of the wikimedia project
     }
   }
   creator = creator.charAt(0).toUpperCase() + creator.substr(1);
@@ -284,9 +286,7 @@ function execute(argv) {
       cmd,
       (error) => {
         U.exitIfError(error, `Failed to find binary "${cmd.split(' ')[0]}": (' + error + ')`);
-      },
-      true,
-      true,
+      }
     );
   });
 
@@ -295,7 +295,7 @@ function execute(argv) {
 
   /* Some helpers */
   function readTemplate(t) {
-    return fs.readFileSync(pathParser.resolve(__dirname, t), 'utf-8');
+    return fs.readFileSync(pathParser.resolve(process.cwd(), 'res', t), 'utf-8');
   }
   const { dirs } = config.output;
   function cssPath(css) {
@@ -403,8 +403,8 @@ function execute(argv) {
           (finished) => {
             redis.quit();
             logger.log('Closing HTTP agents...');
-            closeAgents();
-            finished(error);
+            closeAgents(finished);
+            // finished(error);
           },
         ],
         () => {
@@ -422,10 +422,10 @@ function execute(argv) {
   /** ********************************* */
 
   /* Setting up media optimization queue */
-  const optimizationQueue = async.queue((file, finished) => {
+  const optimizationQueue = async.queue((file: any, finished) => {
     const { path } = file;
 
-    function getOptimizationCommand(path, forcedType) {
+    function getOptimizationCommand(path, forcedType?) {
       const ext = pathParser.extname(path).split('.')[1] || '';
       const basename = path.substring(0, path.length - ext.length - 1) || '';
       const tmpExt = `.${U.randomString(5)}.${ext}`;
@@ -557,7 +557,7 @@ function execute(argv) {
       () => !downloadFileQueue.idle(),
       () => {
         const drainBackup = downloadFileQueue.drain;
-        downloadFileQueue.drain = (error) => {
+        downloadFileQueue.drain = <any>function (error) {
           U.exitIfError(error, `Error by downloading images ${error}`);
           if (downloadFileQueue.length() === 0) {
             logger.log('All images successfuly downloaded');
@@ -582,7 +582,7 @@ function execute(argv) {
       () => !optimizationQueue.idle(),
       () => {
         const drainBackup = optimizationQueue.drain;
-        optimizationQueue.drain = (error) => {
+        optimizationQueue.drain = <any>function (error) {
           U.exitIfError(error, `Error by optimizing images ${error}`);
           if (optimizationQueue.length() === 0) {
             logger.log('All images successfuly optimized');
@@ -645,7 +645,7 @@ function execute(argv) {
 
   function saveArticles(dump, finished) {
     // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
-    let jsConfigVars = '';
+    let jsConfigVars: string | RegExpExecArray = '';
     let jsDependenciesList = [];
     let styleDependenciesList = [];
 
@@ -674,7 +674,7 @@ function execute(argv) {
           styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter(a => a);
 
           styleDependenciesList = styleDependenciesList.filter(
-            oneStyleDep => !config.filters.blackListCssModules.includes(oneStyleDep),
+            oneStyleDep => !~config.filters.blackListCssModules.indexOf(oneStyleDep),
           );
 
           logger.log(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
@@ -692,7 +692,9 @@ function execute(argv) {
           const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script');
           const regex = /mw\.config\.set\(\{.*?\}\);/mg;
           for (let i = 0; i < scriptTags.length; i += 1) {
-            if (scriptTags[i].text.includes('mw.config.set')) jsConfigVars = regex.exec(scriptTags[i].text);
+            if (scriptTags[i].text.includes('mw.config.set')) {
+              jsConfigVars = regex.exec(scriptTags[i].text);
+            }
           }
           jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
           jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
@@ -788,7 +790,7 @@ function execute(argv) {
       const videos = Array.from(parsoidDoc.getElementsByTagName('video'));
       const srcCache = {};
 
-      videos.forEach((videoEl) => {
+      videos.forEach((videoEl: DominoElement) => {
         // Worth noting:
         // Video tags are used for audio files too (as opposed to the audio tag)
         // When it's only audio, there will be a single OGG file
@@ -797,7 +799,7 @@ function execute(argv) {
         const posterUrl = videoEl.getAttribute('poster');
         const videoPosterUrl = U.getFullUrl(webUrlHost, posterUrl);
         const newVideoPosterUrl = getMediaUrl(videoPosterUrl);
-        let videoSources = Array.from(videoEl.children).filter(child => child.tagName === 'SOURCE');
+        let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
 
         // Firefox is not able to display correctly <video> nodes with a height < 40.
         // In that case the controls are not displayed.
@@ -1053,15 +1055,15 @@ function execute(argv) {
             let lon;
             if (/poimap2\.php/i.test(href)) {
               const hrefQuery = urlParser.parse(href, true).query;
-              lat = parseFloat(hrefQuery.lat);
-              lon = parseFloat(hrefQuery.lon);
+              lat = parseFloat(<string>hrefQuery.lat);
+              lon = parseFloat(<string>hrefQuery.lon);
             } else if (/geohack\.php/i.test(href)) {
               let { params } = urlParser.parse(href, true).query;
 
               /* "params" might be an array, try to detect the geo localization one */
               if (params instanceof Array) {
                 let i = 0;
-                while (params[i] && isNaN(params[i][0])) {
+                while (params[i] && isNaN(+params[i][0])) {
                   i += 1;
                 }
                 params = params[i];
@@ -1077,7 +1079,7 @@ function execute(argv) {
                   const factors = [1, 60, 3600];
                   let offs = 0;
 
-                  function deg(hemiHash) {
+                  const deg = (hemiHash) => {
                     let out = 0;
                     let hemiSign = 0;
                     for (let i = 0; i < 4 && i + offs < pieces.length; i += 1) {
@@ -1087,7 +1089,7 @@ function execute(argv) {
                         offs = i + 1;
                         break;
                       }
-                      out += v / factors[i];
+                      out += +v / factors[i];
                     }
                     return out * hemiSign;
                   }
@@ -1148,7 +1150,7 @@ function execute(argv) {
       const filtersConfig = config.filters;
 
       /* Don't need <link> and <input> tags */
-      const nodesToDelete = [{ tag: 'link' }, { tag: 'input' }];
+      const nodesToDelete: { class?: string, tag?: string, filter?: (n) => boolean }[] = [{ tag: 'link' }, { tag: 'input' }];
 
       /* Remove "map" tags if necessary */
       if (env.nopic) {
@@ -1592,12 +1594,12 @@ function execute(argv) {
     fs.unlink(stylePath, () => { });
 
     /* Take care to download medias */
-    const downloadCSSFileQueue = async.queue((data, finished) => {
+    const downloadCSSFileQueue = async.queue((data: any, finished) => {
       downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue, finished);
     }, speed);
 
     /* Take care to download CSS files */
-    const downloadCSSQueue = async.queue((link, finished) => {
+    const downloadCSSQueue = async.queue((link: any, finished) => {
       /* link might be a 'link' DOM node or an URL */
       const cssUrl = typeof link === 'object' ? U.getFullUrl(webUrlHost, link.getAttribute('href')) : link;
       const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
@@ -1667,10 +1669,10 @@ function execute(argv) {
       downloadCSSQueue.push(offlineCssUrl);
 
       /* Set the drain method to be called one time everything is done */
-      downloadCSSQueue.drain = function drain(error) {
+      downloadCSSQueue.drain = <any>function drain(error) {
         U.exitIfError(error, `Error by CSS dependencies: ${error}`);
         const drainBackup = downloadCSSQueue.drain;
-        downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
+        downloadCSSFileQueue.drain = <any>function downloadCSSFileQueueDrain(error) {
           U.exitIfError(error, `Error by CSS medias: ${error}`);
           downloadCSSQueue.drain = drainBackup;
           finished();
@@ -1719,7 +1721,7 @@ function execute(argv) {
 
   function getArticleIds(finished) {
     function drainRedirectQueue(finished) {
-      redirectQueue.drain = function drain(error) {
+      redirectQueue.drain = <any>function drain(error) {
         U.exitIfError(error, `Unable to retrieve redirects for an article: ${error}`);
         logger.log('All redirect ids retrieve successfuly.');
         finished();
@@ -1751,7 +1753,7 @@ function execute(argv) {
               articleIds[entry.title] = entry.revisions[0].revid;
 
               /* Get last revision id timestamp */
-              const articleDetails = { t: parseInt(new Date(entry.revisions[0].timestamp).getTime() / 1000, 10) };
+              const articleDetails: { t: number, g?: string } = { t: new Date(entry.revisions[0].timestamp).getTime() / 1000 };
 
               /* Get article geo coordinates */
               if (entry.coordinates) {
@@ -1841,7 +1843,7 @@ function execute(argv) {
             }
           });
         },
-        () => next,
+        () => <any>next,
         (error) => {
           U.exitIfError(error, `Unable to download article ids: ${error}`);
           logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
@@ -1850,7 +1852,7 @@ function execute(argv) {
       );
     }
 
-    function getArticleIdsForNamespaces() {
+    function getArticleIdsForNamespaces(finished) {
       async.eachLimit(mw.namespacesToMirror, mw.namespacesToMirror.length, getArticleIdsForNamespace, (error) => {
         U.exitIfError(error, `Unable to get all article ids for in a namespace: ${error}`);
         logger.log('All articles ids (but without redirect ids) for all namespaces were successfuly retrieved.');
@@ -1887,7 +1889,7 @@ function execute(argv) {
   }
 
   /* Multiple developer friendly functions */
-  function downloadContentAndCache(url, callback, var1, var2, var3) {
+  function downloadContentAndCache(url, callback) {
     const cachePath = zim.cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
     const cacheHeadersPath = `${cachePath}.h`;
 
@@ -1914,14 +1916,14 @@ function execute(argv) {
             logger.log(`Caching ${url} at ${cachePath}...`);
             fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
               fs.writeFile(cachePath, content, () => {
-                callback(content, responseHeaders, var1, var2, var3);
+                callback(content, responseHeaders);
               });
             });
           });
         } else {
           logger.log(`Cache hit for ${url} (${cachePath})`);
-          U.touch(cachePath, cacheHeadersPath);
-          callback(results[0], results[1], var1, var2, var3);
+          U.touch(cachePath);
+          callback(results[0], results[1]);
         }
       },
     );
@@ -2054,7 +2056,7 @@ function execute(argv) {
     return getMediaBase(url, true);
   }
 
-  function getMediaPath(url, escape) {
+  function getMediaPath(url, escape?) {
     const mediaBase = getMediaBase(url, escape);
     return mediaBase ? env.htmlRootPath + mediaBase : undefined;
   }

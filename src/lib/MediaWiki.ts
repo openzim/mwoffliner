@@ -1,11 +1,30 @@
-const urlParser = require('url');
-const countryLanguage = require('country-language');
-const domino = require('domino');
-const U = require('./Utils.js').Utils;
+import Logger from "./Logger";
+import Downloader from "./Downloader";
+
+import urlParser from 'url';
+import countryLanguage from 'country-language';
+import domino from 'domino';
+import U from './Utils';
 
 // Stub for now
 class MediaWiki {
-  constructor(logger, config) {
+  logger: Logger;
+  base: string;
+  wikiPath: string;
+  apiPath: string;
+  domain: string;
+  username: string;
+  password: string;
+  spaceDelimiter: string;
+  webUrl: string;
+  apiUrl: string;
+  webUrlPath: string;
+  namespaces: {
+    [namespace: string]: any
+  };
+  namespacesToMirror: string[];
+
+  constructor(logger: Logger, config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; }) {
     this.logger = logger;
     // Normalize args
     this.base = `${config.base.replace(/\/$/, '')}/`;
@@ -24,7 +43,7 @@ class MediaWiki {
     this.namespacesToMirror = [];
   }
 
-  login(downloader, cb) {
+  login(downloader: Downloader, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
     if (this.username && this.password) {
       let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
       if (this.domain) {
@@ -59,7 +78,7 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
-  articleQueryUrl(title) {
+  articleQueryUrl(title: string) {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }
 
@@ -67,7 +86,7 @@ class MediaWiki {
     return `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&titles=${encodeURIComponent(articleId)}&rawcontinue=`;
   }
 
-  pageGeneratorQueryUrl(namespace, init) {
+  pageGeneratorQueryUrl(namespace: string, init: string) {
     return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].number}&format=json&rawcontinue=${init}`;
   }
 
@@ -75,7 +94,7 @@ class MediaWiki {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
 
-  getTextDirection(env, cb) {
+  getTextDirection(env, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
     const { logger } = this;
     logger.log('Getting text direction...');
     env.downloader.downloadContent(this.webUrl, (content) => {
@@ -97,7 +116,7 @@ class MediaWiki {
     });
   }
 
-  getSiteInfo(env, cb) {
+  getSiteInfo(env, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
     const self = this;
     this.logger.log('Getting web site name...');
     const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
@@ -125,7 +144,7 @@ class MediaWiki {
     });
   }
 
-  getNamespaces(addNamespaces, downloader, cb) {
+  getNamespaces(addNamespaces: string[], downloader: Downloader, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
     const self = this;
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     downloader.downloadContent(url, (content) => {
@@ -137,7 +156,7 @@ class MediaWiki {
           const name = entry['*'].replace(/ /g, self.spaceDelimiter);
           const number = entry.id;
           const allowedSubpages = ('subpages' in entry);
-          const isContent = !!(entry.content !== undefined || addNamespaces.contains(number));
+          const isContent = !!(entry.content !== undefined || !!~addNamespaces.indexOf(number));
           const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
           const details = { number, allowedSubpages, isContent };
           /* Namespaces in local language */
@@ -158,7 +177,7 @@ class MediaWiki {
     });
   }
 
-  extractPageTitleFromHref(href) {
+  extractPageTitleFromHref(href: any) {
     try {
       const pathname = urlParser.parse(href, false, true).pathname || '';
       if (pathname.indexOf('./') === 0) {

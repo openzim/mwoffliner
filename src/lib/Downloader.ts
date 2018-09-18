@@ -1,16 +1,25 @@
-const fs = require('fs');
-const async = require('async');
-const urlParser = require('url');
-const { http, https } = require('follow-redirects');
-const zlib = require('zlib');
-const U = require('./Utils.js').Utils;
+import fs from 'fs';
+import * as async from 'async';
+import urlParser, { UrlWithStringQuery } from 'url';
+import { http, https } from 'follow-redirects';
+import zlib from 'zlib';
+import U from './Utils.js';
+import Logger from './Logger.js';
+import MediaWiki from './MediaWiki.js';
 
-function getPort(urlObj) {
+function getPort(urlObj: UrlWithStringQuery) {
   return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
 }
 
 class Downloader {
-  constructor(logger, mw, uaString, reqTimeout) {
+  logger: Logger;
+  uaString: string;
+  loginCookie: string = '';
+  requestTimeout: any;
+  webUrlPort: string | number;
+  optionalUrls: Set<string>;
+
+  constructor(logger: Logger, mw: MediaWiki, uaString: string, reqTimeout: any) {
     this.logger = logger;
     this.uaString = uaString;
     this.loginCookie = '';
@@ -49,7 +58,7 @@ class Downloader {
     };
   }
 
-  downloadContent(url, callback, var1, var2, var3) {
+  downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
     let retryCount = 0;
     let responseHeaders = {};
     const self = this;
@@ -57,7 +66,7 @@ class Downloader {
     async.retry(3, (finished) => {
       let request;
       let calledFinished = false;
-      function callFinished(timeout, message, data) {
+      function callFinished(timeout: number, message: Error | string, data?: any) {
         if (!calledFinished) {
           calledFinished = true;
           if (message) {
@@ -165,7 +174,7 @@ class Downloader {
          * and this stops the whole dumping process */
         // process.exit( 1 );
       }
-      callback(data || Buffer.alloc(0), responseHeaders, var1, var2, var3);
+      callback(data || Buffer.alloc(0), responseHeaders);
     });
   }
 

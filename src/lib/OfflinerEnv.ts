@@ -1,11 +1,28 @@
-const fs = require('fs');
-const urlParser = require('url');
-const pathParser = require('path');
-const U = require('./Utils.js').Utils;
+import fs from 'fs';
+import urlParser from 'url';
+import pathParser from 'path';
+import U from './Utils';
 
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
 class OfflinerEnv {
+  nopic: boolean;
+  novid: boolean;
+  nozim: boolean;
+  nodet: boolean;
+  ltr: boolean;
+  htmlRootPath: string;
+  contentDate: string;
+  dumps: string[];
+  zim: any;
+  mw: any;
+  filenamePrefix: any;
+  resume: boolean;
+  logger: any;
+  keepHtml: any;
+  writeHtmlRedirects: any;
+  deflateTmpHtml: any;
+
   constructor(format, envObjs) {
     Object.assign(this, envObjs);
     // output config (FIXME: Does this belong in Zim?)
@@ -38,7 +55,7 @@ class OfflinerEnv {
     this.zim.env = this;
   }
 
-  computeFilenameRadical(withoutSelection, withoutContentSpecifier, withoutDate) {
+  computeFilenameRadical(withoutSelection?, withoutContentSpecifier?, withoutDate?) {
     let radical;
     if (this.filenamePrefix) {
       radical = this.filenamePrefix;
@@ -91,11 +108,11 @@ class OfflinerEnv {
     return this.getArticleBase(articleId, true);
   }
 
-  getArticlePath(articleId, escape) {
+  getArticlePath(articleId, escape?) {
     return this.htmlRootPath + this.getArticleBase(articleId, escape);
   }
 
-  getArticleBase(articleId, escape) {
+  getArticleBase(articleId, escape?) {
     let filename = articleId.replace(/\//g, this.mw.spaceDelimiter);
     /* Filesystem is not able to handle with filename > 255 bytes */
     while (Buffer.byteLength(filename, 'utf8') > 250) {

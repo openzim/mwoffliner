@@ -1,6 +1,6 @@
 
 import fs from 'fs';
-import urlParser from 'url';
+import urlParser, { UrlWithStringQuery } from 'url';
 import pathParser from 'path';
 
 const Utils = {
@@ -38,10 +38,10 @@ const Utils = {
     });
   },
 
-  getFullUrl(webUrlHost, url, baseUrl) {
+  getFullUrl(webUrlHost, url, baseUrl?) {
     const urlObject = urlParser.parse(url, false, true);
     if (!urlObject.protocol) {
-      const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {};
+      const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : <UrlWithStringQuery>{};
       urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
       urlObject.host = urlObject.host || baseUrlObject.host || webUrlHost;
 
