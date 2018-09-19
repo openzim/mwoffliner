@@ -147,3 +147,28 @@ const parameters = {
 }
 mwoffliner.execute(parameters)
 ```
+
+## Background
+
+**There are two Wikitext parsers. mwoffliner uses Parsoid.**
+
+*   Wikitext is the name of the markup language that Wikipedia uses.
+*   MediaWiki is a PHP package that runs a wiki, including Wikipedia.
+*   MediaWiki includes a parser for Wikitext into HTML, and this
+    parser creates Wikipedia currently.
+*   There is another Wikitext parser, called Parsoid, implemented in
+    Javascript (Node.js).
+*   Parsoid is planned to eventually become the main parser for
+    Wikipedia.
+*   mwoffliner uses Parsoid.
+*   mwoffliner calls Parsoid and then post-processes the results for
+    offline format.
+
+**mwoffliner code and behavior are radically different for Mobile and
+Desktop modes.**
+
+*   Parsoid output for Mobile is radically different than for Desktop
+    *   Mobile: Multiple structured sections, but not directly renderable
+    *   Desktop: One renderable page
+*   Therefore mwoffliner is quite different depending on whether it is
+    in Mobile or Desktop mode.
