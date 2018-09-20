@@ -7,6 +7,7 @@ directory. It has mainly been tested against Wikimedia projects like
 Wikipedia, Wiktionary, ... But it should also work for any recent
 Mediawiki.
 
+[![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
 
 ## Prerequisites
