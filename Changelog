@@ -1,3 +1,6 @@
+1.5.1:
+*
+
 1.5.0:
 * FIX: Favicon related crashes #347 #354
 * FIX: Improved error logging when invalid logo information is returned from the server #363
