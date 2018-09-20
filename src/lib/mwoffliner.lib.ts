@@ -273,7 +273,6 @@ function execute(argv) {
     'stat --version',
     'convert --version',
     'rsvg-convert --version',
-    'rsvg --version',
   ];
   try {
     env.dumps.forEach((dump) => {
