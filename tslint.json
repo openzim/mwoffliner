@@ -3,6 +3,12 @@
     "extends": [
         "tslint:recommended"
     ],
+    "linterOptions": {
+        "exclude": [
+            "src/mwoffliner.script.ts",
+            "src/mwmatrixoffliner.script.ts"
+        ]
+    },
     "jsRules": {},
     "rules": {
         "quotemark": [

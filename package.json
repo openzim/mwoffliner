@@ -13,8 +13,7 @@
     "mwoffliner": "node mwoffliner",
     "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "npm run eslint",
-    "eslint": "eslint bin lib",
+    "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./build.sh"
   },
   "bin": {
