@@ -7,6 +7,8 @@ directory. It has mainly been tested against Wikimedia projects like
 Wikipedia, Wiktionary, ... But it should also work for any recent
 Mediawiki.
 
+[![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
+
 ## Prerequisites
 
 To use `mwoffliner`, you need a recent version of Node.js and a POSIX
