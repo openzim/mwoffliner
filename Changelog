@@ -1,9 +1,14 @@
+1.5.1:
+*
+
+1.5.0:
+* FIX: Favicon related crashes #347 #354
+* FIX: Improved error logging when invalid logo information is returned from the server #363
+* UPDATE: Updated parsoid version to latest security patch (not latest Parsoid)
+
 1.4.1:
 * FIX: Fix support of nodejs versions with V8 core #281
 * FIX: Missing external link icon with desktop layout #279
 * FIX: Sporadic wrong redirects #258
 * FIX: Remove empty tags #259
 * FIX: Remove sections sur-numerous braces #205
-* FIX: Favicon related crashes #347 #354
-* FIX: Improved error logging when invalid logo information is returned from the server #363
-* UPDATE: Updated parsoid version to latest security patch (not latest Parsoid)
