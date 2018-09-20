@@ -4,7 +4,7 @@ var config = {
     userAgent: 'MWOffliner/HEAD',
     defaults: {
         publisher: 'Kiwix',
-        redisConfig: '/tmp/redis.sock',
+        redisConfig: '/dev/shm/redis.sock',
         requestTimeout: 60,
     },
     filters: {

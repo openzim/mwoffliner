@@ -272,6 +272,8 @@ function execute(argv) {
     'file --help',
     'stat --version',
     'convert --version',
+    'rsvg-convert --version',
+    'rsvg --version',
   ];
   try {
     env.dumps.forEach((dump) => {
@@ -482,6 +484,10 @@ function execute(argv) {
         5,
         (finished) => {
           console.info(`Executing command : ${cmd}`);
+          if (!cmd) {
+            finished(null, 'No optim command, skipping file');
+            return;
+          }
           exec(cmd, (executionError) => {
             if (!executionError) {
               finished();
@@ -1637,19 +1643,24 @@ function execute(argv) {
 
             /* Avoid 'data', so no url dependency */
             if (!url.match('^data')) {
-              const filename = pathParser.basename(urlParser.parse(url, false, true).pathname);
+              const filePathname = urlParser.parse(url, false, true).pathname;
+              if (filePathname) {
+                const filename = pathParser.basename(filePathname);
 
-              /* Rewrite the CSS */
-              rewrittenCss = rewrittenCss.replace(url, filename);
+                /* Rewrite the CSS */
+                rewrittenCss = rewrittenCss.replace(url, filename);
 
-              /* Need a rewrite if url doesn't include protocol */
-              url = U.getFullUrl(webUrlHost, url, cssUrl);
-              url = url.indexOf('%') < 0 ? encodeURI(url) : url;
+                /* Need a rewrite if url doesn't include protocol */
+                url = U.getFullUrl(webUrlHost, url, cssUrl);
+                url = url.indexOf('%') < 0 ? encodeURI(url) : url;
 
-              /* Download CSS dependency, but avoid duplicate calls */
-              if (!urlCache.hasOwnProperty(url) && filename) {
-                urlCache[url] = true;
-                downloadCSSFileQueue.push({ url, path: `${env.htmlRootPath + dirs.style}/${filename}` });
+                /* Download CSS dependency, but avoid duplicate calls */
+                if (!urlCache.hasOwnProperty(url) && filename) {
+                  urlCache[url] = true;
+                  downloadCSSFileQueue.push({ url, path: env.htmlRootPath + dirs.style + '/' + filename });
+                }
+              } else {
+                console.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
               }
             }
           }
@@ -2077,9 +2088,8 @@ function execute(argv) {
 
   function saveFavicon(finished) {
     logger.log('Saving favicon.png...');
-    const faviconPath = `${env.htmlRootPath}favicon.png`;
 
-    function resizeFavicon(finished) {
+    function resizeFavicon(faviconPath, finished) {
       const cmd = `convert -thumbnail 48 "${faviconPath}" "${faviconPath}.tmp" ; mv "${faviconPath}.tmp" "${faviconPath}" `;
       exec(cmd, (error) => {
         fs.stat(faviconPath, (error, stats) => {
@@ -2093,17 +2103,37 @@ function execute(argv) {
     }
 
     if (customZimFavicon) {
+      const faviconPath = env.htmlRootPath + 'favicon.png';
       const content = fs.readFileSync(customZimFavicon);
       fs.writeFileSync(faviconPath, content);
-      resizeFavicon(finished);
+      resizeFavicon(faviconPath, finished);
     } else {
       downloader.downloadContent(mw.siteInfoUrl(), (content) => {
         const body = content.toString();
         const entries = JSON.parse(body).query.general;
-        let logoUrl = entries.logo;
-        logoUrl = urlParser.parse(logoUrl).protocol ? logoUrl : `http:${logoUrl}`;
-        downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, () => {
-          resizeFavicon(finished);
+        if (!entries.logo) {
+          throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
+        }
+
+        const parsedUrl = urlParser.parse(entries.logo);
+        const ext = parsedUrl.pathname.split('.').slice(-1)[0];
+        const faviconPath = env.htmlRootPath + `favicon.${ext}`;
+        const faviconFinalPath = env.htmlRootPath + `favicon.png`;
+        const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
+        downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
+          if (ext !== 'png') {
+            console.warn(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+            await new Promise((resolve, reject) => {
+              exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve();
+                }
+              });
+            });
+          }
+          resizeFavicon(faviconFinalPath, finished);
         });
       });
     }
