@@ -1,0 +1,11 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.12.0
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  'npm:lodash:20180130':
+    - parsoid > service-runner > limitation > kad > lodash:
+        patched: '2018-09-20T15:00:14.083Z'
+  'npm:ms:20170412':
+    - parsoid > service-runner > limitation > kad > ms:
+        patched: '2018-09-20T15:00:14.083Z'
