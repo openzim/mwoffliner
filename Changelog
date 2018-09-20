@@ -4,3 +4,6 @@
 * FIX: Sporadic wrong redirects #258
 * FIX: Remove empty tags #259
 * FIX: Remove sections sur-numerous braces #205
+* FIX: Favicon related crashes #347 #354
+* FIX: Improved error logging when invalid logo information is returned from the server #363
+* UPDATE: Updated parsoid version to latest security patch (not latest Parsoid)
