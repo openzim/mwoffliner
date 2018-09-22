@@ -1,6 +1,4 @@
-"use strict";
-
-var config = {
+const config = {
   userAgent: 'MWOffliner/HEAD',
 
   defaults: {
@@ -16,16 +14,16 @@ var config = {
       'noprint', 'metadata', 'ambox', 'stub',
       'topicon', 'magnify', 'navbar',
       'mwe-math-mathml-inline', 'mw-kartographer-container',
-      'mw-dismissable-notice', 'navigation-only'
+      'mw-dismissable-notice', 'navigation-only',
     ],
 
     /* Additional black list if only intro is dumped */
-    nodetCssClassBlackList: [ 'mw-ref' ],
+    nodetCssClassBlackList: ['mw-ref'],
 
     /* All DOM node with these styles will be deleted
      * if no <a> tag is included in the sub-tree */
     cssClassBlackListIfNoLink: [
-        'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote'
+      'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote',
     ],
 
     /* All DOM nodes which we should for to display */
@@ -46,7 +44,7 @@ var config = {
 
   output: {
     // CSS resources added by Kiwix
-    cssResources: [ 'mobile', 'content.parsoid', 'inserted_style_mobile' ],
+    cssResources: ['mobile', 'content.parsoid', 'inserted_style_mobile'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
@@ -54,16 +52,16 @@ var config = {
         desktop: [],
         mobile: [
           ['skins.minerva.base.reset', 'skins.minerva.content.styles',
-          'ext.cite.style', 'mobile.app.pagestyles.android',
-          'mediawiki.page.gallery.styles',
-          'mediawiki.skinning.content.parsoid'].join('|')
-        ]
+            'ext.cite.style', 'mobile.app.pagestyles.android',
+            'mediawiki.page.gallery.styles',
+            'mediawiki.skinning.content.parsoid'].join('|'),
+        ],
       },
       js: ['startup', 'jquery', 'mediawiki', 'site'],
     },
 
     // Output directories for storing js and css resources
-    dirs : {
+    dirs: {
       style: 's',
       media: 'm',
       javascript: 'j',
@@ -74,7 +72,7 @@ var config = {
     // Output templates (TODO: Needs more docs)
     templates: {
       /* Template code for any redirect to be written on the FS */
-      redirects : './templates/redirects.html',
+      redirects: './templates/redirects.html',
 
       /* In these files, the following replacements will occur:
        * __ARTICLE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
@@ -85,20 +83,18 @@ var config = {
       desktop: './templates/desktop.html',
 
       /* License footer template code */
-      footer : './templates/footer.html',
+      footer: './templates/footer.html',
 
       /* Template for wrapping lead section content */
-      lead_section_wrapper : './templates/lead_section_wrapper.html',
+      lead_section_wrapper: './templates/lead_section_wrapper.html',
 
       /* Template for wrapping all other toplevel sections */
-      section_wrapper : './templates/section_wrapper.html',
+      section_wrapper: './templates/section_wrapper.html',
 
       /* Template for wrapping subsections */
-      subsection_wrapper : './templates/subsection_wrapper.html',
+      subsection_wrapper: './templates/subsection_wrapper.html',
     },
   },
 };
 
-module.exports = {
-  config: config
-};
+export default config;

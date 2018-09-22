@@ -10,12 +10,14 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/bin/mwoffliner.script.js",
             "args": [
-                "--mwUrl=https://es.wikipedia.org",
+                "--mwUrl=https://es.wikipedia.org/",
                 "--adminEmail=admin@kiwix.com",
                 "--localParsoid",
                 "--verbose",
                 "--format=nozim",
-                "--articleList=./articleList"
+                "--articleList=./articleList",
+                // "--mwApiPath=wiki/api.php",
+                "--mobileLayout"
             ]
         }
     ]

@@ -1,0 +1,26 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "linterOptions": {
+        "exclude": [
+            "src/mwoffliner.script.ts",
+            "src/mwmatrixoffliner.script.ts"
+        ]
+    },
+    "jsRules": {},
+    "rules": {
+        "quotemark": [
+            true,
+            "single"
+        ],
+        "max-line-length": false,
+        "no-console": false,
+        "no-shadowed-variable": false,
+        "only-arrow-functions": false,
+        "object-literal-sort-keys": false,
+        "space-before-function-paren": false
+    },
+    "rulesDirectory": []
+}
