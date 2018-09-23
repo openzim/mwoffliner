@@ -531,7 +531,7 @@ function execute(argv) {
   function saveStaticFiles(finished) {
     config.output.cssResources.forEach(function(css) {
       try {
-        fs.readFile(pathParser.resolve(process.cwd(), 'res', css + '.css'), (err, data) =>
+        fs.readFile(pathParser.resolve(__dirname, '../' + css + '.css'), (err, data) =>
           fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => {})
         );
       } catch (error) {

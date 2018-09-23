@@ -16,7 +16,8 @@
     "lint": "npm run eslint",
     "eslint": "eslint bin lib",
     "snyk-protect": "snyk protect",
-    "prepare": "npm run snyk-protect"
+    "prepare": "npm run snyk-protect",
+    "build": "rm -rf lib && mkdir -p lib && cp -r src/* lib"
   },
   "bin": {
     "mwoffliner": "./bin/mwoffliner.script.js",
