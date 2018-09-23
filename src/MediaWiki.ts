@@ -1,9 +1,9 @@
 'use strict';
 
-const urlParser = require('url');
-const countryLanguage = require('country-language');
-const domino = require('domino');
-const U = require('./Utils.js').Utils;
+import urlParser from 'url';
+import countryLanguage from 'country-language';
+import domino from 'domino';
+import U from './Utils';
 
 // Stub for now
 function MediaWiki(logger, config) {
@@ -190,6 +190,4 @@ MediaWiki.prototype.extractPageTitleFromHref = function (href) {
   }
 };
 
-module.exports = {
-  MediaWiki: MediaWiki,
-};
+export default MediaWiki;

@@ -10,6 +10,4 @@ Logger.prototype.log = function (msg) {
   }
 };
 
-module.exports = {
-  Logger: Logger,
-};
+export default Logger;

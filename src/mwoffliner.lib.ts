@@ -4,35 +4,34 @@
 /* MODULE VARIABLE SECTION **********/
 /************************************/
 
-const fs = require('fs');
-const domino = require('domino');
-const async = require('async');
-const http = require('follow-redirects').http;
-const https = require('follow-redirects').https;
-const zlib = require('zlib');
-const swig = require('swig-templates');
-const urlParser = require('url');
-const pathParser = require('path');
-const exec = require('child_process').exec;
-const os = require('os');
-const crypto = require('crypto');
-const unicodeCutter = require('utf8-binary-cutter');
-const htmlMinifier = require('html-minifier');
-const parsoid = require('parsoid');
-const fetch = require('node-fetch');
+import fs from 'fs';
+import domino from 'domino';
+import async from 'async';
+import { http, https } from 'follow-redirects';
+import zlib from 'zlib';
+import swig from 'swig-templates';
+import urlParser from 'url';
+import pathParser from 'path';
+import { exec } from 'child_process';
+import os from 'os';
+import crypto from 'crypto';
+import unicodeCutter from 'utf8-binary-cutter';
+import htmlMinifier from 'html-minifier';
+import parsoid from 'parsoid';
+import fetch from 'node-fetch';
 
-require('./jsutils.js'); // we should avoid monkey-patching
-const config = require('./config.js').config;
-const Downloader = require('./Downloader.js').Downloader;
-const DU = require('./DOMUtils.js').DOMUtils;
-const Logger = require('./Logger.js').Logger;
-const MediaWiki = require('./MediaWiki.js').MediaWiki;
-const Redis = require('./redis.js').Redis;
-const U = require('./Utils.js').Utils;
-const Zim = require('./Zim.js').Zim;
+import './jsutils'; // we should avoid monkey-patching
+import config from './config';
+import Downloader from './Downloader';
+import DU from './DOMUtils';
+import Logger from './Logger';
+import MediaWiki from './MediaWiki';
+import Redis from './redis';
+import U from './Utils';
+import Zim from './Zim';
 
-const OfflinerEnv = require('./OfflinerEnv.js').OfflinerEnv;
-const { parameterList } = require('./parameterList');
+import OfflinerEnv from './OfflinerEnv';
+import parameterList from './parameterList';
 
 function getParametersList() {
   return parameterList; // Want to remove this anonymous function. Need to investigate to see if it's needed

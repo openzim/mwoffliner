@@ -1,8 +1,8 @@
 'use strict';
 
-const fs = require('fs');
-const urlParser = require('url');
-const pathParser = require('path');
+import fs from 'fs';
+import urlParser from 'url';
+import pathParser from 'path';
 
 var Utils = {
   isValidEmail: function (email) {
@@ -88,6 +88,4 @@ var Utils = {
   },
 };
 
-module.exports = {
-  Utils: Utils
-};
+export default Utils;

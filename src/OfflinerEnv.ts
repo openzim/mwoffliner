@@ -1,9 +1,10 @@
 'use strict';
 
-var fs = require('fs');
-var urlParser = require('url');
-var pathParser = require('path');
-var U = require('./Utils.js').Utils;
+import fs from 'fs';
+import urlParser from 'url';
+import pathParser from 'path';
+
+import U from './Utils';
 
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
@@ -143,6 +144,4 @@ OfflinerEnv.prototype.checkResume = function (cb) {
   cb(this.dumps.length > 0 ? false : true);
 };
 
-module.exports = {
-  OfflinerEnv: OfflinerEnv
-};
+export default OfflinerEnv;

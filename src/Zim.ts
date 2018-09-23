@@ -1,16 +1,16 @@
 'use strict';
 
-const async = require('async');
-const domino = require('domino');
-const mkdirp = require('mkdirp');
-const homeDirExpander = require('expand-home-dir');
-const exec = require('child_process').exec;
-const spawn = require('child_process').spawn;
-const pathParser = require('path');
-const fs = require('fs');
-const urlParser = require('url');
-const ci = require('case-insensitive');
-const U = require('./Utils.js').Utils;
+import async from 'async';
+import domino from 'domino';
+import mkdirp from 'mkdirp';
+import homeDirExpander from 'expand-home-dir';
+import { exec, spawn } from 'child_process';
+import pathParser from 'path';
+import fs from 'fs';
+import urlParser from 'url';
+import ci from 'case-insensitive';
+
+import U from './Utils.js';
 
 function Zim(config, args) {
   this.config = config;

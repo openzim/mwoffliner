@@ -1,8 +1,8 @@
 'use strict';
 
-const redis = require('redis');
-const async = require('async');
-const U = require('./Utils.js').Utils;
+import redis from 'redis';
+import async from 'async';
+import U from './Utils';
 
 function Redis(env, argv, config) {
   this.env = env;
@@ -135,6 +135,4 @@ Redis.prototype.delMediaDB = function (finished) {
   this.redisClient.del(this.redisMediaIdsDatabase, finished);
 };
 
-module.exports = {
-  Redis: Redis
-};
+export default Redis;

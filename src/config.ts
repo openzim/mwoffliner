@@ -99,6 +99,4 @@ var config = {
   },
 };
 
-module.exports = {
-  config: config
-};
+export default config;

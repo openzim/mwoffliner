@@ -1,12 +1,12 @@
 'use strict';
 
-const fs = require('fs');
-const async = require('async');
-const urlParser = require('url');
-const http = require('follow-redirects').http;
-const https = require('follow-redirects').https;
-const zlib = require('zlib');
-const U = require('./Utils.js').Utils;
+import fs from 'fs';
+import async from 'async';
+import urlParser from 'url';
+import { http, https } from 'follow-redirects';
+import zlib from 'zlib';
+
+import U from './Utils';
 
 function getPort(urlObj) {
   return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) == 'https' ? 443 : 80);

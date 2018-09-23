@@ -69,6 +69,4 @@ const parameterList = [
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false }
 ];
 
-module.exports = {
-  parameterList: parameterList
-};
+export default parameterList;
