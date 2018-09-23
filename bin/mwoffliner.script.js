@@ -10,7 +10,7 @@ const mwofflinerLib = require('../lib/mwoffliner.lib.js');
 /* Command Parsing ******************/
 /************************************/
 
-const { parameterList } = require('../lib/parameterList');
+const parameterList = require('../lib/parameterList').default;
 
 let argv = yargs
   .usage(
