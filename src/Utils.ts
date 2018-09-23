@@ -1,28 +1,26 @@
-'use strict';
-
 import fs from 'fs';
-import urlParser from 'url';
 import pathParser from 'path';
+import urlParser, { UrlWithStringQuery } from 'url';
 
-var Utils = {
-  isValidEmail: function (email) {
-    var emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const Utils = {
+  isValidEmail(email) {
+    const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return emailRegex.test(email);
   },
 
-  lcFirst: function (str) {
+  lcFirst(str) {
     str += '';
-    var f = str.charAt(0).toLowerCase();
+    const f = str.charAt(0).toLowerCase();
     return f + str.substr(1);
   },
 
-  ucFirst: function (str) {
+  ucFirst(str) {
     str += '';
-    var f = str.charAt(0).toUpperCase();
+    const f = str.charAt(0).toUpperCase();
     return f + str.substr(1);
   },
 
-  decodeURIComponent: function (uri) {
+  decodeURIComponent(uri) {
     try {
       return decodeURIComponent(uri);
     } catch (error) {
@@ -31,23 +29,23 @@ var Utils = {
     }
   },
 
-  touch: function (paths) {
-    var currentDate = Date.now();
+  touch(paths) {
+    const currentDate = Date.now();
     paths = paths instanceof Array ? paths : [paths];
-    paths.map(function (path) {
-      fs.utimes(path, currentDate, currentDate, () => { });
+    paths.forEach((path) => {
+      fs.utimes(path, currentDate, currentDate, () => null);
     });
   },
 
-  getFullUrl: function (webUrlHost, url, baseUrl) {
-    let urlObject = urlParser.parse(url, false, true);
+  getFullUrl(webUrlHost, url, baseUrl?) {
+    const urlObject = urlParser.parse(url, false, true);
     if (!urlObject.protocol) {
-      const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {};
+      const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
       urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
       urlObject.host = urlObject.host || baseUrlObject.host || webUrlHost;
 
       /* Relative path */
-      if (urlObject.pathname && urlObject.pathname.indexOf('/') != 0 && baseUrlObject.pathname) {
+      if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
         urlObject.pathname = `${pathParser.dirname(baseUrlObject.pathname)}/${urlObject.pathname}`;
       }
 
@@ -57,28 +55,28 @@ var Utils = {
     return url;
   },
 
-  exitIfError: function (error, msg) {
+  exitIfError(error, msg) {
     if (error) {
       console.error(msg, error);
       process.exit(1);
     }
   },
 
-  randomString: function (len) {
+  randomString(len) {
     let str = '';
     const charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < len; i++) {
+    for (let i = 0; i < len; i += 1) {
       const randomPoz = Math.floor(Math.random() * charSet.length);
       str += charSet.substring(randomPoz, randomPoz + 1);
     }
     return str;
   },
 
-	/**
+  /*
 	 * Move 'from'.childNodes to 'to' adding them before 'beforeNode'
 	 * If 'beforeNode' is null, the nodes are appended at the end.
 	 */
-  migrateChildren: function (from, to, beforeNode) {
+  migrateChildren(from, to, beforeNode) {
     if (beforeNode === undefined) {
       beforeNode = null;
     }
@@ -89,3 +87,7 @@ var Utils = {
 };
 
 export default Utils;
+
+export function contains(arr, value) {
+  return arr.some((v) => v === value);
+}

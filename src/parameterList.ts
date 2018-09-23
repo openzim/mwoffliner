@@ -3,14 +3,14 @@ const parameterList = [
   {
     name: 'adminEmail',
     description: 'Email of the mwoffliner user which will be put in the HTTP user-agent string',
-    required: true
+    required: true,
   },
   { name: 'articleList', description: 'File with one title (in UTF8) per line', required: false },
   { name: 'cacheDirectory', description: 'Directory where files are permanently cached', required: false },
   {
     name: 'customZimFavicon',
     description: 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.',
-    required: false
+    required: false,
   },
   { name: 'customZimTitle', description: 'Allow to configure a custom ZIM file title.', required: false },
   { name: 'customZimDescription', description: 'Allow to configure a custom ZIM file description.', required: false },
@@ -19,17 +19,17 @@ const parameterList = [
   {
     name: 'deflateTmpHtml',
     description: 'To reduce I/O, HTML pages might be deflated in tmpDirectory.',
-    required: false
+    required: false,
   },
   {
     name: 'filenamePrefix',
     description: 'For the part of the ZIM filename which is before the date part.',
-    required: false
+    required: false,
   },
   {
     name: 'format',
     description: 'To custom the output with comma separated values : "nopic,novid,nozim,nodet"',
-    required: false
+    required: false,
   },
   { name: 'keepEmptyParagraphs', description: 'Keep all paragraphs, even empty ones.', required: false },
   { name: 'keepHtml', description: 'If ZIM built, keep the temporary HTML directory', required: false },
@@ -41,24 +41,24 @@ const parameterList = [
   { name: 'minifyHtml', description: 'Try to reduce the size of the HTML', required: false },
   { name: 'outputDirectory', description: 'Directory to write the downloaded content', required: false },
   { name: 'parsoidUrl', description: 'Mediawiki Parsoid URL', required: false },
-  { name: 'publisher', description: "ZIM publisher meta data, per default 'Kiwix'", required: false },
+  { name: 'publisher', description: `ZIM publisher meta data, per default 'Kiwix'`, required: false },
   {
     name: 'redis',
     description: 'Redis configuration (https://github.com/NodeRedis/node_redis#rediscreateclient)',
-    required: false
+    required: false,
   },
   { name: 'requestTimeout', description: 'Request timeout (in seconds)', required: false },
   { name: 'resume', description: 'Do not overwrite if ZIM file already created', required: false },
   {
     name: 'skipHtmlCache',
     description: 'Do not cache Parsoid HTML output (and do not use any cached HTML content)',
-    required: false
+    required: false,
   },
   { name: 'skipCacheCleaning', description: 'Do not search for old/outdated files in the cache', required: false },
   {
     name: 'speed',
     description: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.',
-    required: false
+    required: false,
   },
   { name: 'tmpDirectory', description: 'Directory where files are temporary stored', required: false },
   { name: 'verbose', description: 'Print debug information to the stdout', required: false },
@@ -66,7 +66,7 @@ const parameterList = [
   { name: 'writeHtmlRedirects', description: 'Write redirect as HTML files', required: false },
   { name: 'localParsoid', description: 'Create a local parsoid instance default value is false', required: false },
   { name: 'mobileLayout', description: 'HTML optimised for mobile use', required: false },
-  { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false }
+  { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
 ];
 
 export default parameterList;

@@ -1,138 +1,139 @@
-'use strict';
-
+import * as async from 'async';
 import redis from 'redis';
-import async from 'async';
 import U from './Utils';
 
-function Redis(env, argv, config) {
-  this.env = env;
-  this.redisClient = redis.createClient(argv.redis || config.defaults.redisConfig);
+class Redis {
+  public env: any;
+  public redisClient: any;
+  public redisRedirectsDatabase: string;
+  public redisMediaIdsDatabase: string;
+  public redisArticleDetailsDatabase: string;
+  public redisModuleDatabase: string;
+  public redisCachedMediaToCheckDatabase: string;
+  constructor(env, argv, config) {
+    this.env = env;
+    this.redisClient = redis.createClient(argv.redis || config.defaults.redisConfig);
+    const redisNamePrefix = new Date().getTime();
+    this.redisRedirectsDatabase = `${redisNamePrefix}r`;
+    this.redisMediaIdsDatabase = `${redisNamePrefix}m`;
+    this.redisArticleDetailsDatabase = `${redisNamePrefix}d`;
+    this.redisModuleDatabase = `${redisNamePrefix}mod`;
+    this.redisCachedMediaToCheckDatabase = `${redisNamePrefix}c`;
+  }
 
-  const redisNamePrefix = new Date().getTime();
-  this.redisRedirectsDatabase = redisNamePrefix + 'r';
-  this.redisMediaIdsDatabase = redisNamePrefix + 'm';
-  this.redisArticleDetailsDatabase = redisNamePrefix + 'd';
-  this.redisModuleDatabase = redisNamePrefix + 'mod';
-  this.redisCachedMediaToCheckDatabase = redisNamePrefix + 'c';
-}
+  public quit() {
+    this.env.logger.log('Quitting redis databases...');
+    this.redisClient.quit();
+  }
 
-Redis.prototype.quit = function () {
-  this.env.logger.log('Quitting redis databases...');
-  this.redisClient.quit();
-};
+  public flushDBs(finished) {
+    const { logger } = this.env;
+    this.redisClient.del(
+      this.redisRedirectsDatabase,
+      this.redisMediaIdsDatabase,
+      this.redisArticleDetailsDatabase,
+      this.redisCachedMediaToCheckDatabase,
+      () => {
+        logger.log('Redis databases flushed.');
+        finished();
+      },
+    );
+  }
 
-Redis.prototype.flushDBs = function (finished) {
-  var logger = this.env.logger;
-  this.redisClient.del(
-    this.redisRedirectsDatabase,
-    this.redisMediaIdsDatabase,
-    this.redisArticleDetailsDatabase,
-    this.redisCachedMediaToCheckDatabase,
-    () => {
-      logger.log('Redis databases flushed.');
-      finished();
-    }
-  );
-};
+  /* ------------ Redirect methods -------------- */
+  public getRedirect(redirectId, finished, cb) {
+    this.redisClient.hget(this.redisRedirectsDatabase, redirectId, (error, target) => {
+      U.exitIfError(error, `Unable to get a redirect target from redis: ${error}`);
+      if (target) {
+        cb(target);
+      } else {
+        finished();
+      }
+    });
+  }
 
-/* ------------ Redirect methods -------------- */
-Redis.prototype.getRedirect = function (redirectId, finished, cb) {
-  this.redisClient.hget(this.redisRedirectsDatabase, redirectId, function (error, target) {
-    U.exitIfError(error, `Unable to get a redirect target from redis: ${error}`);
-    if (target) {
-      cb(target);
+  public saveRedirects(numRedirects, redirects, finished) {
+    if (numRedirects > 0) {
+      this.redisClient.hmset(this.redisRedirectsDatabase, redirects, (error) => {
+        U.exitIfError(error, `Unable to set redirects: ${error}`);
+        finished();
+      });
     } else {
       finished();
     }
-  });
-};
-
-Redis.prototype.saveRedirects = function (numRedirects, redirects, finished) {
-  if (numRedirects > 0) {
-    this.redisClient.hmset(this.redisRedirectsDatabase, redirects, function (error) {
-      U.exitIfError(error, `Unable to set redirects: ${error}`);
-      finished();
-    });
-  } else {
-    finished();
   }
-};
 
-Redis.prototype.processAllRedirects = function (speed, keyProcessor, errorMsg, successMsg, finished) {
-  var logger = this.env.logger;
-  this.redisClient.hkeys(this.redisRedirectsDatabase, function (error, keys) {
-    U.exitIfError(error, `Unable to get redirect keys from redis: ${error}`);
-    async.eachLimit(keys, speed, keyProcessor, function (error) {
-      U.exitIfError(error, `${errorMsg}: ${error}`);
-      logger.log(successMsg);
-      finished();
-    });
-  });
-};
-
-Redis.prototype.processRedirectIfExists = function (targetId, processor) {
-  try {
-    this.redisClient.hexists(this.redisRedirectsDatabase, targetId, function (error, res) {
-      U.exitIfError(error, `Unable to check redirect existence with redis: ${error}`);
-      processor(res);
-    });
-  } catch (error) {
-    U.exitIfError(true, `Exception by requesting redis ${error}`);
-  }
-};
-
-/* ------------ Article methods -------------- */
-Redis.prototype.getArticle = function (articleId, cb) {
-  this.redisClient.hget(this.redisArticleDetailsDatabase, articleId, cb);
-};
-
-Redis.prototype.saveArticles = function (articles) {
-  if (Object.keys(articles).length) {
-    this.redisClient.hmset(this.redisArticleDetailsDatabase, articles, function (error) {
-      U.exitIfError(error, `Unable to save article detail information to redis: ${error}`);
+  public processAllRedirects(speed, keyProcessor, errorMsg, successMsg, finished) {
+    const { logger } = this.env;
+    this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
+      U.exitIfError(error, `Unable to get redirect keys from redis: ${error}`);
+      async.eachLimit(keys, speed, keyProcessor, (err) => {
+        U.exitIfError(err, `${errorMsg}: ${err}`);
+        logger.log(successMsg);
+        finished();
+      });
     });
   }
-};
 
-/* ------------ Module methods -------------- */
-Redis.prototype.saveModuleIfNotExists = function (dump, module, moduleUri, type) {
-  var self = this;
-  return new Promise((resolve, reject) => {
-    // hsetnx() store in redis only if key doesn't already exists
-    self.redisClient.hsetnx(
-      self.redisModuleDatabase,
-      `${dump}_${module}.${type}`,
-      moduleUri,
-      (err, res) => (err ? reject(`Error: unable to save module ${module} in redis`) : resolve(res))
-    );
-  });
-};
+  public processRedirectIfExists(targetId, processor) {
+    try {
+      this.redisClient.hexists(this.redisRedirectsDatabase, targetId, (error, res) => {
+        U.exitIfError(error, `Unable to check redirect existence with redis: ${error}`);
+        processor(res);
+      });
+    } catch (error) {
+      U.exitIfError(true, `Exception by requesting redis ${error}`);
+    }
+  }
 
-/* ------------ Media methods -------------- */
-Redis.prototype.getMedia = function (fileName, cb) {
-  this.redisClient.hget(this.redisMediaIdsDatabase, fileName, cb);
-};
+  /* ------------ Article methods -------------- */
+  public getArticle(articleId, cb) {
+    this.redisClient.hget(this.redisArticleDetailsDatabase, articleId, cb);
+  }
 
-Redis.prototype.saveMedia = function (fileName, width, cb) {
-  this.redisClient.hset(this.redisMediaIdsDatabase, fileName, width, function (error) {
-    U.exitIfError(error, `Unable to set redis entry for file to download ${fileName}: ${error}`);
-    cb();
-  });
-};
+  public saveArticles(articles) {
+    if (Object.keys(articles).length) {
+      this.redisClient.hmset(this.redisArticleDetailsDatabase, articles, (error) => {
+        U.exitIfError(error, `Unable to save article detail information to redis: ${error}`);
+      });
+    }
+  }
 
-Redis.prototype.deleteOrCacheMedia = function (del, width, fileName) {
-  if (del) {
-    this.redisClient.hdel(this.redisCachedMediaToCheckDatabase, fileName);
-  } else {
-    this.redisClient.hset(this.redisCachedMediaToCheckDatabase, fileName, width, function (error) {
-      U.exitIfError(error, `Unable to set redis cache media to check ${fileName}: ${error}`);
+  /* ------------ Module methods -------------- */
+  public saveModuleIfNotExists(dump, module, moduleUri, type) {
+    const self = this;
+    return new Promise((resolve, reject) => {
+      // hsetnx() store in redis only if key doesn't already exists
+      self.redisClient.hsetnx(self.redisModuleDatabase, `${dump}_${module}.${type}`, moduleUri, (err, res) => (err ? reject(new Error(`unable to save module ${module} in redis`)) : resolve(res)));
     });
   }
-};
 
-Redis.prototype.delMediaDB = function (finished) {
-  this.env.logger.log('Dumping finished with success.');
-  this.redisClient.del(this.redisMediaIdsDatabase, finished);
-};
+  /* ------------ Media methods -------------- */
+  public getMedia(fileName, cb) {
+    this.redisClient.hget(this.redisMediaIdsDatabase, fileName, cb);
+  }
+
+  public saveMedia(fileName, width, cb) {
+    this.redisClient.hset(this.redisMediaIdsDatabase, fileName, width, (error) => {
+      U.exitIfError(error, `Unable to set redis entry for file to download ${fileName}: ${error}`);
+      cb();
+    });
+  }
+
+  public deleteOrCacheMedia(del, width, fileName) {
+    if (del) {
+      this.redisClient.hdel(this.redisCachedMediaToCheckDatabase, fileName);
+    } else {
+      this.redisClient.hset(this.redisCachedMediaToCheckDatabase, fileName, width, (error) => {
+        U.exitIfError(error, `Unable to set redis cache media to check ${fileName}: ${error}`);
+      });
+    }
+  }
+
+  public delMediaDB(finished) {
+    this.env.logger.log('Dumping finished with success.');
+    this.redisClient.del(this.redisMediaIdsDatabase, finished);
+  }
+}
 
 export default Redis;

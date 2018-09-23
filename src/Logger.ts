@@ -1,13 +1,13 @@
-'use strict';
-
-function Logger(verbose) {
-  this.verbose = verbose;
-}
-
-Logger.prototype.log = function (msg) {
-  if (this.verbose) {
-    console.info(msg);
+class Logger {
+  public verbose: boolean;
+  constructor(verbose) {
+    this.verbose = verbose;
   }
-};
+  public log(msg) {
+    if (this.verbose) {
+      console.info(msg);
+    }
+  }
+}
 
 export default Logger;

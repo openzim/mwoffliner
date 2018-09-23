@@ -1,7 +1,5 @@
-'use strict';
-
-var DOMUtils = {
-  deleteNode: function (node) {
+const DOMUtils = {
+  deleteNode(node) {
     if (node.parentNode) {
       node.parentNode.removeChild(node);
     } else {
@@ -10,18 +8,19 @@ var DOMUtils = {
     node = undefined;
   },
 
-  appendToAttr: function (node, attr, val) {
-    var oldVal = node.getAttribute(attr);
-    node.setAttribute(attr, oldVal ? oldVal + ' ' + val : oldVal);
+  appendToAttr(node, attr: string, val: any) {
+    const oldVal = node.getAttribute(attr);
+    const valToSet = oldVal ? `${oldVal} ${val}` : oldVal;
+    node.setAttribute(attr, valToSet as any);
   },
 
-  nextElementSibling: function (node) {
-    var sibling = node.nextSibling;
-    while (sibling && sibling.nodeType != 1 /* ELEMENT_NODE */) {
+  nextElementSibling(node) {
+    let sibling = node.nextSibling;
+    while (sibling && sibling.nodeType !== 1 /* ELEMENT_NODE */) {
       sibling = sibling.nextSibling;
     }
     return sibling;
-  }
+  },
 };
 
 export default DOMUtils;

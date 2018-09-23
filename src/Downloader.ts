@@ -1,69 +1,72 @@
-'use strict';
-
-import fs from 'fs';
-import async from 'async';
-import urlParser from 'url';
+import * as async from 'async';
 import { http, https } from 'follow-redirects';
+import fs from 'fs';
+import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
+import Logger from './Logger';
+import MediaWiki from './MediaWiki';
+import U from './Utils.js';
 
-import U from './Utils';
-
-function getPort(urlObj) {
-  return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) == 'https' ? 443 : 80);
+function getPort(urlObj: UrlWithStringQuery) {
+  return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
 }
 
-function Downloader(logger, mw, uaString, reqTimeout) {
-  this.logger = logger;
-  this.uaString = uaString;
-  this.loginCookie = '';
-  this.requestTimeout = reqTimeout;
-  this.webUrlPort = getPort(urlParser.parse(mw.base + mw.wikiPath + '/'));
-  // Optional URLs will not have an error message if they are
-  // are not found.
-  this.optionalUrls = new Set();
-}
+class Downloader {
+  public logger: Logger;
+  public uaString: string;
+  public loginCookie: string = '';
+  public requestTimeout: any;
+  public webUrlPort: string | number;
+  public optionalUrls: Set<string>;
 
-// Registers a URL as optional.  We don't necessarily expect this URL to be
-// present, so no error will be printed if fetching returns a value other
-// than 200.
-// Note that this also means that only a single attempt to download them
-// will be made if a status code other than 200 is returned.
-Downloader.prototype.registerOptionalUrl = function (url) {
-  this.optionalUrls.add(url);
-}
+  constructor(logger: Logger, mw: MediaWiki, uaString: string, reqTimeout: any) {
+    this.logger = logger;
+    this.uaString = uaString;
+    this.loginCookie = '';
+    this.requestTimeout = reqTimeout;
+    this.webUrlPort = getPort(urlParser.parse(`${mw.base}${mw.wikiPath}/`));
+    // Optional URLs will not have an error message if they are
+    // are not found.
+    this.optionalUrls = new Set();
+  }
 
-Downloader.prototype.getRequestOptionsFromUrl = function (url, compression) {
-  var urlObj = urlParser.parse(url);
-  var headers = {
-    'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
-    'cache-control': 'public, max-stale=2678400',
-    'accept-encoding': (compression ? 'gzip, deflate' : ''),
-    'user-agent': this.uaString,
-    'cookie': this.loginCookie
-  };
+  // Registers a URL as optional.  We don't necessarily expect this URL to be
+  // present, so no error will be printed if fetching returns a value other
+  // than 200.
+  // Note that this also means that only a single attempt to download them
+  // will be made if a status code other than 200 is returned.
+  public registerOptionalUrl(url) {
+    this.optionalUrls.add(url);
+  }
 
-  return {
-    protocol: urlObj.protocol,
-    hostname: urlObj.hostname,
-    port: getPort(urlObj),
-    headers: headers,
-    path: urlObj.path,
-    method: url.indexOf('action=login') > -1 ? 'POST' : 'GET'
-  };
-};
+  public getRequestOptionsFromUrl(url, compression) {
+    const urlObj = urlParser.parse(url);
+    const headers = {
+      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+      'cache-control': 'public, max-stale=2678400',
+      'accept-encoding': (compression ? 'gzip, deflate' : ''),
+      'user-agent': this.uaString,
+      'cookie': this.loginCookie,
+    };
+    return {
+      protocol: urlObj.protocol,
+      hostname: urlObj.hostname,
+      port: getPort(urlObj),
+      headers,
+      path: urlObj.path,
+      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+    };
+  }
 
-Downloader.prototype.downloadContent = function (url, callback, var1, var2, var3) {
-  var retryCount = 0;
-  var responseHeaders = {};
-  var self = this;
-
-  this.logger.log('Downloading ' + decodeURI(url) + '...');
-  async.retry(
-    3,
-    finished => {
-      var request;
-      var calledFinished = false;
-      function callFinished(timeout, message, data) {
+  public downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
+    let retryCount = 0;
+    let responseHeaders = {};
+    const self = this;
+    this.logger.log(`Downloading ${decodeURI(url)}...`);
+    async.retry(3, (finished) => {
+      let request;
+      let calledFinished = false;
+      function callFinished(timeout: number, message: Error | string, data?: any) {
         if (!calledFinished) {
           calledFinished = true;
           if (message) {
@@ -74,62 +77,58 @@ Downloader.prototype.downloadContent = function (url, callback, var1, var2, var3
           setTimeout(finished, timeout, message, data);
         }
       }
-
-      retryCount++;
-
+      retryCount += 1;
       /* Analyse url */
-      var options = self.getRequestOptionsFromUrl(url, true);
-
+      let options = self.getRequestOptionsFromUrl(url, true);
       /* Protocol detection */
-      var protocol;
-      if (options.protocol == 'http:') {
+      let protocol;
+      if (options.protocol === 'http:') {
         protocol = http;
-      } else if (options.protocol == 'https:') {
+      } else if (options.protocol === 'https:') {
         protocol = https;
       } else {
-        console.error('Unable to determine the protocol of the following url (' + options.protocol + '), switched back to ' + (this.webUrlPort == 443 ? 'https' : 'http') + ': ' + url);
-        if (this.webUrlPort == 443) {
+        console.error(`Unable to determine the protocol of the following url (${options.protocol}), switched back to ${this.webUrlPort === 443 ? 'https' : 'http'}: ${url}`);
+        if (this.webUrlPort === 443) {
           protocol = https;
           url = url.replace(options.protocol, 'https:');
         } else {
           protocol = http;
           url = url.replace(options.protocol, 'http:');
         }
-        console.error('New url is: ' + url);
+        console.error(`New url is: ${url}`);
       }
-
       /* Downloading */
       options = self.getRequestOptionsFromUrl(url, true);
-      request = (protocol).get(options, function (response) {
-        if (response.statusCode == 200) {
-          var chunks = [];
-          response.on('data', function (chunk) {
+      request = (protocol).get(options, (response) => {
+        if (response.statusCode === 200) {
+          const chunks = [];
+          response.on('data', (chunk) => {
             chunks.push(chunk);
           });
-          response.on('end', function () {
+          response.on('end', () => {
             responseHeaders = response.headers;
-            var encoding = responseHeaders['content-encoding'];
-            if (encoding == 'gzip') {
-              zlib.gunzip(Buffer.concat(chunks), function (error, decoded) {
+            const encoding = responseHeaders['content-encoding'];
+            if (encoding === 'gzip') {
+              zlib.gunzip(Buffer.concat(chunks), (error, decoded) => {
                 callFinished(0, error, decoded && decoded.toString());
               });
-            } else if (encoding == 'deflate') {
-              zlib.inflate(Buffer.concat(chunks), function (error, decoded) {
+            } else if (encoding === 'deflate') {
+              zlib.inflate(Buffer.concat(chunks), (error, decoded) => {
                 callFinished(0, error, decoded && decoded.toString());
               });
             } else {
               callFinished(0, null, Buffer.concat(chunks));
             }
           });
-          response.on('error', function (error) {
+          response.on('error', (error) => {
             response.socket.emit('agentRemove');
             response.socket.destroy();
-            callFinished(0, 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (response code: ' + response.statusCode + ', error: ' + error + ').');
+            callFinished(0, `Unable to download content [${retryCount}] ${decodeURI(url)} (response code: ${response.statusCode}, error: ${error}).`);
           });
         } else {
           response.socket.emit('agentRemove');
           response.socket.destroy();
-          let message = 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (response code: ' + response.statusCode + ').';
+          let message = `Unable to download content [${retryCount}] ${decodeURI(url)} (response code: ${response.statusCode}).`;
           // No error message for optional URLs; we don't necessarily
           // expect them, and it confuses users who have other errors.
           // Note that this also prevents a retry.
@@ -139,33 +138,35 @@ Downloader.prototype.downloadContent = function (url, callback, var1, var2, var3
           callFinished(0, message);
         }
       });
-      request.on('error', function (error) {
-        callFinished(10000 * retryCount, 'Unable to download content [' + retryCount + '] ' + decodeURI(url) + ' (request error: ' + error + ' ).');
+      request.on('error', (error) => {
+        callFinished(10000 * retryCount, `Unable to download content [${retryCount}] ${decodeURI(url)} (request error: ${error} ).`);
       });
-      request.on('socket', function (socket) {
+      request.on('socket', (socket) => {
         if (!socket.custom) {
           socket.custom = true;
-          socket.on('error', function () {
+          socket.on('error', () => {
             console.error('Socket timeout');
             socket.emit('agentRemove');
             socket.destroy();
-            if (request) { request.emit('error', 'Socket timeout'); }
+            if (request) {
+              request.emit('error', 'Socket timeout');
+            }
           });
-          socket.on('timeout', function () {
+          socket.on('timeout', () => {
             console.error('Socket error');
             socket.emit('agentRemove');
             socket.end();
-            if (request) { request.emit('error', 'Socket error'); }
+            if (request) {
+              request.emit('error', 'Socket error');
+            }
           });
         }
       });
       request.setTimeout(self.requestTimeout * 1000 * retryCount);
       request.end();
-    },
-    (error, data) => {
+    }, (error, data) => {
       if (error) {
-        console.error('Absolutely unable to retrieve async. URL: ' + error);
-
+        console.error(`Absolutely unable to retrieve async. URL: ${error}`);
         /* Unfortunately, we can not do that because there are
          * articles which simply will not be parsed correctly by
          * Parsoid. For example this one
@@ -173,36 +174,33 @@ Downloader.prototype.downloadContent = function (url, callback, var1, var2, var3
          * and this stops the whole dumping process */
         // process.exit( 1 );
       }
-      callback(data || new Buffer(0), responseHeaders, var1, var2, var3);
-    }
-  );
-};
-
-Downloader.prototype.downloadMediaFile = function (url, path, force, optQueue, callback) {
-  if (!url || !path) {
-    callback();
-    return;
+      callback(data || Buffer.alloc(0), responseHeaders);
+    });
   }
 
-  var self = this;
-  fs.stat(path, function (error) {
-    if (error && !force) {
-      U.exitIfError(error.code !== 'ENOENT' && error, `Impossible to stat() ${path}:`);
-      self.logger.log(`${path} already downloaded, download will be skipped.`);
+  public downloadMediaFile(url, path, force, optQueue, callback) {
+    if (!url || !path) {
       callback();
-    } else {
-      self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
-      self.downloadContent(url, function (content, responseHeaders) {
-        fs.writeFile(path, content, function (error) {
-          U.exitIfError(error, `Unable to write ${path} (${url})`);
-          optQueue.push({ path: path, size: content.length });
-          callback(error, responseHeaders);
-        });
-      });
+      return;
     }
-  });
-};
+    const self = this;
+    fs.stat(path, (statError) => {
+      if (statError && !force) {
+        U.exitIfError(statError.code !== 'ENOENT' && statError, `Impossible to stat() ${path}:`);
+        self.logger.log(`${path} already downloaded, download will be skipped.`);
+        callback();
+      } else {
+        self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
+        self.downloadContent(url, (content, responseHeaders) => {
+          fs.writeFile(path, content, (writeError) => {
+            U.exitIfError(writeError, `Unable to write ${path} (${url})`);
+            optQueue.push({ path, size: content.length });
+            callback(writeError, responseHeaders);
+          });
+        });
+      }
+    });
+  }
+}
 
-module.exports = {
-  Downloader: Downloader
-};
+export default Downloader;
