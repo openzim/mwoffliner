@@ -28,11 +28,11 @@ function Downloader(logger, mw, uaString, reqTimeout) {
 // than 200.
 // Note that this also means that only a single attempt to download them
 // will be made if a status code other than 200 is returned.
-Downloader.prototype.registerOptionalUrl = function(url) {
+Downloader.prototype.registerOptionalUrl = function (url) {
   this.optionalUrls.add(url);
 }
 
-Downloader.prototype.getRequestOptionsFromUrl = function(url, compression) {
+Downloader.prototype.getRequestOptionsFromUrl = function (url, compression) {
   var urlObj = urlParser.parse(url);
   var headers = {
     'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
@@ -52,7 +52,7 @@ Downloader.prototype.getRequestOptionsFromUrl = function(url, compression) {
   };
 };
 
-Downloader.prototype.downloadContent = function(url, callback, var1, var2, var3) {
+Downloader.prototype.downloadContent = function (url, callback, var1, var2, var3) {
   var retryCount = 0;
   var responseHeaders = {};
   var self = this;
@@ -185,15 +185,15 @@ Downloader.prototype.downloadMediaFile = function (url, path, force, optQueue, c
   }
 
   var self = this;
-  fs.stat(path, function(error) {
+  fs.stat(path, function (error) {
     if (error && !force) {
       U.exitIfError(error.code !== 'ENOENT' && error, `Impossible to stat() ${path}:`);
       self.logger.log(`${path} already downloaded, download will be skipped.`);
       callback();
     } else {
       self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
-      self.downloadContent(url, function(content, responseHeaders) {
-        fs.writeFile(path, content, function(error) {
+      self.downloadContent(url, function (content, responseHeaders) {
+        fs.writeFile(path, content, function (error) {
           U.exitIfError(error, `Unable to write ${path} (${url})`);
           optQueue.push({ path: path, size: content.length });
           callback(error, responseHeaders);

@@ -17,11 +17,11 @@ function Zim(config, args) {
   Object.assign(this, args);
 
   // Normalize
-  this.outputDirectory = this.outputDirectory ?  homeDirExpander(this.outputDirectory) + '/' : 'out/';
-  this.tmpDirectory = this.tmpDirectory ?  homeDirExpander(this.tmpDirectory) + '/' : 'tmp/';
+  this.outputDirectory = this.outputDirectory ? homeDirExpander(this.outputDirectory) + '/' : 'out/';
+  this.tmpDirectory = this.tmpDirectory ? homeDirExpander(this.tmpDirectory) + '/' : 'tmp/';
 }
 
-Zim.prototype.createDirectories = function(cb) {
+Zim.prototype.createDirectories = function (cb) {
   this.env.logger.log('Creating base directories...');
   var self = this;
   async.series(
@@ -36,8 +36,8 @@ Zim.prototype.createDirectories = function(cb) {
   );
 };
 
-  /* Create directories for static files */
-Zim.prototype.createSubDirectories = function(cb) {
+/* Create directories for static files */
+Zim.prototype.createSubDirectories = function (cb) {
   const env = this.env;
   const dirs = this.config.output.dirs;
   env.logger.log(`Creating sub directories at "${env.htmlRootPath}"...`);
@@ -58,7 +58,7 @@ Zim.prototype.createSubDirectories = function(cb) {
   );
 }
 
-Zim.prototype.prepareCache = function(cb) {
+Zim.prototype.prepareCache = function (cb) {
   var env = this.env;
   var self = this;
   env.logger.log('Preparing cache...');
@@ -70,10 +70,10 @@ Zim.prototype.prepareCache = function(cb) {
   });
 };
 
-Zim.prototype.getSubTitle = function(cb) {
+Zim.prototype.getSubTitle = function (cb) {
   var env = this.env;
   env.logger.log('Getting sub-title...');
-  env.downloader.downloadContent(env.mw.webUrl, function(content) {
+  env.downloader.downloadContent(env.mw.webUrl, function (content) {
     var html = content.toString();
     var doc = domino.createDocument(html);
     var subTitleNode = doc.getElementById('siteSub');
@@ -82,17 +82,17 @@ Zim.prototype.getSubTitle = function(cb) {
   });
 };
 
-Zim.prototype.computeZimRootPath = function() {
+Zim.prototype.computeZimRootPath = function () {
   var zimRootPath = this.outputDirectory[0] === '/' ? this.outputDirectory : pathParser.resolve(process.cwd(), this.outputDirectory) + '/';
   zimRootPath += this.env.computeFilenameRadical() + '.zim';
   return zimRootPath;
 };
 
-Zim.prototype.computeZimName = function() {
+Zim.prototype.computeZimName = function () {
   return (this.publisher ? this.publisher.toLowerCase() + '.' : '') + this.env.computeFilenameRadical(false, true, true);
 };
 
-Zim.prototype.computeZimTags = function() {
+Zim.prototype.computeZimTags = function () {
   var tags = this.tags.split(';');
 
   /* Mediawiki hostname radical */
@@ -113,14 +113,14 @@ Zim.prototype.computeZimTags = function() {
   if (this.env.nodet) tags.push('nodet');
 
   /* Remove empty elements */
-  var tags = tags.filter(function(x){
+  var tags = tags.filter(function (x) {
     return (x !== (undefined || null || ''));
   });
 
   return tags.join(";");
 };
 
-Zim.prototype.executeTransparently = function(command, args, callback, nostdout, nostderr) {
+Zim.prototype.executeTransparently = function (command, args, callback, nostdout, nostderr) {
   var logger = this.env.logger;
   try {
     var proc = spawn(command, args).on('error', function (error) {
@@ -131,18 +131,18 @@ Zim.prototype.executeTransparently = function(command, args, callback, nostdout,
       proc.stdout.on('data', function (data) {
         logger.log(data.toString().replace(/[\n\r]/g, ''));
       })
-      .on('error', function (error) {
-        console.error('STDOUT output error: ' + error);
-      });
+        .on('error', function (error) {
+          console.error('STDOUT output error: ' + error);
+        });
     }
 
     if (!nostderr) {
       proc.stderr.on('data', function (data) {
         console.error(data.toString().replace(/[\n\r]/g, ''));
       })
-      .on('error', function (error) {
-        console.error('STDERR output error: ' + error);
-      });
+        .on('error', function (error) {
+          console.error('STDERR output error: ' + error);
+        });
     }
 
     proc.on('close', function (code) {
@@ -153,7 +153,7 @@ Zim.prototype.executeTransparently = function(command, args, callback, nostdout,
   }
 };
 
-Zim.prototype.buildZIM = function(cb) {
+Zim.prototype.buildZIM = function (cb) {
   var env = this.env;
   var zim = this;
   var logger = this.env.logger;
