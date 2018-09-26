@@ -10,6 +10,7 @@
   </script>
   __ARTICLE_CSS_LIST__
   __CSS_LINKS__
+  __JS_SCRIPTS__
 </head>
 
 <body class="mediawiki mw-hide-empty-elt ns-0 ns-subject stable skin-minerva action-view animations">
@@ -25,23 +26,14 @@
       </div>
     </div>
   </div>
-  <script>
-    // this function is to be able to open/close section in mobile version since the code from wiki meant to do that doesn't work
-    function toggleOpenSection(id) {
-      if (id === 0) return // do not allow to hide the main section
-      $('#mf-section-' + id).toggleClass('open-block').prev().toggleClass('open-block')
-    }
 
-    window.onload = function () {
-      $('.mw-ref').on({
-        click: function () {
-          var ref = $('#References').closest('h2');
-          ref.addClass('open-block');
-          ref.next().addClass('open-block');
-        }
-      })
-    }
-  </script>
+  <noscript>
+    <style>
+      .client-js [onclick]+.collapsible-block {
+        display: block !important;
+      }
+    </style>
+  </noscript>
   __ARTICLE_CONFIGVARS_LIST__
   __ARTICLE_JS_LIST__
 </body>
