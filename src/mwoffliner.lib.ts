@@ -17,6 +17,7 @@ import swig from 'swig-templates';
 import urlParser from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
 import zlib from 'zlib';
+import semver from 'semver';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -28,8 +29,12 @@ import parameterList from './parameterList';
 import Redis from './redis';
 import { contains, default as U } from './Utils';
 import Zim from './Zim';
+import packageJSON from '../package.json';
 
-type DominoElement = any;
+const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
+if (!nodeVersionSatisfiesPackage) {
+  console.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
+}
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -314,7 +319,13 @@ function execute(argv) {
     return `<script src="${jsPath(js)}"></script>`;
   }
 
-  const cssLinks = config.output.cssResources.reduce((buf, css) => buf + genHeaderCSSLink(css), '');
+  const cssLinks = config.output.cssResources.reduce((buf, css) => {
+    return buf + genHeaderCSSLink(css);
+  }, '');
+
+  const jsScripts = config.output.jsResources.reduce((buf, js) => {
+    return buf + genHeaderScript(js);
+  }, '');
 
   /* Compile templates */
   const redirectTemplate = swig.compile(readTemplate(config.output.templates.redirects));
@@ -331,7 +342,9 @@ function execute(argv) {
   const genericCssModules = zim.mobileLayout ? config.output.mw.css.mobile : config.output.mw.css.desktop;
 
   const mediaRegex = /^(.*\/)([^/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6}|)(\.[A-Za-z0-9]{2,6}|)$/;
-  const htmlMobileTemplateCode = readTemplate(config.output.templates.mobile).replace('__CSS_LINKS__', cssLinks);
+  const htmlMobileTemplateCode = readTemplate(config.output.templates.mobile)
+    .replace('__CSS_LINKS__', cssLinks)
+    .replace('__JS_SCRIPTS__', jsScripts);
   const htmlDesktopTemplateCode = readTemplate(config.output.templates.desktop);
   /* Get content */
   async.series(
@@ -551,6 +564,17 @@ function execute(argv) {
         console.error(`Could not create ${css} file : ${error}`);
       }
     });
+
+    config.output.jsResources.forEach(function (js) {
+      try {
+        fs.readFile(pathParser.resolve(__dirname, '../' + js + '.js'), (err, data) =>
+          fs.writeFile(pathParser.resolve(env.htmlRootPath, jsPath(js)), data, () => { })
+        );
+      } catch (error) {
+        console.error(`Could not create ${js} file : ${error}`);
+      }
+    });
+
     finished();
   }
 

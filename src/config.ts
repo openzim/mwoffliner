@@ -47,6 +47,8 @@ export default {
     // CSS resources added by Kiwix
     cssResources: ['mobile', 'content.parsoid', 'inserted_style_mobile'],
 
+    jsResources: [ 'mobile' ],
+
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: {
