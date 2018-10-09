@@ -1,6 +1,5 @@
-"use strict";
 
-var config = {
+export default {
   userAgent: 'MWOffliner/HEAD',
 
   defaults: {
@@ -16,7 +15,7 @@ var config = {
       'noprint', 'metadata', 'ambox', 'stub',
       'topicon', 'magnify', 'navbar',
       'mwe-math-mathml-inline', 'mw-kartographer-container',
-      'mw-dismissable-notice', 'navigation-only'
+      'mw-dismissable-notice', 'navigation-only',
     ],
 
     /* Additional black list if only intro is dumped */
@@ -25,7 +24,7 @@ var config = {
     /* All DOM node with these styles will be deleted
      * if no <a> tag is included in the sub-tree */
     cssClassBlackListIfNoLink: [
-      'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote'
+      'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote',
     ],
 
     /* All DOM nodes which we should for to display */
@@ -48,6 +47,8 @@ var config = {
     // CSS resources added by Kiwix
     cssResources: ['mobile', 'content.parsoid', 'inserted_style_mobile'],
 
+    jsResources: [ 'mobile' ],
+
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: {
@@ -56,8 +57,8 @@ var config = {
           ['skins.minerva.base.reset', 'skins.minerva.content.styles',
             'ext.cite.style', 'mobile.app.pagestyles.android',
             'mediawiki.page.gallery.styles',
-            'mediawiki.skinning.content.parsoid'].join('|')
-        ]
+            'mediawiki.skinning.content.parsoid'].join('|'),
+        ],
       },
       js: ['startup', 'jquery', 'mediawiki', 'site'],
     },
@@ -97,8 +98,4 @@ var config = {
       subsection_wrapper: './templates/subsection_wrapper.html',
     },
   },
-};
-
-module.exports = {
-  config: config
 };
