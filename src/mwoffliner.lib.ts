@@ -568,7 +568,9 @@ function execute(argv) {
     config.output.jsResources.forEach(function (js) {
       try {
         fs.readFile(pathParser.resolve(__dirname, '../' + js + '.js'), (err, data) =>
-          fs.writeFile(pathParser.resolve(env.htmlRootPath, jsPath(js)), data, () => { })
+          fs.writeFile(pathParser.resolve(env.htmlRootPath, jsPath(js)), data, () => {
+            const noop = 1;
+          }),
         );
       } catch (error) {
         console.error(`Could not create ${js} file : ${error}`);
