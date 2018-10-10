@@ -1,0 +1,24 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "linterOptions": {
+        "exclude": []
+    },
+    "jsRules": {},
+    "rules": {
+        "quotemark": [
+            true,
+            "single"
+        ],
+        "ordered-imports": false,
+        "max-line-length": false,
+        "no-console": false,
+        "no-shadowed-variable": false,
+        "only-arrow-functions": false,
+        "object-literal-sort-keys": false,
+        "space-before-function-paren": false
+    },
+    "rulesDirectory": []
+}
