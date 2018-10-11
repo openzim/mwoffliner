@@ -5,7 +5,7 @@ import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
 import Logger from './Logger';
 import MediaWiki from './MediaWiki';
-import U from './Utils.js';
+import * as U from './Utils.js';
 
 function getPort(urlObj: UrlWithStringQuery) {
   return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
