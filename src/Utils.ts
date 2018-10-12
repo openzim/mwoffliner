@@ -194,5 +194,6 @@ export {
   mkdirPromise,
   writeFilePromise,
   execPromise,
+  contains,
   _decodeURIComponent as decodeURIComponent,
 };
