@@ -5,6 +5,7 @@ import countryLanguage from 'country-language';
 import domino from 'domino';
 import urlParser from 'url';
 import * as U from './Utils';
+import OfflinerEnv from './OfflinerEnv';
 
 // Stub for now
 class MediaWiki {
@@ -43,35 +44,36 @@ class MediaWiki {
     this.namespacesToMirror = [];
   }
 
-  public login(downloader: Downloader, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
-    if (this.username && this.password) {
-      let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
-      if (this.domain) {
-        url = `${url}&lgdomain=${this.domain}`;
-      }
-      downloader.downloadContent(url, (content) => {
-        let body = content.toString();
-        let jsonResponse = JSON.parse(body).login;
-        downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-        if (jsonResponse.result === 'SUCCESS') {
-          cb(null);
-        } else {
-          url = `${url}&lgtoken=${jsonResponse.token}`;
-          downloader.downloadContent(url, (subContent) => {
-            body = subContent.toString();
-            jsonResponse = JSON.parse(body).login;
-            if (jsonResponse.result !== 'Success') {
-              cb('Login Failed');
-            } else {
-              downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-              cb(null);
-            }
-          });
+  public login(downloader: Downloader) {
+    return new Promise((resolve, reject) => {
+      if (this.username && this.password) {
+        let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
+        if (this.domain) {
+          url = `${url}&lgdomain=${this.domain}`;
         }
-      });
-    } else {
-      cb();
-    }
+        downloader.downloadContent(url, (content) => {
+          let body = content.toString();
+          let jsonResponse = JSON.parse(body).login;
+          downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
+          if (jsonResponse.result === 'SUCCESS') {
+            resolve();
+          } else {
+            url = `${url}&lgtoken=${jsonResponse.token}`;
+            downloader.downloadContent(url, (subContent) => {
+              body = subContent.toString();
+              jsonResponse = JSON.parse(body).login;
+              if (jsonResponse.result !== 'Success') {
+                return reject('Login Failed');
+              }
+              downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
+              resolve();
+            });
+          }
+        });
+      } else {
+        resolve();
+      }
+    });
   }
 
   // In all the url methods below:
@@ -97,57 +99,62 @@ class MediaWiki {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
 
-  public getTextDirection(env, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
-    const { logger } = this;
-    logger.log('Getting text direction...');
-    env.downloader.downloadContent(this.webUrl, (content) => {
-      const body = content.toString();
-      const doc = domino.createDocument(body);
-      const contentNode = doc.getElementById('mw-content-text');
-      const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
-      const parts = languageDirectionRegex.exec(body);
-      if (parts && parts[1]) {
-        env.ltr = (parts[1] === 'ltr');
-      } else if (contentNode) {
-        env.ltr = (contentNode.getAttribute('dir') === 'ltr');
-      } else {
-        logger.log('Unable to get the language direction, fallback to ltr');
-        env.ltr = true;
-      }
-      logger.log(`Text direction is ${env.ltr ? 'ltr' : 'rtl'}`);
-      cb();
-    });
-  }
-
-  public getSiteInfo(env, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
+  public getTextDirection(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
     const self = this;
-    this.logger.log('Getting web site name...');
-    const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
-    env.downloader.downloadContent(url, (content) => {
-      const body = content.toString();
-      const entries = JSON.parse(body).query.general;
-      /* Welcome page */
-      if (!env.zim.mainPageId && !env.zim.articleList) {
-        env.zim.mainPageId = entries.mainpage.replace(/ /g, self.spaceDelimiter);
-      }
-      /* Site name */
-      if (!env.zim.name) {
-        env.zim.name = entries.sitename;
-      }
-      /* Language */
-      env.zim.langIso2 = entries.lang;
-      countryLanguage.getLanguage(env.zim.langIso2, (error, language) => {
-        if (error || !language.iso639_3) {
-          env.zim.langIso3 = env.zim.langIso2;
+    return new Promise((resolve, reject) => {
+      const { logger } = self;
+      logger.log('Getting text direction...');
+      downloader.downloadContent(this.webUrl, (content) => {
+        const body = content.toString();
+        const doc = domino.createDocument(body);
+        const contentNode = doc.getElementById('mw-content-text');
+        const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
+        const parts = languageDirectionRegex.exec(body);
+        if (parts && parts[1]) {
+          env.ltr = (parts[1] === 'ltr');
+        } else if (contentNode) {
+          env.ltr = (contentNode.getAttribute('dir') === 'ltr');
         } else {
-          env.zim.langIso3 = language.iso639_3;
+          logger.log('Unable to get the language direction, fallback to ltr');
+          env.ltr = true;
         }
-        cb();
+        logger.log(`Text direction is ${env.ltr ? 'ltr' : 'rtl'}`);
+        resolve();
       });
     });
   }
 
-  public getNamespaces(addNamespaces: string[], downloader: Downloader, cb: (err?: {} | undefined, result?: {} | undefined) => void) {
+  public getSiteInfo(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
+    const self = this;
+    return new Promise((resolve, reject) => {
+      this.logger.log('Getting web site name...');
+      const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
+      downloader.downloadContent(url, (content) => {
+        const body = content.toString();
+        const entries = JSON.parse(body).query.general;
+        /* Welcome page */
+        if (!env.zim.mainPageId && !env.zim.articleList) {
+          env.zim.mainPageId = entries.mainpage.replace(/ /g, self.spaceDelimiter);
+        }
+        /* Site name */
+        if (!env.zim.name) {
+          env.zim.name = entries.sitename;
+        }
+        /* Language */
+        env.zim.langIso2 = entries.lang;
+        countryLanguage.getLanguage(env.zim.langIso2, (error, language) => {
+          if (error || !language.iso639_3) {
+            env.zim.langIso3 = env.zim.langIso2;
+          } else {
+            env.zim.langIso3 = language.iso639_3;
+          }
+          resolve();
+        });
+      });
+    });
+  }
+
+  public async getNamespaces(addNamespaces: string[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     downloader.downloadContent(url, (content) => {
@@ -176,7 +183,6 @@ class MediaWiki {
           }
         });
       });
-      cb();
     });
   }
 

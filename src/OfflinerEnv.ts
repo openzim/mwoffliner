@@ -130,24 +130,31 @@ class OfflinerEnv {
     return `${e(filename)}.html`;
   }
 
-  public checkResume(cb) {
-    for (let i = 0; i < this.dumps.length; i += 1) {
-      const dump = this.dumps[i];
-      this.nopic = dump.toString().search('nopic') >= 0;
-      this.novid = dump.toString().search('novid') >= 0;
-      this.nozim = dump.toString().search('nozim') >= 0;
-      this.nodet = dump.toString().search('nodet') >= 0;
-      this.htmlRootPath = this.computeHtmlRootPath();
-      if (this.resume && !this.nozim) {
-        const zimPath = this.zim.computeZimRootPath();
-        if (fs.existsSync(zimPath)) {
-          this.logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
-          this.dumps.splice(i, 1);
-          i -= 1;
+  public checkResume() {
+    return new Promise((resolve, reject) => { // TODO: convert to promises
+      for (let i = 0; i < this.dumps.length; i += 1) {
+        const dump = this.dumps[i];
+        this.nopic = dump.toString().search('nopic') >= 0;
+        this.novid = dump.toString().search('novid') >= 0;
+        this.nozim = dump.toString().search('nozim') >= 0;
+        this.nodet = dump.toString().search('nodet') >= 0;
+        this.htmlRootPath = this.computeHtmlRootPath();
+        if (this.resume && !this.nozim) {
+          const zimPath = this.zim.computeZimRootPath();
+          if (fs.existsSync(zimPath)) {
+            this.logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
+            this.dumps.splice(i, 1);
+            i -= 1;
+          }
         }
       }
-    }
-    cb(!(this.dumps.length > 0));
+      const isError = !(this.dumps.length > 0);
+      if (isError) {
+        reject();
+      } else {
+        resolve();
+      }
+    });
   }
 }
 

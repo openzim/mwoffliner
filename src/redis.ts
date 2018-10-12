@@ -26,18 +26,23 @@ class Redis {
     this.redisClient.quit();
   }
 
-  public flushDBs(finished) {
-    const { logger } = this.env;
-    this.redisClient.del(
-      this.redisRedirectsDatabase,
-      this.redisMediaIdsDatabase,
-      this.redisArticleDetailsDatabase,
-      this.redisCachedMediaToCheckDatabase,
-      () => {
-        logger.log('Redis databases flushed.');
-        finished();
-      },
-    );
+  public flushDBs() {
+    return new Promise((resolve, reject) => {
+      const { logger } = this.env;
+      this.redisClient.del(
+        this.redisRedirectsDatabase,
+        this.redisMediaIdsDatabase,
+        this.redisArticleDetailsDatabase,
+        this.redisCachedMediaToCheckDatabase,
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            logger.log('Redis databases flushed.');
+            resolve();
+          }
+        });
+    });
   }
 
   /* ------------ Redirect methods -------------- */
@@ -67,18 +72,22 @@ class Redis {
     }
   }
 
-  public processAllRedirects(speed, keyProcessor, errorMsg, successMsg, finished) {
-    const { logger } = this.env;
-    this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
-      if (error) {
-        throw new Error(`Unable to get redirect keys from redis: ${error}`);
-      }
-      async.eachLimit(keys, speed, keyProcessor, (err) => {
-        if (err) {
-          throw new Error(`${errorMsg}: ${err}`);
+  public processAllRedirects(speed, keyProcessor, errorMsg, successMsg) {
+    return new Promise((resolve, reject) => {
+      const { logger } = this.env;
+      this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
+        if (error) {
+          reject(`Unable to get redirect keys from redis: ${error}`);
+        } else {
+          async.eachLimit(keys, speed, keyProcessor, (err) => {
+            if (err) {
+              reject(`${errorMsg}: ${err}`);
+            } else {
+              logger.log(successMsg);
+              resolve();
+            }
+          });
         }
-        logger.log(successMsg);
-        finished();
       });
     });
   }
@@ -146,9 +155,17 @@ class Redis {
     }
   }
 
-  public delMediaDB(finished) {
-    this.env.logger.log('Dumping finished with success.');
-    this.redisClient.del(this.redisMediaIdsDatabase, finished);
+  public delMediaDB() {
+    return new Promise((resolve, reject) => {
+      this.env.logger.log('Dumping finished with success.');
+      this.redisClient.del(this.redisMediaIdsDatabase, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 }
 

@@ -1,6 +1,9 @@
 import fs from 'fs';
 import pathParser from 'path';
 import urlParser, { UrlWithStringQuery } from 'url';
+import MediaWiki from './MediaWiki';
+import OfflinerEnv from './OfflinerEnv';
+import { exec } from 'child_process';
 
 function isValidEmail(email) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -64,6 +67,106 @@ function randomString(len) {
   return str;
 }
 
+function getCreatorName(mw: MediaWiki) {
+  /*
+   * Find a suitable name to use for ZIM (content) creator
+   * Heuristic: Use basename of the domain unless
+   * - it happens to be a wikimedia project OR
+   * - some domain where the second part of the hostname is longer than the first part
+   */
+  const hostParts = urlParser.parse(mw.base).hostname.split('.');
+  let creator = hostParts[0];
+  if (hostParts.length > 1) {
+    const wmProjects = [
+      'wikipedia',
+      'wikisource',
+      'wikibooks',
+      'wikiquote',
+      'wikivoyage',
+      'wikiversity',
+      'wikinews',
+      'wiktionary',
+    ];
+    if (contains(wmProjects, hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+      creator = hostParts[1]; // Name of the wikimedia project
+    }
+  }
+  creator = creator.charAt(0).toUpperCase() + creator.substr(1);
+  return creator;
+}
+
+function checkDependencies(env: OfflinerEnv) {
+  /* Check if opt. binaries are available */
+  const shouldCheckZimwriterFs = env.dumps.some((dump) => !dump.toLowerCase().includes('nozim'));
+  const optBinaries = [
+    'jpegoptim --version',
+    'pngquant --version',
+    'gifsicle --version',
+    'advdef --version',
+    'file --help',
+    'stat --version',
+    'convert --version',
+    'rsvg-convert --version',
+    shouldCheckZimwriterFs ? 'zimwriterfs --help' : null,
+  ].filter((a) => a);
+
+  return Promise.all(
+    optBinaries.map((execCommand) => {
+      return new Promise((resolve, reject) => {
+        exec(execCommand, (error) => {
+          if (error) { reject(error); } else { resolve(); }
+        });
+      });
+    }),
+  );
+}
+
+function doSeries(funcs: Array<(...args: any[]) => Promise<any>>) {
+  return funcs.filter((a) => a).reduce((p, func) => {
+    return p.then(func);
+  }, Promise.resolve());
+}
+
+function mkdirPromise(path: string, mode?: string | number) {
+  return new Promise((resolve, reject) => {
+    fs.mkdir(path, mode, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+function writeFilePromise(path: string, content: string | Buffer) {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path, content, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+function execPromise(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, (err, stdout) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(stdout);
+      }
+    });
+  });
+}
+
+function contains(arr, value) {
+  return arr.some((v) => v === value);
+}
+
 /*
  * Move 'from'.childNodes to 'to' adding them before 'beforeNode'
  * If 'beforeNode' is null, the nodes are appended at the end.
@@ -77,10 +180,6 @@ function migrateChildren(from, to, beforeNode) {
   }
 }
 
-function contains(arr, value) {
-  return arr.some((v) => v === value);
-}
-
 export {
   isValidEmail,
   lcFirst,
@@ -89,6 +188,11 @@ export {
   getFullUrl,
   randomString,
   migrateChildren,
-  contains,
+  getCreatorName,
+  checkDependencies,
+  doSeries,
+  mkdirPromise,
+  writeFilePromise,
+  execPromise,
   _decodeURIComponent as decodeURIComponent,
 };
