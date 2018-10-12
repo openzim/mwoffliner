@@ -4,7 +4,7 @@ import Logger from './Logger';
 import countryLanguage from 'country-language';
 import domino from 'domino';
 import urlParser from 'url';
-import { contains, default as U } from './Utils';
+import * as U from './Utils';
 
 // Stub for now
 class MediaWiki {
@@ -54,15 +54,18 @@ class MediaWiki {
         let jsonResponse = JSON.parse(body).login;
         downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
         if (jsonResponse.result === 'SUCCESS') {
-          cb();
+          cb(null);
         } else {
           url = `${url}&lgtoken=${jsonResponse.token}`;
           downloader.downloadContent(url, (subContent) => {
             body = subContent.toString();
             jsonResponse = JSON.parse(body).login;
-            U.exitIfError(jsonResponse.result !== 'Success', 'Login Failed');
-            downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-            cb();
+            if (jsonResponse.result !== 'Success') {
+              cb('Login Failed');
+            } else {
+              downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
+              cb(null);
+            }
           });
         }
       });
@@ -156,7 +159,7 @@ class MediaWiki {
           const name = entry['*'].replace(/ /g, self.spaceDelimiter);
           const num = entry.id;
           const allowedSubpages = ('subpages' in entry);
-          const isContent = !!(entry.content !== undefined || contains(addNamespaces, num));
+          const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
           const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
           const details = { num, allowedSubpages, isContent };
           /* Namespaces in local language */

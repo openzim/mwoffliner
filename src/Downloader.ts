@@ -5,7 +5,7 @@ import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
 import Logger from './Logger';
 import MediaWiki from './MediaWiki';
-import U from './Utils.js';
+import * as U from './Utils.js';
 
 function getPort(urlObj: UrlWithStringQuery) {
   return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
@@ -190,16 +190,13 @@ class Downloader {
     const self = this;
     fs.stat(path, (statError) => {
       if (statError && !force) {
-        U.exitIfError(statError.code !== 'ENOENT' && statError, `Impossible to stat() ${path}:`);
-        self.logger.log(`${path} already downloaded, download will be skipped.`);
-        callback();
+        callback(statError.code !== 'ENOENT' && statError ? `Impossible to stat() ${path}:\n${path} already downloaded, download will be skipped.` : undefined);
       } else {
         self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
         self.downloadContent(url, (content, responseHeaders) => {
           fs.writeFile(path, content, (writeError) => {
-            U.exitIfError(writeError, `Unable to write ${path} (${url})`);
             optQueue.push({ path, size: content.length });
-            callback(writeError, responseHeaders);
+            callback(writeError ? `Unable to write ${path} (${url})` : undefined, responseHeaders);
           });
         });
       }

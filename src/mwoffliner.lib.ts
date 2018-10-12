@@ -12,7 +12,7 @@ import htmlMinifier from 'html-minifier';
 import fetch from 'node-fetch';
 import os from 'os';
 import parsoid from 'parsoid';
-import pathParser from 'path';
+import pathParser, { resolve } from 'path';
 import swig from 'swig-templates';
 import urlParser from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
@@ -27,7 +27,7 @@ import MediaWiki from './MediaWiki';
 import OfflinerEnv from './OfflinerEnv';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { contains, default as U } from './Utils';
+import * as U from './Utils';
 import Zim from './Zim';
 import packageJSON from '../package.json';
 
@@ -41,7 +41,7 @@ function getParametersList() {
   return parameterList;
 }
 
-function execute(argv) {
+async function execute(argv) {
   /* ********************************* */
   /* CUSTOM VARIABLE SECTION ********* */
   /* ********************************* */
@@ -91,13 +91,13 @@ function execute(argv) {
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
-  U.exitIfError(!U.isValidEmail(adminEmail), `Admin email ${adminEmail} is not valid`);
+  if (!U.isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
 
   /* ZIM custom Favicon */
-  U.exitIfError(customZimFavicon && !fs.existsSync(customZimFavicon), `Path ${customZimFavicon} is not a valid PNG file.`);
+  if (customZimFavicon && !fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
 
   /* Number of parallel requests */
-  U.exitIfError(_speed && isNaN(_speed), 'speed is not a number, please give a number value to --speed');
+  if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
   const cpuCount = os.cpus().length;
   const speed = cpuCount * (_speed || 1);
 
@@ -145,7 +145,7 @@ function execute(argv) {
       'wikinews',
       'wiktionary',
     ];
-    if (contains(wmProjects, hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+    if (U.contains(wmProjects, hostParts[1]) || hostParts[0].length < hostParts[1].length) {
       creator = hostParts[1]; // Name of the wikimedia project
     }
   }
@@ -240,7 +240,7 @@ function execute(argv) {
                 `,
         'utf8',
       );
-      parsoid
+      await parsoid
         .apiServiceWorker({
           appBasePath: './node_modules/parsoid',
           logger: console,
@@ -252,9 +252,6 @@ function execute(argv) {
         .then((_) => {
           fs.unlinkSync('./localsettings.js');
           console.info('Parsoid Started Successfully');
-        })
-        .catch((err) => {
-          U.exitIfError(err, `Error starting Parsoid: ${err}`);
         });
       parsoidUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
       parsoidContentType = 'json';
@@ -293,7 +290,9 @@ function execute(argv) {
     exec(
       cmd,
       (error) => {
-        U.exitIfError(error, `Failed to find binary "${cmd.split(' ')[0]}": (' + error + ')`);
+        if (error) {
+          throw new Error(`Failed to find binary "${cmd.split(' ')[0]}": (' + error + ')`);
+        }
       },
     );
   });
@@ -346,92 +345,6 @@ function execute(argv) {
     .replace('__CSS_LINKS__', cssLinks)
     .replace('__JS_SCRIPTS__', jsScripts);
   const htmlDesktopTemplateCode = readTemplate(config.output.templates.desktop);
-  /* Get content */
-  async.series(
-    [
-      (finished) => mw.login(downloader, finished),
-      (finished) => mw.getTextDirection(env, finished),
-      (finished) => mw.getSiteInfo(env, finished),
-      (finished) => zim.getSubTitle(finished),
-      (finished) => mw.getNamespaces(addNamespaces, downloader, finished),
-      (finished) => zim.createDirectories(finished),
-      (finished) => zim.prepareCache(finished),
-      (finished) => env.checkResume(finished),
-      (finished) => getArticleIds(finished),
-      (finished) => cacheRedirects(finished),
-      (finished) => {
-        async.eachSeries(
-          env.dumps,
-          (dump, finishedDump) => {
-            logger.log('Starting a new dump...');
-            env.nopic = dump.toString().search('nopic') >= 0;
-            env.novid = dump.toString().search('novid') >= 0;
-            env.nozim = dump.toString().search('nozim') >= 0;
-            env.nodet = dump.toString().search('nodet') >= 0;
-            env.keepHtml = env.nozim || env.keepHtml;
-            env.htmlRootPath = env.computeHtmlRootPath();
-
-            async.series(
-              [
-                (finishedTask) => zim.createSubDirectories(finishedTask),
-                (finishedTask) => (zim.mobileLayout ? saveStaticFiles(finishedTask) : finishedTask()),
-                (finishedTask) => saveStylesheet(finishedTask),
-                (finishedTask) => saveFavicon(finishedTask),
-                (finishedTask) => getMainPage(finishedTask),
-                (finishedTask) => (env.writeHtmlRedirects ? saveHtmlRedirects(finishedTask) : finishedTask()),
-                (finishedTask) => saveArticles(dump, finishedTask),
-                (finishedTask) => drainDownloadFileQueue(finishedTask),
-                (finishedTask) => drainOptimizationQueue(finishedTask),
-                (finishedTask) => zim.buildZIM(finishedTask),
-                (finishedTask) => redis.delMediaDB(finishedTask),
-              ],
-              (error) => finishedDump(error),
-            );
-          },
-          () => {
-            async.series(
-              [
-                (finishedTask) => {
-                  if (skipCacheCleaning) {
-                    logger.log('Skipping cache cleaning...');
-                    exec(`rm -f "${zim.cacheDirectory}ref"`, finishedTask);
-                  } else {
-                    logger.log('Cleaning cache');
-                    exec(
-                      `find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`,
-                      finishedTask,
-                    );
-                  }
-                },
-              ],
-              (error) => finished(error),
-            );
-          },
-        );
-      },
-    ],
-    (error) => {
-      async.series(
-        [
-          (finished) => {
-            redis.flushDBs(finished);
-          },
-          (finished) => {
-            redis.quit();
-            logger.log('Closing HTTP agents...');
-            closeAgents(finished);
-            // finished(error);
-          },
-        ],
-        () => {
-          logger.log('All dumping(s) finished with success.');
-
-          /* Time to time the script hungs here. Forcing the exit */
-          process.exit(0);
-        },
-      );
-    },
-  );
 
   /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
@@ -544,6 +457,134 @@ function execute(argv) {
     downloadFileAndCache(url, finished);
   }, speed * 5);
 
+  /* Get ids */
+  const redirectQueue = async.queue((articleId, finished) => {
+    if (articleId) {
+      logger.log(`Getting redirects for article ${articleId}...`);
+      const url = mw.backlinkRedirectsQueryUrl(articleId);
+      downloader.downloadContent(url, (content) => {
+        const body = content.toString();
+        try {
+          if (!JSON.parse(body).error) {
+            const redirects = {};
+            let redirectsCount = 0;
+            const { pages } = JSON.parse(body).query;
+
+            pages[Object.keys(pages)[0]].redirects.map((entry) => {
+              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+              redirects[title] = articleId;
+              redirectsCount += 1;
+
+              if (title === zim.mainPageId) {
+                zim.mainPageId = articleId;
+              }
+            });
+            logger.log(`${redirectsCount} redirect(s) found for ${articleId}`);
+            redis.saveRedirects(redirectsCount, redirects, finished);
+          } else {
+            finished(JSON.parse(body).error);
+          }
+        } catch (error) {
+          finished(error);
+        }
+      });
+    } else {
+      finished();
+    }
+  }, speed * 3);
+
+  /* Get content */
+  await new Promise((resolve, reject) => {
+    async.series(
+      [
+        (finished) => mw.login(downloader, finished),
+        (finished) => mw.getTextDirection(env, finished),
+        (finished) => mw.getSiteInfo(env, finished),
+        (finished) => zim.getSubTitle(finished),
+        (finished) => mw.getNamespaces(addNamespaces, downloader, finished),
+        (finished) => zim.createDirectories(finished),
+        (finished) => zim.prepareCache(finished),
+        (finished) => env.checkResume(finished),
+        (finished) => getArticleIds(finished),
+        (finished) => cacheRedirects(finished),
+        (finished) => {
+          async.eachSeries(
+            env.dumps,
+            (dump, finishedDump) => {
+              logger.log('Starting a new dump...');
+              env.nopic = dump.toString().search('nopic') >= 0;
+              env.novid = dump.toString().search('novid') >= 0;
+              env.nozim = dump.toString().search('nozim') >= 0;
+              env.nodet = dump.toString().search('nodet') >= 0;
+              env.keepHtml = env.nozim || env.keepHtml;
+              env.htmlRootPath = env.computeHtmlRootPath();
+
+              async.series(
+                [
+                  (finishedTask) => zim.createSubDirectories(finishedTask),
+                  (finishedTask) => (zim.mobileLayout ? saveStaticFiles(finishedTask) : finishedTask()),
+                  (finishedTask) => saveStylesheet(finishedTask),
+                  (finishedTask) => saveFavicon(finishedTask),
+                  (finishedTask) => getMainPage(finishedTask),
+                  (finishedTask) => (env.writeHtmlRedirects ? saveHtmlRedirects(finishedTask) : finishedTask()),
+                  (finishedTask) => saveArticles(dump, finishedTask),
+                  (finishedTask) => drainDownloadFileQueue(finishedTask),
+                  (finishedTask) => drainOptimizationQueue(finishedTask),
+                  (finishedTask) => zim.buildZIM(finishedTask),
+                  (finishedTask) => redis.delMediaDB(finishedTask),
+                ],
+                (error) => finishedDump(error),
+              );
+            },
+            () => {
+              async.series(
+                [
+                  (finishedTask) => {
+                    if (skipCacheCleaning) {
+                      logger.log('Skipping cache cleaning...');
+                      exec(`rm -f "${zim.cacheDirectory}ref"`, finishedTask);
+                    } else {
+                      logger.log('Cleaning cache');
+                      exec(
+                        `find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`,
+                        finishedTask,
+                      );
+                    }
+                  },
+                ],
+                (error) => finished(error),
+              );
+            },
+          );
+        },
+      ],
+      (error) => {
+        if (error) {
+          return reject(error);
+        }
+        async.series(
+          [
+            (finished) => {
+              redis.flushDBs(finished);
+            },
+            (finished) => {
+              redis.quit();
+              logger.log('Closing HTTP agents...');
+              closeAgents(finished);
+              // finished(error);
+            },
+          ],
+          () => {
+            logger.log('All dumping(s) finished with success.');
+
+            /* Time to time the script hangs here. Forcing the exit */
+            resolve();
+          },
+        );
+      },
+    );
+  });
+
   /* ********************************* */
   /* FUNCTIONS *********************** */
   /* ********************************* */
@@ -593,7 +634,9 @@ function execute(argv) {
       () => {
         const drainBackup = downloadFileQueue.drain;
         downloadFileQueue.drain = function (error) {
-          U.exitIfError(error, `Error by downloading images ${error}`);
+          if (error) {
+            throw new Error(`Error by downloading images ${error}`);
+          }
           if (downloadFileQueue.length() === 0) {
             logger.log('All images successfuly downloaded');
             downloadFileQueue.drain = drainBackup;
@@ -618,7 +661,9 @@ function execute(argv) {
       () => {
         const drainBackup = optimizationQueue.drain;
         optimizationQueue.drain = function (error) {
-          U.exitIfError(error, `Error by optimizing images ${error}`);
+          if (error) {
+            throw new Error(`Error by optimizing images ${error}`);
+          }
           if (optimizationQueue.length() === 0) {
             logger.log('All images successfuly optimized');
             optimizationQueue.drain = drainBackup;
@@ -688,7 +733,7 @@ function execute(argv) {
       try {
         finished(null, domino.createDocument(html), articleId);
       } catch (error) {
-        U.exitIfError(true, `Crash while parsing ${articleId}\n${error.stack}`);
+        throw new Error(`Crash while parsing ${articleId}\n${error.stack}`);
       }
     }
 
@@ -709,7 +754,7 @@ function execute(argv) {
           styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a);
 
           styleDependenciesList = styleDependenciesList.filter(
-            (oneStyleDep) => contains(config.filters.blackListCssModules, oneStyleDep),
+            (oneStyleDep) => U.contains(config.filters.blackListCssModules, oneStyleDep),
           );
 
           logger.log(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
@@ -1155,8 +1200,9 @@ function execute(argv) {
             }
 
             /* Check if the link is "valid" */
-            U.exitIfError(!href,
-              `No href attribute in the following code, in article ${articleId}\n${linkNode.outerHTML}`);
+            if (!href) {
+              throw new Error(`No href attribute in the following code, in article ${articleId}\n${linkNode.outerHTML}`);
+            }
 
             /* Rewrite external links starting with // */
             if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
@@ -1179,7 +1225,9 @@ function execute(argv) {
       }
 
       async.eachLimit(linkNodes, speed, rewriteUrl, (error) => {
-        U.exitIfError(error, `Problem by rewriting urls: ${error}`);
+        if (error) {
+          throw new Error(`Problem by rewriting urls: ${error}`);
+        }
         finished(null, parsoidDoc, articleId);
       });
     }
@@ -1582,7 +1630,9 @@ function execute(argv) {
 
           logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
           prepareAndSaveArticle(html, articleId, (error) => {
-            U.exitIfError(error, `Error by preparing and saving file ${error}`);
+            if (error) {
+              throw new Error(`Error by preparing and saving file ${error}`);
+            }
             logger.log(`Dumped successfully article ${articleId}`);
             finished();
           });
@@ -1595,7 +1645,9 @@ function execute(argv) {
 
     logger.log('Saving articles...');
     async.eachLimit(Object.keys(articleIds), speed, saveArticle, (error) => {
-      U.exitIfError(error, `Unable to retrieve an article correctly: ${error}`);
+      if (error) {
+        throw new Error(`Unable to retrieve an article correctly: ${error}`);
+      }
       logger.log('All articles were retrieved and saved.');
       finished();
     });
@@ -1720,10 +1772,14 @@ function execute(argv) {
 
       /* Set the drain method to be called one time everything is done */
       downloadCSSQueue.drain = function drain(error) {
-        U.exitIfError(error, `Error by CSS dependencies: ${error}`);
+        if (error) {
+          throw new Error(`Error by CSS dependencies: ${error}`);
+        }
         const drainBackup = downloadCSSQueue.drain;
         downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
-          U.exitIfError(error, `Error by CSS medias: ${error}`);
+          if (error) {
+            throw new Error(`Error by CSS medias: ${error}`);
+          }
           downloadCSSQueue.drain = drainBackup;
           finished();
         } as any;
@@ -1733,46 +1789,12 @@ function execute(argv) {
     });
   }
 
-  /* Get ids */
-  const redirectQueue = async.queue((articleId, finished) => {
-    if (articleId) {
-      logger.log(`Getting redirects for article ${articleId}...`);
-      const url = mw.backlinkRedirectsQueryUrl(articleId);
-      downloader.downloadContent(url, (content) => {
-        const body = content.toString();
-        try {
-          if (!JSON.parse(body).error) {
-            const redirects = {};
-            let redirectsCount = 0;
-            const { pages } = JSON.parse(body).query;
-
-            pages[Object.keys(pages)[0]].redirects.map((entry) => {
-              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
-              redirects[title] = articleId;
-              redirectsCount += 1;
-
-              if (title === zim.mainPageId) {
-                zim.mainPageId = articleId;
-              }
-            });
-            logger.log(`${redirectsCount} redirect(s) found for ${articleId}`);
-            redis.saveRedirects(redirectsCount, redirects, finished);
-          } else {
-            finished(JSON.parse(body).error);
-          }
-        } catch (error) {
-          finished(error);
-        }
-      });
-    } else {
-      finished();
-    }
-  }, speed * 3);
-
   function getArticleIds(finished) {
     function drainRedirectQueue(finished) {
       redirectQueue.drain = function drain(error) {
-        U.exitIfError(error, `Unable to retrieve redirects for an article: ${error}`);
+        if (error) {
+          throw new Error(`Unable to retrieve redirects for an article: ${error}`);
+        }
         logger.log('All redirect ids retrieve successfuly.');
         finished();
       } as any;
@@ -1816,7 +1838,7 @@ function execute(argv) {
               logger.log(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
               delete articleIds[entry.title];
             } else {
-              U.exitIfError(true, `Unable to get revisions for ${entry.title}\nJSON was ${body}`);
+              throw new Error(`Unable to get revisions for ${entry.title}\nJSON was ${body}`);
             }
           }
         });
@@ -1860,11 +1882,13 @@ function execute(argv) {
       try {
         lines = fs.readFileSync(zim.articleList).toString().split('\n');
       } catch (error) {
-        U.exitIfError(true, `Unable to open article list file: ${error}`);
+        throw new Error(`Unable to open article list file: ${error}`);
       }
 
       async.eachLimit(lines, speed, getArticleIdsForLine, (error) => {
-        U.exitIfError(error, `Unable to get all article ids for a file: ${error}`);
+        if (error) {
+          throw new Error(`Unable to get all article ids for a file: ${error}`);
+        }
         logger.log('List of article ids to mirror completed');
         drainRedirectQueue(finished);
       });
@@ -1895,7 +1919,9 @@ function execute(argv) {
         },
         () => next as any,
         (error) => {
-          U.exitIfError(error, `Unable to download article ids: ${error}`);
+          if (error) {
+            throw new Error(`Unable to download article ids: ${error}`);
+          }
           logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
           finished();
         },
@@ -1904,7 +1930,9 @@ function execute(argv) {
 
     function getArticleIdsForNamespaces(finished) {
       async.eachLimit(mw.namespacesToMirror, mw.namespacesToMirror.length, getArticleIdsForNamespace, (error) => {
-        U.exitIfError(error, `Unable to get all article ids for in a namespace: ${error}`);
+        if (error) {
+          throw new Error(`Unable to get all article ids for in a namespace: ${error}`);
+        }
         logger.log('All articles ids (but without redirect ids) for all namespaces were successfuly retrieved.');
         drainRedirectQueue(finished);
       });
@@ -1932,7 +1960,9 @@ function execute(argv) {
         },
       ],
       (error) => {
-        U.exitIfError(error, `Unable retrive article ids: ${error}`);
+        if (error) {
+          throw new Error(`Unable retrive article ids: ${error}`);
+        }
         finished();
       },
     );
@@ -2018,8 +2048,9 @@ function execute(argv) {
             } else {
               fs.symlink(cachePath, mediaPath, 'file', (error) => {
                 if (error) {
-                  U.exitIfError(error.code !== 'EEXIST',
-                    `Unable to create symlink to ${mediaPath} at ${cachePath}: ${error}`);
+                  if (error.code !== 'EEXIST') {
+                    throw new Error(`Unable to create symlink to ${mediaPath} at ${cachePath}: ${error}`);
+                  }
                   if (!skipCacheCleaning) {
                     U.touch(cachePath);
                   }
@@ -2044,10 +2075,13 @@ function execute(argv) {
               } else {
                 logger.log(`Caching ${filenameBase} at ${cachePath}...`);
                 fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                  U.exitIfError(error && error.code !== 'EEXIST',
-                    `Unable to create symlink to ${mediaPath} at ${cachePath}: ${error}`);
+                  if (error && error.code !== 'EEXIST') {
+                    throw new Error(`Unable to create symlink to ${mediaPath} at ${cachePath}: ${error}`);
+                  }
                   fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
-                    U.exitIfError(error, `Unable to write cache header at ${cacheHeadersPath}: ${error}`);
+                    if (error) {
+                      throw new Error(`Unable to write cache header at ${cacheHeadersPath}: ${error}`);
+                    }
                     callback();
                   });
                 });
@@ -2216,7 +2250,7 @@ function execute(argv) {
 
   process.on('uncaughtException', (error) => {
     console.error(error.stack);
-    process.exit(42);
+    // process.exit(42);
   });
 }
 

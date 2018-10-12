@@ -1,7 +1,7 @@
 import fs from 'fs';
 import pathParser from 'path';
 import urlParser from 'url';
-import U from './Utils';
+import * as U from './Utils';
 
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
@@ -48,7 +48,9 @@ class OfflinerEnv {
       } else if (format !== true) {
         this.dumps = [format];
       }
-      U.exitIfError(this.dumps.indexOf('nodet') !== -1 && !this.zim.mobileLayout, 'The "nodet" format can only work with --mobileLayout');
+      if (this.dumps.indexOf('nodet') !== -1 && !this.zim.mobileLayout) {
+        throw new Error('The "nodet" format can only work with --mobileLayout');
+      }
     }
     // Update the other config objects
     this.mw.env = this;

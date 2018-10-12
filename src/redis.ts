@@ -1,6 +1,6 @@
 import * as async from 'async';
 import redis from 'redis';
-import U from './Utils';
+import * as U from './Utils';
 
 class Redis {
   public env: any;
@@ -43,7 +43,9 @@ class Redis {
   /* ------------ Redirect methods -------------- */
   public getRedirect(redirectId, finished, cb) {
     this.redisClient.hget(this.redisRedirectsDatabase, redirectId, (error, target) => {
-      U.exitIfError(error, `Unable to get a redirect target from redis: ${error}`);
+      if (error) {
+        throw new Error(`Unable to get a redirect target from redis: ${error}`); // TODO: use cb
+      }
       if (target) {
         cb(target);
       } else {
@@ -55,7 +57,9 @@ class Redis {
   public saveRedirects(numRedirects, redirects, finished) {
     if (numRedirects > 0) {
       this.redisClient.hmset(this.redisRedirectsDatabase, redirects, (error) => {
-        U.exitIfError(error, `Unable to set redirects: ${error}`);
+        if (error) {
+          throw new Error(`Unable to set redirects: ${error}`); // TODO: use finished?
+        }
         finished();
       });
     } else {
@@ -66,9 +70,13 @@ class Redis {
   public processAllRedirects(speed, keyProcessor, errorMsg, successMsg, finished) {
     const { logger } = this.env;
     this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
-      U.exitIfError(error, `Unable to get redirect keys from redis: ${error}`);
+      if (error) {
+        throw new Error(`Unable to get redirect keys from redis: ${error}`);
+      }
       async.eachLimit(keys, speed, keyProcessor, (err) => {
-        U.exitIfError(err, `${errorMsg}: ${err}`);
+        if (err) {
+          throw new Error(`${errorMsg}: ${err}`);
+        }
         logger.log(successMsg);
         finished();
       });
@@ -78,11 +86,13 @@ class Redis {
   public processRedirectIfExists(targetId, processor) {
     try {
       this.redisClient.hexists(this.redisRedirectsDatabase, targetId, (error, res) => {
-        U.exitIfError(error, `Unable to check redirect existence with redis: ${error}`);
+        if (error) {
+          throw new Error(`Unable to check redirect existence with redis: ${error}`);
+        }
         processor(res);
       });
     } catch (error) {
-      U.exitIfError(true, `Exception by requesting redis ${error}`);
+      throw new Error(`Exception by requesting redis ${error}`);
     }
   }
 
@@ -94,7 +104,9 @@ class Redis {
   public saveArticles(articles) {
     if (Object.keys(articles).length) {
       this.redisClient.hmset(this.redisArticleDetailsDatabase, articles, (error) => {
-        U.exitIfError(error, `Unable to save article detail information to redis: ${error}`);
+        if (error) {
+          throw new Error(`Unable to save article detail information to redis: ${error}`);
+        }
       });
     }
   }
@@ -115,7 +127,9 @@ class Redis {
 
   public saveMedia(fileName, width, cb) {
     this.redisClient.hset(this.redisMediaIdsDatabase, fileName, width, (error) => {
-      U.exitIfError(error, `Unable to set redis entry for file to download ${fileName}: ${error}`);
+      if (error) {
+        throw new Error(`Unable to set redis entry for file to download ${fileName}: ${error}`);
+      }
       cb();
     });
   }
@@ -125,7 +139,9 @@ class Redis {
       this.redisClient.hdel(this.redisCachedMediaToCheckDatabase, fileName);
     } else {
       this.redisClient.hset(this.redisCachedMediaToCheckDatabase, fileName, width, (error) => {
-        U.exitIfError(error, `Unable to set redis cache media to check ${fileName}: ${error}`);
+        if (error) {
+          throw new Error(`Unable to set redis cache media to check ${fileName}: ${error}`);
+        }
       });
     }
   }

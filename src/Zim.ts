@@ -8,7 +8,7 @@ import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser from 'url';
 
-import U from './Utils';
+import * as U from './Utils';
 
 class Zim {
   public config: any;
@@ -44,8 +44,10 @@ class Zim {
       (finished) => { mkdirp(self.outputDirectory, finished); },
       (finished) => { mkdirp(self.tmpDirectory, finished); },
     ], (error) => {
-      U.exitIfError(error, `Unable to create mandatory directories : ${error}`);
-      cb();
+      if (error) {
+        throw new Error(`Unable to create mandatory directories : ${error}`); // TODO: convert to cb
+      }
+      cb(null);
     });
   }
 
@@ -63,8 +65,10 @@ class Zim {
       (finished) => fs.mkdir(env.htmlRootPath + dirs.javascript, undefined, finished),
       (finished) => fs.mkdir(`${env.htmlRootPath + dirs.javascript}/${dirs.jsModules}`, undefined, finished),
     ], (error) => {
-      U.exitIfError(error, `Unable to create mandatory directories : ${error}`);
-      cb();
+      if (error) {
+        throw new Error(`Unable to create mandatory directories : ${error}`); // TODO: Convert to cb
+      }
+      cb(null);
     });
   }
 
@@ -129,7 +133,9 @@ class Zim {
     const { logger } = this.env;
     try {
       const proc = spawn(command, args).on('error', (error) => {
-        U.exitIfError(error, `Error in executeTransparently(), ${error}`);
+        if (error) {
+          throw new Error(`Error in executeTransparently(), ${error}`); // TODO: convert to callback
+        }
       });
       if (!nostdout) {
         proc.stdout.on('data', (data) => {
@@ -183,7 +189,9 @@ class Zim {
           env.htmlRootPath,
           zimPath,
         ], (error) => {
-          U.exitIfError(error, `Failed to build successfuly the ZIM file ${zimPath} (${error})`);
+          if (error) {
+            throw new Error(`Failed to build successfuly the ZIM file ${zimPath} (${error})`); // TODO: use cb
+          }
           logger.log(`ZIM file built at ${zimPath}`);
           /* Delete the html directory ? */
           if (env.keepHtml) {
