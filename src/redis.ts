@@ -49,12 +49,13 @@ class Redis {
   public getRedirect(redirectId, finished, cb) {
     this.redisClient.hget(this.redisRedirectsDatabase, redirectId, (error, target) => {
       if (error) {
-        throw new Error(`Unable to get a redirect target from redis: ${error}`); // TODO: use cb
-      }
-      if (target) {
-        cb(target);
+        cb({ message: `Unable to get a redirect target from redis`, error });
       } else {
-        finished();
+        if (target) {
+          cb(target);
+        } else {
+          finished();
+        }
       }
     });
   }
@@ -62,10 +63,7 @@ class Redis {
   public saveRedirects(numRedirects, redirects, finished) {
     if (numRedirects > 0) {
       this.redisClient.hmset(this.redisRedirectsDatabase, redirects, (error) => {
-        if (error) {
-          throw new Error(`Unable to set redirects: ${error}`); // TODO: use finished?
-        }
-        finished();
+        finished(error && { message: `Unable to set redirects`, error });
       });
     } else {
       finished();
@@ -136,10 +134,7 @@ class Redis {
 
   public saveMedia(fileName, width, cb) {
     this.redisClient.hset(this.redisMediaIdsDatabase, fileName, width, (error) => {
-      if (error) {
-        throw new Error(`Unable to set redis entry for file to download ${fileName}: ${error}`);
-      }
-      cb();
+      cb(error && { message: `Unable to set redis entry for file to download ${fileName}`, error });
     });
   }
 

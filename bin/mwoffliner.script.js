@@ -31,10 +31,14 @@ parameterList.forEach(param => argv.describe(param.name, param.description));
 
 argv = argv.strict().argv;
 
+const execStartTime = Date.now();
+
 mwofflinerLib.execute(argv)
     .then(() => {
-        console.info(`Finished running mwoffliner`);
+        console.info(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`);
+        process.exit(0);
     })
     .catch(err => {
-        console.error(`Failed to run mwoffliner:`, err);
+        console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, JSON.stringify(err, null, '\t'));
+        process.exit(2);
     });

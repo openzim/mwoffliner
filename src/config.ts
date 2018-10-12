@@ -4,7 +4,7 @@ export default {
 
   defaults: {
     publisher: 'Kiwix',
-    redisConfig: '/tmp/redis.sock',
+    redisConfig: '/dev/shm/redis.sock',
     requestTimeout: 60,
   },
 

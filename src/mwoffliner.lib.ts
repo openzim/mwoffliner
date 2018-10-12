@@ -502,9 +502,6 @@ async function execute(argv) {
 
   logger.log('All dumping(s) finished with success.');
 
-  /* Time to time the script hungs here. Forcing the exit */
-  process.exit(0); // TODO: Maybe return not exit
-
   /* ********************************* */
   /* FUNCTIONS *********************** */
   /* ********************************* */
@@ -661,7 +658,7 @@ async function execute(argv) {
         try {
           finished(null, domino.createDocument(html), articleId);
         } catch (error) {
-          throw new Error(`Crash while parsing ${articleId}\n${error.stack}`);
+          finished({ message: `Crash while parsing ${articleId}`, error });
         }
       }
 
@@ -1129,7 +1126,7 @@ async function execute(argv) {
 
               /* Check if the link is "valid" */
               if (!href) {
-                throw new Error(`No href attribute in the following code, in article ${articleId}\n${linkNode.outerHTML}`); // TODO: pass to finished
+                return finished({ message: `No href attribute in the following code, in article ${articleId}\n${linkNode.outerHTML}` });
               }
 
               /* Rewrite external links starting with // */
@@ -1153,10 +1150,7 @@ async function execute(argv) {
         }
 
         async.eachLimit(linkNodes, speed, rewriteUrl, (error) => {
-          if (error) {
-            throw new Error(`Problem by rewriting urls: ${error}`); // TODO: Pass to finished
-          }
-          finished(null, parsoidDoc, articleId);
+          finished(error && { message: `Problem rewriting urls`, error }, parsoidDoc, articleId);
         });
       }
 
@@ -1396,7 +1390,7 @@ async function execute(argv) {
         const oldId = articleIds[articleId];
         redis.getArticle(articleId, (error, detailsJson) => {
           if (error) {
-            finished(`Unable to get the details from redis for article ${articleId}: ${error}`);
+            finished({ message: `Unable to get the details from redis for article ${articleId}`, error });
           } else {
             /* Is seems that sporadically this goes wrong */
             const details = JSON.parse(detailsJson);
@@ -1558,11 +1552,8 @@ async function execute(argv) {
 
             logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
-              if (error) {
-                throw new Error(`Error by preparing and saving file ${error}`);
-              }
-              logger.log(`Dumped successfully article ${articleId}`);
-              finished();
+              if (!error) { logger.log(`Successfully dumped article ${articleId}`); }
+              finished(error && { message: `Error preparing and saving file`, error });
             });
           } else {
             delete articleIds[articleId];
@@ -1574,7 +1565,7 @@ async function execute(argv) {
       logger.log('Saving articles...');
       async.eachLimit(Object.keys(articleIds), speed, saveArticle, (error) => {
         if (error) {
-          reject(`Unable to retrieve an article correctly: ${error}`);
+          reject({ message: `Unable to retrieve an article correctly`, error });
         } else {
           logger.log('All articles were retrieved and saved.');
           resolve();
@@ -1704,12 +1695,12 @@ async function execute(argv) {
         /* Set the drain method to be called one time everything is done */
         downloadCSSQueue.drain = function drain(error) {
           if (error) {
-            throw new Error(`Error by CSS dependencies: ${error}`);
+            return reject({ message: `Error in CSS dependencies`, error });
           }
           const drainBackup = downloadCSSQueue.drain;
           downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
             if (error) {
-              reject(`Error by CSS medias: ${error}`);
+              reject({ message: `Error in CSS medias`, error });
             } else {
               downloadCSSQueue.drain = drainBackup;
               resolve();
@@ -1854,17 +1845,16 @@ async function execute(argv) {
               finished();
             } else {
               next = '';
-              finished(`Error by retrieving ${url}`);
+              finished({ message: `Error by retrieving ${url}` });
             }
           });
         },
         () => next as any,
         (error) => {
-          if (error) {
-            throw new Error(`Unable to download article ids: ${error}`);
+          if (!error) {
+            logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
           }
-          logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
-          finished();
+          finished(error && { message: `Unable to download article ids`, error });
         },
       );
     }
@@ -1919,7 +1909,7 @@ async function execute(argv) {
             try {
               finished(error, error ? undefined : JSON.parse(data.toString()));
             } catch (error) {
-              finished(`Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}, error is: ${error}`);
+              finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
             }
           });
         },
@@ -1983,7 +1973,7 @@ async function execute(argv) {
               fs.symlink(cachePath, mediaPath, 'file', (error) => {
                 if (error) {
                   if (error.code !== 'EEXIST') {
-                    throw new Error(`Unable to create symlink to ${mediaPath} at ${cachePath}: ${error}`);
+                    return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
                   }
                   if (!skipCacheCleaning) {
                     U.touch(cachePath);
@@ -2010,13 +2000,10 @@ async function execute(argv) {
                 logger.log(`Caching ${filenameBase} at ${cachePath}...`);
                 fs.symlink(cachePath, mediaPath, 'file', (error) => {
                   if (error && error.code !== 'EEXIST') {
-                    throw new Error(`Unable to create symlink to ${mediaPath} at ${cachePath}: ${error}`);
+                    return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
                   }
                   fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
-                    if (error) {
-                      throw new Error(`Unable to write cache header at ${cacheHeadersPath}: ${error}`);
-                    }
-                    callback();
+                    return callback(error && { message: `Unable to write cache header at ${cacheHeadersPath}`, error });
                   });
                 });
               }
@@ -2113,7 +2100,7 @@ async function execute(argv) {
           const body = content.toString();
           const entries = JSON.parse(body).query.general;
           if (!entries.logo) {
-            throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
+            return reject(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
           }
 
           const parsedUrl = urlParser.parse(entries.logo);
@@ -2197,10 +2184,6 @@ async function execute(argv) {
     });
   }
 
-  process.on('uncaughtException', (error) => {
-    console.error(error.stack);
-    // process.exit(42);
-  });
 }
 
 export {
