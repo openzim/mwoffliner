@@ -1,7 +1,7 @@
 import fs from 'fs';
 import pathParser from 'path';
 import urlParser from 'url';
-import U from './Utils';
+import * as U from './Utils';
 
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
@@ -48,7 +48,9 @@ class OfflinerEnv {
       } else if (format !== true) {
         this.dumps = [format];
       }
-      U.exitIfError(this.dumps.indexOf('nodet') !== -1 && !this.zim.mobileLayout, 'The "nodet" format can only work with --mobileLayout');
+      if (this.dumps.indexOf('nodet') !== -1 && !this.zim.mobileLayout) {
+        throw new Error('The "nodet" format can only work with --mobileLayout');
+      }
     }
     // Update the other config objects
     this.mw.env = this;
@@ -128,24 +130,31 @@ class OfflinerEnv {
     return `${e(filename)}.html`;
   }
 
-  public checkResume(cb) {
-    for (let i = 0; i < this.dumps.length; i += 1) {
-      const dump = this.dumps[i];
-      this.nopic = dump.toString().search('nopic') >= 0;
-      this.novid = dump.toString().search('novid') >= 0;
-      this.nozim = dump.toString().search('nozim') >= 0;
-      this.nodet = dump.toString().search('nodet') >= 0;
-      this.htmlRootPath = this.computeHtmlRootPath();
-      if (this.resume && !this.nozim) {
-        const zimPath = this.zim.computeZimRootPath();
-        if (fs.existsSync(zimPath)) {
-          this.logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
-          this.dumps.splice(i, 1);
-          i -= 1;
+  public checkResume() {
+    return new Promise((resolve, reject) => { // TODO: convert to promises
+      for (let i = 0; i < this.dumps.length; i += 1) {
+        const dump = this.dumps[i];
+        this.nopic = dump.toString().search('nopic') >= 0;
+        this.novid = dump.toString().search('novid') >= 0;
+        this.nozim = dump.toString().search('nozim') >= 0;
+        this.nodet = dump.toString().search('nodet') >= 0;
+        this.htmlRootPath = this.computeHtmlRootPath();
+        if (this.resume && !this.nozim) {
+          const zimPath = this.zim.computeZimRootPath();
+          if (fs.existsSync(zimPath)) {
+            this.logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
+            this.dumps.splice(i, 1);
+            i -= 1;
+          }
         }
       }
-    }
-    cb(!(this.dumps.length > 0));
+      const isError = !(this.dumps.length > 0);
+      if (isError) {
+        reject();
+      } else {
+        resolve();
+      }
+    });
   }
 }
 

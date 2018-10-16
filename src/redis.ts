@@ -1,6 +1,6 @@
 import * as async from 'async';
 import redis from 'redis';
-import U from './Utils';
+import * as U from './Utils';
 
 class Redis {
   public env: any;
@@ -26,28 +26,36 @@ class Redis {
     this.redisClient.quit();
   }
 
-  public flushDBs(finished) {
-    const { logger } = this.env;
-    this.redisClient.del(
-      this.redisRedirectsDatabase,
-      this.redisMediaIdsDatabase,
-      this.redisArticleDetailsDatabase,
-      this.redisCachedMediaToCheckDatabase,
-      () => {
-        logger.log('Redis databases flushed.');
-        finished();
-      },
-    );
+  public flushDBs() {
+    return new Promise((resolve, reject) => {
+      const { logger } = this.env;
+      this.redisClient.del(
+        this.redisRedirectsDatabase,
+        this.redisMediaIdsDatabase,
+        this.redisArticleDetailsDatabase,
+        this.redisCachedMediaToCheckDatabase,
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            logger.log('Redis databases flushed.');
+            resolve();
+          }
+        });
+    });
   }
 
   /* ------------ Redirect methods -------------- */
   public getRedirect(redirectId, finished, cb) {
     this.redisClient.hget(this.redisRedirectsDatabase, redirectId, (error, target) => {
-      U.exitIfError(error, `Unable to get a redirect target from redis: ${error}`);
-      if (target) {
-        cb(target);
+      if (error) {
+        cb({ message: `Unable to get a redirect target from redis`, error });
       } else {
-        finished();
+        if (target) {
+          cb(target);
+        } else {
+          finished();
+        }
       }
     });
   }
@@ -55,22 +63,29 @@ class Redis {
   public saveRedirects(numRedirects, redirects, finished) {
     if (numRedirects > 0) {
       this.redisClient.hmset(this.redisRedirectsDatabase, redirects, (error) => {
-        U.exitIfError(error, `Unable to set redirects: ${error}`);
-        finished();
+        finished(error && { message: `Unable to set redirects`, error });
       });
     } else {
       finished();
     }
   }
 
-  public processAllRedirects(speed, keyProcessor, errorMsg, successMsg, finished) {
-    const { logger } = this.env;
-    this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
-      U.exitIfError(error, `Unable to get redirect keys from redis: ${error}`);
-      async.eachLimit(keys, speed, keyProcessor, (err) => {
-        U.exitIfError(err, `${errorMsg}: ${err}`);
-        logger.log(successMsg);
-        finished();
+  public processAllRedirects(speed, keyProcessor, errorMsg, successMsg) {
+    return new Promise((resolve, reject) => {
+      const { logger } = this.env;
+      this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
+        if (error) {
+          reject(`Unable to get redirect keys from redis: ${error}`);
+        } else {
+          async.eachLimit(keys, speed, keyProcessor, (err) => {
+            if (err) {
+              reject(`${errorMsg}: ${err}`);
+            } else {
+              logger.log(successMsg);
+              resolve();
+            }
+          });
+        }
       });
     });
   }
@@ -78,11 +93,13 @@ class Redis {
   public processRedirectIfExists(targetId, processor) {
     try {
       this.redisClient.hexists(this.redisRedirectsDatabase, targetId, (error, res) => {
-        U.exitIfError(error, `Unable to check redirect existence with redis: ${error}`);
+        if (error) {
+          throw new Error(`Unable to check redirect existence with redis: ${error}`);
+        }
         processor(res);
       });
     } catch (error) {
-      U.exitIfError(true, `Exception by requesting redis ${error}`);
+      throw new Error(`Exception by requesting redis ${error}`);
     }
   }
 
@@ -94,7 +111,9 @@ class Redis {
   public saveArticles(articles) {
     if (Object.keys(articles).length) {
       this.redisClient.hmset(this.redisArticleDetailsDatabase, articles, (error) => {
-        U.exitIfError(error, `Unable to save article detail information to redis: ${error}`);
+        if (error) {
+          throw new Error(`Unable to save article detail information to redis: ${error}`);
+        }
       });
     }
   }
@@ -115,8 +134,7 @@ class Redis {
 
   public saveMedia(fileName, width, cb) {
     this.redisClient.hset(this.redisMediaIdsDatabase, fileName, width, (error) => {
-      U.exitIfError(error, `Unable to set redis entry for file to download ${fileName}: ${error}`);
-      cb();
+      cb(error && { message: `Unable to set redis entry for file to download ${fileName}`, error });
     });
   }
 
@@ -125,14 +143,24 @@ class Redis {
       this.redisClient.hdel(this.redisCachedMediaToCheckDatabase, fileName);
     } else {
       this.redisClient.hset(this.redisCachedMediaToCheckDatabase, fileName, width, (error) => {
-        U.exitIfError(error, `Unable to set redis cache media to check ${fileName}: ${error}`);
+        if (error) {
+          throw new Error(`Unable to set redis cache media to check ${fileName}: ${error}`);
+        }
       });
     }
   }
 
-  public delMediaDB(finished) {
-    this.env.logger.log('Dumping finished with success.');
-    this.redisClient.del(this.redisMediaIdsDatabase, finished);
+  public delMediaDB() {
+    return new Promise((resolve, reject) => {
+      this.env.logger.log('Dumping finished with success.');
+      this.redisClient.del(this.redisMediaIdsDatabase, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 }
 
