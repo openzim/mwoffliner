@@ -1344,12 +1344,12 @@ async function execute(argv) {
         /* Title */
         if (zim.mobileLayout) {
           htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-            ? htmlTemplateDoc.getElementById('title_0').innerHTML
+            ? htmlTemplateDoc.getElementById('title_0').textContent
             : articleId.replace(/_/g, ' ');
           DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
         } else {
           htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = parsoidDoc.getElementsByTagName('title')
-            ? parsoidDoc.getElementsByTagName('title')[0].innerHTML.replace(/_/g, ' ')
+            ? parsoidDoc.getElementsByTagName('title')[0].textContent.replace(/_/g, ' ')
             : articleId.replace(/_/g, ' ');
           if (zim.mainPageId !== articleId) {
             htmlTemplateDoc.getElementById('titleHeading').innerHTML = htmlTemplateDoc.getElementsByTagName('title')[
