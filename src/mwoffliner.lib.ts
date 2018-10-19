@@ -250,7 +250,7 @@ async function execute(argv) {
 
   /* Some helpers */
   function readTemplate(t) {
-    return fs.readFileSync(pathParser.resolve(process.cwd(), 'lib', t), 'utf-8');
+    return fs.readFileSync(pathParser.resolve(process.cwd(), 'res', t), 'utf-8');
   }
   const { dirs } = config.output;
   function cssPath(css) {
@@ -516,7 +516,7 @@ async function execute(argv) {
     return new Promise((resolve, reject) => {
       config.output.cssResources.forEach((css) => {
         try {
-          fs.readFile(pathParser.resolve(__dirname, `../${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
+          fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
         } catch (error) {
           console.error(`Could not create ${css} file : ${error}`);
         }
@@ -524,7 +524,7 @@ async function execute(argv) {
 
       config.output.jsResources.forEach(function (js) {
         try {
-          fs.readFile(pathParser.resolve(__dirname, '../' + js + '.js'), (err, data) =>
+          fs.readFile(pathParser.resolve(__dirname, `../res/${js}.js`), (err, data) =>
             fs.writeFile(pathParser.resolve(env.htmlRootPath, jsPath(js)), data, () => {
               const noop = 1;
             }),

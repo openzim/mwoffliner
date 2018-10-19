@@ -59,3 +59,11 @@ h1[tabindex="0"].collapsible-heading>.indicator {
         /* this is to hide to "v" icone next to titles in desktop */
     }
 }
+
+.collapsible-block {
+    display: none;
+}
+
+.open-block {
+    display: block;
+}
