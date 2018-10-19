@@ -250,7 +250,7 @@ async function execute(argv) {
 
   /* Some helpers */
   function readTemplate(t) {
-    return fs.readFileSync(pathParser.resolve(process.cwd(), 'res', t), 'utf-8');
+    return fs.readFileSync(pathParser.resolve(process.cwd(), 'lib', t), 'utf-8');
   }
   const { dirs } = config.output;
   function cssPath(css) {
