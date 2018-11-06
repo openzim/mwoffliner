@@ -16,5 +16,12 @@ window.onload = function () {
             ref.addClass('open-block');
             ref.next().addClass('open-block');
         }
-    })
+    });
+
+    $('.collapsible-heading').on({
+        click: function () {
+            var id = this.dataset.sectionId;
+            toggleOpenSection(id);
+        }
+    });
 }
