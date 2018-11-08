@@ -24,4 +24,8 @@ window.onload = function () {
             toggleOpenSection(id);
         }
     });
+    
+    if (window.innerWidth > 720) {
+        $('.collapsible-heading').click();
+    }
 }
