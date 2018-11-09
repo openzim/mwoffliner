@@ -1,6 +1,5 @@
 import * as async from 'async';
-import { http, https } from 'follow-redirects';
-import rp from 'request-promise-native';
+import axios from 'axios';
 import fs from 'fs';
 import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
@@ -42,17 +41,15 @@ class Downloader {
 
   public getRequestOptionsFromUrl(url, compression) {
     const headers = {
-      // 'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
       'cache-control': 'public, max-stale=2678400',
       'accept-encoding': (compression ? 'gzip, deflate' : ''),
       'user-agent': this.uaString,
       'cookie': this.loginCookie,
     };
     return {
-      gzip: true,
-      resolveWithFullResponse: true,
-      uri: url,
-      headers,
+      url,
+      responseType: 'arraybuffer',
       method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
     };
   }
@@ -65,11 +62,11 @@ class Downloader {
     async.retry(3, async (finished) => {
 
       try {
-        const resp = await rp(this.getRequestOptionsFromUrl(url, true));
+        const resp = await axios(this.getRequestOptionsFromUrl(url, true));
         responseHeaders = resp.headers;
-        finished(null, responseHeaders['content-type'].includes('text') ? resp.body : Buffer.from(resp.body));
+        finished(null, resp.data);
       } catch (err) {
-        finished(url, err.stack.split('-')[0].trim());
+        finished(url, err.stack);
       }
     }, (error, data) => {
       if (error) {
@@ -98,7 +95,7 @@ class Downloader {
         self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
         self.downloadContent(url, (content, responseHeaders) => {
           fs.writeFile(path, content, (writeError) => {
-            optQueue.push({ path, size: content.length });
+            optQueue.push({ path, size: responseHeaders['content-length'] });
             callback(writeError ? `Unable to write ${path} (${url})` : undefined, responseHeaders);
           });
         });
