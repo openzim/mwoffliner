@@ -1,6 +1,6 @@
 import * as async from 'async';
 import { http, https } from 'follow-redirects';
-import * as rp from 'request-promise-native';
+import rp from 'request-promise-native';
 import fs from 'fs';
 import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
@@ -40,25 +40,34 @@ class Downloader {
     this.optionalUrls.add(url);
   }
 
+  public getRequestOptionsFromUrl(url, compression) {
+    const headers = {
+      // 'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+      'cache-control': 'public, max-stale=2678400',
+      'accept-encoding': (compression ? 'gzip, deflate' : ''),
+      'user-agent': this.uaString,
+      'cookie': this.loginCookie,
+    };
+    return {
+      gzip: true,
+      resolveWithFullResponse: true,
+      uri: url,
+      headers,
+      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+    };
+  }
+
   public downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
     // let retryCount = 0;
-    const responseHeaders = {};
+    let responseHeaders = {};
     const self = this;
     this.logger.log(`Downloading ${decodeURI(url)}...`);
     async.retry(3, async (finished) => {
 
       try {
-        const resp = await rp.get(url, {
-          gzip: true,
-          headers: {
-            'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
-            'cache-control': 'public, max-stale=2678400',
-            'accept-encoding': 'gzip, deflate',
-            'user-agent': this.uaString,
-            'cookie': this.loginCookie,
-          },
-        });
-        finished(null, resp);
+        const resp = await rp(this.getRequestOptionsFromUrl(url, true));
+        responseHeaders = resp.headers;
+        finished(null, responseHeaders['content-type'].includes('text') ? resp.body : Buffer.from(resp.body));
       } catch (err) {
         finished(url, err.stack.split('-')[0].trim());
       }
