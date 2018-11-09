@@ -52,12 +52,14 @@
     "node-fetch": "^1.7.3",
     "parsoid": "^0.8.1",
     "redis": "^2.6.2",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5",
+    "snyk": "^1.96.0",
     "swig-templates": "^2.0.2",
     "tslint": "^5.11.0",
     "typescript": "^3.0.3",
     "utf8-binary-cutter": "^0.9.1",
-    "yargs": "^4.7.1",
-    "snyk": "^1.96.0"
+    "yargs": "^4.7.1"
   },
   "keywords": [
     "mediawiki",

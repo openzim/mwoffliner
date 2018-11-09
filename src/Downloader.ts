@@ -1,5 +1,6 @@
 import * as async from 'async';
 import { http, https } from 'follow-redirects';
+import * as rp from 'request-promise-native';
 import fs from 'fs';
 import urlParser, { UrlWithStringQuery } from 'url';
 import zlib from 'zlib';
@@ -39,134 +40,27 @@ class Downloader {
     this.optionalUrls.add(url);
   }
 
-  public getRequestOptionsFromUrl(url, compression) {
-    const urlObj = urlParser.parse(url);
-    const headers = {
-      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
-      'cache-control': 'public, max-stale=2678400',
-      'accept-encoding': (compression ? 'gzip, deflate' : ''),
-      'user-agent': this.uaString,
-      'cookie': this.loginCookie,
-    };
-    return {
-      protocol: urlObj.protocol,
-      hostname: urlObj.hostname,
-      port: getPort(urlObj),
-      headers,
-      path: urlObj.path,
-      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
-    };
-  }
-
   public downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
-    let retryCount = 0;
-    let responseHeaders = {};
+    // let retryCount = 0;
+    const responseHeaders = {};
     const self = this;
     this.logger.log(`Downloading ${decodeURI(url)}...`);
-    async.retry(3, (finished) => {
-      let request;
-      let calledFinished = false;
-      function callFinished(timeout: number, message: Error | string, data?: any) {
-        if (!calledFinished) {
-          calledFinished = true;
-          if (message) {
-            console.error(message);
-            request.abort();
-          }
-          request = undefined;
-          setTimeout(finished, timeout, message, data);
-        }
-      }
-      retryCount += 1;
-      /* Analyse url */
-      let options = self.getRequestOptionsFromUrl(url, true);
-      /* Protocol detection */
-      let protocol;
-      if (options.protocol === 'http:') {
-        protocol = http;
-      } else if (options.protocol === 'https:') {
-        protocol = https;
-      } else {
-        console.error(`Unable to determine the protocol of the following url (${options.protocol}), switched back to ${this.webUrlPort === 443 ? 'https' : 'http'}: ${url}`);
-        if (this.webUrlPort === 443) {
-          protocol = https;
-          url = url.replace(options.protocol, 'https:');
-        } else {
-          protocol = http;
-          url = url.replace(options.protocol, 'http:');
-        }
-        console.error(`New url is: ${url}`);
-      }
-      /* Downloading */
-      options = self.getRequestOptionsFromUrl(url, true);
+    async.retry(3, async (finished) => {
+
       try {
-        request = (protocol).get(options, (response) => {
-          if (response.statusCode === 200) {
-            const chunks = [];
-            response.on('data', (chunk) => {
-              chunks.push(chunk);
-            });
-            response.on('end', () => {
-              responseHeaders = response.headers;
-              const encoding = responseHeaders['content-encoding'];
-              if (encoding === 'gzip') {
-                zlib.gunzip(Buffer.concat(chunks), (error, decoded) => {
-                  callFinished(0, error, decoded && decoded.toString());
-                });
-              } else if (encoding === 'deflate') {
-                zlib.inflate(Buffer.concat(chunks), (error, decoded) => {
-                  callFinished(0, error, decoded && decoded.toString());
-                });
-              } else {
-                callFinished(0, null, Buffer.concat(chunks));
-              }
-            });
-            response.on('error', (error) => {
-              response.socket.emit('agentRemove');
-              response.socket.destroy();
-              callFinished(0, `Unable to download content [${retryCount}] ${decodeURI(url)} (response code: ${response.statusCode}, error: ${error}).`);
-            });
-          } else {
-            response.socket.emit('agentRemove');
-            response.socket.destroy();
-            let message = `Unable to download content [${retryCount}] ${decodeURI(url)} (response code: ${response.statusCode}).`;
-            // No error message for optional URLs; we don't necessarily
-            // expect them, and it confuses users who have other errors.
-            // Note that this also prevents a retry.
-            if (self.optionalUrls.has(url)) {
-              message = '';
-            }
-            callFinished(0, message);
-          }
+        const resp = await rp.get(url, {
+          gzip: true,
+          headers: {
+            'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+            'cache-control': 'public, max-stale=2678400',
+            'accept-encoding': 'gzip, deflate',
+            'user-agent': this.uaString,
+            'cookie': this.loginCookie,
+          },
         });
-        request.on('error', (error) => {
-          callFinished(10000 * retryCount, `Unable to download content [${retryCount}] ${decodeURI(url)} (request error: ${error} ).`);
-        });
-        request.on('socket', (socket) => {
-          if (!socket.custom) {
-            socket.custom = true;
-            socket.on('error', () => {
-              console.error('Socket timeout');
-              socket.emit('agentRemove');
-              socket.destroy();
-              if (request) {
-                request.emit('error', 'Socket timeout');
-              }
-            });
-            socket.on('timeout', () => {
-              console.error('Socket error');
-              socket.emit('agentRemove');
-              socket.end();
-              if (request) {
-                request.emit('error', 'Socket error');
-              }
-            });
-          }
-        });
-        request.setTimeout(self.requestTimeout * 1000 * retryCount);
-        request.end();
+        finished(null, resp);
       } catch (err) {
-        console.warn(`Skipping file [${decodeURI(url)}]. Failed to download:`, err);
+        finished(url, err.stack.split('-')[0].trim());
       }
     }, (error, data) => {
       if (error) {
