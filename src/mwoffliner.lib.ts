@@ -1521,7 +1521,7 @@ async function execute(argv) {
                 }
                 if (json && json.visualeditor) {
                   html = json.visualeditor.content;
-                } else if (json && json.contentmodel === 'wikitext') {
+                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
                   html = json.html.body;
                 } else if (json && json.error) {
                   console.error(`Error by retrieving article: ${json.error.info}`);
@@ -1549,7 +1549,7 @@ async function execute(argv) {
               storeDependencies,
               parseHtml,
             );
-
+            
             logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
               if (!error) { logger.log(`Successfully dumped article ${articleId}`); }
