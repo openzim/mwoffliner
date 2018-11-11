@@ -1531,7 +1531,7 @@ async function execute(argv) {
                 }
                 if (json && json.visualeditor) {
                   html = json.visualeditor.content;
-                } else if (json && json.contentmodel === 'wikitext') {
+                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
                   html = json.html.body;
                 } else if (json && json.error) {
                   console.error(`Error by retrieving article: ${json.error.info}`);
