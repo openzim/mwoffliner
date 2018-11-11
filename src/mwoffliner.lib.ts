@@ -1549,7 +1549,7 @@ async function execute(argv) {
               storeDependencies,
               parseHtml,
             );
-            
+
             logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
               if (!error) { logger.log(`Successfully dumped article ${articleId}`); }
