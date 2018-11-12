@@ -2,15 +2,15 @@
 * 
 
 1.6.0:
-* FIX: Template referencing 
-* FIX: Generated files are more no-js friendly 
-* FIX: Added top level section when it doesn't exist in API Response 
-* UPDATE: Added mwmatrixoffliner tests
-* UPDATE: Added git revision to version log 
-* UPDATE: Normalised Resources and Templates
-* UPDATE: Strip HTML from title tags 
-* UPDATE: Improved Error Handling
-* UPDATE: Converted to TypeScript
+* FIX: Template referencing #421
+* FIX: Generated files are more no-js friendly #324
+* FIX: Added top level section when it doesn't exist in API Response #180
+* UPDATE: Added mwmatrixoffliner tests 
+* UPDATE: Added git revision to version log #426
+* UPDATE: Normalised Resources and Templates 
+* UPDATE: Strip HTML from title tags #159
+* UPDATE: Improved Error Handling 
+* UPDATE: Converted to TypeScript #386
 
 1.5.0:
 * FIX: Favicon related crashes #347 #354
