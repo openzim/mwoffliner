@@ -92,7 +92,7 @@ class MediaWiki {
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
-    return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].number}&format=json&rawcontinue=${init}`;
+    return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].number || 0}&format=json&rawcontinue=${init}`;
   }
 
   public articleApiUrl(articleId) {
@@ -159,8 +159,9 @@ class MediaWiki {
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     downloader.downloadContent(url, (content) => {
       const body = content.toString();
+      const json = JSON.parse(body);
       ['namespaces', 'namespacealiases'].forEach((type) => {
-        const entries = JSON.parse(body).query[type];
+        const entries = json.query[type];
         Object.keys(entries).forEach((key) => {
           const entry = entries[key];
           const name = entry['*'].replace(/ /g, self.spaceDelimiter);
