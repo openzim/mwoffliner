@@ -21,7 +21,11 @@ class MediaWiki {
   public apiUrl: string;
   public webUrlPath: string;
   public namespaces: {
-    [namespace: string]: any,
+    [namespace: string]: {
+      num: number,
+      allowedSubpages: boolean,
+      isContent: boolean,
+    },
   };
   public namespacesToMirror: string[];
 
@@ -92,7 +96,7 @@ class MediaWiki {
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
-    return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].number || 0}&format=json&rawcontinue=${init}`;
+    return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].num}&format=json&rawcontinue=${init}`;
   }
 
   public articleApiUrl(articleId) {
