@@ -32,7 +32,7 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
 	.describe('language', 'Language to dump (regex)')
 	.describe('languageInverter', 'If given, select languages *not* matching the --language regex')
 	.describe('languageTrigger', 'Ignore everything until this language is found')
-	.describe('mwURL', 'Mediawiki API URL')
+	.describe('mwUrl', 'Mediawiki API URL')
 	.describe('outputDirectory', 'Directory to write the ZIM files')
 	.describe('parsoidUrl', 'Mediawiki Parsoid URL')
 	.describe('project', 'Projects to dump')
@@ -46,6 +46,9 @@ var argv = yargs.usage('Mirror many mediawikis instances base on the matrix exte
 	.describe('skipHtmlCache', 'Do not cache Parsoid HTML output (and do not use any cached HTML content)')
 	.describe('withZimFullTextIndex', 'Include a fulltext search index to the ZIM')
 	.describe('mobileLayout', 'HTML optimised for mobile mobile use')
+	.describe('dryRun', 'Display mwoffliner commands but do not execute them')
+	.boolean('dryRun')
+	.implies('dryRun', 'verbose')
 	.strict()
 	.argv;
 
@@ -107,6 +110,10 @@ var withMobileLayout = argv.mobileLayout;
 /************************************/
 /* MAIN *****************************/
 /************************************/
+
+if (argv.dryRun) {
+	console.log("** Dry-run mode. Not running mwoffliner despite output below. **");
+}
 
 async.series(
 	[
@@ -294,7 +301,10 @@ function downloadContent(url, callback, var1, var2, var3) {
 
 function executeTransparently(command, args, callback, nostdout, nostderr) {
 	printLog('Executing command: ' + command + ' ' + args.join(' '));
-
+	if (argv.dryRun) {
+		callback(); // Indicates successful completion
+		return;
+	}
 	try {
 		var proc = spawn(command, args)
 			.on('error', function (error) {

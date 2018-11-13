@@ -1,5 +1,5 @@
 <h2 class="section-heading in-block collapsible-heading" tabindex="0" aria-haspopup="true" aria-controls="content-collapsible-block-{{ section_index }}"
-    onClick="toggleOpenSection({{ section_id }})">
+    data-section-id="{{section_id}}">
     <div class="mw-ui-icon mw-ui-icon-arrow mw-ui-icon-element indicator" title=""></div>
     <span class="mw-headline" id="{{ section_anchor }}">{% autoescape false %}{{ section_line }}{% endautoescape %}</span>
 </h2>

@@ -250,7 +250,7 @@ async function execute(argv) {
 
   /* Some helpers */
   function readTemplate(t) {
-    return fs.readFileSync(pathParser.resolve(process.cwd(), 'res', t), 'utf-8');
+    return fs.readFileSync(pathParser.resolve(__dirname, '../res', t), 'utf-8');
   }
   const { dirs } = config.output;
   function cssPath(css) {
@@ -1344,12 +1344,12 @@ async function execute(argv) {
         /* Title */
         if (zim.mobileLayout) {
           htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-            ? htmlTemplateDoc.getElementById('title_0').innerHTML
+            ? htmlTemplateDoc.getElementById('title_0').textContent
             : articleId.replace(/_/g, ' ');
           DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
         } else {
           htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = parsoidDoc.getElementsByTagName('title')
-            ? parsoidDoc.getElementsByTagName('title')[0].innerHTML.replace(/_/g, ' ')
+            ? parsoidDoc.getElementsByTagName('title')[0].textContent.replace(/_/g, ' ')
             : articleId.replace(/_/g, ' ');
           if (zim.mainPageId !== articleId) {
             htmlTemplateDoc.getElementById('titleHeading').innerHTML = htmlTemplateDoc.getElementsByTagName('title')[
@@ -1466,6 +1466,16 @@ async function execute(argv) {
               // set all other section (closed by default)
               if (!env.nodet) {
                 json.remaining.sections.forEach((oneSection, i) => {
+                  if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
+                    html += sectionTemplate({
+                      section_index: i,
+                      section_id: i,
+                      section_anchor: 'TopLevelSection',
+                      section_line: 'Disambiguation',
+                      section_text: '',
+                    });
+                  }
+
                   // if below is to test if we need to nest a subsections into a section
                   if (oneSection.toclevel === 1) {
                     html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
@@ -1521,7 +1531,7 @@ async function execute(argv) {
                 }
                 if (json && json.visualeditor) {
                   html = json.visualeditor.content;
-                } else if (json && json.contentmodel === 'wikitext') {
+                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
                   html = json.html.body;
                 } else if (json && json.error) {
                   console.error(`Error by retrieving article: ${json.error.info}`);
