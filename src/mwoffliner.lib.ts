@@ -679,7 +679,7 @@ async function execute(argv) {
             styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a);
 
             styleDependenciesList = styleDependenciesList.filter(
-              (oneStyleDep) => contains(config.filters.blackListCssModules, oneStyleDep),
+              (oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep),
             );
 
             logger.log(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
@@ -690,7 +690,7 @@ async function execute(argv) {
               { type: 'css', moduleList: styleDependenciesList },
             ];
 
-            allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(oneModule, type)));
+            allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(oneModule, type as any)));
 
             // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
             // the script below extracts the config with a regex executed on the page header returned from the api
@@ -718,7 +718,7 @@ async function execute(argv) {
             finished(null, parsoidDoc, articleId); // calling finished here will allow zim generation to continue event if an article doesn't properly get its modules
           });
 
-        const downloadAndSaveModule = (module, type) => {
+        function downloadAndSaveModule(module, type: 'js' | 'css') {
           // param :
           //   module : string : the name of the module
           //   moduleUri : string : the path where the module will be saved into the zim
@@ -757,10 +757,11 @@ async function execute(argv) {
             apiParameterOnly = 'styles';
           }
 
+          console.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
             `${mw.base}w/load.php?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
-          redis.saveModuleIfNotExists(dump, module, moduleUri, type)
+          return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
             .then((redisResult) => {
               if (redisResult === 1) {
                 return fetch(moduleApiUrl, {
@@ -783,8 +784,9 @@ async function execute(argv) {
                     }
                   })
                   .catch((e) => console.error(`Error fetching load.php for ${articleId} ${e}`));
+              } else {
+                return Promise.resolve();
               }
-              return Promise.resolve();
             })
             .catch((e) => console.error(e));
         };
