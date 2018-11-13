@@ -789,7 +789,7 @@ async function execute(argv) {
               }
             })
             .catch((e) => console.error(e));
-        };
+        }
       }
 
       function treatMedias(parsoidDoc, articleId, finished) {
