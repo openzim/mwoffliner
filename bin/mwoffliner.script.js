@@ -5,7 +5,6 @@
 
 const yargs = require('yargs');
 const mwofflinerLib = require('../lib/mwoffliner.lib.js');
-const { execSync } = require('child_process');
 
 /************************************/
 /* Command Parsing ******************/
@@ -28,14 +27,9 @@ Or, as a npm script: '
 yargs.version(() => {
     const packageJSON = require('../package');
     const version = packageJSON.version;
-    let gitRevision;
-    try {
-        gitRevision = execSync('git rev-parse --short HEAD').toString().trim();
-    } catch (err) { /* NOOP */ }
+    const revision = packageJSON.gitRevision;
 
-    const gitRevisionText = gitRevision ? `\nGit Revision:\t${gitRevision}` : '';
-
-    return `Version:\t${version}${gitRevisionText}`;
+    return `Version:\t${version}\nGit Revision:\t${revision}`;
 });
 yargs.help();
 
