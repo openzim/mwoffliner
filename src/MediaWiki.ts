@@ -158,7 +158,7 @@ class MediaWiki {
     });
   }
 
-  public async getNamespaces(addNamespaces: string[], downloader: Downloader) {
+  public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     downloader.downloadContent(url, (content) => {

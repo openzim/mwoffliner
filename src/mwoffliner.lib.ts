@@ -201,7 +201,7 @@ async function execute(argv) {
   const articleIds = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   let parsoidContentType = 'html';
-  const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',') : [];
+  const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
   if (!parsoidUrl) {
     if (localParsoid) {
