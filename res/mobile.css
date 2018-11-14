@@ -60,6 +60,12 @@ h1[tabindex="0"].collapsible-heading>.indicator {
     }
 }
 
+@media (max-width: 720px) {
+    .content .thumb .thumbinner>.thumbcaption {
+        flex: 1 1 auto !important;
+    }
+}
+
 .collapsible-block {
     display: none;
 }
