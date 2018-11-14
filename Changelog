@@ -6,6 +6,7 @@
 * FIX: Generated files are more no-js friendly #324
 * FIX: Added top level section when it doesn't exist in API Response #180
 * FIX: Fixed --addNamespace #338
+* FIX: CSS Image issue #418
 * UPDATE: Added mwmatrixoffliner tests 
 * UPDATE: Added git revision to version log #426
 * UPDATE: Normalised Resources and Templates 
