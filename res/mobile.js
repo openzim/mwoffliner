@@ -5,7 +5,7 @@
 
 // this function is to be able to open/close section in mobile version since the code from wiki meant to do that doesn't work
 function toggleOpenSection(id) {
-    if (id === 0) return // do not allow to hide the main section
+    if (id === '0') return // do not allow to hide the main section
     $('#mf-section-' + id).toggleClass('open-block').prev().toggleClass('open-block')
 }
 
