@@ -8,6 +8,7 @@ import * as U from './Utils';
 class OfflinerEnv {
   public nopic: boolean;
   public novid: boolean;
+  public nopdf: boolean;
   public nozim: boolean;
   public nodet: boolean;
   public ltr: boolean;
@@ -28,6 +29,7 @@ class OfflinerEnv {
     // output config (FIXME: Does this belong in Zim?)
     this.nopic = false;
     this.novid = false;
+    this.nopdf = false;
     this.nozim = false;
     this.nodet = false;
     // Script direction (defaults to ltr)
@@ -84,6 +86,8 @@ class OfflinerEnv {
     if (!withoutContentSpecifier) {
       if (this.nopic) {
         radical += '_nopic';
+      } else if (this.nopdf) {
+        radical += '_nopdf';
       } else if (this.novid && !this.nodet) {
         radical += '_novid';
       }
@@ -136,6 +140,7 @@ class OfflinerEnv {
         const dump = this.dumps[i];
         this.nopic = dump.toString().search('nopic') >= 0;
         this.novid = dump.toString().search('novid') >= 0;
+        this.nopdf = dump.toString().search('nopdf') >= 0;
         this.nozim = dump.toString().search('nozim') >= 0;
         this.nodet = dump.toString().search('nodet') >= 0;
         this.htmlRootPath = this.computeHtmlRootPath();

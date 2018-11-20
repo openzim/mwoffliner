@@ -59,6 +59,7 @@ class Downloader {
   }
 
   public downloadContent(url: string, callback: (content: any, responseHeaders: any) => void) {
+    url = url.trim();
     let retryCount = 0;
     let responseHeaders = {};
     const self = this;
@@ -90,10 +91,18 @@ class Downloader {
         console.error(`Unable to determine the protocol of the following url (${options.protocol}), switched back to ${this.webUrlPort === 443 ? 'https' : 'http'}: ${url}`);
         if (this.webUrlPort === 443) {
           protocol = https;
-          url = url.replace(options.protocol, 'https:');
+          if (options.protocol === null) {
+            url = 'https:' + url;
+          } else {
+            url = url.replace(options.protocol, 'https:');
+          }
         } else {
           protocol = http;
-          url = url.replace(options.protocol, 'http:');
+          if (options.protocol === null) {
+            url = 'http:' + url;
+          } else {
+            url = url.replace(options.protocol, 'http:');
+          }
         }
         console.error(`New url is: ${url}`);
       }
@@ -167,6 +176,7 @@ class Downloader {
         request.end();
       } catch (err) {
         console.warn(`Skipping file [${decodeURI(url)}]. Failed to download:`, err);
+        callFinished(0, `Skipping file [${decodeURI(url)}]. Failed to download`);
       }
     }, (error, data) => {
       if (error) {

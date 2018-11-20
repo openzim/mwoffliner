@@ -127,6 +127,8 @@ class Zim {
       tags.push('nopic');
     } else if (this.env.novid) {
       tags.push('novid');
+    } else if (this.env.nopdf) {
+      tags.push('nopdf');
     }
     /* nodet */
     if (this.env.nodet) { tags.push('nodet'); }

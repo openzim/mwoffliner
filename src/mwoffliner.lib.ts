@@ -475,6 +475,7 @@ async function execute(argv) {
     logger.log('Starting a new dump...');
     env.nopic = dump.toString().search('nopic') >= 0;
     env.novid = dump.toString().search('novid') >= 0;
+    env.nopdf = dump.toString().search('nopdf') >= 0;
     env.nozim = dump.toString().search('nozim') >= 0;
     env.nodet = dump.toString().search('nodet') >= 0;
     env.keepHtml = env.nozim || env.keepHtml;
@@ -539,7 +540,7 @@ async function execute(argv) {
 
   function drainDownloadFileQueue() {
     return new Promise((resolve, reject) => {
-      logger.log(`${downloadFileQueue.length()} images still to be downloaded.`);
+      logger.log(`${downloadFileQueue.length()} files still to be downloaded.`);
       async.doWhilst(
         (doneWait) => {
           if (downloadFileQueue.idle()) {
@@ -1110,6 +1111,14 @@ async function execute(argv) {
                 const parts = href.split('/');
                 lat = parts[4];
                 lon = parts[5];
+              } else if (!env.nopdf && /\.pdf/i.test(href)) {
+                try {
+                  linkNode.setAttribute('href', getMediaUrl(href));
+                  downloadFileQueue.push(href);
+                } catch (err) {
+                  console.warn('Error parsing url:', err);
+                  DU.deleteNode(linkNode);
+                }
               }
 
               if (!isNaN(lat) && !isNaN(lon)) {
