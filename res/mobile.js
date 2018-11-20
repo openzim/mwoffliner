@@ -11,10 +11,14 @@ function toggleOpenSection(id) {
 
 window.onload = function () {
     $('.mw-ref').on({
-        click: function () {
-            var ref = $('#References').closest('h2');
-            ref.addClass('open-block');
-            ref.next().addClass('open-block');
+        click: function (ev) {
+            var targetId = ev.target.hash || ev.target.parentNode.hash;
+            var refBlock = $(targetId).closest('.collapsible-block');
+            var refHeader = refBlock.prev();
+            refBlock.addClass('open-block');
+            refHeader.addClass('open-block');
+
+            refBlock.find('collapsible-block').addClass('open-block');
         }
     });
 
@@ -24,7 +28,7 @@ window.onload = function () {
             toggleOpenSection(id);
         }
     });
-    
+
     if (window.innerWidth > 720) {
         $('.collapsible-heading').click();
     }

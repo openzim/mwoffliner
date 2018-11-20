@@ -174,10 +174,3 @@ Desktop modes.**
     *   Desktop: One renderable page
 *   Therefore mwoffliner is quite different depending on whether it is
     in Mobile or Desktop mode.
-
-
-## Releasing
-
-Before releasing:
-- Update `package.json` version
-- Update `package.json` git revision (`node updateGitRevision.js`)
