@@ -1113,13 +1113,15 @@ async function execute(argv) {
                 const parts = href.split('/');
                 lat = parts[4];
                 lon = parts[5];
-              } else if (!env.nopdf && /\.pdf/i.test(href)) {
-                try {
-                  linkNode.setAttribute('href', getMediaUrl(href));
-                  downloadFileQueue.push(href);
-                } catch (err) {
-                  console.warn('Error parsing url:', err);
-                  DU.deleteNode(linkNode);
+              } else if (rel === 'mw:MediaLink') {
+                if (!env.nopdf && /\.pdf/i.test(href)) {
+                  try {
+                    linkNode.setAttribute('href', getMediaUrl(href));
+                    downloadFileQueue.push(href);
+                  } catch (err) {
+                    console.warn('Error parsing url:', err);
+                    DU.deleteNode(linkNode);
+                  }
                 }
               }
 
