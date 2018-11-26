@@ -28,7 +28,7 @@ const parameterList = [
   },
   {
     name: 'format',
-    description: 'To custom the output with comma separated values : "nopic,novid,nozim,nodet"',
+    description: 'To custom the output with comma separated values : "nopic,novid,nopdf,nozim,nodet"',
     required: false,
   },
   { name: 'keepEmptyParagraphs', description: 'Keep all paragraphs, even empty ones.', required: false },
