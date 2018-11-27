@@ -1532,7 +1532,10 @@ async function execute(argv) {
           setTimeout((url, handler) => {
             downloadFunc(url)
               .then(({ content }) => handler(content))
-              .catch((err) => finished(err));
+              .catch((err) => {
+                console.error(`Failed to get article [${articleUrl}] Skipping.`, err);
+                finished();
+              });
           },
             downloadFileQueue.length() + optimizationQueue.length(),
             articleUrl,
@@ -1579,8 +1582,12 @@ async function execute(argv) {
 
             logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
-              if (!error) { logger.log(`Successfully dumped article ${articleId}`); }
-              finished(error && { message: `Error preparing and saving file`, error });
+              if (!error) {
+                logger.log(`Successfully dumped article ${articleId}`);
+                finished();
+              } else {
+                console.error(`Error preparing and saving file, skipping [${articleId}]`, error);
+              }
             });
           } else {
             delete articleIds[articleId];
@@ -1592,7 +1599,7 @@ async function execute(argv) {
       logger.log('Saving articles...');
       async.eachLimit(Object.keys(articleIds), speed, saveArticle, (error) => {
         if (error) {
-          reject({ message: `Unable to retrieve an article correctly`, error });
+          reject({ message: `Fatal Error:`, error });
         } else {
           logger.log('All articles were retrieved and saved.');
           resolve();
