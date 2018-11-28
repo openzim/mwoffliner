@@ -1,6 +1,3 @@
-1.6.1:
-* 
-
 1.6.0:
 * FIX: Template referencing #421
 * FIX: Generated files are more no-js friendly #324
