@@ -87,6 +87,10 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
+  public imageQueryUrl(title: string) {
+    return `${this.apiUrl}action=query&prop=pageimages&pithumbsize=300&format=json&titles=${encodeURIComponent(title)}`;
+  }
+
   public articleQueryUrl(title: string) {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }

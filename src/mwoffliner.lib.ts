@@ -198,10 +198,11 @@ async function execute(argv) {
   });
 
   const INFINITY_WIDTH = 9999999;
-  const articleIds = {};
+  const articleDetailXId = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   let parsoidContentType = 'html';
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
+  const articleListLines = articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
 
   if (!parsoidUrl) {
     if (localParsoid) {
@@ -293,6 +294,7 @@ async function execute(argv) {
     .replace('__CSS_LINKS__', cssLinks)
     .replace('__JS_SCRIPTS__', jsScripts);
   const htmlDesktopTemplateCode = readTemplate(config.output.templates.desktop);
+  const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate);
 
   /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
@@ -486,6 +488,7 @@ async function execute(argv) {
       zim.mobileLayout ? () => saveStaticFiles() : null,
       () => saveStylesheet(),
       () => saveFavicon(),
+      articleList ? () => getArticleThumbnails() : null,
       () => getMainPage(),
       env.writeHtmlRedirects ? () => saveHtmlRedirects() : null,
       () => saveArticles(dump),
@@ -513,8 +516,58 @@ async function execute(argv) {
     return Promise.resolve();
   }
 
+  function getArticleThumbnails() {
+    console.info(`Getting article thumbnails`);
+    return new Promise((resolve, reject) => {
+      let articleIndex = 0;
+      let fetchedThumbnails = 0;
+      async.whilst(
+        () => articleIndex < articleListLines.length - 1 && fetchedThumbnails < 100,
+        async (callback) => {
+          const articleTitle = articleListLines[articleIndex];
+          articleIndex++;
+          const articleId = articleTitle.replace(/ /g, '_');
+          const url = mw.imageQueryUrl(articleId);
+          let imageUrl: string = null;
+          try {
+            const resp = await U.getJSON<any>(url);
+            imageUrl = U.getFullUrl(webUrlHost, resp.query.pages[Object.keys(resp.query.pages)[0]].thumbnail.source);
+          } catch (err) {
+            console.warn(`Failed to get thumbnail url for article [${articleId}]: ${err.message}`);
+            return callback();
+          }
+          downloadFileQueue.push(imageUrl);
+          const internalSrc = getMediaUrl(imageUrl);
+          console.log(`Got thumbnail url for article [${articleId}], reading from [${internalSrc}]`);
+          articleDetailXId[articleId] = Object.assign(
+            articleDetailXId[articleId] || {},
+            { thumbnail: internalSrc },
+          );
+          fetchedThumbnails++;
+          callback();
+        },
+        (error) => {
+          if (error) {
+            console.error('Failed to get all article thumbnails', error);
+            reject({ message: `Failed to get all article thumbnails`, error });
+          } else {
+            resolve();
+          }
+        },
+      );
+    });
+  }
+
   function saveStaticFiles() {
     return new Promise((resolve, reject) => {
+      config.output.mainPageCssResources.forEach((css) => {
+        try {
+          fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
+        } catch (error) {
+          console.error(`Could not create ${css} file : ${error}`);
+        }
+      });
+
       config.output.cssResources.forEach((css) => {
         try {
           fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
@@ -758,7 +811,7 @@ async function execute(argv) {
             apiParameterOnly = 'styles';
           }
 
-          console.info(`Getting [${type}] module [${module}]`);
+          // console.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
             `${mw.base}w/load.php?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
@@ -1400,7 +1453,7 @@ async function execute(argv) {
 
         /* Set footer */
         const div = htmlTemplateDoc.createElement('div');
-        const oldId = articleIds[articleId];
+        const { oldId } = articleDetailXId[articleId];
         redis.getArticle(articleId, (error, detailsJson) => {
           if (error) {
             finished({ message: `Unable to get the details from redis for article ${articleId}`, error });
@@ -1524,7 +1577,7 @@ async function execute(argv) {
           const articleUrl = parsoidUrl
             + encodeURIComponent(articleId)
             + (parsoidUrl.indexOf('/rest') < 0 ? `${parsoidUrl.indexOf('?') < 0 ? '?' : '&'}oldid=` : '/')
-            + articleIds[articleId];
+            + articleDetailXId[articleId].oldId;
           logger.log(`Getting (desktop) article from ${articleUrl}`);
           setTimeout(
             skipHtmlCache || articleId === zim.mainPageId
@@ -1579,14 +1632,14 @@ async function execute(argv) {
               finished(error && { message: `Error preparing and saving file`, error });
             });
           } else {
-            delete articleIds[articleId];
+            delete articleDetailXId[articleId];
             finished();
           }
         }
       }
 
       logger.log('Saving articles...');
-      async.eachLimit(Object.keys(articleIds), speed, saveArticle, (error) => {
+      async.eachLimit(Object.keys(articleDetailXId), speed, saveArticle, (error) => {
         if (error) {
           reject({ message: `Unable to retrieve an article correctly`, error });
         } else {
@@ -1609,7 +1662,7 @@ async function execute(argv) {
         return namespace.isContent;
       }
     }
-    return id in articleIds;
+    return id in articleDetailXId;
   }
 
   function isSubpage(id) {
@@ -1766,13 +1819,16 @@ async function execute(argv) {
 
           if ('missing' in entry) {
             console.error(`Article ${entry.title} is not available on this wiki.`);
-            delete articleIds[entry.title];
+            delete articleDetailXId[entry.title];
           } else {
             redirectQueueValues.push(entry.title);
 
             if (entry.revisions) {
               /* Get last revision id */
-              articleIds[entry.title] = entry.revisions[0].revid;
+              articleDetailXId[entry.title] = Object.assign(articleDetailXId[entry.title] || {}, {
+                title: entry.title,
+                oldId: entry.revisions[0].revid,
+              });
 
               /* Get last revision id timestamp */
               const articleDetails: { t: number, g?: string } = { t: new Date(entry.revisions[0].timestamp).getTime() / 1000 };
@@ -1786,7 +1842,7 @@ async function execute(argv) {
               details[entry.title] = JSON.stringify(articleDetails);
             } else if (entry.pageid) {
               logger.log(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
-              delete articleIds[entry.title];
+              delete articleDetailXId[entry.title];
             } else {
               throw new Error(`Unable to get revisions for ${entry.title}\nJSON was ${body}`);
             }
@@ -1830,14 +1886,14 @@ async function execute(argv) {
 
     /* Get ids from file */
     function getArticleIdsForFile() {
-      return new Promise((resolve, reject) => {
-        let lines;
-        try {
-          lines = fs.readFileSync(zim.articleList).toString().split('\n');
-        } catch (error) {
-          reject(`Unable to open article list file: ${error}`);
-        }
+      let lines;
+      try {
+        lines = fs.readFileSync(zim.articleList).toString().split('\n');
+      } catch (error) {
+        return Promise.reject(`Unable to open article list file: ${error}`);
+      }
 
+      return new Promise((resolve, reject) => {
         async.eachLimit(lines, speed, (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)), (error) => {
           if (error) {
             reject(`Unable to get all article ids for a file: ${error}`);
@@ -1993,7 +2049,9 @@ async function execute(argv) {
             if (!responseHeaders || responseHeaders.width < width) {
               toDownload = true;
             } else {
+              console.log(`Cache stat: [${mediaPath}]`, fs.statSync(cachePath).size);
               fs.symlink(cachePath, mediaPath, 'file', (error) => {
+                console.log(`Linking [${cachePath}] to [${mediaPath}]`);
                 if (error) {
                   if (error.code !== 'EEXIST') {
                     return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
@@ -2020,8 +2078,10 @@ async function execute(argv) {
               if (error) {
                 callback();
               } else {
+                console.log(`Cache stat: [${mediaPath}]`, fs.statSync(cachePath).size);
                 logger.log(`Caching ${filenameBase} at ${cachePath}...`);
                 fs.symlink(cachePath, mediaPath, 'file', (error) => {
+                  console.log(`Linking [${cachePath}] to [${mediaPath}]`);
                   if (error && error.code !== 'EEXIST') {
                     return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
                   }
@@ -2033,6 +2093,7 @@ async function execute(argv) {
             });
           } else {
             logger.log(`Cache hit for ${url}`);
+            console.info(`Found cached file [${url}] with mediaPath [${mediaPath}]`);
           }
         });
       } else {
@@ -2169,20 +2230,37 @@ async function execute(argv) {
       function createMainPage() {
         logger.log('Creating main page...');
         const doc = domino.createDocument(
-          (zim.mobileLayout ? htmlMobileTemplateCode : htmlDesktopTemplateCode)
-            .replace('__ARTICLE_JS_LIST__', '')
-            .replace('__ARTICLE_CSS_LIST__', '')
-            .replace('__ARTICLE_CONFIGVARS_LIST__', ''),
+          articleListHomeTemplate
+            .replace('</head>', genHeaderCSSLink('mobile_main_page') + '\n</head>'),
         );
-        doc.getElementById('titleHeading').innerHTML = 'Summary';
-        doc.getElementsByTagName('title')[0].innerHTML = 'Summary';
 
-        let html = '<ul>\n';
-        Object.keys(articleIds).sort().forEach((articleId) => {
-          html += `<li><a href="${env.getArticleBase(articleId, true)}">${articleId.replace(/_/g, ' ')}<a></li>\n`;
-        });
+        const titles = Object.keys(articleDetailXId).sort();
+
+        const {
+          articlesWithImages,
+          articlesWithoutImages,
+        } = titles.reduce((acc, title) => {
+          const articleDetail = articleDetailXId[title];
+          if (articleDetail.thumbnail) {
+            acc.articlesWithImages.push(articleDetail);
+          } else {
+            acc.articlesWithoutImages.push(articleDetail);
+          }
+          return acc;
+        }, {
+            articlesWithImages: [],
+            articlesWithoutImages: [],
+          },
+        );
+
+        let html = '<div class="masonry">\n';
+        html += articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
+        html += '</div>\n';
+        html += '<h2>More Articles...</h2>\n';
+        html += '<ul>\n';
+        html += articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
         html += '</ul>\n';
-        doc.getElementById('mw-content-text').innerHTML = html;
+        doc.getElementById('content').innerHTML = html;
 
         /* Write the static html file */
         return writeMainPage(doc.documentElement.outerHTML);

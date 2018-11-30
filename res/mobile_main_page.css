@@ -1,0 +1,65 @@
+/* Box-sizing reset: https://w3bits.com/?p=3225 */
+
+html {
+    box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+/* The Masonry Container */
+
+.masonry {
+    width: 100%s;
+    column-gap: 0;
+}
+
+/* The Masonry Brick */
+
+.item {
+    background: #fff;
+    display: block;
+    position: relative;
+}
+
+.item img {
+    width: 100%;
+    height: auto;
+}
+
+.item .caption {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    padding: 5px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Masonry on large screens */
+
+@media only screen and (min-width: 1024px) {
+    .masonry {
+        column-count: 4;
+    }
+}
+
+/* Masonry on medium-sized screens */
+
+@media only screen and (max-width: 1023px) and (min-width: 768px) {
+    .masonry {
+        column-count: 3;
+    }
+}
+
+/* Masonry on small screens */
+
+@media only screen and (max-width: 767px) and (min-width: 540px) {
+    .masonry {
+        column-count: 2;
+    }
+}

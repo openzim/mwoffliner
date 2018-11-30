@@ -46,8 +46,9 @@ export default {
   output: {
     // CSS resources added by Kiwix
     cssResources: ['mobile', 'content.parsoid', 'inserted_style_mobile'],
+    mainPageCssResources: ['mobile_main_page'],
 
-    jsResources: [ 'mobile' ],
+    jsResources: ['mobile'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
@@ -84,6 +85,8 @@ export default {
        */
       mobile: './templates/mobile.html',
       desktop: './templates/desktop.html',
+
+      articleListHomeTemplate: './templates/article_list_home.html',
 
       /* License footer template code */
       footer: './templates/footer.html',
