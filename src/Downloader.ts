@@ -63,7 +63,7 @@ class Downloader {
     let retryCount = 0;
     let responseHeaders = {};
     const self = this;
-    this.logger.log(`Downloading ${decodeURI(url)}...`);
+    this.logger.info(`Downloading ${decodeURI(url)}...`);
     async.retry(3, (finished) => {
       let request;
       let calledFinished = false;
@@ -71,7 +71,7 @@ class Downloader {
         if (!calledFinished) {
           calledFinished = true;
           if (message) {
-            console.error(message);
+            self.logger.warn(message);
             request.abort();
           }
           request = undefined;
@@ -88,7 +88,7 @@ class Downloader {
       } else if (options.protocol === 'https:') {
         protocol = https;
       } else {
-        console.error(`Unable to determine the protocol of the following url (${options.protocol}), switched back to ${this.webUrlPort === 443 ? 'https' : 'http'}: ${url}`);
+        self.logger.warn(`Unable to determine the protocol of the following url (${options.protocol}), switched back to ${this.webUrlPort === 443 ? 'https' : 'http'}: ${url}`);
         if (this.webUrlPort === 443) {
           protocol = https;
           if (options.protocol === null) {
@@ -104,7 +104,7 @@ class Downloader {
             url = url.replace(options.protocol, 'http:');
           }
         }
-        console.error(`New url is: ${url}`);
+        self.logger.info(`New url is: ${url}`);
       }
       /* Downloading */
       options = self.getRequestOptionsFromUrl(url, true);
@@ -155,7 +155,7 @@ class Downloader {
           if (!socket.custom) {
             socket.custom = true;
             socket.on('error', () => {
-              console.error('Socket timeout');
+              self.logger.warn('Socket timeout');
               socket.emit('agentRemove');
               socket.destroy();
               if (request) {
@@ -163,7 +163,7 @@ class Downloader {
               }
             });
             socket.on('timeout', () => {
-              console.error('Socket error');
+              self.logger.warn('Socket error');
               socket.emit('agentRemove');
               socket.end();
               if (request) {
@@ -175,12 +175,12 @@ class Downloader {
         request.setTimeout(self.requestTimeout * 1000 * retryCount);
         request.end();
       } catch (err) {
-        console.warn(`Skipping file [${decodeURI(url)}]. Failed to download:`, err);
+        self.logger.warn(`Skipping file [${decodeURI(url)}]. Failed to download:`, err);
         callFinished(0, `Skipping file [${decodeURI(url)}]. Failed to download`);
       }
     }, (error, data) => {
       if (error) {
-        console.error(`Absolutely unable to retrieve async. URL: ${error}`);
+        self.logger.warn(`Absolutely unable to retrieve async. URL: ${error}`);
         /* Unfortunately, we can not do that because there are
          * articles which simply will not be parsed correctly by
          * Parsoid. For example this one
@@ -202,7 +202,7 @@ class Downloader {
       if (statError && !force) {
         callback(statError.code !== 'ENOENT' && statError ? `Impossible to stat() ${path}:\n${path} already downloaded, download will be skipped.` : undefined);
       } else {
-        self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
+        self.logger.info(`Downloading ${decodeURI(url)} at ${path}...`);
         self.downloadContent(url, (content, responseHeaders) => {
           fs.writeFile(path, content, (writeError) => {
             optQueue.push({ path, size: content.length });

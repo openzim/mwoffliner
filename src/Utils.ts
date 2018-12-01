@@ -26,7 +26,7 @@ function _decodeURIComponent(uri) {
   try {
     return decodeURIComponent(uri);
   } catch (error) {
-    console.error(error);
+    console.warn(error);
     return uri;
   }
 }
