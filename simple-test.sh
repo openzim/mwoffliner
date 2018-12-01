@@ -8,4 +8,4 @@ mwoffliner --mwUrl=https://en.wikipedia.org --adminEmail=admin@kiwix.com --local
 mv tmp ../test-run-master
 
 
-diff ../test-run-change ../test-run-master
+diff -r ../test-run-change ../test-run-master
