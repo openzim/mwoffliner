@@ -337,12 +337,8 @@ async function execute(argv) {
     }
 
     fs.stat(path, (preOptimError, preOptimStats) => {
-      if (preOptimError || preOptimStats.size !== file.size) {
-        if (preOptimError) {
-          logger.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimError);
-        } else {
-          logger.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimStats ? preOptimStats.size : 'No stats information');
-        }
+      if (preOptimError) {
+        logger.error(`Failed to start to optim ${path} - file was probably deleted:`, preOptimError);
         finished();
         return;
       }
@@ -368,9 +364,9 @@ async function execute(argv) {
             }
 
             fs.stat(path, (postOptimError, postOptimStats) => {
-              if (!postOptimError && postOptimStats.size > file.size) {
+              if (!postOptimError && postOptimStats.size > preOptimStats.size) {
                 finished(null, true);
-              } else if (!postOptimError && postOptimStats.size < file.size) {
+              } else if (!postOptimError && postOptimStats.size < preOptimStats.size) {
                 finished('File to optim is smaller (before optim) than it should.');
               } else {
                 exec(`file -b --mime-type "${path}"`, (error, stdout) => {
@@ -406,36 +402,36 @@ async function execute(argv) {
   }, speed * 5);
 
   /* Get ids */
-  const redirectQueue = async.queue((articleId, finished) => {
+  const redirectQueue = async.queue(async (articleId, finished) => {
     if (articleId) {
       logger.info(`Getting redirects for article ${articleId}...`);
       const url = mw.backlinkRedirectsQueryUrl(articleId);
-      downloader.downloadContent(url, (content) => {
+      try {
+        const { content } = await downloader.downloadContent(url);
         const body = content.toString();
-        try {
-          if (!JSON.parse(body).error) {
-            const redirects = {};
-            let redirectsCount = 0;
-            const { pages } = JSON.parse(body).query;
+        if (!JSON.parse(body).error) {
+          const redirects = {};
+          let redirectsCount = 0;
+          const { pages } = JSON.parse(body).query;
 
-            pages[Object.keys(pages)[0]].redirects.map((entry) => {
-              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
-              redirects[title] = articleId;
-              redirectsCount += 1;
+          pages[Object.keys(pages)[0]].redirects.map((entry) => {
+            const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+            redirects[title] = articleId;
+            redirectsCount += 1;
 
-              if (title === zim.mainPageId) {
-                zim.mainPageId = articleId;
-              }
-            });
-            logger.info(`${redirectsCount} redirect(s) found for ${articleId}`);
-            redis.saveRedirects(redirectsCount, redirects, finished);
-          } else {
-            finished(JSON.parse(body).error);
-          }
-        } catch (error) {
-          finished(error);
+            if (title === zim.mainPageId) {
+              zim.mainPageId = articleId;
+            }
+          });
+
+          logger.info(`${redirectsCount} redirect(s) found for ${articleId}`);
+          redis.saveRedirects(redirectsCount, redirects, finished);
+        } else {
+          finished(JSON.parse(body).error);
         }
-      });
+      } catch (err) {
+        finished(err);
+      }
     } else {
       finished();
     }
@@ -621,31 +617,31 @@ async function execute(argv) {
   }
 
   function saveHtmlRedirects() {
-    return new Promise((resolve, reject) => {
-      logger.log('Saving HTML redirects...');
+    logger.log('Saving HTML redirects...');
 
-      function saveHtmlRedirect(redirectId, finished) {
-        redis.getRedirect(redirectId, finished, (target) => {
-          logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
-          const data = redirectTemplate({
-            target: env.getArticleUrl(target),
-            title: redirectId.replace(/_/g, ' '),
-          });
-          if (env.deflateTmpHtml) {
-            zlib.deflate(data, (error, deflatedHtml) => {
-              fs.writeFile(env.getArticlePath(redirectId), deflatedHtml, finished);
-            });
-          } else {
-            fs.writeFile(env.getArticlePath(redirectId), data, finished);
-          }
+    function saveHtmlRedirect(redirectId, finished) {
+      redis.getRedirect(redirectId, finished, (target) => {
+        logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
+        const data = redirectTemplate({
+          target: env.getArticleUrl(target),
+          title: redirectId.replace(/_/g, ' '),
         });
-      }
+        if (env.deflateTmpHtml) {
+          zlib.deflate(data, (error, deflatedHtml) => {
+            fs.writeFile(env.getArticlePath(redirectId), deflatedHtml, finished);
+          });
+        } else {
+          fs.writeFile(env.getArticlePath(redirectId), data, finished);
+        }
+      });
+    }
 
-      redis.processAllRedirects(speed, saveHtmlRedirect,
-        'Unable to save a HTML redirect',
-        'All redirects were saved successfuly as HTML files.',
-      ).then(resolve, reject);
-    });
+    return redis.processAllRedirects(
+      speed,
+      saveHtmlRedirect,
+      'Unable to save a HTML redirect',
+      'All redirects were saved successfuly as HTML files.',
+    );
   }
 
   function saveArticles(dump) {
@@ -1526,10 +1522,17 @@ async function execute(argv) {
             + (parsoidUrl.indexOf('/rest') < 0 ? `${parsoidUrl.indexOf('?') < 0 ? '?' : '&'}oldid=` : '/')
             + articleIds[articleId];
           logger.info(`Getting (desktop) article from ${articleUrl}`);
-          setTimeout(
-            skipHtmlCache || articleId === zim.mainPageId
-              ? downloader.downloadContent.bind(downloader)
-              : downloadContentAndCache,
+          const downloadFunc = skipHtmlCache || articleId === zim.mainPageId
+            ? downloader.downloadContent.bind(downloader)
+            : downloadContentAndCache;
+          setTimeout((url, handler) => {
+            downloadFunc(url)
+              .then(({ content }) => handler(content))
+              .catch((err) => {
+                console.error(`Failed to get article [${articleUrl}] Skipping.`, err);
+                finished();
+              });
+          },
             downloadFileQueue.length() + optimizationQueue.length(),
             articleUrl,
             (content) => {
@@ -1575,8 +1578,13 @@ async function execute(argv) {
 
             logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
-              if (!error) { logger.info(`Successfully dumped article ${articleId}`); }
-              finished(error && { message: `Error preparing and saving file`, error });
+              if (!error) {
+                logger.info(`Successfully dumped article ${articleId}`);
+                finished();
+              } else {
+                logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
+                finished(error);
+              }
             });
           } else {
             delete articleIds[articleId];
@@ -1588,7 +1596,7 @@ async function execute(argv) {
       logger.log('Saving articles...');
       async.eachLimit(Object.keys(articleIds), speed, saveArticle, (error) => {
         if (error) {
-          reject({ message: `Unable to retrieve an article correctly`, error });
+          reject({ message: `Fatal Error:`, error });
         } else {
           logger.log('All articles were retrieved and saved.');
           resolve();
@@ -1639,16 +1647,17 @@ async function execute(argv) {
       }, speed);
 
       /* Take care to download CSS files */
-      const downloadCSSQueue = async.queue((link: any, finished) => {
-        /* link might be a 'link' DOM node or an URL */
-        const cssUrl = typeof link === 'object' ? U.getFullUrl(webUrlHost, link.getAttribute('href')) : link;
-        const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
+      const downloadCSSQueue = async.queue(async (link: any, finished) => {
+        try {
+          /* link might be a 'link' DOM node or an URL */
+          const cssUrl = typeof link === 'object' ? U.getFullUrl(webUrlHost, link.getAttribute('href')) : link;
+          const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
 
-        if (cssUrl) {
-          const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
+          if (cssUrl) {
+            const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
 
-          logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`);
-          downloader.downloadContent(cssUrl, (content) => {
+            logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`);
+            const { content } = await downloader.downloadContent(cssUrl);
             const body = content.toString();
 
             let rewrittenCss = `\n/* start ${cssUrl} */\n\n`;
@@ -1689,50 +1698,53 @@ async function execute(argv) {
 
             fs.appendFileSync(stylePath, rewrittenCss);
             finished();
-          });
-        } else {
-          finished();
+          } else {
+            finished();
+          }
+        } catch (err) {
+          finished(err);
         }
       }, speed);
 
       /* Load main page to see which CSS files are needed */
-      downloadContentAndCache(mw.webUrl, (content) => {
-        const html = content.toString();
-        const doc = domino.createDocument(html);
-        const links = doc.getElementsByTagName('link');
+      downloadContentAndCache(mw.webUrl)
+        .then(({ content }) => {
+          const html = content.toString();
+          const doc = domino.createDocument(html);
+          const links = doc.getElementsByTagName('link');
 
-        /* Go through all CSS links */
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < links.length; i += 1) {
-          const link = links[i];
-          if (link.getAttribute('rel') === 'stylesheet') {
-            downloadCSSQueue.push(link);
-          }
-        }
-
-        /* Push Mediawiki:Offline.css ( at the end) */
-        const offlineCssUrl = `${mw.webUrl}Mediawiki:offline.css?action=raw`;
-        downloader.registerOptionalUrl(offlineCssUrl);
-        downloadCSSQueue.push(offlineCssUrl);
-
-        /* Set the drain method to be called one time everything is done */
-        downloadCSSQueue.drain = function drain(error) {
-          if (error) {
-            return reject({ message: `Error in CSS dependencies`, error });
-          }
-          const drainBackup = downloadCSSQueue.drain;
-          downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
-            if (error) {
-              reject({ message: `Error in CSS medias`, error });
-            } else {
-              downloadCSSQueue.drain = drainBackup;
-              resolve();
+          /* Go through all CSS links */
+          // tslint:disable-next-line:prefer-for-of
+          for (let i = 0; i < links.length; i += 1) {
+            const link = links[i];
+            if (link.getAttribute('rel') === 'stylesheet') {
+              downloadCSSQueue.push(link);
             }
+          }
+
+          /* Push Mediawiki:Offline.css ( at the end) */
+          const offlineCssUrl = `${mw.webUrl}Mediawiki:offline.css?action=raw`;
+          downloader.registerOptionalUrl(offlineCssUrl);
+          downloadCSSQueue.push(offlineCssUrl);
+
+          /* Set the drain method to be called one time everything is done */
+          downloadCSSQueue.drain = function drain(error) {
+            if (error) {
+              return reject({ message: `Error in CSS dependencies`, error });
+            }
+            const drainBackup = downloadCSSQueue.drain;
+            downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
+              if (error) {
+                reject({ message: `Error in CSS medias`, error });
+              } else {
+                downloadCSSQueue.drain = drainBackup;
+                resolve();
+              }
+            } as any;
+            downloadCSSFileQueue.push('');
           } as any;
-          downloadCSSFileQueue.push('');
-        } as any;
-        downloadCSSQueue.push('');
-      });
+          downloadCSSQueue.push('');
+        });
     });
   }
 
@@ -1814,14 +1826,21 @@ async function execute(argv) {
       return new Promise((resolve, reject) => {
         if (line) {
           const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-          const f = downloader.downloadContent.bind(downloader, mw.articleQueryUrl(title));
-          setTimeout(f, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, (content) => {
-            const body = content.toString();
-            if (body && body.length > 1) {
-              parseAPIResponse(body);
-            }
-            setTimeout(resolve, redirectQueue.length());
-          });
+          const f = () => {
+            downloader.downloadContent.bind(downloader)(mw.articleQueryUrl(title))
+              .then(({ content }) => {
+                const body = content.toString();
+                if (body && body.length > 1) {
+                  parseAPIResponse(body);
+                }
+                setTimeout(resolve, redirectQueue.length());
+              })
+              .catch(reject);
+          };
+          setTimeout(
+            f,
+            redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
+          );
         } else {
           resolve();
         }
@@ -1838,14 +1857,19 @@ async function execute(argv) {
           reject(`Unable to open article list file: ${error}`);
         }
 
-        async.eachLimit(lines, speed, (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)), (error) => {
-          if (error) {
-            reject(`Unable to get all article ids for a file: ${error}`);
-          } else {
-            logger.log('List of article ids to mirror completed');
-            drainRedirectQueue(redirectQueue).then(resolve, reject);
-          }
-        });
+        async.eachLimit(
+          lines,
+          speed,
+          (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)),
+          (error) => {
+            if (error) {
+              reject({ message: `Unable to get all article ids for a file`, error });
+            } else {
+              logger.log('List of article ids to mirror completed');
+              drainRedirectQueue(redirectQueue).then(resolve, reject);
+            }
+          },
+        );
       });
     }
 
@@ -1861,16 +1885,23 @@ async function execute(argv) {
           );
           const url = mw.pageGeneratorQueryUrl(namespace, next);
           const dc = downloader.downloadContent.bind(downloader);
-          setTimeout(dc, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, (content) => {
-            const body = content.toString();
-            if (body && body.length > 1) {
-              next = parseAPIResponse(body);
-              finished();
-            } else {
-              next = '';
-              finished({ message: `Error by retrieving ${url}` });
-            }
-          });
+          setTimeout((url, handler) => {
+            dc(url)
+              .then(({ content }) => handler(content))
+              .catch((err) => finished(err));
+          },
+            redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
+            url,
+            (content) => {
+              const body = content.toString();
+              if (body && body.length > 1) {
+                next = parseAPIResponse(body);
+                finished();
+              } else {
+                next = '';
+                finished({ message: `Error by retrieving ${url}` });
+              }
+            });
         },
         () => next as any,
         (error) => {
@@ -1916,44 +1947,51 @@ async function execute(argv) {
   }
 
   /* Multiple developer friendly functions */
-  function downloadContentAndCache(url, callback) {
-    const cachePath = zim.cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
-    const cacheHeadersPath = `${cachePath}.h`;
+  function downloadContentAndCache(url): Promise<{ content: any, responseHeaders: any }> {
+    return new Promise((resolve, reject) => {
+      const cachePath = zim.cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
+      const cacheHeadersPath = `${cachePath}.h`;
 
-    async.series(
-      [
-        (finished) => {
-          fs.readFile(cachePath, (error, data) => {
-            finished(error, error ? undefined : data.toString());
-          });
-        },
-        (finished) => {
-          fs.readFile(cacheHeadersPath, (error, data) => {
-            try {
-              finished(error, error ? undefined : JSON.parse(data.toString()));
-            } catch (error) {
-              finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
-            }
-          });
-        },
-      ],
-      (error, results) => {
-        if (error) {
-          downloader.downloadContent(url, (content, responseHeaders) => {
-            logger.info(`Caching ${url} at ${cachePath}...`);
-            fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
-              fs.writeFile(cachePath, content, () => {
-                callback(content, responseHeaders);
-              });
+      async.series(
+        [
+          (finished) => {
+            fs.readFile(cachePath, (error, data) => {
+              finished(error, error ? undefined : data.toString());
             });
-          });
-        } else {
-          logger.info(`Cache hit for ${url} (${cachePath})`);
-          U.touch(cachePath);
-          callback(results[0], results[1]);
-        }
-      },
-    );
+          },
+          (finished) => {
+            fs.readFile(cacheHeadersPath, (error, data) => {
+              try {
+                finished(error, error ? undefined : JSON.parse(data.toString()));
+              } catch (error) {
+                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
+              }
+            });
+          },
+        ],
+        (error, results) => {
+          if (error) {
+            downloader.downloadContent(url)
+              .then(({ content, responseHeaders }) => {
+                logger.info(`Caching ${url} at ${cachePath}...`);
+                fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
+                  fs.writeFile(cachePath, content, () => {
+                    resolve({ content, responseHeaders });
+                  });
+                });
+              })
+              .catch((err) => {
+                console.warn(err);
+                reject(err);
+              });
+          } else {
+            logger.log(`Cache hit for ${url} (${cachePath})`);
+            U.touch(cachePath);
+            resolve({ content: results[0], responseHeaders: results[1] });
+          }
+        },
+      );
+    });
   }
 
   function downloadFileAndCache(url, callback) {
@@ -2117,94 +2155,92 @@ async function execute(argv) {
         const faviconPath = env.htmlRootPath + 'favicon.png';
         const content = fs.readFileSync(customZimFavicon);
         fs.writeFileSync(faviconPath, content);
-        resizeFavicon(faviconPath).then(resolve, reject);
+        return resizeFavicon(faviconPath);
       } else {
-        downloader.downloadContent(mw.siteInfoUrl(), (content) => {
-          const body = content.toString();
-          const entries = JSON.parse(body).query.general;
-          if (!entries.logo) {
-            return reject(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
-          }
-
-          const parsedUrl = urlParser.parse(entries.logo);
-          const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-          const faviconPath = env.htmlRootPath + `favicon.${ext}`;
-          const faviconFinalPath = env.htmlRootPath + `favicon.png`;
-          const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
-          downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
-            if (ext !== 'png') {
-              logger.log(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
-              await new Promise((resolve, reject) => {
-                exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
-                  if (err) {
-                    reject(err);
-                  } else {
-                    resolve();
-                  }
-                });
-              });
+        downloader.downloadContent(mw.siteInfoUrl())
+          .then(({ content }) => {
+            const body = content.toString();
+            const entries = JSON.parse(body).query.general;
+            if (!entries.logo) {
+              return reject(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
             }
-            resizeFavicon(faviconFinalPath).then(resolve, reject);
-          });
-        });
+
+            const parsedUrl = urlParser.parse(entries.logo);
+            const ext = parsedUrl.pathname.split('.').slice(-1)[0];
+            const faviconPath = env.htmlRootPath + `favicon.${ext}`;
+            const faviconFinalPath = env.htmlRootPath + `favicon.png`;
+            const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
+            downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
+              if (ext !== 'png') {
+                console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+                await new Promise((resolve, reject) => {
+                  exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
+                    if (err) {
+                      reject(err);
+                    } else {
+                      resolve();
+                    }
+                  });
+                });
+              }
+              resizeFavicon(faviconFinalPath).then(resolve, reject);
+            });
+          })
+          .catch(reject);
       }
     });
   }
 
   function getMainPage() {
-    return new Promise((resolve, reject) => {
-      function writeMainPage(html) {
-        const mainPagePath = `${env.htmlRootPath}index.htm`;
-        if (env.deflateTmpHtml) {
-          return new Promise((resolve, reject) => {
-            zlib.deflate(html, (error, deflatedHtml) => {
-              writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
-            });
-          });
-        } else {
-          return writeFilePromise(mainPagePath, html);
-        }
-      }
-
-      function createMainPage() {
-        logger.log('Creating main page...');
-        const doc = domino.createDocument(
-          (zim.mobileLayout ? htmlMobileTemplateCode : htmlDesktopTemplateCode)
-            .replace('__ARTICLE_JS_LIST__', '')
-            .replace('__ARTICLE_CSS_LIST__', '')
-            .replace('__ARTICLE_CONFIGVARS_LIST__', ''),
-        );
-        doc.getElementById('titleHeading').innerHTML = 'Summary';
-        doc.getElementsByTagName('title')[0].innerHTML = 'Summary';
-
-        let html = '<ul>\n';
-        Object.keys(articleIds).sort().forEach((articleId) => {
-          html += `<li><a href="${env.getArticleBase(articleId, true)}">${articleId.replace(/_/g, ' ')}<a></li>\n`;
-        });
-        html += '</ul>\n';
-        doc.getElementById('mw-content-text').innerHTML = html;
-
-        /* Write the static html file */
-        return writeMainPage(doc.documentElement.outerHTML);
-      }
-
-      function createMainPageRedirect() {
+    function writeMainPage(html) {
+      const mainPagePath = `${env.htmlRootPath}index.htm`;
+      if (env.deflateTmpHtml) {
         return new Promise((resolve, reject) => {
-          logger.log('Create main page redirection...');
-          const html = redirectTemplate({
-            title: zim.mainPageId.replace(/_/g, ' '),
-            target: env.getArticleBase(zim.mainPageId, true),
+          zlib.deflate(html, (error, deflatedHtml) => {
+            writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
           });
-          writeMainPage(html).then(resolve, reject);
         });
-      }
-
-      if (zim.mainPageId) {
-        createMainPageRedirect().then(resolve, reject);
       } else {
-        createMainPage().then(resolve, reject);
+        return writeFilePromise(mainPagePath, html);
       }
-    });
+    }
+
+    function createMainPage() {
+      logger.log('Creating main page...');
+      const doc = domino.createDocument(
+        (zim.mobileLayout ? htmlMobileTemplateCode : htmlDesktopTemplateCode)
+          .replace('__ARTICLE_JS_LIST__', '')
+          .replace('__ARTICLE_CSS_LIST__', '')
+          .replace('__ARTICLE_CONFIGVARS_LIST__', ''),
+      );
+      doc.getElementById('titleHeading').innerHTML = 'Summary';
+      doc.getElementsByTagName('title')[0].innerHTML = 'Summary';
+
+      let html = '<ul>\n';
+      Object.keys(articleIds).sort().forEach((articleId) => {
+        html += `<li><a href="${env.getArticleBase(articleId, true)}">${articleId.replace(/_/g, ' ')}<a></li>\n`;
+      });
+      html += '</ul>\n';
+      doc.getElementById('mw-content-text').innerHTML = html;
+
+      /* Write the static html file */
+      return writeMainPage(doc.documentElement.outerHTML);
+    }
+
+    function createMainPageRedirect() {
+      logger.log('Create main page redirection...');
+      const html = redirectTemplate({
+        title: zim.mainPageId.replace(/_/g, ' '),
+        target: env.getArticleBase(zim.mainPageId, true),
+      });
+      return writeMainPage(html);
+    }
+
+    if (zim.mainPageId) {
+      return createMainPageRedirect();
+    } else {
+      return createMainPage();
+    }
   }
 
 }

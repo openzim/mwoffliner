@@ -16,4 +16,6 @@ npm run build
 mv tmp ../test-run-master
 
 
-diff -r ../test-run-change ../test-run-master
+(diff -r ../test-run-change ../test-run-master)
+
+exit 0
