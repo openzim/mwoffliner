@@ -7,7 +7,8 @@
     "npm run test"
   ],
   "before_install": [
-    "sudo apt install jpegoptim advancecomp gifsicle pngquant imagemagick",
+    "sudo apt update",
+    "sudo apt install jpegoptim advancecomp gifsicle pngquant imagemagick"
   ],
   "install": [
     "npm ci"
