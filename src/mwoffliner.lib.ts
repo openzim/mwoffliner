@@ -337,12 +337,8 @@ async function execute(argv) {
     }
 
     fs.stat(path, (preOptimError, preOptimStats) => {
-      if (preOptimError || Number(preOptimStats.size) !== Number(file.size)) {
-        if (preOptimError) {
-          logger.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimError);
-        } else {
-          logger.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimStats ? preOptimStats.size : 'No stats information');
-        }
+      if (preOptimError) {
+        logger.error(`Failed to start to optim ${path} - file was probably deleted:`, preOptimError);
         finished();
         return;
       }
@@ -368,9 +364,9 @@ async function execute(argv) {
             }
 
             fs.stat(path, (postOptimError, postOptimStats) => {
-              if (!postOptimError && postOptimStats.size > file.size) {
+              if (!postOptimError && postOptimStats.size > preOptimStats.size) {
                 finished(null, true);
-              } else if (!postOptimError && postOptimStats.size < file.size) {
+              } else if (!postOptimError && postOptimStats.size < preOptimStats.size) {
                 finished('File to optim is smaller (before optim) than it should.');
               } else {
                 exec(`file -b --mime-type "${path}"`, (error, stdout) => {
