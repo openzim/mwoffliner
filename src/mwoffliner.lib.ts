@@ -1426,105 +1426,64 @@ async function execute(argv) {
 
       function saveArticle(articleId, finished) {
         let html = '';
-        const isMainPage = zim.mainPageId === articleId;
-        if (isMainPage) {
-          const articleUrl = parsoidUrl
-            + encodeURIComponent(articleId)
-            + (parsoidUrl.indexOf('/rest') < 0 ? `${parsoidUrl.indexOf('?') < 0 ? '?' : '&'}oldid=` : '/')
-            + articleIds[articleId];
-          logger.log(`Getting (desktop) article from ${articleUrl}`);
-          setTimeout(
-            skipHtmlCache || articleId === zim.mainPageId
-              ? downloader.downloadContent.bind(downloader)
-              : downloadContentAndCache,
-            downloadFileQueue.length() + optimizationQueue.length(),
-            articleUrl,
-            (content) => {
-              let json;
-              if (parsoidContentType === 'json') {
-                try {
-                  json = JSON.parse(content.toString());
-                } catch (e) {
-                  // TODO: Figure out why this is happening
-                  html = content.toString();
-                  console.error(e);
-                }
-                if (json && json.visualeditor) {
-                  html = json.visualeditor.content;
-                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
-                  html = json.html.body;
-                } else if (json && json.error) {
-                  console.error(`Error by retrieving article: ${json.error.info}`);
-                } else {
-                  html = content.toString();
-                }
-              } else {
-                html = content.toString();
-              }
-              buildArticleFromApiData();
-            },
-            articleId,
-          );
-        } else {
-          const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
-          logger.log(`Getting (mobile) article from ${articleApiUrl}`);
-          fetch(articleApiUrl, {
-            method: 'GET',
-            headers: { Accept: 'application/json' },
-          })
-            .then((response) => response.json())
-            .then((json) => {
-              // set the first section (open by default)
-              html += leadSectionTemplate({
-                lead_display_title: json.lead.displaytitle,
-                lead_section_text: json.lead.sections[0].text,
-              });
-
-              // set all other section (closed by default)
-              if (!env.nodet) {
-                json.remaining.sections.forEach((oneSection, i) => {
-                  if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
-                    html += sectionTemplate({
-                      section_index: i,
-                      section_id: i,
-                      section_anchor: 'TopLevelSection',
-                      section_line: 'Disambiguation',
-                      section_text: '',
-                    });
-                  }
-
-                  // if below is to test if we need to nest a subsections into a section
-                  if (oneSection.toclevel === 1) {
-                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
-                    html += sectionTemplate({
-                      section_index: i + 1,
-                      section_id: oneSection.id,
-                      section_anchor: oneSection.anchor,
-                      section_line: oneSection.line,
-                      section_text: oneSection.text,
-                    });
-                  } else {
-                    const replacement = subSectionTemplate({
-                      section_index: i + 1,
-                      section_toclevel: oneSection.toclevel + 1,
-                      section_id: oneSection.id,
-                      section_anchor: oneSection.anchor,
-                      section_line: oneSection.line,
-                      section_text: oneSection.text,
-                    });
-                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
-                  }
-                });
-              }
-
-              html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
-              buildArticleFromApiData();
-            })
-            .catch((e) => {
-              console.error(`Error handling json response from api. ${e}`);
-              buildArticleFromApiData();
+        const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
+        logger.log(`Getting (mobile) article from ${articleApiUrl}`);
+        fetch(articleApiUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        })
+          .then((response) => response.json())
+          .then((json) => {
+            // set the first section (open by default)
+            html += leadSectionTemplate({
+              lead_display_title: json.lead.displaytitle,
+              lead_section_text: json.lead.sections[0].text,
             });
-        }
+
+            // set all other section (closed by default)
+            if (!env.nodet) {
+              json.remaining.sections.forEach((oneSection, i) => {
+                if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
+                  html += sectionTemplate({
+                    section_index: i,
+                    section_id: i,
+                    section_anchor: 'TopLevelSection',
+                    section_line: 'Disambiguation',
+                    section_text: '',
+                  });
+                }
+
+                // if below is to test if we need to nest a subsections into a section
+                if (oneSection.toclevel === 1) {
+                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
+                  html += sectionTemplate({
+                    section_index: i + 1,
+                    section_id: oneSection.id,
+                    section_anchor: oneSection.anchor,
+                    section_line: oneSection.line,
+                    section_text: oneSection.text,
+                  });
+                } else {
+                  const replacement = subSectionTemplate({
+                    section_index: i + 1,
+                    section_toclevel: oneSection.toclevel + 1,
+                    section_id: oneSection.id,
+                    section_anchor: oneSection.anchor,
+                    section_line: oneSection.line,
+                    section_text: oneSection.text,
+                  });
+                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
+                }
+              });
+            }
+
+            html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
+            buildArticleFromApiData();
+          })
+          .catch((e) => {
+            console.error(`Error handling json response from api. ${e}`);
+            buildArticleFromApiData();
+          });
 
         function buildArticleFromApiData() {
           if (html) {
