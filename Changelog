@@ -1,5 +1,4 @@
-1.6.1:
-* 
+1.7.0:
 
 1.6.0:
 * FIX: Template referencing #421
@@ -8,11 +7,11 @@
 * FIX: Fixed --addNamespace #338
 * FIX: CSS Image issue #418
 * UPDATE: Implemented PDF downloads #338
-* UPDATE: Added mwmatrixoffliner tests 
+* UPDATE: Added mwmatrixoffliner tests
 * UPDATE: Added git revision to version log #426
-* UPDATE: Normalised Resources and Templates 
+* UPDATE: Normalised Resources and Templates
 * UPDATE: Strip HTML from title tags #159
-* UPDATE: Improved Error Handling 
+* UPDATE: Improved Error Handling
 * UPDATE: Converted to TypeScript #386
 
 1.5.0:
