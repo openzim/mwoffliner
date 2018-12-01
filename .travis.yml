@@ -5,5 +5,11 @@
     "npm run lint",
     "npm run build",
     "npm run test"
-  ]
+  ],
+  "before_install": [
+    "apt install jpegoptim advancecomp gifsicle pngquant imagemagick",
+  ],
+  "install": [
+    "npm ci"
+  ],
 }
