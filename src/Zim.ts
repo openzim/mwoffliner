@@ -148,15 +148,15 @@ class Zim {
             logger.log(data.toString().replace(/[\n\r]/g, ''));
           })
             .on('error', (error) => {
-              console.error(`STDOUT output error: ${error}`);
+              logger.error(`STDOUT output error: ${error}`);
             });
         }
         if (!nostderr) {
           proc.stderr.on('data', (data) => {
-            console.error(data.toString().replace(/[\n\r]/g, ''));
+            logger.error(data.toString().replace(/[\n\r]/g, ''));
           })
             .on('error', (error) => {
-              console.error(`STDERR output error: ${error}`);
+              logger.error(`STDERR output error: ${error}`);
             });
         }
         proc.on('close', (code) => {
@@ -214,7 +214,7 @@ class Zim {
             .catch((error) => {
               reject(`Failed to build successfuly the ZIM file ${zimPath} (${error})`);
             });
-        }).on('error', (error) => { console.error(error); });
+        }).on('error', (error) => { logger.error(error); });
       });
     } else {
       return Promise.resolve();

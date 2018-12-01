@@ -10,13 +10,14 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/bin/mwoffliner.script.js",
             "args": [
-                "--mwUrl=http://en.wikivoyage.org",
+                "--mwUrl=https://en.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
                 "--localParsoid",
-                "--verbose",
+                // "--verbose",
                 "--format=nozim",
                 "--articleList=./articleList",
-                "--customZimFavicon=test.png"
+                "--redis=redis://127.0.0.1:6379"
+                // "--customZimFavicon=test.png"
             ]
         }
     ]

@@ -56,7 +56,7 @@ class Downloader {
   public downloadContent(url: string): Promise<{ content: any, responseHeaders: any }> {
     return new Promise((resolve, reject) => {
       let responseHeaders = {};
-      this.logger.log(`Downloading [${decodeURI(url)}]`);
+      this.logger.info(`Downloading [${decodeURI(url)}]`);
       async.retry(3, async (finished) => {
         try {
           const resp = await axios(this.getRequestOptionsFromUrl(url, true));
@@ -92,7 +92,7 @@ class Downloader {
       if (statError && !force) {
         callback(statError.code !== 'ENOENT' && statError ? `Impossible to stat() ${path}:\n${path} already downloaded, download will be skipped.` : undefined);
       } else {
-        self.logger.log(`Downloading ${decodeURI(url)} at ${path}...`);
+        self.logger.info(`Downloading ${decodeURI(url)} at ${path}...`);
         try {
           const { content, responseHeaders } = await self.downloadContent(url);
           fs.writeFile(path, content, (writeError) => {
