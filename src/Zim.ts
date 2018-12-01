@@ -26,7 +26,6 @@ class Zim {
   public description: any;
   public subTitle: any;
   public creator: any;
-  public mobileLayout: boolean;
   public articleList: any;
 
   constructor(config, args) {

@@ -72,7 +72,6 @@ async function execute(argv) {
     customZimDescription,
     customZimTags,
     cacheDirectory,
-    mobileLayout,
     outputDirectory,
     tmpDirectory,
     withZimFullTextIndex,
@@ -151,9 +150,6 @@ async function execute(argv) {
     description: customZimDescription || '',
     tags: customZimTags || '',
     cacheDirectory: `${cacheDirectory || pathParser.resolve(process.cwd(), 'cac')}/`,
-
-    // Layout
-    mobileLayout: mobileLayout || false,
 
     // File where redirects might be save if --writeHtmlRedirects is not set
     redirectsCacheFile: null,
@@ -286,13 +282,12 @@ async function execute(argv) {
   /* ********************************** */
 
   const genericJsModules = config.output.mw.js;
-  const genericCssModules = zim.mobileLayout ? config.output.mw.css.mobile : config.output.mw.css.desktop;
+  const genericCssModules = config.output.mw.css;
 
   const mediaRegex = /^(.*\/)([^/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6}|)(\.[A-Za-z0-9]{2,6}|)$/;
-  const htmlMobileTemplateCode = readTemplate(config.output.templates.mobile)
+  const htmlTemplateCode = readTemplate(config.output.templates.page)
     .replace('__CSS_LINKS__', cssLinks)
     .replace('__JS_SCRIPTS__', jsScripts);
-  const htmlDesktopTemplateCode = readTemplate(config.output.templates.desktop);
 
   /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
@@ -483,7 +478,7 @@ async function execute(argv) {
 
     return doSeries([
       () => zim.createSubDirectories(),
-      zim.mobileLayout ? () => saveStaticFiles() : null,
+      () => saveStaticFiles(),
       () => saveStylesheet(),
       () => saveFavicon(),
       () => getMainPage(),
@@ -954,60 +949,43 @@ async function execute(argv) {
             const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
             const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
 
-            if (
-              imageNodeTypeof.indexOf('mw:Image/Thumb') >= 0
-              || imageNodeTypeof.indexOf('mw:Video/Thumb') >= 0
-              || zim.mobileLayout
-            ) {
-              const descriptions = imageNode.getElementsByTagName('figcaption');
-              const description = descriptions.length > 0 ? descriptions[0] : undefined;
-              const imageWidth = parseInt(image.getAttribute('width'), 10);
+            const descriptions = imageNode.getElementsByTagName('figcaption');
+            const description = descriptions.length > 0 ? descriptions[0] : undefined;
+            const imageWidth = parseInt(image.getAttribute('width'), 10);
 
-              let thumbDiv = parsoidDoc.createElement('div');
-              thumbDiv.setAttribute('class', 'thumb');
-              if (imageNodeClass.search('mw-halign-right') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tright');
-              } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tleft');
-              } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tnone');
-                const centerDiv = parsoidDoc.createElement('center');
-                centerDiv.appendChild(thumbDiv);
-                thumbDiv = centerDiv;
-              } else {
-                const revAutoAlign = env.ltr ? 'right' : 'left';
-                DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
-              }
-
-              const thumbinnerDiv = parsoidDoc.createElement('div');
-              thumbinnerDiv.setAttribute('class', 'thumbinner');
-              thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
-
-              const thumbcaptionDiv = parsoidDoc.createElement('div');
-              thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-              const autoAlign = env.ltr ? 'left' : 'right';
-              thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
-              if (description) {
-                thumbcaptionDiv.innerHTML = description.innerHTML;
-              }
-
-              thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
-              thumbinnerDiv.appendChild(thumbcaptionDiv);
-              thumbDiv.appendChild(thumbinnerDiv);
-
-              imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-            } else if (imageNodeTypeof.indexOf('mw:Image') >= 0) {
-              const div = parsoidDoc.createElement('div');
-              if (imageNodeClass.search('mw-halign-right') >= 0) {
-                DU.appendToAttr(div, 'class', 'floatright');
-              } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-                DU.appendToAttr(div, 'class', 'floatleft');
-              } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-                DU.appendToAttr(div, 'class', 'center');
-              }
-              div.appendChild(isStillLinked ? image.parentNode : image);
-              imageNode.parentNode.replaceChild(div, imageNode);
+            let thumbDiv = parsoidDoc.createElement('div');
+            thumbDiv.setAttribute('class', 'thumb');
+            if (imageNodeClass.search('mw-halign-right') >= 0) {
+              DU.appendToAttr(thumbDiv, 'class', 'tright');
+            } else if (imageNodeClass.search('mw-halign-left') >= 0) {
+              DU.appendToAttr(thumbDiv, 'class', 'tleft');
+            } else if (imageNodeClass.search('mw-halign-center') >= 0) {
+              DU.appendToAttr(thumbDiv, 'class', 'tnone');
+              const centerDiv = parsoidDoc.createElement('center');
+              centerDiv.appendChild(thumbDiv);
+              thumbDiv = centerDiv;
+            } else {
+              const revAutoAlign = env.ltr ? 'right' : 'left';
+              DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
             }
+
+            const thumbinnerDiv = parsoidDoc.createElement('div');
+            thumbinnerDiv.setAttribute('class', 'thumbinner');
+            thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
+
+            const thumbcaptionDiv = parsoidDoc.createElement('div');
+            thumbcaptionDiv.setAttribute('class', 'thumbcaption');
+            const autoAlign = env.ltr ? 'left' : 'right';
+            thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
+            if (description) {
+              thumbcaptionDiv.innerHTML = description.innerHTML;
+            }
+
+            thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
+            thumbinnerDiv.appendChild(thumbcaptionDiv);
+            thumbDiv.appendChild(thumbinnerDiv);
+
+            imageNode.parentNode.replaceChild(thumbDiv, imageNode);
           } else {
             DU.deleteNode(imageNode);
           }
@@ -1332,7 +1310,7 @@ async function execute(argv) {
 
       function setFooter(parsoidDoc, articleId, finished) {
         const htmlTemplateDoc = domino.createDocument(
-          (zim.mobileLayout ? htmlMobileTemplateCode : htmlDesktopTemplateCode)
+          htmlTemplateCode
             .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript('jsConfigVars') : '')
             .replace(
               '__ARTICLE_JS_LIST__',
@@ -1355,23 +1333,10 @@ async function execute(argv) {
         ].innerHTML;
 
         /* Title */
-        if (zim.mobileLayout) {
-          htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-            ? htmlTemplateDoc.getElementById('title_0').textContent
-            : articleId.replace(/_/g, ' ');
-          DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
-        } else {
-          htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = parsoidDoc.getElementsByTagName('title')
-            ? parsoidDoc.getElementsByTagName('title')[0].textContent.replace(/_/g, ' ')
-            : articleId.replace(/_/g, ' ');
-          if (zim.mainPageId !== articleId) {
-            htmlTemplateDoc.getElementById('titleHeading').innerHTML = htmlTemplateDoc.getElementsByTagName('title')[
-              0
-            ].innerHTML;
-          } else {
-            DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
-          }
-        }
+        htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
+          ? htmlTemplateDoc.getElementById('title_0').textContent
+          : articleId.replace(/_/g, ' ');
+        DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
 
         /* Subpage */
         if (isSubpage(articleId) && zim.mainPageId !== articleId) {
@@ -1461,7 +1426,46 @@ async function execute(argv) {
 
       function saveArticle(articleId, finished) {
         let html = '';
-        if (zim.mobileLayout && zim.mainPageId !== articleId) {
+        const isMainPage = zim.mainPageId === articleId;
+        if (isMainPage) {
+          const articleUrl = parsoidUrl
+            + encodeURIComponent(articleId)
+            + (parsoidUrl.indexOf('/rest') < 0 ? `${parsoidUrl.indexOf('?') < 0 ? '?' : '&'}oldid=` : '/')
+            + articleIds[articleId];
+          logger.log(`Getting (desktop) article from ${articleUrl}`);
+          setTimeout(
+            skipHtmlCache || articleId === zim.mainPageId
+              ? downloader.downloadContent.bind(downloader)
+              : downloadContentAndCache,
+            downloadFileQueue.length() + optimizationQueue.length(),
+            articleUrl,
+            (content) => {
+              let json;
+              if (parsoidContentType === 'json') {
+                try {
+                  json = JSON.parse(content.toString());
+                } catch (e) {
+                  // TODO: Figure out why this is happening
+                  html = content.toString();
+                  console.error(e);
+                }
+                if (json && json.visualeditor) {
+                  html = json.visualeditor.content;
+                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
+                  html = json.html.body;
+                } else if (json && json.error) {
+                  console.error(`Error by retrieving article: ${json.error.info}`);
+                } else {
+                  html = content.toString();
+                }
+              } else {
+                html = content.toString();
+              }
+              buildArticleFromApiData();
+            },
+            articleId,
+          );
+        } else {
           const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
           logger.log(`Getting (mobile) article from ${articleApiUrl}`);
           fetch(articleApiUrl, {
@@ -1520,44 +1524,6 @@ async function execute(argv) {
               console.error(`Error handling json response from api. ${e}`);
               buildArticleFromApiData();
             });
-        } else {
-          const articleUrl = parsoidUrl
-            + encodeURIComponent(articleId)
-            + (parsoidUrl.indexOf('/rest') < 0 ? `${parsoidUrl.indexOf('?') < 0 ? '?' : '&'}oldid=` : '/')
-            + articleIds[articleId];
-          logger.log(`Getting (desktop) article from ${articleUrl}`);
-          setTimeout(
-            skipHtmlCache || articleId === zim.mainPageId
-              ? downloader.downloadContent.bind(downloader)
-              : downloadContentAndCache,
-            downloadFileQueue.length() + optimizationQueue.length(),
-            articleUrl,
-            (content) => {
-              let json;
-              if (parsoidContentType === 'json') {
-                try {
-                  json = JSON.parse(content.toString());
-                } catch (e) {
-                  // TODO: Figure out why this is happening
-                  html = content.toString();
-                  console.error(e);
-                }
-                if (json && json.visualeditor) {
-                  html = json.visualeditor.content;
-                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
-                  html = json.html.body;
-                } else if (json && json.error) {
-                  console.error(`Error by retrieving article: ${json.error.info}`);
-                } else {
-                  html = content.toString();
-                }
-              } else {
-                html = content.toString();
-              }
-              buildArticleFromApiData();
-            },
-            articleId,
-          );
         }
 
         function buildArticleFromApiData() {
@@ -2169,7 +2135,7 @@ async function execute(argv) {
       function createMainPage() {
         logger.log('Creating main page...');
         const doc = domino.createDocument(
-          (zim.mobileLayout ? htmlMobileTemplateCode : htmlDesktopTemplateCode)
+          htmlTemplateCode
             .replace('__ARTICLE_JS_LIST__', '')
             .replace('__ARTICLE_CSS_LIST__', '')
             .replace('__ARTICLE_CONFIGVARS_LIST__', ''),
