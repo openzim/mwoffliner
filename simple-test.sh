@@ -5,7 +5,7 @@ cp ./articleList ../articleList
 ./bin/mwoffliner.script.js --mwUrl=https://en.wikipedia.org --adminEmail=admin@kiwix.com --localParsoid --redis=redis://127.0.0.1:6379 --format=nozim --articleList=../articleList
 mv tmp ../test-run-change
 
-# git checkout master
+git checkout master
 
 rm -rf cac
 redis-cli flushall
