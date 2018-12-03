@@ -203,7 +203,7 @@ class MediaWiki {
 
       return null; /* Interwiki link? -- return null */
     } catch (error) {
-      console.error(`Unable to parse href ${href}`);
+      this.logger.warn(`Unable to parse href ${href}`);
       return null;
     }
   }

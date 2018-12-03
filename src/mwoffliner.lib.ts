@@ -32,11 +32,6 @@ import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise
 import Zim from './Zim';
 import packageJSON from '../package.json';
 
-const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
-if (!nodeVersionSatisfiesPackage) {
-  console.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
-}
-
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
   return parameterList;
@@ -106,6 +101,11 @@ async function execute(argv) {
 
   /* logger */
   const logger = new Logger(verbose);
+
+  const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
+  if (!nodeVersionSatisfiesPackage) {
+    logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
+  }
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki(logger, {
@@ -201,7 +201,7 @@ async function execute(argv) {
 
   if (!parsoidUrl) {
     if (localParsoid) {
-      console.info('Starting Parsoid');
+      logger.log('Starting Parsoid');
       // Icky but necessary
       fs.writeFileSync(
         './localsettings.js',
@@ -225,7 +225,7 @@ async function execute(argv) {
         })
         .then((_) => {
           fs.unlinkSync('./localsettings.js');
-          console.info('Parsoid Started Successfully');
+          logger.log('Parsoid Started Successfully');
         });
       parsoidUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
       parsoidContentType = 'json';
@@ -334,9 +334,9 @@ async function execute(argv) {
     fs.stat(path, (preOptimError, preOptimStats) => {
       if (preOptimError || preOptimStats.size !== file.size) {
         if (preOptimError) {
-          console.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimError);
+          logger.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimError);
         } else {
-          console.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimStats ? preOptimStats.size : 'No stats information');
+          logger.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimStats ? preOptimStats.size : 'No stats information');
         }
         finished();
         return;
@@ -351,7 +351,7 @@ async function execute(argv) {
       async.retry(
         5,
         (finished) => {
-          console.info(`Executing command : ${cmd}`);
+          logger.info(`Executing command : ${cmd}`);
           if (!cmd) {
             finished(null, 'No optim command, skipping file');
             return;
@@ -383,11 +383,11 @@ async function execute(argv) {
         },
         (error, skip) => {
           if (error) {
-            console.error(`Failed to optim ${path}, with size=${file.size} (${error})`);
+            logger.warn(`Failed to optim ${path}, with size=${file.size} (${error})`);
           } else if (skip) {
-            logger.log(`Optimization skipped for ${path}, with size='${file.size}, a better version was downloaded meanwhile.`);
+            logger.info(`Optimization skipped for ${path}, with size='${file.size}, a better version was downloaded meanwhile.`);
           } else {
-            logger.log(`Successfuly optimized ${path}`);
+            logger.info(`Successfuly optimized ${path}`);
           }
           finished();
         },
@@ -403,7 +403,7 @@ async function execute(argv) {
   /* Get ids */
   const redirectQueue = async.queue((articleId, finished) => {
     if (articleId) {
-      logger.log(`Getting redirects for article ${articleId}...`);
+      logger.info(`Getting redirects for article ${articleId}...`);
       const url = mw.backlinkRedirectsQueryUrl(articleId);
       downloader.downloadContent(url, (content) => {
         const body = content.toString();
@@ -422,7 +422,7 @@ async function execute(argv) {
                 zim.mainPageId = articleId;
               }
             });
-            logger.log(`${redirectsCount} redirect(s) found for ${articleId}`);
+            logger.info(`${redirectsCount} redirect(s) found for ${articleId}`);
             redis.saveRedirects(redirectsCount, redirects, finished);
           } else {
             finished(JSON.parse(body).error);
@@ -514,7 +514,7 @@ async function execute(argv) {
         try {
           fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
         } catch (error) {
-          console.error(`Could not create ${css} file : ${error}`);
+          logger.warn(`Could not create ${css} file : ${error}`);
         }
       });
 
@@ -526,7 +526,7 @@ async function execute(argv) {
             }),
           );
         } catch (error) {
-          console.error(`Could not create ${js} file : ${error}`);
+          logger.warn(`Could not create ${js} file : ${error}`);
         }
       });
       resolve();
@@ -600,7 +600,7 @@ async function execute(argv) {
     logger.log('Caching redirects...');
     function cacheRedirect(redirectId, finished) {
       redis.getRedirect(redirectId, finished, (target) => {
-        logger.log(`Caching redirect ${redirectId} (to ${target})...`);
+        logger.info(`Caching redirect ${redirectId} (to ${target})...`);
         const line = 'A\t'
           + `${env.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
@@ -621,7 +621,7 @@ async function execute(argv) {
 
       function saveHtmlRedirect(redirectId, finished) {
         redis.getRedirect(redirectId, finished, (target) => {
-          logger.log(`Writing HTML redirect ${redirectId} (to ${target})...`);
+          logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
           const data = redirectTemplate({
             target: env.getArticleUrl(target),
             title: redirectId.replace(/_/g, ' '),
@@ -678,8 +678,8 @@ async function execute(argv) {
               (oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep),
             );
 
-            logger.log(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
-            logger.log(`Css dependencies of ${articleId} : ${styleDependenciesList}`);
+            logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
+            logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`);
 
             const allDependenciesWithType = [
               { type: 'js', moduleList: jsDependenciesList },
@@ -704,13 +704,13 @@ async function execute(argv) {
               fs.writeFileSync(pathParser.resolve(env.htmlRootPath, jsPath('jsConfigVars')), jsConfigVars);
               logger.log(`created dep jsConfigVars.js for article ${articleId}`);
             } catch (e) {
-              console.error('Error writing file', e);
+              logger.warn('Error writing file', e);
             }
 
             finished(null, parsoidDoc, articleId);
           })
           .catch((e) => {
-            console.log(`Error fetching api.php for ${articleApiUrl} ${e}`);
+            logger.warn(`Error fetching api.php for ${articleApiUrl} ${e}`);
             finished(null, parsoidDoc, articleId); // calling finished here will allow zim generation to continue event if an article doesn't properly get its modules
           });
 
@@ -753,7 +753,7 @@ async function execute(argv) {
             apiParameterOnly = 'styles';
           }
 
-          console.info(`Getting [${type}] module [${module}]`);
+          logger.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
             `${mw.base}w/load.php?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
@@ -774,17 +774,17 @@ async function execute(argv) {
 
                     try {
                       fs.writeFileSync(moduleUri, text);
-                      logger.log(`created dep ${module} for article ${articleId}`);
+                      logger.info(`created dep ${module} for article ${articleId}`);
                     } catch (e) {
-                      console.error(`Error writing file ${moduleUri} ${e}`);
+                      logger.warn(`Error writing file ${moduleUri} ${e}`);
                     }
                   })
-                  .catch((e) => console.error(`Error fetching load.php for ${articleId} ${e}`));
+                  .catch((e) => logger.warn(`Error fetching load.php for ${articleId} ${e}`));
               } else {
                 return Promise.resolve();
               }
             })
-            .catch((e) => console.error(e));
+            .catch((e) => logger.error(e));
         }
       }
 
@@ -1097,7 +1097,7 @@ async function execute(argv) {
                     linkNode.setAttribute('href', getMediaUrl(href));
                     downloadFileQueue.push(href);
                   } catch (err) {
-                    console.warn('Error parsing url:', err);
+                    logger.warn('Error parsing url:', err);
                     DU.deleteNode(linkNode);
                   }
                 }
@@ -1498,9 +1498,9 @@ async function execute(argv) {
               parseHtml,
             );
 
-            logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
+            logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
-              if (!error) { logger.log(`Successfully dumped article ${articleId}`); }
+              if (!error) { logger.info(`Successfully dumped article ${articleId}`); }
               finished(error && { message: `Error preparing and saving file`, error });
             });
           } else {
@@ -1572,7 +1572,7 @@ async function execute(argv) {
         if (cssUrl) {
           const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
 
-          logger.log(`Downloading CSS from ${decodeURI(cssUrl)}`);
+          logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`);
           downloader.downloadContent(cssUrl, (content) => {
             const body = content.toString();
 
@@ -1607,7 +1607,7 @@ async function execute(argv) {
                     downloadCSSFileQueue.push({ url, path: env.htmlRootPath + dirs.style + '/' + filename });
                   }
                 } else {
-                  console.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
+                  logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
                 }
               }
             }
@@ -1690,7 +1690,7 @@ async function execute(argv) {
           entry.title = entry.title.replace(/ /g, mw.spaceDelimiter);
 
           if ('missing' in entry) {
-            console.error(`Article ${entry.title} is not available on this wiki.`);
+            logger.warn(`Article ${entry.title} is not available on this wiki.`);
             delete articleIds[entry.title];
           } else {
             redirectQueueValues.push(entry.title);
@@ -1710,7 +1710,7 @@ async function execute(argv) {
               /* Save as JSON string */
               details[entry.title] = JSON.stringify(articleDetails);
             } else if (entry.pageid) {
-              logger.log(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
+              logger.warn(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
               delete articleIds[entry.title];
             } else {
               throw new Error(`Unable to get revisions for ${entry.title}\nJSON was ${body}`);
@@ -1865,7 +1865,7 @@ async function execute(argv) {
       (error, results) => {
         if (error) {
           downloader.downloadContent(url, (content, responseHeaders) => {
-            logger.log(`Caching ${url} at ${cachePath}...`);
+            logger.info(`Caching ${url} at ${cachePath}...`);
             fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
               fs.writeFile(cachePath, content, () => {
                 callback(content, responseHeaders);
@@ -1873,7 +1873,7 @@ async function execute(argv) {
             });
           });
         } else {
-          logger.log(`Cache hit for ${url} (${cachePath})`);
+          logger.info(`Cache hit for ${url} (${cachePath})`);
           U.touch(cachePath);
           callback(results[0], results[1]);
         }
@@ -1910,7 +1910,7 @@ async function execute(argv) {
             try {
               responseHeaders = JSON.parse(fs.readFileSync(cacheHeadersPath).toString());
             } catch (err) {
-              console.error(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}, error is:`, err);
+              logger.warn(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}`, err);
               responseHeaders = undefined;
             }
 
@@ -1945,7 +1945,7 @@ async function execute(argv) {
               if (error) {
                 callback();
               } else {
-                logger.log(`Caching ${filenameBase} at ${cachePath}...`);
+                logger.info(`Caching ${filenameBase} at ${cachePath}...`);
                 fs.symlink(cachePath, mediaPath, 'file', (error) => {
                   if (error && error.code !== 'EEXIST') {
                     return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
@@ -1957,7 +1957,7 @@ async function execute(argv) {
               }
             });
           } else {
-            logger.log(`Cache hit for ${url}`);
+            logger.info(`Cache hit for ${url}`);
           }
         });
       } else {
@@ -1977,7 +1977,7 @@ async function execute(argv) {
     }
 
     if (!root) {
-      console.error(`Unable to parse media url "${url}"`);
+      logger.warn(`Unable to parse media url "${url}"`);
       return '';
     }
 
@@ -2058,7 +2058,7 @@ async function execute(argv) {
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
           downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
             if (ext !== 'png') {
-              console.warn(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+              logger.log(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
               await new Promise((resolve, reject) => {
                 exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
                   if (err) {

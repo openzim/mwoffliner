@@ -3,6 +3,17 @@
   "node_js": "8",
   "script": [
     "npm run lint",
-    "npm run build"
-  ]
+    "npm run build",
+    "npm run test",
+  ],
+  "before_install": [
+    "sudo apt update",
+    "sudo apt install jpegoptim advancecomp gifsicle pngquant imagemagick librsvg2-bin",
+  ],
+  "install": [
+    "npm ci",
+  ],
+  "services": [
+    "redis-server",
+  ],
 }
