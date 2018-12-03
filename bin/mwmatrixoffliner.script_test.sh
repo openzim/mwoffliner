@@ -29,11 +29,6 @@ runTest() {
 }
 
 # The tests
-name=MobileLayout
-test_args=( --project=wiki --mobileLayout --language=es )
-want="mwoffliner.script.js --mwUrl=https://es.wikipedia.org/ --parsoidUrl=https://es.wikipedia.org/api/rest_v1/page/html/ --adminEmail=foo@bar.net --format=novid --format=nopic --verbose --mobileLayout"
-runTest $name $test_args "$want"
-
 name=MultipleLanguages
 test_args=( --project=wikivoyage --language="(de|en|fr)" )
 want="mwoffliner.script.js --mwUrl=https://de.wikivoyage.org/ --parsoidUrl=https://de.wikivoyage.org/api/rest_v1/page/html/ --adminEmail=foo@bar.net --format=novid --format=nopic --verbose

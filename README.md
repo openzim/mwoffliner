@@ -165,12 +165,3 @@ mwoffliner.execute(parameters)
 *   mwoffliner uses Parsoid.
 *   mwoffliner calls Parsoid and then post-processes the results for
     offline format.
-
-**mwoffliner code and behavior are radically different for Mobile and
-Desktop modes.**
-
-*   Parsoid output for Mobile is radically different than for Desktop
-    *   Mobile: Multiple structured sections, but not directly renderable
-    *   Desktop: One renderable page
-*   Therefore mwoffliner is quite different depending on whether it is
-    in Mobile or Desktop mode.

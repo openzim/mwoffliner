@@ -1,4 +1,5 @@
 1.7.0:
+* UPDATE: Deprecated desktop scraping (not --mobileLayout)
 
 1.6.0:
 * FIX: Template referencing #421

@@ -52,9 +52,6 @@ class OfflinerEnv {
       } else if (format !== true) {
         this.dumps = [format];
       }
-      if (this.dumps.indexOf('nodet') !== -1 && !this.zim.mobileLayout) {
-        throw new Error('The "nodet" format can only work with --mobileLayout');
-      }
     }
     // Update the other config objects
     this.mw.env = this;
