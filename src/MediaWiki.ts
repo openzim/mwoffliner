@@ -48,36 +48,27 @@ class MediaWiki {
     this.namespacesToMirror = [];
   }
 
-  public login(downloader: Downloader) {
-    return new Promise((resolve, reject) => {
-      if (this.username && this.password) {
-        let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
-        if (this.domain) {
-          url = `${url}&lgdomain=${this.domain}`;
-        }
-        downloader.downloadContent(url, (content) => {
-          let body = content.toString();
-          let jsonResponse = JSON.parse(body).login;
-          downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-          if (jsonResponse.result === 'SUCCESS') {
-            resolve();
-          } else {
-            url = `${url}&lgtoken=${jsonResponse.token}`;
-            downloader.downloadContent(url, (subContent) => {
-              body = subContent.toString();
-              jsonResponse = JSON.parse(body).login;
-              if (jsonResponse.result !== 'Success') {
-                return reject('Login Failed');
-              }
-              downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-              resolve();
-            });
-          }
-        });
-      } else {
-        resolve();
+  public async login(downloader: Downloader) {
+    if (this.username && this.password) {
+      let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
+      if (this.domain) {
+        url = `${url}&lgdomain=${this.domain}`;
       }
-    });
+      const { content } = await downloader.downloadContent(url);
+      let body = content.toString();
+      let jsonResponse = JSON.parse(body).login;
+      downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
+      if (jsonResponse.result !== 'SUCCESS') {
+        url = `${url}&lgtoken=${jsonResponse.token}`;
+        const { content: subContent } = await downloader.downloadContent(url);
+        body = subContent.toString();
+        jsonResponse = JSON.parse(body).login;
+        if (jsonResponse.result !== 'Success') {
+          throw new Error('Login Failed');
+        }
+        downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
+      }
+    }
   }
 
   // In all the url methods below:
@@ -107,90 +98,81 @@ class MediaWiki {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
 
-  public getTextDirection(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
+  public async getTextDirection(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
     const self = this;
-    return new Promise((resolve, reject) => {
-      const { logger } = self;
-      logger.log('Getting text direction...');
-      downloader.downloadContent(this.webUrl, (content) => {
-        const body = content.toString();
-        const doc = domino.createDocument(body);
-        const contentNode = doc.getElementById('mw-content-text');
-        const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
-        const parts = languageDirectionRegex.exec(body);
-        if (parts && parts[1]) {
-          env.ltr = (parts[1] === 'ltr');
-        } else if (contentNode) {
-          env.ltr = (contentNode.getAttribute('dir') === 'ltr');
-        } else {
-          logger.log('Unable to get the language direction, fallback to ltr');
-          env.ltr = true;
-        }
-        logger.log(`Text direction is ${env.ltr ? 'ltr' : 'rtl'}`);
-        resolve();
-      });
-    });
+    const { logger } = self;
+    logger.log('Getting text direction...');
+    const { content } = await downloader.downloadContent(this.webUrl);
+    const body = content.toString();
+    const doc = domino.createDocument(body);
+    const contentNode = doc.getElementById('mw-content-text');
+    const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
+    const parts = languageDirectionRegex.exec(body);
+    if (parts && parts[1]) {
+      env.ltr = (parts[1] === 'ltr');
+    } else if (contentNode) {
+      env.ltr = (contentNode.getAttribute('dir') === 'ltr');
+    } else {
+      logger.log('Unable to get the language direction, fallback to ltr');
+      env.ltr = true;
+    }
+    logger.log(`Text direction is ${env.ltr ? 'ltr' : 'rtl'}`);
   }
 
-  public getSiteInfo(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
+  public async getSiteInfo(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
     const self = this;
-    return new Promise((resolve, reject) => {
-      this.logger.log('Getting web site name...');
-      const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
-      downloader.downloadContent(url, (content) => {
-        const body = content.toString();
-        const entries = JSON.parse(body).query.general;
-        /* Welcome page */
-        if (!env.zim.mainPageId && !env.zim.articleList) {
-          env.zim.mainPageId = entries.mainpage.replace(/ /g, self.spaceDelimiter);
-        }
-        /* Site name */
-        if (!env.zim.name) {
-          env.zim.name = entries.sitename;
-        }
-        /* Language */
-        env.zim.langIso2 = entries.lang;
-        countryLanguage.getLanguage(env.zim.langIso2, (error, language) => {
-          if (error || !language.iso639_3) {
-            env.zim.langIso3 = env.zim.langIso2;
-          } else {
-            env.zim.langIso3 = language.iso639_3;
-          }
-          resolve();
-        });
-      });
+    this.logger.log('Getting web site name...');
+    const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
+    const { content } = await downloader.downloadContent(url);
+    const body = content.toString();
+    const entries = JSON.parse(body).query.general;
+    /* Welcome page */
+    if (!env.zim.mainPageId && !env.zim.articleList) {
+      env.zim.mainPageId = entries.mainpage.replace(/ /g, self.spaceDelimiter);
+    }
+    /* Site name */
+    if (!env.zim.name) {
+      env.zim.name = entries.sitename;
+    }
+    /* Language */
+    env.zim.langIso2 = entries.lang;
+    countryLanguage.getLanguage(env.zim.langIso2, (error, language) => {
+      if (error || !language.iso639_3) {
+        env.zim.langIso3 = env.zim.langIso2;
+      } else {
+        env.zim.langIso3 = language.iso639_3;
+      }
     });
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
-    downloader.downloadContent(url, (content) => {
-      const body = content.toString();
-      const json = JSON.parse(body);
-      ['namespaces', 'namespacealiases'].forEach((type) => {
-        const entries = json.query[type];
-        Object.keys(entries).forEach((key) => {
-          const entry = entries[key];
-          const name = entry['*'].replace(/ /g, self.spaceDelimiter);
-          const num = entry.id;
-          const allowedSubpages = ('subpages' in entry);
-          const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
-          const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
-          const details = { num, allowedSubpages, isContent };
-          /* Namespaces in local language */
-          self.namespaces[U.lcFirst(name)] = details;
-          self.namespaces[U.ucFirst(name)] = details;
-          /* Namespaces in English (if available) */
-          if (canonical) {
-            self.namespaces[U.lcFirst(canonical)] = details;
-            self.namespaces[U.ucFirst(canonical)] = details;
-          }
-          /* Is content to mirror */
-          if (isContent) {
-            self.namespacesToMirror.push(name);
-          }
-        });
+    const { content } = await downloader.downloadContent(url);
+    const body = content.toString();
+    const json = JSON.parse(body);
+    ['namespaces', 'namespacealiases'].forEach((type) => {
+      const entries = json.query[type];
+      Object.keys(entries).forEach((key) => {
+        const entry = entries[key];
+        const name = entry['*'].replace(/ /g, self.spaceDelimiter);
+        const num = entry.id;
+        const allowedSubpages = ('subpages' in entry);
+        const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
+        const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
+        const details = { num, allowedSubpages, isContent };
+        /* Namespaces in local language */
+        self.namespaces[U.lcFirst(name)] = details;
+        self.namespaces[U.ucFirst(name)] = details;
+        /* Namespaces in English (if available) */
+        if (canonical) {
+          self.namespaces[U.lcFirst(canonical)] = details;
+          self.namespaces[U.ucFirst(canonical)] = details;
+        }
+        /* Is content to mirror */
+        if (isContent) {
+          self.namespacesToMirror.push(name);
+        }
       });
     });
   }
@@ -207,7 +189,7 @@ class MediaWiki {
 
       return null; /* Interwiki link? -- return null */
     } catch (error) {
-      console.error(`Unable to parse href ${href}`);
+      this.logger.warn(`Unable to parse href ${href}`);
       return null;
     }
   }

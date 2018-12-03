@@ -45,22 +45,19 @@ export default {
 
   output: {
     // CSS resources added by Kiwix
-    cssResources: ['mobile', 'content.parsoid', 'inserted_style_mobile'],
+    cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
 
-    jsResources: ['mobile'],
+    jsResources: ['script'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
-      css: {
-        desktop: [],
-        mobile: [
-          ['skins.minerva.base.reset', 'skins.minerva.content.styles',
-            'ext.cite.style', 'mobile.app.pagestyles.android',
-            'mediawiki.page.gallery.styles',
-            'mediawiki.skinning.content.parsoid'].join('|'),
-        ],
-      },
+      css: [
+        ['skins.minerva.base.reset', 'skins.minerva.content.styles',
+          'ext.cite.style', 'mobile.app.pagestyles.android',
+          'mediawiki.page.gallery.styles',
+          'mediawiki.skinning.content.parsoid'].join('|'),
+      ],
       js: ['startup', 'jquery', 'mediawiki', 'site'],
     },
 
@@ -83,8 +80,7 @@ export default {
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
-      mobile: './templates/mobile.html',
-      desktop: './templates/desktop.html',
+      page: './templates/page.html',
 
       articleListHomeTemplate: './templates/article_list_home.html',
 

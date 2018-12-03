@@ -32,11 +32,6 @@ import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise
 import Zim from './Zim';
 import packageJSON from '../package.json';
 
-const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
-if (!nodeVersionSatisfiesPackage) {
-  console.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
-}
-
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
   return parameterList;
@@ -72,7 +67,6 @@ async function execute(argv) {
     customZimDescription,
     customZimTags,
     cacheDirectory,
-    mobileLayout,
     outputDirectory,
     tmpDirectory,
     withZimFullTextIndex,
@@ -107,6 +101,11 @@ async function execute(argv) {
 
   /* logger */
   const logger = new Logger(verbose);
+
+  const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
+  if (!nodeVersionSatisfiesPackage) {
+    logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
+  }
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki(logger, {
@@ -151,9 +150,6 @@ async function execute(argv) {
     description: customZimDescription || '',
     tags: customZimTags || '',
     cacheDirectory: `${cacheDirectory || pathParser.resolve(process.cwd(), 'cac')}/`,
-
-    // Layout
-    mobileLayout: mobileLayout || false,
 
     // File where redirects might be save if --writeHtmlRedirects is not set
     redirectsCacheFile: null,
@@ -206,7 +202,7 @@ async function execute(argv) {
 
   if (!parsoidUrl) {
     if (localParsoid) {
-      console.info('Starting Parsoid');
+      logger.log('Starting Parsoid');
       // Icky but necessary
       fs.writeFileSync(
         './localsettings.js',
@@ -230,7 +226,7 @@ async function execute(argv) {
         })
         .then((_) => {
           fs.unlinkSync('./localsettings.js');
-          console.info('Parsoid Started Successfully');
+          logger.log('Parsoid Started Successfully');
         });
       parsoidUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
       parsoidContentType = 'json';
@@ -287,13 +283,12 @@ async function execute(argv) {
   /* ********************************** */
 
   const genericJsModules = config.output.mw.js;
-  const genericCssModules = zim.mobileLayout ? config.output.mw.css.mobile : config.output.mw.css.desktop;
+  const genericCssModules = config.output.mw.css;
 
   const mediaRegex = /^(.*\/)([^/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6}|)(\.[A-Za-z0-9]{2,6}|)$/;
-  const htmlMobileTemplateCode = readTemplate(config.output.templates.mobile)
+  const htmlTemplateCode = readTemplate(config.output.templates.page)
     .replace('__CSS_LINKS__', cssLinks)
     .replace('__JS_SCRIPTS__', jsScripts);
-  const htmlDesktopTemplateCode = readTemplate(config.output.templates.desktop);
   const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate);
 
   /* ********************************* */
@@ -339,12 +334,8 @@ async function execute(argv) {
     }
 
     fs.stat(path, (preOptimError, preOptimStats) => {
-      if (preOptimError || preOptimStats.size !== file.size) {
-        if (preOptimError) {
-          console.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimError);
-        } else {
-          console.error(`Failed to start to optim ${path}. Size should be ${file.size} - file was probably deleted:`, preOptimStats ? preOptimStats.size : 'No stats information');
-        }
+      if (preOptimError) {
+        logger.error(`Failed to start to optim ${path} - file was probably deleted:`, preOptimError);
         finished();
         return;
       }
@@ -358,7 +349,7 @@ async function execute(argv) {
       async.retry(
         5,
         (finished) => {
-          console.info(`Executing command : ${cmd}`);
+          logger.info(`Executing command : ${cmd}`);
           if (!cmd) {
             finished(null, 'No optim command, skipping file');
             return;
@@ -370,9 +361,9 @@ async function execute(argv) {
             }
 
             fs.stat(path, (postOptimError, postOptimStats) => {
-              if (!postOptimError && postOptimStats.size > file.size) {
+              if (!postOptimError && postOptimStats.size > preOptimStats.size) {
                 finished(null, true);
-              } else if (!postOptimError && postOptimStats.size < file.size) {
+              } else if (!postOptimError && postOptimStats.size < preOptimStats.size) {
                 finished('File to optim is smaller (before optim) than it should.');
               } else {
                 exec(`file -b --mime-type "${path}"`, (error, stdout) => {
@@ -390,11 +381,11 @@ async function execute(argv) {
         },
         (error, skip) => {
           if (error) {
-            console.error(`Failed to optim ${path}, with size=${file.size} (${error})`);
+            logger.warn(`Failed to optim ${path}, with size=${file.size} (${error})`);
           } else if (skip) {
-            logger.log(`Optimization skipped for ${path}, with size='${file.size}, a better version was downloaded meanwhile.`);
+            logger.info(`Optimization skipped for ${path}, with size='${file.size}, a better version was downloaded meanwhile.`);
           } else {
-            logger.log(`Successfuly optimized ${path}`);
+            logger.info(`Successfuly optimized ${path}`);
           }
           finished();
         },
@@ -408,36 +399,36 @@ async function execute(argv) {
   }, speed * 5);
 
   /* Get ids */
-  const redirectQueue = async.queue((articleId, finished) => {
+  const redirectQueue = async.queue(async (articleId, finished) => {
     if (articleId) {
-      logger.log(`Getting redirects for article ${articleId}...`);
+      logger.info(`Getting redirects for article ${articleId}...`);
       const url = mw.backlinkRedirectsQueryUrl(articleId);
-      downloader.downloadContent(url, (content) => {
+      try {
+        const { content } = await downloader.downloadContent(url);
         const body = content.toString();
-        try {
-          if (!JSON.parse(body).error) {
-            const redirects = {};
-            let redirectsCount = 0;
-            const { pages } = JSON.parse(body).query;
+        if (!JSON.parse(body).error) {
+          const redirects = {};
+          let redirectsCount = 0;
+          const { pages } = JSON.parse(body).query;
 
-            pages[Object.keys(pages)[0]].redirects.map((entry) => {
-              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
-              redirects[title] = articleId;
-              redirectsCount += 1;
+          pages[Object.keys(pages)[0]].redirects.map((entry) => {
+            const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+            redirects[title] = articleId;
+            redirectsCount += 1;
 
-              if (title === zim.mainPageId) {
-                zim.mainPageId = articleId;
-              }
-            });
-            logger.log(`${redirectsCount} redirect(s) found for ${articleId}`);
-            redis.saveRedirects(redirectsCount, redirects, finished);
-          } else {
-            finished(JSON.parse(body).error);
-          }
-        } catch (error) {
-          finished(error);
+            if (title === zim.mainPageId) {
+              zim.mainPageId = articleId;
+            }
+          });
+
+          logger.info(`${redirectsCount} redirect(s) found for ${articleId}`);
+          redis.saveRedirects(redirectsCount, redirects, finished);
+        } else {
+          finished(JSON.parse(body).error);
         }
-      });
+      } catch (err) {
+        finished(err);
+      }
     } else {
       finished();
     }
@@ -485,7 +476,7 @@ async function execute(argv) {
 
     return doSeries([
       () => zim.createSubDirectories(),
-      zim.mobileLayout ? () => saveStaticFiles() : null,
+      () => saveStaticFiles(),
       () => saveStylesheet(),
       () => saveFavicon(),
       articleList ? () => getArticleThumbnails() : null,
@@ -572,7 +563,7 @@ async function execute(argv) {
         try {
           fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
         } catch (error) {
-          console.error(`Could not create ${css} file : ${error}`);
+          logger.warn(`Could not create ${css} file : ${error}`);
         }
       });
 
@@ -584,7 +575,7 @@ async function execute(argv) {
             }),
           );
         } catch (error) {
-          console.error(`Could not create ${js} file : ${error}`);
+          logger.warn(`Could not create ${js} file : ${error}`);
         }
       });
       resolve();
@@ -658,7 +649,7 @@ async function execute(argv) {
     logger.log('Caching redirects...');
     function cacheRedirect(redirectId, finished) {
       redis.getRedirect(redirectId, finished, (target) => {
-        logger.log(`Caching redirect ${redirectId} (to ${target})...`);
+        logger.info(`Caching redirect ${redirectId} (to ${target})...`);
         const line = 'A\t'
           + `${env.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
@@ -674,31 +665,31 @@ async function execute(argv) {
   }
 
   function saveHtmlRedirects() {
-    return new Promise((resolve, reject) => {
-      logger.log('Saving HTML redirects...');
+    logger.log('Saving HTML redirects...');
 
-      function saveHtmlRedirect(redirectId, finished) {
-        redis.getRedirect(redirectId, finished, (target) => {
-          logger.log(`Writing HTML redirect ${redirectId} (to ${target})...`);
-          const data = redirectTemplate({
-            target: env.getArticleUrl(target),
-            title: redirectId.replace(/_/g, ' '),
-          });
-          if (env.deflateTmpHtml) {
-            zlib.deflate(data, (error, deflatedHtml) => {
-              fs.writeFile(env.getArticlePath(redirectId), deflatedHtml, finished);
-            });
-          } else {
-            fs.writeFile(env.getArticlePath(redirectId), data, finished);
-          }
+    function saveHtmlRedirect(redirectId, finished) {
+      redis.getRedirect(redirectId, finished, (target) => {
+        logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
+        const data = redirectTemplate({
+          target: env.getArticleUrl(target),
+          title: redirectId.replace(/_/g, ' '),
         });
-      }
+        if (env.deflateTmpHtml) {
+          zlib.deflate(data, (error, deflatedHtml) => {
+            fs.writeFile(env.getArticlePath(redirectId), deflatedHtml, finished);
+          });
+        } else {
+          fs.writeFile(env.getArticlePath(redirectId), data, finished);
+        }
+      });
+    }
 
-      redis.processAllRedirects(speed, saveHtmlRedirect,
-        'Unable to save a HTML redirect',
-        'All redirects were saved successfuly as HTML files.',
-      ).then(resolve, reject);
-    });
+    return redis.processAllRedirects(
+      speed,
+      saveHtmlRedirect,
+      'Unable to save a HTML redirect',
+      'All redirects were saved successfuly as HTML files.',
+    );
   }
 
   function saveArticles(dump) {
@@ -736,8 +727,8 @@ async function execute(argv) {
               (oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep),
             );
 
-            logger.log(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
-            logger.log(`Css dependencies of ${articleId} : ${styleDependenciesList}`);
+            logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
+            logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`);
 
             const allDependenciesWithType = [
               { type: 'js', moduleList: jsDependenciesList },
@@ -762,13 +753,13 @@ async function execute(argv) {
               fs.writeFileSync(pathParser.resolve(env.htmlRootPath, jsPath('jsConfigVars')), jsConfigVars);
               logger.log(`created dep jsConfigVars.js for article ${articleId}`);
             } catch (e) {
-              console.error('Error writing file', e);
+              logger.warn('Error writing file', e);
             }
 
             finished(null, parsoidDoc, articleId);
           })
           .catch((e) => {
-            console.log(`Error fetching api.php for ${articleApiUrl} ${e}`);
+            logger.warn(`Error fetching api.php for ${articleApiUrl} ${e}`);
             finished(null, parsoidDoc, articleId); // calling finished here will allow zim generation to continue event if an article doesn't properly get its modules
           });
 
@@ -811,7 +802,7 @@ async function execute(argv) {
             apiParameterOnly = 'styles';
           }
 
-          // console.info(`Getting [${type}] module [${module}]`);
+          logger.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
             `${mw.base}w/load.php?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
@@ -832,17 +823,17 @@ async function execute(argv) {
 
                     try {
                       fs.writeFileSync(moduleUri, text);
-                      logger.log(`created dep ${module} for article ${articleId}`);
+                      logger.info(`created dep ${module} for article ${articleId}`);
                     } catch (e) {
-                      console.error(`Error writing file ${moduleUri} ${e}`);
+                      logger.warn(`Error writing file ${moduleUri} ${e}`);
                     }
                   })
-                  .catch((e) => console.error(`Error fetching load.php for ${articleId} ${e}`));
+                  .catch((e) => logger.warn(`Error fetching load.php for ${articleId} ${e}`));
               } else {
                 return Promise.resolve();
               }
             })
-            .catch((e) => console.error(e));
+            .catch((e) => logger.error(e));
         }
       }
 
@@ -1007,60 +998,43 @@ async function execute(argv) {
             const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
             const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
 
-            if (
-              imageNodeTypeof.indexOf('mw:Image/Thumb') >= 0
-              || imageNodeTypeof.indexOf('mw:Video/Thumb') >= 0
-              || zim.mobileLayout
-            ) {
-              const descriptions = imageNode.getElementsByTagName('figcaption');
-              const description = descriptions.length > 0 ? descriptions[0] : undefined;
-              const imageWidth = parseInt(image.getAttribute('width'), 10);
+            const descriptions = imageNode.getElementsByTagName('figcaption');
+            const description = descriptions.length > 0 ? descriptions[0] : undefined;
+            const imageWidth = parseInt(image.getAttribute('width'), 10);
 
-              let thumbDiv = parsoidDoc.createElement('div');
-              thumbDiv.setAttribute('class', 'thumb');
-              if (imageNodeClass.search('mw-halign-right') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tright');
-              } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tleft');
-              } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tnone');
-                const centerDiv = parsoidDoc.createElement('center');
-                centerDiv.appendChild(thumbDiv);
-                thumbDiv = centerDiv;
-              } else {
-                const revAutoAlign = env.ltr ? 'right' : 'left';
-                DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
-              }
-
-              const thumbinnerDiv = parsoidDoc.createElement('div');
-              thumbinnerDiv.setAttribute('class', 'thumbinner');
-              thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
-
-              const thumbcaptionDiv = parsoidDoc.createElement('div');
-              thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-              const autoAlign = env.ltr ? 'left' : 'right';
-              thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
-              if (description) {
-                thumbcaptionDiv.innerHTML = description.innerHTML;
-              }
-
-              thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
-              thumbinnerDiv.appendChild(thumbcaptionDiv);
-              thumbDiv.appendChild(thumbinnerDiv);
-
-              imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-            } else if (imageNodeTypeof.indexOf('mw:Image') >= 0) {
-              const div = parsoidDoc.createElement('div');
-              if (imageNodeClass.search('mw-halign-right') >= 0) {
-                DU.appendToAttr(div, 'class', 'floatright');
-              } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-                DU.appendToAttr(div, 'class', 'floatleft');
-              } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-                DU.appendToAttr(div, 'class', 'center');
-              }
-              div.appendChild(isStillLinked ? image.parentNode : image);
-              imageNode.parentNode.replaceChild(div, imageNode);
+            let thumbDiv = parsoidDoc.createElement('div');
+            thumbDiv.setAttribute('class', 'thumb');
+            if (imageNodeClass.search('mw-halign-right') >= 0) {
+              DU.appendToAttr(thumbDiv, 'class', 'tright');
+            } else if (imageNodeClass.search('mw-halign-left') >= 0) {
+              DU.appendToAttr(thumbDiv, 'class', 'tleft');
+            } else if (imageNodeClass.search('mw-halign-center') >= 0) {
+              DU.appendToAttr(thumbDiv, 'class', 'tnone');
+              const centerDiv = parsoidDoc.createElement('center');
+              centerDiv.appendChild(thumbDiv);
+              thumbDiv = centerDiv;
+            } else {
+              const revAutoAlign = env.ltr ? 'right' : 'left';
+              DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
             }
+
+            const thumbinnerDiv = parsoidDoc.createElement('div');
+            thumbinnerDiv.setAttribute('class', 'thumbinner');
+            thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
+
+            const thumbcaptionDiv = parsoidDoc.createElement('div');
+            thumbcaptionDiv.setAttribute('class', 'thumbcaption');
+            const autoAlign = env.ltr ? 'left' : 'right';
+            thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
+            if (description) {
+              thumbcaptionDiv.innerHTML = description.innerHTML;
+            }
+
+            thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
+            thumbinnerDiv.appendChild(thumbcaptionDiv);
+            thumbDiv.appendChild(thumbinnerDiv);
+
+            imageNode.parentNode.replaceChild(thumbDiv, imageNode);
           } else {
             DU.deleteNode(imageNode);
           }
@@ -1172,7 +1146,7 @@ async function execute(argv) {
                     linkNode.setAttribute('href', getMediaUrl(href));
                     downloadFileQueue.push(href);
                   } catch (err) {
-                    console.warn('Error parsing url:', err);
+                    logger.warn('Error parsing url:', err);
                     DU.deleteNode(linkNode);
                   }
                 }
@@ -1385,7 +1359,7 @@ async function execute(argv) {
 
       function setFooter(parsoidDoc, articleId, finished) {
         const htmlTemplateDoc = domino.createDocument(
-          (zim.mobileLayout ? htmlMobileTemplateCode : htmlDesktopTemplateCode)
+          htmlTemplateCode
             .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript('jsConfigVars') : '')
             .replace(
               '__ARTICLE_JS_LIST__',
@@ -1408,23 +1382,10 @@ async function execute(argv) {
         ].innerHTML;
 
         /* Title */
-        if (zim.mobileLayout) {
-          htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-            ? htmlTemplateDoc.getElementById('title_0').textContent
-            : articleId.replace(/_/g, ' ');
-          DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
-        } else {
-          htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = parsoidDoc.getElementsByTagName('title')
-            ? parsoidDoc.getElementsByTagName('title')[0].textContent.replace(/_/g, ' ')
-            : articleId.replace(/_/g, ' ');
-          if (zim.mainPageId !== articleId) {
-            htmlTemplateDoc.getElementById('titleHeading').innerHTML = htmlTemplateDoc.getElementsByTagName('title')[
-              0
-            ].innerHTML;
-          } else {
-            DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
-          }
-        }
+        htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
+          ? htmlTemplateDoc.getElementById('title_0').textContent
+          : articleId.replace(/_/g, ' ');
+        DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
 
         /* Subpage */
         if (isSubpage(articleId) && zim.mainPageId !== articleId) {
@@ -1514,104 +1475,64 @@ async function execute(argv) {
 
       function saveArticle(articleId, finished) {
         let html = '';
-        if (zim.mobileLayout && zim.mainPageId !== articleId) {
-          const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
-          logger.log(`Getting (mobile) article from ${articleApiUrl}`);
-          fetch(articleApiUrl, {
-            method: 'GET',
-            headers: { Accept: 'application/json' },
-          })
-            .then((response) => response.json())
-            .then((json) => {
-              // set the first section (open by default)
-              html += leadSectionTemplate({
-                lead_display_title: json.lead.displaytitle,
-                lead_section_text: json.lead.sections[0].text,
-              });
-
-              // set all other section (closed by default)
-              if (!env.nodet) {
-                json.remaining.sections.forEach((oneSection, i) => {
-                  if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
-                    html += sectionTemplate({
-                      section_index: i,
-                      section_id: i,
-                      section_anchor: 'TopLevelSection',
-                      section_line: 'Disambiguation',
-                      section_text: '',
-                    });
-                  }
-
-                  // if below is to test if we need to nest a subsections into a section
-                  if (oneSection.toclevel === 1) {
-                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
-                    html += sectionTemplate({
-                      section_index: i + 1,
-                      section_id: oneSection.id,
-                      section_anchor: oneSection.anchor,
-                      section_line: oneSection.line,
-                      section_text: oneSection.text,
-                    });
-                  } else {
-                    const replacement = subSectionTemplate({
-                      section_index: i + 1,
-                      section_toclevel: oneSection.toclevel + 1,
-                      section_id: oneSection.id,
-                      section_anchor: oneSection.anchor,
-                      section_line: oneSection.line,
-                      section_text: oneSection.text,
-                    });
-                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
-                  }
-                });
-              }
-
-              html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
-              buildArticleFromApiData();
-            })
-            .catch((e) => {
-              console.error(`Error handling json response from api. ${e}`);
-              buildArticleFromApiData();
+        const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
+        logger.log(`Getting (mobile) article from ${articleApiUrl}`);
+        fetch(articleApiUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        })
+          .then((response) => response.json())
+          .then((json) => {
+            // set the first section (open by default)
+            html += leadSectionTemplate({
+              lead_display_title: json.lead.displaytitle,
+              lead_section_text: json.lead.sections[0].text,
             });
-        } else {
-          const articleUrl = parsoidUrl
-            + encodeURIComponent(articleId)
-            + (parsoidUrl.indexOf('/rest') < 0 ? `${parsoidUrl.indexOf('?') < 0 ? '?' : '&'}oldid=` : '/')
-            + articleDetailXId[articleId].oldId;
-          logger.log(`Getting (desktop) article from ${articleUrl}`);
-          setTimeout(
-            skipHtmlCache || articleId === zim.mainPageId
-              ? downloader.downloadContent.bind(downloader)
-              : downloadContentAndCache,
-            downloadFileQueue.length() + optimizationQueue.length(),
-            articleUrl,
-            (content) => {
-              let json;
-              if (parsoidContentType === 'json') {
-                try {
-                  json = JSON.parse(content.toString());
-                } catch (e) {
-                  // TODO: Figure out why this is happening
-                  html = content.toString();
-                  console.error(e);
+
+            // set all other section (closed by default)
+            if (!env.nodet) {
+              json.remaining.sections.forEach((oneSection, i) => {
+                if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
+                  html += sectionTemplate({
+                    section_index: i,
+                    section_id: i,
+                    section_anchor: 'TopLevelSection',
+                    section_line: 'Disambiguation',
+                    section_text: '',
+                  });
                 }
-                if (json && json.visualeditor) {
-                  html = json.visualeditor.content;
-                } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
-                  html = json.html.body;
-                } else if (json && json.error) {
-                  console.error(`Error by retrieving article: ${json.error.info}`);
+
+                // if below is to test if we need to nest a subsections into a section
+                if (oneSection.toclevel === 1) {
+                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
+                  html += sectionTemplate({
+                    section_index: i + 1,
+                    section_id: oneSection.id,
+                    section_anchor: oneSection.anchor,
+                    section_line: oneSection.line,
+                    section_text: oneSection.text,
+                  });
                 } else {
-                  html = content.toString();
+                  const replacement = subSectionTemplate({
+                    section_index: i + 1,
+                    section_toclevel: oneSection.toclevel + 1,
+                    section_id: oneSection.id,
+                    section_anchor: oneSection.anchor,
+                    section_line: oneSection.line,
+                    section_text: oneSection.text,
+                  });
+                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
                 }
-              } else {
-                html = content.toString();
-              }
-              buildArticleFromApiData();
-            },
-            articleId,
-          );
-        }
+              });
+            }
+
+            html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
+            buildArticleFromApiData();
+          })
+          .catch((e) => {
+            console.error(`Error handling json response from api. ${e}`);
+            buildArticleFromApiData();
+          });
 
         function buildArticleFromApiData() {
           if (html) {
@@ -1626,10 +1547,15 @@ async function execute(argv) {
               parseHtml,
             );
 
-            logger.log(`Treating and saving article ${articleId} at ${articlePath}...`);
+            logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
             prepareAndSaveArticle(html, articleId, (error) => {
-              if (!error) { logger.log(`Successfully dumped article ${articleId}`); }
-              finished(error && { message: `Error preparing and saving file`, error });
+              if (!error) {
+                logger.info(`Successfully dumped article ${articleId}`);
+                finished();
+              } else {
+                logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
+                finished(error);
+              }
             });
           } else {
             delete articleDetailXId[articleId];
@@ -1641,7 +1567,7 @@ async function execute(argv) {
       logger.log('Saving articles...');
       async.eachLimit(Object.keys(articleDetailXId), speed, saveArticle, (error) => {
         if (error) {
-          reject({ message: `Unable to retrieve an article correctly`, error });
+          reject({ message: `Fatal Error:`, error });
         } else {
           logger.log('All articles were retrieved and saved.');
           resolve();
@@ -1692,16 +1618,17 @@ async function execute(argv) {
       }, speed);
 
       /* Take care to download CSS files */
-      const downloadCSSQueue = async.queue((link: any, finished) => {
-        /* link might be a 'link' DOM node or an URL */
-        const cssUrl = typeof link === 'object' ? U.getFullUrl(webUrlHost, link.getAttribute('href')) : link;
-        const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
+      const downloadCSSQueue = async.queue(async (link: any, finished) => {
+        try {
+          /* link might be a 'link' DOM node or an URL */
+          const cssUrl = typeof link === 'object' ? U.getFullUrl(webUrlHost, link.getAttribute('href')) : link;
+          const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
 
-        if (cssUrl) {
-          const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
+          if (cssUrl) {
+            const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
 
-          logger.log(`Downloading CSS from ${decodeURI(cssUrl)}`);
-          downloader.downloadContent(cssUrl, (content) => {
+            logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`);
+            const { content } = await downloader.downloadContent(cssUrl);
             const body = content.toString();
 
             let rewrittenCss = `\n/* start ${cssUrl} */\n\n`;
@@ -1735,57 +1662,60 @@ async function execute(argv) {
                     downloadCSSFileQueue.push({ url, path: env.htmlRootPath + dirs.style + '/' + filename });
                   }
                 } else {
-                  console.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
+                  logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
                 }
               }
             }
 
             fs.appendFileSync(stylePath, rewrittenCss);
             finished();
-          });
-        } else {
-          finished();
+          } else {
+            finished();
+          }
+        } catch (err) {
+          finished(err);
         }
       }, speed);
 
       /* Load main page to see which CSS files are needed */
-      downloadContentAndCache(mw.webUrl, (content) => {
-        const html = content.toString();
-        const doc = domino.createDocument(html);
-        const links = doc.getElementsByTagName('link');
+      downloadContentAndCache(mw.webUrl)
+        .then(({ content }) => {
+          const html = content.toString();
+          const doc = domino.createDocument(html);
+          const links = doc.getElementsByTagName('link');
 
-        /* Go through all CSS links */
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < links.length; i += 1) {
-          const link = links[i];
-          if (link.getAttribute('rel') === 'stylesheet') {
-            downloadCSSQueue.push(link);
-          }
-        }
-
-        /* Push Mediawiki:Offline.css ( at the end) */
-        const offlineCssUrl = `${mw.webUrl}Mediawiki:offline.css?action=raw`;
-        downloader.registerOptionalUrl(offlineCssUrl);
-        downloadCSSQueue.push(offlineCssUrl);
-
-        /* Set the drain method to be called one time everything is done */
-        downloadCSSQueue.drain = function drain(error) {
-          if (error) {
-            return reject({ message: `Error in CSS dependencies`, error });
-          }
-          const drainBackup = downloadCSSQueue.drain;
-          downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
-            if (error) {
-              reject({ message: `Error in CSS medias`, error });
-            } else {
-              downloadCSSQueue.drain = drainBackup;
-              resolve();
+          /* Go through all CSS links */
+          // tslint:disable-next-line:prefer-for-of
+          for (let i = 0; i < links.length; i += 1) {
+            const link = links[i];
+            if (link.getAttribute('rel') === 'stylesheet') {
+              downloadCSSQueue.push(link);
             }
+          }
+
+          /* Push Mediawiki:Offline.css ( at the end) */
+          const offlineCssUrl = `${mw.webUrl}Mediawiki:offline.css?action=raw`;
+          downloader.registerOptionalUrl(offlineCssUrl);
+          downloadCSSQueue.push(offlineCssUrl);
+
+          /* Set the drain method to be called one time everything is done */
+          downloadCSSQueue.drain = function drain(error) {
+            if (error) {
+              return reject({ message: `Error in CSS dependencies`, error });
+            }
+            const drainBackup = downloadCSSQueue.drain;
+            downloadCSSFileQueue.drain = function downloadCSSFileQueueDrain(error) {
+              if (error) {
+                reject({ message: `Error in CSS medias`, error });
+              } else {
+                downloadCSSQueue.drain = drainBackup;
+                resolve();
+              }
+            } as any;
+            downloadCSSFileQueue.push('');
           } as any;
-          downloadCSSFileQueue.push('');
-        } as any;
-        downloadCSSQueue.push('');
-      });
+          downloadCSSQueue.push('');
+        });
     });
   }
 
@@ -1818,7 +1748,7 @@ async function execute(argv) {
           entry.title = entry.title.replace(/ /g, mw.spaceDelimiter);
 
           if ('missing' in entry) {
-            console.error(`Article ${entry.title} is not available on this wiki.`);
+            logger.warn(`Article ${entry.title} is not available on this wiki.`);
             delete articleDetailXId[entry.title];
           } else {
             redirectQueueValues.push(entry.title);
@@ -1841,7 +1771,7 @@ async function execute(argv) {
               /* Save as JSON string */
               details[entry.title] = JSON.stringify(articleDetails);
             } else if (entry.pageid) {
-              logger.log(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
+              logger.warn(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
               delete articleDetailXId[entry.title];
             } else {
               throw new Error(`Unable to get revisions for ${entry.title}\nJSON was ${body}`);
@@ -1870,14 +1800,21 @@ async function execute(argv) {
       return new Promise((resolve, reject) => {
         if (line) {
           const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-          const f = downloader.downloadContent.bind(downloader, mw.articleQueryUrl(title));
-          setTimeout(f, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, (content) => {
-            const body = content.toString();
-            if (body && body.length > 1) {
-              parseAPIResponse(body);
-            }
-            setTimeout(resolve, redirectQueue.length());
-          });
+          const f = () => {
+            downloader.downloadContent.bind(downloader)(mw.articleQueryUrl(title))
+              .then(({ content }) => {
+                const body = content.toString();
+                if (body && body.length > 1) {
+                  parseAPIResponse(body);
+                }
+                setTimeout(resolve, redirectQueue.length());
+              })
+              .catch(reject);
+          };
+          setTimeout(
+            f,
+            redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
+          );
         } else {
           resolve();
         }
@@ -1894,14 +1831,18 @@ async function execute(argv) {
       }
 
       return new Promise((resolve, reject) => {
-        async.eachLimit(lines, speed, (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)), (error) => {
-          if (error) {
-            reject(`Unable to get all article ids for a file: ${error}`);
-          } else {
-            logger.log('List of article ids to mirror completed');
-            drainRedirectQueue(redirectQueue).then(resolve, reject);
-          }
-        });
+        async.eachLimit(
+          lines,
+          speed,
+          (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)),
+          (error) => {
+            if (error) {
+              reject({ message: `Unable to get all article ids for a file`, error });
+            } else {
+              logger.log('List of article ids to mirror completed');
+              drainRedirectQueue(redirectQueue).then(resolve, reject);
+            }
+          });
       });
     }
 
@@ -1917,16 +1858,23 @@ async function execute(argv) {
           );
           const url = mw.pageGeneratorQueryUrl(namespace, next);
           const dc = downloader.downloadContent.bind(downloader);
-          setTimeout(dc, redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0, url, (content) => {
-            const body = content.toString();
-            if (body && body.length > 1) {
-              next = parseAPIResponse(body);
-              finished();
-            } else {
-              next = '';
-              finished({ message: `Error by retrieving ${url}` });
-            }
-          });
+          setTimeout((url, handler) => {
+            dc(url)
+              .then(({ content }) => handler(content))
+              .catch((err) => finished(err));
+          },
+            redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
+            url,
+            (content) => {
+              const body = content.toString();
+              if (body && body.length > 1) {
+                next = parseAPIResponse(body);
+                finished();
+              } else {
+                next = '';
+                finished({ message: `Error by retrieving ${url}` });
+              }
+            });
         },
         () => next as any,
         (error) => {
@@ -1972,44 +1920,51 @@ async function execute(argv) {
   }
 
   /* Multiple developer friendly functions */
-  function downloadContentAndCache(url, callback) {
-    const cachePath = zim.cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
-    const cacheHeadersPath = `${cachePath}.h`;
+  function downloadContentAndCache(url): Promise<{ content: any, responseHeaders: any }> {
+    return new Promise((resolve, reject) => {
+      const cachePath = zim.cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
+      const cacheHeadersPath = `${cachePath}.h`;
 
-    async.series(
-      [
-        (finished) => {
-          fs.readFile(cachePath, (error, data) => {
-            finished(error, error ? undefined : data.toString());
-          });
-        },
-        (finished) => {
-          fs.readFile(cacheHeadersPath, (error, data) => {
-            try {
-              finished(error, error ? undefined : JSON.parse(data.toString()));
-            } catch (error) {
-              finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
-            }
-          });
-        },
-      ],
-      (error, results) => {
-        if (error) {
-          downloader.downloadContent(url, (content, responseHeaders) => {
-            logger.log(`Caching ${url} at ${cachePath}...`);
-            fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
-              fs.writeFile(cachePath, content, () => {
-                callback(content, responseHeaders);
-              });
+      async.series(
+        [
+          (finished) => {
+            fs.readFile(cachePath, (error, data) => {
+              finished(error, error ? undefined : data.toString());
             });
-          });
-        } else {
-          logger.log(`Cache hit for ${url} (${cachePath})`);
-          U.touch(cachePath);
-          callback(results[0], results[1]);
-        }
-      },
-    );
+          },
+          (finished) => {
+            fs.readFile(cacheHeadersPath, (error, data) => {
+              try {
+                finished(error, error ? undefined : JSON.parse(data.toString()));
+              } catch (error) {
+                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
+              }
+            });
+          },
+        ],
+        (error, results) => {
+          if (error) {
+            downloader.downloadContent(url)
+              .then(({ content, responseHeaders }) => {
+                logger.info(`Caching ${url} at ${cachePath}...`);
+                fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
+                  fs.writeFile(cachePath, content, () => {
+                    resolve({ content, responseHeaders });
+                  });
+                });
+              })
+              .catch((err) => {
+                console.warn(err);
+                reject(err);
+              });
+          } else {
+            logger.log(`Cache hit for ${url} (${cachePath})`);
+            U.touch(cachePath);
+            resolve({ content: results[0], responseHeaders: results[1] });
+          }
+        },
+      );
+    });
   }
 
   function downloadFileAndCache(url, callback) {
@@ -2041,7 +1996,7 @@ async function execute(argv) {
             try {
               responseHeaders = JSON.parse(fs.readFileSync(cacheHeadersPath).toString());
             } catch (err) {
-              console.error(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}, error is:`, err);
+              logger.warn(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}`, err);
               responseHeaders = undefined;
             }
 
@@ -2078,8 +2033,7 @@ async function execute(argv) {
               if (error) {
                 callback();
               } else {
-                console.log(`Cache stat: [${mediaPath}]`, fs.statSync(cachePath).size);
-                logger.log(`Caching ${filenameBase} at ${cachePath}...`);
+                logger.info(`Caching ${filenameBase} at ${cachePath}...`);
                 fs.symlink(cachePath, mediaPath, 'file', (error) => {
                   console.log(`Linking [${cachePath}] to [${mediaPath}]`);
                   if (error && error.code !== 'EEXIST') {
@@ -2092,8 +2046,7 @@ async function execute(argv) {
               }
             });
           } else {
-            logger.log(`Cache hit for ${url}`);
-            console.info(`Found cached file [${url}] with mediaPath [${mediaPath}]`);
+            logger.info(`Cache hit for ${url}`);
           }
         });
       } else {
@@ -2113,7 +2066,7 @@ async function execute(argv) {
     }
 
     if (!root) {
-      console.error(`Unable to parse media url "${url}"`);
+      logger.warn(`Unable to parse media url "${url}"`);
       return '';
     }
 
@@ -2178,111 +2131,109 @@ async function execute(argv) {
         const faviconPath = env.htmlRootPath + 'favicon.png';
         const content = fs.readFileSync(customZimFavicon);
         fs.writeFileSync(faviconPath, content);
-        resizeFavicon(faviconPath).then(resolve, reject);
+        return resizeFavicon(faviconPath);
       } else {
-        downloader.downloadContent(mw.siteInfoUrl(), (content) => {
-          const body = content.toString();
-          const entries = JSON.parse(body).query.general;
-          if (!entries.logo) {
-            return reject(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
-          }
-
-          const parsedUrl = urlParser.parse(entries.logo);
-          const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-          const faviconPath = env.htmlRootPath + `favicon.${ext}`;
-          const faviconFinalPath = env.htmlRootPath + `favicon.png`;
-          const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
-          downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
-            if (ext !== 'png') {
-              console.warn(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
-              await new Promise((resolve, reject) => {
-                exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
-                  if (err) {
-                    reject(err);
-                  } else {
-                    resolve();
-                  }
-                });
-              });
+        downloader.downloadContent(mw.siteInfoUrl())
+          .then(({ content }) => {
+            const body = content.toString();
+            const entries = JSON.parse(body).query.general;
+            if (!entries.logo) {
+              return reject(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
             }
-            resizeFavicon(faviconFinalPath).then(resolve, reject);
-          });
-        });
+
+            const parsedUrl = urlParser.parse(entries.logo);
+            const ext = parsedUrl.pathname.split('.').slice(-1)[0];
+            const faviconPath = env.htmlRootPath + `favicon.${ext}`;
+            const faviconFinalPath = env.htmlRootPath + `favicon.png`;
+            const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
+            downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
+              if (ext !== 'png') {
+                console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+                await new Promise((resolve, reject) => {
+                  exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
+                    if (err) {
+                      reject(err);
+                    } else {
+                      resolve();
+                    }
+                  });
+                });
+              }
+              resizeFavicon(faviconFinalPath).then(resolve, reject);
+            });
+          })
+          .catch(reject);
       }
     });
   }
 
   function getMainPage() {
-    return new Promise((resolve, reject) => {
-      function writeMainPage(html) {
-        const mainPagePath = `${env.htmlRootPath}index.htm`;
-        if (env.deflateTmpHtml) {
-          return new Promise((resolve, reject) => {
-            zlib.deflate(html, (error, deflatedHtml) => {
-              writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
-            });
-          });
-        } else {
-          return writeFilePromise(mainPagePath, html);
-        }
-      }
-
-      function createMainPage() {
-        logger.log('Creating main page...');
-        const doc = domino.createDocument(
-          articleListHomeTemplate
-            .replace('</head>', genHeaderCSSLink('mobile_main_page') + '\n</head>'),
-        );
-
-        const titles = Object.keys(articleDetailXId).sort();
-
-        const {
-          articlesWithImages,
-          articlesWithoutImages,
-        } = titles.reduce((acc, title) => {
-          const articleDetail = articleDetailXId[title];
-          if (articleDetail.thumbnail) {
-            acc.articlesWithImages.push(articleDetail);
-          } else {
-            acc.articlesWithoutImages.push(articleDetail);
-          }
-          return acc;
-        }, {
-            articlesWithImages: [],
-            articlesWithoutImages: [],
-          },
-        );
-
-        let html = '<div class="masonry">\n';
-        html += articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
-        html += '</div>\n';
-        html += '<h2>More Articles...</h2>\n';
-        html += '<ul>\n';
-        html += articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
-        html += '</ul>\n';
-        doc.getElementById('content').innerHTML = html;
-
-        /* Write the static html file */
-        return writeMainPage(doc.documentElement.outerHTML);
-      }
-
-      function createMainPageRedirect() {
+    function writeMainPage(html) {
+      const mainPagePath = `${env.htmlRootPath}index.htm`;
+      if (env.deflateTmpHtml) {
         return new Promise((resolve, reject) => {
-          logger.log('Create main page redirection...');
-          const html = redirectTemplate({
-            title: zim.mainPageId.replace(/_/g, ' '),
-            target: env.getArticleBase(zim.mainPageId, true),
+          zlib.deflate(html, (error, deflatedHtml) => {
+            writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
           });
-          writeMainPage(html).then(resolve, reject);
         });
-      }
-
-      if (zim.mainPageId) {
-        createMainPageRedirect().then(resolve, reject);
       } else {
-        createMainPage().then(resolve, reject);
+        return writeFilePromise(mainPagePath, html);
       }
-    });
+    }
+
+    function createMainPage() {
+      logger.log('Creating main page...');
+      const doc = domino.createDocument(
+        articleListHomeTemplate
+          .replace('</head>', genHeaderCSSLink('mobile_main_page') + '\n</head>'),
+      );
+
+      const titles = Object.keys(articleDetailXId).sort();
+
+      const {
+        articlesWithImages,
+        articlesWithoutImages,
+      } = titles.reduce((acc, title) => {
+        const articleDetail = articleDetailXId[title];
+        if (articleDetail.thumbnail) {
+          acc.articlesWithImages.push(articleDetail);
+        } else {
+          acc.articlesWithoutImages.push(articleDetail);
+        }
+        return acc;
+      }, {
+          articlesWithImages: [],
+          articlesWithoutImages: [],
+        },
+      );
+
+      let html = '<div class="masonry">\n';
+      html += articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
+      html += '</div>\n';
+      html += '<h2>More Articles...</h2>\n';
+      html += '<ul>\n';
+      html += articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
+      html += '</ul>\n';
+      doc.getElementById('content').innerHTML = html;
+
+      /* Write the static html file */
+      return writeMainPage(doc.documentElement.outerHTML);
+    }
+
+    function createMainPageRedirect() {
+      logger.log('Create main page redirection...');
+      const html = redirectTemplate({
+        title: zim.mainPageId.replace(/_/g, ' '),
+        target: env.getArticleBase(zim.mainPageId, true),
+      });
+      return writeMainPage(html);
+    }
+
+    if (zim.mainPageId) {
+      return createMainPageRedirect();
+    } else {
+      return createMainPage();
+    }
   }
 
 }

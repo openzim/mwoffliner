@@ -65,7 +65,6 @@ const parameterList = [
   { name: 'withZimFullTextIndex', description: 'Include a fulltext search index to the ZIM', required: false },
   { name: 'writeHtmlRedirects', description: 'Write redirect as HTML files', required: false },
   { name: 'localParsoid', description: 'Create a local parsoid instance default value is false', required: false },
-  { name: 'mobileLayout', description: 'HTML optimised for mobile use', required: false },
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
 ];
 

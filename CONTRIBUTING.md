@@ -11,8 +11,7 @@ some important concepts that motivate the advice below.
 
 ## Advice for debugging mwoffliner issues
 
-1.  Check whether mwoffliner is using Mobile or Desktop mode or both.
-    For pre-packaged Kiwix downloads, look at the scripts at
+1.  For pre-packaged Kiwix downloads, look at the scripts at
     https://github.com/kiwix/maintenance/tree/master/mwoffliner
     *   If both, then you may need separate corrections for each.
 2.  Create Parsoid output to understand what mwoffliner is working
@@ -20,9 +19,9 @@ some important concepts that motivate the advice below.
     output itself.  For Wikimedia wikis you can easily generate and
     view the output in your browser using the Parsoid REST interface.
     Example URLs:
-    *   Mobile:
+    *   Mobile (most pages):
         https://en.wikivoyage.org/api/rest_v1/page/mobile-sections/Hot_springs
-    *   Desktop:
+    *   Desktop (main page):
         https://es.wikipedia.org/api/rest_v1/page/html/Espa%C3%B1a
 3.  If the error is with the Parsoid output
     *   Mark the issue in openzim/mwoffliner with the

@@ -9,12 +9,13 @@ import pathParser from 'path';
 import urlParser from 'url';
 
 import { doSeries, mkdirPromise, execPromise } from './Utils';
+import OfflinerEnv from './OfflinerEnv';
 
 class Zim {
   public config: any;
   public outputDirectory: string;
   public tmpDirectory: string;
-  public env: any;
+  public env: OfflinerEnv;
   public cacheDirectory: string;
   public redirectsCacheFile: string;
   public publisher: any;
@@ -26,7 +27,6 @@ class Zim {
   public description: any;
   public subTitle: any;
   public creator: any;
-  public mobileLayout: boolean;
   public articleList: any;
 
   constructor(config, args) {
@@ -88,18 +88,14 @@ class Zim {
     });
   }
 
-  public getSubTitle(this: Zim) {
+  public async getSubTitle(this: Zim) {
     const { env } = this;
-    return new Promise((resolve, reject) => {
-      env.logger.log('Getting sub-title...');
-      env.downloader.downloadContent(env.mw.webUrl, (content) => {
-        const html = content.toString();
-        const doc = domino.createDocument(html);
-        const subTitleNode = doc.getElementById('siteSub');
-        env.zim.subTitle = subTitleNode ? subTitleNode.innerHTML : '';
-        resolve();
-      });
-    });
+    env.logger.log('Getting sub-title...');
+    const { content } = await env.downloader.downloadContent(env.mw.webUrl);
+    const html = content.toString();
+    const doc = domino.createDocument(html);
+    const subTitleNode = doc.getElementById('siteSub');
+    env.zim.subTitle = subTitleNode ? subTitleNode.innerHTML : '';
   }
 
   public computeZimRootPath() {
@@ -151,15 +147,15 @@ class Zim {
             logger.log(data.toString().replace(/[\n\r]/g, ''));
           })
             .on('error', (error) => {
-              console.error(`STDOUT output error: ${error}`);
+              logger.error(`STDOUT output error: ${error}`);
             });
         }
         if (!nostderr) {
           proc.stderr.on('data', (data) => {
-            console.error(data.toString().replace(/[\n\r]/g, ''));
+            logger.error(data.toString().replace(/[\n\r]/g, ''));
           })
             .on('error', (error) => {
-              console.error(`STDERR output error: ${error}`);
+              logger.error(`STDERR output error: ${error}`);
             });
         }
         proc.on('close', (code) => {
@@ -217,7 +213,7 @@ class Zim {
             .catch((error) => {
               reject(`Failed to build successfuly the ZIM file ${zimPath} (${error})`);
             });
-        }).on('error', (error) => { console.error(error); });
+        }).on('error', (error) => { logger.error(error); });
       });
     } else {
       return Promise.resolve();
