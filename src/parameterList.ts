@@ -50,8 +50,8 @@ const parameterList = [
   { name: 'requestTimeout', description: 'Request timeout (in seconds)', required: false },
   { name: 'resume', description: 'Do not overwrite if ZIM file already created', required: false },
   {
-    name: 'skipHtmlCache',
-    description: 'Do not cache Parsoid HTML output (and do not use any cached HTML content)',
+    name: 'useCache',
+    description: 'Cache all assets and HTML',
     required: false,
   },
   { name: 'skipCacheCleaning', description: 'Do not search for old/outdated files in the cache', required: false },
