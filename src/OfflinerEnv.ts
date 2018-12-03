@@ -1,7 +1,7 @@
 import fs from 'fs';
 import pathParser from 'path';
 import urlParser from 'url';
-import * as U from './Utils';
+import Downloader from './Downloader';
 
 // This is just a refactoring stub for now.
 // Eventually, we want a MWOffliner object that might swallow this.
@@ -11,7 +11,9 @@ class OfflinerEnv {
   public nopdf: boolean;
   public nozim: boolean;
   public nodet: boolean;
+  public verbose: boolean;
   public ltr: boolean;
+  public downloader: Downloader;
   public htmlRootPath: string;
   public contentDate: string;
   public dumps: string[];

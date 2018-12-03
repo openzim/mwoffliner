@@ -9,12 +9,13 @@ import pathParser from 'path';
 import urlParser from 'url';
 
 import { doSeries, mkdirPromise, execPromise } from './Utils';
+import OfflinerEnv from './OfflinerEnv';
 
 class Zim {
   public config: any;
   public outputDirectory: string;
   public tmpDirectory: string;
-  public env: any;
+  public env: OfflinerEnv;
   public cacheDirectory: string;
   public redirectsCacheFile: string;
   public publisher: any;
@@ -87,18 +88,14 @@ class Zim {
     });
   }
 
-  public getSubTitle(this: Zim) {
+  public async getSubTitle(this: Zim) {
     const { env } = this;
-    return new Promise((resolve, reject) => {
-      env.logger.log('Getting sub-title...');
-      env.downloader.downloadContent(env.mw.webUrl, (content) => {
-        const html = content.toString();
-        const doc = domino.createDocument(html);
-        const subTitleNode = doc.getElementById('siteSub');
-        env.zim.subTitle = subTitleNode ? subTitleNode.innerHTML : '';
-        resolve();
-      });
-    });
+    env.logger.log('Getting sub-title...');
+    const { content } = await env.downloader.downloadContent(env.mw.webUrl);
+    const html = content.toString();
+    const doc = domino.createDocument(html);
+    const subTitleNode = doc.getElementById('siteSub');
+    env.zim.subTitle = subTitleNode ? subTitleNode.innerHTML : '';
   }
 
   public computeZimRootPath() {
