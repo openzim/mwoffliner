@@ -48,7 +48,7 @@ export default {
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
 
-    jsResources: ['script'],
+    jsResources: ['script', 'masonry.min', 'article_list_home'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {

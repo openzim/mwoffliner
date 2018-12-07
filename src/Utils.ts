@@ -105,7 +105,7 @@ function checkDependencies(env: OfflinerEnv) {
     'gifsicle --version',
     'advdef --version',
     'file --help',
-    'stat --version',
+    // 'stat --version',
     'convert --version',
     'rsvg-convert --version',
     shouldCheckZimwriterFs ? 'zimwriterfs --help' : null,
@@ -186,7 +186,7 @@ function makeArticleListItem(env, articleEntry) {
 }
 
 function makeArticleImageTile(env, articleEntry) {
-  return `<a class="item" href="${env.getArticleBase(articleEntry.title, true)}"><img src="${articleEntry.thumbnail}" /><br /><div class="caption">${articleEntry.title.replace(/_/g, ' ')}</div></a>\n`;
+  return `<a class="item" href="${env.getArticleBase(articleEntry.title, true)}"><figure><img src="${articleEntry.thumbnail}" /><figcaption>${articleEntry.title.replace(/_/g, ' ')}</figcaption></figure></a>\n`;
 }
 
 function getJSON<T>(url: string): Promise<T> {

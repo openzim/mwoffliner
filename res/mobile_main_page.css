@@ -15,6 +15,8 @@ html {
 .masonry {
     width: 100%s;
     column-gap: 0;
+    max-width: 800px;
+    font-size: 6vw;
 }
 
 /* The Masonry Brick */
@@ -30,14 +32,20 @@ html {
     height: auto;
 }
 
-.item .caption {
+.item figure {
+    margin: 0;
+}
+
+.item figcaption {
     position: absolute;
     width: 100%;
     bottom: 0;
-    padding: 5px;
-    font-weight: bold;
+    left: 0;
+    vertical-align: bottom;
+    background: rgba(48, 48, 48, 0.2);
     color: white;
-    background: rgba(0, 0, 0, 0.3);
+    padding-left: 1vw;
+    font-weight: bold;
 }
 
 /* Masonry on large screens */
@@ -45,6 +53,7 @@ html {
 @media only screen and (min-width: 1024px) {
     .masonry {
         column-count: 4;
+        font-size: 2vw;
     }
 }
 
@@ -53,6 +62,7 @@ html {
 @media only screen and (max-width: 1023px) and (min-width: 768px) {
     .masonry {
         column-count: 3;
+        font-size: 3vw;
     }
 }
 
@@ -61,5 +71,6 @@ html {
 @media only screen and (max-width: 767px) and (min-width: 540px) {
     .masonry {
         column-count: 2;
+        font-size: 5vw;
     }
 }
