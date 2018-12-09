@@ -1,7 +1,7 @@
 FROM openzim/zimwriterfs:latest
 
 # Basics
-RUN apt-get update && apt-get install -y make g++
+RUN apt-get update && apt-get install -y make g++ curl
 
 # Install jpegoptim
 RUN apt-get install -y libjpeg-dev && \
@@ -21,10 +21,8 @@ RUN wget https://www.lcdf.org/gifsicle/gifsicle-1.91.tar.gz && \
     ./configure && make all install && cd .. && rm -rf gifsicle-1.91*
 
 # Install npm & nodejs
-RUN wget https://nodejs.org/dist/v10.11.0/node-v10.11.0-linux-x64.tar.xz && \
-    tar -xJf node-v10.11.0-linux-x64.tar.xz -C /usr/local --strip-components=1 --no-same-owner && \
-    rm node-v10.11.0-linux-x64.tar.xz && \
-    ln -s /usr/local/bin/node /usr/local/bin/nodejs
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash && \
+    apt-get install --yes nodejs
 
 # Install mwoffliner
 RUN apt-get install -y nscd file imagemagick advancecomp git librsvg2-bin && \
