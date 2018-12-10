@@ -15,7 +15,6 @@ class Downloader {
   public loginCookie: string = '';
   public requestTimeout: any;
   public webUrlPort: string | number;
-  public optionalUrls: Set<string>;
 
   constructor(logger: Logger, mw: MediaWiki, uaString: string, reqTimeout: any) {
     this.logger = logger;
@@ -23,18 +22,6 @@ class Downloader {
     this.loginCookie = '';
     this.requestTimeout = reqTimeout;
     this.webUrlPort = getPort(urlParser.parse(`${mw.base}${mw.wikiPath}/`));
-    // Optional URLs will not have an error message if they are
-    // are not found.
-    this.optionalUrls = new Set();
-  }
-
-  // Registers a URL as optional.  We don't necessarily expect this URL to be
-  // present, so no error will be printed if fetching returns a value other
-  // than 200.
-  // Note that this also means that only a single attempt to download them
-  // will be made if a status code other than 200 is returned.
-  public registerOptionalUrl(url) {
-    this.optionalUrls.add(url);
   }
 
   public getRequestOptionsFromUrl(url, compression) {

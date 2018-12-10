@@ -50,7 +50,6 @@ async function execute(argv) {
     customZimFavicon,
     verbose,
     minifyHtml,
-    skipHtmlCache,
     skipCacheCleaning,
     keepEmptyParagraphs,
     mwUrl,
@@ -78,11 +77,15 @@ async function execute(argv) {
     writeHtmlRedirects,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
+    // tslint:disable-next-line:variable-name
+    useCache: _useCache,
   } = argv;
 
   let {
     parsoidUrl,
   } = argv;
+
+  const useCache = typeof _useCache === 'undefined' ? true : _useCache;
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -445,10 +448,14 @@ async function execute(argv) {
   await zim.getSubTitle();
   await mw.getNamespaces(addNamespaces, downloader);
   await zim.createDirectories();
-  await zim.prepareCache();
+  if (useCache) {
+    await zim.prepareCache();
+  }
   await env.checkResume();
   await getArticleIds(redirectQueue);
-  await cacheRedirects();
+  if (useCache) {
+    await cacheRedirects();
+  }
 
   await doSeries(
     env.dumps.map((dump) => {
@@ -456,7 +463,7 @@ async function execute(argv) {
     }),
   );
 
-  if (skipCacheCleaning) {
+  if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');
     await exec(`rm -f "${zim.cacheDirectory}ref"`);
   } else {
@@ -1693,9 +1700,8 @@ async function execute(argv) {
             }
           }
 
-          /* Push Mediawiki:Offline.css ( at the end) */
+          /* Push Mediawiki:Offline.css (at the end) */
           const offlineCssUrl = `${mw.webUrl}Mediawiki:offline.css?action=raw`;
-          downloader.registerOptionalUrl(offlineCssUrl);
           downloadCSSQueue.push(offlineCssUrl);
 
           /* Set the drain method to be called one time everything is done */
@@ -1946,12 +1952,16 @@ async function execute(argv) {
           if (error) {
             downloader.downloadContent(url)
               .then(({ content, responseHeaders }) => {
-                logger.info(`Caching ${url} at ${cachePath}...`);
-                fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
-                  fs.writeFile(cachePath, content, () => {
-                    resolve({ content, responseHeaders });
+                if (useCache) {
+                  logger.info(`Caching ${url} at ${cachePath}...`);
+                  fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
+                    fs.writeFile(cachePath, content, () => {
+                      resolve({ content, responseHeaders });
+                    });
                   });
-                });
+                } else {
+                  resolve({ content, responseHeaders });
+                }
               })
               .catch((err) => {
                 console.warn(err);
@@ -2029,22 +2039,31 @@ async function execute(argv) {
 
           /* Download the file if necessary */
           if (toDownload) {
-            downloader.downloadMediaFile(url, cachePath, true, optimizationQueue, (error) => {
-              if (error) {
-                callback();
-              } else {
-                logger.info(`Caching ${filenameBase} at ${cachePath}...`);
-                fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                  console.log(`Linking [${cachePath}] to [${mediaPath}]`);
-                  if (error && error.code !== 'EEXIST') {
-                    return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
-                  }
-                  fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
-                    return callback(error && { message: `Unable to write cache header at ${cacheHeadersPath}`, error });
+            if (useCache) {
+              downloader.downloadMediaFile(url, cachePath, true, optimizationQueue, (error) => {
+                if (error) {
+                  callback();
+                } else {
+                  logger.info(`Caching ${filenameBase} at ${cachePath}...`);
+                  fs.symlink(cachePath, mediaPath, 'file', (error) => {
+                    if (error && error.code !== 'EEXIST') {
+                      return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
+                    }
+                    fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
+                      return callback(error && { message: `Unable to write cache header at ${cacheHeadersPath}`, error });
+                    });
                   });
-                });
-              }
-            });
+                }
+              });
+            } else {
+              downloader.downloadMediaFile(url, mediaPath, true, optimizationQueue, (error) => {
+                if (error) {
+                  callback({ message: 'Failed to write file', error });
+                } else {
+                  callback(null);
+                }
+              });
+            }
           } else {
             logger.info(`Cache hit for ${url}`);
           }
