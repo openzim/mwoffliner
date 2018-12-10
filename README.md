@@ -1,10 +1,8 @@
 # mwoffliner
 
-[![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
-
-`mwoffliner` is a tool which allows to make a local HTML snapshot of
+`mwoffliner` is a tool for making a local HTML snapshot of
 any online (recent) Mediawiki instance. It goes through all articles
-(or a selection if specified) and write the HTML/pictures to a local
+(or a selection if specified) and writes the HTML/images to a local
 directory. It has mainly been tested against Wikimedia projects like
 Wikipedia, Wiktionary, ... But it should also work for any recent
 Mediawiki.
