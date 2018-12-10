@@ -15,7 +15,6 @@ html {
 .masonry {
     width: 100%s;
     column-gap: 0;
-    max-width: 800px;
     font-size: 6vw;
 }
 
