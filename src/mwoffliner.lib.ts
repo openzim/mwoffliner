@@ -2204,7 +2204,9 @@ async function execute(argv) {
       logger.log('Creating main page...');
       const doc = domino.createDocument(
         articleListHomeTemplate
-          .replace('</head>', genHeaderCSSLink('mobile_main_page') + '\n</head>'),
+          .replace('</head>', 
+            genHeaderCSSLink('mobile_main_page') + '\n' + 
+            genHeaderScript('article_list_home') + '\n</head>'),
       );
 
       const titles = Object.keys(articleDetailXId).sort();
@@ -2226,14 +2228,11 @@ async function execute(argv) {
         },
       );
 
-      let html = '<div class="masonry">\n';
-      html += articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
-      html += '</div>\n';
-      html += '<h2>More Articles...</h2>\n';
-      html += '<ul>\n';
-      html += articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
-      html += '</ul>\n';
-      doc.getElementById('content').innerHTML = html;
+      const articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
+      const articlesWithoutImagesEl = articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
+
+      doc.getElementById('content').innerHTML = articlesWithImagesEl;
+      doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
 
       /* Write the static html file */
       return writeMainPage(doc.documentElement.outerHTML);
