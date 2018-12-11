@@ -1,4 +1,4 @@
 #!/bin/bash
 echo "Building at [$(date)]"
-tsc;
+./node_modules/.bin/tsc
 echo "Build Complete at [$(date)]"
