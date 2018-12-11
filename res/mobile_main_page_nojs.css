@@ -32,7 +32,7 @@ h2 {
     overflow: hidden;
     font-size: 1em;
     column-count: 4;
-    column-gap: 1em;
+    column-gap: 0;
 }
 
 #footer {
@@ -48,20 +48,21 @@ h2 {
 }
 
 .item {
-    background: #fff;
+    /* background: #fff; */
     display: inline-block;
     position: relative;
+    width: 100%;
 }
 
 .item img {
     width: 100%;
     height: auto;
-    transition: all 0.3s;
-    transform: scale(0.95);
+    /* transition: all 0.3s;
+    transform: scale(0.95); */
 }
 
 .item:hover img {
-    transform: scale(1);
+    /* transform: scale(1); */
 }
 
 .item figure {
@@ -70,20 +71,20 @@ h2 {
 
 .item figcaption {
     position: absolute;
-    bottom: 5%;
+    bottom: 0;
     width: 100%;
     vertical-align: bottom;
     background: rgba(48, 48, 48, 0.5);
     color: white;
     padding: 1vw;
     font-weight: bold;
-    transition: all 0.3s;
-    transform: scale(0.95);
+    /* transition: all 0.3s; */
+    /* transform: scale(0.95); */
 }
 
 .item:hover figcaption {
-    transform: scale(1);
-    bottom: 0%;
+    /* transform: scale(1); */
+    /* bottom: 0%; */
 }
 
 @media only screen and (min-width: 1024px) {
