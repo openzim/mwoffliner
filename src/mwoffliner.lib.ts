@@ -536,7 +536,6 @@ async function execute(argv) {
           }
           downloadFileQueue.push(imageUrl);
           const internalSrc = getMediaUrl(imageUrl);
-          console.log(`Got thumbnail url for article [${articleId}], reading from [${internalSrc}]`);
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
             { thumbnail: internalSrc },
@@ -2014,9 +2013,7 @@ async function execute(argv) {
             if (!responseHeaders || responseHeaders.width < width) {
               toDownload = true;
             } else {
-              console.log(`Cache stat: [${mediaPath}]`, fs.statSync(cachePath).size);
               fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                console.log(`Linking [${cachePath}] to [${mediaPath}]`);
                 if (error) {
                   if (error.code !== 'EEXIST') {
                     return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
@@ -2231,6 +2228,9 @@ async function execute(argv) {
       const articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
       const articlesWithoutImagesEl = articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
 
+      const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
+
+      doc.getElementById('title').textContent = dumpTitle;
       doc.getElementById('content').innerHTML = articlesWithImagesEl;
       doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
 
