@@ -71,7 +71,7 @@ h2 {
     vertical-align: bottom;
     background: rgba(48, 48, 48, 0.5);
     color: white;
-    padding: 1vw;
+    padding: 0.6em;
     font-weight: bold;
     /* transition: all 0.3s; */
     /* transform: scale(0.95); */
@@ -104,7 +104,7 @@ h2 {
         font-size: 4vw;
     }
     #content {
-        font-size: 1em;
+        font-size: 1.2em;
     }
     #content .item {
         width: 33.3333%;
@@ -143,12 +143,13 @@ h2 {
         font-size: 6vw;
     }
     #content {
-        font-size: 2em;
+        font-size: 1.3em;
+        line-height: 1.2em;
     }
     #content .item {
         width: 100%
-    /* }
-    ul {
+    }
+    /* ul {
         column-count: 1;
     }
     #footer ul li {

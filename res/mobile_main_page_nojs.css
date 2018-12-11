@@ -76,7 +76,7 @@ h2 {
     vertical-align: bottom;
     background: rgba(48, 48, 48, 0.5);
     color: white;
-    padding: 1vw;
+    padding: 0.6em;
     font-weight: bold;
     /* transition: all 0.3s; */
     /* transform: scale(0.95); */
@@ -108,8 +108,6 @@ h2 {
     }
     #content {
         font-size: 1em;
-    }
-    #content {
         column-count: 3;
     }
 }
@@ -127,9 +125,9 @@ h2 {
     #content {
         column-count: 2;
     }
-    #footer ul li {
+    /* #footer ul li {
         font-size: 0.9em;
-    }
+    } */
 }
 
 @media only screen and (max-width: 519px) {
@@ -140,12 +138,11 @@ h2 {
         font-size: 6vw;
     }
     #content {
-        font-size: 2em;
-    }
-    #content {
+        font-size: 1.3em;
+        line-height: 1.2em;
         column-count: 1;
     }
-    #footer ul li {
+    /* #footer ul li {
         font-size: 1em;
-    }
+    } */
 }
