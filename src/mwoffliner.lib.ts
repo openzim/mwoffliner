@@ -2198,8 +2198,9 @@ async function execute(argv) {
           .replace('</head>',
             genHeaderCSSLink('mobile_main_page_nojs', 'nojs') + '\n' +
             genHeaderCSSLink('style') + '\n' +
-            genHeaderScript('article_list_home') + '\n' +
+            genHeaderScript('images_loaded.min') + '\n' +
             genHeaderScript('masonry.min') + '\n' +
+            genHeaderScript('article_list_home') + '\n' +
             '\n</head>'),
       );
 
