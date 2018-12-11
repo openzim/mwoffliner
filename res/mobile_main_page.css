@@ -25,7 +25,9 @@ h2 {
 
 #header {
     padding: 15vh 0;
+    display: none;
 }
+
 #content {
     width: 100%;
     overflow: hidden;
@@ -43,7 +45,7 @@ h2 {
 }
 
 .item {
-    background: #fff;
+    /* background: #fff; */
     display: block;
     position: relative;
         
@@ -51,11 +53,11 @@ h2 {
 .item img {
     width: 100%;
     height: auto;
-    transition: all 0.3s;
-    transform: scale(0.95);
+    /* transition: all 0.3s; */
+    /* transform: scale(0.95); */
 }
 .item:hover img {
-    transform: scale(1);
+    /* transform: scale(1); */
 }
 
 .item figure {
@@ -64,19 +66,19 @@ h2 {
 
 .item figcaption {
     position: absolute;
-    bottom: 5%;
+    bottom: 0%;
     width: 100%;
     vertical-align: bottom;
     background: rgba(48, 48, 48, 0.5);
     color: white;
     padding: 1vw;
     font-weight: bold;
-    transition: all 0.3s;
-    transform: scale(0.95);
+    /* transition: all 0.3s; */
+    /* transform: scale(0.95); */
 }
 .item:hover figcaption {
-    transform: scale(1);
-    bottom: 0%;
+    /* transform: scale(1); */
+    /* bottom: 50%; */
 }
 
 @media only screen and (min-width: 1024px) {
@@ -107,9 +109,9 @@ h2 {
     #content .item {
         width: 33.3333%;
     }
-    ul {
+    /* ul {
         column-count: 3;
-    }
+    } */
 }
 
 @media only screen and (max-width: 767px) and (min-width: 520px) {
@@ -125,12 +127,12 @@ h2 {
     #content .item {
         width: 50%
     }
-    ul {
+    /* ul {
         column-count: 2;
     }
     #footer ul li {
         font-size: 0.9em;
-    }
+    } */
 }
 
 @media only screen and (max-width: 519px) {
@@ -145,11 +147,11 @@ h2 {
     }
     #content .item {
         width: 100%
-    }
+    /* }
     ul {
         column-count: 1;
     }
     #footer ul li {
         font-size: 1em;
-    }
+    } */
 }
