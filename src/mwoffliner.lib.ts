@@ -2204,8 +2204,8 @@ async function execute(argv) {
       logger.log('Creating main page...');
       const doc = domino.createDocument(
         articleListHomeTemplate
-          .replace('</head>', 
-            genHeaderCSSLink('mobile_main_page') + '\n' + 
+          .replace('</head>',
+            genHeaderCSSLink('mobile_main_page') + '\n' +
             genHeaderScript('article_list_home') + '\n</head>'),
       );
 
