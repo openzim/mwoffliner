@@ -51,7 +51,7 @@
 		"mkdirp": "^0.5.1",
 		"moment": "^2.21.0",
 		"node-fetch": "^1.7.3",
-		"parsoid": "^0.8.1",
+		"parsoid": "^0.10.0",
 		"redis": "^2.6.2",
 		"snyk": "^1.96.0",
 		"swig-templates": "^2.0.2",
