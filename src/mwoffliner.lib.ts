@@ -259,11 +259,11 @@ async function execute(argv) {
   function jsPath(js) {
     return [dirs.javascript, dirs.jsModules, `${js.replace(/(\.js)?$/, '')}.js`].join('/');
   }
-  function genHeaderCSSLink(css) {
-    return `<link href="${cssPath(css)}" rel="stylesheet" type="text/css" />`;
+  function genHeaderCSSLink(css, classList = '') {
+    return `<link href="${cssPath(css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
   }
-  function genHeaderScript(js) {
-    return `<script src="${jsPath(js)}"></script>`;
+  function genHeaderScript(js, classList = '') {
+    return `<script src="${jsPath(js)}" class="${classList}"></script>`;
   }
 
   const cssLinks = config.output.cssResources.reduce((buf, css) => {
@@ -515,7 +515,7 @@ async function execute(argv) {
   }
 
   function getArticleThumbnails() {
-    console.info(`Getting article thumbnails`);
+    logger.info(`Getting article thumbnails`);
     return new Promise((resolve, reject) => {
       let articleIndex = 0;
       let fetchedThumbnails = 0;
@@ -557,21 +557,15 @@ async function execute(argv) {
 
   function saveStaticFiles() {
     return new Promise((resolve, reject) => {
-      config.output.mainPageCssResources.forEach((css) => {
-        try {
-          fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
-        } catch (error) {
-          console.error(`Could not create ${css} file : ${error}`);
-        }
-      });
-
-      config.output.cssResources.forEach((css) => {
-        try {
-          fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
-        } catch (error) {
-          logger.warn(`Could not create ${css} file : ${error}`);
-        }
-      });
+      config.output.cssResources
+        .concat(config.output.mainPageCssResources)
+        .forEach((css) => {
+          try {
+            fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
+          } catch (error) {
+            logger.warn(`Could not create ${css} file : ${error}`);
+          }
+        });
 
       config.output.jsResources.forEach(function (js) {
         try {
@@ -1536,7 +1530,7 @@ async function execute(argv) {
             buildArticleFromApiData();
           })
           .catch((e) => {
-            console.error(`Error handling json response from api. ${e}`);
+            logger.error(`Error handling json response from api. ${e}`);
             buildArticleFromApiData();
           });
 
@@ -1963,7 +1957,7 @@ async function execute(argv) {
                 }
               })
               .catch((err) => {
-                console.warn(err);
+                logger.warn(err);
                 reject(err);
               });
           } else {
@@ -2164,7 +2158,7 @@ async function execute(argv) {
             const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
             downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
               if (ext !== 'png') {
-                console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+                logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
                 await new Promise((resolve, reject) => {
                   exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
                     if (err) {
@@ -2202,8 +2196,11 @@ async function execute(argv) {
       const doc = domino.createDocument(
         articleListHomeTemplate
           .replace('</head>',
-            genHeaderCSSLink('mobile_main_page') + '\n' +
-            genHeaderScript('article_list_home') + '\n</head>'),
+            genHeaderCSSLink('mobile_main_page_nojs', 'nojs') + '\n' +
+            genHeaderCSSLink('style') + '\n' +
+            genHeaderScript('article_list_home') + '\n' +
+            genHeaderScript('masonry.min') + '\n' +
+            '\n</head>'),
       );
 
       const titles = Object.keys(articleDetailXId).sort();
