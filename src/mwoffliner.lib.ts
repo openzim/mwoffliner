@@ -531,7 +531,7 @@ async function execute(argv) {
             const resp = await U.getJSON<any>(url);
             imageUrl = U.getFullUrl(webUrlHost, resp.query.pages[Object.keys(resp.query.pages)[0]].thumbnail.source);
           } catch (err) {
-            console.warn(`Failed to get thumbnail url for article [${articleId}]: ${err.message}`);
+            logger.warn(`Failed to get thumbnail url for article [${articleId}]: ${err.message}`);
             return callback();
           }
           downloadFileQueue.push(imageUrl);
@@ -545,7 +545,7 @@ async function execute(argv) {
         },
         (error) => {
           if (error) {
-            console.error('Failed to get all article thumbnails', error);
+            logger.error('Failed to get all article thumbnails', error);
             reject({ message: `Failed to get all article thumbnails`, error });
           } else {
             resolve();
