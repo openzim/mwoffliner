@@ -7,7 +7,7 @@ import { exec } from 'child_process';
 import crypto from 'crypto';
 import domino from 'domino';
 import { http, https } from 'follow-redirects';
-import fs from 'fs';
+import fs, { unlinkSync } from 'fs';
 import htmlMinifier from 'html-minifier';
 import fetch from 'node-fetch';
 import os from 'os';
@@ -18,6 +18,7 @@ import urlParser from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
 import zlib from 'zlib';
 import semver from 'semver';
+import * as path from 'path';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -31,6 +32,7 @@ import * as U from './Utils';
 import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise } from './Utils';
 import Zim from './Zim';
 import packageJSON from '../package.json';
+import axios from 'axios';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -60,7 +62,6 @@ async function execute(argv) {
     mwPassword,
     requestTimeout,
     publisher,
-    articleList,
     customMainPage,
     customZimTitle,
     customZimDescription,
@@ -75,6 +76,7 @@ async function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
+    articleList,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
@@ -441,6 +443,20 @@ async function execute(argv) {
 
   await mw.login(downloader);
 
+  if (zim.articleList && zim.articleList.includes('http')) {
+    const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
+    logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
+    const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
+    const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
+    await new Promise((resolve, reject) => {
+      articleListContentStream
+        .on('error', (err) => reject({ message: `Failed to download article list from [${zim.articleList}]`, error: err }))
+        .on('end', resolve)
+        .pipe(articleListWriteStream);
+    });
+    zim.articleList = tmpArticleListPath;
+  }
+
   await mw.getTextDirection(env, downloader);
   await mw.getSiteInfo(env, downloader);
   await zim.getSubTitle();
@@ -460,6 +476,12 @@ async function execute(argv) {
       return () => doDump(env, dump);
     }),
   );
+
+  if (articleList && articleList.includes('http')) {
+    // We downloaded the list to `zim.articleList`
+    logger.log(`Deleting file [${zim.articleList}]`);
+    unlinkSync(zim.articleList);
+  }
 
   if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');
