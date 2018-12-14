@@ -69,27 +69,33 @@ class Downloader {
     });
   }
 
-  public downloadMediaFile(url, path, force, optQueue, callback) {
-    if (!url || !path) {
-      callback();
-      return;
-    }
-    const self = this;
-    fs.stat(path, async (statError) => {
-      if (statError && !force) {
-        callback(statError.code !== 'ENOENT' && statError ? `Impossible to stat() ${path}:\n${path} already downloaded, download will be skipped.` : undefined);
-      } else {
-        self.logger.info(`Downloading ${decodeURI(url)} at ${path}...`);
-        try {
-          const { content, responseHeaders } = await self.downloadContent(url);
-          fs.writeFile(path, content, (writeError) => {
-            optQueue.push({ path, size: Number(responseHeaders['content-length']) });
-            callback(writeError ? `Unable to write ${path} (${url})` : undefined, responseHeaders);
-          });
-        } catch (err) {
-          callback(`Failed to get file: [${url}]`);
-        }
+  public async downloadMediaFile(url, path, force, optQueue) {
+    return new Promise((resolve, reject) => {
+      if (!url || !path) {
+        resolve();
+        return;
       }
+      const self = this;
+      fs.stat(path, async (statError) => {
+        if (statError && !force) {
+          reject(statError.code !== 'ENOENT' && statError ? `Impossible to stat() ${path}:\n${path} already downloaded, download will be skipped.` : undefined);
+        } else {
+          self.logger.info(`Downloading ${decodeURI(url)} at ${path}...`);
+          try {
+            const { content, responseHeaders } = await self.downloadContent(url);
+            fs.writeFile(path, content, (writeError) => {
+              if (writeError) {
+                reject({ message: `Unable to write ${path} (${url})`, error: writeError });
+              } else {
+                optQueue.push({ path, size: Number(responseHeaders['content-length']) });
+                resolve();
+              }
+            });
+          } catch (err) {
+            reject({ message: `Failed to get file: [${url}]`, error: err });
+          }
+        }
+      });
     });
   }
 }

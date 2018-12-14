@@ -7,7 +7,7 @@ import { exec } from 'child_process';
 import crypto from 'crypto';
 import domino from 'domino';
 import { http, https } from 'follow-redirects';
-import fs from 'fs';
+import fs, { unlinkSync } from 'fs';
 import htmlMinifier from 'html-minifier';
 import fetch from 'node-fetch';
 import os from 'os';
@@ -18,6 +18,7 @@ import urlParser from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
 import zlib from 'zlib';
 import semver from 'semver';
+import * as path from 'path';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -31,6 +32,7 @@ import * as U from './Utils';
 import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise } from './Utils';
 import Zim from './Zim';
 import packageJSON from '../package.json';
+import axios from 'axios';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -60,7 +62,6 @@ async function execute(argv) {
     mwPassword,
     requestTimeout,
     publisher,
-    articleList,
     customMainPage,
     customZimTitle,
     customZimDescription,
@@ -75,6 +76,7 @@ async function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
+    articleList,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
@@ -92,7 +94,7 @@ async function execute(argv) {
   if (!U.isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
 
   /* ZIM custom Favicon */
-  if (customZimFavicon && !fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
+  if (customZimFavicon && !(customZimFavicon.includes('http') || fs.existsSync(customZimFavicon))) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
 
   /* Number of parallel requests */
   if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
@@ -441,6 +443,20 @@ async function execute(argv) {
 
   await mw.login(downloader);
 
+  if (zim.articleList && zim.articleList.includes('http')) {
+    const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
+    logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
+    const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
+    const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
+    await new Promise((resolve, reject) => {
+      articleListContentStream
+        .on('error', (err) => reject({ message: `Failed to download article list from [${zim.articleList}]`, error: err }))
+        .on('end', resolve)
+        .pipe(articleListWriteStream);
+    });
+    zim.articleList = tmpArticleListPath;
+  }
+
   await mw.getTextDirection(env, downloader);
   await mw.getSiteInfo(env, downloader);
   await zim.getSubTitle();
@@ -460,6 +476,12 @@ async function execute(argv) {
       return () => doDump(env, dump);
     }),
   );
+
+  if (articleList && articleList.includes('http')) {
+    // We downloaded the list to `zim.articleList`
+    logger.log(`Deleting file [${zim.articleList}]`);
+    unlinkSync(zim.articleList);
+  }
 
   if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');
@@ -1568,7 +1590,7 @@ async function execute(argv) {
 
       /* Take care to download medias */
       const downloadCSSFileQueue = async.queue((data: any, finished) => {
-        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue, finished);
+        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue).then(finished, finished);
       }, speed);
 
       /* Take care to download CSS files */
@@ -1983,29 +2005,19 @@ async function execute(argv) {
           /* Download the file if necessary */
           if (toDownload) {
             if (useCache) {
-              downloader.downloadMediaFile(url, cachePath, true, optimizationQueue, (error) => {
-                if (error) {
-                  callback();
-                } else {
-                  logger.info(`Caching ${filenameBase} at ${cachePath}...`);
-                  fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                    if (error && error.code !== 'EEXIST') {
-                      return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
-                    }
-                    fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
-                      return callback(error && { message: `Unable to write cache header at ${cacheHeadersPath}`, error });
-                    });
+              downloader.downloadMediaFile(url, cachePath, true, optimizationQueue).then(() => {
+                logger.info(`Caching ${filenameBase} at ${cachePath}...`);
+                fs.symlink(cachePath, mediaPath, 'file', (error) => {
+                  if (error && error.code !== 'EEXIST') {
+                    return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
+                  }
+                  fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
+                    return callback(error && { message: `Unable to write cache header at ${cacheHeadersPath}`, error });
                   });
-                }
-              });
+                });
+              }, callback);
             } else {
-              downloader.downloadMediaFile(url, mediaPath, true, optimizationQueue, (error) => {
-                if (error) {
-                  callback({ message: 'Failed to write file', error });
-                } else {
-                  callback(null);
-                }
-              });
+              downloader.downloadMediaFile(url, mediaPath, true, optimizationQueue).then(callback, (error) => callback({ message: 'Failed to write file', error }));
             }
           } else {
             logger.info(`Cache hit for ${url}`);
@@ -2065,68 +2077,71 @@ async function execute(argv) {
     return mediaBase ? env.htmlRootPath + mediaBase : undefined;
   }
 
-  function saveFavicon() {
-    return new Promise((resolve, reject) => {
-      logger.log('Saving favicon.png...');
+  async function saveFavicon() {
+    logger.log('Saving favicon.png...');
 
-      function resizeFavicon(faviconPath) {
-        return new Promise((resolve, reject) => {
-          const cmd = `convert -thumbnail 48 "${faviconPath}" "${faviconPath}.tmp" ; mv "${faviconPath}.tmp" "${faviconPath}" `;
-          exec(cmd, (error) => {
-            fs.stat(faviconPath, (error, stats) => {
-              optimizationQueue.push({ path: faviconPath, size: stats.size }, () => {
-                if (error) {
-                  reject(error);
+    function resizeFavicon(faviconPath) {
+      return new Promise((resolve, reject) => {
+        const cmd = `convert -thumbnail 48 "${faviconPath}" "${faviconPath}.tmp" ; mv "${faviconPath}.tmp" "${faviconPath}" `;
+        exec(cmd, (error) => {
+          fs.stat(faviconPath, (error, stats) => {
+            optimizationQueue.push({ path: faviconPath, size: stats.size }, () => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve();
+              }
+            });
+          });
+        }).on('error', (error) => {
+          reject(error);
+          // console.error(error);
+        });
+      });
+    }
+
+    if (customZimFavicon) {
+      const faviconPath = env.htmlRootPath + 'favicon.png';
+      const faviconIsRemote = customZimFavicon.includes('http');
+      let content;
+      if (faviconIsRemote) {
+        logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
+        content = await axios.get(customZimFavicon, { responseType: 'arraybuffer' }).then((a) => a.data);
+      } else {
+        content = fs.readFileSync(customZimFavicon);
+      }
+      fs.writeFileSync(faviconPath, content);
+      return resizeFavicon(faviconPath);
+    } else {
+      return downloader.downloadContent(mw.siteInfoUrl())
+        .then(async ({ content }) => {
+          const body = content.toString();
+          const entries = JSON.parse(body).query.general;
+          if (!entries.logo) {
+            throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
+          }
+
+          const parsedUrl = urlParser.parse(entries.logo);
+          const ext = parsedUrl.pathname.split('.').slice(-1)[0];
+          const faviconPath = env.htmlRootPath + `favicon.${ext}`;
+          const faviconFinalPath = env.htmlRootPath + `favicon.png`;
+          const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
+          await downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue);
+          if (ext !== 'png') {
+            console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+            await new Promise((resolve, reject) => {
+              exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
+                if (err) {
+                  reject(err);
                 } else {
                   resolve();
                 }
               });
             });
-          }).on('error', (error) => {
-            reject(error);
-            // console.error(error);
-          });
+          }
+          return resizeFavicon(faviconFinalPath);
         });
-      }
-
-      if (customZimFavicon) {
-        const faviconPath = env.htmlRootPath + 'favicon.png';
-        const content = fs.readFileSync(customZimFavicon);
-        fs.writeFileSync(faviconPath, content);
-        return resizeFavicon(faviconPath);
-      } else {
-        downloader.downloadContent(mw.siteInfoUrl())
-          .then(({ content }) => {
-            const body = content.toString();
-            const entries = JSON.parse(body).query.general;
-            if (!entries.logo) {
-              return reject(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
-            }
-
-            const parsedUrl = urlParser.parse(entries.logo);
-            const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-            const faviconPath = env.htmlRootPath + `favicon.${ext}`;
-            const faviconFinalPath = env.htmlRootPath + `favicon.png`;
-            const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
-            downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue, async () => {
-              if (ext !== 'png') {
-                console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
-                await new Promise((resolve, reject) => {
-                  exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
-                    if (err) {
-                      reject(err);
-                    } else {
-                      resolve();
-                    }
-                  });
-                });
-              }
-              resizeFavicon(faviconFinalPath).then(resolve, reject);
-            });
-          })
-          .catch(reject);
-      }
-    });
+    }
   }
 
   function getMainPage() {

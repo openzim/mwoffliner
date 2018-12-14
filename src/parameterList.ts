@@ -5,11 +5,11 @@ const parameterList = [
     description: 'Email of the mwoffliner user which will be put in the HTTP user-agent string',
     required: true,
   },
-  { name: 'articleList', description: 'File with one title (in UTF8) per line', required: false },
+  { name: 'articleList', description: 'File with one title (in UTF8) per line. This can be a local path or an HTTP(S) url', required: false },
   { name: 'cacheDirectory', description: 'Directory where files are permanently cached', required: false },
   {
     name: 'customZimFavicon',
-    description: 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo.',
+    description: 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo. This can be a local path or an HTTP(S) url',
     required: false,
   },
   { name: 'customZimTitle', description: 'Allow to configure a custom ZIM file title.', required: false },
