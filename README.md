@@ -1,154 +1,120 @@
 # mwoffliner
 
-[![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
-
-`mwoffliner` is a tool which allows to make a local HTML snapshot of
+`mwoffliner` is a tool for making a local HTML snapshot of
 any online (recent) Mediawiki instance. It goes through all articles
-(or a selection if specified) and write the HTML/pictures to a local
+(or a selection if specified) and writes the HTML/images to a local
 directory. It has mainly been tested against Wikimedia projects like
 Wikipedia, Wiktionary, ... But it should also work for any recent
 Mediawiki.
 
+[![NPM](https://nodei.co/npm/mwoffliner.png)](https://nodei.co/npm/mwoffliner/)
+
+[![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
+[![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
+
 ## Prerequisites
 
-To use `mwoffliner`, you need a recent version of Node.js and a POSIX
-system (like GNU/Linux). But there are also a few other dependencies
-described below.
+- *NIX Operating System (Linux/Unix/macOS)
+- [NodeJS](https://nodejs.org/en/)
+- Image Processing Tools
+    - jpegoptim
+    - advdef
+    - gifsicle
+    - pngquant
+    - imagemagick
+- [ZimWriterFS](https://github.com/openzim/zimwriterfs)
 
-Most of the instructions are given for a Debian based OS.
+## Setup
 
-### Node.js
-
-Install first Node.js
-
-```
-$curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-$sudo apt-get install -y nodejs
-```
-
-### Image manipulation softwares
-
-`mwoffliner` makes some treatments on downloaded images, so the
-following binaries are required : `jpegoptim, advdef, gifsicle,
-pngquant, imagemagick`.
-
-```
-$sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
+### MacOS
+#### NodeJS
+```bash
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
+source ~/.bashrc && \
+nvm install stable && \
+node --version
 ```
 
-### Zimwriterfs
-
-`mwoffliner` is thought to write the snapshots in the ZIM archive file
-format. One time the files written on the hard disk, this is done by
-`zimwriterfs`. See https://github.com/openzim/zimwriterfs for more
-details.
-
-### Redis
-
-Redis a software daemon to store huge quantity of key=value pairs. It is
-used as a cache by `mwoffliner`.
-
-You can install it from the source:
-
-```
-$wget http://download.redis.io/releases/redis-3.2.8.tar.gz
-$tar xzf redis-3.2.8.tar.gz
-$cd redis-3.2.8
-$make
+#### Image Processing
+> These instructions require that [Homebrew](https://brew.sh/) is already set-up on your machine
+```bash
+> brew install jpegoptim advancecomp gifsicle pngquant imagemagick
 ```
 
-or directly from the repository:
-
-```
-$sudo apt-get install redis-server
-```
-
-Here are the important parts of the configuration
-(/etc/redis/redis.conf):
-
-```
-unixsocket /dev/shm/redis.sock
-unixsocketperm 777
-save ""
-appendfsync no
+#### Redis
+```bash
+> brew install redis
 ```
 
-### Nscd
+#### ZimWriterFS
+See [GitHub](https://github.com/openzim/zimwriterfs)
 
-We also recommend to use a DNS cache like `nscd`.
-
-## Installation
-
-Then install `mwoffliner` and its dependencies itself:
-
+### Linux (Debian)
+#### NodeJS
+```bash
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
+source ~/.bashrc && \
+nvm install stable && \
+node --version
 ```
-$sudo npm -g install mwoffliner
+
+#### Image Processing
+```bash
+> sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
 ```
 
-or if you do not want to install it as root:
+#### Redis
+```bash
+> sudo apt-get install redis-server
+```
 
-```
-$npm install mwoffliner
-```
+#### ZimWriterFS
+See [GitHub](https://github.com/openzim/zimwriterfs)
 
 ## Usage
+### Command Line
+```bash
+> npm i -g mwoffliner
+> mwoffliner --help
 
-When you are done with the installation, you can start
-mwoffliner. There are two ways to use mwoffliner.
-
-### Basic usage
-
-If installed as root (so in the $PATH):
-
-```
-mwoffliner
-```
-
-otherwise:
-
-```
-node ./node_modules/mwoffliner/bin/mwoffliner.script.js
+> mwoffliner \
+    --mwUrl=https://es.wikipedia.org \
+    --adminEmail=foo@bar.net \
+    --localParsoid \
+    --verbose \
+    --format=nozim \ # Won't make a final ZIM file
+    --articleList=./articleList # Will download one article
 ```
 
-This will show the usage() of the command.
-
-### Advanced usage
-
-#### As a npm script
-
-If you want to run `mwoffliner` the `npm` way, you must create some
-`npm` scripts through `package.json` definition. Add, for example, the
-following scripts part in your `package.json`:
-
-```
-"scripts": {
-  "mwoffliner": "mwoffliner",
-  "create_archive": "mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net",
-  "create_mywiki_archive": "mwoffliner --mwUrl=https://my.wiki.url/ --adminEmail=foo@bar.net"
-}
-```
-
-Now you are able to run mwoffliner through npm:
-
-```
-$npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
-```
-
-The first "--" is meant to pass the following arguments to
-`mwoffliner` module.
-
-#### As a Javascript module
-
-Include this script to the .js file of your project:
-
-```
-const mwoffliner = require('./lib/mwoffliner.lib.js')
+### Programmatic API
+```javascript
+const mwoffliner = require('mwoffliner');
 const parameters = {
-    mwUrl: 'https://en.wikipedia.org/',
-    adminEmail: 'foo@bar.net'
-}
-mwoffliner.execute(parameters)
+    mwUrl: "https://es.wikipedia.org",
+    adminEmail: "foo@bar.net",
+    localParsoid: true,
+    verbose: true,
+    format: "nozim",
+    articleList: "./articleList"
+};
+mwoffliner.execute(parameters);
 ```
+
+## Development
+
+```bash
+git clone https://github.com/openzim/mwoffliner.git
+cd mwoffliner
+
+npm i
+./watch.sh # Watch for changes in "src/*"
+```
+
+### Debugging
+There is a pre-configured debug config for [VSCode](https://code.visualstudio.com/), just click on the debugging tab.
+
+Make sure you read [CONTRIBUTING.md](./CONTRIBUTING.md) for tips on how to best debug and submit issues.
+
 
 ## Background
 

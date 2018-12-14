@@ -39,6 +39,29 @@ mwofflinerLib.execute(argv)
         process.exit(0);
     })
     .catch(err => {
-        console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, JSON.stringify(err, null, '\t'));
+        let loggableErr = err;
+        try {
+            loggableErr = JSON.stringify(err, null, '\t');
+        } catch (err) { /* NOOP */ }
+        console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr);
         process.exit(2);
     });
+
+
+// Hack to allow serializing of Errors
+// https://stackoverflow.com/questions/18391212/is-it-not-possible-to-stringify-an-error-using-json-stringify
+if (!('toJSON' in Error.prototype)) {
+    Object.defineProperty(Error.prototype, 'toJSON', {
+        value: function () {
+            var alt = {};
+
+            Object.getOwnPropertyNames(this).forEach(function (key) {
+                alt[key] = this[key];
+            }, this);
+
+            return alt;
+        },
+        configurable: true,
+        writable: true
+    });
+}
