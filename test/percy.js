@@ -25,7 +25,7 @@ describe(`MWOffliner Page`, function () {
     let page = null
     beforeEach(async function () {
         browser = await puppeteer.launch({
-            headless: false,
+            headless: true,
             timeout: 10000
         })
         page = await browser.newPage()
