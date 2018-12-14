@@ -104,7 +104,7 @@ function checkDependencies(env: OfflinerEnv) {
     'gifsicle --version',
     'advdef --version',
     'file --help',
-    'stat --version',
+    // 'stat --version',
     'convert --version',
     'rsvg-convert --version',
     shouldCheckZimwriterFs ? 'zimwriterfs --help' : null,
