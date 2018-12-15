@@ -46,7 +46,7 @@ export default {
   output: {
     // CSS resources added by Kiwix
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
-    mainPageCssResources: ['mobile_main_page', 'mobile_main_page_nojs'],
+    mainPageCssResources: ['mobile_main_page'],
 
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 

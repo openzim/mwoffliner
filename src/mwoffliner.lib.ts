@@ -2211,7 +2211,7 @@ async function execute(argv) {
       const doc = domino.createDocument(
         articleListHomeTemplate
           .replace('</head>',
-            genHeaderCSSLink('mobile_main_page_nojs', 'nojs') + '\n' +
+            genHeaderCSSLink('mobile_main_page') + '\n' +
             genHeaderCSSLink('style') + '\n' +
             genHeaderScript('images_loaded.min') + '\n' +
             genHeaderScript('masonry.min') + '\n' +
