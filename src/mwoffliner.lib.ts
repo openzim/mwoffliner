@@ -367,7 +367,7 @@ async function execute(argv) {
               if (!postOptimError && postOptimStats.size > preOptimStats.size) {
                 finished(null, true);
               } else if (!postOptimError && postOptimStats.size < preOptimStats.size) {
-                finished('File to optim is smaller (before optim) than it should.');
+                finished('File to optim is smaller (before optim) than it should.' as any);
               } else {
                 exec(`file -b --mime-type "${path}"`, (error, stdout) => {
                   const type = stdout.replace(/image\//, '').replace(/[\n\r]/g, '');
@@ -375,7 +375,7 @@ async function execute(argv) {
                   if (cmd) {
                     setTimeout(finished, 2000, executionError);
                   } else {
-                    finished('Unable to find optimization command.');
+                    finished('Unable to find optimization command.' as any);
                   }
                 });
               }
@@ -1590,7 +1590,7 @@ async function execute(argv) {
 
       /* Take care to download medias */
       const downloadCSSFileQueue = async.queue((data: any, finished) => {
-        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue).then(finished, finished);
+        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue).then(finished as any, finished);
       }, speed);
 
       /* Take care to download CSS files */
@@ -1845,7 +1845,7 @@ async function execute(argv) {
                 finished();
               } else {
                 next = '';
-                finished({ message: `Error by retrieving ${url}` });
+                finished({ message: `Error by retrieving ${url}` } as any);
               }
             });
         },
@@ -1910,7 +1910,7 @@ async function execute(argv) {
               try {
                 finished(error, error ? undefined : JSON.parse(data.toString()));
               } catch (error) {
-                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
+                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error } as any);
               }
             });
           },
