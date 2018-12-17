@@ -36,6 +36,7 @@
 		"node": ">=8.12.0"
 	},
 	"dependencies": {
+		"@percy/puppeteer": "^1.0.0-beta.5",
 		"@types/async": "^2.0.49",
 		"@types/node": "^10.10.1",
 		"@types/yargs": "^12.0.0",
@@ -49,9 +50,11 @@
 		"html-minifier": "^3.5.0",
 		"jsoncompress": "^0.1.3",
 		"mkdirp": "^0.5.1",
+		"mocha": "^5.2.0",
 		"moment": "^2.21.0",
 		"node-fetch": "^1.7.3",
 		"parsoid": "^0.10.0",
+		"puppeteer": "^1.11.0",
 		"redis": "^2.6.2",
 		"snyk": "^1.96.0",
 		"swig-templates": "^2.0.2",
