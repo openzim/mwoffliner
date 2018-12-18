@@ -402,29 +402,42 @@ async function execute(argv) {
   }, speed * 5);
 
   /* Get ids */
-  const redirectQueue = async.queue(async (articleId, finished) => {
-    if (articleId) {
-      logger.info(`Getting redirects for article ${articleId}...`);
-      const url = mw.backlinkRedirectsQueryUrl(articleId);
+  const redirectQueue = async.cargo(async (articleIds, finished) => {
+    const articleId = articleIds[0];
+    if (articleIds && articleIds.length) {
+      logger.info(`Getting redirects for [${articleIds.length}] articles`);
+      const url = mw.backlinkRedirectsQueryUrl(articleIds);
+
       try {
         const { content } = await downloader.downloadContent(url);
         const body = content.toString();
         if (!JSON.parse(body).error) {
           const redirects = {};
           let redirectsCount = 0;
-          const { pages } = JSON.parse(body).query;
+          const { pages, normalized } = JSON.parse(body).query;
 
-          pages[Object.keys(pages)[0]].redirects.map((entry) => {
-            const title = entry.title.replace(/ /g, mw.spaceDelimiter);
-            redirects[title] = articleId;
-            redirectsCount += 1;
+          const fromXTo = normalized.reduce((acc, item) => {
+            acc[item.to] = item.from;
+            return acc;
+          }, {});
 
-            if (title === zim.mainPageId) {
-              zim.mainPageId = articleId;
+          const pageIds = Object.keys(pages);
+
+          for (const pageId of pageIds) {
+            const { redirects } = pages[pageId];
+            for (const entry of redirects) {
+              const originalArticleId = fromXTo[entry.title];
+              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+              redirects[title] = originalArticleId;
+              redirectsCount += 1;
+
+              if (title === zim.mainPageId) {
+                zim.mainPageId = articleId;
+              }
             }
-          });
+          }
 
-          logger.info(`${redirectsCount} redirect(s) found for ${articleId}`);
+          logger.info(`${redirectsCount} redirect(s) found for ids`);
           redis.saveRedirects(redirectsCount, redirects, finished);
         } else {
           finished(JSON.parse(body).error);
@@ -435,7 +448,7 @@ async function execute(argv) {
     } else {
       finished();
     }
-  }, speed * 3);
+  }, Math.min(speed * 100, 500));
 
   /* ********************************* */
   /* GET CONTENT ********************* */
