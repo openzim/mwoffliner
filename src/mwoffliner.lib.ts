@@ -2224,8 +2224,10 @@ async function execute(argv) {
       const {
         articlesWithImages,
         articlesWithoutImages,
+        allArticles,
       } = titles.reduce((acc, title) => {
         const articleDetail = articleDetailXId[title];
+        acc.allArticles.push(articleDetail);
         if (articleDetail.thumbnail) {
           acc.articlesWithImages.push(articleDetail);
         } else {
@@ -2235,17 +2237,28 @@ async function execute(argv) {
       }, {
           articlesWithImages: [],
           articlesWithoutImages: [],
+          allArticles: [],
         },
       );
 
-      const articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
-      // const articlesWithoutImagesEl = articlesWithoutImages.map((article) => U.makeArticleListItem(env, article)).join('\n');
+      const minImageThreshold = 10;
+      let articlesWithImagesEl;
+      let articlesWithoutImagesEl;
+      if (articlesWithImages.length > 10) {
+        articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
+      } else {
+        articlesWithoutImagesEl = allArticles.map((article) => U.makeArticleListItem(env, article)).join('\n');
+      }
 
       const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
-
       // doc.getElementById('title').textContent = dumpTitle;
-      doc.getElementById('content').innerHTML = articlesWithImagesEl;
-      // doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
+
+      if(articlesWithImagesEl) {
+        doc.getElementById('content').innerHTML = articlesWithImagesEl;
+      }
+      if(articlesWithoutImagesEl) {
+        doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
+      }
 
       /* Write the static html file */
       return writeMainPage(doc.documentElement.outerHTML);

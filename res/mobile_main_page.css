@@ -71,9 +71,20 @@ h2 {
     /* transition: all 0.3s; */
     /* transform: scale(0.95); */
 }
+
 .item:hover figcaption {
     /* transform: scale(1); */
     /* bottom: 50%; */
+}
+
+#footer {
+    margin: 0;
+}
+#footer h2 {
+    margin: 15vh 0;
+}
+#footer ul {
+    margin-left: 10%;
 }
 
 @media only screen and (min-width: 1024px) {
@@ -87,6 +98,9 @@ h2 {
         width: 25%;
     }
     .nojs #content {
+        column-count: 4;
+    }
+    ul {
         column-count: 4;
     }
 }
@@ -107,6 +121,12 @@ h2 {
     .nojs #content {
         column-count: 3;
     }
+    ul {
+        column-count: 2;
+    }
+    #footer ul li {
+        font-size: 0.9em;
+    }
 }
 
 @media only screen and (max-width: 767px) {
@@ -124,5 +144,11 @@ h2 {
     }
     .nojs #content {
         column-count: 2;
+    }
+    ul {
+        column-count: 1;
+    }
+    #footer ul li {
+        font-size: 1em;
     }
 }
