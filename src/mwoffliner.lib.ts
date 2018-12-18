@@ -14,11 +14,12 @@ import os from 'os';
 import parsoid from 'parsoid';
 import pathParser, { resolve } from 'path';
 import swig from 'swig-templates';
-import urlParser from 'url';
+import urlParser, { URL } from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
 import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
+import ServiceRunner from 'service-runner';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -48,7 +49,7 @@ async function execute(argv) {
     // tslint:disable-next-line:variable-name
     speed: _speed,
     adminEmail,
-    localParsoid,
+    localMcs,
     customZimFavicon,
     verbose,
     minifyHtml,
@@ -57,6 +58,7 @@ async function execute(argv) {
     mwUrl,
     mwWikiPath,
     mwApiPath,
+    mwModulePath,
     mwDomain,
     mwUsername,
     mwPassword,
@@ -83,9 +85,7 @@ async function execute(argv) {
     useCache: _useCache,
   } = argv;
 
-  let {
-    parsoidUrl,
-  } = argv;
+  let mcsUrl: string = argv.mcsUrl;
 
   const useCache = typeof _useCache === 'undefined' ? true : _useCache;
 
@@ -107,6 +107,8 @@ async function execute(argv) {
   /* logger */
   const logger = new Logger(verbose);
 
+  const runner = new ServiceRunner();
+
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
   if (!nodeVersionSatisfiesPackage) {
     logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
@@ -115,6 +117,7 @@ async function execute(argv) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki(logger, {
     apiPath: mwApiPath,
+    modulePath: mwModulePath,
     base: mwUrl,
     domain: mwDomain,
     password: mwPassword,
@@ -201,43 +204,53 @@ async function execute(argv) {
   const INFINITY_WIDTH = 9999999;
   const articleIds = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
-  let parsoidContentType = 'html';
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
-  if (!parsoidUrl) {
-    if (localParsoid) {
-      logger.log('Starting Parsoid');
-      // Icky but necessary
-      fs.writeFileSync(
-        './localsettings.js',
-        `
-                exports.setup = function(parsoidConfig) {
-                    parsoidConfig.setMwApi({
-                        uri: '${mw.base + mw.apiPath}',
-                    });
-                };
-                `,
-        'utf8',
-      );
-      await parsoid
-        .apiServiceWorker({
-          appBasePath: './node_modules/parsoid',
-          logger: console,
-          config: {
-            localsettings: '../../localsettings.js',
-            parent: undefined,
+  if (localMcs) {
+    // Start Parsoid
+    logger.log('Starting Parsoid & MCS');
+
+    await runner.start({
+      num_workers: 0,
+      services: [{
+        name: 'parsoid',
+        module: 'node_modules/parsoid/lib/index.js',
+        entrypoint: 'apiServiceWorker',
+        conf: {
+          mwApis: [{
+            uri: `${mw.base + mw.apiPath}`,
+          }],
+        },
+      }, {
+        name: 'mcs',
+        module: 'node_modules/service-mobileapp-node/app.js',
+        conf: {
+          port: 6927,
+          mwapi_req: {
+            method: 'post',
+            uri: `https://{{domain}}/${mw.apiPath}`,
+            headers: {
+              'user-agent': '{{user-agent}}',
+            },
+            body: '{{ default(request.query, {}) }}',
           },
-        })
-        .then((_) => {
-          fs.unlinkSync('./localsettings.js');
-          logger.log('Parsoid Started Successfully');
-        });
-      parsoidUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
-      parsoidContentType = 'json';
-    } else {
-      parsoidUrl = `${mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
-      parsoidContentType = 'json';
-    }
+          restbase_req: {
+            method: '{{request.method}}',
+            uri: 'http://localhost:8000/{{domain}}/v3/{+path}',
+            query: '{{ default(request.query, {}) }}',
+            headers: '{{request.headers}}',
+            body: '{{request.body}}',
+          },
+        },
+      }],
+      logging: {
+        level: 'info',
+      },
+    });
+    const domain = (new URL(mw.base)).host;
+    mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+  } else {
+    mcsUrl = `${mw.base}api/rest_v1/page/mobile-sections/`;
   }
 
   /* ********************************* */
@@ -780,7 +793,7 @@ async function execute(argv) {
 
           logger.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
-            `${mw.base}w/load.php?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
+            `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
           return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
             .then((redisResult) => {
@@ -809,7 +822,9 @@ async function execute(argv) {
                 return Promise.resolve();
               }
             })
-            .catch((e) => logger.error(e));
+            .catch((e) => {
+              logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
+            });
         }
       }
 
@@ -1451,7 +1466,7 @@ async function execute(argv) {
 
       function saveArticle(articleId, finished) {
         let html = '';
-        const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
+        const articleApiUrl = `${mcsUrl}${encodeURIComponent(articleId)}`;
         logger.log(`Getting (mobile) article from ${articleApiUrl}`);
         fetch(articleApiUrl, {
           method: 'GET',

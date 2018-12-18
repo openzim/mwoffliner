@@ -56,6 +56,8 @@
 		"parsoid": "^0.10.0",
 		"puppeteer": "^1.11.0",
 		"redis": "^2.6.2",
+		"service-mobileapp-node": "git+https://github.com/wikimedia/mediawiki-services-mobileapps.git#d244439",
+		"service-runner": "^2.6.8",
 		"snyk": "^1.96.0",
 		"swig-templates": "^2.0.2",
 		"tslint": "^5.11.0",
