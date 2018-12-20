@@ -2281,10 +2281,10 @@ async function execute(argv) {
       const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
       // doc.getElementById('title').textContent = dumpTitle;
 
-      if(articlesWithImagesEl) {
+      if (articlesWithImagesEl) {
         doc.getElementById('content').innerHTML = articlesWithImagesEl;
       }
-      if(articlesWithoutImagesEl) {
+      if (articlesWithoutImagesEl) {
         doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
       }
 
