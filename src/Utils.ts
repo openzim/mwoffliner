@@ -180,6 +180,17 @@ function migrateChildren(from, to, beforeNode) {
   }
 }
 
+function getStringsForLang(language, fallbackLanguage = 'en') {
+  let strings: { [id: string]: string } = {};
+  try {
+    strings = require(`../translation/${language}.json`);
+  } catch (err) {
+    console.warn(`Couldn't find strings file for [${language}], falling back to [${fallbackLanguage}]`);
+    strings = require(`../translation/${fallbackLanguage}.json`);
+  }
+  return strings;
+}
+
 export {
   isValidEmail,
   lcFirst,
@@ -195,5 +206,6 @@ export {
   writeFilePromise,
   execPromise,
   contains,
+  getStringsForLang,
   _decodeURIComponent as decodeURIComponent,
 };
