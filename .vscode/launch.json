@@ -12,7 +12,7 @@
             "args": [
                 "--mwUrl=https://en.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
-                "--localParsoid",
+                "--localMcs",
                 // "--verbose",
                 "--format=nozim",
                 "--articleList=./articleList",
