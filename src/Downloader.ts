@@ -50,7 +50,7 @@ class Downloader {
           responseHeaders = resp.headers;
           finished(null, resp.data);
         } catch (err) {
-          finished(url, err.stack);
+          finished(url as any, err.stack);
         }
       }, (error, data) => {
         if (error) {

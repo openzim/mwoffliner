@@ -14,11 +14,12 @@ import os from 'os';
 import parsoid from 'parsoid';
 import pathParser, { resolve } from 'path';
 import swig from 'swig-templates';
-import urlParser from 'url';
+import urlParser, { URL } from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
 import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
+import ServiceRunner from 'service-runner';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -48,7 +49,7 @@ async function execute(argv) {
     // tslint:disable-next-line:variable-name
     speed: _speed,
     adminEmail,
-    localParsoid,
+    localMcs,
     customZimFavicon,
     verbose,
     minifyHtml,
@@ -57,6 +58,7 @@ async function execute(argv) {
     mwUrl,
     mwWikiPath,
     mwApiPath,
+    mwModulePath,
     mwDomain,
     mwUsername,
     mwPassword,
@@ -83,9 +85,7 @@ async function execute(argv) {
     useCache: _useCache,
   } = argv;
 
-  let {
-    parsoidUrl,
-  } = argv;
+  let mcsUrl: string = argv.mcsUrl;
 
   const useCache = typeof _useCache === 'undefined' ? true : _useCache;
 
@@ -107,6 +107,8 @@ async function execute(argv) {
   /* logger */
   const logger = new Logger(verbose);
 
+  const runner = new ServiceRunner();
+
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
   if (!nodeVersionSatisfiesPackage) {
     logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
@@ -115,6 +117,7 @@ async function execute(argv) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki(logger, {
     apiPath: mwApiPath,
+    modulePath: mwModulePath,
     base: mwUrl,
     domain: mwDomain,
     password: mwPassword,
@@ -201,44 +204,54 @@ async function execute(argv) {
   const INFINITY_WIDTH = 9999999;
   const articleDetailXId = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
-  let parsoidContentType = 'html';
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
   const articleListLines = articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
 
-  if (!parsoidUrl) {
-    if (localParsoid) {
-      logger.log('Starting Parsoid');
-      // Icky but necessary
-      fs.writeFileSync(
-        './localsettings.js',
-        `
-                exports.setup = function(parsoidConfig) {
-                    parsoidConfig.setMwApi({
-                        uri: '${mw.base + mw.apiPath}',
-                    });
-                };
-                `,
-        'utf8',
-      );
-      await parsoid
-        .apiServiceWorker({
-          appBasePath: './node_modules/parsoid',
-          logger: console,
-          config: {
-            localsettings: '../../localsettings.js',
-            parent: undefined,
+  if (localMcs) {
+    // Start Parsoid
+    logger.log('Starting Parsoid & MCS');
+
+    await runner.start({
+      num_workers: 0,
+      services: [{
+        name: 'parsoid',
+        module: 'node_modules/parsoid/lib/index.js',
+        entrypoint: 'apiServiceWorker',
+        conf: {
+          mwApis: [{
+            uri: `${mw.base + mw.apiPath}`,
+          }],
+        },
+      }, {
+        name: 'mcs',
+        module: 'node_modules/service-mobileapp-node/app.js',
+        conf: {
+          port: 6927,
+          mwapi_req: {
+            method: 'post',
+            uri: `https://{{domain}}/${mw.apiPath}`,
+            headers: {
+              'user-agent': '{{user-agent}}',
+            },
+            body: '{{ default(request.query, {}) }}',
           },
-        })
-        .then((_) => {
-          fs.unlinkSync('./localsettings.js');
-          logger.log('Parsoid Started Successfully');
-        });
-      parsoidUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
-      parsoidContentType = 'json';
-    } else {
-      parsoidUrl = `${mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
-      parsoidContentType = 'json';
-    }
+          restbase_req: {
+            method: '{{request.method}}',
+            uri: 'http://localhost:8000/{{domain}}/v3/{+path}',
+            query: '{{ default(request.query, {}) }}',
+            headers: '{{request.headers}}',
+            body: '{{request.body}}',
+          },
+        },
+      }],
+      logging: {
+        level: 'info',
+      },
+    });
+    const domain = (new URL(mw.base)).host;
+    mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+  } else {
+    mcsUrl = `${mw.base}api/rest_v1/page/mobile-sections/`;
   }
 
   /* ********************************* */
@@ -369,7 +382,7 @@ async function execute(argv) {
               if (!postOptimError && postOptimStats.size > preOptimStats.size) {
                 finished(null, true);
               } else if (!postOptimError && postOptimStats.size < preOptimStats.size) {
-                finished('File to optim is smaller (before optim) than it should.');
+                finished('File to optim is smaller (before optim) than it should.' as any);
               } else {
                 exec(`file -b --mime-type "${path}"`, (error, stdout) => {
                   const type = stdout.replace(/image\//, '').replace(/[\n\r]/g, '');
@@ -377,7 +390,7 @@ async function execute(argv) {
                   if (cmd) {
                     setTimeout(finished, 2000, executionError);
                   } else {
-                    finished('Unable to find optimization command.');
+                    finished('Unable to find optimization command.' as any);
                   }
                 });
               }
@@ -404,29 +417,42 @@ async function execute(argv) {
   }, speed * 5);
 
   /* Get ids */
-  const redirectQueue = async.queue(async (articleId, finished) => {
-    if (articleId) {
-      logger.info(`Getting redirects for article ${articleId}...`);
-      const url = mw.backlinkRedirectsQueryUrl(articleId);
+  const redirectQueue = async.cargo(async (articleIds, finished) => {
+    const articleId = articleIds[0];
+    if (articleIds && articleIds.length) {
+      logger.info(`Getting redirects for [${articleIds.length}] articles`);
+      const url = mw.backlinkRedirectsQueryUrl(articleIds);
+
       try {
         const { content } = await downloader.downloadContent(url);
         const body = content.toString();
         if (!JSON.parse(body).error) {
           const redirects = {};
           let redirectsCount = 0;
-          const { pages } = JSON.parse(body).query;
+          const { pages, normalized } = JSON.parse(body).query;
 
-          pages[Object.keys(pages)[0]].redirects.map((entry) => {
-            const title = entry.title.replace(/ /g, mw.spaceDelimiter);
-            redirects[title] = articleId;
-            redirectsCount += 1;
+          const fromXTo = normalized.reduce((acc, item) => {
+            acc[item.to] = item.from;
+            return acc;
+          }, {});
 
-            if (title === zim.mainPageId) {
-              zim.mainPageId = articleId;
+          const pageIds = Object.keys(pages);
+
+          for (const pageId of pageIds) {
+            const { redirects } = pages[pageId];
+            for (const entry of redirects) {
+              const originalArticleId = fromXTo[entry.title];
+              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+              redirects[title] = originalArticleId;
+              redirectsCount += 1;
+
+              if (title === zim.mainPageId) {
+                zim.mainPageId = articleId;
+              }
             }
-          });
+          }
 
-          logger.info(`${redirectsCount} redirect(s) found for ${articleId}`);
+          logger.info(`${redirectsCount} redirect(s) found for ids`);
           redis.saveRedirects(redirectsCount, redirects, finished);
         } else {
           finished(JSON.parse(body).error);
@@ -437,7 +463,7 @@ async function execute(argv) {
     } else {
       finished();
     }
-  }, speed * 3);
+  }, Math.min(speed * 100, 500));
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -826,7 +852,7 @@ async function execute(argv) {
 
           logger.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
-            `${mw.base}w/load.php?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
+            `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
           return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
             .then((redisResult) => {
@@ -855,7 +881,9 @@ async function execute(argv) {
                 return Promise.resolve();
               }
             })
-            .catch((e) => logger.error(e));
+            .catch((e) => {
+              logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
+            });
         }
       }
 
@@ -1497,7 +1525,7 @@ async function execute(argv) {
 
       function saveArticle(articleId, finished) {
         let html = '';
-        const articleApiUrl = `${mw.base}api/rest_v1/page/mobile-sections/${encodeURIComponent(articleId)}`;
+        const articleApiUrl = `${mcsUrl}${encodeURIComponent(articleId)}`;
         logger.log(`Getting (mobile) article from ${articleApiUrl}`);
         fetch(articleApiUrl, {
           method: 'GET',
@@ -1636,7 +1664,7 @@ async function execute(argv) {
 
       /* Take care to download medias */
       const downloadCSSFileQueue = async.queue((data: any, finished) => {
-        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue).then(finished, finished);
+        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue).then(finished as any, finished);
       }, speed);
 
       /* Take care to download CSS files */
@@ -1893,7 +1921,7 @@ async function execute(argv) {
                 finished();
               } else {
                 next = '';
-                finished({ message: `Error by retrieving ${url}` });
+                finished({ message: `Error by retrieving ${url}` } as any);
               }
             });
         },
@@ -1958,7 +1986,7 @@ async function execute(argv) {
               try {
                 finished(error, error ? undefined : JSON.parse(data.toString()));
               } catch (error) {
-                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error });
+                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error } as any);
               }
             });
           },

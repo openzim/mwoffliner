@@ -13,6 +13,7 @@ class MediaWiki {
   public base: string;
   public wikiPath: string;
   public apiPath: string;
+  public modulePath: string;
   public domain: string;
   public username: string;
   public password: string;
@@ -29,19 +30,21 @@ class MediaWiki {
   };
   public namespacesToMirror: string[];
 
-  constructor(logger: Logger, config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; }) {
+  constructor(logger: Logger, config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; }) {
     this.logger = logger;
     // Normalize args
     this.base = `${config.base.replace(/\/$/, '')}/`;
-    this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki';
-    this.apiPath = config.apiPath || 'w/api.php';
+    this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki/';
+    this.apiPath = config.apiPath === undefined ? 'w/api.php' : config.apiPath;
+    this.modulePath = config.modulePath === undefined ? 'w/load.php' : config.modulePath;
     this.domain = config.domain || '';
     this.username = config.username;
     this.password = config.password;
     this.spaceDelimiter = config.spaceDelimiter;
     // Computed properties
-    this.webUrl = `${this.base + this.wikiPath}/`;
+    this.webUrl = `${this.base + this.wikiPath}`;
     this.apiUrl = `${this.base + this.apiPath}?`;
+    this.modulePath = `${this.base + this.modulePath}?`;
     this.webUrlPath = urlParser.parse(this.webUrl).pathname;
     // State
     this.namespaces = {};
@@ -86,8 +89,9 @@ class MediaWiki {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }
 
-  public backlinkRedirectsQueryUrl(articleId) {
-    return `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&titles=${encodeURIComponent(articleId)}&rawcontinue=`;
+  public backlinkRedirectsQueryUrl(articleIds: string[]) {
+    const articleIdString = articleIds.map(encodeURIComponent).join('|');
+    return `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&titles=${articleIdString}&rawcontinue=`;
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {

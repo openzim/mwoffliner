@@ -35,13 +35,14 @@ const parameterList = [
   { name: 'keepHtml', description: 'If ZIM built, keep the temporary HTML directory', required: false },
   { name: 'mwWikiPath', description: 'Mediawiki wiki base path (per default "/wiki/")', required: false },
   { name: 'mwApiPath', description: 'Mediawiki API path (per default "/w/api.php")', required: false },
+  { name: 'mwModulePath', description: 'Mediawiki module load path (per default "/w/load.php")', required: false },
   { name: 'mwDomain', description: 'Mediawiki user domain (thought for private wikis)', required: false },
   { name: 'mwUsername', description: 'Mediawiki username (thought for private wikis)', required: false },
   { name: 'mwPassword', description: 'Mediawiki user password (thought for private wikis)', required: false },
   { name: 'minifyHtml', description: 'Try to reduce the size of the HTML', required: false },
   { name: 'outputDirectory', description: 'Directory to write the downloaded content', required: false },
-  { name: 'parsoidUrl', description: 'Mediawiki Parsoid URL', required: false },
   { name: 'publisher', description: `ZIM publisher meta data, per default 'Kiwix'`, required: false },
+  { name: 'mcsUrl', description: 'Mediawiki MCS URL', required: false },
   {
     name: 'redis',
     description: 'Redis configuration (https://github.com/NodeRedis/node_redis#rediscreateclient)',
@@ -64,7 +65,7 @@ const parameterList = [
   { name: 'verbose', description: 'Print debug information to the stdout', required: false },
   { name: 'withZimFullTextIndex', description: 'Include a fulltext search index to the ZIM', required: false },
   { name: 'writeHtmlRedirects', description: 'Write redirect as HTML files', required: false },
-  { name: 'localParsoid', description: 'Create a local parsoid instance default value is false', required: false },
+  { name: 'localMcs', description: 'Create a local MCS and Parsoid instance default value is false', required: false },
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
 ];
 
