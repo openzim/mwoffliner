@@ -54,7 +54,7 @@ class Downloader {
         }
       }, (error, data) => {
         if (error) {
-          console.error(`Absolutely unable to retrieve async. URL: ${error}`);
+          this.logger.error(`Absolutely unable to retrieve async. URL: ${error}`);
           reject(error);
           /* Unfortunately, we can not do that because there are
            * articles which simply will not be parsed correctly by

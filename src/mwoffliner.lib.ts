@@ -202,9 +202,10 @@ async function execute(argv) {
   });
 
   const INFINITY_WIDTH = 9999999;
-  const articleIds = {};
+  const articleDetailXId = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
+  const articleListLines = articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
 
   if (localMcs) {
     // Start Parsoid
@@ -273,11 +274,11 @@ async function execute(argv) {
   function jsPath(js) {
     return [dirs.javascript, dirs.jsModules, `${js.replace(/(\.js)?$/, '')}.js`].join('/');
   }
-  function genHeaderCSSLink(css) {
-    return `<link href="${cssPath(css)}" rel="stylesheet" type="text/css" />`;
+  function genHeaderCSSLink(css, classList = '') {
+    return `<link href="${cssPath(css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
   }
-  function genHeaderScript(js) {
-    return `<script src="${jsPath(js)}"></script>`;
+  function genHeaderScript(js, classList = '') {
+    return `<script src="${jsPath(js)}" class="${classList}"></script>`;
   }
 
   const cssLinks = config.output.cssResources.reduce((buf, css) => {
@@ -306,6 +307,7 @@ async function execute(argv) {
   const htmlTemplateCode = readTemplate(config.output.templates.page)
     .replace('__CSS_LINKS__', cssLinks)
     .replace('__JS_SCRIPTS__', jsScripts);
+  const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate);
 
   /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
@@ -532,6 +534,7 @@ async function execute(argv) {
       () => saveStaticFiles(),
       () => saveStylesheet(),
       () => saveFavicon(),
+      articleList ? () => getArticleThumbnails() : null,
       () => getMainPage(),
       env.writeHtmlRedirects ? () => saveHtmlRedirects() : null,
       () => saveArticles(dump),
@@ -559,15 +562,58 @@ async function execute(argv) {
     return Promise.resolve();
   }
 
+  function getArticleThumbnails() {
+    logger.info(`Getting article thumbnails`);
+    return new Promise((resolve, reject) => {
+      let articleIndex = 0;
+      let fetchedThumbnails = 0;
+      async.whilst(
+        () => articleIndex < articleListLines.length - 1 && fetchedThumbnails < 100,
+        async (callback) => {
+          const articleTitle = articleListLines[articleIndex];
+          articleIndex++;
+          const articleId = articleTitle.replace(/ /g, '_');
+          const url = mw.imageQueryUrl(articleId);
+          let imageUrl: string = null;
+          try {
+            const resp = await U.getJSON<any>(url);
+            imageUrl = U.getFullUrl(webUrlHost, resp.query.pages[Object.keys(resp.query.pages)[0]].thumbnail.source);
+          } catch (err) {
+            logger.warn(`Failed to get thumbnail url for article [${articleId}]: ${err.message}`);
+            return callback();
+          }
+          downloadFileQueue.push(imageUrl);
+          const internalSrc = getMediaUrl(imageUrl);
+          articleDetailXId[articleId] = Object.assign(
+            articleDetailXId[articleId] || {},
+            { thumbnail: internalSrc },
+          );
+          fetchedThumbnails++;
+          callback();
+        },
+        (error) => {
+          if (error) {
+            logger.error('Failed to get all article thumbnails', error);
+            reject({ message: `Failed to get all article thumbnails`, error });
+          } else {
+            resolve();
+          }
+        },
+      );
+    });
+  }
+
   function saveStaticFiles() {
     return new Promise((resolve, reject) => {
-      config.output.cssResources.forEach((css) => {
-        try {
-          fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
-        } catch (error) {
-          logger.warn(`Could not create ${css} file : ${error}`);
-        }
-      });
+      config.output.cssResources
+        .concat(config.output.mainPageCssResources)
+        .forEach((css) => {
+          try {
+            fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
+          } catch (error) {
+            logger.warn(`Could not create ${css} file : ${error}`);
+          }
+        });
 
       config.output.jsResources.forEach(function (js) {
         try {
@@ -1418,7 +1464,7 @@ async function execute(argv) {
 
         /* Set footer */
         const div = htmlTemplateDoc.createElement('div');
-        const oldId = articleIds[articleId];
+        const { oldId } = articleDetailXId[articleId];
         redis.getArticle(articleId, (error, detailsJson) => {
           if (error) {
             finished({ message: `Unable to get the details from redis for article ${articleId}`, error });
@@ -1534,7 +1580,7 @@ async function execute(argv) {
             buildArticleFromApiData();
           })
           .catch((e) => {
-            console.error(`Error handling json response from api. ${e}`);
+            logger.error(`Error handling json response from api. ${e}`);
             buildArticleFromApiData();
           });
 
@@ -1562,14 +1608,14 @@ async function execute(argv) {
               }
             });
           } else {
-            delete articleIds[articleId];
+            delete articleDetailXId[articleId];
             finished();
           }
         }
       }
 
       logger.log('Saving articles...');
-      async.eachLimit(Object.keys(articleIds), speed, saveArticle, (error) => {
+      async.eachLimit(Object.keys(articleDetailXId), speed, saveArticle, (error) => {
         if (error) {
           reject({ message: `Fatal Error:`, error });
         } else {
@@ -1592,7 +1638,7 @@ async function execute(argv) {
         return namespace.isContent;
       }
     }
-    return id in articleIds;
+    return id in articleDetailXId;
   }
 
   function isSubpage(id) {
@@ -1752,13 +1798,16 @@ async function execute(argv) {
 
           if ('missing' in entry) {
             logger.warn(`Article ${entry.title} is not available on this wiki.`);
-            delete articleIds[entry.title];
+            delete articleDetailXId[entry.title];
           } else {
             redirectQueueValues.push(entry.title);
 
             if (entry.revisions) {
               /* Get last revision id */
-              articleIds[entry.title] = entry.revisions[0].revid;
+              articleDetailXId[entry.title] = Object.assign(articleDetailXId[entry.title] || {}, {
+                title: entry.title,
+                oldId: entry.revisions[0].revid,
+              });
 
               /* Get last revision id timestamp */
               const articleDetails: { t: number, g?: string } = { t: new Date(entry.revisions[0].timestamp).getTime() / 1000 };
@@ -1772,7 +1821,7 @@ async function execute(argv) {
               details[entry.title] = JSON.stringify(articleDetails);
             } else if (entry.pageid) {
               logger.warn(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
-              delete articleIds[entry.title];
+              delete articleDetailXId[entry.title];
             } else {
               throw new Error(`Unable to get revisions for ${entry.title}\nJSON was ${body}`);
             }
@@ -1823,14 +1872,14 @@ async function execute(argv) {
 
     /* Get ids from file */
     function getArticleIdsForFile() {
-      return new Promise((resolve, reject) => {
-        let lines;
-        try {
-          lines = fs.readFileSync(zim.articleList).toString().split('\n');
-        } catch (error) {
-          reject(`Unable to open article list file: ${error}`);
-        }
+      let lines;
+      try {
+        lines = fs.readFileSync(zim.articleList).toString().split('\n');
+      } catch (error) {
+        return Promise.reject(`Unable to open article list file: ${error}`);
+      }
 
+      return new Promise((resolve, reject) => {
         async.eachLimit(
           lines,
           speed,
@@ -1842,8 +1891,7 @@ async function execute(argv) {
               logger.log('List of article ids to mirror completed');
               drainRedirectQueue(redirectQueue).then(resolve, reject);
             }
-          },
-        );
+          });
       });
     }
 
@@ -1959,7 +2007,7 @@ async function execute(argv) {
                 }
               })
               .catch((err) => {
-                console.warn(err);
+                logger.warn(err);
                 reject(err);
               });
           } else {
@@ -2189,20 +2237,56 @@ async function execute(argv) {
     function createMainPage() {
       logger.log('Creating main page...');
       const doc = domino.createDocument(
-        htmlTemplateCode
-          .replace('__ARTICLE_JS_LIST__', '')
-          .replace('__ARTICLE_CSS_LIST__', '')
-          .replace('__ARTICLE_CONFIGVARS_LIST__', ''),
+        articleListHomeTemplate
+          .replace('</head>',
+            genHeaderCSSLink('mobile_main_page') + '\n' +
+            genHeaderCSSLink('style') + '\n' +
+            genHeaderScript('images_loaded.min') + '\n' +
+            genHeaderScript('masonry.min') + '\n' +
+            genHeaderScript('article_list_home') + '\n' +
+            '\n</head>'),
       );
-      doc.getElementById('titleHeading').innerHTML = 'Summary';
-      doc.getElementsByTagName('title')[0].innerHTML = 'Summary';
 
-      let html = '<ul>\n';
-      Object.keys(articleIds).sort().forEach((articleId) => {
-        html += `<li><a href="${env.getArticleBase(articleId, true)}">${articleId.replace(/_/g, ' ')}<a></li>\n`;
-      });
-      html += '</ul>\n';
-      doc.getElementById('mw-content-text').innerHTML = html;
+      const titles = Object.keys(articleDetailXId).sort();
+
+      const {
+        articlesWithImages,
+        articlesWithoutImages,
+        allArticles,
+      } = titles.reduce((acc, title) => {
+        const articleDetail = articleDetailXId[title];
+        acc.allArticles.push(articleDetail);
+        if (articleDetail.thumbnail) {
+          acc.articlesWithImages.push(articleDetail);
+        } else {
+          acc.articlesWithoutImages.push(articleDetail);
+        }
+        return acc;
+      }, {
+          articlesWithImages: [],
+          articlesWithoutImages: [],
+          allArticles: [],
+        },
+      );
+
+      const minImageThreshold = 10;
+      let articlesWithImagesEl;
+      let articlesWithoutImagesEl;
+      if (articlesWithImages.length > 10) {
+        articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
+      } else {
+        articlesWithoutImagesEl = allArticles.map((article) => U.makeArticleListItem(env, article)).join('\n');
+      }
+
+      const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
+      // doc.getElementById('title').textContent = dumpTitle;
+
+      if (articlesWithImagesEl) {
+        doc.getElementById('content').innerHTML = articlesWithImagesEl;
+      }
+      if (articlesWithoutImagesEl) {
+        doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
+      }
 
       /* Write the static html file */
       return writeMainPage(doc.documentElement.outerHTML);
