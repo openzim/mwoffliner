@@ -42,7 +42,7 @@ describe(`MWOffliner Page`, function () {
 
     it('Loads the first link', async () => {
         await page.goto(TEST_URL);
-        const as = await page.$$('.content a');
+        const as = await page.$$('a.item');
         await as[0].click();
         await page.waitForNavigation();
         await percySnapshot(page, 'LOADS_FIRST_PAGE');

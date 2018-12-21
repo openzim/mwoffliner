@@ -1,0 +1,154 @@
+html {
+    box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+body {
+    margin: 0; 
+    border-width: 0px; 
+    padding: 0px
+}
+
+h1,
+h2 {
+    color: #333;
+    text-shadow:  #1114 1px 1px 1px;
+    text-align: center;
+    border-bottom: none;
+    padding: 0;
+}
+
+#content {
+    width: 100%;
+    overflow: hidden;
+    font-size: 1em;
+}
+
+.nojs #content {
+    column-count: 4;
+    column-gap: 0;
+}
+
+.item {
+    display: block;
+    position: relative;
+        
+}
+
+.nojs #content .item {
+    display: inline-block;
+    width: 100%;
+}
+
+.item img {
+    width: 100%;
+    height: auto;
+    /* transition: all 0.3s; */
+    /* transform: scale(0.95); */
+}
+.item:hover img {
+    /* transform: scale(1); */
+}
+
+.item figure {
+    margin: 0;
+}
+
+.item figcaption {
+    position: absolute;
+    bottom: 0%;
+    width: 100%;
+    vertical-align: bottom;
+    background: rgba(48, 48, 48, 0.5);
+    color: white;
+    padding: 0.6em;
+    font-weight: bold;
+    /* transition: all 0.3s; */
+    /* transform: scale(0.95); */
+}
+
+.item:hover figcaption {
+    /* transform: scale(1); */
+    /* bottom: 50%; */
+}
+
+#footer {
+    margin: 0;
+}
+#footer h2 {
+    margin: 15vh 0;
+}
+#footer ul {
+    margin-left: 10%;
+}
+
+@media only screen and (min-width: 1024px) {
+    h1 {
+        font-size: 6vw;
+    }
+    h2 {
+        font-size: 4vw;
+    }
+    #content .item {
+        width: 25%;
+    }
+    .nojs #content {
+        column-count: 4;
+    }
+    ul {
+        column-count: 4;
+    }
+}
+
+@media only screen and (max-width: 1023px) and (min-width: 768px) {
+    h1 {
+        font-size: 6vw;
+    }
+    h2 {
+        font-size: 4vw;
+    }
+    #content {
+        font-size: 1em;
+    }
+    #content .item {
+        width: 33.3333%;
+    }
+    .nojs #content {
+        column-count: 3;
+    }
+    ul {
+        column-count: 2;
+    }
+    #footer ul li {
+        font-size: 0.9em;
+    }
+}
+
+@media only screen and (max-width: 767px) {
+    h1 {
+        font-size: 7vw;
+    }
+    h2 {
+        font-size: 5vw;
+    }
+    #content {
+        font-size: 1.2em;
+    }
+    #content .item {
+        width: 50%
+    }
+    .nojs #content {
+        column-count: 2;
+    }
+    ul {
+        column-count: 1;
+    }
+    #footer ul li {
+        font-size: 1em;
+    }
+}

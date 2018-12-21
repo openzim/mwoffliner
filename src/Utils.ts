@@ -4,6 +4,7 @@ import urlParser, { UrlWithStringQuery } from 'url';
 import MediaWiki from './MediaWiki';
 import OfflinerEnv from './OfflinerEnv';
 import { exec } from 'child_process';
+import axios from 'axios';
 
 function isValidEmail(email) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -191,6 +192,18 @@ function getStringsForLang(language, fallbackLanguage = 'en') {
   return strings;
 }
 
+function makeArticleListItem(env, articleEntry) {
+  return `<li><a href="${env.getArticleBase(articleEntry.title, true)}">${articleEntry.title.replace(/_/g, ' ')}<a></li>\n`;
+}
+
+function makeArticleImageTile(env, articleEntry) {
+  return `<a class="item" href="${env.getArticleBase(articleEntry.title, true)}"><figure><img src="${articleEntry.thumbnail}" /><figcaption>${articleEntry.title.replace(/_/g, ' ')}</figcaption></figure></a>\n`;
+}
+
+function getJSON<T>(url: string): Promise<T> {
+  return axios.get<T>(url, { responseType: 'json' }).then((a) => a.data) as any;
+}
+
 export {
   isValidEmail,
   lcFirst,
@@ -208,4 +221,7 @@ export {
   contains,
   getStringsForLang,
   _decodeURIComponent as decodeURIComponent,
+  makeArticleListItem,
+  makeArticleImageTile,
+  getJSON,
 };

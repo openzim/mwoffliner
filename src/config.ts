@@ -46,8 +46,9 @@ export default {
   output: {
     // CSS resources added by Kiwix
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
+    mainPageCssResources: ['mobile_main_page'],
 
-    jsResources: ['script'],
+    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
@@ -80,6 +81,8 @@ export default {
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
       page: './templates/page.html',
+
+      articleListHomeTemplate: './templates/article_list_home.html',
 
       /* License footer template code */
       footer: './templates/footer.html',
