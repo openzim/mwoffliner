@@ -2,16 +2,16 @@ html {
     box-sizing: border-box;
 }
 
-*,
+/* *,
 *:before,
 *:after {
     box-sizing: inherit;
-}
+} */
 
 body {
     margin: 0; 
-    border-width: 0px; 
-    padding: 0px
+    border-width: 0; 
+    padding: 0;
 }
 
 h1,
@@ -51,9 +51,9 @@ h2 {
     /* transition: all 0.3s; */
     /* transform: scale(0.95); */
 }
-.item:hover img {
-    /* transform: scale(1); */
-}
+/* .item:hover img {
+    transform: scale(1);
+} */
 
 .item figure {
     margin: 0;
@@ -61,7 +61,7 @@ h2 {
 
 .item figcaption {
     position: absolute;
-    bottom: 0%;
+    bottom: 0;
     width: 100%;
     vertical-align: bottom;
     background: rgba(48, 48, 48, 0.5);
@@ -72,10 +72,10 @@ h2 {
     /* transform: scale(0.95); */
 }
 
-.item:hover figcaption {
-    /* transform: scale(1); */
-    /* bottom: 50%; */
-}
+/* .item:hover figcaption {
+    transform: scale(1);
+    bottom: 50%;
+} */
 
 #footer {
     margin: 0;
