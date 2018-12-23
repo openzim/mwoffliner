@@ -116,6 +116,14 @@ There is a pre-configured debug config for [VSCode](https://code.visualstudio.co
 Make sure you read [CONTRIBUTING.md](./CONTRIBUTING.md) for tips on how to best debug and submit issues.
 
 
+### Publishing
+To publish, it's best to use a clean clone of the project:
+```
+git clone https://github.com/openzim/mwoffliner.git
+npm i # required for Snyk checks
+npm publish  # you must be logged in already (npm login)
+```
+
 ## Background
 
 **There are two Wikitext parsers. mwoffliner uses Parsoid.**
