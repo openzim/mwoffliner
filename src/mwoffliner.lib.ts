@@ -79,11 +79,15 @@ async function execute(argv) {
     deflateTmpHtml,
     writeHtmlRedirects,
     articleList,
+    language,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
     useCache: _useCache,
   } = argv;
+
+  /* Get language specific strings */
+  const strings = U.getStringsForLang(language || 'en', 'en');
 
   let mcsUrl: string = argv.mcsUrl;
 
@@ -721,6 +725,7 @@ async function execute(argv) {
         const data = redirectTemplate({
           target: env.getArticleUrl(target),
           title: redirectId.replace(/_/g, ' '),
+          strings,
         });
         if (env.deflateTmpHtml) {
           zlib.deflate(data, (error, deflatedHtml) => {
@@ -1481,6 +1486,7 @@ async function execute(argv) {
               creator: zim.creator,
               oldId,
               date: date.toISOString().substring(0, 10),
+              strings,
             });
             htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
             addNoIndexCommentToElement(div);
@@ -1537,6 +1543,7 @@ async function execute(argv) {
             html += leadSectionTemplate({
               lead_display_title: json.lead.displaytitle,
               lead_section_text: json.lead.sections[0].text,
+              strings,
             });
 
             // set all other section (closed by default)
@@ -1549,6 +1556,7 @@ async function execute(argv) {
                     section_anchor: 'TopLevelSection',
                     section_line: 'Disambiguation',
                     section_text: '',
+                    strings,
                   });
                 }
 
@@ -1561,6 +1569,7 @@ async function execute(argv) {
                     section_anchor: oneSection.anchor,
                     section_line: oneSection.line,
                     section_text: oneSection.text,
+                    strings,
                   });
                 } else {
                   const replacement = subSectionTemplate({
@@ -1570,6 +1579,7 @@ async function execute(argv) {
                     section_anchor: oneSection.anchor,
                     section_line: oneSection.line,
                     section_text: oneSection.text,
+                    strings,
                   });
                   html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
                 }
@@ -2297,6 +2307,7 @@ async function execute(argv) {
       const html = redirectTemplate({
         title: zim.mainPageId.replace(/_/g, ' '),
         target: env.getArticleBase(zim.mainPageId, true),
+        strings,
       });
       return writeMainPage(html);
     }
