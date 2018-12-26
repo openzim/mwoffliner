@@ -1,11 +1,11 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
-version: v1.13.2
+version: v1.12.0
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
   SNYK-JS-MERGE-72553:
     - parsoid > kad > merge:
         reason: None given
-        expires: '2018-12-14T10:52:50.447Z'
+        expires: '2019-01-25T17:35:56.530Z'
   'npm:brace-expansion:20170302':
     - parsoid > istanbul > glob > minimatch > brace-expansion:
         reason: None given
@@ -81,10 +81,10 @@ ignore:
   'npm:extend:20180424':
     - parsoid > request > extend:
         reason: None given
-        expires: '2018-12-14T10:52:50.448Z'
+        expires: '2019-01-25T17:23:01.942Z'
     - parsoid > coveralls > request > extend:
         reason: None given
-        expires: '2018-12-14T10:52:50.448Z'
+        expires: '2019-01-25T17:23:01.942Z'
     - parsoid > nsp > https-proxy-agent > extend:
         reason: None given
         expires: '2018-12-14T10:52:50.448Z'
@@ -100,6 +100,15 @@ ignore:
     - parsoid > supertest > superagent > extend:
         reason: None given
         expires: '2018-12-14T10:52:50.448Z'
+    - parsoid > extend:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+    - parsoid > superagent > extend:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+    - parsoid > supertest > superagent > extend:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
   'npm:growl:20160721':
     - parsoid > growl:
         reason: None given
@@ -158,6 +167,9 @@ ignore:
     - parsoid > nock > lodash:
         reason: None given
         expires: '2018-12-14T10:52:50.448Z'
+    - parsoid > eslint-config-node-services > eslint-plugin-json > jshint > lodash:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
   'npm:qs:20170213':
     - parsoid > superagent > qs:
         reason: None given
@@ -178,6 +190,9 @@ ignore:
     - parsoid > eslint-config-node-services > eslint-plugin-json > jshint > shelljs:
         reason: None given
         expires: '2018-12-14T10:52:50.448Z'
+    - parsoid > eslint-config-node-services > eslint-plugin-json > jshint > shelljs:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
   'npm:superagent:20170807':
     - parsoid > superagent:
         reason: None given
@@ -192,15 +207,50 @@ ignore:
     - parsoid > supertest > superagent:
         reason: None given
         expires: '2018-12-14T10:52:50.448Z'
+  SNYK-JS-JUSTEXTEND-72674:
+    - '@percy/puppeteer > @percy/agent > sinon > nise > just-extend':
+        reason: None given
+        expires: '2019-01-25T17:23:01.941Z'
+  'npm:cryptiles:20180710':
+    - parsoid > request > hawk > cryptiles:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+    - parsoid > coveralls > request > hawk > cryptiles:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+  'npm:marked:20180225':
+    - parsoid > jsdoc > marked:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+  'npm:mem:20180117':
+    - parsoid > mem:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+    - parsoid > nsp > yargs > os-locale > mem:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+  'npm:swagger-ui:20171031':
+    - service-mobileapp-node > swagger-ui:
+        reason: None given
+        expires: '2019-01-25T17:23:01.942Z'
+      swagger-ui:
+        reason: None given
+        expires: '2019-01-25T17:35:56.530Z'
 # patches apply the minimum changes required to fix a vulnerability
 patch:
   'npm:lodash:20180130':
     - parsoid > service-runner > limitation > kad > lodash:
         patched: '2018-09-20T15:00:14.083Z'
+      parsoid > cli-table2 > lodash:
+        patched: '2018-12-26T17:35:12.223Z'
     - parsoid > kad > lodash:
         patched: '2018-11-14T10:51:38.590Z'
+      parsoid > nsp > cli-table2 > lodash:
+        patched: '2018-12-26T17:35:12.223Z'
     - service-runner > limitation > kad > lodash:
         patched: '2018-12-20T11:00:50.797Z'
+      parsoid > kad > lodash:
+        patched: '2018-12-26T17:35:12.223Z'
     - parsoid > service-runner > limitation > kad > lodash:
         patched: '2018-12-20T11:00:50.797Z'
     - mediawiki-services-mobileapps > service-runner > limitation > kad > lodash:
@@ -208,6 +258,8 @@ patch:
   'npm:ms:20170412':
     - parsoid > service-runner > limitation > kad > ms:
         patched: '2018-09-20T15:00:14.083Z'
+      parsoid > kad > ms:
+        patched: '2018-12-26T17:35:12.223Z'
     - parsoid > eslint > debug > ms:
         patched: '2018-11-14T10:51:38.590Z'
     - parsoid > nock > debug > ms:
