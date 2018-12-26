@@ -27,6 +27,11 @@ h2 {
     width: 100%;
     overflow: hidden;
     font-size: 1em;
+    background: black;
+}
+
+#list {
+    background: white;
 }
 
 .nojs #content {
@@ -37,7 +42,7 @@ h2 {
 .item {
     display: block;
     position: relative;
-        
+    overflow: hidden;
 }
 
 .nojs #content .item {
@@ -48,12 +53,13 @@ h2 {
 .item img {
     width: 100%;
     height: auto;
-    /* transition: all 0.3s; */
-    /* transform: scale(0.95); */
-}
-/* .item:hover img {
+    transition: all 0.3s;
     transform: scale(1);
-} */
+}
+
+.item:hover img {
+    transform: scale(1.1);
+}
 
 .item figure {
     margin: 0;
@@ -68,8 +74,8 @@ h2 {
     color: white;
     padding: 0.6em;
     font-weight: bold;
-    /* transition: all 0.3s; */
-    /* transform: scale(0.95); */
+    transition: all 0.3s;
+    transform: scale(1);
 }
 
 /* .item:hover figcaption {
@@ -80,10 +86,8 @@ h2 {
 #footer {
     margin: 0;
 }
-#footer h2 {
-    margin: 15vh 0;
-}
 #footer ul {
+    margin: 0;
     margin-left: 10%;
 }
 
