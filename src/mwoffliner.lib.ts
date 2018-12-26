@@ -2280,23 +2280,16 @@ async function execute(argv) {
       );
 
       const minImageThreshold = 10;
-      let articlesWithImagesEl;
-      let articlesWithoutImagesEl;
-      if (articlesWithImages.length > 10) {
-        articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
-      } else {
-        articlesWithoutImagesEl = allArticles.map((article) => U.makeArticleListItem(env, article)).join('\n');
-      }
-
-      const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
-      // doc.getElementById('title').textContent = dumpTitle;
-
-      if (articlesWithImagesEl) {
+      if (articlesWithImages.length > minImageThreshold) {
+        const articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
         doc.getElementById('content').innerHTML = articlesWithImagesEl;
-      }
-      if (articlesWithoutImagesEl) {
+      } else {
+        const articlesWithoutImagesEl = allArticles.map((article) => U.makeArticleListItem(env, article)).join('\n');
         doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
       }
+
+      // const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
+      // doc.getElementById('title').textContent = dumpTitle;
 
       /* Write the static html file */
       return writeMainPage(doc.documentElement.outerHTML);
