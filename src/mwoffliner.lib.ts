@@ -209,7 +209,6 @@ async function execute(argv) {
   const articleDetailXId = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
-  const articleListLines = articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
 
   if (localMcs) {
     // Start Parsoid
@@ -488,6 +487,8 @@ async function execute(argv) {
     });
     zim.articleList = tmpArticleListPath;
   }
+
+  const articleListLines = zim.articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
 
   await mw.getTextDirection(env, downloader);
   await mw.getSiteInfo(env, downloader);
