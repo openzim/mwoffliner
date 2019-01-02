@@ -83,15 +83,13 @@ async function execute(argv) {
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
-    useCache: _useCache,
+    useCache,
   } = argv;
 
   /* Get language specific strings */
   const strings = U.getStringsForLang(language || 'en', 'en');
 
   let mcsUrl: string = argv.mcsUrl;
-
-  const useCache = typeof _useCache === 'undefined' ? true : _useCache;
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
