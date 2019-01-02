@@ -78,12 +78,13 @@ async function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
-    articleList,
     language,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
     useCache: _useCache,
+    // tslint:disable-next-line:variable-name
+    articleList: _articleList,
   } = argv;
 
   /* Get language specific strings */
@@ -92,6 +93,7 @@ async function execute(argv) {
   let mcsUrl: string = argv.mcsUrl;
 
   const useCache = typeof _useCache === 'undefined' ? true : _useCache;
+  const articleList = String(_articleList);
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -475,20 +477,31 @@ async function execute(argv) {
   await mw.login(downloader);
 
   if (zim.articleList && zim.articleList.includes('http')) {
-    const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
-    logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
-    const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
-    const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
-    await new Promise((resolve, reject) => {
-      articleListContentStream
-        .on('error', (err) => reject({ message: `Failed to download article list from [${zim.articleList}]`, error: err }))
-        .on('end', resolve)
-        .pipe(articleListWriteStream);
-    });
-    zim.articleList = tmpArticleListPath;
+    try {
+      const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
+      logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
+      const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
+      const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
+      await new Promise((resolve, reject) => {
+        articleListContentStream
+          .on('error', (err) => reject(err))
+          .on('end', resolve)
+          .pipe(articleListWriteStream);
+      });
+      zim.articleList = tmpArticleListPath;
+    } catch (err) {
+      logger.error(`Failed to download article list from [${zim.articleList}]`, err);
+      throw err;
+    }
   }
 
-  const articleListLines = zim.articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
+  let articleListLines;
+  try {
+    articleListLines = zim.articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
+  } catch (err) {
+    logger.error(`Failed to read articleList from [${zim.articleList}]`, err);
+    throw err;
+  }
 
   await mw.getTextDirection(env, downloader);
   await mw.getSiteInfo(env, downloader);
