@@ -78,11 +78,11 @@ async function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
-    articleList,
     language,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
+    articleList: _articleList,
     useCache,
   } = argv;
 
@@ -90,6 +90,8 @@ async function execute(argv) {
   const strings = U.getStringsForLang(language || 'en', 'en');
 
   let mcsUrl: string = argv.mcsUrl;
+
+  const articleList = String(_articleList);
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -207,7 +209,6 @@ async function execute(argv) {
   const articleDetailXId = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
-  const articleListLines = articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
 
   if (localMcs) {
     // Start Parsoid
@@ -474,17 +475,30 @@ async function execute(argv) {
   await mw.login(downloader);
 
   if (zim.articleList && zim.articleList.includes('http')) {
-    const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
-    logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
-    const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
-    const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
-    await new Promise((resolve, reject) => {
-      articleListContentStream
-        .on('error', (err) => reject({ message: `Failed to download article list from [${zim.articleList}]`, error: err }))
-        .on('end', resolve)
-        .pipe(articleListWriteStream);
-    });
-    zim.articleList = tmpArticleListPath;
+    try {
+      const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
+      logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
+      const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
+      const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
+      await new Promise((resolve, reject) => {
+        articleListContentStream
+          .on('error', (err) => reject(err))
+          .on('end', resolve)
+          .pipe(articleListWriteStream);
+      });
+      zim.articleList = tmpArticleListPath;
+    } catch (err) {
+      logger.error(`Failed to download article list from [${zim.articleList}]`, err);
+      throw err;
+    }
+  }
+
+  let articleListLines;
+  try {
+    articleListLines = zim.articleList ? fs.readFileSync(zim.articleList).toString().split('\n') : [];
+  } catch (err) {
+    logger.error(`Failed to read articleList from [${zim.articleList}]`, err);
+    throw err;
   }
 
   await mw.getTextDirection(env, downloader);
