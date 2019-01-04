@@ -13,11 +13,14 @@
     "mwoffliner": "node mwoffliner",
     "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "./simple-test.sh",
-    "snyk-protect": "snyk protect",
+    "snyk-protect": "exit 0;snyk protect",
     "prepare": "npm run snyk-protect",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./build.sh",
-    "prepublish": "npm run snyk-protect"
+    "prepublish": "npm run snyk-protect",
+    "redis:start": "docker run -p 6379:6379 --name redis-della -d redis",
+    "redis:kill": "docker rm -f redis-della || :",
+    "redis": "npm run redis:kill && npm run redis:start"
   },
   "bin": {
     "mwoffliner": "./bin/mwoffliner.script.js",
