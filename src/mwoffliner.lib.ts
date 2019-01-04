@@ -82,9 +82,8 @@ async function execute(argv) {
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
-    useCache: _useCache,
-    // tslint:disable-next-line:variable-name
     articleList: _articleList,
+    useCache,
   } = argv;
 
   /* Get language specific strings */
@@ -92,7 +91,6 @@ async function execute(argv) {
 
   let mcsUrl: string = argv.mcsUrl;
 
-  const useCache = typeof _useCache === 'undefined' ? true : _useCache;
   const articleList = String(_articleList);
 
   /* HTTP user-agent string */
