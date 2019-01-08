@@ -34,6 +34,7 @@ import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise
 import Zim from './Zim';
 import packageJSON from '../package.json';
 import axios from 'axios';
+import * as libzim from 'libzim';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -535,7 +536,90 @@ async function execute(argv) {
     await exec(`find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`);
   }
 
-  function doDump(env: OfflinerEnv, dump: string) {
+  async function buildZim() {
+    const c = new libzim.writer.ZimCreator();
+
+    class TestArticle extends libzim.writer.Article {
+      // tslint:disable-next-line:variable-name
+      public _id: string;
+      // tslint:disable-next-line:variable-name
+      public _compress: boolean;
+      // tslint:disable-next-line:variable-name
+      public _param: any;
+      // tslint:disable-next-line:variable-name
+      public _data: any;
+      constructor(id) {
+        super();
+        this._id = '' + id;
+        // tslint:disable-next-line:no-bitwise
+        this._compress = ((id & 1) === 1);
+        this._param = [id, 0xFFFFFFFF, Math.pow(2, 32),
+          Math.pow(2, 52), Math.pow(2, 53)];
+        let data = 'this is article ' + id + '\n';
+        while (data.length < 512) {
+          data += Math.random() + '\n';
+        }
+        this._data = new Buffer(data, 'utf8');
+      }
+      public getAid() { return this._id; }
+      public getNamespace() { return 'A'; }
+      public getUrl() { return this._id; }
+      public getTitle() { return this._id; }
+      public isRedirect() { return false; }
+      public getMimeType() { return 'text/plain'; }
+      public getRedirectAid() { return ''; }
+      public getParameter() { return libzim.ZIntStream.toBuffer(this._param); }
+      public shouldCompress() { return this._compress; }
+      public getData() {
+        return new libzim.Blob(this._data);
+      }
+    }
+
+    class TestArticleSource extends libzim.writer.ArticleSource {
+      // tslint:disable-next-line:variable-name
+      public _next: any;
+      // tslint:disable-next-line:variable-name
+      public _articles: any;
+      public getCurrentSize: any;
+      constructor(max, szfunc) {
+        super();
+        const maxx = (max === undefined) ? 16 : max;
+        this._next = 0;
+        this._articles = [];
+        this.getCurrentSize = szfunc;
+        for (let n = 0; n < maxx; n++) {
+          this._articles[n] = new TestArticle(n + 1);
+        }
+      }
+      public getNextArticle() {
+        console.log('After ' + this._next + ' articles:',
+          this.getCurrentSize(), 'bytes');
+        return this._articles[this._next++];
+      }
+      public getUuid() {
+        const uuid = libzim.Uuid.generate();
+        console.log('Generating UUID: ' + uuid);
+        return uuid;
+      }
+    }
+    const src = new libzim.writer.ArticleSource();
+    src.getCurrentSize = () => c.getCurrentSize();
+    src.articles = [];
+    src.getNextArticle = function () {
+      console.log('After ' + this._next + ' articles:',
+        this.getCurrentSize(), 'bytes');
+      return this._articles[this._next++];
+    };
+    src.getUuid = function () {
+      const uuid = libzim.Uuid.generate();
+      console.log('Generating UUID: ' + uuid);
+      return uuid;
+    };
+    c.create(zim.computeZimName(), src);
+    
+  }
+
+  async function doDump(env: OfflinerEnv, dump: string) {
     logger.log('Starting a new dump...');
     env.nopic = dump.toString().search('nopic') >= 0;
     env.novid = dump.toString().search('novid') >= 0;
@@ -545,20 +629,21 @@ async function execute(argv) {
     env.keepHtml = env.nozim || env.keepHtml;
     env.htmlRootPath = env.computeHtmlRootPath();
 
-    return doSeries([
-      () => zim.createSubDirectories(),
-      () => saveStaticFiles(),
-      () => saveStylesheet(),
-      () => saveFavicon(),
-      articleList ? () => getArticleThumbnails() : null,
-      () => getMainPage(),
-      env.writeHtmlRedirects ? () => saveHtmlRedirects() : null,
-      () => saveArticles(dump),
-      () => drainDownloadFileQueue(),
-      () => drainOptimizationQueue(optimizationQueue),
-      () => zim.buildZIM(),
-      () => redis.delMediaDB(),
-    ]);
+    await zim.createSubDirectories();
+    await saveStaticFiles();
+    await saveStylesheet();
+    await saveFavicon();
+    if (articleList) { await getArticleThumbnails(); }
+    await getMainPage();
+    if (env.writeHtmlRedirects) { await saveHtmlRedirects(); }
+    await saveArticles(dump);
+    await drainDownloadFileQueue();
+    await drainOptimizationQueue(optimizationQueue);
+
+    // await zim.buildZIM();
+    await buildZim();
+
+    await redis.delMediaDB();
   }
 
   await redis.flushDBs();

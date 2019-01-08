@@ -12,13 +12,15 @@
             true,
             "single"
         ],
+        "no-debugger": false,
         "ordered-imports": false,
         "max-line-length": false,
         "no-console": false,
         "no-shadowed-variable": false,
         "only-arrow-functions": false,
         "object-literal-sort-keys": false,
-        "space-before-function-paren": false
+        "space-before-function-paren": false,
+        "max-classes-per-file": false
     },
     "rulesDirectory": []
 }
