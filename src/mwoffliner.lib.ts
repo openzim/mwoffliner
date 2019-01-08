@@ -89,7 +89,7 @@ async function execute(argv) {
   /* Get language specific strings */
   const strings = U.getStringsForLang(language || 'en', 'en');
 
-  let mcsUrl: string = argv.mcsUrl;
+  let mcsUrl: string;
 
   const articleList = String(_articleList);
 
