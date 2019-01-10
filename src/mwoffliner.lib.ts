@@ -533,7 +533,7 @@ async function execute(argv) {
   );
 
   logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
-  rimraf(dumpTmpDir);
+  rimraf.sync(dumpTmpDir);
 
   if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');
