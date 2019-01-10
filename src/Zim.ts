@@ -7,6 +7,7 @@ import fs from 'fs';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser from 'url';
+import path from 'path';
 
 import { doSeries, mkdirPromise, execPromise } from './Utils';
 import OfflinerEnv from './OfflinerEnv';
@@ -33,8 +34,8 @@ class Zim {
     this.config = config;
     Object.assign(this, args);
     // Normalize
-    this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : 'out/';
-    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : 'tmp/';
+    this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : path.join(__dirname, '../', 'out/'); // '../' because __dirname is project/lib
+    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : path.join(__dirname, '../', 'tmp/');
   }
 
   public createDirectories() {
