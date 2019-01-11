@@ -478,6 +478,11 @@ async function execute(argv) {
     throw err;
   }
 
+  process.on('exit', () => {
+    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
+    rimraf.sync(dumpTmpDir);
+  });
+
   /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
@@ -531,9 +536,6 @@ async function execute(argv) {
       return () => doDump(env, dump);
     }),
   );
-
-  logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
-  rimraf.sync(dumpTmpDir);
 
   if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');
