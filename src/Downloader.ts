@@ -5,6 +5,19 @@ import urlParser, { UrlWithStringQuery } from 'url';
 import Logger from './Logger';
 import MediaWiki from './MediaWiki';
 
+import * as imagemin from 'imagemin';
+import imageminJpegtran from 'imagemin-jpegtran';
+import imageminPngquant from 'imagemin-pngquant';
+import imageminGifsicle from 'imagemin-gifsicle';
+
+const imageminOptions = {
+  plugins: [
+    imageminJpegtran(),
+    imageminPngquant({ speed: 9 }),
+    imageminGifsicle(),
+  ],
+};
+
 function getPort(urlObj: UrlWithStringQuery) {
   return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
 }
@@ -40,15 +53,20 @@ class Downloader {
     };
   }
 
-  public downloadContent(url: string): Promise<{ content: any, responseHeaders: any }> {
+  public downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
     return new Promise((resolve, reject) => {
+      if (!url) {
+        return reject(new Error(`Parameter [${url}] is not a valid url`));
+      }
       let responseHeaders = {};
       this.logger.info(`Downloading [${decodeURI(url)}]`);
       async.retry(3, async (finished) => {
         try {
           const resp = await axios(this.getRequestOptionsFromUrl(url, true));
           responseHeaders = resp.headers;
-          finished(null, resp.data);
+          const compressed = await imagemin.buffer(resp.data, imageminOptions);
+
+          finished(null, compressed);
         } catch (err) {
           finished(url as any, err.stack);
         }
@@ -64,36 +82,6 @@ class Downloader {
           // process.exit( 1 );
         } else {
           resolve({ content: data, responseHeaders });
-        }
-      });
-    });
-  }
-
-  public async downloadMediaFile(url, path, force, optQueue) {
-    return new Promise((resolve, reject) => {
-      if (!url || !path) {
-        resolve();
-        return;
-      }
-      const self = this;
-      fs.stat(path, async (statError) => {
-        if (statError && !force) {
-          reject(statError.code !== 'ENOENT' && statError ? `Impossible to stat() ${path}:\n${path} already downloaded, download will be skipped.` : undefined);
-        } else {
-          self.logger.info(`Downloading ${decodeURI(url)} at ${path}...`);
-          try {
-            const { content, responseHeaders } = await self.downloadContent(url);
-            fs.writeFile(path, content, (writeError) => {
-              if (writeError) {
-                reject({ message: `Unable to write ${path} (${url})`, error: writeError });
-              } else {
-                optQueue.push({ path, size: Number(responseHeaders['content-length']) });
-                resolve();
-              }
-            });
-          } catch (err) {
-            reject({ message: `Failed to get file: [${url}]`, error: err });
-          }
         }
       });
     });

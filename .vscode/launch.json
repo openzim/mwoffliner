@@ -13,7 +13,7 @@
                 "--mwUrl=https://en.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
                 "--localMcs",
-                // "--verbose",
+                "--verbose",
                 "--format=nozim",
                 "--articleList=./articleList",
                 "--redis=redis://127.0.0.1:6379"

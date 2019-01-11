@@ -11,8 +11,7 @@ import fs, { unlinkSync } from 'fs';
 import htmlMinifier from 'html-minifier';
 import fetch from 'node-fetch';
 import os from 'os';
-import parsoid from 'parsoid';
-import pathParser, { resolve } from 'path';
+import pathParser from 'path';
 import swig from 'swig-templates';
 import urlParser, { URL } from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
@@ -34,7 +33,7 @@ import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise
 import Zim from './Zim';
 import packageJSON from '../package.json';
 import axios from 'axios';
-import * as libzim from 'libzim';
+import { ZimCreator } from 'libzim-object-wrapper';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -317,107 +316,9 @@ async function execute(argv) {
   /* MEDIA RELATED QUEUES ************ */
   /* ********************************* */
 
-  /* Setting up media optimization queue */
-  const optimizationQueue = async.queue((file: any, finished) => {
-    const { path } = file;
-
-    function getOptimizationCommand(path, forcedType?) {
-      const ext = pathParser.extname(path).split('.')[1] || '';
-      const basename = path.substring(0, path.length - ext.length - 1) || '';
-      const tmpExt = `.${U.randomString(5)}.${ext}`;
-      let tmpPath = basename + tmpExt;
-      const type = forcedType || ext;
-
-      /* Escape paths */
-      path = path.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
-      tmpPath = tmpPath.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
-
-      if (type === 'jpg' || type === 'jpeg' || type === 'JPG' || type === 'JPEG') {
-        return `jpegoptim --strip-all --force --all-normal -m60 "${path}"`;
-      }
-      if (type === 'png' || type === 'PNG') {
-        return (
-          `pngquant --verbose --strip --nofs --force --ext="${tmpExt}" "${path}" &&\
-          advdef -q -z -4 -i 5 "${tmpPath}" &&\
-          if [ $(stat -c%s "${tmpPath}") -lt $(stat -c%s "${path}") ]; then mv "${tmpPath}" "${path}"; else rm "${tmpPath}"; fi`
-        );
-      }
-      if (type === 'gif' || type === 'GIF') {
-        return (
-          `gifsicle --verbose --colors 64 -O3 "${path}" -o "${tmpPath}" &&\
-          if [ $(stat -c%s "${tmpPath}") -lt $(stat -c%s "${path}") ]; then mv "${tmpPath}" "${path}"; else rm "${tmpPath}"; fi`
-        );
-      }
-    }
-
-    if (!path || !file.size) {
-      finished();
-      return;
-    }
-
-    fs.stat(path, (preOptimError, preOptimStats) => {
-      if (preOptimError) {
-        logger.error(`Failed to start to optim ${path} - file was probably deleted:`, preOptimError);
-        finished();
-        return;
-      }
-
-      let cmd = getOptimizationCommand(path);
-      if (!cmd) {
-        finished();
-        return;
-      }
-
-      async.retry(
-        5,
-        (finished) => {
-          logger.info(`Executing command : ${cmd}`);
-          if (!cmd) {
-            finished(null, 'No optim command, skipping file');
-            return;
-          }
-          exec(cmd, (executionError) => {
-            if (!executionError) {
-              finished();
-              return;
-            }
-
-            fs.stat(path, (postOptimError, postOptimStats) => {
-              if (!postOptimError && postOptimStats.size > preOptimStats.size) {
-                finished(null, true);
-              } else if (!postOptimError && postOptimStats.size < preOptimStats.size) {
-                finished('File to optim is smaller (before optim) than it should.' as any);
-              } else {
-                exec(`file -b --mime-type "${path}"`, (error, stdout) => {
-                  const type = stdout.replace(/image\//, '').replace(/[\n\r]/g, '');
-                  cmd = getOptimizationCommand(path, type);
-                  if (cmd) {
-                    setTimeout(finished, 2000, executionError);
-                  } else {
-                    finished('Unable to find optimization command.' as any);
-                  }
-                });
-              }
-            });
-          });
-        },
-        (error, skip) => {
-          if (error) {
-            logger.warn(`Failed to optim ${path}, with size=${file.size} (${error})`);
-          } else if (skip) {
-            logger.info(`Optimization skipped for ${path}, with size='${file.size}, a better version was downloaded meanwhile.`);
-          } else {
-            logger.info(`Successfuly optimized ${path}`);
-          }
-          finished();
-        },
-      );
-    });
-  }, cpuCount * 2);
-
   /* Setting up the downloading queue */
-  const downloadFileQueue = async.queue((url, finished) => {
-    downloadFileAndCache(url, finished);
+  const downloadFileQueue = async.queue(({ url, zimCreator }, finished) => {
+    downloadFileAndCache(zimCreator, url, finished);
   }, speed * 5);
 
   /* Get ids */
@@ -536,89 +437,6 @@ async function execute(argv) {
     await exec(`find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`);
   }
 
-  async function buildZim() {
-    const c = new libzim.writer.ZimCreator();
-
-    class TestArticle extends libzim.writer.Article {
-      // tslint:disable-next-line:variable-name
-      public _id: string;
-      // tslint:disable-next-line:variable-name
-      public _compress: boolean;
-      // tslint:disable-next-line:variable-name
-      public _param: any;
-      // tslint:disable-next-line:variable-name
-      public _data: any;
-      constructor(id) {
-        super();
-        this._id = '' + id;
-        // tslint:disable-next-line:no-bitwise
-        this._compress = ((id & 1) === 1);
-        this._param = [id, 0xFFFFFFFF, Math.pow(2, 32),
-          Math.pow(2, 52), Math.pow(2, 53)];
-        let data = 'this is article ' + id + '\n';
-        while (data.length < 512) {
-          data += Math.random() + '\n';
-        }
-        this._data = new Buffer(data, 'utf8');
-      }
-      public getAid() { return this._id; }
-      public getNamespace() { return 'A'; }
-      public getUrl() { return this._id; }
-      public getTitle() { return this._id; }
-      public isRedirect() { return false; }
-      public getMimeType() { return 'text/plain'; }
-      public getRedirectAid() { return ''; }
-      public getParameter() { return libzim.ZIntStream.toBuffer(this._param); }
-      public shouldCompress() { return this._compress; }
-      public getData() {
-        return new libzim.Blob(this._data);
-      }
-    }
-
-    class TestArticleSource extends libzim.writer.ArticleSource {
-      // tslint:disable-next-line:variable-name
-      public _next: any;
-      // tslint:disable-next-line:variable-name
-      public _articles: any;
-      public getCurrentSize: any;
-      constructor(max, szfunc) {
-        super();
-        const maxx = (max === undefined) ? 16 : max;
-        this._next = 0;
-        this._articles = [];
-        this.getCurrentSize = szfunc;
-        for (let n = 0; n < maxx; n++) {
-          this._articles[n] = new TestArticle(n + 1);
-        }
-      }
-      public getNextArticle() {
-        console.log('After ' + this._next + ' articles:',
-          this.getCurrentSize(), 'bytes');
-        return this._articles[this._next++];
-      }
-      public getUuid() {
-        const uuid = libzim.Uuid.generate();
-        console.log('Generating UUID: ' + uuid);
-        return uuid;
-      }
-    }
-    const src = new libzim.writer.ArticleSource();
-    src.getCurrentSize = () => c.getCurrentSize();
-    src.articles = [];
-    src.getNextArticle = function () {
-      console.log('After ' + this._next + ' articles:',
-        this.getCurrentSize(), 'bytes');
-      return this._articles[this._next++];
-    };
-    src.getUuid = function () {
-      const uuid = libzim.Uuid.generate();
-      console.log('Generating UUID: ' + uuid);
-      return uuid;
-    };
-    c.create(zim.computeZimName(), src);
-    
-  }
-
   async function doDump(env: OfflinerEnv, dump: string) {
     logger.log('Starting a new dump...');
     env.nopic = dump.toString().search('nopic') >= 0;
@@ -629,19 +447,24 @@ async function execute(argv) {
     env.keepHtml = env.nozim || env.keepHtml;
     env.htmlRootPath = env.computeHtmlRootPath();
 
+    const outZim = path.join(zim.outputDirectory, zim.computeZimName() + '.zim');
+    logger.log(`Writing zim to [${outZim}]`);
+
+    const zimCreator = new ZimCreator(outZim);
+
     await zim.createSubDirectories();
-    await saveStaticFiles();
-    await saveStylesheet();
-    await saveFavicon();
-    if (articleList) { await getArticleThumbnails(); }
-    await getMainPage();
-    if (env.writeHtmlRedirects) { await saveHtmlRedirects(); }
-    await saveArticles(dump);
-    await drainDownloadFileQueue();
-    await drainOptimizationQueue(optimizationQueue);
+    await saveStaticFiles(zimCreator);
+    await saveStylesheet(zimCreator);
+    await saveFavicon(zimCreator);
+    if (articleList) { await getArticleThumbnails(zimCreator); }
+    await getMainPage(zimCreator);
+    if (env.writeHtmlRedirects) { await saveHtmlRedirects(zimCreator); }
+    await saveArticles(zimCreator, dump);
+    await drainDownloadFileQueue(zimCreator);
 
     // await zim.buildZIM();
-    await buildZim();
+    // await buildZim();
+    zimCreator.finalise();
 
     await redis.delMediaDB();
   }
@@ -663,7 +486,7 @@ async function execute(argv) {
     return Promise.resolve();
   }
 
-  function getArticleThumbnails() {
+  function getArticleThumbnails(zimCreator) {
     logger.info(`Getting article thumbnails`);
     return new Promise((resolve, reject) => {
       let articleIndex = 0;
@@ -683,7 +506,7 @@ async function execute(argv) {
             logger.warn(`Failed to get thumbnail url for article [${articleId}]: ${err.message}`);
             return callback();
           }
-          downloadFileQueue.push(imageUrl);
+          downloadFileQueue.push({ url: imageUrl, zimCreator });
           const internalSrc = getMediaUrl(imageUrl);
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
@@ -704,34 +527,33 @@ async function execute(argv) {
     });
   }
 
-  function saveStaticFiles() {
-    return new Promise((resolve, reject) => {
-      config.output.cssResources
-        .concat(config.output.mainPageCssResources)
-        .forEach((css) => {
-          try {
-            fs.readFile(pathParser.resolve(__dirname, `../res/${css}.css`), (err, data) => fs.writeFile(pathParser.resolve(env.htmlRootPath, cssPath(css)), data, () => null));
-          } catch (error) {
-            logger.warn(`Could not create ${css} file : ${error}`);
-          }
-        });
-
-      config.output.jsResources.forEach(function (js) {
+  function saveStaticFiles(zimCreator: ZimCreator) {
+    const cssPromises = config.output.cssResources
+      .concat(config.output.mainPageCssResources)
+      .map(async (css) => {
         try {
-          fs.readFile(pathParser.resolve(__dirname, `../res/${js}.js`), (err, data) =>
-            fs.writeFile(pathParser.resolve(env.htmlRootPath, jsPath(js)), data, () => {
-              const noop = 1;
-            }),
-          );
+          const cssCont = await U.readFilePromise(pathParser.resolve(__dirname, `../res/${css}.css`));
+          await zimCreator.addArticle(cssPath(css).replace('s/', ''), 's', cssCont);
         } catch (error) {
-          logger.warn(`Could not create ${js} file : ${error}`);
+          logger.warn(`Could not create ${css} file : ${error}`);
         }
       });
-      resolve();
+
+    const jsPromises = config.output.jsResources.map(async (js) => {
+      try {
+        const jsCont = await U.readFilePromise(pathParser.resolve(__dirname, `../res/${js}.js`));
+        await zimCreator.addArticle(jsPath(js).replace('j/', ''), 'j', jsCont);
+      } catch (error) {
+        logger.warn(`Could not create ${js} file : ${error}`);
+      }
     });
+    return Promise.all([
+      ...cssPromises,
+      ...jsPromises,
+    ]);
   }
 
-  function drainDownloadFileQueue() {
+  function drainDownloadFileQueue(zimCreator: ZimCreator) {
     return new Promise((resolve, reject) => {
       logger.log(`${downloadFileQueue.length()} files still to be downloaded.`);
       async.doWhilst(
@@ -755,37 +577,7 @@ async function execute(argv) {
               }
             }
           } as any;
-          downloadFileQueue.push('');
-        },
-      );
-    });
-  }
-
-  function drainOptimizationQueue(optimizationQueue) {
-    return new Promise((resolve, reject) => {
-      logger.log(`${optimizationQueue.length()} images still to be optimized.`);
-      async.doWhilst(
-        (doneWait) => {
-          if (optimizationQueue.idle()) {
-            logger.log('Process still optimizing images...');
-          }
-          setTimeout(doneWait, 1000);
-        },
-        () => !optimizationQueue.idle(),
-        () => {
-          const drainBackup = optimizationQueue.drain;
-          optimizationQueue.drain = function (error) {
-            if (error) {
-              reject(`Error by optimizing images ${error}`);
-            } else {
-              if (optimizationQueue.length() === 0) {
-                logger.log('All images successfuly optimized');
-                optimizationQueue.drain = drainBackup;
-                resolve();
-              }
-            }
-          } as any;
-          optimizationQueue.push({ path: '', size: 0 });
+          downloadFileQueue.push({ url: '', zimCreator });
         },
       );
     });
@@ -813,7 +605,7 @@ async function execute(argv) {
     );
   }
 
-  function saveHtmlRedirects() {
+  function saveHtmlRedirects(zimCreator: ZimCreator) {
     logger.log('Saving HTML redirects...');
 
     function saveHtmlRedirect(redirectId, finished) {
@@ -826,10 +618,10 @@ async function execute(argv) {
         });
         if (env.deflateTmpHtml) {
           zlib.deflate(data, (error, deflatedHtml) => {
-            fs.writeFile(env.getArticlePath(redirectId), deflatedHtml, finished);
+            zimCreator.addArticle(redirectId + '.html', 'A', deflatedHtml).then(finished, finished);
           });
         } else {
-          fs.writeFile(env.getArticlePath(redirectId), data, finished);
+          zimCreator.addArticle(redirectId + '.html', 'A', data).then(finished, finished);
         }
       });
     }
@@ -842,7 +634,7 @@ async function execute(argv) {
     );
   }
 
-  function saveArticles(dump) {
+  function saveArticles(zimCreator, dump) {
     return new Promise((resolve, reject) => {
       // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
       let jsConfigVars: string | RegExpExecArray = '';
@@ -865,7 +657,7 @@ async function execute(argv) {
           method: 'GET',
         })
           .then((response) => response.json())
-          .then(({
+          .then(async ({
             parse: {
               modules, modulescripts, modulestyles, headhtml,
             },
@@ -900,8 +692,8 @@ async function execute(argv) {
             jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
             jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
             try {
-              fs.writeFileSync(pathParser.resolve(env.htmlRootPath, jsPath('jsConfigVars')), jsConfigVars);
-              logger.log(`created dep jsConfigVars.js for article ${articleId}`);
+              // fs.writeFileSync(pathParser.resolve(env.htmlRootPath, jsPath('jsConfigVars')), jsConfigVars);
+              await zimCreator.addArticle(jsPath('jsConfigVars').replace('j/', ''), 'j', jsConfigVars);
             } catch (e) {
               logger.warn('Error writing file', e);
             }
@@ -964,7 +756,7 @@ async function execute(argv) {
                   headers: { Accept: 'text/plain' },
                 })
                   .then((response) => response.text())
-                  .then((text) => {
+                  .then(async (text) => {
                     if (module === 'startup' && type === 'js') {
                       text = hackStartUpModule(text);
                     } else if (module === 'mediawiki' && type === 'js') {
@@ -972,7 +764,10 @@ async function execute(argv) {
                     }
 
                     try {
-                      fs.writeFileSync(moduleUri, text);
+                      const articleId = type === 'js'
+                        ? jsPath(module).replace('j/', '')
+                        : cssPath(module).replace('s/', '');
+                      await zimCreator.addArticle(articleId, type === 'js' ? 'j' : 's', text);
                       logger.info(`created dep ${module} for article ${articleId}`);
                     } catch (e) {
                       logger.warn(`Error writing file ${moduleUri} ${e}`);
@@ -1025,7 +820,7 @@ async function execute(argv) {
 
           if (!srcCache.hasOwnProperty(videoPosterUrl)) {
             srcCache[videoPosterUrl] = true;
-            downloadFileQueue.push(videoPosterUrl);
+            downloadFileQueue.push({ url: videoPosterUrl, zimCreator });
           }
 
           function byWidthXHeight(a, b) {
@@ -1060,7 +855,7 @@ async function execute(argv) {
           /* Download content, but avoid duplicate calls */
           if (!srcCache.hasOwnProperty(sourceUrl)) {
             srcCache[sourceUrl] = true;
-            downloadFileQueue.push(sourceUrl);
+            downloadFileQueue.push({ url: sourceUrl, zimCreator });
           }
 
           sourceEl.setAttribute('src', newUrl);
@@ -1109,7 +904,7 @@ async function execute(argv) {
                 /* Download image, but avoid duplicate calls */
                 if (!srcCache.hasOwnProperty(src)) {
                   srcCache[src] = true;
-                  downloadFileQueue.push(src);
+                  downloadFileQueue.push({ url: src, zimCreator });
                 }
 
                 /* Change image source attribute to point to the local image */
@@ -1296,7 +1091,7 @@ async function execute(argv) {
                 if (!env.nopdf && /\.pdf/i.test(href)) {
                   try {
                     linkNode.setAttribute('href', getMediaUrl(href));
-                    downloadFileQueue.push(href);
+                    downloadFileQueue.push({ url: href, zimCreator });
                   } catch (err) {
                     logger.warn('Error parsing url:', err);
                     DU.deleteNode(linkNode);
@@ -1619,10 +1414,12 @@ async function execute(argv) {
 
         if (env.deflateTmpHtml) {
           zlib.deflate(html, (error, deflatedHtml) => {
-            fs.writeFile(env.getArticlePath(articleId), deflatedHtml, finished);
+            // fs.writeFile(env.getArticlePath(articleId), deflatedHtml, finished);
+            zimCreator.addArticle(articleId + '.html', 'A', deflatedHtml).then(finished, finished);
           });
         } else {
-          fs.writeFile(env.getArticlePath(articleId), html, finished);
+          // fs.writeFile(env.getArticlePath(articleId), html, finished);
+          zimCreator.addArticle(articleId + '.html', 'A', html).then(finished, finished);
         }
       }
 
@@ -1760,7 +1557,7 @@ async function execute(argv) {
   }
 
   /* Grab and concatenate stylesheet files */
-  function saveStylesheet() {
+  function saveStylesheet(zimCreator: ZimCreator) {
     return new Promise((resolve, reject) => {
       logger.log('Dumping stylesheets...');
       const urlCache = {};
@@ -1771,7 +1568,16 @@ async function execute(argv) {
 
       /* Take care to download medias */
       const downloadCSSFileQueue = async.queue((data: any, finished) => {
-        downloader.downloadMediaFile(data.url, data.path, true, optimizationQueue).then(finished as any, finished);
+        if (data) {
+          downloader.downloadContent(data.url)
+            .then(({ content }) => {
+              return zimCreator.addArticle(data.path.replace('s/', ''), 's', content);
+            })
+            .then(finished as any, finished);
+        } else {
+          logger.info(`CSS File Queue is drained`);
+          finished();
+        }
       }, speed);
 
       /* Take care to download CSS files */
@@ -1816,7 +1622,7 @@ async function execute(argv) {
                   /* Download CSS dependency, but avoid duplicate calls */
                   if (!urlCache.hasOwnProperty(url) && filename) {
                     urlCache[url] = true;
-                    downloadCSSFileQueue.push({ url, path: env.htmlRootPath + dirs.style + '/' + filename });
+                    downloadCSSFileQueue.push({ url, path: dirs.style + '/' + filename });
                   }
                 } else {
                   logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
@@ -1827,6 +1633,8 @@ async function execute(argv) {
             fs.appendFileSync(stylePath, rewrittenCss);
             finished();
           } else {
+            const cssContent = await U.readFilePromise(stylePath);
+            await zimCreator.addArticle(`style.css`, 's', cssContent);
             finished();
           }
         } catch (err) {
@@ -2127,11 +1935,13 @@ async function execute(argv) {
     });
   }
 
-  function downloadFileAndCache(url, callback) {
+  function downloadFileAndCache(zimCreator: ZimCreator, url, callback) {
     if (!url) {
       callback();
       return;
     }
+
+    logger.info(`Downloading and Cacheing [${url}]`);
 
     const parts = mediaRegex.exec(decodeURI(url));
     const filenameBase = parts[2].length > parts[5].length
@@ -2145,7 +1955,7 @@ async function execute(argv) {
       if (error || !rWidth || rWidth < width) {
         /* Set the redis entry if necessary */
         redis.saveMedia(filenameBase, width, () => {
-          const mediaPath = getMediaPath(url);
+          const mediaPath = getMediaBase(url, false);
           const cachePath = `${zim.cacheDirectory}m/${crypto.createHash('sha1').update(filenameBase).digest('hex').substr(0, 20)}${pathParser.extname(urlParser.parse(url, false, true).pathname || '') || ''}`;
           const cacheHeadersPath = `${cachePath}.h`;
           let toDownload = false;
@@ -2187,21 +1997,22 @@ async function execute(argv) {
 
           /* Download the file if necessary */
           if (toDownload) {
+            const dlPromise = downloader.downloadContent(url);
             if (useCache) {
-              downloader.downloadMediaFile(url, cachePath, true, optimizationQueue).then(() => {
-                logger.info(`Caching ${filenameBase} at ${cachePath}...`);
-                fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                  if (error && error.code !== 'EEXIST') {
-                    return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
-                  }
-                  fs.writeFile(cacheHeadersPath, JSON.stringify({ width }), (error) => {
-                    return callback(error && { message: `Unable to write cache header at ${cacheHeadersPath}`, error });
-                  });
+              dlPromise
+                .then(async ({ content }) => {
+                  logger.info(`Caching ${filenameBase} at ${cachePath}...`);
+                  await writeFilePromise(cachePath, content);
                 });
-              }, callback);
-            } else {
-              downloader.downloadMediaFile(url, mediaPath, true, optimizationQueue).then(callback, (error) => callback({ message: 'Failed to write file', error }));
             }
+
+            dlPromise
+              .then(({ content }) => {
+                return zimCreator.addArticle(mediaPath.replace('m/', ''), 'm', content);
+              })
+              .then(() => callback())
+              .catch((error) => callback({ message: 'Failed to write file', error }));
+
           } else {
             logger.info(`Cache hit for ${url}`);
           }
@@ -2260,22 +2071,20 @@ async function execute(argv) {
     return mediaBase ? env.htmlRootPath + mediaBase : undefined;
   }
 
-  async function saveFavicon() {
+  async function saveFavicon(zimCreator) {
     logger.log('Saving favicon.png...');
 
-    function resizeFavicon(faviconPath) {
+    function resizeFavicon(zimCreator: ZimCreator, faviconPath) {
       return new Promise((resolve, reject) => {
         const cmd = `convert -thumbnail 48 "${faviconPath}" "${faviconPath}.tmp" ; mv "${faviconPath}.tmp" "${faviconPath}" `;
         exec(cmd, (error) => {
-          fs.stat(faviconPath, (error, stats) => {
-            optimizationQueue.push({ path: faviconPath, size: stats.size }, () => {
-              if (error) {
-                reject(error);
-              } else {
-                resolve();
-              }
-            });
-          });
+          if (error) {
+            reject();
+          } else {
+            U.readFilePromise(faviconPath).then((faviconContent) => {
+              return zimCreator.addArticle('favicon.png', 'm', faviconContent);
+            }).then(resolve, reject);
+          }
         }).on('error', (error) => {
           reject(error);
           // console.error(error);
@@ -2294,7 +2103,7 @@ async function execute(argv) {
         content = fs.readFileSync(customZimFavicon);
       }
       fs.writeFileSync(faviconPath, content);
-      return resizeFavicon(faviconPath);
+      return resizeFavicon(zimCreator, faviconPath);
     } else {
       return downloader.downloadContent(mw.siteInfoUrl())
         .then(async ({ content }) => {
@@ -2309,7 +2118,8 @@ async function execute(argv) {
           const faviconPath = env.htmlRootPath + `favicon.${ext}`;
           const faviconFinalPath = env.htmlRootPath + `favicon.png`;
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
-          await downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue);
+          const logoContent = await downloader.downloadContent(logoUrl);
+          await writeFilePromise(faviconPath, logoContent.content);
           if (ext !== 'png') {
             console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
             await new Promise((resolve, reject) => {
@@ -2322,22 +2132,24 @@ async function execute(argv) {
               });
             });
           }
-          return resizeFavicon(faviconFinalPath);
+          return resizeFavicon(zimCreator, faviconFinalPath);
         });
     }
   }
 
-  function getMainPage() {
+  function getMainPage(zimCreator: ZimCreator) {
     function writeMainPage(html) {
-      const mainPagePath = `${env.htmlRootPath}index.htm`;
+      // const mainPagePath = `${env.htmlRootPath}index.htm`;
       if (env.deflateTmpHtml) {
         return new Promise((resolve, reject) => {
           zlib.deflate(html, (error, deflatedHtml) => {
-            writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
+            zimCreator.addArticle('index.htm', 'A', deflatedHtml).then(resolve, reject);
+            // writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
           });
         });
       } else {
-        return writeFilePromise(mainPagePath, html);
+        // return writeFilePromise(mainPagePath, html);
+        return zimCreator.addArticle('index.htm', 'A', html);
       }
     }
 

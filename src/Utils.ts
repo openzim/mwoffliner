@@ -152,6 +152,18 @@ function writeFilePromise(path: string, content: string | Buffer) {
   });
 }
 
+function readFilePromise(path: string, encoding = 'utf8') {
+  return new Promise<string | Buffer>((resolve, reject) => {
+    fs.readFile(path, encoding, (err, content) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(content);
+      }
+    });
+  });
+}
+
 function execPromise(cmd) {
   return new Promise((resolve, reject) => {
     exec(cmd, (err, stdout) => {
@@ -217,6 +229,7 @@ export {
   doSeries,
   mkdirPromise,
   writeFilePromise,
+  readFilePromise,
   execPromise,
   contains,
   getStringsForLang,
