@@ -272,10 +272,10 @@ async function execute(argv) {
   }
   const { dirs } = config.output;
   function cssPath(css) {
-    return [dirs.style, dirs.styleModules, `${css.replace(/(\.css)?$/, '')}.css`].join('/');
+    return [dirs.style, `${dirs.styleModules}-${css.replace(/(\.css)?$/, '')}.css`].join('/');
   }
   function jsPath(js) {
-    return [dirs.javascript, dirs.jsModules, `${js.replace(/(\.js)?$/, '')}.js`].join('/');
+    return [dirs.javascript, `${dirs.jsModules}-${js.replace(/(\.js)?$/, '')}.js`].join('/');
   }
   function genHeaderCSSLink(css, classList = '') {
     return `<link href="${cssPath(css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
@@ -450,7 +450,9 @@ async function execute(argv) {
     const outZim = path.join(zim.outputDirectory, zim.computeZimName() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
 
-    const zimCreator = new ZimCreator(outZim);
+    const zimCreator = new ZimCreator(outZim, {
+
+    });
 
     await zim.createSubDirectories();
     await saveStaticFiles(zimCreator);
@@ -533,7 +535,7 @@ async function execute(argv) {
       .map(async (css) => {
         try {
           const cssCont = await U.readFilePromise(pathParser.resolve(__dirname, `../res/${css}.css`));
-          await zimCreator.addArticle(cssPath(css).replace('s/', ''), 's', cssCont);
+          await zimCreator.addArticle(cssPath(css).replace('s/', ''), cssCont, 's');
         } catch (error) {
           logger.warn(`Could not create ${css} file : ${error}`);
         }
@@ -542,7 +544,7 @@ async function execute(argv) {
     const jsPromises = config.output.jsResources.map(async (js) => {
       try {
         const jsCont = await U.readFilePromise(pathParser.resolve(__dirname, `../res/${js}.js`));
-        await zimCreator.addArticle(jsPath(js).replace('j/', ''), 'j', jsCont);
+        await zimCreator.addArticle(jsPath(js).replace('j/', ''), jsCont, 'j');
       } catch (error) {
         logger.warn(`Could not create ${js} file : ${error}`);
       }
@@ -618,10 +620,10 @@ async function execute(argv) {
         });
         if (env.deflateTmpHtml) {
           zlib.deflate(data, (error, deflatedHtml) => {
-            zimCreator.addArticle(redirectId + '.html', 'A', deflatedHtml).then(finished, finished);
+            zimCreator.addArticle(redirectId + '.html', deflatedHtml).then(finished, finished);
           });
         } else {
-          zimCreator.addArticle(redirectId + '.html', 'A', data).then(finished, finished);
+          zimCreator.addArticle(redirectId + '.html', data).then(finished, finished);
         }
       });
     }
@@ -693,7 +695,7 @@ async function execute(argv) {
             jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
             try {
               // fs.writeFileSync(pathParser.resolve(env.htmlRootPath, jsPath('jsConfigVars')), jsConfigVars);
-              await zimCreator.addArticle(jsPath('jsConfigVars').replace('j/', ''), 'j', jsConfigVars);
+              await zimCreator.addArticle(jsPath('jsConfigVars').replace('j/', ''), jsConfigVars, 'j');
             } catch (e) {
               logger.warn('Error writing file', e);
             }
@@ -767,7 +769,7 @@ async function execute(argv) {
                       const articleId = type === 'js'
                         ? jsPath(module).replace('j/', '')
                         : cssPath(module).replace('s/', '');
-                      await zimCreator.addArticle(articleId, type === 'js' ? 'j' : 's', text);
+                      await zimCreator.addArticle(articleId, text, type === 'js' ? 'j' : 's');
                       logger.info(`created dep ${module} for article ${articleId}`);
                     } catch (e) {
                       logger.warn(`Error writing file ${moduleUri} ${e}`);
@@ -1415,11 +1417,11 @@ async function execute(argv) {
         if (env.deflateTmpHtml) {
           zlib.deflate(html, (error, deflatedHtml) => {
             // fs.writeFile(env.getArticlePath(articleId), deflatedHtml, finished);
-            zimCreator.addArticle(articleId + '.html', 'A', deflatedHtml).then(finished, finished);
+            zimCreator.addArticle(articleId + '.html', deflatedHtml).then(finished, finished);
           });
         } else {
           // fs.writeFile(env.getArticlePath(articleId), html, finished);
-          zimCreator.addArticle(articleId + '.html', 'A', html).then(finished, finished);
+          zimCreator.addArticle(articleId + '.html', html).then(finished, finished);
         }
       }
 
@@ -1571,7 +1573,7 @@ async function execute(argv) {
         if (data) {
           downloader.downloadContent(data.url)
             .then(({ content }) => {
-              return zimCreator.addArticle(data.path.replace('s/', ''), 's', content);
+              return zimCreator.addArticle(data.path.replace('s/', ''), content, 's');
             })
             .then(finished as any, finished);
         } else {
@@ -1634,7 +1636,7 @@ async function execute(argv) {
             finished();
           } else {
             const cssContent = await U.readFilePromise(stylePath);
-            await zimCreator.addArticle(`style.css`, 's', cssContent);
+            await zimCreator.addArticle(`style.css`, cssContent, 's');
             finished();
           }
         } catch (err) {
@@ -2008,7 +2010,7 @@ async function execute(argv) {
 
             dlPromise
               .then(({ content }) => {
-                return zimCreator.addArticle(mediaPath.replace('m/', ''), 'm', content);
+                return zimCreator.addArticle(mediaPath.replace('m/', ''), content, 'm');
               })
               .then(() => callback())
               .catch((error) => callback({ message: 'Failed to write file', error }));
@@ -2082,7 +2084,7 @@ async function execute(argv) {
             reject();
           } else {
             U.readFilePromise(faviconPath).then((faviconContent) => {
-              return zimCreator.addArticle('favicon.png', 'm', faviconContent);
+              return zimCreator.addArticle('favicon.png', faviconContent, 'm');
             }).then(resolve, reject);
           }
         }).on('error', (error) => {
@@ -2143,13 +2145,13 @@ async function execute(argv) {
       if (env.deflateTmpHtml) {
         return new Promise((resolve, reject) => {
           zlib.deflate(html, (error, deflatedHtml) => {
-            zimCreator.addArticle('index.htm', 'A', deflatedHtml).then(resolve, reject);
+            zimCreator.addArticle('index', deflatedHtml).then(resolve, reject);
             // writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
           });
         });
       } else {
         // return writeFilePromise(mainPagePath, html);
-        return zimCreator.addArticle('index.htm', 'A', html);
+        return zimCreator.addArticle('index', html);
       }
     }
 
