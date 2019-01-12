@@ -91,7 +91,7 @@ async function execute(argv) {
 
   let mcsUrl: string;
 
-  const articleList = String(_articleList);
+  const articleList = _articleList ? String(_articleList) : _articleList;
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
