@@ -210,7 +210,22 @@ async function execute(argv) {
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
-  zim.redirectsFile = path.join(zim.tmpDirectory, env.computeFilenameRadical(), env.computeFilenameRadical(false, true, true) + '.redirects');
+  const dumpId = `mwo-dump-${Date.now()}`;
+  const dumpTmpDir = path.join(zim.tmpDirectory, `${dumpId}`);
+  try {
+    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
+    await U.mkdirPromise(dumpTmpDir);
+  } catch (err) {
+    logger.error(`Failed to create dump temporary directory, exiting`, err);
+    throw err;
+  }
+
+  process.on('exit', () => {
+    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
+    rimraf.sync(dumpTmpDir);
+  });
+
+  zim.redirectsFile = path.join(dumpTmpDir, env.computeFilenameRadical(false, true, true) + '.redirects');
 
   if (localMcs) {
     // Start Parsoid
@@ -446,19 +461,20 @@ async function execute(argv) {
             // tslint:disable-next-line:variable-name
             const { redirects: _redirects, title } = pages[pageId];
             const originalArticleId = fromXTo[title];
-            for (const redirect of _redirects) {
-              const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
-              console.log(`${title} redirects to ${originalArticleId}`, fromXTo);
-              redirects[title] = originalArticleId;
-              redirectsCount += 1;
+            if (_redirects) {
+              for (const redirect of _redirects) {
+                const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
+                redirects[title] = originalArticleId;
+                redirectsCount += 1;
 
-              if (title === zim.mainPageId) {
-                zim.mainPageId = originalArticleId;
+                if (title === zim.mainPageId) {
+                  zim.mainPageId = originalArticleId;
+                }
               }
             }
           }
 
-          logger.info(`${redirectsCount} redirect(s) found for ids`);
+          logger.log(`${redirectsCount} redirect(s) found for ids`);
           redis.saveRedirects(redirectsCount, redirects, finished);
         } else {
           finished(JSON.parse(body).error);
@@ -470,21 +486,6 @@ async function execute(argv) {
       finished();
     }
   }, Math.min(speed * 100, 500));
-
-  const dumpId = `mwo-dump-${Date.now()}`;
-  const dumpTmpDir = path.join(zim.tmpDirectory, env.computeFilenameRadical(), `${dumpId}`);
-  try {
-    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
-    await U.mkdirPromise(dumpTmpDir);
-  } catch (err) {
-    logger.error(`Failed to create dump temporary directory, exiting`, err);
-    throw err;
-  }
-
-  process.on('exit', () => {
-    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
-    rimraf.sync(dumpTmpDir);
-  });
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -546,7 +547,7 @@ async function execute(argv) {
     await exec(`find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`);
   }
 
-  function doDump(env: OfflinerEnv, dump: string) {
+  async function doDump(env: OfflinerEnv, dump: string) {
     logger.log('Starting a new dump...');
     env.nopic = dump.toString().search('nopic') >= 0;
     env.novid = dump.toString().search('novid') >= 0;
@@ -556,20 +557,22 @@ async function execute(argv) {
     env.keepHtml = env.nozim || env.keepHtml;
     env.htmlRootPath = env.computeHtmlRootPath();
 
-    return doSeries([
-      () => zim.createSubDirectories(),
-      () => saveStaticFiles(),
-      () => saveStylesheet(),
-      () => saveFavicon(),
-      articleList ? () => getArticleThumbnails() : null,
-      () => getMainPage(),
-      env.writeHtmlRedirects ? () => saveHtmlRedirects() : null,
-      () => saveArticles(dump),
-      () => drainDownloadFileQueue(),
-      () => drainOptimizationQueue(optimizationQueue),
-      () => zim.buildZIM(),
-      () => redis.delMediaDB(),
-    ]);
+    await zim.createSubDirectories();
+    await saveStaticFiles();
+    await saveStylesheet();
+    await saveFavicon();
+    if (articleList) {
+      await getArticleThumbnails();
+    }
+    await getMainPage();
+    if (env.writeHtmlRedirects) {
+      await saveHtmlRedirects();
+    }
+    await saveArticles(dump);
+    await drainDownloadFileQueue();
+    await drainOptimizationQueue(optimizationQueue);
+    await zim.buildZIM();
+    await redis.delMediaDB();
   }
 
   await redis.flushDBs();
@@ -721,10 +724,10 @@ async function execute(argv) {
     logger.log('Reset redirects cache file (or create it)');
     fs.openSync(zim.redirectsFile, 'w');
 
-    logger.log('Caching redirects...');
+    logger.log('Getting redirects...');
     function cacheRedirect(redirectId, finished) {
       redis.getRedirect(redirectId, finished, (target) => {
-        logger.info(`Caching redirect ${redirectId} (to ${target})...`);
+        logger.info(`Getting redirect ${redirectId} (to ${target})...`);
         const line = 'A\t'
           + `${env.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
@@ -1860,7 +1863,6 @@ async function execute(argv) {
             }
           }
         });
-        console.log(`redirectQueueValues: ${redirectQueueValues.length}`);
         if (redirectQueueValues.length) { redirectQueue.push(redirectQueueValues); }
         redis.saveArticles(details);
       }
@@ -2237,7 +2239,7 @@ async function execute(argv) {
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
           await downloader.downloadMediaFile(logoUrl, faviconPath, true, optimizationQueue);
           if (ext !== 'png') {
-            console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+            logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
             await new Promise((resolve, reject) => {
               exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
                 if (err) {
