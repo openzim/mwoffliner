@@ -32,8 +32,8 @@ class Zim {
     this.config = config;
     Object.assign(this, args);
     // Normalize
-    this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : 'out/';
-    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : path.join(__dirname, '../', 'tmp/'); // '../' because __dirname is project/lib
+    this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : path.join(process.cwd(), 'out/');
+    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : path.join(process.cwd(), 'tmp/');
   }
 
   public createDirectories() {
