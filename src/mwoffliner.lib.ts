@@ -498,9 +498,9 @@ async function execute(argv) {
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
       await new Promise((resolve, reject) => {
         articleListContentStream
+          .pipe(articleListWriteStream)
           .on('error', (err) => reject(err))
-          .on('end', resolve)
-          .pipe(articleListWriteStream);
+          .on('close', resolve);
       });
       zim.articleList = tmpArticleListPath;
     } catch (err) {
