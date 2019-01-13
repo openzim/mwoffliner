@@ -66,7 +66,6 @@ const parameterList = [
   { name: 'writeHtmlRedirects', description: 'Write redirect as HTML files', required: false },
   { name: 'localMcs', description: 'Create a local MCS and Parsoid instance default value is false', required: false },
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
-  { name: 'language', description: 'Language to use for MWOffliner strings (en)', required: false },
 ];
 
 export default parameterList;

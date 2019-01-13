@@ -78,16 +78,12 @@ async function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
-    language,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
     articleList: _articleList,
     useCache,
   } = argv;
-
-  /* Get language specific strings */
-  const strings = U.getStringsForLang(language || 'en', 'en');
 
   let mcsUrl: string;
 
@@ -544,6 +540,9 @@ async function execute(argv) {
     logger.log('Cleaning cache');
     await exec(`find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`);
   }
+
+  /* Get language specific strings */
+  const strings = U.getStringsForLang(zim.langIso2 || 'en', 'en');
 
   function doDump(env: OfflinerEnv, dump: string) {
     logger.log('Starting a new dump...');
