@@ -18,6 +18,7 @@ class Zim {
   public redirectsFile: string;
   public publisher: any;
   public tags: any;
+  public langIso2: any;
   public langIso3: any;
   public mainPageId: any;
   public withZimFullTextIndex: any;
