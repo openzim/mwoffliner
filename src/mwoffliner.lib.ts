@@ -164,7 +164,7 @@ async function execute(argv) {
     cacheDirectory: `${cacheDirectory || pathParser.resolve(process.cwd(), 'cac')}/`,
 
     // File where redirects might be save if --writeHtmlRedirects is not set
-    redirectsCacheFile: null,
+    redirectsFile: null,
 
     // Directory wehre everything is saved at the end of the process
     outputDirectory,
@@ -209,6 +209,8 @@ async function execute(argv) {
   const articleDetailXId = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
+
+  zim.redirectsFile = path.join(zim.tmpDirectory, env.computeFilenameRadical(), env.computeFilenameRadical(false, true, true) + '.redirects');
 
   if (localMcs) {
     // Start Parsoid
@@ -421,7 +423,6 @@ async function execute(argv) {
 
   /* Get ids */
   const redirectQueue = async.cargo(async (articleIds, finished) => {
-    const articleId = articleIds[0];
     if (articleIds && articleIds.length) {
       logger.info(`Getting redirects for [${articleIds.length}] articles`);
       const url = mw.backlinkRedirectsQueryUrl(articleIds);
@@ -442,15 +443,17 @@ async function execute(argv) {
           const pageIds = Object.keys(pages);
 
           for (const pageId of pageIds) {
-            const { redirects } = pages[pageId];
-            for (const entry of redirects) {
-              const originalArticleId = fromXTo[entry.title];
-              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+            // tslint:disable-next-line:variable-name
+            const { redirects: _redirects, title } = pages[pageId];
+            const originalArticleId = fromXTo[title];
+            for (const redirect of _redirects) {
+              const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
+              console.log(`${title} redirects to ${originalArticleId}`, fromXTo);
               redirects[title] = originalArticleId;
               redirectsCount += 1;
 
               if (title === zim.mainPageId) {
-                zim.mainPageId = articleId;
+                zim.mainPageId = originalArticleId;
               }
             }
           }
@@ -469,7 +472,7 @@ async function execute(argv) {
   }, Math.min(speed * 100, 500));
 
   const dumpId = `mwo-dump-${Date.now()}`;
-  const dumpTmpDir = path.join(zim.tmpDirectory, `${dumpId}`);
+  const dumpTmpDir = path.join(zim.tmpDirectory, env.computeFilenameRadical(), `${dumpId}`);
   try {
     logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
     await U.mkdirPromise(dumpTmpDir);
@@ -527,9 +530,7 @@ async function execute(argv) {
   }
   await env.checkResume();
   await getArticleIds(redirectQueue);
-  if (useCache) {
-    await cacheRedirects();
-  }
+  await getRedirects();
 
   await doSeries(
     env.dumps.map((dump) => {
@@ -716,9 +717,9 @@ async function execute(argv) {
     });
   }
 
-  function cacheRedirects() {
+  function getRedirects() {
     logger.log('Reset redirects cache file (or create it)');
-    fs.openSync(zim.redirectsCacheFile, 'w');
+    fs.openSync(zim.redirectsFile, 'w');
 
     logger.log('Caching redirects...');
     function cacheRedirect(redirectId, finished) {
@@ -728,7 +729,7 @@ async function execute(argv) {
           + `${env.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
           + `${env.getArticleBase(target, false)}\n`;
-        fs.appendFile(zim.redirectsCacheFile, line, finished);
+        fs.appendFile(zim.redirectsFile, line, finished);
       });
     }
 
@@ -1859,7 +1860,7 @@ async function execute(argv) {
             }
           }
         });
-
+        console.log(`redirectQueueValues: ${redirectQueueValues.length}`);
         if (redirectQueueValues.length) { redirectQueue.push(redirectQueueValues); }
         redis.saveArticles(details);
       }
