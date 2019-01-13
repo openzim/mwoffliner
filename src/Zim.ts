@@ -5,7 +5,6 @@ import domino from 'domino';
 import homeDirExpander from 'expand-home-dir';
 import pathParser from 'path';
 import urlParser from 'url';
-import path from 'path';
 
 import { doSeries, mkdirPromise, execPromise } from './Utils';
 import OfflinerEnv from './OfflinerEnv';
@@ -32,8 +31,8 @@ class Zim {
     this.config = config;
     Object.assign(this, args);
     // Normalize
-    this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : path.join(process.cwd(), 'out/');
-    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : path.join(process.cwd(), 'tmp/');
+    this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : 'out/';
+    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : 'tmp/';
   }
 
   public createDirectories() {
