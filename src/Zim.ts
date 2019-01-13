@@ -3,11 +3,8 @@ import ci from 'case-insensitive';
 import { exec, spawn } from 'child_process';
 import domino from 'domino';
 import homeDirExpander from 'expand-home-dir';
-import fs from 'fs';
-import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser from 'url';
-import path from 'path';
 
 import { doSeries, mkdirPromise, execPromise } from './Utils';
 import OfflinerEnv from './OfflinerEnv';
@@ -35,7 +32,7 @@ class Zim {
     Object.assign(this, args);
     // Normalize
     this.outputDirectory = this.outputDirectory ? `${homeDirExpander(this.outputDirectory)}/` : 'out/';
-    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : path.join(__dirname, '../', 'tmp/'); // '../' because __dirname is project/lib
+    this.tmpDirectory = this.tmpDirectory ? `${homeDirExpander(this.tmpDirectory)}/` : 'tmp/';
   }
 
   public createDirectories() {
@@ -43,8 +40,8 @@ class Zim {
     const self = this;
     return new Promise((resolve, reject) => {
       async.series([ // TODO: convert to Promise (doSeries)
-        (finished) => { mkdirp(self.outputDirectory, finished); },
-        (finished) => { mkdirp(self.tmpDirectory, finished); },
+        (finished) => { mkdirPromise(self.outputDirectory).then(finished as any, finished); },
+        (finished) => { mkdirPromise(self.tmpDirectory).then(finished as any, finished); },
       ], (error) => {
         if (error) {
           reject(`Unable to create mandatory directories : ${error}`);
@@ -74,19 +71,10 @@ class Zim {
   public prepareCache() {
     const self = this;
     const { env } = self;
-    return new Promise((resolve, reject) => {
-      env.logger.log('Preparing cache...');
-      this.cacheDirectory = `${this.cacheDirectory + env.computeFilenameRadical(true, true, true)}/`;
-      this.redirectsCacheFile = `${this.cacheDirectory + env.computeFilenameRadical(false, true, true)}.redirects`;
-      mkdirp(`${this.cacheDirectory}m/`, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          fs.writeFileSync(`${self.cacheDirectory}ref`, '42');
-          resolve();
-        }
-      });
-    });
+    env.logger.log('Preparing cache...');
+    this.cacheDirectory = `${this.cacheDirectory + env.computeFilenameRadical(true, true, true)}/`;
+    this.redirectsCacheFile = `${this.cacheDirectory + env.computeFilenameRadical(false, true, true)}.redirects`;
+    return mkdirPromise(`${this.cacheDirectory}m/`);
   }
 
   public async getSubTitle(this: Zim) {

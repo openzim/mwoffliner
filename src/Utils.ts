@@ -1,4 +1,5 @@
 import fs from 'fs';
+import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser, { UrlWithStringQuery } from 'url';
 import MediaWiki from './MediaWiki';
@@ -128,9 +129,9 @@ function doSeries(funcs: Array<(...args: any[]) => Promise<any>>) {
   }, Promise.resolve());
 }
 
-function mkdirPromise(path: string, mode?: string | number) {
+function mkdirPromise(path: string) {
   return new Promise((resolve, reject) => {
-    fs.mkdir(path, mode, (err) => {
+    mkdirp(path, (err) => {
       if (err) {
         reject(err);
       } else {
