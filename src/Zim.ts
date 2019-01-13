@@ -187,7 +187,7 @@ class Zim {
           zim.executeTransparently('zimwriterfs', [
             env.deflateTmpHtml ? '--inflateHtml' : '',
             env.verbose ? '--verbose' : '',
-            env.writeHtmlRedirects ? '' : `--redirects=${zim.redirectsCacheFile}`,
+            env.writeHtmlRedirects || !zim.redirectsCacheFile /* Not set when useCache=false */ ? '' : `--redirects=${zim.redirectsCacheFile}`,
             zim.withZimFullTextIndex ? '--withFullTextIndex' : '',
             zimTags ? `--tags=${zimTags}` : '',
             zim.mainPageId ? `--welcome=${env.getArticleBase(zim.mainPageId)}` : '--welcome=index.htm',
