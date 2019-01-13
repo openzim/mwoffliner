@@ -81,6 +81,7 @@ class Redis {
             if (err) {
               reject(`${errorMsg}: ${err}`);
             } else {
+              console.log(`Written`, keys);
               logger.log(successMsg);
               resolve();
             }

@@ -15,7 +15,7 @@ class Zim {
   public tmpDirectory: string;
   public env: OfflinerEnv;
   public cacheDirectory: string;
-  public redirectsCacheFile: string;
+  public redirectsFile: string;
   public publisher: any;
   public tags: any;
   public langIso2: any;
@@ -74,7 +74,6 @@ class Zim {
     const { env } = self;
     env.logger.log('Preparing cache...');
     this.cacheDirectory = `${this.cacheDirectory + env.computeFilenameRadical(true, true, true)}/`;
-    this.redirectsCacheFile = `${this.cacheDirectory + env.computeFilenameRadical(false, true, true)}.redirects`;
     return mkdirPromise(`${this.cacheDirectory}m/`);
   }
 
@@ -171,13 +170,13 @@ class Zim {
         exec('sync', () => {
           const zimPath = zim.computeZimRootPath();
           const zimTags = zim.computeZimTags();
-          const cmd = `zimwriterfs --welcome=index.htm --favicon=favicon.png --language=${zim.langIso3}${zim.mainPageId ? ` --welcome=${env.getArticleBase(zim.mainPageId)}` : ' --welcome=index.htm'}${env.deflateTmpHtml ? ' --inflateHtml ' : ''}${env.verbose ? ' --verbose ' : ''}${zimTags ? ` --tags="${zimTags}"` : ''} --name="${zim.computeZimName()}"${zim.withZimFullTextIndex ? ' --withFullTextIndex' : ''}${env.writeHtmlRedirects ? '' : ` --redirects="${zim.redirectsCacheFile}"`} --title="${zim.name}" --description="${zim.description || zim.subTitle || zim.name}" --creator="${zim.creator}" --publisher="${zim.publisher}" "${env.htmlRootPath}" "${zimPath}"`;
+          const cmd = `zimwriterfs --welcome=index.htm --favicon=favicon.png --language=${zim.langIso3}${zim.mainPageId ? ` --welcome=${env.getArticleBase(zim.mainPageId)}` : ' --welcome=index.htm'}${env.deflateTmpHtml ? ' --inflateHtml ' : ''}${env.verbose ? ' --verbose ' : ''}${zimTags ? ` --tags="${zimTags}"` : ''} --name="${zim.computeZimName()}"${zim.withZimFullTextIndex ? ' --withFullTextIndex' : ''}${env.writeHtmlRedirects && zim.redirectsFile ? '' : ` --redirects="${zim.redirectsFile}"`} --title="${zim.name}" --description="${zim.description || zim.subTitle || zim.name}" --creator="${zim.creator}" --publisher="${zim.publisher}" "${env.htmlRootPath}" "${zimPath}"`;
           logger.log(`Building ZIM file ${zimPath} (${cmd})...`);
           logger.log(`RAID: ${zim.computeZimName()}`);
           zim.executeTransparently('zimwriterfs', [
             env.deflateTmpHtml ? '--inflateHtml' : '',
             env.verbose ? '--verbose' : '',
-            env.writeHtmlRedirects || !zim.redirectsCacheFile /* Not set when useCache=false */ ? '' : `--redirects=${zim.redirectsCacheFile}`,
+            env.writeHtmlRedirects || !zim.redirectsFile /* Not set when useCache=false */ ? '' : `--redirects=${zim.redirectsFile}`,
             zim.withZimFullTextIndex ? '--withFullTextIndex' : '',
             zimTags ? `--tags=${zimTags}` : '',
             zim.mainPageId ? `--welcome=${env.getArticleBase(zim.mainPageId)}` : '--welcome=index.htm',
