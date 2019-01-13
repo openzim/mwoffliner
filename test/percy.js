@@ -16,7 +16,8 @@ console.info(`Finding outputs in [${tmpDir}]`);
 describe(`MWOffliner Page`, function () {
     const TEST_URL = `http://localhost:${TEST_PORT}/index.htm`;
     before(async function () {
-        const [testOutputDir] = await readDirPromise(tmpDir);
+        const fns = await readDirPromise(tmpDir);
+        const testOutputDir = fns.find(fn => fn.includes('articlelist')) || fns[0];
         console.info(`Testing dump [${testOutputDir}]`);
         await serveDir(path.join(tmpDir, testOutputDir), TEST_PORT);
     })

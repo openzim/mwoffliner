@@ -11,8 +11,7 @@ import fs, { unlinkSync } from 'fs';
 import htmlMinifier from 'html-minifier';
 import fetch from 'node-fetch';
 import os from 'os';
-import parsoid from 'parsoid';
-import pathParser, { resolve } from 'path';
+import pathParser from 'path';
 import swig from 'swig-templates';
 import urlParser, { URL } from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
@@ -20,6 +19,7 @@ import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
 import ServiceRunner from 'service-runner';
+import rimraf from 'rimraf';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -468,6 +468,21 @@ async function execute(argv) {
     }
   }, Math.min(speed * 100, 500));
 
+  const dumpId = `mwo-dump-${Date.now()}`;
+  const dumpTmpDir = path.join(zim.tmpDirectory, `${dumpId}`);
+  try {
+    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
+    await U.mkdirPromise(dumpTmpDir);
+  } catch (err) {
+    logger.error(`Failed to create dump temporary directory, exiting`, err);
+    throw err;
+  }
+
+  process.on('exit', () => {
+    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
+    rimraf.sync(dumpTmpDir);
+  });
+
   /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
@@ -476,7 +491,8 @@ async function execute(argv) {
 
   if (zim.articleList && zim.articleList.includes('http')) {
     try {
-      const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
+      const fileName = zim.articleList.split('/').slice(-1)[0];
+      const tmpArticleListPath = path.join(dumpTmpDir, fileName);
       logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
       const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
@@ -520,12 +536,6 @@ async function execute(argv) {
       return () => doDump(env, dump);
     }),
   );
-
-  if (articleList && articleList.includes('http')) {
-    // We downloaded the list to `zim.articleList`
-    logger.log(`Deleting file [${zim.articleList}]`);
-    unlinkSync(zim.articleList);
-  }
 
   if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');

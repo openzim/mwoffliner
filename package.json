@@ -61,6 +61,7 @@
     "parsoid": "^0.10.0",
     "puppeteer": "^1.11.0",
     "redis": "^2.6.2",
+    "rimraf": "^2.6.3",
     "service-mobileapp-node": "git+https://github.com/wikimedia/mediawiki-services-mobileapps.git#d244439",
     "service-runner": "^2.6.8",
     "snyk": "^1.118.1",
