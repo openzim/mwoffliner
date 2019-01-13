@@ -455,12 +455,12 @@ async function execute(argv) {
             return acc;
           }, {});
 
-          const pageIds = Object.keys(pages);
+          const pageIds = Object.keys(pages).filter((id) => id !== '-1');
 
           for (const pageId of pageIds) {
             // tslint:disable-next-line:variable-name
             const { redirects: _redirects, title } = pages[pageId];
-            const originalArticleId = fromXTo[title];
+            const originalArticleId = fromXTo[title] || title;
             if (_redirects) {
               for (const redirect of _redirects) {
                 const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
