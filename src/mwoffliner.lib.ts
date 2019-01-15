@@ -221,6 +221,8 @@ async function execute(argv) {
     rimraf.sync(dumpTmpDir);
   });
 
+  let parsoidFallbackUrl: string;
+
   if (localMcs) {
     // Start Parsoid
     logger.log('Starting Parsoid & MCS');
@@ -264,8 +266,10 @@ async function execute(argv) {
     });
     const domain = (new URL(mw.base)).host;
     mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+    parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
   } else {
     mcsUrl = `${mw.base}api/rest_v1/page/mobile-sections/`;
+    parsoidFallbackUrl = `${mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
   }
 
   /* ********************************* */
@@ -481,7 +485,7 @@ async function execute(argv) {
           }
         }
 
-        logger.log(`${redirectsCount} redirect(s) found for ids: ${articleIds.join('|')}`);
+        logger.log(`${redirectsCount} redirect(s) found`);
         redis.saveRedirects(redirectsCount, redirects, finished);
       } catch (err) {
         logger.warn(`Failed to get redirects for ids: [${articleIds.join('|')}], retrying`);
@@ -894,10 +898,10 @@ async function execute(argv) {
             apiParameterOnly = 'styles';
           }
 
-          logger.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
-            `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
+            `${mw.modulePath}?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
+          logger.info(`Getting [${type}] module [${moduleApiUrl}]`);
           return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
             .then((redisResult) => {
               if (redisResult === 1) {
@@ -1568,9 +1572,14 @@ async function execute(argv) {
         }
       }
 
-      function saveArticle(articleId, finished) {
-        let html = '';
-        const articleApiUrl = `${mcsUrl}${encodeURIComponent(articleId)}`;
+      function saveArticle(articleId, finished, usingParsoidFallback = false) {
+        if (articleId === zim.mainPageId) {
+          usingParsoidFallback = true;
+        }
+
+        const articleApiUrl = usingParsoidFallback
+          ? `${parsoidFallbackUrl}${encodeURIComponent(articleId)}`
+          : `${mcsUrl}${encodeURIComponent(articleId)}`;
         logger.log(`Getting (mobile) article from ${articleApiUrl}`);
         fetch(articleApiUrl, {
           method: 'GET',
@@ -1578,89 +1587,104 @@ async function execute(argv) {
         })
           .then((response) => response.json())
           .then((json) => {
-            // set the first section (open by default)
-            html += leadSectionTemplate({
-              lead_display_title: json.lead.displaytitle,
-              lead_section_text: json.lead.sections[0].text,
-              strings,
-            });
-
-            // set all other section (closed by default)
-            if (!env.nodet) {
-              json.remaining.sections.forEach((oneSection, i) => {
-                if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
-                  html += sectionTemplate({
-                    section_index: i,
-                    section_id: i,
-                    section_anchor: 'TopLevelSection',
-                    section_line: 'Disambiguation',
-                    section_text: '',
-                    strings,
-                  });
-                }
-
-                // if below is to test if we need to nest a subsections into a section
-                if (oneSection.toclevel === 1) {
-                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
-                  html += sectionTemplate({
-                    section_index: i + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings,
-                  });
-                } else {
-                  const replacement = subSectionTemplate({
-                    section_index: i + 1,
-                    section_toclevel: oneSection.toclevel + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings,
-                  });
-                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
-                }
+            let html = '';
+            if (usingParsoidFallback) {
+              if (json && json.visualeditor) {
+                html = json.visualeditor.content;
+              } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
+                html = json.html.body;
+              } else if (json && json.error) {
+                console.error(`Error by retrieving article: ${json.error.info}`);
+              }
+            } else {
+              // set the first section (open by default)
+              html += leadSectionTemplate({
+                lead_display_title: json.lead.displaytitle,
+                lead_section_text: json.lead.sections[0].text,
+                strings,
               });
+
+              // set all other section (closed by default)
+              if (!env.nodet) {
+                json.remaining.sections.forEach((oneSection, i) => {
+                  if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
+                    html += sectionTemplate({
+                      section_index: i,
+                      section_id: i,
+                      section_anchor: 'TopLevelSection',
+                      section_line: 'Disambiguation',
+                      section_text: '',
+                      strings,
+                    });
+                  }
+
+                  // if below is to test if we need to nest a subsections into a section
+                  if (oneSection.toclevel === 1) {
+                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
+                    html += sectionTemplate({
+                      section_index: i + 1,
+                      section_id: oneSection.id,
+                      section_anchor: oneSection.anchor,
+                      section_line: oneSection.line,
+                      section_text: oneSection.text,
+                      strings,
+                    });
+                  } else {
+                    const replacement = subSectionTemplate({
+                      section_index: i + 1,
+                      section_toclevel: oneSection.toclevel + 1,
+                      section_id: oneSection.id,
+                      section_anchor: oneSection.anchor,
+                      section_line: oneSection.line,
+                      section_text: oneSection.text,
+                      strings,
+                    });
+                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
+                  }
+                });
+              }
+              html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
             }
 
-            html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
-            buildArticleFromApiData();
+            return html;
+          })
+          .then((html) => {
+            if (html) {
+              const articlePath = env.getArticlePath(articleId);
+              const prepareAndSaveArticle = async.compose(
+                writeArticle,
+                setFooter,
+                applyOtherTreatments,
+                rewriteUrls,
+                treatMedias,
+                storeDependencies,
+                parseHtml,
+              );
+
+              logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
+              prepareAndSaveArticle(html, articleId, (error) => {
+                if (!error) {
+                  logger.info(`Successfully dumped article ${articleId}`);
+                  finished();
+                } else {
+                  logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
+                  finished(error);
+                }
+              });
+            } else {
+              throw new Error(`No HTML was found`);
+            }
           })
           .catch((e) => {
             logger.error(`Error handling json response from api. ${e}`);
-            buildArticleFromApiData();
+            if (!usingParsoidFallback) {
+              saveArticle(articleId, finished, true);
+              logger.log(`Failed to get mobile article [${articleId}], retrying with ParsoidFallback`);
+            } else {
+              delete articleDetailXId[articleId];
+              finished();
+            }
           });
-
-        function buildArticleFromApiData() {
-          if (html) {
-            const articlePath = env.getArticlePath(articleId);
-            const prepareAndSaveArticle = async.compose(
-              writeArticle,
-              setFooter,
-              applyOtherTreatments,
-              rewriteUrls,
-              treatMedias,
-              storeDependencies,
-              parseHtml,
-            );
-
-            logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
-            prepareAndSaveArticle(html, articleId, (error) => {
-              if (!error) {
-                logger.info(`Successfully dumped article ${articleId}`);
-                finished();
-              } else {
-                logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
-                finished(error);
-              }
-            });
-          } else {
-            delete articleDetailXId[articleId];
-            finished();
-          }
-        }
       }
 
       logger.log('Saving articles...');
