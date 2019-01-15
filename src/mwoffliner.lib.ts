@@ -221,8 +221,6 @@ async function execute(argv) {
     rimraf.sync(dumpTmpDir);
   });
 
-  zim.redirectsFile = path.join(dumpTmpDir, env.computeFilenameRadical(false, true, true) + '.redirects');
-
   if (localMcs) {
     // Start Parsoid
     logger.log('Starting Parsoid & MCS');
@@ -436,45 +434,54 @@ async function execute(argv) {
   const redirectQueue = async.cargo(async (articleIds, finished) => {
     if (articleIds && articleIds.length) {
       logger.info(`Getting redirects for [${articleIds.length}] articles`);
-      const url = mw.backlinkRedirectsQueryUrl(articleIds);
-
+      const urls = mw.backlinkRedirectsQueryUrls(articleIds, 7000);
       try {
-        const { content } = await downloader.downloadContent(url);
-        const body = content.toString();
-        if (!JSON.parse(body).error) {
-          const redirects = {};
-          let redirectsCount = 0;
-          const { pages, normalized } = JSON.parse(body).query;
-
-          const fromXTo = normalized.reduce((acc, item) => {
-            acc[item.to] = item.from;
-            return acc;
-          }, {});
-
-          const pageIds = Object.keys(pages);
-
-          for (const pageId of pageIds) {
-            // tslint:disable-next-line:variable-name
-            const { redirects: _redirects, title } = pages[pageId];
-            const originalArticleId = fromXTo[title];
-            if (_redirects) {
-              for (const redirect of _redirects) {
-                const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
-                redirects[title] = originalArticleId;
-                redirectsCount += 1;
-
-                if (title === zim.mainPageId) {
-                  zim.mainPageId = originalArticleId;
+        const redirects = {};
+        let redirectsCount = 0;
+        const { pages, normalized } = await (
+          Promise.all(urls.map((url) => downloader.downloadContent(url)))
+            .then((resps) => {
+              return resps.reduce((acc, { content }) => {
+                const body = content.toString();
+                const parsedBody = JSON.parse(body);
+                if (parsedBody.error) {
+                  throw new Error(`Failed to parse JSON response: [${parsedBody.error}]`);
                 }
+                const { pages, normalized } = parsedBody.query;
+
+                acc.normalized = acc.normalized.concat(normalized);
+                Object.assign(acc.pages, pages);
+                return acc;
+              }, { pages: {}, normalized: [] });
+            })
+        );
+
+        const fromXTo = normalized.reduce((acc, item) => {
+          acc[item.to] = item.from;
+          return acc;
+        }, {});
+
+        const pageIds = Object.keys(pages);
+
+        for (const pageId of pageIds) {
+          // tslint:disable-next-line:variable-name
+          const { redirects: _redirects, title } = pages[pageId];
+          const originalArticleId = fromXTo[title] || title;
+          if (_redirects) {
+            for (const redirect of _redirects) {
+              const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
+              redirects[title] = originalArticleId;
+              redirectsCount += 1;
+
+              if (title === zim.mainPageId) {
+                zim.mainPageId = originalArticleId;
               }
             }
           }
-
-          logger.log(`${redirectsCount} redirect(s) found for ids`);
-          redis.saveRedirects(redirectsCount, redirects, finished);
-        } else {
-          finished(JSON.parse(body).error);
         }
+
+        logger.log(`${redirectsCount} redirect(s) found for ids`);
+        redis.saveRedirects(redirectsCount, redirects, finished);
       } catch (err) {
         finished(err);
       }
@@ -527,7 +534,11 @@ async function execute(argv) {
   }
   await env.checkResume();
   await getArticleIds(redirectQueue);
+  zim.redirectsFile = path.join(dumpTmpDir, env.computeFilenameRadical(false, true, false) + '.redirects');
   await getRedirects();
+
+  /* Get language specific strings */
+  const strings = U.getStringsForLang(zim.langIso2 || 'en', 'en');
 
   await doSeries(
     env.dumps.map((dump) => {
@@ -542,9 +553,6 @@ async function execute(argv) {
     logger.log('Cleaning cache');
     await exec(`find "${zim.cacheDirectory}" -type f -not -newer "${zim.cacheDirectory}ref" -exec rm {} \\;`);
   }
-
-  /* Get language specific strings */
-  const strings = U.getStringsForLang(zim.langIso2 || 'en', 'en');
 
   async function doDump(env: OfflinerEnv, dump: string) {
     logger.log('Starting a new dump...');
