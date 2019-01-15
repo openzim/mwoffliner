@@ -89,19 +89,21 @@ class MediaWiki {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }
 
-  public backlinkRedirectsQueryUrls(articleIds: string[], maxUrlLength: number): string[] {
+  public backlinkRedirectsQueryUrls(articleIds: string[], maxArticlesPerUrl: number, maxUrlLength: number): string[] {
     const baseUrl = `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&rawcontinue=&titles=`;
-    const redirectUrls = articleIds.reduce((urls, articleId) => {
+    const redirectUrls = articleIds.reduce(({ urls, activeUrlArticleCount }, articleId) => {
       const encodedArticleId = encodeURIComponent(articleId);
       const url = urls[urls.length - 1];
-      if (!urls.length || url.length + encodedArticleId.length > maxUrlLength) {
+      if (!urls.length || url.length + encodedArticleId.length > maxUrlLength || activeUrlArticleCount >= maxArticlesPerUrl) {
         urls.push(baseUrl + encodedArticleId);
+        activeUrlArticleCount = 1;
       } else {
         urls[urls.length - 1] += '|' + encodedArticleId;
+        activeUrlArticleCount += 1;
       }
-      return urls;
-    }, []);
-    return redirectUrls;
+      return { urls, activeUrlArticleCount };
+    }, { urls: [], activeUrlArticleCount: 0 });
+    return redirectUrls.urls;
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
