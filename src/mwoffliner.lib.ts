@@ -517,8 +517,8 @@ async function execute(argv) {
       });
       zim.articleList = tmpArticleListPath;
     } catch (err) {
-      logger.error(`Failed to download article list from [${zim.articleList}]`, err);
-      throw err;
+      logger.error(`Failed to download article list from [${zim.articleList}]`);
+      process.exit();
     }
   }
 
