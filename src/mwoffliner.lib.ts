@@ -433,8 +433,8 @@ async function execute(argv) {
   /* Get ids */
   const redirectQueue = async.cargo(async (articleIds, finished) => {
     if (articleIds && articleIds.length) {
-      logger.info(`Getting redirects for [${articleIds.length}] articles`);
       const urls = mw.backlinkRedirectsQueryUrls(articleIds, 7000);
+      logger.info(`Got [${urls.length}] redirect urls for [${articleIds.length}] articles`);
       try {
         const redirects = {};
         let redirectsCount = 0;
@@ -480,9 +480,13 @@ async function execute(argv) {
           }
         }
 
-        logger.log(`${redirectsCount} redirect(s) found for ids`);
+        logger.log(`${redirectsCount} redirect(s) found for ids: ${articleIds.join('|')}`);
         redis.saveRedirects(redirectsCount, redirects, finished);
       } catch (err) {
+        logger.warn(`Failed to get redirects for ids: [${articleIds.join('|')}], retrying`);
+        for (const id of articleIds) {
+          redirectQueue.push(id);
+        }
         finished(err);
       }
     } else {
@@ -505,9 +509,9 @@ async function execute(argv) {
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
       await new Promise((resolve, reject) => {
         articleListContentStream
+          .pipe(articleListWriteStream)
           .on('error', (err) => reject(err))
-          .on('end', resolve)
-          .pipe(articleListWriteStream);
+          .on('close', resolve);
       });
       zim.articleList = tmpArticleListPath;
     } catch (err) {
@@ -731,10 +735,10 @@ async function execute(argv) {
     logger.log('Reset redirects cache file (or create it)');
     fs.openSync(zim.redirectsFile, 'w');
 
-    logger.log('Getting redirects...');
+    logger.log('Storing redirects...');
     function cacheRedirect(redirectId, finished) {
       redis.getRedirect(redirectId, finished, (target) => {
-        logger.info(`Getting redirect ${redirectId} (to ${target})...`);
+        logger.info(`Storing redirect ${redirectId} (to ${target})...`);
         const line = 'A\t'
           + `${env.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
