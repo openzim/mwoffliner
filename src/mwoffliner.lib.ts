@@ -1573,6 +1573,10 @@ async function execute(argv) {
       }
 
       function saveArticle(articleId, finished, usingParsoidFallback = false) {
+        if (articleId === zim.mainPageId) {
+          usingParsoidFallback = true;
+        }
+
         const articleApiUrl = usingParsoidFallback
           ? `${parsoidFallbackUrl}${encodeURIComponent(articleId)}`
           : `${mcsUrl}${encodeURIComponent(articleId)}`;
