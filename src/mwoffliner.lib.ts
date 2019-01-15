@@ -485,7 +485,7 @@ async function execute(argv) {
         redis.saveRedirects(redirectsCount, redirects, finished);
       } catch (err) {
         logger.warn(`Failed to get redirects for ids: [${articleIds.join('|')}], retrying`);
-        articlesPerQuery = (articlesPerQuery - articlesPerQuery / 5);
+        articlesPerQuery = Math.max(1, Math.round(articlesPerQuery - articlesPerQuery / 5));
         for (const id of articleIds) {
           redirectQueue.push(id);
         }
