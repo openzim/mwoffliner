@@ -110,6 +110,11 @@ npm i
 ./watch.sh # Watch for changes in "src/*"
 ```
 
+### Code Style
+We follow a nearly exact `tslint:recommended` scheme - you can see more information here: [./tslint.json](./tslint.json)
+
+It's best to use TSLint to check your code as you develop, this project is pre-configured for development with VSCode and the TSLint plugin.
+
 ### Debugging
 There is a pre-configured debug config for [VSCode](https://code.visualstudio.com/), just click on the debugging tab.
 

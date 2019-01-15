@@ -89,9 +89,19 @@ class MediaWiki {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }
 
-  public backlinkRedirectsQueryUrl(articleIds: string[]) {
-    const articleIdString = articleIds.map(encodeURIComponent).join('|');
-    return `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&titles=${articleIdString}&rawcontinue=`;
+  public backlinkRedirectsQueryUrls(articleIds: string[], maxUrlLength: number): string[] {
+    const baseUrl = `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&rawcontinue=&titles=`;
+    const redirectUrls = articleIds.reduce((urls, articleId) => {
+      const encodedArticleId = encodeURIComponent(articleId);
+      const url = urls[urls.length - 1];
+      if (!urls.length || url.length + encodedArticleId.length > maxUrlLength) {
+        urls.push(baseUrl + encodedArticleId);
+      } else {
+        urls[urls.length - 1] += '|' + encodedArticleId;
+      }
+      return urls;
+    }, []);
+    return redirectUrls;
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
