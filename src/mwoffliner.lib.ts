@@ -50,7 +50,6 @@ async function execute(argv) {
     speed: _speed,
     adminEmail,
     localMcs,
-    customZimFavicon,
     verbose,
     minifyHtml,
     skipCacheCleaning,
@@ -82,19 +81,19 @@ async function execute(argv) {
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
     articleList: _articleList,
+    // tslint:disable-next-line:variable-name
+    customZimFavicon: _customZimFavicon,
     useCache,
   } = argv;
 
   let mcsUrl: string;
 
   const articleList = _articleList ? String(_articleList) : _articleList;
+  let customZimFavicon = _customZimFavicon;
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
   if (!U.isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
-
-  /* ZIM custom Favicon */
-  if (customZimFavicon && !(customZimFavicon.includes('http') || fs.existsSync(customZimFavicon))) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
 
   /* Number of parallel requests */
   if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
@@ -207,7 +206,7 @@ async function execute(argv) {
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
   const dumpId = `mwo-dump-${Date.now()}`;
-  const dumpTmpDir = path.join(zim.tmpDirectory, `${dumpId}`);
+  const dumpTmpDir = path.resolve(zim.tmpDirectory, `${dumpId}`);
   try {
     logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
     await U.mkdirPromise(dumpTmpDir);
@@ -220,6 +219,32 @@ async function execute(argv) {
     logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
     rimraf.sync(dumpTmpDir);
   });
+
+  /* ZIM custom Favicon */
+  if (customZimFavicon) {
+    const faviconPath = path.join(dumpTmpDir, 'favicon.png');
+    const faviconIsRemote = customZimFavicon.includes('http');
+    logger.log(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`);
+    let content;
+    if (faviconIsRemote) {
+      logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
+      content = await axios.get(customZimFavicon, { responseType: 'arraybuffer' })
+        .then((a) => a.data)
+        .catch((err) => {
+          throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`);
+        });
+    } else {
+      try {
+        content = fs.readFileSync(customZimFavicon);
+      } catch (err) {
+        throw new Error(`Failed to read custom zim favicon from [${customZimFavicon}]`);
+      }
+    }
+    fs.writeFileSync(faviconPath, content);
+    customZimFavicon = faviconPath;
+
+    if (!fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
+  }
 
   let parsoidFallbackUrl: string;
 
@@ -521,8 +546,7 @@ async function execute(argv) {
       });
       zim.articleList = tmpArticleListPath;
     } catch (err) {
-      logger.error(`Failed to download article list from [${zim.articleList}]`);
-      process.exit();
+      throw new Error(`Failed to download article list from [${zim.articleList}]`);
     }
   }
 
@@ -2250,15 +2274,6 @@ async function execute(argv) {
 
     if (customZimFavicon) {
       const faviconPath = env.htmlRootPath + 'favicon.png';
-      const faviconIsRemote = customZimFavicon.includes('http');
-      let content;
-      if (faviconIsRemote) {
-        logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
-        content = await axios.get(customZimFavicon, { responseType: 'arraybuffer' }).then((a) => a.data);
-      } else {
-        content = fs.readFileSync(customZimFavicon);
-      }
-      fs.writeFileSync(faviconPath, content);
       return resizeFavicon(faviconPath);
     } else {
       return downloader.downloadContent(mw.siteInfoUrl())
