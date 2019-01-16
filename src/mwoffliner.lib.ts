@@ -21,6 +21,7 @@ import * as path from 'path';
 import ServiceRunner from 'service-runner';
 import axios from 'axios';
 import { ZimCreator, ZimArticle } from 'libzim-binding';
+import rimraf from 'rimraf';
 
 import config from './config';
 import DU from './DOMUtils';
@@ -50,7 +51,6 @@ async function execute(argv) {
     speed: _speed,
     adminEmail,
     localMcs,
-    customZimFavicon,
     verbose,
     minifyHtml,
     skipCacheCleaning,
@@ -78,27 +78,23 @@ async function execute(argv) {
     resume,
     deflateTmpHtml,
     writeHtmlRedirects,
-    language,
     // tslint:disable-next-line:variable-name
     addNamespaces: _addNamespaces,
     // tslint:disable-next-line:variable-name
     articleList: _articleList,
+    // tslint:disable-next-line:variable-name
+    customZimFavicon: _customZimFavicon,
     useCache,
   } = argv;
 
-  /* Get language specific strings */
-  const strings = U.getStringsForLang(language || 'en', 'en');
+  let mcsUrl: string;
 
-  let mcsUrl: string = argv.mcsUrl;
-
-  const articleList = String(_articleList);
+  const articleList = _articleList ? String(_articleList) : _articleList;
+  let customZimFavicon = _customZimFavicon;
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
   if (!U.isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
-
-  /* ZIM custom Favicon */
-  if (customZimFavicon && !(customZimFavicon.includes('http') || fs.existsSync(customZimFavicon))) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
 
   /* Number of parallel requests */
   if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
@@ -164,7 +160,7 @@ async function execute(argv) {
     cacheDirectory: `${cacheDirectory || pathParser.resolve(process.cwd(), 'cac')}/`,
 
     // File where redirects might be save if --writeHtmlRedirects is not set
-    redirectsCacheFile: null,
+    redirectsFile: null,
 
     // Directory wehre everything is saved at the end of the process
     outputDirectory,
@@ -210,6 +206,49 @@ async function execute(argv) {
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
+  const dumpId = `mwo-dump-${Date.now()}`;
+  const dumpTmpDir = path.resolve(zim.tmpDirectory, `${dumpId}`);
+  try {
+    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
+    await U.mkdirPromise(dumpTmpDir);
+  } catch (err) {
+    logger.error(`Failed to create dump temporary directory, exiting`, err);
+    throw err;
+  }
+
+  process.on('exit', () => {
+    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
+    rimraf.sync(dumpTmpDir);
+  });
+
+  /* ZIM custom Favicon */
+  if (customZimFavicon) {
+    const faviconPath = path.join(dumpTmpDir, 'favicon.png');
+    const faviconIsRemote = customZimFavicon.includes('http');
+    logger.log(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`);
+    let content;
+    if (faviconIsRemote) {
+      logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
+      content = await axios.get(customZimFavicon, { responseType: 'arraybuffer' })
+        .then((a) => a.data)
+        .catch((err) => {
+          throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`);
+        });
+    } else {
+      try {
+        content = fs.readFileSync(customZimFavicon);
+      } catch (err) {
+        throw new Error(`Failed to read custom zim favicon from [${customZimFavicon}]`);
+      }
+    }
+    fs.writeFileSync(faviconPath, content);
+    customZimFavicon = faviconPath;
+
+    if (!fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
+  }
+
+  let parsoidFallbackUrl: string;
+
   if (localMcs) {
     // Start Parsoid
     logger.log('Starting Parsoid & MCS');
@@ -253,8 +292,10 @@ async function execute(argv) {
     });
     const domain = (new URL(mw.base)).host;
     mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+    parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
   } else {
     mcsUrl = `${mw.base}api/rest_v1/page/mobile-sections/`;
+    parsoidFallbackUrl = `${mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
   }
 
   /* ********************************* */
@@ -322,47 +363,64 @@ async function execute(argv) {
   }, speed * 5);
 
   /* Get ids */
+  let articlesPerQuery = 500;
   const redirectQueue = async.cargo(async (articleIds, finished) => {
-    const articleId = articleIds[0];
     if (articleIds && articleIds.length) {
-      logger.info(`Getting redirects for [${articleIds.length}] articles`);
-      const url = mw.backlinkRedirectsQueryUrl(articleIds);
-
+      const urls = mw.backlinkRedirectsQueryUrls(articleIds, articlesPerQuery, 7000);
+      logger.info(`Got [${urls.length}] redirect urls for [${articleIds.length}] articles`);
       try {
-        const { content } = await downloader.downloadContent(url);
-        const body = content.toString();
-        if (!JSON.parse(body).error) {
-          const redirects = {};
-          let redirectsCount = 0;
-          const { pages, normalized } = JSON.parse(body).query;
+        const redirects = {};
+        let redirectsCount = 0;
+        const { pages, normalized } = await (
+          Promise.all(urls.map((url) => downloader.downloadContent(url)))
+            .then((resps) => {
+              return resps.reduce((acc, { content }) => {
+                const body = content.toString();
+                const parsedBody = JSON.parse(body);
+                if (parsedBody.error) {
+                  throw new Error(`Failed to parse JSON response: [${parsedBody.error}]`);
+                }
+                const { pages, normalized } = parsedBody.query;
 
-          const fromXTo = normalized.reduce((acc, item) => {
-            acc[item.to] = item.from;
-            return acc;
-          }, {});
+                acc.normalized = acc.normalized.concat(normalized);
+                Object.assign(acc.pages, pages);
+                return acc;
+              }, { pages: {}, normalized: [] });
+            })
+        );
 
-          const pageIds = Object.keys(pages);
+        const fromXTo = normalized.reduce((acc, item) => {
+          acc[item.to] = item.from;
+          return acc;
+        }, {});
 
-          for (const pageId of pageIds) {
-            const { redirects } = pages[pageId];
-            for (const entry of redirects) {
-              const originalArticleId = fromXTo[entry.title];
-              const title = entry.title.replace(/ /g, mw.spaceDelimiter);
+        const pageIds = Object.keys(pages);
+
+        for (const pageId of pageIds) {
+          // tslint:disable-next-line:variable-name
+          const { redirects: _redirects, title } = pages[pageId];
+          const originalArticleId = fromXTo[title] || title;
+          if (_redirects) {
+            for (const redirect of _redirects) {
+              const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
               redirects[title] = originalArticleId;
               redirectsCount += 1;
 
               if (title === zim.mainPageId) {
-                zim.mainPageId = articleId;
+                zim.mainPageId = originalArticleId;
               }
             }
           }
-
-          logger.info(`${redirectsCount} redirect(s) found for ids`);
-          redis.saveRedirects(redirectsCount, redirects, finished);
-        } else {
-          finished(JSON.parse(body).error);
         }
+
+        logger.log(`${redirectsCount} redirect(s) found`);
+        redis.saveRedirects(redirectsCount, redirects, finished);
       } catch (err) {
+        logger.warn(`Failed to get redirects for ids: [${articleIds.join('|')}], retrying`);
+        articlesPerQuery = Math.max(1, Math.round(articlesPerQuery - articlesPerQuery / 5));
+        for (const id of articleIds) {
+          redirectQueue.push(id);
+        }
         finished(err);
       }
     } else {
@@ -378,20 +436,20 @@ async function execute(argv) {
 
   if (zim.articleList && zim.articleList.includes('http')) {
     try {
-      const tmpArticleListPath = path.join(zim.tmpDirectory, 'articleList');
+      const fileName = zim.articleList.split('/').slice(-1)[0];
+      const tmpArticleListPath = path.join(dumpTmpDir, fileName);
       logger.log(`Downloading article list from [${zim.articleList}] to [${tmpArticleListPath}]`);
       const { data: articleListContentStream } = await axios.get(zim.articleList, { responseType: 'stream' });
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
       await new Promise((resolve, reject) => {
         articleListContentStream
+          .pipe(articleListWriteStream)
           .on('error', (err) => reject(err))
-          .on('end', resolve)
-          .pipe(articleListWriteStream);
+          .on('close', resolve);
       });
       zim.articleList = tmpArticleListPath;
     } catch (err) {
-      logger.error(`Failed to download article list from [${zim.articleList}]`, err);
-      throw err;
+      throw new Error(`Failed to download article list from [${zim.articleList}]`);
     }
   }
 
@@ -413,21 +471,17 @@ async function execute(argv) {
   }
   await env.checkResume();
   await getArticleIds(redirectQueue);
-  if (useCache) {
-    await cacheRedirects();
-  }
+  zim.redirectsFile = path.join(dumpTmpDir, env.computeFilenameRadical(false, true, false) + '.redirects');
+  await getRedirects();
+
+  /* Get language specific strings */
+  const strings = U.getStringsForLang(zim.langIso2 || 'en', 'en');
 
   await doSeries(
     env.dumps.map((dump) => {
       return () => doDump(env, dump);
     }),
   );
-
-  if (articleList && articleList.includes('http')) {
-    // We downloaded the list to `zim.articleList`
-    logger.log(`Deleting file [${zim.articleList}]`);
-    unlinkSync(zim.articleList);
-  }
 
   if (!useCache || skipCacheCleaning) {
     logger.log('Skipping cache cleaning...');
@@ -595,19 +649,19 @@ async function execute(argv) {
     });
   }
 
-  function cacheRedirects() {
+  function getRedirects() {
     logger.log('Reset redirects cache file (or create it)');
-    fs.openSync(zim.redirectsCacheFile, 'w');
+    fs.openSync(zim.redirectsFile, 'w');
 
-    logger.log('Caching redirects...');
+    logger.log('Storing redirects...');
     function cacheRedirect(redirectId, finished) {
       redis.getRedirect(redirectId, finished, (target) => {
-        logger.info(`Caching redirect ${redirectId} (to ${target})...`);
+        logger.info(`Storing redirect ${redirectId} (to ${target})...`);
         const line = 'A\t'
           + `${env.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
           + `${env.getArticleBase(target, false)}\n`;
-        fs.appendFile(zim.redirectsCacheFile, line, finished);
+        fs.appendFile(zim.redirectsFile, line, finished);
       });
     }
 
@@ -759,10 +813,10 @@ async function execute(argv) {
             apiParameterOnly = 'styles';
           }
 
-          logger.info(`Getting [${type}] module [${module}]`);
           const moduleApiUrl = encodeURI(
-            `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
+            `${mw.modulePath}?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
           );
+          logger.info(`Getting [${type}] module [${moduleApiUrl}]`);
           return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
             .then((redisResult) => {
               if (redisResult === 1) {
@@ -1441,9 +1495,14 @@ async function execute(argv) {
         }
       }
 
-      function saveArticle(articleId, finished) {
-        let html = '';
-        const articleApiUrl = `${mcsUrl}${encodeURIComponent(articleId)}`;
+      function saveArticle(articleId, finished, usingParsoidFallback = false) {
+        if (articleId === zim.mainPageId) {
+          usingParsoidFallback = true;
+        }
+
+        const articleApiUrl = usingParsoidFallback
+          ? `${parsoidFallbackUrl}${encodeURIComponent(articleId)}`
+          : `${mcsUrl}${encodeURIComponent(articleId)}`;
         logger.log(`Getting (mobile) article from ${articleApiUrl}`);
         fetch(articleApiUrl, {
           method: 'GET',
@@ -1451,89 +1510,104 @@ async function execute(argv) {
         })
           .then((response) => response.json())
           .then((json) => {
-            // set the first section (open by default)
-            html += leadSectionTemplate({
-              lead_display_title: json.lead.displaytitle,
-              lead_section_text: json.lead.sections[0].text,
-              strings,
-            });
-
-            // set all other section (closed by default)
-            if (!env.nodet) {
-              json.remaining.sections.forEach((oneSection, i) => {
-                if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
-                  html += sectionTemplate({
-                    section_index: i,
-                    section_id: i,
-                    section_anchor: 'TopLevelSection',
-                    section_line: 'Disambiguation',
-                    section_text: '',
-                    strings,
-                  });
-                }
-
-                // if below is to test if we need to nest a subsections into a section
-                if (oneSection.toclevel === 1) {
-                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
-                  html += sectionTemplate({
-                    section_index: i + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings,
-                  });
-                } else {
-                  const replacement = subSectionTemplate({
-                    section_index: i + 1,
-                    section_toclevel: oneSection.toclevel + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings,
-                  });
-                  html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
-                }
+            let html = '';
+            if (usingParsoidFallback) {
+              if (json && json.visualeditor) {
+                html = json.visualeditor.content;
+              } else if (json && (json.contentmodel === 'wikitext' || (json.html && json.html.body))) {
+                html = json.html.body;
+              } else if (json && json.error) {
+                console.error(`Error by retrieving article: ${json.error.info}`);
+              }
+            } else {
+              // set the first section (open by default)
+              html += leadSectionTemplate({
+                lead_display_title: json.lead.displaytitle,
+                lead_section_text: json.lead.sections[0].text,
+                strings,
               });
+
+              // set all other section (closed by default)
+              if (!env.nodet) {
+                json.remaining.sections.forEach((oneSection, i) => {
+                  if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
+                    html += sectionTemplate({
+                      section_index: i,
+                      section_id: i,
+                      section_anchor: 'TopLevelSection',
+                      section_line: 'Disambiguation',
+                      section_text: '',
+                      strings,
+                    });
+                  }
+
+                  // if below is to test if we need to nest a subsections into a section
+                  if (oneSection.toclevel === 1) {
+                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
+                    html += sectionTemplate({
+                      section_index: i + 1,
+                      section_id: oneSection.id,
+                      section_anchor: oneSection.anchor,
+                      section_line: oneSection.line,
+                      section_text: oneSection.text,
+                      strings,
+                    });
+                  } else {
+                    const replacement = subSectionTemplate({
+                      section_index: i + 1,
+                      section_toclevel: oneSection.toclevel + 1,
+                      section_id: oneSection.id,
+                      section_anchor: oneSection.anchor,
+                      section_line: oneSection.line,
+                      section_text: oneSection.text,
+                      strings,
+                    });
+                    html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
+                  }
+                });
+              }
+              html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
             }
 
-            html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
-            buildArticleFromApiData();
+            return html;
+          })
+          .then((html) => {
+            if (html) {
+              const articlePath = env.getArticlePath(articleId);
+              const prepareAndSaveArticle = async.compose(
+                writeArticle,
+                setFooter,
+                applyOtherTreatments,
+                rewriteUrls,
+                treatMedias,
+                storeDependencies,
+                parseHtml,
+              );
+
+              logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
+              prepareAndSaveArticle(html, articleId, (error) => {
+                if (!error) {
+                  logger.info(`Successfully dumped article ${articleId}`);
+                  finished();
+                } else {
+                  logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
+                  finished(error);
+                }
+              });
+            } else {
+              throw new Error(`No HTML was found`);
+            }
           })
           .catch((e) => {
             logger.error(`Error handling json response from api. ${e}`);
-            buildArticleFromApiData();
+            if (!usingParsoidFallback) {
+              saveArticle(articleId, finished, true);
+              logger.log(`Failed to get mobile article [${articleId}], retrying with ParsoidFallback`);
+            } else {
+              delete articleDetailXId[articleId];
+              finished();
+            }
           });
-
-        function buildArticleFromApiData() {
-          if (html) {
-            const articlePath = env.getArticlePath(articleId);
-            const prepareAndSaveArticle = async.compose(
-              writeArticle,
-              setFooter,
-              applyOtherTreatments,
-              rewriteUrls,
-              treatMedias,
-              storeDependencies,
-              parseHtml,
-            );
-
-            logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
-            prepareAndSaveArticle(html, articleId, (error) => {
-              if (!error) {
-                logger.info(`Successfully dumped article ${articleId}`);
-                finished();
-              } else {
-                logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
-                finished(error);
-              }
-            });
-          } else {
-            delete articleDetailXId[articleId];
-            finished();
-          }
-        }
       }
 
       logger.log('Saving articles...');
@@ -1762,7 +1836,6 @@ async function execute(argv) {
             }
           }
         });
-
         if (redirectQueueValues.length) { redirectQueue.push(redirectQueueValues); }
         redis.saveArticles(details);
       }
@@ -2116,15 +2189,6 @@ async function execute(argv) {
 
     if (customZimFavicon) {
       const faviconPath = env.htmlRootPath + 'favicon.png';
-      const faviconIsRemote = customZimFavicon.includes('http');
-      let content;
-      if (faviconIsRemote) {
-        logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
-        content = await axios.get(customZimFavicon, { responseType: 'arraybuffer' }).then((a) => a.data);
-      } else {
-        content = fs.readFileSync(customZimFavicon);
-      }
-      fs.writeFileSync(faviconPath, content);
       return resizeFavicon(zimCreator, faviconPath);
     } else {
       return downloader.downloadContent(mw.siteInfoUrl())
@@ -2143,7 +2207,7 @@ async function execute(argv) {
           const logoContent = await downloader.downloadContent(logoUrl);
           await writeFilePromise(faviconPath, logoContent.content);
           if (ext !== 'png') {
-            console.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+            logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
             await new Promise((resolve, reject) => {
               exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
                 if (err) {

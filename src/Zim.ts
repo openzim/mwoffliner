@@ -3,8 +3,6 @@ import ci from 'case-insensitive';
 import { exec, spawn } from 'child_process';
 import domino from 'domino';
 import homeDirExpander from 'expand-home-dir';
-import fs from 'fs';
-import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser from 'url';
 
@@ -17,9 +15,10 @@ class Zim {
   public tmpDirectory: string;
   public env: OfflinerEnv;
   public cacheDirectory: string;
-  public redirectsCacheFile: string;
+  public redirectsFile: string;
   public publisher: any;
   public tags: any;
+  public langIso2: any;
   public langIso3: any;
   public mainPageId: any;
   public withZimFullTextIndex: any;
@@ -42,8 +41,8 @@ class Zim {
     const self = this;
     return new Promise((resolve, reject) => {
       async.series([ // TODO: convert to Promise (doSeries)
-        (finished) => { mkdirp(self.outputDirectory, finished); },
-        (finished) => { mkdirp(self.tmpDirectory, finished); },
+        (finished) => { mkdirPromise(self.outputDirectory).then(finished as any, finished); },
+        (finished) => { mkdirPromise(self.tmpDirectory).then(finished as any, finished); },
       ], (error) => {
         if (error) {
           reject(`Unable to create mandatory directories : ${error}`);
@@ -73,19 +72,9 @@ class Zim {
   public prepareCache() {
     const self = this;
     const { env } = self;
-    return new Promise((resolve, reject) => {
-      env.logger.log('Preparing cache...');
-      this.cacheDirectory = `${this.cacheDirectory + env.computeFilenameRadical(true, true, true)}/`;
-      this.redirectsCacheFile = `${this.cacheDirectory + env.computeFilenameRadical(false, true, true)}.redirects`;
-      mkdirp(`${this.cacheDirectory}m/`, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          fs.writeFileSync(`${self.cacheDirectory}ref`, '42');
-          resolve();
-        }
-      });
-    });
+    env.logger.log('Preparing cache...');
+    this.cacheDirectory = `${this.cacheDirectory + env.computeFilenameRadical(true, true, true)}/`;
+    return mkdirPromise(`${this.cacheDirectory}m/`);
   }
 
   public async getSubTitle(this: Zim) {
@@ -181,13 +170,13 @@ class Zim {
         exec('sync', () => {
           const zimPath = zim.computeZimRootPath();
           const zimTags = zim.computeZimTags();
-          const cmd = `zimwriterfs --welcome=index.htm --favicon=favicon.png --language=${zim.langIso3}${zim.mainPageId ? ` --welcome=${env.getArticleBase(zim.mainPageId)}` : ' --welcome=index.htm'}${env.deflateTmpHtml ? ' --inflateHtml ' : ''}${env.verbose ? ' --verbose ' : ''}${zimTags ? ` --tags="${zimTags}"` : ''} --name="${zim.computeZimName()}"${zim.withZimFullTextIndex ? ' --withFullTextIndex' : ''}${env.writeHtmlRedirects ? '' : ` --redirects="${zim.redirectsCacheFile}"`} --title="${zim.name}" --description="${zim.description || zim.subTitle || zim.name}" --creator="${zim.creator}" --publisher="${zim.publisher}" "${env.htmlRootPath}" "${zimPath}"`;
+          const cmd = `zimwriterfs --welcome=index.htm --favicon=favicon.png --language=${zim.langIso3}${zim.mainPageId ? ` --welcome=${env.getArticleBase(zim.mainPageId)}` : ' --welcome=index.htm'}${env.deflateTmpHtml ? ' --inflateHtml ' : ''}${env.verbose ? ' --verbose ' : ''}${zimTags ? ` --tags="${zimTags}"` : ''} --name="${zim.computeZimName()}"${zim.withZimFullTextIndex ? ' --withFullTextIndex' : ''}${env.writeHtmlRedirects && zim.redirectsFile ? '' : ` --redirects="${zim.redirectsFile}"`} --title="${zim.name}" --description="${zim.description || zim.subTitle || zim.name}" --creator="${zim.creator}" --publisher="${zim.publisher}" "${env.htmlRootPath}" "${zimPath}"`;
           logger.log(`Building ZIM file ${zimPath} (${cmd})...`);
           logger.log(`RAID: ${zim.computeZimName()}`);
           zim.executeTransparently('zimwriterfs', [
             env.deflateTmpHtml ? '--inflateHtml' : '',
             env.verbose ? '--verbose' : '',
-            env.writeHtmlRedirects ? '' : `--redirects=${zim.redirectsCacheFile}`,
+            env.writeHtmlRedirects || !zim.redirectsFile /* Not set when useCache=false */ ? '' : `--redirects=${zim.redirectsFile}`,
             zim.withZimFullTextIndex ? '--withFullTextIndex' : '',
             zimTags ? `--tags=${zimTags}` : '',
             zim.mainPageId ? `--welcome=${env.getArticleBase(zim.mainPageId)}` : '--welcome=index.htm',
