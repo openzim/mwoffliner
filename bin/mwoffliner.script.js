@@ -44,6 +44,9 @@ mwofflinerLib.execute(argv)
             loggableErr = JSON.stringify(err, null, '\t');
         } catch (err) { /* NOOP */ }
         console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr);
+        if(err && err.message) {
+            console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
+        }
         process.exit(2);
     });
 
