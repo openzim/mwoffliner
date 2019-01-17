@@ -35,6 +35,7 @@ import * as U from './Utils';
 import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise } from './Utils';
 import Zim from './Zim';
 import packageJSON from '../package.json';
+import { ZimCreatorFs } from './ZimCreatorFs';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -365,6 +366,7 @@ async function execute(argv) {
   /* Get ids */
   let articlesPerQuery = 500;
   const redirectQueue = async.cargo(async (articleIds, finished) => {
+    articleIds = articleIds.filter((id) => id.trim());
     if (articleIds && articleIds.length) {
       const urls = mw.backlinkRedirectsQueryUrls(articleIds, articlesPerQuery, 7000);
       logger.info(`Got [${urls.length}] redirect urls for [${articleIds.length}] articles`);
@@ -501,10 +503,12 @@ async function execute(argv) {
     env.keepHtml = env.nozim || env.keepHtml;
     env.htmlRootPath = env.computeHtmlRootPath();
 
-    const outZim = path.join(zim.outputDirectory, zim.computeZimName() + '.zim');
+    const outZim = path.resolve(zim.outputDirectory, env.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
 
-    const zimCreator = new ZimCreator(outZim, {
+    const zimCreatorConstructor = env.nozim ? ZimCreatorFs : ZimCreator;
+
+    const zimCreator = new zimCreatorConstructor(outZim, {
       welcome: zim.mainPageId ? env.getArticleBase(zim.mainPageId) : 'index.htm',
       favicon: 'favicon.png',
     }, {
@@ -2188,8 +2192,7 @@ async function execute(argv) {
     }
 
     if (customZimFavicon) {
-      const faviconPath = env.htmlRootPath + 'favicon.png';
-      return resizeFavicon(zimCreator, faviconPath);
+      return resizeFavicon(zimCreator, customZimFavicon);
     } else {
       return downloader.downloadContent(mw.siteInfoUrl())
         .then(async ({ content }) => {
