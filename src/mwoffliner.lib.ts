@@ -462,6 +462,7 @@ async function execute(argv) {
   /* Get ids */
   let articlesPerQuery = 500;
   const redirectQueue = async.cargo(async (articleIds, finished) => {
+    articleIds = articleIds.filter((id) => id);
     if (articleIds && articleIds.length) {
       const urls = mw.backlinkRedirectsQueryUrls(articleIds, articlesPerQuery, 7000);
       logger.info(`Got [${urls.length}] redirect urls for [${articleIds.length}] articles`);
@@ -486,10 +487,12 @@ async function execute(argv) {
             })
         );
 
-        const fromXTo = normalized.reduce((acc, item) => {
-          acc[item.to] = item.from;
-          return acc;
-        }, {});
+        const fromXTo = normalized
+          .filter((a) => a)
+          .reduce((acc, item) => {
+            acc[item.to] = item.from;
+            return acc;
+          }, {});
 
         const pageIds = Object.keys(pages);
 
@@ -514,6 +517,7 @@ async function execute(argv) {
         redis.saveRedirects(redirectsCount, redirects, finished);
       } catch (err) {
         logger.warn(`Failed to get redirects for ids: [${articleIds.join('|')}], retrying`);
+        logger.error(err);
         articlesPerQuery = Math.max(1, Math.round(articlesPerQuery - articlesPerQuery / 5));
         for (const id of articleIds) {
           redirectQueue.push(id);
