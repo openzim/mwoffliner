@@ -75,7 +75,7 @@ class OfflinerEnv {
       }
       radical += langSuffix;
     }
-    if (!withoutSelection) {
+    if (!withoutSelection && !this.filenamePrefix) {
       if (this.zim.articleList) {
         radical += `_${pathParser.basename(this.zim.articleList, pathParser.extname(this.zim.articleList)).toLowerCase().replace(/ /g, this.mw.spaceDelimiter)}`;
       } else {
