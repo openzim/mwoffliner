@@ -1,15 +1,13 @@
 import Downloader from './Downloader';
-import Logger from './Logger';
+import logger from './Logger';
 
 import countryLanguage from 'country-language';
 import domino from 'domino';
 import urlParser from 'url';
-import * as U from './Utils';
 import OfflinerEnv from './OfflinerEnv';
 
 // Stub for now
 class MediaWiki {
-  public logger: Logger;
   public base: string;
   public wikiPath: string;
   public apiPath: string;
@@ -30,8 +28,7 @@ class MediaWiki {
   };
   public namespacesToMirror: string[];
 
-  constructor(logger: Logger, config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; }) {
-    this.logger = logger;
+  constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; }) {
     // Normalize args
     this.base = `${config.base.replace(/\/$/, '')}/`;
     this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki/';
@@ -89,23 +86,6 @@ class MediaWiki {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }
 
-  public backlinkRedirectsQueryUrls(articleIds: string[], maxArticlesPerUrl: number, maxUrlLength: number): string[] {
-    const baseUrl = `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&rawcontinue=&titles=`;
-    const redirectUrls = articleIds.reduce(({ urls, activeUrlArticleCount }, articleId) => {
-      const encodedArticleId = encodeURIComponent(articleId);
-      const url = urls[urls.length - 1];
-      if (!urls.length || url.length + encodedArticleId.length > maxUrlLength || activeUrlArticleCount >= maxArticlesPerUrl) {
-        urls.push(baseUrl + encodedArticleId);
-        activeUrlArticleCount = 1;
-      } else {
-        urls[urls.length - 1] += '|' + encodedArticleId;
-        activeUrlArticleCount += 1;
-      }
-      return { urls, activeUrlArticleCount };
-    }, { urls: [], activeUrlArticleCount: 0 });
-    return redirectUrls.urls;
-  }
-
   public pageGeneratorQueryUrl(namespace: string, init: string) {
     return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].num}&format=json&rawcontinue=${init}`;
   }
@@ -116,7 +96,6 @@ class MediaWiki {
 
   public async getTextDirection(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
     const self = this;
-    const { logger } = self;
     logger.log('Getting text direction...');
     const { content } = await downloader.downloadContent(this.webUrl);
     const body = content.toString();
@@ -137,7 +116,7 @@ class MediaWiki {
 
   public async getSiteInfo(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
     const self = this;
-    this.logger.log('Getting web site name...');
+    logger.log('Getting web site name...');
     const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const { content } = await downloader.downloadContent(url);
     const body = content.toString();
@@ -205,7 +184,7 @@ class MediaWiki {
 
       return null; /* Interwiki link? -- return null */
     } catch (error) {
-      this.logger.warn(`Unable to parse href ${href}`);
+      logger.warn(`Unable to parse href ${href}`);
       return null;
     }
   }

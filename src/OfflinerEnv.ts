@@ -11,22 +11,15 @@ class OfflinerEnv {
   public nopdf: boolean;
   public nozim: boolean;
   public nodet: boolean;
-  public verbose: boolean;
-  public ltr: boolean;
-  public downloader: Downloader;
   public htmlRootPath: string;
   public contentDate: string;
-  public dumps: string[];
-  public zim: any;
-  public mw: any;
   public filenamePrefix: any;
   public resume: boolean;
-  public logger: any;
   public keepHtml: any;
   public writeHtmlRedirects: any;
   public deflateTmpHtml: any;
 
-  constructor(format, envObjs) {
+  constructor(envObjs) {
     Object.assign(this, envObjs);
     // output config (FIXME: Does this belong in Zim?)
     this.nopic = false;
@@ -35,27 +28,12 @@ class OfflinerEnv {
     this.nozim = false;
     this.nodet = false;
     // Script direction (defaults to ltr)
-    this.ltr = true;
     this.htmlRootPath = '';
     // Content date (FIXME: Does this belong in Zim?)
     const date = new Date();
     this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
     // Compute dump formats
-    this.dumps = [''];
-    if (format) {
-      if (format instanceof Array) {
-        this.dumps = [];
-        const self = this;
-        format.forEach((value) => {
-          self.dumps.push(value === true ? '' : value);
-        });
-      } else if (format !== true) {
-        this.dumps = [format];
-      }
-    }
-    // Update the other config objects
-    this.mw.env = this;
-    this.zim.env = this;
+    
   }
 
   public computeFilenameRadical(withoutSelection?, withoutContentSpecifier?, withoutDate?) {
@@ -134,7 +112,7 @@ class OfflinerEnv {
   }
 
   public checkResume() {
-    return new Promise((resolve, reject) => { // TODO: convert to promises
+    return new Promise((resolve, reject) => {
       for (let i = 0; i < this.dumps.length; i += 1) {
         const dump = this.dumps[i];
         this.nopic = dump.toString().search('nopic') >= 0;

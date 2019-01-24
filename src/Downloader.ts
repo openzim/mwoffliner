@@ -1,14 +1,13 @@
 import * as async from 'async';
-import axios from 'axios';
-import fs from 'fs';
-import urlParser, { UrlWithStringQuery } from 'url';
-import Logger from './Logger';
-import MediaWiki from './MediaWiki';
+import axios, { AxiosRequestConfig } from 'axios';
+import logger from './Logger';
 
 import * as imagemin from 'imagemin';
 import imageminJpegtran from 'imagemin-jpegtran';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
+import { renderDesktopArticle, renderMCSArticle } from './util';
+import MediaWiki from './MediaWiki';
 
 const imageminOptions = {
   plugins: [
@@ -18,26 +17,32 @@ const imageminOptions = {
   ],
 };
 
-function getPort(urlObj: UrlWithStringQuery) {
-  return urlObj.port || (urlObj.protocol && urlObj.protocol.substring(0, 5) === 'https' ? 443 : 80);
-}
-
 class Downloader {
-  public logger: Logger;
+  public mw: MediaWiki;
   public uaString: string;
   public loginCookie: string = '';
-  public requestTimeout: any;
-  public webUrlPort: string | number;
+  public requestTimeout: number;
+  public mcsUrl: string;
+  public parsoidUrl: string;
 
-  constructor(logger: Logger, mw: MediaWiki, uaString: string, reqTimeout: any) {
-    this.logger = logger;
+  constructor(mw: MediaWiki, uaString: string, reqTimeout: number) {
+    this.mw = mw;
     this.uaString = uaString;
-    this.loginCookie = '';
     this.requestTimeout = reqTimeout;
-    this.webUrlPort = getPort(urlParser.parse(`${mw.base}${mw.wikiPath}/`));
+    this.loginCookie = '';
+
+
+    // TODO: generate these
+    this.mcsUrl = ''//mcsUrl;
+    this.parsoidUrl = ''//parsoidUrl;
   }
 
-  public getRequestOptionsFromUrl(url, compression) {
+  public async initLocalMcs() {
+    // TODO: start Parsoid and MCS
+    // Update this.mcsUrl and this.parsoidUrl
+  }
+
+  private getRequestOptionsFromUrl(url, compression): AxiosRequestConfig {
     const headers = {
       'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
       'cache-control': 'public, max-stale=2678400',
@@ -49,8 +54,43 @@ class Downloader {
       url,
       headers,
       responseType: 'arraybuffer',
+      timeout: this.requestTimeout,
       method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
     };
+  }
+
+  public async getArticle(articleId: string, useParsoidFallback = false) {
+
+    const articleApiUrl = useParsoidFallback
+      ? `${this.parsoidUrl}${encodeURIComponent(articleId)}`
+      : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
+
+    logger.log(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
+
+    try {
+      const json = await axios(articleApiUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      }).then((response) => response.data);
+
+
+      if (useParsoidFallback) {
+        return renderDesktopArticle(json);
+      } else {
+        return renderMCSArticle(json);
+      }
+
+    } catch (err) {
+      if (!useParsoidFallback) {
+        return this.getArticle(articleId, true);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  public getJSON<T>(url: string) {
+    return axios.get<T>(url, { responseType: 'json' }).then(a => a.data);
   }
 
   public downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
@@ -59,7 +99,7 @@ class Downloader {
         return reject(new Error(`Parameter [${url}] is not a valid url`));
       }
       let responseHeaders = {};
-      this.logger.info(`Downloading [${decodeURI(url)}]`);
+      logger.info(`Downloading [${decodeURI(url)}]`);
       async.retry(3, async (finished) => {
         try {
           const resp = await axios(this.getRequestOptionsFromUrl(url, true));
@@ -72,7 +112,7 @@ class Downloader {
         }
       }, (error, data) => {
         if (error) {
-          this.logger.error(`Absolutely unable to retrieve async. URL: ${error}`);
+          logger.error(`Absolutely unable to retrieve async. URL: ${error}`);
           reject(error);
           /* Unfortunately, we can not do that because there are
            * articles which simply will not be parsed correctly by

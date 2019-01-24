@@ -29,4 +29,6 @@ class Logger {
   }
 }
 
-export default Logger;
+// export default Logger;
+const logger = new Logger(process.env.verbose)
+export default logger

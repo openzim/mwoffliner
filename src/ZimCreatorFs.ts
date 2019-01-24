@@ -1,11 +1,11 @@
 import { ZimCreator, ZimArticle } from 'libzim-binding';
 import * as mkdirp from 'mkdirp';
-import { writeFilePromise } from './Utils';
 import * as path from 'path';
 import { rmdirSync } from 'fs';
+import { writeFilePromise } from './util';
 
 class ZimCreatorFs extends ZimCreator {
-    public _createZimCreator(fileName: string, welcome: string) {
+    public _createZimCreator({ fileName }) {
         try {
             rmdirSync(fileName);
         } catch (err) { /* NOOP */ }

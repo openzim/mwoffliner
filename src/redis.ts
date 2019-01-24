@@ -1,17 +1,17 @@
 import * as async from 'async';
 import redis from 'redis';
-import * as U from './Utils';
+import Logger from './Logger'
+
+const logger = new Logger(true); // TODO: pass in verbosity
 
 class Redis {
-  public env: any;
   public redisClient: any;
   public redisRedirectsDatabase: string;
   public redisMediaIdsDatabase: string;
   public redisArticleDetailsDatabase: string;
   public redisModuleDatabase: string;
   public redisCachedMediaToCheckDatabase: string;
-  constructor(env, argv, config) {
-    this.env = env;
+  constructor(argv, config) {
     this.redisClient = redis.createClient(argv.redis || config.defaults.redisConfig);
     const redisNamePrefix = new Date().getTime();
     this.redisRedirectsDatabase = `${redisNamePrefix}r`;
@@ -22,13 +22,12 @@ class Redis {
   }
 
   public quit() {
-    this.env.logger.log('Quitting redis databases...');
+    logger.log('Quitting redis databases...');
     this.redisClient.quit();
   }
 
   public flushDBs() {
     return new Promise((resolve, reject) => {
-      const { logger } = this.env;
       this.redisClient.del(
         this.redisRedirectsDatabase,
         this.redisMediaIdsDatabase,
@@ -72,7 +71,6 @@ class Redis {
 
   public processAllRedirects(speed, keyProcessor, errorMsg, successMsg) {
     return new Promise((resolve, reject) => {
-      const { logger } = this.env;
       this.redisClient.hkeys(this.redisRedirectsDatabase, (error, keys) => {
         if (error) {
           reject(`Unable to get redirect keys from redis: ${error}`);
@@ -152,7 +150,7 @@ class Redis {
 
   public delMediaDB() {
     return new Promise((resolve, reject) => {
-      this.env.logger.log('Dumping finished with success.');
+      logger.log('Dumping finished with success.');
       this.redisClient.del(this.redisMediaIdsDatabase, (err) => {
         if (err) {
           reject(err);
