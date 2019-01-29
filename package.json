@@ -40,7 +40,6 @@
     "node": ">=8.12.0"
   },
   "dependencies": {
-    "@percy/puppeteer": "^1.0.0-beta.5",
     "@types/async": "^2.0.49",
     "@types/node": "^10.10.1",
     "@types/yargs": "^12.0.0",
@@ -81,8 +80,9 @@
     "zim"
   ],
   "devDependencies": {
-    "puppeteer": "^1.11.0",
-    "eslint": "^4.18.2"
+    "eslint": "^4.18.2",
+    "@percy/puppeteer": "^1.0.0-beta.5",
+    "puppeteer": "^1.11.0"
   },
   "snyk": true
 }
