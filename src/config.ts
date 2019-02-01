@@ -1,5 +1,5 @@
 
-export default {
+const config = {
   userAgent: 'MWOffliner/HEAD',
 
   defaults: {
@@ -98,3 +98,10 @@ export default {
     },
   },
 };
+
+type Config = typeof config;
+
+export {
+  config,
+  Config
+}

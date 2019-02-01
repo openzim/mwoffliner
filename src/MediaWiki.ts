@@ -5,6 +5,7 @@ import countryLanguage from 'country-language';
 import domino from 'domino';
 import urlParser from 'url';
 import OfflinerEnv from './OfflinerEnv';
+import * as U from './util';
 
 // Stub for now
 class MediaWiki {
@@ -90,11 +91,11 @@ class MediaWiki {
     return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].num}&format=json&rawcontinue=${init}`;
   }
 
-  public articleApiUrl(articleId) {
+  public articleApiUrl(articleId: string) {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
 
-  public async getTextDirection(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
+  public async getTextDirection(env: OfflinerEnv, downloader: Downloader) {
     const self = this;
     logger.log('Getting text direction...');
     const { content } = await downloader.downloadContent(this.webUrl);

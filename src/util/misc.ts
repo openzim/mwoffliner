@@ -3,6 +3,9 @@ import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser, { UrlWithStringQuery } from 'url';
 import { exec } from 'child_process';
+import { ZimCreator, ZimArticle } from 'libzim-binding';
+import { Config } from '../config';
+import logger from '../Logger';
 
 export function isValidEmail(email) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -195,4 +198,63 @@ export function getStringsForLang(language, fallbackLanguage = 'en') {
     strings = require(`../translation/${fallbackLanguage}.json`);
   }
   return strings;
+}
+
+export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
+  const cssPromises = config.output.cssResources
+    .concat(config.output.mainPageCssResources)
+    .map(async (css) => {
+      try {
+        const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../res/${css}.css`));
+        const article = new ZimArticle(cssPath(config, css), cssCont, 'A');
+        await zimCreator.addArticle(article);
+      } catch (error) {
+        logger.warn(`Could not create ${css} file : ${error}`);
+      }
+    });
+
+  const jsPromises = config.output.jsResources.map(async (js) => {
+    try {
+      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../res/${js}.js`));
+      const article = new ZimArticle(jsPath(config, js), jsCont, 'A');
+      await zimCreator.addArticle(article);
+    } catch (error) {
+      logger.warn(`Could not create ${js} file : ${error}`);
+    }
+  });
+  return Promise.all([
+    ...cssPromises,
+    ...jsPromises,
+  ]);
+}
+
+export function cssPath({ output: { dirs } }: Config, css: string) {
+  return [dirs.style, `${dirs.styleModules}-${css.replace(/(\.css)?$/, '')}.css`].join('/');
+}
+export function jsPath({ output: { dirs } }: Config, js: string) {
+  return [dirs.javascript, `${dirs.jsModules}-${js.replace(/(\.js)?$/, '')}.js`].join('/');
+}
+export function genHeaderCSSLink(config: Config, css: string, classList = '') {
+  return `<link href="${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+}
+export function genHeaderScript(config: Config, js: string, classList = '') {
+  return `<script src="${jsPath(config, js)}" class="${classList}"></script>`;
+}
+
+export function getDumps(format: boolean | boolean[]) {
+  let dumps: any[];
+  if (format) {
+    if (format instanceof Array) {
+      dumps = [];
+      const self =
+        format.forEach((value) => {
+          dumps.push(value === true ? '' : value);
+        });
+    } else if (format !== true) {
+      dumps = [format];
+    }
+  } else {
+    dumps = [''];
+  }
+  return dumps;
 }

@@ -2,6 +2,8 @@ import * as pathParser from 'path';
 import * as urlParser from 'url';
 import { MWMetaData } from './util/mediaWiki';
 import { AsyncQueue } from 'async';
+import { existsSync } from 'fs';
+import logger from './Logger';
 
 
 interface DumpOpts {
@@ -10,6 +12,7 @@ interface DumpOpts {
     spaceDelimiter: string;
     outputDirectory: string;
     tmpDirectory: string;
+    cacheDirectory: string;
     keepHtml: boolean;
     publisher: string;
     withoutZimFullTextIndex: boolean;
@@ -19,6 +22,8 @@ interface DumpOpts {
     mainPage?: string;
     filenamePrefix?: string;
     articleList?: string;
+    deflateTmpHtml?: boolean;
+    resume?: boolean;
 }
 
 export class Dump {
@@ -47,9 +52,10 @@ export class Dump {
         const date = new Date();
         this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
 
+        this.opts.cacheDirectory = pathParser.join(opts.cacheDirectory, this.computeFilenameRadical(true, true, true));
     }
 
-    public computeFilenameRadical(withoutSelection?, withoutContentSpecifier?, withoutDate?) {
+    public computeFilenameRadical(withoutSelection?: boolean, withoutContentSpecifier?: boolean, withoutDate?: boolean) {
         let radical;
         if (this.opts.filenamePrefix) {
             radical = this.opts.filenamePrefix;
@@ -58,9 +64,9 @@ export class Dump {
             const hostParts = urlParser.parse(this.mwMetaData.webUrl).hostname.split('.');
             let langSuffix = this.mwMetaData.langIso2;
             // tslint:disable-next-line:prefer-for-of
-            for (let i = 0; i < hostParts.length; i += 1) {
-                if (hostParts[i] === this.mwMetaData.langIso3) {
-                    langSuffix = hostParts[i];
+            for (let part of hostParts) {
+                if (part === this.mwMetaData.langIso3) {
+                    langSuffix = part;
                     break;
                 }
             }
@@ -87,6 +93,22 @@ export class Dump {
             radical += `_${this.contentDate}`;
         }
         return radical;
+    }
+
+    public checkResume() {
+        if (this.opts.resume && !this.nozim) {
+            const zimPath = this.computeZimRootPath();
+            if (existsSync(zimPath)) {
+                logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
+                throw new Error(`TODO: IMPLEMENT RESUME`);
+            }
+        }
+    }
+
+    public computeZimRootPath() {
+        let zimRootPath = this.opts.outputDirectory[0] === '/' ? this.opts.outputDirectory : `${pathParser.resolve(process.cwd(), this.opts.outputDirectory)}/`;
+        zimRootPath += `${this.computeFilenameRadical()}.zim`;
+        return zimRootPath;
     }
 
     public computeHtmlRootPath() {
@@ -125,6 +147,31 @@ export class Dump {
         return sheetUrls.filter(a => a.trim());
     }
 
+
+
+
+    public getArticleUrl(articleId: string) {
+        return this.getArticleBase(articleId, true);
+    }
+
+    public getArticlePath(articleId: string, escape?: boolean) {
+        return this.computeHtmlRootPath() + this.getArticleBase(articleId, escape);
+    }
+
+    public getArticleBase(articleId: string, escape?: boolean) {
+        let filename = articleId.replace(/\//g, this.opts.spaceDelimiter);
+        /* Filesystem is not able to handle with filename > 255 bytes */
+        while (Buffer.byteLength(filename, 'utf8') > 250) {
+            filename = filename.substr(0, filename.length - 1);
+        }
+        function e(str: string) {
+            if (typeof str === 'undefined') {
+                return undefined;
+            }
+            return escape ? encodeURIComponent(str) : str;
+        }
+        return `${e(filename)}.html`;
+    }
 
 
 }

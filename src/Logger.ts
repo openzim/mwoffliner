@@ -1,6 +1,6 @@
 class Logger {
   public verbose: boolean;
-  constructor(verbose) {
+  constructor(verbose: boolean) {
     this.verbose = verbose;
   }
 
@@ -8,27 +8,27 @@ class Logger {
     return (new Date()).toISOString();
   }
 
-  public info(...args) {
+  public info(...args: any[]) {
     if (this.verbose) {
       console.info(`[info] [${this.getTs()}]`, ...args);
     }
   }
 
-  public log(...args) {
+  public log(...args: any[]) {
     console.log(`[log] [${this.getTs()}]`, ...args);
   }
 
-  public warn(...args) {
+  public warn(...args: any[]) {
     if (this.verbose) {
       console.warn(`[warn] [${this.getTs()}]`, ...args);
     }
   }
 
-  public error(...args) {
+  public error(...args: any[]) {
     console.error(`[error] [${this.getTs()}]`, ...args);
   }
 }
 
 // export default Logger;
-const logger = new Logger(process.env.verbose)
+const logger = new Logger(!!process.env.verbose)
 export default logger

@@ -23,28 +23,30 @@ import { ZimCreator, ZimArticle } from 'libzim-binding';
 import homeDirExpander from 'expand-home-dir';
 import rimraf from 'rimraf';
 
-import config from './config';
+import { config } from './config';
 import DU from './DOMUtils';
 import Downloader from './Downloader';
-import Logger from './Logger';
 import MediaWiki from './MediaWiki';
-import OfflinerEnv from './OfflinerEnv';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { contains, getCreatorName, checkDependencies, doSeries, writeFilePromise, getStringsForLang, mkdirPromise, computeHtmlRootPath } from './util';
+import { contains, writeFilePromise, getStringsForLang, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
-import { getArticleThumbnails, parseDump, getAndProcessStylesheets } from './util/dump';
+import * as U from './util';
+import { getArticleThumbnails, getAndProcessStylesheets, getMwMetaData } from './util';
 import { Dump } from './Dump';
-import { getMwMetaData } from './util/mediaWiki';
+import { getArticleIds, drainRedirectQueue } from './util/redirects';
+
+type Callback = (err?: any, data?: any, extra?: any) => void;
+type KVS<T> = { [key: string]: T };
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
   return parameterList;
 }
 
-async function execute(argv) {
+async function execute(argv: any) {
   /* ********************************* */
   /* CUSTOM VARIABLE SECTION ********* */
   /* ********************************* */
@@ -92,15 +94,13 @@ async function execute(argv) {
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
 
-  const __cacheDirectory = _cacheDirectory || pathParser.resolve(process.cwd(), 'cac');
-
   const outputDirectory = _outputDirectory ? `${homeDirExpander(_outputDirectory)}/` : 'out/';
-  const cacheDirectory = `${__cacheDirectory + env.computeFilenameRadical(true, true, true)}/`;
+  const cacheDirectory = _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : 'cac/';
   const tmpDirectory = _tmpDirectory ? `${homeDirExpander(_tmpDirectory)}/` : 'tmp/';
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
-  if (!U.isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
+  if (!isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
 
   /* Number of parallel requests */
   if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
@@ -149,82 +149,10 @@ async function execute(argv) {
   /*       SYSTEM VARIABLE SECTION       */
   /* *********************************** */
 
-  const zimOpts = {
-    // Name to use for ZIM (content) creator
-    creator: mwMetaData.creator,
-
-    // ZIM publisher
-    publisher: publisher || config.defaults.publisher,
-
-    langIso2: 'en',
-    langIso3: 'eng',
-
-    // List of articles is maybe in a file
-    articleList,
-
-    mainPageId: customMainPage || '',
-    name: customZimTitle || '',
-    description: customZimDescription || '',
-    tags: customZimTags || '',
-    cacheDirectory: `${cacheDirectory || pathParser.resolve(process.cwd(), 'cac')}/`,
-
-    // File where redirects might be save if --writeHtmlRedirects is not set
-    redirectsFile: null,
-
-    // Directory wehre everything is saved at the end of the process
-    outputDirectory,
-
-    // Directory where temporary data are saved
-    tmpDirectory,
-
-    // Include fulltext index in ZIM file
-    // withZimFullTextIndex,
-
-    // What is this?
-    subTitle: '',
-  };
-  // const zim = new Zim(config, zimOpts);
-
-  // Temporary stub env for now to encapsulate state and pass around
-  // where it is required. This might eventually take a different form
-  // after refactoring is complete.
-  // const env = new OfflinerEnv(format, {
-  //   // zim,
-  //   mw,
-  //   logger,
-  //   downloader,
-  //   verbose,
-
-  //   // Prefix part of the filename (radical)
-  //   filenamePrefix: filenamePrefix || '',
-
-  //   // If ZIM is built, should temporary HTML directory be kept
-  //   keepHtml,
-
-  //   // Should we keep ZIM file generation if ZIM file already exists
-  //   resume,
-
-  //   deflateTmpHtml,
-
-  //   // How to write redirects
-  //   writeHtmlRedirects,
-  // });
-
-  const dumps = ['']
-  if (format) {
-    if (format instanceof Array) {
-      this.dumps = [];
-      const self = this;
-      format.forEach((value) => {
-        self.dumps.push(value === true ? '' : value);
-      });
-    } else if (format !== true) {
-      this.dumps = [format];
-    }
-  }
+  const dumps = getDumps(format);
 
   const INFINITY_WIDTH = 9999999;
-  const articleDetailXId = {};
+  const articleDetailXId: KVS<any> = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
@@ -330,29 +258,16 @@ async function execute(argv) {
   const redis = new Redis(argv, config);
 
   /* Some helpers */
-  function readTemplate(t) {
+  function readTemplate(t: string) {
     return fs.readFileSync(pathParser.resolve(__dirname, '../res', t), 'utf-8');
-  }
-  const { dirs } = config.output;
-  function cssPath(css) {
-    return [dirs.style, `${dirs.styleModules}-${css.replace(/(\.css)?$/, '')}.css`].join('/');
-  }
-  function jsPath(js) {
-    return [dirs.javascript, `${dirs.jsModules}-${js.replace(/(\.js)?$/, '')}.js`].join('/');
-  }
-  function genHeaderCSSLink(css, classList = '') {
-    return `<link href="${cssPath(css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
-  }
-  function genHeaderScript(js, classList = '') {
-    return `<script src="${jsPath(js)}" class="${classList}"></script>`;
   }
 
   const cssLinks = config.output.cssResources.reduce((buf, css) => {
-    return buf + genHeaderCSSLink(css);
+    return buf + genHeaderCSSLink(config, css);
   }, '');
 
   const jsScripts = config.output.jsResources.reduce((buf, js) => {
-    return buf + genHeaderScript(js);
+    return buf + genHeaderScript(config, js);
   }, '');
 
   /* Compile templates */
@@ -401,7 +316,7 @@ async function execute(argv) {
       await new Promise((resolve, reject) => {
         articleListContentStream
           .pipe(articleListWriteStream)
-          .on('error', (err) => reject(err))
+          .on('error', (err: any) => reject(err))
           .on('close', resolve);
       });
       articleList = tmpArticleListPath;
@@ -410,7 +325,7 @@ async function execute(argv) {
     }
   }
 
-  let articleListLines;
+  let articleListLines: string[];
   try {
     articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n') : [];
   } catch (err) {
@@ -423,14 +338,9 @@ async function execute(argv) {
   // await zim.getSubTitle();
   await mw.getNamespaces(addNamespaces, downloader);
   // await zim.createDirectories();
-  if (useCache) {
-    // await zim.prepareCache();
-  }
-  await env.checkResume();
-  await getArticleIds(redirectQueue);
 
-  const redirectsFile = path.join(dumpTmpDir, env.computeFilenameRadical(false, true, false) + '.redirects');
-  await getRedirects(redirectsFile);
+  const redirectQueue = await getArticleIds(downloader, mainPage || mwMetaData.mainPage, articleList);
+  await drainRedirectQueue(redirectQueue);
 
   for (let _dump of dumps) {
     const dump = new Dump(_dump, {
@@ -439,6 +349,7 @@ async function execute(argv) {
       spaceDelimiter: '_',
       outputDirectory,
       tmpDirectory,
+      cacheDirectory,
       keepHtml,
       mainPage,
       filenamePrefix,
@@ -448,10 +359,15 @@ async function execute(argv) {
       customZimTags,
       customZimTitle,
       withoutZimFullTextIndex,
+      deflateTmpHtml,
+      resume,
     }, mwMetaData);
     logger.log(`Doing dump: [${dump}]`);
-    await doDump(dump)
-    logger.log(`Finished dump: [${dump}]`);
+    try {
+      dump.checkResume();
+      await doDump(dump);
+      logger.log(`Finished dump: [${dump}]`);
+    } catch (err) { }
   }
 
   if (!useCache || skipCacheCleaning) {
@@ -473,8 +389,14 @@ async function execute(argv) {
 
 
   async function doDump(dump: Dump) {
-    const keepHtml = dump.nozim || dump.opts.keepHtml;
-    const htmlRootPath = dump.computeHtmlRootPath();
+
+    if (useCache) {
+      // await zim.prepareCache();
+    }
+
+    const redirectsFile = path.join(dumpTmpDir, dump.computeFilenameRadical(false, true, false) + '.redirects');
+    await getRedirects(dump, redirectsFile);
+
 
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
@@ -486,7 +408,7 @@ async function execute(argv) {
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-      welcome: dump.opts.mainPage ? env.getArticleBase(dump.opts.mainPage) : 'index.htm',
+      welcome: dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index.htm',
     }, {
         favicon: 'favicon.png',
         Tags: dump.opts.customZimTags || '',
@@ -501,7 +423,7 @@ async function execute(argv) {
 
 
     // await zim.createSubDirectories();
-    await saveStaticFiles(zimCreator);
+    await saveStaticFiles(config, zimCreator);
 
     logger.info('Finding stylesheets to download');
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls();
@@ -517,8 +439,8 @@ async function execute(argv) {
     const article = new ZimArticle(`style.css`, finalCss, 'A');
     await zimCreator.addArticle(article);
 
-    await saveStylesheet(zimCreator);
-    await saveFavicon(zimCreator);
+    // await saveStylesheet(dump, zimCreator);
+    await saveFavicon(dump, zimCreator);
 
     if (articleList) {
       const thumbnailUrls = await getArticleThumbnails(downloader, articleListLines);
@@ -534,8 +456,8 @@ async function execute(argv) {
       }
     }
 
-    await getMainPage(zimCreator);
-    if (writeHtmlRedirects) { await saveHtmlRedirects(zimCreator); }
+    await getMainPage(dump, zimCreator);
+    if (writeHtmlRedirects) { await saveHtmlRedirects(dump, zimCreator); }
     await saveArticles(zimCreator, dump);
     await drainDownloadFileQueue(zimCreator);
 
@@ -560,35 +482,6 @@ async function execute(argv) {
   /* FUNCTIONS *********************** */
   /* ********************************* */
 
-
-  function saveStaticFiles(zimCreator: ZimCreator) {
-    const cssPromises = config.output.cssResources
-      .concat(config.output.mainPageCssResources)
-      .map(async (css) => {
-        try {
-          const cssCont = await U.readFilePromise(pathParser.resolve(__dirname, `../res/${css}.css`));
-          const article = new ZimArticle(cssPath(css), cssCont, 'A');
-          await zimCreator.addArticle(article);
-        } catch (error) {
-          logger.warn(`Could not create ${css} file : ${error}`);
-        }
-      });
-
-    const jsPromises = config.output.jsResources.map(async (js) => {
-      try {
-        const jsCont = await U.readFilePromise(pathParser.resolve(__dirname, `../res/${js}.js`));
-        const article = new ZimArticle(jsPath(js), jsCont, 'A');
-        await zimCreator.addArticle(article);
-      } catch (error) {
-        logger.warn(`Could not create ${js} file : ${error}`);
-      }
-    });
-    return Promise.all([
-      ...cssPromises,
-      ...jsPromises,
-    ]);
-  }
-
   function drainDownloadFileQueue(zimCreator: ZimCreator) {
     return new Promise((resolve, reject) => {
       logger.log(`${downloadFileQueue.length()} files still to be downloaded.`);
@@ -602,7 +495,7 @@ async function execute(argv) {
         () => !downloadFileQueue.idle(),
         () => {
           const drainBackup = downloadFileQueue.drain;
-          downloadFileQueue.drain = function (error) {
+          downloadFileQueue.drain = function (error: any) {
             if (error) {
               reject(`Error by downloading images ${error}`);
             } else {
@@ -619,18 +512,18 @@ async function execute(argv) {
     });
   }
 
-  function getRedirects(redirectsFile) {
+  function getRedirects(dump: Dump, redirectsFile: string) {
     logger.log('Reset redirects cache file (or create it)');
     fs.openSync(redirectsFile, 'w');
 
     logger.log('Storing redirects...');
-    function cacheRedirect(redirectId, finished) {
-      redis.getRedirect(redirectId, finished, (target) => {
+    function cacheRedirect(redirectId: string, finished: Callback) {
+      redis.getRedirect(redirectId, finished, (target: string) => {
         logger.info(`Storing redirect ${redirectId} (to ${target})...`);
         const line = 'A\t'
-          + `${env.getArticleBase(redirectId)}\t`
+          + `${dump.getArticleBase(redirectId)}\t`
           + `${redirectId.replace(/_/g, ' ')}\t`
-          + `${env.getArticleBase(target, false)}\n`;
+          + `${dump.getArticleBase(target, false)}\n`;
         fs.appendFile(redirectsFile, line, finished);
       });
     }
@@ -641,18 +534,18 @@ async function execute(argv) {
     );
   }
 
-  function saveHtmlRedirects(zimCreator: ZimCreator) {
+  function saveHtmlRedirects(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Saving HTML redirects...');
 
-    function saveHtmlRedirect(redirectId, finished) {
-      redis.getRedirect(redirectId, finished, (target) => {
+    function saveHtmlRedirect(redirectId: string, finished: Callback) {
+      redis.getRedirect(redirectId, finished, (target: string) => {
         logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
         const data = redirectTemplate({
-          target: env.getArticleUrl(target),
+          target: dump.getArticleUrl(target),
           title: redirectId.replace(/_/g, ' '),
           strings,
         });
-        if (env.deflateTmpHtml) {
+        if (dump.opts.deflateTmpHtml) {
           zlib.deflate(data, (error, deflatedHtml) => {
             const article = new ZimArticle(redirectId + '.html', deflatedHtml, 'A', 'text/html', target);
             zimCreator.addArticle(article).then(finished, finished);
@@ -672,14 +565,14 @@ async function execute(argv) {
     );
   }
 
-  function saveArticles(zimCreator, dump) {
+  function saveArticles(zimCreator: ZimCreator, dump: Dump) {
     return new Promise((resolve, reject) => {
       // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
       let jsConfigVars: string | RegExpExecArray = '';
-      let jsDependenciesList = [];
-      let styleDependenciesList = [];
+      let jsDependenciesList: string[] = [];
+      let styleDependenciesList: string[] = [];
 
-      function parseHtml(html, articleId, finished) {
+      function parseHtml(html: string, articleId: string, finished: Callback) {
         try {
           finished(null, domino.createDocument(html), articleId);
         } catch (error) {
@@ -687,19 +580,19 @@ async function execute(argv) {
         }
       }
 
-      function storeDependencies(parsoidDoc, articleId, finished) {
+      function storeDependencies(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
         const articleApiUrl = mw.articleApiUrl(articleId);
 
         fetch(articleApiUrl, {
           headers: { Accept: 'application/json' },
           method: 'GET',
         })
-          .then((response) => response.json())
+          .then((response: any) => response.json())
           .then(async ({
             parse: {
               modules, modulescripts, modulestyles, headhtml,
             },
-          }) => {
+          }: any) => {
             jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a);
             styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a);
 
@@ -715,7 +608,7 @@ async function execute(argv) {
               { type: 'css', moduleList: styleDependenciesList },
             ];
 
-            allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(oneModule, type as any)));
+            allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(dump, oneModule, type as any)));
 
             // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
             // the script below extracts the config with a regex executed on the page header returned from the api
@@ -730,8 +623,8 @@ async function execute(argv) {
             jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
             jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
             try {
-              // fs.writeFileSync(pathParser.resolve(env.htmlRootPath, jsPath('jsConfigVars')), jsConfigVars);
-              const article = new ZimArticle(jsPath('jsConfigVars'), jsConfigVars, 'A');
+              // fs.writeFileSync(pathParser.resolve(dump.computeHtmlRootPath(), jsPath(config, 'jsConfigVars')), jsConfigVars);
+              const article = new ZimArticle(jsPath(config, 'jsConfigVars'), jsConfigVars, 'A');
               await zimCreator.addArticle(article);
             } catch (e) {
               logger.warn('Error writing file', e);
@@ -739,12 +632,12 @@ async function execute(argv) {
 
             finished(null, parsoidDoc, articleId);
           })
-          .catch((e) => {
+          .catch((e: any) => {
             logger.warn(`Error fetching api.php for ${articleApiUrl} ${e}`);
             finished(null, parsoidDoc, articleId); // calling finished here will allow zim generation to continue event if an article doesn't properly get its modules
           });
 
-        function downloadAndSaveModule(module, type: 'js' | 'css') {
+        function downloadAndSaveModule(dump: Dump, module: string, type: 'js' | 'css') {
           // param :
           //   module : string : the name of the module
           //   moduleUri : string : the path where the module will be saved into the zim
@@ -756,7 +649,7 @@ async function execute(argv) {
           // the 2 variable functions below are a hack to call startUp() (from module startup) when the 3 generic dependencies (startup, jquery, mediawiki) are loaded.
           // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
           // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
-          function hackStartUpModule(jsCode) {
+          function hackStartUpModule(jsCode: string) {
             return jsCode.replace(
               'script=document.createElement(\'script\');',
               `
@@ -765,7 +658,7 @@ async function execute(argv) {
                         script=document.createElement('script');`,
             );
           }
-          function hackMediaWikiModule(jsCode) {
+          function hackMediaWikiModule(jsCode: string) {
             jsCode += `(function () {
                 const startUpEvent = new CustomEvent('fireStartUp');
                 document.body.dispatchEvent(startUpEvent);
@@ -773,13 +666,13 @@ async function execute(argv) {
             return jsCode;
           }
 
-          let moduleUri;
+          let moduleUri: string;
           let apiParameterOnly;
           if (type === 'js') {
-            moduleUri = pathParser.resolve(env.htmlRootPath, jsPath(module));
+            moduleUri = pathParser.resolve(dump.computeHtmlRootPath(), jsPath(config, module));
             apiParameterOnly = 'scripts';
           } else if (type === 'css') {
-            moduleUri = pathParser.resolve(env.htmlRootPath, cssPath(module));
+            moduleUri = pathParser.resolve(dump.computeHtmlRootPath(), cssPath(config, module));
             apiParameterOnly = 'styles';
           }
 
@@ -794,8 +687,8 @@ async function execute(argv) {
                   method: 'GET',
                   headers: { Accept: 'text/plain' },
                 })
-                  .then((response) => response.text())
-                  .then(async (text) => {
+                  .then((response: any) => response.text())
+                  .then(async (text: string) => {
                     if (module === 'startup' && type === 'js') {
                       text = hackStartUpModule(text);
                     } else if (module === 'mediawiki' && type === 'js') {
@@ -804,8 +697,8 @@ async function execute(argv) {
 
                     try {
                       const articleId = type === 'js'
-                        ? jsPath(module)
-                        : cssPath(module);
+                        ? jsPath(config, module)
+                        : cssPath(config, module);
                       const article = new ZimArticle(articleId, text, 'A');
                       await zimCreator.addArticle(article);
                       logger.info(`created dep ${module} for article ${articleId}`);
@@ -813,7 +706,7 @@ async function execute(argv) {
                       logger.warn(`Error writing file ${moduleUri} ${e}`);
                     }
                   })
-                  .catch((e) => logger.warn(`Error fetching load.php for ${articleId} ${e}`));
+                  .catch((e: any) => logger.warn(`Error fetching load.php for ${articleId} ${e}`));
               } else {
                 return Promise.resolve();
               }
@@ -824,11 +717,11 @@ async function execute(argv) {
         }
       }
 
-      function treatMedias(parsoidDoc, articleId, finished) {
+      function treatMedias(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
         /* Clean/rewrite image tags */
         const imgs = parsoidDoc.getElementsByTagName('img');
         const videos = Array.from(parsoidDoc.getElementsByTagName('video'));
-        const srcCache = {};
+        const srcCache: KVS<boolean> = {};
 
         videos.forEach((videoEl: DominoElement) => {
           // Worth noting:
@@ -837,7 +730,7 @@ async function execute(argv) {
           // For video, we get multiple SOURCE tages with different resolutions
 
           const posterUrl = videoEl.getAttribute('poster');
-          const videoPosterUrl = U.getFullUrl(webUrlHost, posterUrl);
+          const videoPosterUrl = getFullUrl(webUrlHost, posterUrl);
           const newVideoPosterUrl = getMediaUrl(videoPosterUrl);
           let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
 
@@ -850,7 +743,7 @@ async function execute(argv) {
           // Always show controls
           videoEl.setAttribute('controls', '40');
 
-          if (env.nopic || env.novid || env.nodet) {
+          if (dump.nopic || dump.novid || dump.nodet) {
             DU.deleteNode(videoEl);
             return;
           }
@@ -863,7 +756,7 @@ async function execute(argv) {
             downloadFileQueue.push({ url: videoPosterUrl, zimCreator });
           }
 
-          function byWidthXHeight(a, b) {
+          function byWidthXHeight(a: DominoElement, b: DominoElement) {
             // If there is no width/height, it counts as zero, probably best?
             // Sometimes (pure audio) there will only be one item
             // Sometimes (pure audio) there won't be width/height
@@ -884,7 +777,7 @@ async function execute(argv) {
           sourcesToRemove.forEach(DU.deleteNode);
 
           const sourceEl = videoSources[0]; // Use first source (smallest resolution)
-          const sourceUrl = U.getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
+          const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
           const newUrl = getMediaUrl(sourceUrl);
 
           if (!newUrl) {
@@ -907,7 +800,7 @@ async function execute(argv) {
           const imageNodeClass = img.getAttribute('class') || '';
 
           if (
-            (!env.nopic
+            (!dump.nopic
               || imageNodeClass.search('mwe-math-fallback-image-inline') >= 0
               || img.getAttribute('typeof') === 'mw:Extension/math')
             && img.getAttribute('src')
@@ -937,7 +830,7 @@ async function execute(argv) {
 
             /* Rewrite image src attribute */
             if (img) {
-              const src = U.getFullUrl(webUrlHost, img.getAttribute('src'));
+              const src = getFullUrl(webUrlHost, img.getAttribute('src'));
               const newSrc = getMediaUrl(src);
 
               if (newSrc) {
@@ -981,7 +874,7 @@ async function execute(argv) {
           }
           const isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
 
-          if (!env.nopic && imageNode && image) {
+          if (!dump.nopic && imageNode && image) {
             const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
             const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
 
@@ -1001,7 +894,7 @@ async function execute(argv) {
               centerDiv.appendChild(thumbDiv);
               thumbDiv = centerDiv;
             } else {
-              const revAutoAlign = env.ltr ? 'right' : 'left';
+              const revAutoAlign = dump.mwMetaData.ltr ? 'right' : 'left';
               DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
             }
 
@@ -1011,7 +904,7 @@ async function execute(argv) {
 
             const thumbcaptionDiv = parsoidDoc.createElement('div');
             thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-            const autoAlign = env.ltr ? 'left' : 'right';
+            const autoAlign = dump.mwMetaData.ltr ? 'left' : 'right';
             thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
             if (description) {
               thumbcaptionDiv.innerHTML = description.innerHTML;
@@ -1030,13 +923,13 @@ async function execute(argv) {
         finished(null, parsoidDoc, articleId);
       }
 
-      function rewriteUrls(parsoidDoc, articleId, finished) {
+      function rewriteUrls(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
         /* Go through all links */
         const as = parsoidDoc.getElementsByTagName('a');
         const areas = parsoidDoc.getElementsByTagName('area');
         const linkNodes = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas));
 
-        function removeLinksToUnmirroredArticles(linkNode, href, cb) {
+        function removeLinksToUnmirroredArticles(linkNode: DominoElement, href: string, cb: Callback) {
           const title = mw.extractPageTitleFromHref(href);
           if (!title) {
             setImmediate(() => cb());
@@ -1046,14 +939,14 @@ async function execute(argv) {
           if (isMirrored(title)) {
             /* Deal with local anchor */
             const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
-            linkNode.setAttribute('href', env.getArticleUrl(title) + localAnchor);
+            linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
             setImmediate(() => cb());
           } else {
-            redis.processRedirectIfExists(title, (res) => {
+            redis.processRedirectIfExists(title, (res: any) => {
               if (res) {
-                linkNode.setAttribute('href', env.getArticleUrl(title));
+                linkNode.setAttribute('href', dump.getArticleUrl(title));
               } else {
-                U.migrateChildren(linkNode, linkNode.parentNode, linkNode);
+                migrateChildren(linkNode, linkNode.parentNode, linkNode);
                 linkNode.parentNode.removeChild(linkNode);
               }
               setImmediate(() => cb());
@@ -1061,7 +954,7 @@ async function execute(argv) {
           }
         }
 
-        function rewriteUrl(linkNode, finished) {
+        function rewriteUrl(linkNode: DominoElement, finished: Callback) {
           const rel = linkNode.getAttribute('rel');
           let href = linkNode.getAttribute('href') || '';
 
@@ -1104,7 +997,7 @@ async function execute(argv) {
                     const factors = [1, 60, 3600];
                     let offs = 0;
 
-                    const deg = (hemiHash) => {
+                    const deg = (hemiHash: any) => {
                       let out = 0;
                       let hemiSign = 0;
                       for (let i = 0; i < 4 && i + offs < pieces.length; i += 1) {
@@ -1128,7 +1021,7 @@ async function execute(argv) {
                 lat = parts[4];
                 lon = parts[5];
               } else if (rel === 'mw:MediaLink') {
-                if (!env.nopdf && /\.pdf/i.test(href)) {
+                if (!dump.nopdf && /\.pdf/i.test(href)) {
                   try {
                     linkNode.setAttribute('href', getMediaUrl(href));
                     downloadFileQueue.push({ url: href, zimCreator });
@@ -1159,9 +1052,9 @@ async function execute(argv) {
               /* Rewrite external links starting with // */
               if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
                 if (href.substring(0, 1) === '/') {
-                  linkNode.setAttribute('href', U.getFullUrl(webUrlHost, href));
+                  linkNode.setAttribute('href', getFullUrl(webUrlHost, href));
                 } else if (href.substring(0, 2) === './') {
-                  U.migrateChildren(linkNode, linkNode.parentNode, linkNode);
+                  migrateChildren(linkNode, linkNode.parentNode, linkNode);
                   linkNode.parentNode.removeChild(linkNode);
                 }
                 setImmediate(() => finished());
@@ -1181,19 +1074,19 @@ async function execute(argv) {
         });
       }
 
-      function applyOtherTreatments(parsoidDoc, articleId, finished) {
+      function applyOtherTreatments(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
         const filtersConfig = config.filters;
 
         /* Don't need <link> and <input> tags */
-        const nodesToDelete: Array<{ class?: string, tag?: string, filter?: (n) => boolean }> = [{ tag: 'link' }, { tag: 'input' }];
+        const nodesToDelete: Array<{ class?: string, tag?: string, filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }];
 
         /* Remove "map" tags if necessary */
-        if (env.nopic) {
+        if (dump.nopic) {
           nodesToDelete.push({ tag: 'map' });
         }
 
         /* Remove useless DOM nodes without children */
-        function emptyChildFilter(n) {
+        function emptyChildFilter(n: any) {
           return !n.innerHTML;
         }
         nodesToDelete.push({ tag: 'li', filter: emptyChildFilter });
@@ -1220,7 +1113,7 @@ async function execute(argv) {
           nodesToDelete.push({ class: classname });
         });
 
-        if (env.nodet) {
+        if (dump.nodet) {
           filtersConfig.nodetCssClassBlackList.forEach((classname) => {
             nodesToDelete.push({ class: classname });
           });
@@ -1344,26 +1237,26 @@ async function execute(argv) {
         finished(null, parsoidDoc, articleId);
       }
 
-      function setFooter(parsoidDoc, articleId, finished) {
+      function setFooter(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
         const htmlTemplateDoc = domino.createDocument(
           htmlTemplateCode
-            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript('jsConfigVars') : '')
+            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars') : '')
             .replace(
               '__ARTICLE_JS_LIST__',
               jsDependenciesList.length !== 0
-                ? jsDependenciesList.map((oneJsDep) => genHeaderScript(oneJsDep)).join('\n')
+                ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep)).join('\n')
                 : '',
             )
             .replace(
               '__ARTICLE_CSS_LIST__',
               styleDependenciesList.length !== 0
-                ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(oneCssDep)).join('\n')
+                ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep)).join('\n')
                 : '',
             ),
         );
 
         /* Create final document by merging template and parsoid documents */
-        htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', env.ltr ? 'ltr' : 'rtl');
+        htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.ltr ? 'ltr' : 'rtl');
         htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[
           0
         ].innerHTML;
@@ -1388,7 +1281,7 @@ async function execute(argv) {
             subpages
               += `&lt; ${
               isParentMirrored
-                ? `<a href="${env.getArticleUrl(parentPath + parent)}" title="${label}">`
+                ? `<a href="${dump.getArticleUrl(parentPath + parent)}" title="${label}">`
                 : ''
               }${label
               }${isParentMirrored ? '</a> ' : ' '}`;
@@ -1402,7 +1295,7 @@ async function execute(argv) {
         /* Set footer */
         const div = htmlTemplateDoc.createElement('div');
         const { oldId } = articleDetailXId[articleId];
-        redis.getArticle(articleId, (error, detailsJson) => {
+        redis.getArticle(articleId, (error: any, detailsJson: any) => {
           if (error) {
             finished({ message: `Unable to get the details from redis for article ${articleId}`, error });
           } else {
@@ -1415,7 +1308,7 @@ async function execute(argv) {
             div.innerHTML = footerTemplate({
               articleId: encodeURIComponent(articleId),
               webUrl: mw.webUrl,
-              creator: creator,
+              creator: dump.mwMetaData.creator,
               oldId,
               date: date.toISOString().substring(0, 10),
               strings,
@@ -1437,7 +1330,7 @@ async function execute(argv) {
         });
       }
 
-      function writeArticle(doc, articleId, finished) {
+      function writeArticle(doc: DominoElement, articleId: string, finished: Callback) {
         logger.log(`Saving article ${articleId}...`);
         let html = doc.documentElement.outerHTML;
 
@@ -1452,25 +1345,25 @@ async function execute(argv) {
           });
         }
 
-        if (env.deflateTmpHtml) {
+        if (dump.opts.deflateTmpHtml) {
           zlib.deflate(html, (error, deflatedHtml) => {
-            // fs.writeFile(env.getArticlePath(articleId), deflatedHtml, finished);
+            // fs.writeFile(dump.getArticlePath(articleId), deflatedHtml, finished);
             const article = new ZimArticle(articleId + '.html', deflatedHtml, 'A', 'text/html');
             zimCreator.addArticle(article).then(finished, finished);
           });
         } else {
-          // fs.writeFile(env.getArticlePath(articleId), html, finished);
+          // fs.writeFile(dump.getArticlePath(articleId), html, finished);
           const article = new ZimArticle(articleId + '.html', html, 'A', 'text/html');
           zimCreator.addArticle(article).then(finished, finished);
         }
       }
 
-      function saveArticle(articleId, finished) {
+      function saveArticle(articleId: string, finished: Callback) {
         const useParsoidFallback = articleId === mainPage;
         downloader.getArticle(articleId, useParsoidFallback)
           .then((html) => {
             if (html) {
-              const articlePath = env.getArticlePath(articleId);
+              const articlePath = dump.getArticlePath(articleId);
               const prepareAndSaveArticle = async.compose(
                 writeArticle,
                 setFooter,
@@ -1482,7 +1375,7 @@ async function execute(argv) {
               );
 
               logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
-              prepareAndSaveArticle(html, articleId, (error) => {
+              prepareAndSaveArticle(html, articleId, (error: any) => {
                 if (!error) {
                   logger.info(`Successfully dumped article ${articleId}`);
                   finished();
@@ -1514,12 +1407,12 @@ async function execute(argv) {
     });
   }
 
-  function addNoIndexCommentToElement(element) {
+  function addNoIndexCommentToElement(element: DominoElement) {
     const slices = element.parentElement.innerHTML.split(element.outerHTML);
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`;
   }
 
-  function isMirrored(id) {
+  function isMirrored(id: string) {
     if (!articleList && id && id.indexOf(':') >= 0) {
       const namespace = mw.namespaces[id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter)];
       if (namespace !== undefined) {
@@ -1529,232 +1422,19 @@ async function execute(argv) {
     return id in articleDetailXId;
   }
 
-  function isSubpage(id) {
+  function isSubpage(id: string) {
     if (id && id.indexOf('/') >= 0) {
-      let namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter) : '';
-      namespace = mw.namespaces[namespace]; // namespace already defined
-      if (namespace !== undefined) {
-        return namespace.allowedSubpages;
+      const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter) : '';
+      const ns = mw.namespaces[namespace]; // namespace already defined
+      if (ns !== undefined) {
+        return ns.allowedSubpages;
       }
     }
     return false;
   }
 
-  /* Grab and concatenate stylesheet files */
-  function saveStylesheet(zimCreator: ZimCreator) {
-    return new Promise((resolve, reject) => {
-      logger.log('Dumping stylesheets...');
-      const urlCache = {};
-      const stylePath = `${env.htmlRootPath}${dirs.style}/style.css`;
-
-      /* Remove if exists */
-      fs.unlink(stylePath, () => null);
-
-
-    });
-  }
-
-  function getArticleIds(redirectQueue) {
-    function drainRedirectQueue(redirectQueue) {
-      return new Promise((resolve, reject) => {
-        redirectQueue.drain = function drain(error) {
-          if (error) {
-            reject(`Unable to retrieve redirects for an article: ${error}`);
-          } else {
-            logger.log('All redirect ids retrieve successfuly.');
-            resolve();
-          }
-        } as any;
-        redirectQueue.push('');
-      });
-    }
-
-    /* Parse article list given by API */
-    function parseAPIResponse(body) {
-      let next = '';
-      const json = JSON.parse(body);
-      const entries = json.query && json.query.pages;
-
-      if (entries) {
-        const redirectQueueValues = [];
-        const details = {};
-        Object.keys(entries).map((key) => {
-          const entry = entries[key];
-          entry.title = entry.title.replace(/ /g, mw.spaceDelimiter);
-
-          if ('missing' in entry) {
-            logger.warn(`Article ${entry.title} is not available on this wiki.`);
-            delete articleDetailXId[entry.title];
-          } else {
-            redirectQueueValues.push(entry.title);
-
-            if (entry.revisions) {
-              /* Get last revision id */
-              articleDetailXId[entry.title] = Object.assign(articleDetailXId[entry.title] || {}, {
-                title: entry.title,
-                oldId: entry.revisions[0].revid,
-              });
-
-              /* Get last revision id timestamp */
-              const articleDetails: { t: number, g?: string } = { t: new Date(entry.revisions[0].timestamp).getTime() / 1000 };
-
-              /* Get article geo coordinates */
-              if (entry.coordinates) {
-                articleDetails.g = `${entry.coordinates[0].lat};${entry.coordinates[0].lon}`;
-              }
-
-              /* Save as JSON string */
-              details[entry.title] = JSON.stringify(articleDetails);
-            } else if (entry.pageid) {
-              logger.warn(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
-              delete articleDetailXId[entry.title];
-            } else {
-              throw new Error(`Unable to get revisions for ${entry.title}\nJSON was ${body}`);
-            }
-          }
-        });
-        if (redirectQueueValues.length) { redirectQueue.push(redirectQueueValues); }
-        redis.saveArticles(details);
-      }
-
-      /* Get continue parameters from 'query-continue',
-       * unfortunately old MW version does not use the same way
-       * than recent */
-      const continueHash = json['query-continue'] && json['query-continue'].allpages;
-      if (continueHash) {
-        Object.keys(continueHash).forEach((key) => {
-          next += `&${key}=${encodeURIComponent(continueHash[key])}`;
-        });
-      }
-
-      return next;
-    }
-
-    function getArticleIdsForLine(redirectQueue, line) {
-      return new Promise((resolve, reject) => {
-        if (line) {
-          const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-          const f = () => {
-            downloader.downloadContent.bind(downloader)(mw.articleQueryUrl(title))
-              .then(({ content }) => {
-                const body = content.toString();
-                if (body && body.length > 1) {
-                  parseAPIResponse(body);
-                }
-                setTimeout(resolve, redirectQueue.length());
-              })
-              .catch(reject);
-          };
-          setTimeout(
-            f,
-            redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
-          );
-        } else {
-          resolve();
-        }
-      });
-    }
-
-    /* Get ids from file */
-    function getArticleIdsForFile() {
-      let lines;
-      try {
-        lines = fs.readFileSync(articleList).toString().split('\n');
-      } catch (error) {
-        return Promise.reject(`Unable to open article list file: ${error}`);
-      }
-
-      return new Promise((resolve, reject) => {
-        async.eachLimit(
-          lines,
-          speed,
-          (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)),
-          (error) => {
-            if (error) {
-              reject({ message: `Unable to get all article ids for a file`, error });
-            } else {
-              logger.log('List of article ids to mirror completed');
-              drainRedirectQueue(redirectQueue).then(resolve, reject);
-            }
-          });
-      });
-    }
-
-    /* Get ids from Mediawiki API */
-    function getArticleIdsForNamespace(namespace, finished) {
-      let next = '';
-
-      async.doWhilst(
-        (finished) => {
-          logger.log(
-            `Getting article ids for namespace "${namespace}" ${next !== '' ? ` (from ${namespace ? `${namespace}:` : ''}${next.split('=')[1]})` : ''
-            }...`,
-          );
-          const url = mw.pageGeneratorQueryUrl(namespace, next);
-          const dc = downloader.downloadContent.bind(downloader);
-          setTimeout((url, handler) => {
-            dc(url)
-              .then(({ content }) => handler(content))
-              .catch((err) => finished(err));
-          },
-            redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
-            url,
-            (content) => {
-              const body = content.toString();
-              if (body && body.length > 1) {
-                next = parseAPIResponse(body);
-                finished();
-              } else {
-                next = '';
-                finished({ message: `Error by retrieving ${url}` } as any);
-              }
-            });
-        },
-        () => next as any,
-        (error) => {
-          if (!error) {
-            logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
-          }
-          finished(error && { message: `Unable to download article ids`, error });
-        },
-      );
-    }
-
-    function getArticleIdsForNamespaces() {
-      return new Promise((resolve, reject) => {
-        async.eachLimit(mw.namespacesToMirror, mw.namespacesToMirror.length, getArticleIdsForNamespace, (error) => {
-          if (error) {
-            reject(`Unable to get all article ids for in a namespace: ${error}`);
-          } else {
-            logger.log('All articles ids (but without redirect ids) for all namespaces were successfuly retrieved.');
-            drainRedirectQueue(redirectQueue).then(resolve, reject);
-          }
-        });
-      });
-    }
-
-    /* Get list of article ids */
-    return doSeries([
-      () => getArticleIdsForLine(redirectQueue, mainPage),
-      () => {
-        if (articleList) {
-          return getArticleIdsForFile();
-        } else {
-          return getArticleIdsForNamespaces();
-        }
-      },
-      () => {
-        if (!articleList && !isMirrored(mainPage)) {
-          return getArticleIdsForLine(redirectQueue, mainPage);
-        } else {
-          return Promise.resolve();
-        }
-      },
-    ]);
-  }
-
   /* Multiple developer friendly functions */
-  function downloadContentAndCache(url): Promise<{ content: any, responseHeaders: any }> {
+  function downloadContentAndCache(url: string): Promise<{ content: any, responseHeaders: any }> {
     return new Promise((resolve, reject) => {
       const cachePath = cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
       const cacheHeadersPath = `${cachePath}.h`;
@@ -1797,7 +1477,7 @@ async function execute(argv) {
               });
           } else {
             logger.log(`Cache hit for ${url} (${cachePath})`);
-            U.touch(cachePath);
+            touch(cachePath);
             resolve({ content: results[0], responseHeaders: results[1] });
           }
         },
@@ -1805,7 +1485,7 @@ async function execute(argv) {
     });
   }
 
-  function downloadFileAndCache(zimCreator: ZimCreator, url, callback) {
+  function downloadFileAndCache(zimCreator: ZimCreator, url: string, callback: Callback) {
     if (!url) {
       callback();
       return;
@@ -1820,7 +1500,7 @@ async function execute(argv) {
     const width = parseInt(parts[4].replace(/px-/g, ''), 10) || INFINITY_WIDTH;
 
     /* Check if we have already met this image during this dumping process */
-    redis.getMedia(filenameBase, (error, rWidth) => {
+    redis.getMedia(filenameBase, (error: any, rWidth: number) => {
       /* If no redis entry */
       if (error || !rWidth || rWidth < width) {
         /* Set the redis entry if necessary */
@@ -1850,12 +1530,12 @@ async function execute(argv) {
                     return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
                   }
                   if (!skipCacheCleaning) {
-                    U.touch(cachePath);
+                    touch(cachePath);
                   }
                 }
 
                 if (!skipCacheCleaning) {
-                  U.touch(cacheHeadersPath);
+                  touch(cacheHeadersPath);
                 }
               });
               redis.deleteOrCacheMedia(responseHeaders.width === width, width, filenameBase);
@@ -1896,7 +1576,7 @@ async function execute(argv) {
   }
 
   /* Internal path/url functions */
-  function getMediaBase(url, escape) {
+  function getMediaBase(url: string, escape: boolean) {
     let root;
 
     const parts = mediaRegex.exec(decodeURI(url));
@@ -1930,29 +1610,29 @@ async function execute(argv) {
         + crypto.createHash('md5').update(basename).digest('hex').substring(0, 2)}.${ext}`;
     }
 
-    return `${dirs.media}/${e(filename)}`;
+    return `${config.output.dirs.media}/${e(filename)}`;
   }
 
-  function getMediaUrl(url) {
+  function getMediaUrl(url: string) {
     return getMediaBase(url, true);
   }
 
-  function getMediaPath(url, escape?) {
+  function getMediaPath(dump: Dump, url: string, escape?: boolean) {
     const mediaBase = getMediaBase(url, escape);
-    return mediaBase ? env.htmlRootPath + mediaBase : undefined;
+    return mediaBase ? dump.computeHtmlRootPath + mediaBase : undefined;
   }
 
-  async function saveFavicon(zimCreator) {
+  async function saveFavicon(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Saving favicon.png...');
 
-    function resizeFavicon(zimCreator: ZimCreator, faviconPath) {
+    function resizeFavicon(zimCreator: ZimCreator, faviconPath: string) {
       return new Promise((resolve, reject) => {
         const cmd = `convert -thumbnail 48 "${faviconPath}" "${faviconPath}.tmp" ; mv "${faviconPath}.tmp" "${faviconPath}" `;
         exec(cmd, (error) => {
           if (error) {
             reject();
           } else {
-            U.readFilePromise(faviconPath).then((faviconContent) => {
+            readFilePromise(faviconPath).then((faviconContent) => {
               const article = new ZimArticle('favicon.png', faviconContent, 'I');
               return zimCreator.addArticle(article);
             }).then(resolve, reject);
@@ -1977,8 +1657,8 @@ async function execute(argv) {
 
           const parsedUrl = urlParser.parse(entries.logo);
           const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-          const faviconPath = env.htmlRootPath + `favicon.${ext}`;
-          const faviconFinalPath = env.htmlRootPath + `favicon.png`;
+          const faviconPath = dump.computeHtmlRootPath + `favicon.${ext}`;
+          const faviconFinalPath = dump.computeHtmlRootPath + `favicon.png`;
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
           const logoContent = await downloader.downloadContent(logoUrl);
           await writeFilePromise(faviconPath, logoContent.content);
@@ -1999,10 +1679,10 @@ async function execute(argv) {
     }
   }
 
-  function getMainPage(zimCreator: ZimCreator) {
-    function writeMainPage(html) {
-      // const mainPagePath = `${env.htmlRootPath}index.htm`;
-      if (env.deflateTmpHtml) {
+  function getMainPage(dump: Dump, zimCreator: ZimCreator) {
+    function writeMainPage(html: string) {
+      // const mainPagePath = `${dump.computeHtmlRootPath}index.htm`;
+      if (dump.opts.deflateTmpHtml) {
         return new Promise((resolve, reject) => {
           zlib.deflate(html, (error, deflatedHtml) => {
             const article = new ZimArticle('index.htm', deflatedHtml, 'A', 'text/html');
@@ -2022,11 +1702,11 @@ async function execute(argv) {
       const doc = domino.createDocument(
         articleListHomeTemplate
           .replace('</head>',
-            genHeaderCSSLink('mobile_main_page') + '\n' +
-            genHeaderCSSLink('style') + '\n' +
-            genHeaderScript('images_loaded.min') + '\n' +
-            genHeaderScript('masonry.min') + '\n' +
-            genHeaderScript('article_list_home') + '\n' +
+            genHeaderCSSLink(config, 'mobile_main_page') + '\n' +
+            genHeaderCSSLink(config, 'style') + '\n' +
+            genHeaderScript(config, 'images_loaded.min') + '\n' +
+            genHeaderScript(config, 'masonry.min') + '\n' +
+            genHeaderScript(config, 'article_list_home') + '\n' +
             '\n</head>'),
       );
 
@@ -2054,10 +1734,10 @@ async function execute(argv) {
 
       const minImageThreshold = 10;
       if (articlesWithImages.length > minImageThreshold) {
-        const articlesWithImagesEl = articlesWithImages.map((article) => U.makeArticleImageTile(env, article)).join('\n');
+        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n');
         doc.getElementById('content').innerHTML = articlesWithImagesEl;
       } else {
-        const articlesWithoutImagesEl = allArticles.map((article) => U.makeArticleListItem(env, article)).join('\n');
+        const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n');
         doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
       }
 
@@ -2072,7 +1752,7 @@ async function execute(argv) {
       logger.log('Create main page redirection...');
       const html = redirectTemplate({
         title: mainPage.replace(/_/g, ' '),
-        target: env.getArticleBase(mainPage, true),
+        target: dump.getArticleBase(mainPage, true),
         strings,
       });
       return writeMainPage(html);

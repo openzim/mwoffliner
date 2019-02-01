@@ -8,8 +8,8 @@ export interface MWMetaData {
     creator: string;
     textDirection: string;
     mainPage: string;
-    
-    
+    ltr: boolean;
+
     base: any;
     wikiPath: any;
     apiPath: any;
@@ -27,7 +27,7 @@ export async function getMwMetaData(): Promise<MWMetaData> {
     const apiPath = opts.apiPath === undefined ? 'w/api.php' : opts.apiPath;
     const modulePath = opts.modulePath === undefined ? 'w/load.php' : opts.modulePath;
     const webUrl = base + wikiPath;
-    
+
     return {
         webUrl,
         apiUrl: `${base}${apiPath}?`,
