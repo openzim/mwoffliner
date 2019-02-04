@@ -1,5 +1,5 @@
 import { ZimCreator, ZimArticle } from 'libzim-binding';
-import * as mkdirp from 'mkdirp';
+import mkdirp from 'mkdirp';
 import * as path from 'path';
 import { rmdirSync } from 'fs';
 import { writeFilePromise } from './util';

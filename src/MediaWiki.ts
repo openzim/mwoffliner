@@ -1,9 +1,8 @@
 import Downloader from './Downloader';
 import logger from './Logger';
-
-import countryLanguage from 'country-language';
 import urlParser from 'url';
 import * as U from './util';
+import * as domino from 'domino';
 
 // Stub for now
 class MediaWiki {
@@ -140,6 +139,122 @@ class MediaWiki {
       logger.warn(`Unable to parse href ${href}`);
       return null;
     }
+  }
+
+
+  getCreatorName() {
+    /*
+     * Find a suitable name to use for ZIM (content) creator
+     * Heuristic: Use basename of the domain unless
+     * - it happens to be a wikimedia project OR
+     * - some domain where the second part of the hostname is longer than the first part
+     */
+    const hostParts = urlParser.parse(this.base).hostname.split('.');
+    let creator = hostParts[0];
+    if (hostParts.length > 1) {
+      const wmProjects = new Set([
+        'wikipedia',
+        'wikisource',
+        'wikibooks',
+        'wikiquote',
+        'wikivoyage',
+        'wikiversity',
+        'wikinews',
+        'wiktionary',
+      ]);
+
+      if (wmProjects.has(hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+        creator = hostParts[1]; // Name of the wikimedia project
+      }
+    }
+    creator = creator.charAt(0).toUpperCase() + creator.substr(1);
+    return creator;
+  }
+
+  public async getTextDirection(downloader: Downloader) {
+    logger.log('Getting text direction...');
+    const { content } = await downloader.downloadContent(this.webUrl);
+    const body = content.toString();
+    const doc = domino.createDocument(body);
+    const contentNode = doc.getElementById('mw-content-text');
+    const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
+    const parts = languageDirectionRegex.exec(body);
+    let isLtr = true;
+    if (parts && parts[1]) {
+      isLtr = (parts[1] === 'ltr');
+    } else if (contentNode) {
+      isLtr = (contentNode.getAttribute('dir') === 'ltr');
+    } else {
+      logger.log('Unable to get the language direction, fallback to ltr');
+      isLtr = true;
+    }
+    const textDir = isLtr ? 'ltr' : 'rtl';
+    logger.log(`Text direction is [${textDir}]`);
+    return textDir;
+  }
+
+  public async getSiteInfo(downloader: Downloader) {
+    const self = this;
+    logger.log('Getting web site name...');
+    const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
+    const body = await downloader.query(query);
+    const entries = body.query.general;
+
+    const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
+    const siteName = entries.sitename;
+
+    const langIso2 = entries.lang;
+    const langIso3 = await U.getIso3(langIso2);
+
+    return {
+      mainPage,
+      siteName,
+      langIso2,
+      langIso3,
+    }
+  }
+
+  public async getSubTitle(downloader: Downloader) {
+    logger.log('Getting sub-title...');
+    const { content } = await downloader.downloadContent(this.webUrl);
+    const html = content.toString();
+    const doc = domino.createDocument(html);
+    const subTitleNode = doc.getElementById('siteSub');
+    return subTitleNode ? subTitleNode.innerHTML : '';
+  }
+
+  async getMwMetaData(downloader: Downloader): Promise<MWMetaData> {
+
+    const creator = this.getCreatorName() || 'Kiwix';
+
+    const [
+      textDir,
+      { langIso2, langIso3, mainPage, siteName },
+      subTitle
+    ] = await Promise.all([
+      this.getTextDirection(downloader),
+      this.getSiteInfo(downloader),
+      this.getSubTitle(downloader),
+    ])
+
+    return {
+      webUrl: this.webUrl,
+      apiUrl: this.apiUrl,
+      modulePath: this.modulePath,
+      webUrlPath: this.webUrlPath,
+      wikiPath: this.wikiPath,
+      base: this.base,
+      apiPath: this.apiPath,
+      domain: this.domain,
+
+      textDir,
+      langIso2,
+      langIso3,
+      title: siteName,
+      subTitle,
+      creator,
+      mainPage,
+    };
   }
 }
 

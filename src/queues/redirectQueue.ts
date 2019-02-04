@@ -1,10 +1,11 @@
 import logger from "../Logger";
 import async from "async";
 import Downloader from "../Downloader";
+import Redis from "../redis";
 
 /* Get ids */
 let articlesPerQuery = 500;
-export function makeRedirectsQueue(downloader: Downloader) {
+export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPage: string) {
     const redirectQueue = async.cargo(async (articleIds, finished) => {
         articleIds = articleIds.filter((id) => id.trim());
         if (articleIds && articleIds.length) {
@@ -46,10 +47,9 @@ export function makeRedirectsQueue(downloader: Downloader) {
                     const originalArticleId = fromXTo[title] || title;
                     if (_redirects) {
                         for (const redirect of _redirects) {
-                            const title = redirect.title.replace(/ /g, mw.spaceDelimiter);
+                            const title = redirect.title.replace(/ /g, downloader.mw.spaceDelimiter);
                             redirects[title] = originalArticleId;
                             redirectsCount += 1;
-
                             if (title === mainPage) {
                                 mainPage = originalArticleId;
                             }
@@ -71,7 +71,7 @@ export function makeRedirectsQueue(downloader: Downloader) {
         } else {
             finished();
         }
-    }, Math.min(speed * 100, 500));
+    }, Math.min(downloader.speed * 100, 500));
     return redirectQueue;
 }
 

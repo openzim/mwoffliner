@@ -4,22 +4,22 @@ import async, { AsyncCargo } from "async";
 import logger from "../Logger";
 import { readFilePromise } from "./misc";
 import { mapLimit } from ".";
+import Redis from "../redis";
+import MediaWiki from "../MediaWiki";
 
-export async function getArticleIds(downloader: Downloader, mainPage: string, articleList?: string) {
-    const redirectQueue = makeRedirectsQueue(downloader);
+export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage: string, articleList?: string) {
+    const redirectQueue = makeRedirectsQueue(downloader, redis, mainPage);
 
     let articleVals: { redirectValues: any, articleDetailXId: any, next: any, scrapeDetails: any }[] = [];
     if (articleList) {
-        const vals = await getArticleIdsForFile(articleList, downloader);
+        const vals = await getArticleIdsForFile(articleList, downloader, mw);
         articleVals = articleVals.concat(vals.filter(a => a));
     } else {
-        const vals = await getArticleIdsForNamespaces(downloader);
+        const vals = await getArticleIdsForNamespaces(downloader, mw);
         articleVals = articleVals.concat(vals);
     }
 
-    if (!articleList && !isMirrored(mainPage)) {
-        articleVals.push(await getArticleIdsForLine(downloader, mainPage));
-    }
+    articleVals.push(await getArticleIdsForLine(downloader, mainPage, mw));
 
     for (let { redirectValues, articleDetailXId, next, scrapeDetails } of articleVals) {
         if (redirectValues.length) { redirectQueue.push(redirectValues); }
@@ -44,7 +44,7 @@ export function drainRedirectQueue(redirectQueue: AsyncCargo) {
 }
 
 /* Parse article list given by API */
-function parseAPIResponse(body: KVS<any>) {
+function parseAPIResponse(body: KVS<any>, mw: MediaWiki) {
     let next = '';
     const entries = body.query && body.query.pages;
     const redirectQueueValues: string[] = [];
@@ -102,26 +102,26 @@ function parseAPIResponse(body: KVS<any>) {
     return { next, redirectValues: redirectQueueValues, articleDetailXId, scrapeDetails };
 }
 
-async function getArticleIdsForLine(downloader: Downloader, line: string) {
+async function getArticleIdsForLine(downloader: Downloader, line: string, mw: MediaWiki) {
     const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '')
     try {
         const body = await downloader.getJSON(mw.articleQueryUrl(title));
-        return parseAPIResponse(body);
+        return parseAPIResponse(body, mw);
     } catch (err) {
         throw new Error(`Invalid body from query of [${title}]`);
     }
 }
 
 /* Get ids from file */
-async function getArticleIdsForFile(articleList: string, downloader: Downloader) {
+async function getArticleIdsForFile(articleList: string, downloader: Downloader, mw: MediaWiki) {
     const lines: string[] = (await readFilePromise(articleList) as string).split('\n');
 
-    return mapLimit(lines, speed, async (line) => {
+    return mapLimit(lines, downloader.speed, async (line) => {
         if (line) {
             const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
             const body = await downloader.getJSON(mw.articleQueryUrl(title))
             if (body) {
-                return parseAPIResponse(body);
+                return parseAPIResponse(body, mw);
             } else {
                 throw new Error(`Invalid body from query of [${title}]`);
             }
@@ -132,17 +132,17 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader)
 }
 
 /* Get ids from Mediawiki API */
-async function getArticleIdsForNamespace(downloader: Downloader, namespace: string, _next?: string): Promise<{ next: string, redirectValues: string[], articleDetailXId: KVS<any>, scrapeDetails: KVS<any> }> {
+async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, namespace: string, _next?: string): Promise<{ next: string, redirectValues: string[], articleDetailXId: KVS<any>, scrapeDetails: KVS<any> }> {
 
     logger.log(`Getting article ids for [namespace=${namespace}] ${_next !== '' ? ` (from ${namespace ? `${namespace}:` : ''}${_next.split('=')[1]})` : ''}`);
 
     const url = mw.pageGeneratorQueryUrl(namespace, _next);
     const body = await downloader.getJSON(url);
 
-    const { next, redirectValues, articleDetailXId, scrapeDetails } = parseAPIResponse(body);
+    const { next, redirectValues, articleDetailXId, scrapeDetails } = parseAPIResponse(body, mw);
 
     if (next) {
-        const nextData = await getArticleIdsForNamespace(downloader, namespace, next);
+        const nextData = await getArticleIdsForNamespace(downloader, mw, namespace, next);
         return {
             next: nextData.next,
             redirectValues: redirectValues.concat(nextData.redirectValues),
@@ -159,10 +159,10 @@ async function getArticleIdsForNamespace(downloader: Downloader, namespace: stri
     }
 }
 
-function getArticleIdsForNamespaces(downloader: Downloader) {
+function getArticleIdsForNamespaces(downloader: Downloader, mw: MediaWiki) {
     return mapLimit(
         mw.namespacesToMirror,
-        speed,
-        (namespace: string) => getArticleIdsForNamespace(downloader, namespace)
+        downloader.speed,
+        (namespace: string) => getArticleIdsForNamespace(downloader, mw, namespace)
     );
 }

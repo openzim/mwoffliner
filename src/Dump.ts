@@ -1,6 +1,5 @@
 import * as pathParser from 'path';
 import * as urlParser from 'url';
-import { MWMetaData } from './util/mediaWiki';
 import { AsyncQueue } from 'async';
 import { existsSync } from 'fs';
 import * as domino from 'domino';

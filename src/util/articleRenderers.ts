@@ -1,5 +1,6 @@
 import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from "../Templates";
 import { getStringsForLang } from ".";
+import { Dump } from "../Dump";
 
 export function renderDesktopArticle(json: any) {
     if (!json) throw new Error(`Cannot render [${json}] into an article`);
@@ -13,9 +14,9 @@ export function renderDesktopArticle(json: any) {
     }
 }
 
-export function renderMCSArticle(json: any, langIso2: string) {
+export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
     const strings = getStringsForLang(langIso2 || 'en', 'en');
-    
+
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({
@@ -25,8 +26,8 @@ export function renderMCSArticle(json: any, langIso2: string) {
     });
 
     // set all other section (closed by default)
-    if (!env.nodet) {
-        json.remaining.sections.forEach((oneSection, i) => {
+    if (!dump.nodet) {
+        json.remaining.sections.forEach((oneSection: any, i: number) => {
             if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
                 html += sectionTemplate({
                     section_index: i,

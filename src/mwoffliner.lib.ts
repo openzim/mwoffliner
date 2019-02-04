@@ -32,7 +32,7 @@ import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
 import * as U from './util';
-import { getArticleThumbnails, getAndProcessStylesheets, getMwMetaData } from './util';
+import { getArticleThumbnails, getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
 import { getArticleIds, drainRedirectQueue } from './util/redirects';
 import { footerTemplate, redirectTemplate, articleListHomeTemplate, htmlTemplateCode } from './Templates';
@@ -127,12 +127,13 @@ async function execute(argv: any) {
   const downloader = new Downloader(
     mw,
     `${config.userAgent} (${adminEmail})`,
+    speed,
     requestTimeout || config.defaults.requestTimeout,
   );
 
   /* Get MediaWiki Info */
 
-  const mwMetaData = await getMwMetaData();
+  const mwMetaData = await mw.getMwMetaData(downloader);
 
   let mainPage = customMainPage || mwMetaData.mainPage;
 
@@ -259,7 +260,7 @@ async function execute(argv: any) {
   await mw.getNamespaces(addNamespaces, downloader);
   // await zim.createDirectories();
 
-  const redirectQueue = await getArticleIds(downloader, mainPage || mwMetaData.mainPage, articleList);
+  const redirectQueue = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
   await drainRedirectQueue(redirectQueue);
 
   for (let _dump of dumps) {
@@ -824,7 +825,7 @@ async function execute(argv: any) {
               centerDiv.appendChild(thumbDiv);
               thumbDiv = centerDiv;
             } else {
-              const revAutoAlign = dump.mwMetaData.ltr ? 'right' : 'left';
+              const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left';
               DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
             }
 
@@ -834,7 +835,7 @@ async function execute(argv: any) {
 
             const thumbcaptionDiv = parsoidDoc.createElement('div');
             thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-            const autoAlign = dump.mwMetaData.ltr ? 'left' : 'right';
+            const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right';
             thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
             if (description) {
               thumbcaptionDiv.innerHTML = description.innerHTML;
@@ -1186,7 +1187,7 @@ async function execute(argv: any) {
         );
 
         /* Create final document by merging template and parsoid documents */
-        htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.ltr ? 'ltr' : 'rtl');
+        htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.textDir);
         htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[
           0
         ].innerHTML;
@@ -1290,7 +1291,7 @@ async function execute(argv: any) {
 
       function saveArticle(articleId: string, finished: Callback) {
         const useParsoidFallback = articleId === mainPage;
-        downloader.getArticle(articleId, mwMetaData.langIso2, useParsoidFallback)
+        downloader.getArticle(articleId, dump, mwMetaData.langIso2, useParsoidFallback)
           .then((html) => {
             if (html) {
               const articlePath = dump.getArticlePath(articleId);
@@ -1342,16 +1343,6 @@ async function execute(argv: any) {
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`;
   }
 
-  function isMirrored(id: string) {
-    if (!articleList && id && id.indexOf(':') >= 0) {
-      const namespace = mw.namespaces[id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter)];
-      if (namespace !== undefined) {
-        return namespace.isContent;
-      }
-    }
-    return id in articleDetailXId;
-  }
-
   function isSubpage(id: string) {
     if (id && id.indexOf('/') >= 0) {
       const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter) : '';
@@ -1361,6 +1352,16 @@ async function execute(argv: any) {
       }
     }
     return false;
+  }
+
+  function isMirrored(id: string) {
+    if (!articleList && id && id.indexOf(':') >= 0) {
+      const namespace = mw.namespaces[id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter)];
+      if (namespace !== undefined) {
+        return namespace.isContent;
+      }
+    }
+    return id in articleDetailXId;
   }
 
   /* Multiple developer friendly functions */

@@ -4,6 +4,7 @@ import async from 'async';
 import logger from "../Logger";
 import Downloader from "../Downloader";
 import { getFullUrl } from '.';
+import { config } from '../config';
 
 export async function getArticleThumbnails(downloader: Downloader, articleList: string[]) {
     logger.info(`Getting article thumbnails`);
@@ -12,6 +13,7 @@ export async function getArticleThumbnails(downloader: Downloader, articleList: 
 
     while (articleIndex < articleList.length - 1 && thumbnailsToDownload.length < 100) {
         try {
+            const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
             const articleId = articleList[articleIndex];
             const resp = await downloader.queryArticleThumbnail(articleId);
             const imageUrl = getFullUrl(webUrlHost, resp.query.pages[Object.keys(resp.query.pages)[0]].thumbnail.source);
@@ -27,6 +29,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: (s
     const mediaItemsToDownload: { url: string, path: string }[] = [];
     let finalCss = '';
     const urlCache: KVS<boolean> = {};
+    const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
 
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
         try {
@@ -69,7 +72,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: (s
                             /* Download CSS dependency, but avoid duplicate calls */
                             if (!urlCache.hasOwnProperty(url) && filename) {
                                 urlCache[url] = true;
-                                mediaItemsToDownload.push({ url, path: dirs.style + '/' + filename });
+                                mediaItemsToDownload.push({ url, path: config.output.dirs.style + '/' + filename });
                             }
                         } else {
                             logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
@@ -82,7 +85,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: (s
         } catch (err) {
             finished(err);
         }
-    }, Number(process.env.speed));
+    }, Number(downloader.speed));
 
     stylesheetQueue.push(links);
 

@@ -10,6 +10,7 @@ import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import { renderDesktopArticle, renderMCSArticle } from './util';
 import MediaWiki from './MediaWiki';
+import { Dump } from './Dump';
 
 const imageminOptions = {
   plugins: [
@@ -28,10 +29,12 @@ class Downloader {
   public requestTimeout: number;
   public mcsUrl: string;
   public parsoidFallbackUrl: string;
+  public speed: number; // TODO: consider moving queueing to the downloader class so the rest of the logic can forget about it
 
-  constructor(mw: MediaWiki, uaString: string, reqTimeout: number) {
+  constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number) {
     this.mw = mw;
     this.uaString = uaString;
+    this.speed = speed;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
 
@@ -102,12 +105,16 @@ class Downloader {
     };
   }
 
+  public query(query: string): KVS<any> {
+    return this.getJSON(`${this.mw.apiPath}?${query}`);
+  }
+
   public queryArticleThumbnail(articleId: string): KVS<any> {
     const url = this.mw.imageQueryUrl(articleId);
     return this.getJSON(url);
   }
 
-  public async getArticle(articleId: string, langIso2: string, useParsoidFallback = false): Promise<string> {
+  public async getArticle(articleId: string, dump: Dump, langIso2: string, useParsoidFallback = false): Promise<string> {
 
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
@@ -125,12 +132,12 @@ class Downloader {
       if (useParsoidFallback) {
         return renderDesktopArticle(json);
       } else {
-        return renderMCSArticle(json, langIso2);
+        return renderMCSArticle(json, dump, langIso2);
       }
 
     } catch (err) {
       if (!useParsoidFallback) {
-        return this.getArticle(articleId, langIso2, true);
+        return this.getArticle(articleId, dump, langIso2, true);
       } else {
         throw err;
       }

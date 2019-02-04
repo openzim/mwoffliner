@@ -1,3 +1,5 @@
+
+import countryLanguage from 'country-language';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
@@ -7,24 +9,24 @@ import { ZimCreator, ZimArticle } from 'libzim-binding';
 import { Config } from '../config';
 import logger from '../Logger';
 
-export function isValidEmail(email) {
+export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
   return emailRegex.test(email);
 }
 
-export function lcFirst(str) {
+export function lcFirst(str: string) {
   str += '';
   const f = str.charAt(0).toLowerCase();
   return f + str.substr(1);
 }
 
-export function ucFirst(str) {
+export function ucFirst(str: string) {
   str += '';
   const f = str.charAt(0).toUpperCase();
   return f + str.substr(1);
 }
 
-function _decodeURIComponent(uri) {
+function _decodeURIComponent(uri: string) {
   try {
     return decodeURIComponent(uri);
   } catch (error) {
@@ -34,7 +36,7 @@ function _decodeURIComponent(uri) {
 }
 export { _decodeURIComponent as decodeURIComponent }
 
-export function touch(paths) {
+export function touch(paths: string[] | string) {
   const currentDate = Date.now();
   paths = paths instanceof Array ? paths : [paths];
   paths.forEach((path) => {
@@ -42,7 +44,7 @@ export function touch(paths) {
   });
 }
 
-export function getFullUrl(webUrlHost, url, baseUrl?) {
+export function getFullUrl(webUrlHost: string, url: string, baseUrl?: string) {
   const urlObject = urlParser.parse(url, false, true);
   if (!urlObject.protocol) {
     const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
@@ -60,7 +62,7 @@ export function getFullUrl(webUrlHost, url, baseUrl?) {
   return url;
 }
 
-export function randomString(len) {
+export function randomString(len: number) {
   let str = '';
   const charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
   for (let i = 0; i < len; i += 1) {
@@ -70,63 +72,9 @@ export function randomString(len) {
   return str;
 }
 
-// export function getCreatorName(mw: MediaWiki) {
-//   /*
-//    * Find a suitable name to use for ZIM (content) creator
-//    * Heuristic: Use basename of the domain unless
-//    * - it happens to be a wikimedia project OR
-//    * - some domain where the second part of the hostname is longer than the first part
-//    */
-//   const hostParts = urlParser.parse(mw.base).hostname.split('.');
-//   let creator = hostParts[0];
-//   if (hostParts.length > 1) {
-//     const wmProjects = [
-//       'wikipedia',
-//       'wikisource',
-//       'wikibooks',
-//       'wikiquote',
-//       'wikivoyage',
-//       'wikiversity',
-//       'wikinews',
-//       'wiktionary',
-//     ];
-//     if (contains(wmProjects, hostParts[1]) || hostParts[0].length < hostParts[1].length) {
-//       creator = hostParts[1]; // Name of the wikimedia project
-//     }
-//   }
-//   creator = creator.charAt(0).toUpperCase() + creator.substr(1);
-//   return creator;
-// }
-
-// export function checkDependencies(env: OfflinerEnv) {
-//   /* Check if opt. binaries are available */
-//   const shouldCheckZimwriterFs = env.dumps.some((dump) => !dump.toLowerCase().includes('nozim'));
-//   const optBinaries = [
-//     'jpegoptim --version',
-//     'pngquant --version',
-//     'gifsicle --version',
-//     'advdef --version',
-//     'file --help',
-//     // 'stat --version',
-//     'convert --version',
-//     'rsvg-convert --version',
-//     shouldCheckZimwriterFs ? 'zimwriterfs --help' : null,
-//   ].filter((a) => a);
-
-//   return Promise.all(
-//     optBinaries.map((execCommand) => {
-//       return new Promise((resolve, reject) => {
-//         exec(execCommand, (error) => {
-//           if (error) { reject(error); } else { resolve(); }
-//         });
-//       });
-//     }),
-//   );
-// }
-
 export function mkdirPromise(path: string) {
   return new Promise((resolve, reject) => {
-    mkdirp(path, (err) => {
+    mkdirp(path, (err: any) => {
       if (err) {
         reject(err);
       } else {
@@ -160,7 +108,7 @@ export function readFilePromise(path: string, encoding = 'utf8') {
   });
 }
 
-export function execPromise(cmd) {
+export function execPromise(cmd: string) {
   return new Promise((resolve, reject) => {
     exec(cmd, (err, stdout) => {
       if (err) {
@@ -172,7 +120,7 @@ export function execPromise(cmd) {
   });
 }
 
-export function contains(arr, value) {
+export function contains(arr: any[], value: any) {
   return arr.some((v) => v === value);
 }
 
@@ -180,7 +128,7 @@ export function contains(arr, value) {
  * Move 'from'.childNodes to 'to' adding them before 'beforeNode'
  * If 'beforeNode' is null, the nodes are appended at the end.
  */
-export function migrateChildren(from, to, beforeNode) {
+export function migrateChildren(from: any, to: any, beforeNode: any) {
   if (beforeNode === undefined) {
     beforeNode = null;
   }
@@ -189,7 +137,7 @@ export function migrateChildren(from, to, beforeNode) {
   }
 }
 
-export function getStringsForLang(language, fallbackLanguage = 'en') {
+export function getStringsForLang(language: string, fallbackLanguage = 'en') {
   let strings: { [id: string]: string } = {};
   try {
     strings = require(`../translation/${language}.json`);
@@ -257,4 +205,16 @@ export function getDumps(format: boolean | boolean[]) {
     dumps = [''];
   }
   return dumps;
+}
+
+export function getIso3(langIso2: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    countryLanguage.getLanguage(langIso2, (error: any, language: KVS<any>) => {
+      if (error || !language.iso639_3) {
+        reject(error);
+      } else {
+        resolve(language.iso639_3 as string);
+      }
+    });
+  });
 }
