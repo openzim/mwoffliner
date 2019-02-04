@@ -3,7 +3,9 @@ import * as urlParser from 'url';
 import { MWMetaData } from './util/mediaWiki';
 import { AsyncQueue } from 'async';
 import { existsSync } from 'fs';
+import * as domino from 'domino';
 import logger from './Logger';
+import Downloader from './Downloader';
 
 
 interface DumpOpts {
@@ -122,11 +124,11 @@ export class Dump {
         return htmlRootPath;
     }
 
-    public async getRelevantStylesheetUrls() {
-        const sheetUrls: string[] = [];
+    public async getRelevantStylesheetUrls(downloader: Downloader) { // TODO: consider moving to Downloader
+        const sheetUrls: (string | DominoElement)[] = [];
 
         /* Load main page to see which CSS files are needed */
-        const { content } = await downloadContentAndCache(this.mwMetaData.webUrl);
+        const { content } = await downloader.downloadContent(this.mwMetaData.webUrl);
         const html = content.toString();
         const doc = domino.createDocument(html);
         const links = doc.getElementsByTagName('link');
@@ -146,9 +148,6 @@ export class Dump {
 
         return sheetUrls.filter(a => a.trim());
     }
-
-
-
 
     public getArticleUrl(articleId: string) {
         return this.getArticleBase(articleId, true);

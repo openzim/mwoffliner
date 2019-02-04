@@ -4,3 +4,6 @@ declare module "*.json" {
     export default value;
 }
 type DominoElement = any;
+
+type Callback = (err?: any, data?: any, extra?: any) => void;
+type KVS<T> = { [key: string]: T };

@@ -5,7 +5,7 @@ import { rmdirSync } from 'fs';
 import { writeFilePromise } from './util';
 
 class ZimCreatorFs extends ZimCreator {
-    public _createZimCreator({ fileName }) {
+    public _createZimCreator({ fileName }: any) {
         try {
             rmdirSync(fileName);
         } catch (err) { /* NOOP */ }

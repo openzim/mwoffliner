@@ -43,6 +43,7 @@
     "@types/async": "^2.0.49",
     "@types/bluebird": "^3.5.25",
     "@types/html-minifier": "^3.5.2",
+    "@types/mkdirp": "^0.5.2",
     "@types/node": "^10.10.1",
     "@types/node-fetch": "^2.1.4",
     "@types/rimraf": "^2.0.2",

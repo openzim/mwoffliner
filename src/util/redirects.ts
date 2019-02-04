@@ -8,16 +8,24 @@ import { mapLimit } from ".";
 export async function getArticleIds(downloader: Downloader, mainPage: string, articleList?: string) {
     const redirectQueue = makeRedirectsQueue(downloader);
 
-    await getArticleIdsForLine(redirectQueue, mainPage);
+    let articleVals: { redirectValues: any, articleDetailXId: any, next: any, scrapeDetails: any }[] = [];
     if (articleList) {
-        await getArticleIdsForFile();
+        const vals = await getArticleIdsForFile(articleList, downloader);
+        articleVals = articleVals.concat(vals.filter(a => a));
     } else {
-        await getArticleIdsForNamespaces();
+        const vals = await getArticleIdsForNamespaces(downloader);
+        articleVals = articleVals.concat(vals);
     }
 
     if (!articleList && !isMirrored(mainPage)) {
-        await getArticleIdsForLine(redirectQueue, mainPage);
+        articleVals.push(await getArticleIdsForLine(downloader, mainPage));
     }
+
+    for (let { redirectValues, articleDetailXId, next, scrapeDetails } of articleVals) {
+        if (redirectValues.length) { redirectQueue.push(redirectValues); }
+        redis.saveArticles(scrapeDetails);
+    }
+
     return redirectQueue;
 }
 
@@ -36,15 +44,14 @@ export function drainRedirectQueue(redirectQueue: AsyncCargo) {
 }
 
 /* Parse article list given by API */
-function parseAPIResponse(body: string) {
+function parseAPIResponse(body: KVS<any>) {
     let next = '';
-    const json = JSON.parse(body);
-    const entries = json.query && json.query.pages;
+    const entries = body.query && body.query.pages;
     const redirectQueueValues: string[] = [];
     const articleDetailXId: KVS<any> = {};
+    const scrapeDetails: KVS<string> = {};
 
     if (entries) {
-        const details: KVS<string> = {};
         Object.keys(entries).map((key) => {
             const entry = entries[key];
             entry.title = entry.title.replace(/ /g, mw.spaceDelimiter);
@@ -71,7 +78,7 @@ function parseAPIResponse(body: string) {
                     }
 
                     /* Save as JSON string */
-                    details[entry.title] = JSON.stringify(articleDetails);
+                    scrapeDetails[entry.title] = JSON.stringify(articleDetails);
                 } else if (entry.pageid) {
                     logger.warn(`Unable to get revisions for ${entry.title}, but entry exists in the database. Article was probably deleted meanwhile.`);
                     delete articleDetailXId[entry.title];
@@ -85,130 +92,77 @@ function parseAPIResponse(body: string) {
     /* Get continue parameters from 'query-continue',
      * unfortunately old MW version does not use the same way
      * than recent */
-    const continueHash = json['query-continue'] && json['query-continue'].allpages;
+    const continueHash = body['query-continue'] && body['query-continue'].allpages;
     if (continueHash) {
         Object.keys(continueHash).forEach((key) => {
             next += `&${key}=${encodeURIComponent(continueHash[key])}`;
         });
     }
 
-    return { next, redirectValues: redirectQueueValues, articleDetailXId };
+    return { next, redirectValues: redirectQueueValues, articleDetailXId, scrapeDetails };
 }
 
-function getArticleIdsForLine(downloader: Downloader, line: string) {
-    if (line) {
-        const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-        return downloader.downloadContent(mw.articleQueryUrl(title))
-            .then(({ content }) => {
-                const body = content.toString();
-                if (body && body.length > 1) {
-                    return parseAPIResponse(body);
-
-
-                    if (redirectValues.length) { redirectQueue.push(redirectValues); }
-                    redis.saveArticles(details);
-                } else {
-                    throw new Error(`Invalid body from query of [${title}]`);
-                }
-            });
-    } else {
-        return Promise.resolve();
+async function getArticleIdsForLine(downloader: Downloader, line: string) {
+    const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '')
+    try {
+        const body = await downloader.getJSON(mw.articleQueryUrl(title));
+        return parseAPIResponse(body);
+    } catch (err) {
+        throw new Error(`Invalid body from query of [${title}]`);
     }
 }
 
 /* Get ids from file */
-async function getArticleIdsForFile(downloader: Downloader, redirectQueue: AsyncCargo) {
+async function getArticleIdsForFile(articleList: string, downloader: Downloader) {
     const lines: string[] = (await readFilePromise(articleList) as string).split('\n');
 
-    mapLimit(lines, speed, (line) => {
+    return mapLimit(lines, speed, async (line) => {
         if (line) {
             const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-            return downloader.downloadContent(mw.articleQueryUrl(title))
-                .then(({ content }) => {
-                    const body = content.toString();
-                    if (body && body.length > 1) {
-                        return parseAPIResponse(body);
-                    } else {
-                        throw new Error(`Invalid body from query of [${title}]`);
-                    }
-                });
+            const body = await downloader.getJSON(mw.articleQueryUrl(title))
+            if (body) {
+                return parseAPIResponse(body);
+            } else {
+                throw new Error(`Invalid body from query of [${title}]`);
+            }
         } else {
             return Promise.reject(`Invalid line value [${line}]`);
         }
-    })
-        .then((retVals) => {
-            for (let { redirectValues, articleDetailXId, next } of retVals) {
-
-                if (redirectValues.length) { redirectQueue.push(redirectValues); }
-                redis.saveArticles(details);
-            }
-        })
-
-    return new Promise((resolve, reject) => {
-        async.eachLimit(
-            lines,
-            speed,
-            (line, finish) => getArticleIdsForLine(redirectQueue, line).then(() => finish(), (err) => finish(err)),
-            (error) => {
-                if (error) {
-                    reject({ message: `Unable to get all article ids for a file`, error });
-                } else {
-                    logger.log('List of article ids to mirror completed');
-                    drainRedirectQueue(redirectQueue).then(resolve, reject);
-                }
-            });
     });
 }
 
 /* Get ids from Mediawiki API */
-function getArticleIdsForNamespace(downloader: Downloader, namespace: string, finished: Callback) {
-    let next = '';
+async function getArticleIdsForNamespace(downloader: Downloader, namespace: string, _next?: string): Promise<{ next: string, redirectValues: string[], articleDetailXId: KVS<any>, scrapeDetails: KVS<any> }> {
 
-    async.doWhilst(
-        (finished) => {
-            logger.log(
-                `Getting article ids for namespace "${namespace}" ${next !== '' ? ` (from ${namespace ? `${namespace}:` : ''}${next.split('=')[1]})` : ''
-                }...`,
-            );
-            const url = mw.pageGeneratorQueryUrl(namespace, next);
-            const dc = downloader.downloadContent.bind(downloader);
-            setTimeout((url, handler) => {
-                dc(url)
-                    .then(({ content }) => handler(content))
-                    .catch((err) => finished(err));
-            },
-                redirectQueue.length() > 30000 ? redirectQueue.length() - 30000 : 0,
-                url,
-                (content: any) => {
-                    const body = content.toString();
-                    if (body && body.length > 1) {
-                        next = parseAPIResponse(body);
-                        finished();
-                    } else {
-                        next = '';
-                        finished({ message: `Error by retrieving ${url}` } as any);
-                    }
-                });
-        },
-        () => next as any,
-        (error) => {
-            if (!error) {
-                logger.log(`List of article ids to mirror completed for namespace "${namespace}"`);
-            }
-            finished(error && { message: `Unable to download article ids`, error });
-        },
-    );
+    logger.log(`Getting article ids for [namespace=${namespace}] ${_next !== '' ? ` (from ${namespace ? `${namespace}:` : ''}${_next.split('=')[1]})` : ''}`);
+
+    const url = mw.pageGeneratorQueryUrl(namespace, _next);
+    const body = await downloader.getJSON(url);
+
+    const { next, redirectValues, articleDetailXId, scrapeDetails } = parseAPIResponse(body);
+
+    if (next) {
+        const nextData = await getArticleIdsForNamespace(downloader, namespace, next);
+        return {
+            next: nextData.next,
+            redirectValues: redirectValues.concat(nextData.redirectValues),
+            articleDetailXId: Object.assign({}, articleDetailXId, nextData.articleDetailXId),
+            scrapeDetails: Object.assign({}, scrapeDetails, nextData.scrapeDetails),
+        }
+    } else {
+        return {
+            next,
+            redirectValues,
+            articleDetailXId,
+            scrapeDetails,
+        }
+    }
 }
 
-function getArticleIdsForNamespaces() {
-    return new Promise((resolve, reject) => {
-        async.eachLimit(mw.namespacesToMirror, mw.namespacesToMirror.length, getArticleIdsForNamespace, (error) => {
-            if (error) {
-                reject(`Unable to get all article ids for in a namespace: ${error}`);
-            } else {
-                logger.log('All articles ids (but without redirect ids) for all namespaces were successfuly retrieved.');
-                drainRedirectQueue(redirectQueue).then(resolve, reject);
-            }
-        });
-    });
+function getArticleIdsForNamespaces(downloader: Downloader) {
+    return mapLimit(
+        mw.namespacesToMirror,
+        speed,
+        (namespace: string) => getArticleIdsForNamespace(downloader, namespace)
+    );
 }

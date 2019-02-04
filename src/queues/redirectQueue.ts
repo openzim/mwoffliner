@@ -5,13 +5,13 @@ import Downloader from "../Downloader";
 /* Get ids */
 let articlesPerQuery = 500;
 export function makeRedirectsQueue(downloader: Downloader) {
-    return async.cargo(async (articleIds, finished) => {
+    const redirectQueue = async.cargo(async (articleIds, finished) => {
         articleIds = articleIds.filter((id) => id.trim());
         if (articleIds && articleIds.length) {
             const queryStrings = backlinkRedirectsQueries(articleIds, articlesPerQuery, 7000);
             logger.info(`Got [${queryStrings.length}] redirect urls for [${articleIds.length}] articles`);
             try {
-                const redirects = {};
+                const redirects: any = {};
                 let redirectsCount = 0;
                 const { pages, normalized } = await (
                     Promise.all(queryStrings.map((query) => downloader.query(query)))
@@ -32,8 +32,8 @@ export function makeRedirectsQueue(downloader: Downloader) {
                 );
 
                 const fromXTo = normalized
-                    .filter((a) => a)
-                    .reduce((acc, item) => {
+                    .filter((a: any) => a)
+                    .reduce((acc: any, item: any) => {
                         acc[item.to] = item.from;
                         return acc;
                     }, {});
@@ -72,6 +72,7 @@ export function makeRedirectsQueue(downloader: Downloader) {
             finished();
         }
     }, Math.min(speed * 100, 500));
+    return redirectQueue;
 }
 
 

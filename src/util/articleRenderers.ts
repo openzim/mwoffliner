@@ -1,3 +1,5 @@
+import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from "../Templates";
+import { getStringsForLang } from ".";
 
 export function renderDesktopArticle(json: any) {
     if (!json) throw new Error(`Cannot render [${json}] into an article`);
@@ -11,7 +13,9 @@ export function renderDesktopArticle(json: any) {
     }
 }
 
-export function renderMCSArticle(json: any) {
+export function renderMCSArticle(json: any, langIso2: string) {
+    const strings = getStringsForLang(langIso2 || 'en', 'en');
+    
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({

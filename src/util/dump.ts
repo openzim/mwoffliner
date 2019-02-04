@@ -10,7 +10,6 @@ export async function getArticleThumbnails(downloader: Downloader, articleList: 
     let articleIndex = 0;
     let thumbnailsToDownload = [];
 
-
     while (articleIndex < articleList.length - 1 && thumbnailsToDownload.length < 100) {
         try {
             const articleId = articleList[articleIndex];
@@ -25,8 +24,9 @@ export async function getArticleThumbnails(downloader: Downloader, articleList: 
 }
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: (string | DominoElement)[]) {
-    const mediaItemsToDownload = [];
+    const mediaItemsToDownload: { url: string, path: string }[] = [];
     let finalCss = '';
+    const urlCache: KVS<boolean> = {};
 
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
         try {

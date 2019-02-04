@@ -11,13 +11,11 @@ import htmlMinifier from 'html-minifier';
 import fetch from 'node-fetch';
 import os from 'os';
 import pathParser from 'path';
-import swig from 'swig-templates';
 import urlParser, { URL } from 'url';
 import unicodeCutter from 'utf8-binary-cutter';
 import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
-import ServiceRunner from 'service-runner';
 import axios from 'axios';
 import { ZimCreator, ZimArticle } from 'libzim-binding';
 import homeDirExpander from 'expand-home-dir';
@@ -29,7 +27,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { contains, writeFilePromise, getStringsForLang, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps } from './util';
+import { contains, writeFilePromise, getStringsForLang, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -37,9 +35,7 @@ import * as U from './util';
 import { getArticleThumbnails, getAndProcessStylesheets, getMwMetaData } from './util';
 import { Dump } from './Dump';
 import { getArticleIds, drainRedirectQueue } from './util/redirects';
-
-type Callback = (err?: any, data?: any, extra?: any) => void;
-type KVS<T> = { [key: string]: T };
+import { footerTemplate, redirectTemplate, articleListHomeTemplate, htmlTemplateCode } from './Templates';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -109,8 +105,6 @@ async function execute(argv: any) {
 
   /* Necessary to avoid problems with https */
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
-  const runner = new ServiceRunner();
 
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
   if (!nodeVersionSatisfiesPackage) {
@@ -197,56 +191,6 @@ async function execute(argv: any) {
     if (!fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
   }
 
-  let parsoidFallbackUrl: string;
-
-  if (localMcs) {
-    // Start Parsoid
-    logger.log('Starting Parsoid & MCS');
-
-    await runner.start({
-      num_workers: 0,
-      services: [{
-        name: 'parsoid',
-        module: 'node_modules/parsoid/lib/index.js',
-        entrypoint: 'apiServiceWorker',
-        conf: {
-          mwApis: [{
-            uri: `${mw.base + mw.apiPath}`,
-          }],
-        },
-      }, {
-        name: 'mcs',
-        module: 'node_modules/service-mobileapp-node/app.js',
-        conf: {
-          port: 6927,
-          mwapi_req: {
-            method: 'post',
-            uri: `https://{{domain}}/${mw.apiPath}`,
-            headers: {
-              'user-agent': '{{user-agent}}',
-            },
-            body: '{{ default(request.query, {}) }}',
-          },
-          restbase_req: {
-            method: '{{request.method}}',
-            uri: 'http://localhost:8000/{{domain}}/v3/{+path}',
-            query: '{{ default(request.query, {}) }}',
-            headers: '{{request.headers}}',
-            body: '{{request.body}}',
-          },
-        },
-      }],
-      logging: {
-        level: 'info',
-      },
-    });
-    const domain = (new URL(mw.base)).host;
-    mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
-    parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
-  } else {
-    mcsUrl = `${mw.base}api/rest_v1/page/mobile-sections/`;
-    parsoidFallbackUrl = `${mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
-  }
 
   /* ********************************* */
   /* RUNNING CODE ******************** */
@@ -257,26 +201,6 @@ async function execute(argv: any) {
   /* Setup redis client */
   const redis = new Redis(argv, config);
 
-  /* Some helpers */
-  function readTemplate(t: string) {
-    return fs.readFileSync(pathParser.resolve(__dirname, '../res', t), 'utf-8');
-  }
-
-  const cssLinks = config.output.cssResources.reduce((buf, css) => {
-    return buf + genHeaderCSSLink(config, css);
-  }, '');
-
-  const jsScripts = config.output.jsResources.reduce((buf, js) => {
-    return buf + genHeaderScript(config, js);
-  }, '');
-
-  /* Compile templates */
-  const redirectTemplate = swig.compile(readTemplate(config.output.templates.redirects));
-  const footerTemplate = swig.compile(readTemplate(config.output.templates.footer));
-  const leadSectionTemplate = swig.compile(readTemplate(config.output.templates.lead_section_wrapper));
-  const sectionTemplate = swig.compile(readTemplate(config.output.templates.section_wrapper));
-  const subSectionTemplate = swig.compile(readTemplate(config.output.templates.subsection_wrapper));
-
   /* ********************************** */
   /* CONSTANT VARIABLE SECTION ******** */
   /* ********************************** */
@@ -285,10 +209,6 @@ async function execute(argv: any) {
   const genericCssModules = config.output.mw.css;
 
   const mediaRegex = /^(.*\/)([^/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6}|)(\.[A-Za-z0-9]{2,6}|)$/;
-  const htmlTemplateCode = readTemplate(config.output.templates.page)
-    .replace('__CSS_LINKS__', cssLinks)
-    .replace('__JS_SCRIPTS__', jsScripts);
-  const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate);
 
   /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
@@ -426,7 +346,7 @@ async function execute(argv: any) {
     await saveStaticFiles(config, zimCreator);
 
     logger.info('Finding stylesheets to download');
-    const stylesheetsToGet = await dump.getRelevantStylesheetUrls();
+    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader);
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`);
 
     logger.log(`Downloading stylesheets and populating media queue`);
@@ -435,6 +355,16 @@ async function execute(argv: any) {
       finalCss
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
+
+
+    // Download Media Items
+    logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
+    await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
+      const { content } = await downloader.downloadContent(url);
+      const article = new ZimArticle(path, content, 'A');
+      return zimCreator.addArticle(article);
+    });
+
 
     const article = new ZimArticle(`style.css`, finalCss, 'A');
     await zimCreator.addArticle(article);
@@ -1360,7 +1290,7 @@ async function execute(argv: any) {
 
       function saveArticle(articleId: string, finished: Callback) {
         const useParsoidFallback = articleId === mainPage;
-        downloader.getArticle(articleId, useParsoidFallback)
+        downloader.getArticle(articleId, mwMetaData.langIso2, useParsoidFallback)
           .then((html) => {
             if (html) {
               const articlePath = dump.getArticlePath(articleId);
