@@ -2,7 +2,7 @@ import { ZimCreator, ZimArticle } from 'libzim-binding';
 import mkdirp from 'mkdirp';
 import * as path from 'path';
 import { rmdirSync } from 'fs';
-import { writeFilePromise } from './util';
+import { writeFilePromise, mkdirPromise } from './util';
 
 class ZimCreatorFs extends ZimCreator {
     public _createZimCreator({ fileName }: any) {
@@ -14,7 +14,7 @@ class ZimCreatorFs extends ZimCreator {
 
     public async addArticle(this: any, article: ZimArticle) {
         const { dir } = path.parse(article.aid);
-        await mkdirp.mkdirp(path.join(this.fileName, dir));
+        await mkdirPromise(path.join(this.fileName, dir));
         return writeFilePromise(path.join(this.fileName, article.aid), article.bufferData);
     }
 

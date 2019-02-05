@@ -112,17 +112,6 @@ export class Dump {
         return zimRootPath;
     }
 
-    public computeHtmlRootPath() {
-        let htmlRootPath;
-        if (this.nozim) {
-            htmlRootPath = this.opts.outputDirectory[0] === '/' ? this.opts.outputDirectory : `${pathParser.resolve(process.cwd(), this.opts.tmpDirectory)}/`;
-        } else {
-            htmlRootPath = this.opts.tmpDirectory[0] === '/' ? this.opts.tmpDirectory : `${pathParser.resolve(process.cwd(), this.opts.tmpDirectory)}/`;
-        }
-        htmlRootPath += `${this.computeFilenameRadical()}/`;
-        return htmlRootPath;
-    }
-
     public async getRelevantStylesheetUrls(downloader: Downloader) { // TODO: consider moving to Downloader
         const sheetUrls: (string | DominoElement)[] = [];
 
@@ -145,15 +134,11 @@ export class Dump {
         const offlineCssUrl = `${this.mwMetaData.webUrl}Mediawiki:offline.css?action=raw`;
         sheetUrls.push(offlineCssUrl);
 
-        return sheetUrls.filter(a => a.trim());
+        return sheetUrls.filter(a => a);
     }
 
     public getArticleUrl(articleId: string) {
         return this.getArticleBase(articleId, true);
-    }
-
-    public getArticlePath(articleId: string, escape?: boolean) {
-        return this.computeHtmlRootPath() + this.getArticleBase(articleId, escape);
     }
 
     public getArticleBase(articleId: string, escape?: boolean) {

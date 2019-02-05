@@ -195,7 +195,7 @@ class MediaWiki {
 
   public async getSiteInfo(downloader: Downloader) {
     const self = this;
-    logger.log('Getting web site name...');
+    logger.log('Getting site info...');
     const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const body = await downloader.query(query);
     const entries = body.query.general;

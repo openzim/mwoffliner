@@ -1,7 +1,5 @@
 class Logger {
-  public verbose: boolean;
-  constructor(verbose: boolean) {
-    this.verbose = verbose;
+  constructor() {
   }
 
   public getTs() {
@@ -9,7 +7,7 @@ class Logger {
   }
 
   public info(...args: any[]) {
-    if (this.verbose) {
+    if (!!process.env.verbose) {
       console.info(`[info] [${this.getTs()}]`, ...args);
     }
   }
@@ -19,7 +17,7 @@ class Logger {
   }
 
   public warn(...args: any[]) {
-    if (this.verbose) {
+    if (!!process.env.verbose) {
       console.warn(`[warn] [${this.getTs()}]`, ...args);
     }
   }
@@ -30,5 +28,5 @@ class Logger {
 }
 
 // export default Logger;
-const logger = new Logger(!!process.env.verbose)
+const logger = new Logger()
 export default logger

@@ -140,10 +140,10 @@ export function migrateChildren(from: any, to: any, beforeNode: any) {
 export function getStringsForLang(language: string, fallbackLanguage = 'en') {
   let strings: { [id: string]: string } = {};
   try {
-    strings = require(`../translation/${language}.json`);
+    strings = require(`../../translation/${language}.json`);
   } catch (err) {
     console.warn(`Couldn't find strings file for [${language}], falling back to [${fallbackLanguage}]`);
-    strings = require(`../translation/${fallbackLanguage}.json`);
+    strings = require(`../../translation/${fallbackLanguage}.json`);
   }
   return strings;
 }
@@ -153,7 +153,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
     .concat(config.output.mainPageCssResources)
     .map(async (css) => {
       try {
-        const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../res/${css}.css`));
+        const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
         const article = new ZimArticle(cssPath(config, css), cssCont, 'A');
         await zimCreator.addArticle(article);
       } catch (error) {
@@ -163,7 +163,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
-      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../res/${js}.js`));
+      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
       const article = new ZimArticle(jsPath(config, js), jsCont, 'A');
       await zimCreator.addArticle(article);
     } catch (error) {

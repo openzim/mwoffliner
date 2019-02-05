@@ -106,7 +106,7 @@ class Downloader {
   }
 
   public query(query: string): KVS<any> {
-    return this.getJSON(`${this.mw.apiPath}?${query}`);
+    return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
   public queryArticleThumbnail(articleId: string): KVS<any> {
@@ -115,7 +115,7 @@ class Downloader {
   }
 
   public async getArticle(articleId: string, dump: Dump, langIso2: string, useParsoidFallback = false): Promise<string> {
-
+    logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
       : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
@@ -145,6 +145,7 @@ class Downloader {
   }
 
   public getJSON<T>(url: string) {
+    logger.info(`Getting JSON from [${url}]`);
     return axios.get<T>(url, { responseType: 'json' }).then(a => a.data);
   }
 
@@ -163,18 +164,13 @@ class Downloader {
 
           finished(null, compressed);
         } catch (err) {
-          finished(url as any, err.stack);
+          logger.warn(`Failed to download from [${url}], retrying`, err);
+          finished(url as any);
         }
       }, (error, data) => {
         if (error) {
           logger.error(`Absolutely unable to retrieve async. URL: ${error}`);
           reject(error);
-          /* Unfortunately, we can not do that because there are
-           * articles which simply will not be parsed correctly by
-           * Parsoid. For example this one
-           * http://parsoid-lb.eqiad.wikimedia.org/dewikivoyage/Via_Jutlandica/Gpx
-           * and this stops the whole dumping process */
-          // process.exit( 1 );
         } else {
           resolve({ content: data, responseHeaders });
         }

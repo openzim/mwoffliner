@@ -8,7 +8,6 @@ function readTemplate(t: string) {
     return readFileSync(pathParser.resolve(__dirname, '../res', t), 'utf-8');
 }
 
-
 const cssLinks = config.output.cssResources.reduce((buf, css) => {
     return buf + genHeaderCSSLink(config, css);
 }, '');

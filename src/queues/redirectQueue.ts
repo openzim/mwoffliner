@@ -17,13 +17,11 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
                 const { pages, normalized } = await (
                     Promise.all(queryStrings.map((query) => downloader.query(query)))
                         .then((resps) => {
-                            return resps.reduce((acc, { content }) => {
-                                const body = content.toString();
-                                const parsedBody = JSON.parse(body);
-                                if (parsedBody.error) {
-                                    throw new Error(`Failed to parse JSON response: [${parsedBody.error}]`);
+                            return resps.reduce((acc, body) => {
+                                if (body.error) {
+                                    throw new Error(`Failed to parse JSON response: [${body.error}]`);
                                 }
-                                const { pages, normalized } = parsedBody.query;
+                                const { pages, normalized } = body.query;
 
                                 acc.normalized = acc.normalized.concat(normalized);
                                 Object.assign(acc.pages, pages);

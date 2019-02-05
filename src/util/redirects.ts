@@ -21,12 +21,15 @@ export async function getArticleIds(downloader: Downloader, redis: Redis, mw: Me
 
     articleVals.push(await getArticleIdsForLine(downloader, mainPage, mw));
 
+    const articleDetailXIdOut: KVS<any> = {};
+
     for (let { redirectValues, articleDetailXId, next, scrapeDetails } of articleVals) {
+        Object.assign(articleDetailXIdOut, articleDetailXId);
         if (redirectValues.length) { redirectQueue.push(redirectValues); }
         redis.saveArticles(scrapeDetails);
     }
 
-    return redirectQueue;
+    return { redirectQueue, articleDetailXId: articleDetailXIdOut };
 }
 
 export function drainRedirectQueue(redirectQueue: AsyncCargo) {

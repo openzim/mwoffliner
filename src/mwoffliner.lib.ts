@@ -84,6 +84,8 @@ async function execute(argv: any) {
     useCache,
   } = argv;
 
+  process.env.verbose = verbose;
+
   let mcsUrl: string;
 
   let articleList = _articleList ? String(_articleList) : _articleList;
@@ -147,7 +149,6 @@ async function execute(argv: any) {
   const dumps = getDumps(format);
 
   const INFINITY_WIDTH = 9999999;
-  const articleDetailXId: KVS<any> = {};
   const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
@@ -260,7 +261,7 @@ async function execute(argv: any) {
   await mw.getNamespaces(addNamespaces, downloader);
   // await zim.createDirectories();
 
-  const redirectQueue = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
+  const { redirectQueue, articleDetailXId } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
   await drainRedirectQueue(redirectQueue);
 
   for (let _dump of dumps) {
@@ -369,10 +370,8 @@ async function execute(argv: any) {
 
     const article = new ZimArticle(`style.css`, finalCss, 'A');
     await zimCreator.addArticle(article);
-
     // await saveStylesheet(dump, zimCreator);
     await saveFavicon(dump, zimCreator);
-
     if (articleList) {
       const thumbnailUrls = await getArticleThumbnails(downloader, articleListLines);
       if (thumbnailUrls.length > 10) {
@@ -386,10 +385,11 @@ async function execute(argv: any) {
         }
       }
     }
-
     await getMainPage(dump, zimCreator);
     if (writeHtmlRedirects) { await saveHtmlRedirects(dump, zimCreator); }
+    debugger
     await saveArticles(zimCreator, dump);
+    debugger
     await drainDownloadFileQueue(zimCreator);
 
     logger.log(`Finishing Zim Creation`);
@@ -600,10 +600,10 @@ async function execute(argv: any) {
           let moduleUri: string;
           let apiParameterOnly;
           if (type === 'js') {
-            moduleUri = pathParser.resolve(dump.computeHtmlRootPath(), jsPath(config, module));
+            moduleUri = pathParser.resolve(dumpTmpDir, jsPath(config, module));
             apiParameterOnly = 'scripts';
           } else if (type === 'css') {
-            moduleUri = pathParser.resolve(dump.computeHtmlRootPath(), cssPath(config, module));
+            moduleUri = pathParser.resolve(dumpTmpDir, cssPath(config, module));
             apiParameterOnly = 'styles';
           }
 
@@ -1294,7 +1294,6 @@ async function execute(argv: any) {
         downloader.getArticle(articleId, dump, mwMetaData.langIso2, useParsoidFallback)
           .then((html) => {
             if (html) {
-              const articlePath = dump.getArticlePath(articleId);
               const prepareAndSaveArticle = async.compose(
                 writeArticle,
                 setFooter,
@@ -1305,7 +1304,6 @@ async function execute(argv: any) {
                 parseHtml,
               );
 
-              logger.info(`Treating and saving article ${articleId} at ${articlePath}...`);
               prepareAndSaveArticle(html, articleId, (error: any) => {
                 if (!error) {
                   logger.info(`Successfully dumped article ${articleId}`);
@@ -1548,11 +1546,6 @@ async function execute(argv: any) {
     return getMediaBase(url, true);
   }
 
-  function getMediaPath(dump: Dump, url: string, escape?: boolean) {
-    const mediaBase = getMediaBase(url, escape);
-    return mediaBase ? dump.computeHtmlRootPath + mediaBase : undefined;
-  }
-
   async function saveFavicon(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Saving favicon.png...');
 
@@ -1588,8 +1581,9 @@ async function execute(argv: any) {
 
           const parsedUrl = urlParser.parse(entries.logo);
           const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-          const faviconPath = dump.computeHtmlRootPath + `favicon.${ext}`;
-          const faviconFinalPath = dump.computeHtmlRootPath + `favicon.png`;
+
+          const faviconPath = pathParser.join(dumpTmpDir, `favicon.${ext}`);
+          const faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
           const logoContent = await downloader.downloadContent(logoUrl);
           await writeFilePromise(faviconPath, logoContent.content);
@@ -1605,6 +1599,7 @@ async function execute(argv: any) {
               });
             });
           }
+          debugger
           return resizeFavicon(zimCreator, faviconFinalPath);
         });
     }

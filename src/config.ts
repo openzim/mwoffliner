@@ -5,7 +5,7 @@ const config = {
   defaults: {
     publisher: 'Kiwix',
     redisConfig: '/dev/shm/redis.sock',
-    requestTimeout: 60,
+    requestTimeout: 60 * 1000,
   },
 
   filters: {
