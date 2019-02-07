@@ -39,7 +39,7 @@ class Downloader {
     this.loginCookie = '';
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
+    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&action=parse&page=`;
   }
 
   public async initLocalMcs() {
@@ -124,11 +124,7 @@ class Downloader {
 
     try {
       // TODO: convert to downloader.getJSON
-      const json = await axios(articleApiUrl, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      }).then((response) => response.data);
-
+      const json = await this.getJSON(articleApiUrl);
 
       if (useParsoidFallback) {
         return renderDesktopArticle(json);
