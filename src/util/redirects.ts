@@ -135,7 +135,7 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader,
 }
 
 /* Get ids from Mediawiki API */
-async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, namespace: string, _next?: string): Promise<{ next: string, redirectValues: string[], articleDetailXId: KVS<any>, scrapeDetails: KVS<any> }> {
+async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, namespace: string, _next: string = ''): Promise<{ next: string, redirectValues: string[], articleDetailXId: KVS<any>, scrapeDetails: KVS<any> }> {
 
     logger.log(`Getting article ids for [namespace=${namespace}] ${_next !== '' ? ` (from ${namespace ? `${namespace}:` : ''}${_next.split('=')[1]})` : ''}`);
 
