@@ -13,6 +13,9 @@ class ZimCreatorFs extends ZimCreator {
     }
 
     public async addArticle(this: any, article: ZimArticle) {
+
+        // TODO: implement redirect articles
+
         const { dir } = path.parse(article.aid);
         await mkdirPromise(path.join(this.fileName, dir));
         return writeFilePromise(path.join(this.fileName, article.aid), article.bufferData);

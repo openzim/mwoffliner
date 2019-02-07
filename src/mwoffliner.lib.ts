@@ -304,19 +304,12 @@ async function execute(argv: any) {
 
 
   async function doDump(dump: Dump) {
-
-    const redirectsFile = path.join(dumpTmpDir, dump.computeFilenameRadical(false, true, false) + '.redirects');
-    await getRedirects(dump, redirectsFile);
-
-
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
 
     const zimCreatorConstructor = dump.nozim ? ZimCreatorFs : ZimCreator;
-
-    // TODO: redirects file
 
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
@@ -332,6 +325,9 @@ async function execute(argv: any) {
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
       });
+
+    logger.log(`Storing redirects`);
+    await getRedirects(dump, zimCreator);
 
     logger.info('Copying Static Resource Files');
     await saveStaticFiles(config, zimCreator);
@@ -368,7 +364,7 @@ async function execute(argv: any) {
         for (let { articleId, imageUrl } of thumbnailUrls) {
           downloadFileQueue.push({ url: imageUrl, zimCreator });
           const internalSrc = getMediaBase(imageUrl, true);
-          
+
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
             { thumbnail: internalSrc },
@@ -446,19 +442,17 @@ async function execute(argv: any) {
     });
   }
 
-  function getRedirects(dump: Dump, redirectsFile: string) {
+  function getRedirects(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Reset redirects cache file (or create it)');
-    fs.openSync(redirectsFile, 'w');
 
     logger.log('Storing redirects...');
     function cacheRedirect(redirectId: string, finished: Callback) {
       redis.getRedirect(redirectId, finished, (target: string) => {
         logger.info(`Storing redirect ${redirectId} (to ${target})...`);
-        const line = 'A\t'
-          + `${dump.getArticleBase(redirectId)}\t`
-          + `${redirectId.replace(/_/g, ' ')}\t`
-          + `${dump.getArticleBase(target, false)}\n`;
-        fs.appendFile(redirectsFile, line, finished);
+        const url = dump.getArticleBase(redirectId);
+        const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', dump.getArticleBase(target, false), `A/${url}`, redirectId.replace(/_/g, ' '));
+        zimCreator.addArticle(redirectArticle)
+          .then(finished, finished);
       });
     }
 
