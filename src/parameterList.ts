@@ -63,7 +63,6 @@ const parameterList = [
   { name: 'tmpDirectory', description: 'Directory where files are temporary stored', required: false },
   { name: 'verbose', description: 'Print debug information to the stdout', required: false },
   { name: 'withoutZimFullTextIndex', description: 'Don\'t include a fulltext search index to the ZIM', required: false },
-  { name: 'localMcs', description: 'Create a local MCS and Parsoid instance default value is false', required: false },
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
 ];
 

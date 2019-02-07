@@ -80,7 +80,6 @@ See [GitHub](https://github.com/openzim/zimwriterfs)
 > mwoffliner \
     --mwUrl=https://es.wikipedia.org \
     --adminEmail=foo@bar.net \
-    --localMcs \
     --verbose \
     --format=nozim \ # Won't make a final ZIM file
     --articleList=./articleList # Will download one article
@@ -92,7 +91,6 @@ const mwoffliner = require('mwoffliner');
 const parameters = {
     mwUrl: "https://es.wikipedia.org",
     adminEmail: "foo@bar.net",
-    localMcs: true,
     verbose: true,
     format: "nozim",
     articleList: "./articleList"

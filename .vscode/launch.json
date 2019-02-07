@@ -12,7 +12,6 @@
             "args": [
                 "--mwUrl=https://en.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
-                "--localMcs",
                 "--verbose",
                 "--format=nozim",
                 "--articleList=./articleList",
