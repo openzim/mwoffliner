@@ -46,7 +46,6 @@ async function execute(argv: any) {
   const {
     speed: _speed,
     adminEmail,
-    localMcs,
     verbose,
     minifyHtml,
     skipCacheCleaning,
@@ -129,13 +128,17 @@ async function execute(argv: any) {
     requestTimeout || config.defaults.requestTimeout,
   );
 
-  if (localMcs) {
-    await downloader.initLocalMcs();
-  }
 
   /* Get MediaWiki Info */
-
   const mwMetaData = await mw.getMwMetaData(downloader);
+
+  const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${mwMetaData.mainPage}`);
+  const useLocalMCS = !MCSMainPageQuery.lead;
+  
+  if (useLocalMCS) {
+    logger.log(`Using a local MCS instance, couldn't find a remote one`);
+    await downloader.initLocalMcs();
+  }
 
   let mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
 
