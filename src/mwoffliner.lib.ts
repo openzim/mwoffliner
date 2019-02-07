@@ -63,7 +63,7 @@ async function execute(argv: any) {
     customZimTitle,
     customZimDescription,
     customZimTags,
-    withoutZimFullTextIndex,
+    withZimFullTextIndex,
     format,
     filenamePrefix,
     resume,
@@ -271,7 +271,7 @@ async function execute(argv: any) {
       customZimDescription,
       customZimTags,
       customZimTitle,
-      withoutZimFullTextIndex,
+      withZimFullTextIndex,
       deflateTmpHtml,
       resume,
       minifyHtml,
@@ -313,7 +313,7 @@ async function execute(argv: any) {
 
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
-      fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
+      fullTextIndexLanguage: !dump.opts.withZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
       welcome: dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index.htm',
     }, {
         favicon: 'favicon.png',

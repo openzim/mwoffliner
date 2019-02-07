@@ -17,7 +17,7 @@ interface DumpOpts {
     cacheDirectory: string;
     keepHtml: boolean;
     publisher: string;
-    withoutZimFullTextIndex: boolean;
+    withZimFullTextIndex: boolean;
     customZimTags?: string;
     customZimTitle?: string;
     customZimDescription?: string;
