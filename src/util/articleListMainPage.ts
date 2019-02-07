@@ -6,5 +6,5 @@ export function makeArticleListItem(dump: Dump, articleEntry: any) {
 }
 
 export function makeArticleImageTile(dump: Dump, articleEntry: any) {
-    return `<a class="item" href="${dump.getArticleBase(articleEntry.title, true)}"><figure><img src="${articleEntry.thumbnail}" /><figcaption>${articleEntry.title.replace(/_/g, ' ')}</figcaption></figure></a>\n`;
+    return `<a class="item" href="${dump.getArticleBase(articleEntry.title || '', true)}"><figure><img src="${articleEntry.thumbnail}" /><figcaption>${(articleEntry.title || '').replace(/_/g, ' ')}</figcaption></figure></a>\n`;
 }

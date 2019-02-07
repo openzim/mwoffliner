@@ -8,8 +8,9 @@ import Downloader from './Downloader';
 
 
 interface DumpOpts {
-    username: any;
-    password: any;
+    tmpDir: string;
+    username: string;
+    password: string;
     spaceDelimiter: string;
     outputDirectory: string;
     tmpDirectory: string;
@@ -25,6 +26,8 @@ interface DumpOpts {
     articleList?: string;
     deflateTmpHtml?: boolean;
     resume?: boolean;
+    minifyHtml: boolean;
+    keepEmptyParagraphs: boolean;
 }
 
 export class Dump {

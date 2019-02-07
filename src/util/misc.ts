@@ -1,4 +1,5 @@
-
+import crypto from 'crypto';
+import unicodeCutter from 'utf8-binary-cutter';
 import countryLanguage from 'country-language';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
@@ -6,8 +7,9 @@ import pathParser from 'path';
 import urlParser, { UrlWithStringQuery } from 'url';
 import { exec } from 'child_process';
 import { ZimCreator, ZimArticle } from 'libzim-binding';
-import { Config } from '../config';
+import { Config, config } from '../config';
 import logger from '../Logger';
+import { MEDIA_REGEX } from '.';
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -217,4 +219,42 @@ export function getIso3(langIso2: string): Promise<string> {
       }
     });
   });
+}
+
+/* Internal path/url functions */
+export function getMediaBase(url: string, escape: boolean) {
+  let root;
+
+  const parts = MEDIA_REGEX.exec(decodeURI(url));
+  if (parts) {
+    root = parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
+  }
+
+  if (!root) {
+    logger.warn(`Unable to parse media url "${url}"`);
+    return '';
+  }
+
+  function e(str: string) {
+    if (typeof str === 'undefined') {
+      return undefined;
+    }
+    return escape ? encodeURIComponent(str) : str;
+  }
+
+  const filenameFirstVariant = parts[2];
+  const filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');
+  let filename = decodeURIComponent(
+    filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant,
+  );
+
+  /* Need to shorten the file due to filesystem limitations */
+  if (unicodeCutter.getBinarySize(filename) > 249) {
+    const ext = pathParser.extname(filename).split('.')[1] || '';
+    const basename = filename.substring(0, filename.length - ext.length - 1) || '';
+    filename = `${unicodeCutter.truncateToBinarySize(basename, 239 - ext.length)
+      + crypto.createHash('md5').update(basename).digest('hex').substring(0, 2)}.${ext}`;
+  }
+
+  return `${config.output.dirs.media}/${e(filename)}`;
 }

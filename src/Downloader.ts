@@ -114,7 +114,7 @@ class Downloader {
     return this.getJSON(url);
   }
 
-  public async getArticle(articleId: string, dump: Dump, langIso2: string, useParsoidFallback = false): Promise<string> {
+  public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<string> {
     logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
@@ -123,6 +123,7 @@ class Downloader {
     logger.log(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
 
     try {
+      // TODO: convert to downloader.getJSON
       const json = await axios(articleApiUrl, {
         method: 'GET',
         headers: { Accept: 'application/json' },
@@ -132,12 +133,12 @@ class Downloader {
       if (useParsoidFallback) {
         return renderDesktopArticle(json);
       } else {
-        return renderMCSArticle(json, dump, langIso2);
+        return renderMCSArticle(json, dump, dump.mwMetaData.langIso2);
       }
 
     } catch (err) {
       if (!useParsoidFallback) {
-        return this.getArticle(articleId, dump, langIso2, true);
+        return this.getArticle(articleId, dump, true);
       } else {
         throw err;
       }

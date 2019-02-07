@@ -5,8 +5,9 @@ import logger from "../Logger";
 import Downloader from "../Downloader";
 import { getFullUrl } from '.';
 import { config } from '../config';
+import MediaWiki from '../MediaWiki';
 
-export async function getArticleThumbnails(downloader: Downloader, articleList: string[]) {
+export async function getArticleThumbnails(downloader: Downloader, mw: MediaWiki, articleList: string[]) {
     logger.info(`Getting article thumbnails`);
     let articleIndex = 0;
     let thumbnailsToDownload = [];
@@ -16,8 +17,10 @@ export async function getArticleThumbnails(downloader: Downloader, articleList: 
             const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
             const articleId = articleList[articleIndex];
             const resp = await downloader.queryArticleThumbnail(articleId);
-            const imageUrl = getFullUrl(webUrlHost, resp.query.pages[Object.keys(resp.query.pages)[0]].thumbnail.source);
-            thumbnailsToDownload.push({ articleId, imageUrl });
+            const page = resp.query.pages[Object.keys(resp.query.pages)[0]];
+            const imageUrl = getFullUrl(webUrlHost, page.thumbnail.source);
+            const id = page.title.replace(/ /g, mw.spaceDelimiter);
+            thumbnailsToDownload.push({ articleId: id, imageUrl });
         } catch (err) { }
         articleIndex += 1;
     }

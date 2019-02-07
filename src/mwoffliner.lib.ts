@@ -6,13 +6,10 @@ import async from 'async';
 import { exec } from 'child_process';
 import crypto from 'crypto';
 import domino from 'domino';
-import fs, { unlinkSync } from 'fs';
-import htmlMinifier from 'html-minifier';
-import fetch from 'node-fetch';
+import fs from 'fs';
 import os from 'os';
 import pathParser from 'path';
-import urlParser, { URL } from 'url';
-import unicodeCutter from 'utf8-binary-cutter';
+import urlParser from 'url';
 import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
@@ -22,20 +19,19 @@ import homeDirExpander from 'expand-home-dir';
 import rimraf from 'rimraf';
 
 import { config } from './config';
-import DU from './DOMUtils';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { contains, writeFilePromise, getStringsForLang, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit } from './util';
+import { writeFilePromise, getStringsForLang, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
-import * as U from './util';
 import { getArticleThumbnails, getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
 import { getArticleIds, drainRedirectQueue } from './util/redirects';
-import { footerTemplate, redirectTemplate, articleListHomeTemplate, htmlTemplateCode } from './Templates';
+import { redirectTemplate, articleListHomeTemplate } from './Templates';
+import { saveArticles } from './util/saveArticles';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -133,11 +129,15 @@ async function execute(argv: any) {
     requestTimeout || config.defaults.requestTimeout,
   );
 
+  if (localMcs) {
+    await downloader.initLocalMcs();
+  }
+
   /* Get MediaWiki Info */
 
   const mwMetaData = await mw.getMwMetaData(downloader);
 
-  let mainPage = customMainPage || mwMetaData.mainPage;
+  let mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
 
   /* Get language specific strings */
   const strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
@@ -149,7 +149,6 @@ async function execute(argv: any) {
   const dumps = getDumps(format);
 
   const INFINITY_WIDTH = 9999999;
-  const webUrlHost = urlParser.parse(mw.webUrl).host;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
   const dumpId = `mwo-dump-${Date.now()}`;
@@ -202,15 +201,6 @@ async function execute(argv: any) {
 
   /* Setup redis client */
   const redis = new Redis(argv, config);
-
-  /* ********************************** */
-  /* CONSTANT VARIABLE SECTION ******** */
-  /* ********************************** */
-
-  const genericJsModules = config.output.mw.js;
-  const genericCssModules = config.output.mw.css;
-
-  const mediaRegex = /^(.*\/)([^/]+)(\/)(\d+px-|)(.+?)(\.[A-Za-z0-9]{2,6}|)(\.[A-Za-z0-9]{2,6}|)$/;
 
   /* ********************************* */
   /* MEDIA RELATED QUEUES ************ */
@@ -266,6 +256,7 @@ async function execute(argv: any) {
 
   for (let _dump of dumps) {
     const dump = new Dump(_dump, {
+      tmpDir: dumpTmpDir,
       username: mwUsername,
       password: mwPassword,
       spaceDelimiter: '_',
@@ -283,6 +274,8 @@ async function execute(argv: any) {
       withoutZimFullTextIndex,
       deflateTmpHtml,
       resume,
+      minifyHtml,
+      keepEmptyParagraphs,
     }, mwMetaData);
     logger.log(`Doing dump: [${dump}]`);
     try {
@@ -312,10 +305,6 @@ async function execute(argv: any) {
 
   async function doDump(dump: Dump) {
 
-    if (useCache) {
-      // await zim.prepareCache();
-    }
-
     const redirectsFile = path.join(dumpTmpDir, dump.computeFilenameRadical(false, true, false) + '.redirects');
     await getRedirects(dump, redirectsFile);
 
@@ -326,6 +315,8 @@ async function execute(argv: any) {
     logger.log(`Writing zim to [${outZim}]`);
 
     const zimCreatorConstructor = dump.nozim ? ZimCreatorFs : ZimCreator;
+
+    // TODO: redirects file
 
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
@@ -342,9 +333,7 @@ async function execute(argv: any) {
         Publisher: dump.opts.publisher,
       });
 
-
-
-    // await zim.createSubDirectories();
+    logger.info('Copying Static Resource Files');
     await saveStaticFiles(config, zimCreator);
 
     logger.info('Finding stylesheets to download');
@@ -358,7 +347,6 @@ async function execute(argv: any) {
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
 
-
     // Download Media Items
     logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
     await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
@@ -367,17 +355,20 @@ async function execute(argv: any) {
       return zimCreator.addArticle(article);
     });
 
-
     const article = new ZimArticle(`style.css`, finalCss, 'A');
     await zimCreator.addArticle(article);
-    // await saveStylesheet(dump, zimCreator);
+
+    logger.log(`Getting Favicon`);
     await saveFavicon(dump, zimCreator);
-    if (articleList) {
-      const thumbnailUrls = await getArticleThumbnails(downloader, articleListLines);
-      if (thumbnailUrls.length > 10) {
+
+    if (articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
+      logger.log(`Getting Article Thumbnails`);
+      const thumbnailUrls = await getArticleThumbnails(downloader, mw, articleListLines);
+      if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         for (let { articleId, imageUrl } of thumbnailUrls) {
           downloadFileQueue.push({ url: imageUrl, zimCreator });
-          const internalSrc = getMediaUrl(imageUrl);
+          const internalSrc = getMediaBase(imageUrl, true);
+          
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
             { thumbnail: internalSrc },
@@ -385,11 +376,23 @@ async function execute(argv: any) {
         }
       }
     }
+
+    logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
-    if (writeHtmlRedirects) { await saveHtmlRedirects(dump, zimCreator); }
-    debugger
-    await saveArticles(zimCreator, dump);
-    debugger
+
+    if (writeHtmlRedirects) {
+      logger.log(`Getting and Writing html Redirects`);
+      await saveHtmlRedirects(dump, zimCreator);
+    }
+
+    logger.log(`Getting articles`);
+    const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
+    logger.log(`Found [${mediaDeps.length}] dependencies`);
+
+    for (let depUrl of mediaDeps) { // TODO: remove downloadFileQueue
+      downloadFileQueue.push({ url: depUrl, zimCreator });
+    }
+
     await drainDownloadFileQueue(zimCreator);
 
     logger.log(`Finishing Zim Creation`);
@@ -496,872 +499,6 @@ async function execute(argv: any) {
     );
   }
 
-  function saveArticles(zimCreator: ZimCreator, dump: Dump) {
-    return new Promise((resolve, reject) => {
-      // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
-      let jsConfigVars: string | RegExpExecArray = '';
-      let jsDependenciesList: string[] = [];
-      let styleDependenciesList: string[] = [];
-
-      function parseHtml(html: string, articleId: string, finished: Callback) {
-        try {
-          finished(null, domino.createDocument(html), articleId);
-        } catch (error) {
-          finished({ message: `Crash while parsing ${articleId}`, error });
-        }
-      }
-
-      function storeDependencies(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
-        const articleApiUrl = mw.articleApiUrl(articleId);
-
-        fetch(articleApiUrl, {
-          headers: { Accept: 'application/json' },
-          method: 'GET',
-        })
-          .then((response: any) => response.json())
-          .then(async ({
-            parse: {
-              modules, modulescripts, modulestyles, headhtml,
-            },
-          }: any) => {
-            jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a);
-            styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a);
-
-            styleDependenciesList = styleDependenciesList.filter(
-              (oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep),
-            );
-
-            logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
-            logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`);
-
-            const allDependenciesWithType = [
-              { type: 'js', moduleList: jsDependenciesList },
-              { type: 'css', moduleList: styleDependenciesList },
-            ];
-
-            allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(dump, oneModule, type as any)));
-
-            // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
-            // the script below extracts the config with a regex executed on the page header returned from the api
-            const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script');
-            const regex = /mw\.config\.set\(\{.*?\}\);/mg;
-            // tslint:disable-next-line:prefer-for-of
-            for (let i = 0; i < scriptTags.length; i += 1) {
-              if (scriptTags[i].text.includes('mw.config.set')) {
-                jsConfigVars = regex.exec(scriptTags[i].text);
-              }
-            }
-            jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
-            jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
-            try {
-              // fs.writeFileSync(pathParser.resolve(dump.computeHtmlRootPath(), jsPath(config, 'jsConfigVars')), jsConfigVars);
-              const article = new ZimArticle(jsPath(config, 'jsConfigVars'), jsConfigVars, 'A');
-              await zimCreator.addArticle(article);
-            } catch (e) {
-              logger.warn('Error writing file', e);
-            }
-
-            finished(null, parsoidDoc, articleId);
-          })
-          .catch((e: any) => {
-            logger.warn(`Error fetching api.php for ${articleApiUrl} ${e}`);
-            finished(null, parsoidDoc, articleId); // calling finished here will allow zim generation to continue event if an article doesn't properly get its modules
-          });
-
-        function downloadAndSaveModule(dump: Dump, module: string, type: 'js' | 'css') {
-          // param :
-          //   module : string : the name of the module
-          //   moduleUri : string : the path where the module will be saved into the zim
-          //   type : string : either 'js' or 'css'
-          // this function save a key into redis db in the form of module.type -> moduleUri
-          // return :
-          //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in redis
-
-          // the 2 variable functions below are a hack to call startUp() (from module startup) when the 3 generic dependencies (startup, jquery, mediawiki) are loaded.
-          // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
-          // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
-          function hackStartUpModule(jsCode: string) {
-            return jsCode.replace(
-              'script=document.createElement(\'script\');',
-              `
-                        document.body.addEventListener('fireStartUp', function () { startUp() }, false);
-                        return;
-                        script=document.createElement('script');`,
-            );
-          }
-          function hackMediaWikiModule(jsCode: string) {
-            jsCode += `(function () {
-                const startUpEvent = new CustomEvent('fireStartUp');
-                document.body.dispatchEvent(startUpEvent);
-            })()`;
-            return jsCode;
-          }
-
-          let moduleUri: string;
-          let apiParameterOnly;
-          if (type === 'js') {
-            moduleUri = pathParser.resolve(dumpTmpDir, jsPath(config, module));
-            apiParameterOnly = 'scripts';
-          } else if (type === 'css') {
-            moduleUri = pathParser.resolve(dumpTmpDir, cssPath(config, module));
-            apiParameterOnly = 'styles';
-          }
-
-          const moduleApiUrl = encodeURI(
-            `${mw.modulePath}?debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
-          );
-          logger.info(`Getting [${type}] module [${moduleApiUrl}]`);
-          return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
-            .then((redisResult) => {
-              if (redisResult === 1) {
-                return fetch(moduleApiUrl, {
-                  method: 'GET',
-                  headers: { Accept: 'text/plain' },
-                })
-                  .then((response: any) => response.text())
-                  .then(async (text: string) => {
-                    if (module === 'startup' && type === 'js') {
-                      text = hackStartUpModule(text);
-                    } else if (module === 'mediawiki' && type === 'js') {
-                      text = hackMediaWikiModule(text);
-                    }
-
-                    try {
-                      const articleId = type === 'js'
-                        ? jsPath(config, module)
-                        : cssPath(config, module);
-                      const article = new ZimArticle(articleId, text, 'A');
-                      await zimCreator.addArticle(article);
-                      logger.info(`created dep ${module} for article ${articleId}`);
-                    } catch (e) {
-                      logger.warn(`Error writing file ${moduleUri} ${e}`);
-                    }
-                  })
-                  .catch((e: any) => logger.warn(`Error fetching load.php for ${articleId} ${e}`));
-              } else {
-                return Promise.resolve();
-              }
-            })
-            .catch((e) => {
-              logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
-            });
-        }
-      }
-
-      function treatMedias(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
-        /* Clean/rewrite image tags */
-        const imgs = parsoidDoc.getElementsByTagName('img');
-        const videos = Array.from(parsoidDoc.getElementsByTagName('video'));
-        const srcCache: KVS<boolean> = {};
-
-        videos.forEach((videoEl: DominoElement) => {
-          // Worth noting:
-          // Video tags are used for audio files too (as opposed to the audio tag)
-          // When it's only audio, there will be a single OGG file
-          // For video, we get multiple SOURCE tages with different resolutions
-
-          const posterUrl = videoEl.getAttribute('poster');
-          const videoPosterUrl = getFullUrl(webUrlHost, posterUrl);
-          const newVideoPosterUrl = getMediaUrl(videoPosterUrl);
-          let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
-
-          // Firefox is not able to display correctly <video> nodes with a height < 40.
-          // In that case the controls are not displayed.
-          if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
-            videoEl.setAttribute('height', '40');
-          }
-
-          // Always show controls
-          videoEl.setAttribute('controls', '40');
-
-          if (dump.nopic || dump.novid || dump.nodet) {
-            DU.deleteNode(videoEl);
-            return;
-          }
-
-          if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
-          videoEl.removeAttribute('resource');
-
-          if (!srcCache.hasOwnProperty(videoPosterUrl)) {
-            srcCache[videoPosterUrl] = true;
-            downloadFileQueue.push({ url: videoPosterUrl, zimCreator });
-          }
-
-          function byWidthXHeight(a: DominoElement, b: DominoElement) {
-            // If there is no width/height, it counts as zero, probably best?
-            // Sometimes (pure audio) there will only be one item
-            // Sometimes (pure audio) there won't be width/height
-            const aWidth = Number(a.getAttribute('data-file-width') || a.getAttribute('data-width') || 0);
-            const aHeight = Number(a.getAttribute('data-file-height') || a.getAttribute('data-height') || 0);
-            const bWidth = Number(b.getAttribute('data-file-width') || b.getAttribute('data-width') || 0);
-            const bHeight = Number(b.getAttribute('data-file-height') || b.getAttribute('data-height') || 0);
-
-            const aVal = aWidth * aHeight;
-            const bVal = bWidth * bHeight;
-            return aVal > bVal ? 1 : -1;
-          }
-
-          videoSources = videoSources.sort(byWidthXHeight);
-
-          const sourcesToRemove = videoSources.slice(1); // All but first
-
-          sourcesToRemove.forEach(DU.deleteNode);
-
-          const sourceEl = videoSources[0]; // Use first source (smallest resolution)
-          const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
-          const newUrl = getMediaUrl(sourceUrl);
-
-          if (!newUrl) {
-            DU.deleteNode(sourceEl);
-            return;
-          }
-
-          /* Download content, but avoid duplicate calls */
-          if (!srcCache.hasOwnProperty(sourceUrl)) {
-            srcCache[sourceUrl] = true;
-            downloadFileQueue.push({ url: sourceUrl, zimCreator });
-          }
-
-          sourceEl.setAttribute('src', newUrl);
-        });
-
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < imgs.length; i += 1) {
-          const img = imgs[i];
-          const imageNodeClass = img.getAttribute('class') || '';
-
-          if (
-            (!dump.nopic
-              || imageNodeClass.search('mwe-math-fallback-image-inline') >= 0
-              || img.getAttribute('typeof') === 'mw:Extension/math')
-            && img.getAttribute('src')
-            && img.getAttribute('src').indexOf('./Special:FilePath/') !== 0
-          ) {
-            /* Remove image link */
-            const linkNode = img.parentNode;
-            if (linkNode.tagName === 'A') {
-              /* Check if the target is mirrored */
-              const href = linkNode.getAttribute('href') || '';
-              const title = mw.extractPageTitleFromHref(href);
-              const keepLink = title && isMirrored(title);
-
-              /* Under certain condition it seems that this is possible
-                               * to have parentNode == undefined, in this case this
-                               * seems preferable to remove the whole link+content than
-                               * keeping a wrong link. See for example this url
-                               * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-              if (!keepLink) {
-                if (linkNode.parentNode) {
-                  linkNode.parentNode.replaceChild(img, linkNode);
-                } else {
-                  DU.deleteNode(img);
-                }
-              }
-            }
-
-            /* Rewrite image src attribute */
-            if (img) {
-              const src = getFullUrl(webUrlHost, img.getAttribute('src'));
-              const newSrc = getMediaUrl(src);
-
-              if (newSrc) {
-                /* Download image, but avoid duplicate calls */
-                if (!srcCache.hasOwnProperty(src)) {
-                  srcCache[src] = true;
-                  downloadFileQueue.push({ url: src, zimCreator });
-                }
-
-                /* Change image source attribute to point to the local image */
-                img.setAttribute('src', newSrc);
-
-                /* Remove useless 'resource' attribute */
-                img.removeAttribute('resource');
-
-                /* Remove srcset */
-                img.removeAttribute('srcset');
-              } else {
-                DU.deleteNode(img);
-              }
-            }
-          } else {
-            DU.deleteNode(img);
-          }
-        }
-
-        /* Improve image frames */
-        const figures = parsoidDoc.getElementsByTagName('figure');
-        const spans = parsoidDoc.querySelectorAll('span[typeof=mw:Image/Frameless]');
-        const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans));
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < imageNodes.length; i += 1) {
-          const imageNode = imageNodes[i];
-          let image;
-          const numImages = imageNode.getElementsByTagName('img').length;
-          const numVideos = imageNode.getElementsByTagName('video').length;
-          if (numImages) {
-            image = imageNode.getElementsByTagName('img')[0];
-          } else if (numVideos) {
-            image = imageNode.getElementsByTagName('video')[0];
-          }
-          const isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
-
-          if (!dump.nopic && imageNode && image) {
-            const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
-            const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
-
-            const descriptions = imageNode.getElementsByTagName('figcaption');
-            const description = descriptions.length > 0 ? descriptions[0] : undefined;
-            const imageWidth = parseInt(image.getAttribute('width'), 10);
-
-            let thumbDiv = parsoidDoc.createElement('div');
-            thumbDiv.setAttribute('class', 'thumb');
-            if (imageNodeClass.search('mw-halign-right') >= 0) {
-              DU.appendToAttr(thumbDiv, 'class', 'tright');
-            } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-              DU.appendToAttr(thumbDiv, 'class', 'tleft');
-            } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-              DU.appendToAttr(thumbDiv, 'class', 'tnone');
-              const centerDiv = parsoidDoc.createElement('center');
-              centerDiv.appendChild(thumbDiv);
-              thumbDiv = centerDiv;
-            } else {
-              const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left';
-              DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
-            }
-
-            const thumbinnerDiv = parsoidDoc.createElement('div');
-            thumbinnerDiv.setAttribute('class', 'thumbinner');
-            thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
-
-            const thumbcaptionDiv = parsoidDoc.createElement('div');
-            thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-            const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right';
-            thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
-            if (description) {
-              thumbcaptionDiv.innerHTML = description.innerHTML;
-            }
-
-            thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
-            thumbinnerDiv.appendChild(thumbcaptionDiv);
-            thumbDiv.appendChild(thumbinnerDiv);
-
-            imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-          } else {
-            DU.deleteNode(imageNode);
-          }
-        }
-
-        finished(null, parsoidDoc, articleId);
-      }
-
-      function rewriteUrls(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
-        /* Go through all links */
-        const as = parsoidDoc.getElementsByTagName('a');
-        const areas = parsoidDoc.getElementsByTagName('area');
-        const linkNodes = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas));
-
-        function removeLinksToUnmirroredArticles(linkNode: DominoElement, href: string, cb: Callback) {
-          const title = mw.extractPageTitleFromHref(href);
-          if (!title) {
-            setImmediate(() => cb());
-            return;
-          }
-
-          if (isMirrored(title)) {
-            /* Deal with local anchor */
-            const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
-            linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
-            setImmediate(() => cb());
-          } else {
-            redis.processRedirectIfExists(title, (res: any) => {
-              if (res) {
-                linkNode.setAttribute('href', dump.getArticleUrl(title));
-              } else {
-                migrateChildren(linkNode, linkNode.parentNode, linkNode);
-                linkNode.parentNode.removeChild(linkNode);
-              }
-              setImmediate(() => cb());
-            });
-          }
-        }
-
-        function rewriteUrl(linkNode: DominoElement, finished: Callback) {
-          const rel = linkNode.getAttribute('rel');
-          let href = linkNode.getAttribute('href') || '';
-
-          if (!href) {
-            DU.deleteNode(linkNode);
-            setImmediate(() => finished());
-          } else if (href.substring(0, 1) === '#') {
-            setImmediate(() => finished());
-          } else {
-            /* Deal with custom geo. URL replacement, for example:
-             * http://maps.wikivoyage-ev.org/w/poimap2.php?lat=44.5044943&lon=34.1969633&zoom=15&layer=M&lang=ru&name=%D0%9C%D0%B0%D1%81%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0
-             * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
-             */
-            if (rel !== 'mw:WikiLink') {
-              let lat;
-              let lon;
-              if (/poimap2\.php/i.test(href)) {
-                const hrefQuery = urlParser.parse(href, true).query;
-                lat = parseFloat(hrefQuery.lat as string);
-                lon = parseFloat(hrefQuery.lon as string);
-              } else if (/geohack\.php/i.test(href)) {
-                let { params } = urlParser.parse(href, true).query;
-
-                /* "params" might be an array, try to detect the geo localization one */
-                if (params instanceof Array) {
-                  let i = 0;
-                  while (params[i] && isNaN(+params[i][0])) {
-                    i += 1;
-                  }
-                  params = params[i];
-                }
-
-                if (params) {
-                  // see https://bitbucket.org/magnusmanske/geohack/src public_html geo_param.php
-                  const pieces = params.toUpperCase().split('_');
-                  const semiPieces = pieces.length > 0 ? pieces[0].split(';') : undefined;
-                  if (semiPieces && semiPieces.length === 2) {
-                    [lat, lon] = semiPieces;
-                  } else {
-                    const factors = [1, 60, 3600];
-                    let offs = 0;
-
-                    const deg = (hemiHash: any) => {
-                      let out = 0;
-                      let hemiSign = 0;
-                      for (let i = 0; i < 4 && i + offs < pieces.length; i += 1) {
-                        const v = pieces[i + offs];
-                        hemiSign = hemiHash[v];
-                        if (hemiSign) {
-                          offs = i + 1;
-                          break;
-                        }
-                        out += +v / factors[i];
-                      }
-                      return out * hemiSign;
-                    };
-
-                    lat = deg({ N: 1, S: -1 });
-                    lon = deg({ E: 1, W: -1, O: 1 });
-                  }
-                }
-              } else if (/Special:Map/i.test(href)) {
-                const parts = href.split('/');
-                lat = parts[4];
-                lon = parts[5];
-              } else if (rel === 'mw:MediaLink') {
-                if (!dump.nopdf && /\.pdf/i.test(href)) {
-                  try {
-                    linkNode.setAttribute('href', getMediaUrl(href));
-                    downloadFileQueue.push({ url: href, zimCreator });
-                  } catch (err) {
-                    logger.warn('Error parsing url:', err);
-                    DU.deleteNode(linkNode);
-                  }
-                }
-              }
-
-              if (!isNaN(lat) && !isNaN(lon)) {
-                href = `geo:${lat},${lon}`;
-                linkNode.setAttribute('href', href);
-              }
-            }
-
-            if (rel) { // This is Parsoid HTML
-              /* Add 'external' class to interwiki links */
-              if (rel === 'mw:WikiLink/Interwiki') {
-                DU.appendToAttr(linkNode, 'class', 'external');
-              }
-
-              /* Check if the link is "valid" */
-              if (!href) {
-                return finished({ message: `No href attribute in the following code, in article ${articleId}\n${linkNode.outerHTML}` });
-              }
-
-              /* Rewrite external links starting with // */
-              if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
-                if (href.substring(0, 1) === '/') {
-                  linkNode.setAttribute('href', getFullUrl(webUrlHost, href));
-                } else if (href.substring(0, 2) === './') {
-                  migrateChildren(linkNode, linkNode.parentNode, linkNode);
-                  linkNode.parentNode.removeChild(linkNode);
-                }
-                setImmediate(() => finished());
-              } else if (rel === 'mw:WikiLink' || rel === 'mw:referencedBy') {
-                removeLinksToUnmirroredArticles(linkNode, href, finished);
-              } else {
-                setImmediate(() => finished());
-              }
-            } else { // This is MediaWiki HTML
-              removeLinksToUnmirroredArticles(linkNode, href, finished);
-            }
-          }
-        }
-
-        async.eachLimit(linkNodes, speed, rewriteUrl, (error) => {
-          finished(error && { message: `Problem rewriting urls`, error }, parsoidDoc, articleId);
-        });
-      }
-
-      function applyOtherTreatments(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
-        const filtersConfig = config.filters;
-
-        /* Don't need <link> and <input> tags */
-        const nodesToDelete: Array<{ class?: string, tag?: string, filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }];
-
-        /* Remove "map" tags if necessary */
-        if (dump.nopic) {
-          nodesToDelete.push({ tag: 'map' });
-        }
-
-        /* Remove useless DOM nodes without children */
-        function emptyChildFilter(n: any) {
-          return !n.innerHTML;
-        }
-        nodesToDelete.push({ tag: 'li', filter: emptyChildFilter });
-        nodesToDelete.push({ tag: 'span', filter: emptyChildFilter });
-
-        /* Remove gallery boxes if pics need stripping of if it doesn't have thumbs */
-        nodesToDelete.push({
-          class: 'gallerybox',
-          filter(n) {
-            return !n.getElementsByTagName('img').length
-              && !n.getElementsByTagName('audio').length
-              && !n.getElementsByTagName('video').length;
-          },
-        });
-        nodesToDelete.push({
-          class: 'gallery',
-          filter(n) {
-            return !n.getElementsByClassName('gallerybox').length;
-          },
-        });
-
-        /* Remove element with black listed CSS classes */
-        filtersConfig.cssClassBlackList.forEach((classname) => {
-          nodesToDelete.push({ class: classname });
-        });
-
-        if (dump.nodet) {
-          filtersConfig.nodetCssClassBlackList.forEach((classname) => {
-            nodesToDelete.push({ class: classname });
-          });
-        }
-
-        /* Remove element with black listed CSS classes and no link */
-        filtersConfig.cssClassBlackListIfNoLink.forEach((classname) => {
-          nodesToDelete.push({
-            class: classname,
-            filter(n) {
-              return n.getElementsByTagName('a').length === 0;
-            },
-          });
-        });
-
-        /* Delete them all */
-        nodesToDelete.forEach((t) => {
-          let nodes;
-          if (t.tag) {
-            nodes = parsoidDoc.getElementsByTagName(t.tag);
-          } else if (t.class) {
-            nodes = parsoidDoc.getElementsByClassName(t.class);
-          } else {
-            return; /* throw error? */
-          }
-
-          const f = t.filter;
-          // tslint:disable-next-line:prefer-for-of
-          for (let i = 0; i < nodes.length; i += 1) {
-            if (!f || f(nodes[i])) {
-              DU.deleteNode(nodes[i]);
-            }
-          }
-        });
-
-        /* Go through all reference calls */
-        const spans = parsoidDoc.getElementsByTagName('span');
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < spans.length; i += 1) {
-          const span = spans[i];
-          const rel = span.getAttribute('rel');
-          if (rel === 'dc:references') {
-            const sup = parsoidDoc.createElement('sup');
-            if (span.innerHTML) {
-              sup.id = span.id;
-              sup.innerHTML = span.innerHTML;
-              span.parentNode.replaceChild(sup, span);
-            } else {
-              DU.deleteNode(span);
-            }
-          }
-        }
-
-        /* Remove element with id in the blacklist */
-        filtersConfig.idBlackList.forEach((id) => {
-          const node = parsoidDoc.getElementById(id);
-          if (node) {
-            DU.deleteNode(node);
-          }
-        });
-
-        /* Force display of element with that CSS class */
-        filtersConfig.cssClassDisplayList.map((classname) => {
-          const nodes = parsoidDoc.getElementsByClassName(classname);
-          // tslint:disable-next-line:prefer-for-of
-          for (let i = 0; i < nodes.length; i += 1) {
-            nodes[i].style.removeProperty('display');
-          }
-        });
-
-        /* Remove empty paragraphs */
-        if (!keepEmptyParagraphs) {
-          for (let level = 5; level > 0; level--) {
-            const paragraphNodes = parsoidDoc.getElementsByTagName(`h${level}`);
-            // tslint:disable-next-line:prefer-for-of
-            for (let i = 0; i < paragraphNodes.length; i += 1) {
-              const paragraphNode = paragraphNodes[i];
-              const nextElementNode = DU.nextElementSibling(paragraphNode);
-
-              /* No nodes */
-              if (!nextElementNode) {
-                DU.deleteNode(paragraphNode);
-              } else {
-                /* Delete if nextElementNode is a paragraph with <= level */
-                const nextElementNodeTag = nextElementNode.tagName.toLowerCase();
-                if (
-                  nextElementNodeTag.length > 1
-                  && nextElementNodeTag[0] === 'h'
-                  && !isNaN(nextElementNodeTag[1])
-                  && nextElementNodeTag[1] <= level
-                ) {
-                  DU.deleteNode(paragraphNode);
-                }
-              }
-            }
-          }
-        }
-
-        /* Clean the DOM of all uncessary code */
-        const allNodes = parsoidDoc.getElementsByTagName('*');
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < allNodes.length; i += 1) {
-          const node = allNodes[i];
-          node.removeAttribute('data-parsoid');
-          node.removeAttribute('typeof');
-          node.removeAttribute('about');
-          node.removeAttribute('data-mw');
-
-          if (node.getAttribute('rel') && node.getAttribute('rel').substr(0, 3) === 'mw:') {
-            node.removeAttribute('rel');
-          }
-
-          /* Remove a few css calls */
-          filtersConfig.cssClassCallsBlackList.map((classname) => {
-            if (node.getAttribute('class')) {
-              node.setAttribute('class', node.getAttribute('class').replace(classname, ''));
-            }
-          });
-        }
-
-        finished(null, parsoidDoc, articleId);
-      }
-
-      function setFooter(parsoidDoc: DominoElement, articleId: string, finished: Callback) {
-        const htmlTemplateDoc = domino.createDocument(
-          htmlTemplateCode
-            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars') : '')
-            .replace(
-              '__ARTICLE_JS_LIST__',
-              jsDependenciesList.length !== 0
-                ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep)).join('\n')
-                : '',
-            )
-            .replace(
-              '__ARTICLE_CSS_LIST__',
-              styleDependenciesList.length !== 0
-                ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep)).join('\n')
-                : '',
-            ),
-        );
-
-        /* Create final document by merging template and parsoid documents */
-        htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.textDir);
-        htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[
-          0
-        ].innerHTML;
-
-        /* Title */
-        htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-          ? htmlTemplateDoc.getElementById('title_0').textContent
-          : articleId.replace(/_/g, ' ');
-        DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
-
-        /* Subpage */
-        if (isSubpage(articleId) && mainPage !== articleId) {
-          const headingNode = htmlTemplateDoc.getElementById('mw-content-text');
-          const subpagesNode = htmlTemplateDoc.createElement('span');
-          const parents = articleId.split('/');
-          parents.pop();
-          let subpages = '';
-          let parentPath = '';
-          parents.map((parent) => {
-            const label = parent.replace(/_/g, ' ');
-            const isParentMirrored = isMirrored(parentPath + parent);
-            subpages
-              += `&lt; ${
-              isParentMirrored
-                ? `<a href="${dump.getArticleUrl(parentPath + parent)}" title="${label}">`
-                : ''
-              }${label
-              }${isParentMirrored ? '</a> ' : ' '}`;
-            parentPath += `${parent}/`;
-          });
-          subpagesNode.innerHTML = subpages;
-          subpagesNode.setAttribute('class', 'subpages');
-          headingNode.parentNode.insertBefore(subpagesNode, headingNode);
-        }
-
-        /* Set footer */
-        const div = htmlTemplateDoc.createElement('div');
-        const { oldId } = articleDetailXId[articleId];
-        redis.getArticle(articleId, (error: any, detailsJson: any) => {
-          if (error) {
-            finished({ message: `Unable to get the details from redis for article ${articleId}`, error });
-          } else {
-            /* Is seems that sporadically this goes wrong */
-            const details = JSON.parse(detailsJson);
-
-            /* Revision date */
-            const timestamp = details.t;
-            const date = new Date(timestamp * 1000);
-            div.innerHTML = footerTemplate({
-              articleId: encodeURIComponent(articleId),
-              webUrl: mw.webUrl,
-              creator: dump.mwMetaData.creator,
-              oldId,
-              date: date.toISOString().substring(0, 10),
-              strings,
-            });
-            htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
-            addNoIndexCommentToElement(div);
-
-            /* Geo-coordinates */
-            const geoCoordinates = details.g;
-            if (geoCoordinates) {
-              const metaNode = htmlTemplateDoc.createElement('meta');
-              metaNode.name = 'geo.position';
-              metaNode.content = geoCoordinates; // latitude + ';' + longitude;
-              htmlTemplateDoc.getElementsByTagName('head')[0].appendChild(metaNode);
-            }
-
-            finished(null, htmlTemplateDoc, articleId);
-          }
-        });
-      }
-
-      function writeArticle(doc: DominoElement, articleId: string, finished: Callback) {
-        logger.log(`Saving article ${articleId}...`);
-        let html = doc.documentElement.outerHTML;
-
-        if (minifyHtml) {
-          html = htmlMinifier.minify(html, {
-            removeComments: true,
-            conservativeCollapse: true,
-            collapseBooleanAttributes: true,
-            removeRedundantAttributes: true,
-            removeEmptyAttributes: true,
-            minifyCSS: true,
-          });
-        }
-
-        if (dump.opts.deflateTmpHtml) {
-          zlib.deflate(html, (error, deflatedHtml) => {
-            // fs.writeFile(dump.getArticlePath(articleId), deflatedHtml, finished);
-            const article = new ZimArticle(articleId + '.html', deflatedHtml, 'A', 'text/html');
-            zimCreator.addArticle(article).then(finished, finished);
-          });
-        } else {
-          // fs.writeFile(dump.getArticlePath(articleId), html, finished);
-          const article = new ZimArticle(articleId + '.html', html, 'A', 'text/html');
-          zimCreator.addArticle(article).then(finished, finished);
-        }
-      }
-
-      function saveArticle(articleId: string, finished: Callback) {
-        const useParsoidFallback = articleId === mainPage;
-        downloader.getArticle(articleId, dump, mwMetaData.langIso2, useParsoidFallback)
-          .then((html) => {
-            if (html) {
-              const prepareAndSaveArticle = async.compose(
-                writeArticle,
-                setFooter,
-                applyOtherTreatments,
-                rewriteUrls,
-                treatMedias,
-                storeDependencies,
-                parseHtml,
-              );
-
-              prepareAndSaveArticle(html, articleId, (error: any) => {
-                if (!error) {
-                  logger.info(`Successfully dumped article ${articleId}`);
-                  finished();
-                } else {
-                  logger.warn(`Error preparing and saving file, skipping [${articleId}]`, error);
-                  finished(error);
-                }
-              });
-            } else {
-              throw new Error(`No HTML was found`);
-            }
-          })
-          .catch((e) => {
-            logger.error(`Error handling json response from api. ${e}`);
-            delete articleDetailXId[articleId];
-            finished();
-          });
-      }
-
-      logger.log('Saving articles...');
-      async.eachLimit(Object.keys(articleDetailXId), speed, saveArticle, (error) => {
-        if (error) {
-          reject({ message: `Fatal Error:`, error });
-        } else {
-          logger.log('All articles were retrieved and saved.');
-          resolve();
-        }
-      });
-    });
-  }
-
-  function addNoIndexCommentToElement(element: DominoElement) {
-    const slices = element.parentElement.innerHTML.split(element.outerHTML);
-    element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`;
-  }
-
-  function isSubpage(id: string) {
-    if (id && id.indexOf('/') >= 0) {
-      const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter) : '';
-      const ns = mw.namespaces[namespace]; // namespace already defined
-      if (ns !== undefined) {
-        return ns.allowedSubpages;
-      }
-    }
-    return false;
-  }
-
-  function isMirrored(id: string) {
-    if (!articleList && id && id.indexOf(':') >= 0) {
-      const namespace = mw.namespaces[id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter)];
-      if (namespace !== undefined) {
-        return namespace.isContent;
-      }
-    }
-    return id in articleDetailXId;
-  }
-
   /* Multiple developer friendly functions */
   function downloadContentAndCache(url: string): Promise<{ content: any, responseHeaders: any }> {
     return new Promise((resolve, reject) => {
@@ -1420,9 +557,9 @@ async function execute(argv: any) {
       return;
     }
 
-    logger.info(`Downloading and Cacheing [${url}]`);
+    logger.info(`Downloading and Caching [${url}]`);
 
-    const parts = mediaRegex.exec(decodeURI(url));
+    const parts = MEDIA_REGEX.exec(decodeURI(url));
     const filenameBase = parts[2].length > parts[5].length
       ? parts[2]
       : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
@@ -1504,48 +641,6 @@ async function execute(argv: any) {
     });
   }
 
-  /* Internal path/url functions */
-  function getMediaBase(url: string, escape: boolean) {
-    let root;
-
-    const parts = mediaRegex.exec(decodeURI(url));
-    if (parts) {
-      root = parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-    }
-
-    if (!root) {
-      logger.warn(`Unable to parse media url "${url}"`);
-      return '';
-    }
-
-    function e(str: string) {
-      if (typeof str === 'undefined') {
-        return undefined;
-      }
-      return escape ? encodeURIComponent(str) : str;
-    }
-
-    const filenameFirstVariant = parts[2];
-    const filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-    let filename = U.decodeURIComponent(
-      filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant,
-    );
-
-    /* Need to shorten the file due to filesystem limitations */
-    if (unicodeCutter.getBinarySize(filename) > 249) {
-      const ext = pathParser.extname(filename).split('.')[1] || '';
-      const basename = filename.substring(0, filename.length - ext.length - 1) || '';
-      filename = `${unicodeCutter.truncateToBinarySize(basename, 239 - ext.length)
-        + crypto.createHash('md5').update(basename).digest('hex').substring(0, 2)}.${ext}`;
-    }
-
-    return `${config.output.dirs.media}/${e(filename)}`;
-  }
-
-  function getMediaUrl(url: string) {
-    return getMediaBase(url, true);
-  }
-
   async function saveFavicon(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Saving favicon.png...');
 
@@ -1599,7 +694,6 @@ async function execute(argv: any) {
               });
             });
           }
-          debugger
           return resizeFavicon(zimCreator, faviconFinalPath);
         });
     }
@@ -1658,8 +752,7 @@ async function execute(argv: any) {
         },
       );
 
-      const minImageThreshold = 10;
-      if (articlesWithImages.length > minImageThreshold) {
+      if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n');
         doc.getElementById('content').innerHTML = articlesWithImagesEl;
       } else {

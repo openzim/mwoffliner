@@ -86,13 +86,16 @@ class Redis {
     });
   }
 
-  public processRedirectIfExists(targetId: any, processor: any) {
+  public async processRedirectIfExists(targetId: any) {
     try {
-      this.redisClient.hexists(this.redisRedirectsDatabase, targetId, (error: any, res: any) => {
-        if (error) {
-          throw new Error(`Unable to check redirect existence with redis: ${error}`);
-        }
-        processor(res);
+      return new Promise((resolve, reject) => {
+        this.redisClient.hexists(this.redisRedirectsDatabase, targetId, (error: any, res: any) => {
+          if (error) {
+            reject(`Unable to check redirect existence with redis: ${error}`);
+          } else {
+            resolve(res);
+          }
+        });
       });
     } catch (error) {
       throw new Error(`Exception by requesting redis ${error}`);
@@ -100,8 +103,13 @@ class Redis {
   }
 
   /* ------------ Article methods -------------- */
-  public getArticle(articleId: string, cb: Callback) {
-    this.redisClient.hget(this.redisArticleDetailsDatabase, articleId, cb);
+  public getArticle(articleId: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.redisClient.hget(this.redisArticleDetailsDatabase, articleId, (err: any, res: string) => {
+        if (err) reject(err);
+        else resolve(res);
+      });
+    });
   }
 
   public saveArticles(articles: string[]) {
