@@ -40,17 +40,17 @@
     "node": ">=8.12.0"
   },
   "dependencies": {
-    "@types/async": "^2.0.49",
+    "@types/async": "^2.4.0",
     "@types/bluebird": "^3.5.25",
     "@types/html-minifier": "^3.5.2",
     "@types/imagemin": "^6.0.0",
     "@types/imagemin-gifsicle": "^5.2.0",
     "@types/imagemin-jpegtran": "^5.0.0",
-    "@types/node": "^10.10.1",
+    "@types/node": "^10.12.21",
     "@types/redis": "^2.8.10",
     "@types/rimraf": "^2.0.2",
     "@types/semver": "^5.5.0",
-    "@types/yargs": "^12.0.0",
+    "@types/yargs": "^12.0.8",
     "async": "^1.5.2",
     "axios": "^0.18.0",
     "bluebird": "^3.5.3",
@@ -69,16 +69,16 @@
     "libzim-binding": "file:../nbind-libzim",
     "mkdirp": "^0.5.1",
     "mocha": "^5.2.0",
-    "moment": "^2.21.0",
+    "moment": "^2.24.0",
     "parsoid": "^0.10.0",
     "redis": "^2.8.0",
     "rimraf": "^2.6.3",
     "service-mobileapp-node": "git+https://github.com/wikimedia/mediawiki-services-mobileapps.git#d244439",
     "service-runner": "^2.6.8",
-    "snyk": "^1.118.1",
+    "snyk": "^1.125.0",
     "swig-templates": "^2.0.2",
     "tslint": "^5.11.0",
-    "typescript": "^3.0.3",
+    "typescript": "^3.3.1",
     "utf8-binary-cutter": "^0.9.1",
     "yargs": "^4.7.1"
   },
@@ -88,9 +88,9 @@
     "zim"
   ],
   "devDependencies": {
+    "@percy/puppeteer": "^1.0.3",
     "eslint": "^4.18.2",
-    "@percy/puppeteer": "^1.0.0-beta.5",
-    "puppeteer": "^1.11.0"
+    "puppeteer": "^1.12.2"
   },
   "snyk": true
 }
