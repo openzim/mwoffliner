@@ -278,11 +278,24 @@ async function execute(argv: any) {
       keepEmptyParagraphs,
     }, mwMetaData);
     logger.log(`Doing dump: [${dump}]`);
+    let shouldSkip = false;
     try {
       dump.checkResume();
-      await doDump(dump);
+    } catch (err) {
+      shouldSkip = true;
+    }
+
+    if (shouldSkip) {
+      logger.log(`Skipping dump: [${dump}]`);
+    } else {
+      try {
+        await doDump(dump);
+      } catch (err) {
+        debugger;
+        throw err;
+      }
       logger.log(`Finished dump: [${dump}]`);
-    } catch (err) { }
+    }
   }
 
   if (!useCache || skipCacheCleaning) {
@@ -346,9 +359,13 @@ async function execute(argv: any) {
     // Download Media Items
     logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
     await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
-      const { content } = await downloader.downloadContent(url);
-      const article = new ZimArticle(path, content, 'A');
-      return zimCreator.addArticle(article);
+      try {
+        const { content } = await downloader.downloadContent(url);
+        const article = new ZimArticle(path, content, 'A');
+        return zimCreator.addArticle(article);
+      } catch (err) {
+        logger.warn(`Failed to download item [${url}], skipping`);
+      }
     });
 
     const article = new ZimArticle(`style.css`, finalCss, 'A');

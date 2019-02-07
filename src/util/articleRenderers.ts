@@ -8,8 +8,10 @@ export function renderDesktopArticle(json: any) {
         return json.visualeditor.content;
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
+    } else if (json.parse && json.parse.text) {
+        return json.parse.text['*'];
     } else if (json.error) {
-        console.error(`Error by retrieving article: ${json.error.info}`);
+        console.error(`Error retrieving article: ${json.error.info}`);
         return ''
     }
 }
