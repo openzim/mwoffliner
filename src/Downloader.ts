@@ -82,7 +82,7 @@ class Downloader {
         level: 'info',
       },
     });
-    const domain = (new URL(this.mw.base)).host;
+    const domain = (urlParser.parse(this.mw.base)).host;
     const webUrlHost = urlParser.parse(this.mw.webUrl).host;
     this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
