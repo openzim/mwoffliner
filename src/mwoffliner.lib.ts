@@ -249,6 +249,7 @@ async function execute(argv: any) {
   // await zim.createDirectories();
 
   const { redirectQueue, articleDetailXId } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
+  logger.info(`Redirect queue has [${redirectQueue.length()}] items`);
   await drainRedirectQueue(redirectQueue);
 
   for (const _dump of dumps) {
@@ -320,9 +321,9 @@ async function execute(argv: any) {
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-      welcome: dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index.htm',
+      welcome: 'A/' + (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index.htm'),
     }, {
-        favicon: 'favicon.png',
+        favicon: 'I/favicon.png',
         Tags: dump.opts.customZimTags || '',
         Language: dump.mwMetaData.langIso3,
         Title: dump.opts.customZimTitle || dump.mwMetaData.title,
@@ -331,9 +332,6 @@ async function execute(argv: any) {
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
       });
-
-    logger.log(`Storing redirects`);
-    await getRedirects(dump, zimCreator);
 
     logger.info('Copying Static Resource Files');
     await saveStaticFiles(config, zimCreator);
@@ -396,6 +394,9 @@ async function execute(argv: any) {
 
     await drainDownloadFileQueue(zimCreator);
 
+    logger.log(`Creating redirects`);
+    await getRedirects(dump, zimCreator);
+
     logger.log(`Finishing Zim Creation`);
     zimCreator.finalise();
 
@@ -444,9 +445,12 @@ async function execute(argv: any) {
       redis.getRedirect(redirectId, finished, (target: string) => {
         logger.info(`Storing redirect ${redirectId} (to ${target})...`);
         const url = dump.getArticleBase(redirectId);
-        const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', dump.getArticleBase(target, false), `A/${url}`, redirectId.replace(/_/g, ' '));
+        const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', 'A/' + dump.getArticleBase(target, false), `A/${url}`, redirectId.replace(/_/g, ' '));
         zimCreator.addArticle(redirectArticle)
-          .then(finished, finished);
+          .then(finished, (err) => {
+            logger.warn(`Failed to create redirect, skipping: `, err);
+            finished();
+          });
       });
     }
 
