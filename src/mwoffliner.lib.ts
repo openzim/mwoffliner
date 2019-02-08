@@ -127,9 +127,12 @@ async function execute(argv: any) {
 
   /* Get MediaWiki Info */
   const mwMetaData = await mw.getMwMetaData(downloader);
+  let useLocalMCS = true;
 
-  const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${mwMetaData.mainPage}`);
-  const useLocalMCS = !MCSMainPageQuery.lead;
+  try {
+    const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${mwMetaData.mainPage}`);
+    useLocalMCS = !MCSMainPageQuery.lead;
+  } catch (err) { /* NOOP */ }
 
   if (useLocalMCS) {
     logger.log(`Using a local MCS instance, couldn't find a remote one`);
