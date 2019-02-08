@@ -75,6 +75,7 @@ class Redis {
         } else {
           async.eachLimit(keys, speed, keyProcessor, (err) => {
             if (err) {
+              logger.warn(`${errorMsg}: ${err}`);
               reject(`${errorMsg}: ${err}`);
             } else {
               logger.log(successMsg);

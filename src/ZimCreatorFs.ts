@@ -1,7 +1,7 @@
 import { ZimCreator, ZimArticle } from 'libzim-binding';
 import mkdirp from 'mkdirp';
 import * as path from 'path';
-import { rmdirSync } from 'fs';
+import { rmdirSync, symlink } from 'fs';
 import { writeFilePromise, mkdirPromise } from './util';
 
 class ZimCreatorFs extends ZimCreator {
@@ -13,12 +13,17 @@ class ZimCreatorFs extends ZimCreator {
     }
 
     public async addArticle(this: any, article: ZimArticle) {
-
-        // TODO: implement redirect articles
-
         const { dir } = path.parse(article.aid);
         await mkdirPromise(path.join(this.fileName, dir));
-        return writeFilePromise(path.join(this.fileName, article.aid), article.bufferData);
+
+        const articleFileName = path.join(this.fileName, article.aid);
+
+        if (article.redirectAid) {
+            const target = article.redirectAid.split('/').slice(1).join('/'); // Hack
+            return symlinkPromise(target, articleFileName);
+        } else {
+            return writeFilePromise(articleFileName, article.bufferData);
+        }
     }
 
     public async finalise() {
@@ -29,3 +34,15 @@ class ZimCreatorFs extends ZimCreator {
 export {
     ZimCreatorFs,
 };
+
+function symlinkPromise(target: string, source: string) {
+    return new Promise((resolve, reject) => {
+        symlink(target, source, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
