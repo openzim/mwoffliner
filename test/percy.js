@@ -9,15 +9,15 @@ console.info(`Running from [${process.cwd()}]`);
 
 const TEST_PORT = process.env.TEST_PORT || 8080;
 
-const tmpDir = path.join(process.cwd(), 'tmp');
+const tmpDir = path.join(process.cwd(), 'out');
 console.info(`Finding outputs in [${tmpDir}]`);
 
 
 describe(`MWOffliner Page`, function () {
-    const TEST_URL = `http://localhost:${TEST_PORT}/index.htm`;
+    const TEST_URL = `http://localhost:${TEST_PORT}/A/index.htm`;
     before(async function () {
         const fns = await readDirPromise(tmpDir);
-        const testOutputDir = fns.find(fn => fn.includes('articlelist')) || fns[0];
+        const testOutputDir = fns.find(fn => fn.includes('articlelist') && fn.slice(-4) === '.zim') || fns[0];
         console.info(`Testing dump [${testOutputDir}]`);
         await serveDir(path.join(tmpDir, testOutputDir), TEST_PORT);
     })

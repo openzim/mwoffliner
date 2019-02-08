@@ -1,15 +1,11 @@
 import Downloader from './Downloader';
-import Logger from './Logger';
-
-import countryLanguage from 'country-language';
-import domino from 'domino';
+import logger from './Logger';
 import urlParser from 'url';
-import * as U from './Utils';
-import OfflinerEnv from './OfflinerEnv';
+import * as U from './util';
+import * as domino from 'domino';
 
 // Stub for now
 class MediaWiki {
-  public logger: Logger;
   public base: string;
   public wikiPath: string;
   public apiPath: string;
@@ -30,8 +26,7 @@ class MediaWiki {
   };
   public namespacesToMirror: string[];
 
-  constructor(logger: Logger, config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; }) {
-    this.logger = logger;
+  constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; }) {
     // Normalize args
     this.base = `${config.base.replace(/\/$/, '')}/`;
     this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki/';
@@ -89,76 +84,12 @@ class MediaWiki {
     return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
   }
 
-  public backlinkRedirectsQueryUrls(articleIds: string[], maxArticlesPerUrl: number, maxUrlLength: number): string[] {
-    const baseUrl = `${this.apiUrl}action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&rawcontinue=&titles=`;
-    const redirectUrls = articleIds.reduce(({ urls, activeUrlArticleCount }, articleId) => {
-      const encodedArticleId = encodeURIComponent(articleId);
-      const url = urls[urls.length - 1];
-      if (!urls.length || url.length + encodedArticleId.length > maxUrlLength || activeUrlArticleCount >= maxArticlesPerUrl) {
-        urls.push(baseUrl + encodedArticleId);
-        activeUrlArticleCount = 1;
-      } else {
-        urls[urls.length - 1] += '|' + encodedArticleId;
-        activeUrlArticleCount += 1;
-      }
-      return { urls, activeUrlArticleCount };
-    }, { urls: [], activeUrlArticleCount: 0 });
-    return redirectUrls.urls;
-  }
-
   public pageGeneratorQueryUrl(namespace: string, init: string) {
     return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].num}&format=json&rawcontinue=${init}`;
   }
 
-  public articleApiUrl(articleId) {
+  public articleApiUrl(articleId: string) {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
-  }
-
-  public async getTextDirection(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
-    const self = this;
-    const { logger } = self;
-    logger.log('Getting text direction...');
-    const { content } = await downloader.downloadContent(this.webUrl);
-    const body = content.toString();
-    const doc = domino.createDocument(body);
-    const contentNode = doc.getElementById('mw-content-text');
-    const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
-    const parts = languageDirectionRegex.exec(body);
-    if (parts && parts[1]) {
-      env.ltr = (parts[1] === 'ltr');
-    } else if (contentNode) {
-      env.ltr = (contentNode.getAttribute('dir') === 'ltr');
-    } else {
-      logger.log('Unable to get the language direction, fallback to ltr');
-      env.ltr = true;
-    }
-    logger.log(`Text direction is ${env.ltr ? 'ltr' : 'rtl'}`);
-  }
-
-  public async getSiteInfo(this: MediaWiki, env: OfflinerEnv, downloader: Downloader) {
-    const self = this;
-    this.logger.log('Getting web site name...');
-    const url = `${this.apiUrl}action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
-    const { content } = await downloader.downloadContent(url);
-    const body = content.toString();
-    const entries = JSON.parse(body).query.general;
-    /* Welcome page */
-    if (!env.zim.mainPageId && !env.zim.articleList) {
-      env.zim.mainPageId = entries.mainpage.replace(/ /g, self.spaceDelimiter);
-    }
-    /* Site name */
-    if (!env.zim.name) {
-      env.zim.name = entries.sitename;
-    }
-    /* Language */
-    env.zim.langIso2 = entries.lang;
-    countryLanguage.getLanguage(env.zim.langIso2, (error, language) => {
-      if (error || !language.iso639_3) {
-        env.zim.langIso3 = env.zim.langIso2;
-      } else {
-        env.zim.langIso3 = language.iso639_3;
-      }
-    });
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
@@ -205,9 +136,124 @@ class MediaWiki {
 
       return null; /* Interwiki link? -- return null */
     } catch (error) {
-      this.logger.warn(`Unable to parse href ${href}`);
+      logger.warn(`Unable to parse href ${href}`);
       return null;
     }
+  }
+
+  public getCreatorName() {
+    /*
+     * Find a suitable name to use for ZIM (content) creator
+     * Heuristic: Use basename of the domain unless
+     * - it happens to be a wikimedia project OR
+     * - some domain where the second part of the hostname is longer than the first part
+     */
+    const hostParts = urlParser.parse(this.base).hostname.split('.');
+    let creator = hostParts[0];
+    if (hostParts.length > 1) {
+      const wmProjects = new Set([
+        'wikipedia',
+        'wikisource',
+        'wikibooks',
+        'wikiquote',
+        'wikivoyage',
+        'wikiversity',
+        'wikinews',
+        'wiktionary',
+      ]);
+
+      if (wmProjects.has(hostParts[1]) || hostParts[0].length < hostParts[1].length) {
+        creator = hostParts[1]; // Name of the wikimedia project
+      }
+    }
+    creator = creator.charAt(0).toUpperCase() + creator.substr(1);
+    return creator;
+  }
+
+  public async getTextDirection(downloader: Downloader) {
+    logger.log('Getting text direction...');
+    const { content } = await downloader.downloadContent(this.webUrl);
+    const body = content.toString();
+    const doc = domino.createDocument(body);
+    const contentNode = doc.getElementById('mw-content-text');
+    const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/;
+    const parts = languageDirectionRegex.exec(body);
+    let isLtr = true;
+    if (parts && parts[1]) {
+      isLtr = (parts[1] === 'ltr');
+    } else if (contentNode) {
+      isLtr = (contentNode.getAttribute('dir') === 'ltr');
+    } else {
+      logger.log('Unable to get the language direction, fallback to ltr');
+      isLtr = true;
+    }
+    const textDir = isLtr ? 'ltr' : 'rtl';
+    logger.log(`Text direction is [${textDir}]`);
+    return textDir;
+  }
+
+  public async getSiteInfo(downloader: Downloader) {
+    const self = this;
+    logger.log('Getting site info...');
+    const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
+    const body = await downloader.query(query);
+    const entries = body.query.general;
+
+    const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
+    const siteName = entries.sitename;
+
+    const langIso2 = entries.lang;
+    const langIso3 = await U.getIso3(langIso2);
+
+    return {
+      mainPage,
+      siteName,
+      langIso2,
+      langIso3,
+    };
+  }
+
+  public async getSubTitle(downloader: Downloader) {
+    logger.log('Getting sub-title...');
+    const { content } = await downloader.downloadContent(this.webUrl);
+    const html = content.toString();
+    const doc = domino.createDocument(html);
+    const subTitleNode = doc.getElementById('siteSub');
+    return subTitleNode ? subTitleNode.innerHTML : '';
+  }
+
+  public async getMwMetaData(downloader: Downloader): Promise<MWMetaData> {
+
+    const creator = this.getCreatorName() || 'Kiwix';
+
+    const [
+      textDir,
+      { langIso2, langIso3, mainPage, siteName },
+      subTitle,
+    ] = await Promise.all([
+      this.getTextDirection(downloader),
+      this.getSiteInfo(downloader),
+      this.getSubTitle(downloader),
+    ]);
+
+    return {
+      webUrl: this.webUrl,
+      apiUrl: this.apiUrl,
+      modulePath: this.modulePath,
+      webUrlPath: this.webUrlPath,
+      wikiPath: this.wikiPath,
+      base: this.base,
+      apiPath: this.apiPath,
+      domain: this.domain,
+
+      textDir,
+      langIso2,
+      langIso3,
+      title: siteName,
+      subTitle,
+      creator,
+      mainPage,
+    };
   }
 }
 

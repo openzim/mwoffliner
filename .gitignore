@@ -6,6 +6,8 @@
 /out
 */out
 */tmp
+tmp/*
+lib/
 npm-debug.log
 .DS_Store
 .env

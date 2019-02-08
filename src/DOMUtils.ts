@@ -1,5 +1,5 @@
 const DOMUtils = {
-  deleteNode(node) {
+  deleteNode(node: DominoElement) {
     if (node.parentNode) {
       node.parentNode.removeChild(node);
     } else {
@@ -8,13 +8,13 @@ const DOMUtils = {
     node = undefined;
   },
 
-  appendToAttr(node, attr: string, val: any) {
+  appendToAttr(node: DominoElement, attr: string, val: any) {
     const oldVal = node.getAttribute(attr);
     const valToSet = oldVal ? `${oldVal} ${val}` : oldVal;
     node.setAttribute(attr, valToSet as any);
   },
 
-  nextElementSibling(node) {
+  nextElementSibling(node: DominoElement) {
     let sibling = node.nextSibling;
     while (sibling && sibling.nodeType !== 1 /* ELEMENT_NODE */) {
       sibling = sibling.nextSibling;

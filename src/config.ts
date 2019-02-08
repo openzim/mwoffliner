@@ -1,11 +1,11 @@
 
-export default {
+const config = {
   userAgent: 'MWOffliner/HEAD',
 
   defaults: {
     publisher: 'Kiwix',
     redisConfig: '/dev/shm/redis.sock',
-    requestTimeout: 60,
+    requestTimeout: 60 * 1000,
   },
 
   filters: {
@@ -97,4 +97,11 @@ export default {
       subsection_wrapper: './templates/subsection_wrapper.html',
     },
   },
+};
+
+type Config = typeof config;
+
+export {
+  config,
+  Config,
 };
