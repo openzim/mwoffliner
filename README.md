@@ -16,13 +16,8 @@ Mediawiki.
 
 - *NIX Operating System (Linux/Unix/macOS)
 - [NodeJS](https://nodejs.org/en/)
-- Image Processing Tools
-    - jpegoptim
-    - advdef
-    - gifsicle
-    - pngquant
-    - imagemagick
-- [ZimWriterFS](https://github.com/openzim/zimwriterfs)
+- [Redis](https://redis.io/)
+- [Libzim](https://github.com/openzim/libzim) (On linux we automatically download binaries)
 
 ## Setup
 
@@ -35,19 +30,13 @@ nvm install stable && \
 node --version
 ```
 
-#### Image Processing
-> These instructions require that [Homebrew](https://brew.sh/) is already set-up on your machine
-```bash
-> brew install jpegoptim advancecomp gifsicle pngquant imagemagick
-```
-
 #### Redis
 ```bash
 > brew install redis
 ```
 
-#### ZimWriterFS
-See [GitHub](https://github.com/openzim/zimwriterfs)
+#### LibZim
+See instructions here: [https://github.com/openzim/libzim](https://github.com/openzim/libzim)
 
 ### Linux (Debian)
 #### NodeJS
@@ -58,18 +47,10 @@ nvm install stable && \
 node --version
 ```
 
-#### Image Processing
-```bash
-> sudo apt-get install jpegoptim advancecomp gifsicle pngquant imagemagick
-```
-
 #### Redis
 ```bash
 > sudo apt-get install redis-server
 ```
-
-#### ZimWriterFS
-See [GitHub](https://github.com/openzim/zimwriterfs)
 
 ## Usage
 ### Command Line
@@ -95,7 +76,7 @@ const parameters = {
     format: "nozim",
     articleList: "./articleList"
 };
-mwoffliner.execute(parameters);
+mwoffliner.execute(parameters); // returns a Promise
 ```
 
 ## Development
@@ -118,12 +99,12 @@ There is a pre-configured debug config for [VSCode](https://code.visualstudio.co
 
 Make sure you read [CONTRIBUTING.md](./CONTRIBUTING.md) for tips on how to best debug and submit issues.
 
-
 ### Publishing
 To publish, it's best to use a clean clone of the project:
 ```
 git clone https://github.com/openzim/mwoffliner.git
 npm i # required for Snyk checks
+./build.sh
 npm publish  # you must be logged in already (npm login)
 ```
 
