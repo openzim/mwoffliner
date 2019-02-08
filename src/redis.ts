@@ -1,6 +1,6 @@
 import * as async from 'async';
 import redis from 'redis';
-import logger from './Logger'
+import logger from './Logger';
 
 class Redis {
   public redisClient: any;
@@ -106,8 +106,7 @@ class Redis {
   public getArticle(articleId: string): Promise<string> {
     return new Promise((resolve, reject) => {
       this.redisClient.hget(this.redisArticleDetailsDatabase, articleId, (err: any, res: string) => {
-        if (err) reject(err);
-        else resolve(res);
+        if (err) { reject(err); } else { resolve(res); }
       });
     });
   }

@@ -39,7 +39,7 @@ class Downloader {
     this.loginCookie = '';
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
+    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&action=parse&page=`;
   }
 
   public async initLocalMcs() {
@@ -82,27 +82,10 @@ class Downloader {
         level: 'info',
       },
     });
-    const domain = (new URL(this.mw.base)).host;
+    const domain = (urlParser.parse(this.mw.base)).host;
     const webUrlHost = urlParser.parse(this.mw.webUrl).host;
     this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
-  }
-
-  private getRequestOptionsFromUrl(url: string, compression: boolean): AxiosRequestConfig {
-    const headers = {
-      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
-      'cache-control': 'public, max-stale=2678400',
-      'accept-encoding': (compression ? 'gzip, deflate' : ''),
-      'user-agent': this.uaString,
-      'cookie': this.loginCookie,
-    };
-    return {
-      url,
-      headers,
-      responseType: 'arraybuffer',
-      timeout: this.requestTimeout,
-      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
-    };
   }
 
   public query(query: string): KVS<any> {
@@ -124,11 +107,7 @@ class Downloader {
 
     try {
       // TODO: convert to downloader.getJSON
-      const json = await axios(articleApiUrl, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      }).then((response) => response.data);
-
+      const json = await this.getJSON(articleApiUrl);
 
       if (useParsoidFallback) {
         return renderDesktopArticle(json);
@@ -147,7 +126,7 @@ class Downloader {
 
   public getJSON<T>(url: string) {
     logger.info(`Getting JSON from [${url}]`);
-    return axios.get<T>(url, { responseType: 'json' }).then(a => a.data);
+    return axios.get<T>(url, { responseType: 'json' }).then((a) => a.data);
   }
 
   public downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
@@ -177,6 +156,23 @@ class Downloader {
         }
       });
     });
+  }
+
+  private getRequestOptionsFromUrl(url: string, compression: boolean): AxiosRequestConfig {
+    const headers = {
+      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+      'cache-control': 'public, max-stale=2678400',
+      'accept-encoding': (compression ? 'gzip, deflate' : ''),
+      'user-agent': this.uaString,
+      'cookie': this.loginCookie,
+    };
+    return {
+      url,
+      headers,
+      responseType: 'arraybuffer',
+      timeout: this.requestTimeout,
+      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+    };
   }
 }
 

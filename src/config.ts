@@ -103,5 +103,5 @@ type Config = typeof config;
 
 export {
   config,
-  Config
-}
+  Config,
+};

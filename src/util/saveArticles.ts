@@ -1,7 +1,7 @@
-import logger from "../Logger";
-import Downloader from "../Downloader";
-import MediaWiki from "../MediaWiki";
-import { ZimCreator, ZimArticle } from "libzim-binding";
+import logger from '../Logger';
+import Downloader from '../Downloader';
+import MediaWiki from '../MediaWiki';
+import { ZimCreator, ZimArticle } from 'libzim-binding';
 import htmlMinifier from 'html-minifier';
 import zlib from 'zlib';
 import * as urlParser from 'url';
@@ -9,12 +9,12 @@ import * as pathParser from 'path';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
-import { Dump } from "../Dump";
-import { mapLimit } from "./mapLimit";
-import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase, getStringsForLang } from ".";
-import { config } from "../config";
-import { htmlTemplateCode, footerTemplate } from "../Templates";
-import Redis from "../redis";
+import { Dump } from '../Dump';
+import { mapLimit } from './mapLimit';
+import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase, getStringsForLang } from '.';
+import { config } from '../config';
+import { htmlTemplateCode, footerTemplate } from '../Templates';
+import Redis from '../redis';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -51,16 +51,14 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             const zimArticle = new ZimArticle(articleId + '.html', outHtml, 'A', 'text/html');
             await zimCreator.addArticle(zimArticle);
 
-
             const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, 'A');
             await zimCreator.addArticle(article);
 
             return mediaDependencies.reduce((acc, arr) => acc.concat(arr), []);
-        }
-    ).then(a => a.reduce((acc, arr) => acc.concat(arr), []));
+        },
+    ).then((a) => a.reduce((acc, arr) => acc.concat(arr), []));
 
 }
-
 
 async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump) {
     // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
@@ -111,18 +109,18 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
         jsConfigVars,
         jsDependenciesList,
         styleDependenciesList,
-    }
+    };
 }
 
 async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
     let mediaDependencies: string[] = [];
 
     let doc = domino.createDocument(html);
-    let tmRet = treatMedias(doc, mw, dump, articleDetailXId);
+    const tmRet = treatMedias(doc, mw, dump, articleDetailXId);
     doc = tmRet.doc;
     mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies);
 
-    let ruRet = await rewriteUrls(doc, redis, downloader, mw, dump, articleDetailXId);
+    const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump, articleDetailXId);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(ruRet.mediaDependencies);
 
@@ -131,12 +129,12 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
     return {
         articleDoc: doc,
         mediaDependencies,
-    }
+    };
 }
 
 function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
-    let mediaDependencies = [];
+    const mediaDependencies = [];
     /* Clean/rewrite image tags */
     const imgs = parsoidDoc.getElementsByTagName('img');
     const videos = Array.from(parsoidDoc.getElementsByTagName('video'));
@@ -253,9 +251,7 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
                 let newSrc: string;
                 try {
                     newSrc = getMediaBase(src, true);
-                } catch (err) {
-
-                }
+                } catch (err) { /* NOOP */ }
 
                 if (newSrc) {
                     /* Download image, but avoid duplicate calls */
@@ -669,7 +665,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         jsConfigVars: string | RegExpExecArray,
         jsDependenciesList: string[],
         styleDependenciesList: string[],
-    }
+    };
 
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode

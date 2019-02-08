@@ -16,7 +16,6 @@ const jsScripts = config.output.jsResources.reduce((buf, js) => {
     return buf + genHeaderScript(config, js);
 }, '');
 
-
 /* Compile templates */
 const redirectTemplate = swig.compile(readTemplate(config.output.templates.redirects));
 const footerTemplate = swig.compile(readTemplate(config.output.templates.footer));
@@ -37,4 +36,4 @@ export {
     subSectionTemplate,
     htmlTemplateCode,
     articleListHomeTemplate,
-}
+};

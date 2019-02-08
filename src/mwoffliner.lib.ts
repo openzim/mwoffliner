@@ -67,7 +67,6 @@ async function execute(argv: any) {
     filenamePrefix,
     resume,
     deflateTmpHtml,
-    writeHtmlRedirects,
     keepHtml: keepHtml,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
@@ -80,8 +79,6 @@ async function execute(argv: any) {
   } = argv;
 
   process.env.verbose = verbose;
-
-  let mcsUrl: string;
 
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
@@ -128,19 +125,18 @@ async function execute(argv: any) {
     requestTimeout || config.defaults.requestTimeout,
   );
 
-
   /* Get MediaWiki Info */
   const mwMetaData = await mw.getMwMetaData(downloader);
 
   const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${mwMetaData.mainPage}`);
   const useLocalMCS = !MCSMainPageQuery.lead;
-  
+
   if (useLocalMCS) {
     logger.log(`Using a local MCS instance, couldn't find a remote one`);
     await downloader.initLocalMcs();
   }
 
-  let mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
+  const mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
 
   /* Get language specific strings */
   const strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
@@ -195,7 +191,6 @@ async function execute(argv: any) {
     if (!fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
   }
 
-
   /* ********************************* */
   /* RUNNING CODE ******************** */
   /* ********************************* */
@@ -213,7 +208,6 @@ async function execute(argv: any) {
   const downloadFileQueue = async.queue(({ url, zimCreator }, finished) => {
     downloadFileAndCache(zimCreator, url, finished);
   }, speed * 5);
-
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -257,7 +251,7 @@ async function execute(argv: any) {
   const { redirectQueue, articleDetailXId } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
   await drainRedirectQueue(redirectQueue);
 
-  for (let _dump of dumps) {
+  for (const _dump of dumps) {
     const dump = new Dump(_dump, {
       tmpDir: dumpTmpDir,
       username: mwUsername,
@@ -281,11 +275,24 @@ async function execute(argv: any) {
       keepEmptyParagraphs,
     }, mwMetaData);
     logger.log(`Doing dump: [${dump}]`);
+    let shouldSkip = false;
     try {
       dump.checkResume();
-      await doDump(dump);
+    } catch (err) {
+      shouldSkip = true;
+    }
+
+    if (shouldSkip) {
+      logger.log(`Skipping dump: [${dump}]`);
+    } else {
+      try {
+        await doDump(dump);
+      } catch (err) {
+        debugger;
+        throw err;
+      }
       logger.log(`Finished dump: [${dump}]`);
-    } catch (err) { }
+    }
   }
 
   if (!useCache || skipCacheCleaning) {
@@ -301,10 +308,6 @@ async function execute(argv: any) {
   logger.log('Closing HTTP agents...');
 
   logger.log('All dumping(s) finished with success.');
-
-
-
-
 
   async function doDump(dump: Dump) {
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
@@ -342,16 +345,20 @@ async function execute(argv: any) {
     logger.log(`Downloading stylesheets and populating media queue`);
     const {
       mediaItemsToDownload,
-      finalCss
+      finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
 
     // Download Media Items
     logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
     await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
-      const { content } = await downloader.downloadContent(url);
-      const article = new ZimArticle(path, content, 'A');
-      return zimCreator.addArticle(article);
+      try {
+        const { content } = await downloader.downloadContent(url);
+        const article = new ZimArticle(path, content, 'A');
+        return zimCreator.addArticle(article);
+      } catch (err) {
+        logger.warn(`Failed to download item [${url}], skipping`);
+      }
     });
 
     const article = new ZimArticle(`style.css`, finalCss, 'A');
@@ -364,7 +371,7 @@ async function execute(argv: any) {
       logger.log(`Getting Article Thumbnails`);
       const thumbnailUrls = await getArticleThumbnails(downloader, mw, articleListLines);
       if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        for (let { articleId, imageUrl } of thumbnailUrls) {
+        for (const { articleId, imageUrl } of thumbnailUrls) {
           downloadFileQueue.push({ url: imageUrl, zimCreator });
           const internalSrc = getMediaBase(imageUrl, true);
 
@@ -379,16 +386,11 @@ async function execute(argv: any) {
     logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
 
-    if (writeHtmlRedirects) {
-      logger.log(`Getting and Writing html Redirects`);
-      await saveHtmlRedirects(dump, zimCreator);
-    }
-
     logger.log(`Getting articles`);
     const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
     logger.log(`Found [${mediaDeps.length}] dependencies`);
 
-    for (let depUrl of mediaDeps) { // TODO: remove downloadFileQueue
+    for (const depUrl of mediaDeps) { // TODO: remove downloadFileQueue
       downloadFileQueue.push({ url: depUrl, zimCreator });
     }
 
@@ -399,17 +401,6 @@ async function execute(argv: any) {
 
     await redis.delMediaDB();
   }
-
-
-
-
-
-
-
-
-
-
-
 
   /* ********************************* */
   /* FUNCTIONS *********************** */
@@ -462,37 +453,6 @@ async function execute(argv: any) {
     return redis.processAllRedirects(speed, cacheRedirect,
       'Unable to cache a redirect',
       'All redirects were cached successfuly.',
-    );
-  }
-
-  function saveHtmlRedirects(dump: Dump, zimCreator: ZimCreator) {
-    logger.log('Saving HTML redirects...');
-
-    function saveHtmlRedirect(redirectId: string, finished: Callback) {
-      redis.getRedirect(redirectId, finished, (target: string) => {
-        logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
-        const data = redirectTemplate({
-          target: dump.getArticleUrl(target),
-          title: redirectId.replace(/_/g, ' '),
-          strings,
-        });
-        if (dump.opts.deflateTmpHtml) {
-          zlib.deflate(data, (error, deflatedHtml) => {
-            const article = new ZimArticle(redirectId + '.html', deflatedHtml, 'A', 'text/html', target);
-            zimCreator.addArticle(article).then(finished, finished);
-          });
-        } else {
-          const article = new ZimArticle(redirectId + '.html', data, 'A', 'text/html', target);
-          zimCreator.addArticle(article).then(finished, finished);
-        }
-      });
-    }
-
-    return redis.processAllRedirects(
-      speed,
-      saveHtmlRedirect,
-      'Unable to save a HTML redirect',
-      'All redirects were saved successfuly as HTML files.',
     );
   }
 

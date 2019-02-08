@@ -1,7 +1,7 @@
-import logger from "../Logger";
-import async from "async";
-import Downloader from "../Downloader";
-import Redis from "../redis";
+import logger from '../Logger';
+import async from 'async';
+import Downloader from '../Downloader';
+import Redis from '../redis';
 
 /* Get ids */
 let articlesPerQuery = 500;
@@ -72,8 +72,6 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
     }, Math.min(downloader.speed * 100, 500));
     return redirectQueue;
 }
-
-
 
 function backlinkRedirectsQueries(articleIds: string[], maxArticlesPerUrl: number, maxUrlLength: number): string[] {
     const baseUrl = `action=query&prop=redirects&format=json&rdprop=title&rdlimit=max&rawcontinue=&titles=`;

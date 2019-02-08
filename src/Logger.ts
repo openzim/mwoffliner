@@ -1,7 +1,4 @@
 class Logger {
-  constructor() {
-  }
-
   public getTs() {
     return (new Date()).toISOString();
   }
@@ -28,5 +25,5 @@ class Logger {
 }
 
 // export default Logger;
-const logger = new Logger()
-export default logger
+const logger = new Logger();
+export default logger;

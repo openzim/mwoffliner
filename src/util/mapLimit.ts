@@ -29,7 +29,7 @@ export function mapLimit<T, X>(iterable: T[], limit: number, iteratee: (arg: T) 
             counter += 1;
             running += 1;
 
-            Promise.resolve(iteratorResult.value).then(iteratee || defaultIteratee).then(value => {
+            Promise.resolve(iteratorResult.value).then(iteratee || defaultIteratee).then((value) => {
                 running -= 1;
                 results[index] = value;
                 if (done && running <= 0) {
@@ -37,7 +37,7 @@ export function mapLimit<T, X>(iterable: T[], limit: number, iteratee: (arg: T) 
                     return;
                 }
                 replenish();
-            }, err => {
+            }, (err) => {
                 running -= 1;
                 done = true;
                 reject(err);
@@ -58,7 +58,7 @@ function getIterator(iterable: any) {
     if (iterable[Symbol.iterator]) {
         return iterable[Symbol.iterator]();
     }
-    return Object.keys(iterable).map(key => iterable[key])[Symbol.iterator]();
+    return Object.keys(iterable).map((key) => iterable[key])[Symbol.iterator]();
 }
 
 function defaultIteratee(fn: any) {

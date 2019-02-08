@@ -1,19 +1,19 @@
-import { makeRedirectsQueue } from "../queues/redirectQueue";
-import Downloader from "../Downloader";
-import async, { AsyncCargo } from "async";
-import logger from "../Logger";
-import { readFilePromise } from "./misc";
-import { mapLimit } from ".";
-import Redis from "../redis";
-import MediaWiki from "../MediaWiki";
+import { makeRedirectsQueue } from '../queues/redirectQueue';
+import Downloader from '../Downloader';
+import async, { AsyncCargo } from 'async';
+import logger from '../Logger';
+import { readFilePromise } from './misc';
+import { mapLimit } from '.';
+import Redis from '../redis';
+import MediaWiki from '../MediaWiki';
 
 export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage: string, articleList?: string) {
     const redirectQueue = makeRedirectsQueue(downloader, redis, mainPage);
 
-    let articleVals: { redirectValues: any, articleDetailXId: any, next: any, scrapeDetails: any }[] = [];
+    let articleVals: Array<{ redirectValues: any, articleDetailXId: any, next: any, scrapeDetails: any }> = [];
     if (articleList) {
         const vals = await getArticleIdsForFile(articleList, downloader, mw);
-        articleVals = articleVals.concat(vals.filter(a => a));
+        articleVals = articleVals.concat(vals.filter((a) => a));
     } else {
         const vals = await getArticleIdsForNamespaces(downloader, mw);
         articleVals = articleVals.concat(vals);
@@ -23,7 +23,7 @@ export async function getArticleIds(downloader: Downloader, redis: Redis, mw: Me
 
     const articleDetailXIdOut: KVS<any> = {};
 
-    for (let { redirectValues, articleDetailXId, next, scrapeDetails } of articleVals) {
+    for (const { redirectValues, articleDetailXId, next, scrapeDetails } of articleVals) {
         Object.assign(articleDetailXIdOut, articleDetailXId);
         if (redirectValues.length) { redirectQueue.push(redirectValues); }
         redis.saveArticles(scrapeDetails);
@@ -106,7 +106,7 @@ function parseAPIResponse(body: KVS<any>, mw: MediaWiki) {
 }
 
 async function getArticleIdsForLine(downloader: Downloader, line: string, mw: MediaWiki) {
-    const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '')
+    const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
     try {
         const body = await downloader.getJSON(mw.articleQueryUrl(title));
         return parseAPIResponse(body, mw);
@@ -122,7 +122,7 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader,
     return mapLimit(lines, downloader.speed, async (line) => {
         if (line) {
             const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-            const body = await downloader.getJSON(mw.articleQueryUrl(title))
+            const body = await downloader.getJSON(mw.articleQueryUrl(title));
             if (body) {
                 return parseAPIResponse(body, mw);
             } else {
@@ -151,14 +151,14 @@ async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, 
             redirectValues: redirectValues.concat(nextData.redirectValues),
             articleDetailXId: Object.assign({}, articleDetailXId, nextData.articleDetailXId),
             scrapeDetails: Object.assign({}, scrapeDetails, nextData.scrapeDetails),
-        }
+        };
     } else {
         return {
             next,
             redirectValues,
             articleDetailXId,
             scrapeDetails,
-        }
+        };
     }
 }
 
@@ -166,6 +166,6 @@ function getArticleIdsForNamespaces(downloader: Downloader, mw: MediaWiki) {
     return mapLimit(
         mw.namespacesToMirror,
         downloader.speed,
-        (namespace: string) => getArticleIdsForNamespace(downloader, mw, namespace)
+        (namespace: string) => getArticleIdsForNamespace(downloader, mw, namespace),
     );
 }
