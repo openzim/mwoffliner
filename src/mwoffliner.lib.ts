@@ -68,7 +68,6 @@ async function execute(argv: any) {
     filenamePrefix,
     resume,
     deflateTmpHtml,
-    writeHtmlRedirects,
     keepHtml: keepHtml,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
@@ -385,11 +384,6 @@ async function execute(argv: any) {
     logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
 
-    if (writeHtmlRedirects) {
-      logger.log(`Getting and Writing html Redirects`);
-      await saveHtmlRedirects(dump, zimCreator);
-    }
-
     logger.log(`Getting articles`);
     const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
     logger.log(`Found [${mediaDeps.length}] dependencies`);
@@ -457,37 +451,6 @@ async function execute(argv: any) {
     return redis.processAllRedirects(speed, cacheRedirect,
       'Unable to cache a redirect',
       'All redirects were cached successfuly.',
-    );
-  }
-
-  function saveHtmlRedirects(dump: Dump, zimCreator: ZimCreator) {
-    logger.log('Saving HTML redirects...');
-
-    function saveHtmlRedirect(redirectId: string, finished: Callback) {
-      redis.getRedirect(redirectId, finished, (target: string) => {
-        logger.info(`Writing HTML redirect ${redirectId} (to ${target})...`);
-        const data = redirectTemplate({
-          target: dump.getArticleUrl(target),
-          title: redirectId.replace(/_/g, ' '),
-          strings,
-        });
-        if (dump.opts.deflateTmpHtml) {
-          zlib.deflate(data, (error, deflatedHtml) => {
-            const article = new ZimArticle(redirectId + '.html', deflatedHtml, 'A', 'text/html', target);
-            zimCreator.addArticle(article).then(finished, finished);
-          });
-        } else {
-          const article = new ZimArticle(redirectId + '.html', data, 'A', 'text/html', target);
-          zimCreator.addArticle(article).then(finished, finished);
-        }
-      });
-    }
-
-    return redis.processAllRedirects(
-      speed,
-      saveHtmlRedirect,
-      'Unable to save a HTML redirect',
-      'All redirects were saved successfuly as HTML files.',
     );
   }
 
