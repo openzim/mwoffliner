@@ -1,9 +1,9 @@
-import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from "../Templates";
-import { getStringsForLang } from ".";
-import { Dump } from "../Dump";
+import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from '../Templates';
+import { getStringsForLang } from '.';
+import { Dump } from '../Dump';
 
 export function renderDesktopArticle(json: any) {
-    if (!json) throw new Error(`Cannot render [${json}] into an article`);
+    if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
         return json.visualeditor.content;
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
@@ -12,7 +12,7 @@ export function renderDesktopArticle(json: any) {
         return json.parse.text['*'];
     } else if (json.error) {
         console.error(`Error retrieving article: ${json.error.info}`);
-        return ''
+        return '';
     }
 }
 

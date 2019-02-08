@@ -6,7 +6,6 @@ import * as domino from 'domino';
 import logger from './Logger';
 import Downloader from './Downloader';
 
-
 interface DumpOpts {
     tmpDir: string;
     username: string;
@@ -31,17 +30,16 @@ interface DumpOpts {
 }
 
 export class Dump {
-    nopic: boolean;
-    novid: boolean;
-    nopdf: boolean;
-    nozim: boolean;
-    nodet: boolean;
-    contentDate: string;
-    opts: DumpOpts;
-    mwMetaData: MWMetaData;
+    public nopic: boolean;
+    public novid: boolean;
+    public nopdf: boolean;
+    public nozim: boolean;
+    public nodet: boolean;
+    public contentDate: string;
+    public opts: DumpOpts;
+    public mwMetaData: MWMetaData;
 
-
-    mediaQueue: AsyncQueue<string>;
+    public mediaQueue: AsyncQueue<string>;
 
     constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData) {
         this.mwMetaData = mwMetaData;
@@ -68,7 +66,7 @@ export class Dump {
             const hostParts = urlParser.parse(this.mwMetaData.webUrl).hostname.split('.');
             let langSuffix = this.mwMetaData.langIso2;
             // tslint:disable-next-line:prefer-for-of
-            for (let part of hostParts) {
+            for (const part of hostParts) {
                 if (part === this.mwMetaData.langIso3) {
                     langSuffix = part;
                     break;
@@ -116,7 +114,7 @@ export class Dump {
     }
 
     public async getRelevantStylesheetUrls(downloader: Downloader) { // TODO: consider moving to Downloader
-        const sheetUrls: (string | DominoElement)[] = [];
+        const sheetUrls: Array<string | DominoElement> = [];
 
         /* Load main page to see which CSS files are needed */
         const { content } = await downloader.downloadContent(this.mwMetaData.webUrl);
@@ -137,7 +135,7 @@ export class Dump {
         const offlineCssUrl = `${this.mwMetaData.webUrl}Mediawiki:offline.css?action=raw`;
         sheetUrls.push(offlineCssUrl);
 
-        return sheetUrls.filter(a => a);
+        return sheetUrls.filter((a) => a);
     }
 
     public getArticleUrl(articleId: string) {
@@ -158,6 +156,5 @@ export class Dump {
         }
         return `${e(filename)}.html`;
     }
-
 
 }

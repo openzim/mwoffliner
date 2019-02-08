@@ -1,8 +1,8 @@
 import * as urlParser from 'url';
 import * as pathParser from 'path';
 import async from 'async';
-import logger from "../Logger";
-import Downloader from "../Downloader";
+import logger from '../Logger';
+import Downloader from '../Downloader';
 import { getFullUrl } from '.';
 import { config } from '../config';
 import MediaWiki from '../MediaWiki';
@@ -10,7 +10,7 @@ import MediaWiki from '../MediaWiki';
 export async function getArticleThumbnails(downloader: Downloader, mw: MediaWiki, articleList: string[]) {
     logger.info(`Getting article thumbnails`);
     let articleIndex = 0;
-    let thumbnailsToDownload = [];
+    const thumbnailsToDownload = [];
 
     while (articleIndex < articleList.length - 1 && thumbnailsToDownload.length < 100) {
         try {
@@ -21,15 +21,15 @@ export async function getArticleThumbnails(downloader: Downloader, mw: MediaWiki
             const imageUrl = getFullUrl(webUrlHost, page.thumbnail.source);
             const id = page.title.replace(/ /g, mw.spaceDelimiter);
             thumbnailsToDownload.push({ articleId: id, imageUrl });
-        } catch (err) { }
+        } catch (err) { /* NOOP */ }
         articleIndex += 1;
     }
 
     return thumbnailsToDownload;
 }
 
-export async function getAndProcessStylesheets(downloader: Downloader, links: (string | DominoElement)[]) {
-    const mediaItemsToDownload: { url: string, path: string }[] = [];
+export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
+    const mediaItemsToDownload: Array<{ url: string, path: string }> = [];
     let finalCss = '';
     const urlCache: KVS<boolean> = {};
     const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
@@ -93,11 +93,11 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: (s
     stylesheetQueue.push(links);
 
     return new Promise((resolve, reject) => {
-        stylesheetQueue.drain = resolve
+        stylesheetQueue.drain = resolve;
     }).then(() => {
         return {
             finalCss,
             mediaItemsToDownload,
-        }
+        };
     });
 }

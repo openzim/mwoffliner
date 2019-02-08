@@ -88,23 +88,6 @@ class Downloader {
     this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
   }
 
-  private getRequestOptionsFromUrl(url: string, compression: boolean): AxiosRequestConfig {
-    const headers = {
-      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
-      'cache-control': 'public, max-stale=2678400',
-      'accept-encoding': (compression ? 'gzip, deflate' : ''),
-      'user-agent': this.uaString,
-      'cookie': this.loginCookie,
-    };
-    return {
-      url,
-      headers,
-      responseType: 'arraybuffer',
-      timeout: this.requestTimeout,
-      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
-    };
-  }
-
   public query(query: string): KVS<any> {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
@@ -143,7 +126,7 @@ class Downloader {
 
   public getJSON<T>(url: string) {
     logger.info(`Getting JSON from [${url}]`);
-    return axios.get<T>(url, { responseType: 'json' }).then(a => a.data);
+    return axios.get<T>(url, { responseType: 'json' }).then((a) => a.data);
   }
 
   public downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
@@ -173,6 +156,23 @@ class Downloader {
         }
       });
     });
+  }
+
+  private getRequestOptionsFromUrl(url: string, compression: boolean): AxiosRequestConfig {
+    const headers = {
+      'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+      'cache-control': 'public, max-stale=2678400',
+      'accept-encoding': (compression ? 'gzip, deflate' : ''),
+      'user-agent': this.uaString,
+      'cookie': this.loginCookie,
+    };
+    return {
+      url,
+      headers,
+      responseType: 'arraybuffer',
+      timeout: this.requestTimeout,
+      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+    };
   }
 }
 

@@ -141,8 +141,7 @@ class MediaWiki {
     }
   }
 
-
-  getCreatorName() {
+  public getCreatorName() {
     /*
      * Find a suitable name to use for ZIM (content) creator
      * Heuristic: Use basename of the domain unless
@@ -211,7 +210,7 @@ class MediaWiki {
       siteName,
       langIso2,
       langIso3,
-    }
+    };
   }
 
   public async getSubTitle(downloader: Downloader) {
@@ -223,19 +222,19 @@ class MediaWiki {
     return subTitleNode ? subTitleNode.innerHTML : '';
   }
 
-  async getMwMetaData(downloader: Downloader): Promise<MWMetaData> {
+  public async getMwMetaData(downloader: Downloader): Promise<MWMetaData> {
 
     const creator = this.getCreatorName() || 'Kiwix';
 
     const [
       textDir,
       { langIso2, langIso3, mainPage, siteName },
-      subTitle
+      subTitle,
     ] = await Promise.all([
       this.getTextDirection(downloader),
       this.getSiteInfo(downloader),
       this.getSubTitle(downloader),
-    ])
+    ]);
 
     return {
       webUrl: this.webUrl,

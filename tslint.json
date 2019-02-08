@@ -12,6 +12,7 @@
             true,
             "single"
         ],
+        "interface-name": false,
         "no-debugger": false,
         "ordered-imports": false,
         "max-line-length": false,

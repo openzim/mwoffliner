@@ -36,7 +36,7 @@ function _decodeURIComponent(uri: string) {
     return uri;
   }
 }
-export { _decodeURIComponent as decodeURIComponent }
+export { _decodeURIComponent as decodeURIComponent };
 
 export function touch(paths: string[] | string) {
   const currentDate = Date.now();

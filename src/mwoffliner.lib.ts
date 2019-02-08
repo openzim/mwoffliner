@@ -82,8 +82,6 @@ async function execute(argv: any) {
 
   process.env.verbose = verbose;
 
-  let mcsUrl: string;
-
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
@@ -137,7 +135,7 @@ async function execute(argv: any) {
 
   const mwMetaData = await mw.getMwMetaData(downloader);
 
-  let mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
+  const mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
 
   /* Get language specific strings */
   const strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
@@ -192,7 +190,6 @@ async function execute(argv: any) {
     if (!fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
   }
 
-
   /* ********************************* */
   /* RUNNING CODE ******************** */
   /* ********************************* */
@@ -210,7 +207,6 @@ async function execute(argv: any) {
   const downloadFileQueue = async.queue(({ url, zimCreator }, finished) => {
     downloadFileAndCache(zimCreator, url, finished);
   }, speed * 5);
-
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -254,7 +250,7 @@ async function execute(argv: any) {
   const { redirectQueue, articleDetailXId } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
   await drainRedirectQueue(redirectQueue);
 
-  for (let _dump of dumps) {
+  for (const _dump of dumps) {
     const dump = new Dump(_dump, {
       tmpDir: dumpTmpDir,
       username: mwUsername,
@@ -312,10 +308,6 @@ async function execute(argv: any) {
 
   logger.log('All dumping(s) finished with success.');
 
-
-
-
-
   async function doDump(dump: Dump) {
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
@@ -352,7 +344,7 @@ async function execute(argv: any) {
     logger.log(`Downloading stylesheets and populating media queue`);
     const {
       mediaItemsToDownload,
-      finalCss
+      finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
 
@@ -378,7 +370,7 @@ async function execute(argv: any) {
       logger.log(`Getting Article Thumbnails`);
       const thumbnailUrls = await getArticleThumbnails(downloader, mw, articleListLines);
       if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        for (let { articleId, imageUrl } of thumbnailUrls) {
+        for (const { articleId, imageUrl } of thumbnailUrls) {
           downloadFileQueue.push({ url: imageUrl, zimCreator });
           const internalSrc = getMediaBase(imageUrl, true);
 
@@ -402,7 +394,7 @@ async function execute(argv: any) {
     const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
     logger.log(`Found [${mediaDeps.length}] dependencies`);
 
-    for (let depUrl of mediaDeps) { // TODO: remove downloadFileQueue
+    for (const depUrl of mediaDeps) { // TODO: remove downloadFileQueue
       downloadFileQueue.push({ url: depUrl, zimCreator });
     }
 
@@ -413,17 +405,6 @@ async function execute(argv: any) {
 
     await redis.delMediaDB();
   }
-
-
-
-
-
-
-
-
-
-
-
 
   /* ********************************* */
   /* FUNCTIONS *********************** */
