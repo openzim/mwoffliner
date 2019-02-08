@@ -21,7 +21,7 @@
         "object-literal-sort-keys": false,
         "space-before-function-paren": false,
         "max-classes-per-file": false,
-        "variable-name": false,
+        "variable-name": false
     },
     "rulesDirectory": []
 }
