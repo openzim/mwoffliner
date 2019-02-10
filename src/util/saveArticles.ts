@@ -57,7 +57,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
             const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId, translationStrings);
 
-            const zimArticle = new ZimArticle(articleId + '.html', outHtml, 'A', 'text/html');
+            const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html');
             await zimCreator.addArticle(zimArticle);
 
             const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, 'A');

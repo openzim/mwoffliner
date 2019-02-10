@@ -14,7 +14,7 @@ console.info(`Finding outputs in [${tmpDir}]`);
 
 
 describe(`MWOffliner Page`, function () {
-    const TEST_URL = `http://localhost:${TEST_PORT}/A/index.htm`;
+    const TEST_URL = `http://localhost:${TEST_PORT}/A/index.html`;
     before(async function () {
         const fns = await readDirPromise(tmpDir);
         const testOutputDir = fns.find(fn => fn.includes('articlelist') && fn.slice(-4) === '.zim') || fns[0];
