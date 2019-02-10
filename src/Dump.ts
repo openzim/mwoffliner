@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import * as domino from 'domino';
 import logger from './Logger';
 import Downloader from './Downloader';
+import { dump } from 'js-yaml';
 
 interface DumpOpts {
     tmpDir: string;
@@ -143,7 +144,7 @@ export class Dump {
     }
 
     public getArticleBase(articleId: string, escape?: boolean) {
-        let filename = articleId.replace(/\//g, this.opts.spaceDelimiter);
+        let filename = this.nozim ? articleId.replace(/\//g, this.opts.spaceDelimiter) : articleId;
         /* Filesystem is not able to handle with filename > 255 bytes */
         while (Buffer.byteLength(filename, 'utf8') > 250) {
             filename = filename.substr(0, filename.length - 1);
@@ -154,7 +155,7 @@ export class Dump {
             }
             return escape ? encodeURIComponent(str) : str;
         }
-        return `${e(filename)}.html`;
+        return e(filename) + (this.nozim ? '.html' : '');
     }
 
 }

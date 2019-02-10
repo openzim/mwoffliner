@@ -317,7 +317,7 @@ async function execute(argv: any) {
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-      welcome: 'A/' + (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index.htm'),
+      welcome: 'A/' + (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
     }, {
         favicon: 'I/favicon.png',
         Tags: dump.opts.customZimTags || '',
@@ -654,18 +654,18 @@ async function execute(argv: any) {
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator) {
     function writeMainPage(html: string) {
-      // const mainPagePath = `${dump.computeHtmlRootPath}index.htm`;
+      // const mainPagePath = `${dump.computeHtmlRootPath}index`;
       if (dump.opts.deflateTmpHtml) {
         return new Promise((resolve, reject) => {
           zlib.deflate(html, (error, deflatedHtml) => {
-            const article = new ZimArticle('index.htm', deflatedHtml, 'A', 'text/html');
+            const article = new ZimArticle('index' + (dump.nozim ? '.htm' : ''), deflatedHtml, 'A', 'text/html');
             zimCreator.addArticle(article).then(resolve, reject);
             // writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
           });
         });
       } else {
         // return writeFilePromise(mainPagePath, html);
-        const article = new ZimArticle('index.htm', html, 'A', 'text/html');
+        const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), html, 'A', 'text/html');
         return zimCreator.addArticle(article);
       }
     }
