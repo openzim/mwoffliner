@@ -204,15 +204,6 @@ async function execute(argv: any) {
   const redis = new Redis(argv, config);
 
   /* ********************************* */
-  /* MEDIA RELATED QUEUES ************ */
-  /* ********************************* */
-
-  /* Setting up the downloading queue */
-  const downloadFileQueue = async.queue(({ url, zimCreator }, finished) => {
-    downloadFileAndCache(zimCreator, url, finished);
-  }, speed * 5);
-
-  /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
 
@@ -314,6 +305,8 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
+    let filesToDownload = [];
+
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
@@ -352,9 +345,22 @@ async function execute(argv: any) {
 
     // Download Media Items
     logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
-    await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
+    let mediaSpeed = speed;
+    await mapLimit(mediaItemsToDownload, mediaSpeed, async ({ url, path }) => {
       try {
-        const { content } = await downloader.downloadContent(url);
+        let content;
+        try {
+          const resp = await downloader.downloadContent(url);
+          content = resp.content;
+        } catch (err) {
+          if (err.status === 429) {
+            mediaItemsToDownload.push({ url, path });
+            mediaSpeed = Math.max(mediaSpeed - 1, 1);
+            logger.info(`Got a status of [429], slowing down media retrieval speed to [${mediaSpeed}]`);
+          } else {
+            throw err;
+          }
+        }
         const article = new ZimArticle(path, content, 'A');
         return zimCreator.addArticle(article);
       } catch (err) {
@@ -373,7 +379,7 @@ async function execute(argv: any) {
       const thumbnailUrls = await getArticleThumbnails(downloader, mw, articleListLines);
       if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         for (const { articleId, imageUrl } of thumbnailUrls) {
-          downloadFileQueue.push({ url: imageUrl, zimCreator });
+          filesToDownload.push(imageUrl);
           const internalSrc = getMediaBase(imageUrl, true);
 
           articleDetailXId[articleId] = Object.assign(
@@ -391,11 +397,22 @@ async function execute(argv: any) {
     const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
     logger.log(`Found [${mediaDeps.length}] dependencies`);
 
-    for (const depUrl of mediaDeps) { // TODO: remove downloadFileQueue
-      downloadFileQueue.push({ url: depUrl, zimCreator });
-    }
+    filesToDownload = filesToDownload.concat(mediaDeps);
 
-    await drainDownloadFileQueue(zimCreator);
+    let fileDownloadSpeed = downloader.speed;
+    await mapLimit(filesToDownload, fileDownloadSpeed, async (url) => {
+      try {
+        await downloadFileAndCache(zimCreator, url);
+      } catch (err) {
+        if (err.status === 429) {
+          filesToDownload.push(url);
+          fileDownloadSpeed = Math.max(fileDownloadSpeed - 1, 1);
+          logger.info(`Got a status of [429], slowing down file retrieval speed to [${fileDownloadSpeed}]`);
+        } else {
+          logger.warn(`Failed to download file [${url}] skipping...`);
+        }
+      }
+    });
 
     logger.log(`Creating redirects`);
     await getRedirects(dump, zimCreator);
@@ -409,36 +426,6 @@ async function execute(argv: any) {
   /* ********************************* */
   /* FUNCTIONS *********************** */
   /* ********************************* */
-
-  function drainDownloadFileQueue(zimCreator: ZimCreator) {
-    return new Promise((resolve, reject) => {
-      logger.log(`${downloadFileQueue.length()} files still to be downloaded.`);
-      async.doWhilst(
-        (doneWait) => {
-          if (downloadFileQueue.idle()) {
-            logger.log('Process still downloading images...');
-          }
-          setTimeout(doneWait, 1000);
-        },
-        () => !downloadFileQueue.idle(),
-        () => {
-          const drainBackup = downloadFileQueue.drain;
-          downloadFileQueue.drain = function (error: any) {
-            if (error) {
-              reject(`Error by downloading images ${error}`);
-            } else {
-              if (downloadFileQueue.length() === 0) {
-                logger.log('All images successfuly downloaded');
-                downloadFileQueue.drain = drainBackup;
-                resolve();
-              }
-            }
-          } as any;
-          downloadFileQueue.push({ url: '', zimCreator });
-        },
-      );
-    });
-  }
 
   function getRedirects(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Reset redirects cache file (or create it)');
@@ -515,93 +502,95 @@ async function execute(argv: any) {
     });
   }
 
-  function downloadFileAndCache(zimCreator: ZimCreator, url: string, callback: Callback) {
-    if (!url) {
-      callback();
-      return;
-    }
-
-    logger.info(`Downloading and Caching [${url}]`);
-
-    const parts = MEDIA_REGEX.exec(decodeURI(url));
-    const filenameBase = parts[2].length > parts[5].length
-      ? parts[2]
-      : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-    const width = parseInt(parts[4].replace(/px-/g, ''), 10) || INFINITY_WIDTH;
-
-    /* Check if we have already met this image during this dumping process */
-    redis.getMedia(filenameBase, (error: any, rWidth: number) => {
-      /* If no redis entry */
-      if (error || !rWidth || rWidth < width) {
-        /* Set the redis entry if necessary */
-        redis.saveMedia(filenameBase, width, () => {
-          const mediaPath = getMediaBase(url, false);
-          const cachePath = `${cacheDirectory}m/${crypto.createHash('sha1').update(filenameBase).digest('hex').substr(0, 20)}${pathParser.extname(urlParser.parse(url, false, true).pathname || '') || ''}`;
-          const cacheHeadersPath = `${cachePath}.h`;
-          let toDownload = false;
-
-          /* Check if the file exists in the cache */
-          if (fs.existsSync(cacheHeadersPath) && fs.existsSync(cachePath)) {
-            let responseHeaders;
-            try {
-              responseHeaders = JSON.parse(fs.readFileSync(cacheHeadersPath).toString());
-            } catch (err) {
-              logger.warn(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}`, err);
-              responseHeaders = undefined;
-            }
-
-            /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
-            if (!responseHeaders || responseHeaders.width < width) {
-              toDownload = true;
-            } else {
-              fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                if (error) {
-                  if (error.code !== 'EEXIST') {
-                    return callback({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
-                  }
-                  if (!skipCacheCleaning) {
-                    touch(cachePath);
-                  }
-                }
-
-                if (!skipCacheCleaning) {
-                  touch(cacheHeadersPath);
-                }
-              });
-              redis.deleteOrCacheMedia(responseHeaders.width === width, width, filenameBase);
-              callback();
-            }
-          } else {
-            toDownload = true;
-          }
-
-          /* Download the file if necessary */
-          if (toDownload) {
-            const dlPromise = downloader.downloadContent(url);
-            if (useCache) {
-              dlPromise
-                .then(async ({ content }) => {
-                  logger.info(`Caching ${filenameBase} at ${cachePath}...`);
-                  await writeFilePromise(cachePath, content);
-                });
-            }
-
-            dlPromise
-              .then(({ content }) => {
-                const article = new ZimArticle(mediaPath, content, 'A');
-                return zimCreator.addArticle(article);
-              })
-              .then(() => callback())
-              .catch((error) => callback({ message: 'Failed to write file', error }));
-
-          } else {
-            logger.info(`Cache hit for ${url}`);
-          }
-        });
-      } else {
-        /* We already have this image with a resolution equal or higher to what we need */
-        callback();
+  function downloadFileAndCache(zimCreator: ZimCreator, url: string) {
+    return new Promise((resolve, reject) => {
+      if (!url) {
+        reject(`Invalid url: [${url}]`);
+        return;
       }
+
+      logger.info(`Downloading and Caching [${url}]`);
+
+      const parts = MEDIA_REGEX.exec(decodeURI(url));
+      const filenameBase = parts[2].length > parts[5].length
+        ? parts[2]
+        : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
+      const width = parseInt(parts[4].replace(/px-/g, ''), 10) || INFINITY_WIDTH;
+
+      /* Check if we have already met this image during this dumping process */
+      redis.getMedia(filenameBase, (error: any, rWidth: number) => {
+        /* If no redis entry */
+        if (error || !rWidth || rWidth < width) {
+          /* Set the redis entry if necessary */
+          redis.saveMedia(filenameBase, width, () => {
+            const mediaPath = getMediaBase(url, false);
+            const cachePath = `${cacheDirectory}m/${crypto.createHash('sha1').update(filenameBase).digest('hex').substr(0, 20)}${pathParser.extname(urlParser.parse(url, false, true).pathname || '') || ''}`;
+            const cacheHeadersPath = `${cachePath}.h`;
+            let toDownload = false;
+
+            /* Check if the file exists in the cache */
+            if (fs.existsSync(cacheHeadersPath) && fs.existsSync(cachePath)) {
+              let responseHeaders;
+              try {
+                responseHeaders = JSON.parse(fs.readFileSync(cacheHeadersPath).toString());
+              } catch (err) {
+                logger.warn(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}`, err);
+                responseHeaders = undefined;
+              }
+
+              /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
+              if (!responseHeaders || responseHeaders.width < width) {
+                toDownload = true;
+              } else {
+                fs.symlink(cachePath, mediaPath, 'file', (error) => {
+                  if (error) {
+                    if (error.code !== 'EEXIST') {
+                      return reject({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
+                    }
+                    if (!skipCacheCleaning) {
+                      touch(cachePath);
+                    }
+                  }
+
+                  if (!skipCacheCleaning) {
+                    touch(cacheHeadersPath);
+                  }
+                });
+                redis.deleteOrCacheMedia(responseHeaders.width === width, width, filenameBase);
+                resolve();
+              }
+            } else {
+              toDownload = true;
+            }
+
+            /* Download the file if necessary */
+            if (toDownload) {
+              const dlPromise = downloader.downloadContent(url);
+              if (useCache) {
+                dlPromise
+                  .then(async ({ content }) => {
+                    logger.info(`Caching ${filenameBase} at ${cachePath}...`);
+                    await writeFilePromise(cachePath, content);
+                  });
+              }
+
+              dlPromise
+                .then(({ content }) => {
+                  const article = new ZimArticle(mediaPath, content, 'A');
+                  return zimCreator.addArticle(article);
+                })
+                .then(resolve)
+                .catch(reject);
+
+            } else {
+              logger.info(`Cache hit for ${url}`);
+            }
+          });
+        } else {
+          /* We already have this image with a resolution equal or higher to what we need */
+          resolve();
+        }
+      });
     });
   }
 
