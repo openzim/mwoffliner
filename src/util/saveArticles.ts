@@ -21,20 +21,29 @@ const genericCssModules = config.output.mw.css;
 
 export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
     const translationStrings = getStringsForLang(dump.mwMetaData.langIso2);
+    let speed = downloader.speed;
+
+    const articleIds = Object.keys(articleDetailXId);
 
     logger.log('Saving articles...');
     return mapLimit(
-        Object.keys(articleDetailXId),
-        downloader.speed,
+        articleIds,
+        speed,
         async (articleId) => {
             const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
             let articleHtml: string;
             try {
                 articleHtml = await downloader.getArticle(articleId, dump, useParsoidFallback);
             } catch (err) {
-                logger.error(`Error downloading article [${articleId}]`);
-                delete articleDetailXId[articleId];
-                return Promise.reject();
+                if (err.status === 429) {
+                    articleIds.push(articleId);
+                    speed = Math.max(speed - 1, 1);
+                    logger.info(`Got a status of [429], slowing down retrieval speed to [${speed}]`);
+                } else {
+                    logger.warn(`Error downloading article [${articleId}], skipping`);
+                    delete articleDetailXId[articleId];
+                    return Promise.resolve();
+                }
             }
 
             if (!articleHtml) {
@@ -56,7 +65,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
             return mediaDependencies.reduce((acc, arr) => acc.concat(arr), []);
         },
-    ).then((a) => a.reduce((acc, arr) => acc.concat(arr), []));
+    ).then((a) => a.filter((a) => a).reduce((acc: string[], arr) => acc.concat(arr as string[]), []));
 
 }
 
