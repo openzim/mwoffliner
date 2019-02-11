@@ -9,6 +9,7 @@ declare module "expand-home-dir";
 declare module "swig-templates";
 declare module "mkdirp";
 declare module "country-language";
+declare module "backoff";
 
 type DominoElement = any;
 

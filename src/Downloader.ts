@@ -11,6 +11,7 @@ import imageminGifsicle from 'imagemin-gifsicle';
 import { renderDesktopArticle, renderMCSArticle } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
+import * as backoff from 'backoff';
 
 const imageminOptions = {
   plugins: [
@@ -126,35 +127,39 @@ class Downloader {
 
   public getJSON<T>(url: string) {
     logger.info(`Getting JSON from [${url}]`);
-    return axios.get<T>(url, { responseType: 'json' }).then((a) => a.data);
+    return new Promise<T>((resolve, reject) => {
+      const call = backoff.call(getJSON, url, (err: any, val: any) => {
+        if (err) {
+          console.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
+          reject(err);
+        } else {
+          resolve(val);
+        }
+      });
+      call.setStrategy(new backoff.ExponentialStrategy());
+      call.failAfter(10);
+      call.start();
+    });
   }
 
   public downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
-    return new Promise((resolve, reject) => {
-      if (!url) {
-        return reject(new Error(`Parameter [${url}] is not a valid url`));
-      }
-      let responseHeaders = {};
-      logger.info(`Downloading [${decodeURI(url)}]`);
-      async.retry(3, async (finished) => {
-        try {
-          const resp = await axios(this.getRequestOptionsFromUrl(url, true));
-          responseHeaders = resp.headers;
-          const compressed = await imagemin.buffer(resp.data, imageminOptions);
+    if (!url) {
+      throw new Error(`Parameter [${url}] is not a valid url`);
+    }
 
-          finished(null, compressed);
-        } catch (err) {
-          logger.warn(`Failed to download from [${url}], retrying`, err);
-          finished(url as any);
-        }
-      }, (error, data) => {
-        if (error) {
-          logger.error(`Absolutely unable to retrieve async. URL: ${error}`);
-          reject(error);
+    return new Promise((resolve, reject) => {
+      const requestOptions = this.getRequestOptionsFromUrl(url, true);
+      const call = backoff.call(getContent, requestOptions, (err: any, val: any) => {
+        if (err) {
+          console.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
+          reject(err);
         } else {
-          resolve({ content: data, responseHeaders });
+          resolve(val);
         }
       });
+      call.setStrategy(new backoff.ExponentialStrategy());
+      call.failAfter(10);
+      call.start();
     });
   }
 
@@ -177,3 +182,19 @@ class Downloader {
 }
 
 export default Downloader;
+
+function getJSON<T>(url: string, handler: any) {
+  return axios.get<T>(url, { responseType: 'json' }).then((a) => handler(null, a.data), handler);
+}
+
+async function getContent(requestOptions: any, handler: any) {
+  try {
+    const resp = await axios(requestOptions);
+    const responseHeaders = resp.headers;
+    const compressed = await imagemin.buffer(resp.data, imageminOptions);
+
+    handler(null, { responseHeaders, content: compressed });
+  } catch (err) {
+    handler(err);
+  }
+}

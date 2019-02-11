@@ -6,7 +6,7 @@ import async from 'async';
 import { exec } from 'child_process';
 import crypto from 'crypto';
 import domino from 'domino';
-import fs from 'fs';
+import fs, { promises } from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
@@ -345,28 +345,17 @@ async function execute(argv: any) {
 
     // Download Media Items
     logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
-    let mediaSpeed = speed;
-    await mapLimit(mediaItemsToDownload, mediaSpeed, async ({ url, path }) => {
+    await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
       try {
         let content;
-        try {
-          const resp = await downloader.downloadContent(url);
-          content = resp.content;
-        } catch (err) {
-          if (err.status === 429) {
-            mediaItemsToDownload.push({ url, path });
-            mediaSpeed = Math.max(mediaSpeed - 1, 1);
-            logger.info(`Got a status of [429], slowing down media retrieval speed to [${mediaSpeed}]`);
-          } else {
-            throw err;
-          }
-        }
+        const resp = await downloader.downloadContent(url);
+        content = resp.content;
         const article = new ZimArticle(path, content, 'A');
         return zimCreator.addArticle(article);
       } catch (err) {
         logger.warn(`Failed to download item [${url}], skipping`);
       }
-    });
+    }).then((a) => a.filter((a) => a));
 
     const article = new ZimArticle(`style.css`, finalCss, 'A');
     await zimCreator.addArticle(article);
@@ -399,18 +388,11 @@ async function execute(argv: any) {
 
     filesToDownload = filesToDownload.concat(mediaDeps);
 
-    let fileDownloadSpeed = downloader.speed;
-    await mapLimit(filesToDownload, fileDownloadSpeed, async (url) => {
+    await mapLimit(filesToDownload, downloader.speed, async (url) => {
       try {
         await downloadFileAndCache(zimCreator, url);
       } catch (err) {
-        if (err.status === 429) {
-          filesToDownload.push(url);
-          fileDownloadSpeed = Math.max(fileDownloadSpeed - 1, 1);
-          logger.info(`Got a status of [429], slowing down file retrieval speed to [${fileDownloadSpeed}]`);
-        } else {
-          logger.warn(`Failed to download file [${url}] skipping...`);
-        }
+        logger.warn(`Failed to download file [${url}] skipping...`);
       }
     });
 

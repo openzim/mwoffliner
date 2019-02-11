@@ -118,22 +118,15 @@ async function getArticleIdsForLine(downloader: Downloader, line: string, mw: Me
 /* Get ids from file */
 async function getArticleIdsForFile(articleList: string, downloader: Downloader, mw: MediaWiki) {
     const lines: string[] = (await readFilePromise(articleList) as string).split('\n');
-    let speed = downloader.speed;
 
-    return mapLimit(lines, speed, async (line) => {
+    return mapLimit(lines, downloader.speed, async (line) => {
         if (line) {
             const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
             let body;
             try {
                 body = await downloader.getJSON(mw.articleQueryUrl(title));
             } catch (err) {
-                if (err.status === 429) {
-                    lines.push(line);
-                    speed = Math.max(speed - 1, 1);
-                    logger.info(`Got a status of [429], slowing down retrieval speed to [${speed}]`);
-                } else {
-                    throw new Error(`Failed to download article [${title}]`);
-                }
+                throw new Error(`Failed to download article [${title}]`);
             }
 
             if (body) {
@@ -144,7 +137,7 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader,
         } else {
             return Promise.reject(`Invalid line value [${line}]`);
         }
-    });
+    }).then((a) => a.filter((a) => a));
 }
 
 /* Get ids from Mediawiki API */
