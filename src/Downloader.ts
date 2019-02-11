@@ -137,7 +137,7 @@ class Downloader {
         }
       });
       call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(10);
+      call.failAfter(5);
       call.start();
     });
   }
@@ -146,7 +146,7 @@ class Downloader {
     if (!url) {
       throw new Error(`Parameter [${url}] is not a valid url`);
     }
-
+    logger.info(`Downloading [${url}]`);
     return new Promise((resolve, reject) => {
       const requestOptions = this.getRequestOptionsFromUrl(url, true);
       const call = backoff.call(getContent, requestOptions, (err: any, val: any) => {
@@ -158,7 +158,7 @@ class Downloader {
         }
       });
       call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(10);
+      call.failAfter(5);
       call.start();
     });
   }
@@ -192,6 +192,7 @@ async function getContent(requestOptions: any, handler: any) {
     const resp = await axios(requestOptions);
     const responseHeaders = resp.headers;
     const compressed = await imagemin.buffer(resp.data, imageminOptions);
+    console.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
 
     handler(null, { responseHeaders, content: compressed });
   } catch (err) {
