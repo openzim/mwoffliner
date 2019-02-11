@@ -1,13 +1,13 @@
 {
   "name": "mwoffliner",
   "version": "1.7.1",
-  "description": "Mediawiki/Parsoid HTML snapshot utility and ZIM file builder",
+  "description": "Mediawiki HTML/ZIM scraper",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
   "author": {
     "name": "Emmanuel Engelhart",
     "email": "kelson@kiwix.org",
-    "url": "http://www.kiwix.org/"
+    "url": "https://kiwix.org/"
   },
   "scripts": {
     "mwoffliner": "node mwoffliner",
