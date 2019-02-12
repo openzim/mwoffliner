@@ -23,7 +23,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { writeFilePromise, getStringsForLang, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -130,19 +130,20 @@ async function execute(argv: any) {
   let useLocalMCS = true;
 
   try {
-    const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${mwMetaData.mainPage}`);
+    const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
     useLocalMCS = !MCSMainPageQuery.lead;
-  } catch (err) { /* NOOP */ }
+  } catch (err) {
+    logger.warn(`Failed to get remote MCS:`, err);
+  }
 
   if (useLocalMCS) {
     logger.log(`Using a local MCS instance, couldn't find a remote one`);
     await downloader.initLocalMcs();
+  } else {
+    logger.log(`Using a remote MCS instance`);
   }
 
   const mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
-
-  /* Get language specific strings */
-  const strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
 
   /* *********************************** */
   /*       SYSTEM VARIABLE SECTION       */
@@ -707,7 +708,7 @@ async function execute(argv: any) {
       const html = redirectTemplate({
         title: mainPage.replace(/_/g, ' '),
         target: dump.getArticleBase(mainPage, true),
-        strings,
+        strings: dump.strings,
       });
       return writeMainPage(html);
     }

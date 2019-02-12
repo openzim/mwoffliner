@@ -1,5 +1,4 @@
 import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from '../Templates';
-import { getStringsForLang } from '.';
 import { Dump } from '../Dump';
 
 export function renderDesktopArticle(json: any) {
@@ -17,14 +16,13 @@ export function renderDesktopArticle(json: any) {
 }
 
 export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
-    const strings = getStringsForLang(langIso2 || 'en', 'en');
 
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({
         lead_display_title: json.lead.displaytitle,
         lead_section_text: json.lead.sections[0].text,
-        strings,
+        string: dump.strings,
     });
 
     // set all other section (closed by default)
@@ -37,7 +35,7 @@ export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
                     section_anchor: 'TopLevelSection',
                     section_line: 'Disambiguation',
                     section_text: '',
-                    strings,
+                    strings: dump.strings,
                 });
             }
 
@@ -50,7 +48,7 @@ export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
                     section_anchor: oneSection.anchor,
                     section_line: oneSection.line,
                     section_text: oneSection.text,
-                    strings,
+                    strings: dump.strings,
                 });
             } else {
                 const replacement = subSectionTemplate({
@@ -60,7 +58,7 @@ export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
                     section_anchor: oneSection.anchor,
                     section_line: oneSection.line,
                     section_text: oneSection.text,
-                    strings,
+                    strings: dump.strings,
                 });
                 html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
             }

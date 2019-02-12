@@ -11,7 +11,7 @@ import DU from '../DOMUtils';
 import * as domino from 'domino';
 import { Dump } from '../Dump';
 import { mapLimit } from './mapLimit';
-import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase, getStringsForLang } from '.';
+import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import Redis from '../redis';
@@ -20,7 +20,6 @@ const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
 
 export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
-    const translationStrings = getStringsForLang(dump.mwMetaData.langIso2);
 
     const articleIds = Object.keys(articleDetailXId);
 
@@ -48,7 +47,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
             // TODO: fix above warning
 
-            const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId, translationStrings);
+            const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
 
             const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html');
             await zimCreator.addArticle(zimArticle);
@@ -658,7 +657,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetailXId: KVS<any>, translationStrings: KVS<string>): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetailXId: KVS<any>): Promise<string | Buffer> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -740,7 +739,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             creator: dump.mwMetaData.creator,
             oldId,
             date: date.toISOString().substring(0, 10),
-            strings: translationStrings,
+            strings: dump.strings,
         });
         htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
         addNoIndexCommentToElement(div);
