@@ -78,7 +78,7 @@ async function execute(argv: any) {
     useCache,
   } = argv;
 
-  process.env.verbose = verbose;
+  (process as any).verbose = !!verbose;
 
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;

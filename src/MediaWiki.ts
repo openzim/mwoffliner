@@ -95,9 +95,7 @@ class MediaWiki {
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
-    const { content } = await downloader.downloadContent(url);
-    const body = content.toString();
-    const json = JSON.parse(body);
+    const json: any = await downloader.getJSON(url);
     ['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type];
       Object.keys(entries).forEach((key) => {

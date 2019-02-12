@@ -35,7 +35,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             } catch (err) {
                 logger.warn(`Error downloading article [${articleId}], skipping`);
                 delete articleDetailXId[articleId];
-                return Promise.resolve(null);
+                return null;
             }
 
             if (!articleHtml) {
