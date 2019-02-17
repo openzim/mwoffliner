@@ -18,8 +18,8 @@ import * as backoff from 'backoff';
 const imageminOptions = {
   plugins: [
     // imageminOptiPng(),
-    imageminAdvPng({ optimizationLevel: 10, iterations: 5 }),
-    imageminPngquant({ speed: 3, strip: true }),
+    imageminPngquant({ speed: 3, strip: true, dithering: 0 }),
+    imageminAdvPng({ optimizationLevel: 4, iterations: 5 }),
     imageminJpegoptim({ max: 60, stripAll: true }),
     // imageminJpegtran(),
     imageminGifsicle({ optimizationLevel: 3, colors: 64 }),
