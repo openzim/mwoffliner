@@ -126,7 +126,8 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader,
             try {
                 body = await downloader.getJSON(mw.articleQueryUrl(title));
             } catch (err) {
-                throw new Error(`Failed to download article [${title}]`);
+                logger.warn(`Failed to download article [${title}], skipping`);
+                return null;
             }
 
             if (body) {
@@ -135,7 +136,8 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader,
                 throw new Error(`Invalid body from query of [${title}]`);
             }
         } else {
-            return Promise.reject(`Invalid line value [${line}]`);
+            logger.warn(`Invalid line value [${line}], skipping`);
+            return null;
         }
     }).then((a) => a.filter((a) => a));
 }

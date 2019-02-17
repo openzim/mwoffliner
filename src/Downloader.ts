@@ -1,12 +1,14 @@
-import * as async from 'async';
 import axios, { AxiosRequestConfig } from 'axios';
 import logger from './Logger';
 
 import * as urlParser from 'url';
 import ServiceRunner from 'service-runner';
 import * as imagemin from 'imagemin';
+import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminJpegtran from 'imagemin-jpegtran';
+import imageminAdvPng from 'imagemin-advpng';
 import imageminPngquant from 'imagemin-pngquant';
+import imageminOptiPng from 'imagemin-optipng';
 import imageminGifsicle from 'imagemin-gifsicle';
 import { renderDesktopArticle, renderMCSArticle } from './util';
 import MediaWiki from './MediaWiki';
@@ -15,9 +17,12 @@ import * as backoff from 'backoff';
 
 const imageminOptions = {
   plugins: [
-    imageminJpegtran(),
-    imageminPngquant({ speed: 9 }),
-    imageminGifsicle(),
+    // imageminOptiPng(),
+    imageminPngquant({ speed: 3, strip: true, dithering: 0 }),
+    imageminAdvPng({ optimizationLevel: 4, iterations: 5 }),
+    imageminJpegoptim({ max: 60, stripAll: true }),
+    // imageminJpegtran(),
+    imageminGifsicle({ optimizationLevel: 3, colors: 64 }),
   ],
 };
 
@@ -192,9 +197,18 @@ async function getContent(requestOptions: any, handler: any) {
     const resp = await axios(requestOptions);
     const responseHeaders = resp.headers;
     const compressed = await imagemin.buffer(resp.data, imageminOptions);
-    console.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
 
-    handler(null, { responseHeaders, content: compressed });
+    const compressionWorked = compressed.length < resp.data.length;
+    if (compressionWorked) {
+      logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
+    } else {
+      logger.warn(`Couldn't compress [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+    }
+
+    handler(null, {
+      responseHeaders,
+      content: compressionWorked ? compressed : resp.data,
+    });
   } catch (err) {
     handler(err);
   }

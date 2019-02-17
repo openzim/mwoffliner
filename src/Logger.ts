@@ -4,7 +4,7 @@ class Logger {
   }
 
   public info(...args: any[]) {
-    if (!!process.env.verbose) {
+    if (!!(process as any).verbose) {
       console.info(`[info] [${this.getTs()}]`, ...args);
     }
   }
@@ -14,7 +14,7 @@ class Logger {
   }
 
   public warn(...args: any[]) {
-    if (!!process.env.verbose) {
+    if (!!(process as any).verbose) {
       console.warn(`[warn] [${this.getTs()}]`, ...args);
     }
   }

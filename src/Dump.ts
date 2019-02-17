@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import * as domino from 'domino';
 import logger from './Logger';
 import Downloader from './Downloader';
-import { dump } from 'js-yaml';
+import { getStringsForLang } from './util';
 
 interface DumpOpts {
     tmpDir: string;
@@ -38,6 +38,7 @@ export class Dump {
     public nodet: boolean;
     public contentDate: string;
     public opts: DumpOpts;
+    public strings: KVS<string>;
     public mwMetaData: MWMetaData;
 
     public mediaQueue: AsyncQueue<string>;
@@ -56,6 +57,9 @@ export class Dump {
         this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
 
         this.opts.cacheDirectory = pathParser.join(opts.cacheDirectory, this.computeFilenameRadical(true, true, true));
+
+        /* Get language specific strings */
+        this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
     }
 
     public computeFilenameRadical(withoutSelection?: boolean, withoutContentSpecifier?: boolean, withoutDate?: boolean) {

@@ -10,6 +10,8 @@ declare module "swig-templates";
 declare module "mkdirp";
 declare module "country-language";
 declare module "backoff";
+declare module "imagemin-advpng";
+declare module "imagemin-jpegoptim";
 
 type DominoElement = any;
 

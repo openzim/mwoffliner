@@ -1,7 +1,7 @@
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
-import { ZimCreator, ZimArticle } from 'libzim-binding';
+import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import zlib from 'zlib';
 import * as urlParser from 'url';
@@ -11,7 +11,7 @@ import DU from '../DOMUtils';
 import * as domino from 'domino';
 import { Dump } from '../Dump';
 import { mapLimit } from './mapLimit';
-import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase, getStringsForLang } from '.';
+import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import Redis from '../redis';
@@ -19,8 +19,14 @@ import Redis from '../redis';
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
 
+interface SaveArticlesRet {
+    mediaDependencies: Array<{ url: string, path: string }>;
+    moduleDependencies: {
+        jsDependenciesList: string[];
+        styleDependenciesList: string[];
+    };
+}
 export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
-    const translationStrings = getStringsForLang(dump.mwMetaData.langIso2);
 
     const articleIds = Object.keys(articleDetailXId);
 
@@ -36,7 +42,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             } catch (err) {
                 logger.warn(`Error downloading article [${articleId}], skipping`);
                 delete articleDetailXId[articleId];
-                return Promise.resolve(null);
+                return null;
             }
 
             if (!articleHtml) {
@@ -48,7 +54,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
             // TODO: fix above warning
 
-            const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId, translationStrings);
+            const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
 
             const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html');
             await zimCreator.addArticle(zimArticle);
@@ -56,9 +62,33 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, 'A');
             await zimCreator.addArticle(article);
 
-            return mediaDependencies.reduce((acc, arr) => acc.concat(arr), []);
+            return {
+                mediaDependencies: mediaDependencies.reduce((acc, arr) => acc.concat(arr), []),
+                moduleDependencies,
+            };
         },
-    ).then((a) => a.filter((a) => a).reduce((acc: string[], arr) => acc.concat(arr as string[]), []));
+    ).then((a) => {
+        const ret = a.filter((a) => a)
+            .reduce((acc: SaveArticlesRet, val) => {
+                acc.mediaDependencies = acc.mediaDependencies.concat(val.mediaDependencies);
+                acc.moduleDependencies.jsDependenciesList = acc.moduleDependencies.jsDependenciesList.concat(val.moduleDependencies.jsDependenciesList);
+                acc.moduleDependencies.styleDependenciesList = acc.moduleDependencies.styleDependenciesList.concat(val.moduleDependencies.styleDependenciesList);
+                return acc;
+            }, {
+                    mediaDependencies: [],
+                    moduleDependencies: {
+                        jsDependenciesList: [],
+                        styleDependenciesList: [],
+                    },
+                },
+            );
+
+        // De-dup
+        ret.moduleDependencies.jsDependenciesList = ret.moduleDependencies.jsDependenciesList.sort().filter((a, i, arr) => a !== arr[i + 1]);
+        ret.moduleDependencies.styleDependenciesList = ret.moduleDependencies.styleDependenciesList.sort().filter((a, i, arr) => a !== arr[i + 1]);
+
+        return ret;
+    });
 
 }
 
@@ -87,13 +117,6 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
     logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`);
     logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`);
 
-    const allDependenciesWithType = [
-        { type: 'js', moduleList: jsDependenciesList },
-        { type: 'css', moduleList: styleDependenciesList },
-    ];
-
-    allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any)));
-
     // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
     // the script below extracts the config with a regex executed on the page header returned from the api
     const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script');
@@ -115,16 +138,22 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
 }
 
 async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
-    let mediaDependencies: string[] = [];
+    let mediaDependencies: Array<{ url: string, path: string }> = [];
 
     let doc = domino.createDocument(html);
     const tmRet = treatMedias(doc, mw, dump, articleDetailXId);
     doc = tmRet.doc;
-    mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies);
+    mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies.map((url) => {
+        const path = getMediaBase(url, false);
+        return { url, path };
+    }));
 
     const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump, articleDetailXId);
     doc = ruRet.doc;
-    mediaDependencies = mediaDependencies.concat(ruRet.mediaDependencies);
+    mediaDependencies = mediaDependencies.concat(ruRet.mediaDependencies.map((url) => {
+        const path = getMediaBase(url, false);
+        return { url, path };
+    }));
 
     doc = applyOtherTreatments(doc, dump);
 
@@ -658,7 +687,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetailXId: KVS<any>, translationStrings: KVS<string>): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetailXId: KVS<any>): Promise<string | Buffer> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -740,7 +769,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             creator: dump.mwMetaData.creator,
             oldId,
             date: date.toISOString().substring(0, 10),
-            strings: translationStrings,
+            strings: dump.strings,
         });
         htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
         addNoIndexCommentToElement(div);
@@ -783,79 +812,6 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     } catch (err) {
         throw new Error(`Unable to get the details from redis for article ${articleId}: \n${err}`);
     }
-}
-
-function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
-    // param :
-    //   module : string : the name of the module
-    //   moduleUri : string : the path where the module will be saved into the zim
-    //   type : string : either 'js' or 'css'
-    // this function save a key into redis db in the form of module.type -> moduleUri
-    // return :
-    //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in redis
-
-    // the 2 variable functions below are a hack to call startUp() (from module startup) when the 3 generic dependencies (startup, jquery, mediawiki) are loaded.
-    // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
-    // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
-    function hackStartUpModule(jsCode: string) {
-        return jsCode.replace(
-            'script=document.createElement(\'script\');',
-            `
-                    document.body.addEventListener('fireStartUp', function () { startUp() }, false);
-                    return;
-                    script=document.createElement('script');`,
-        );
-    }
-    function hackMediaWikiModule(jsCode: string) {
-        jsCode += `(function () {
-            const startUpEvent = new CustomEvent('fireStartUp');
-            document.body.dispatchEvent(startUpEvent);
-        })()`;
-        return jsCode;
-    }
-
-    let moduleUri: string;
-    let apiParameterOnly;
-    if (type === 'js') {
-        moduleUri = pathParser.resolve(dump.opts.tmpDir, jsPath(config, module));
-        apiParameterOnly = 'scripts';
-    } else if (type === 'css') {
-        moduleUri = pathParser.resolve(dump.opts.tmpDir, cssPath(config, module));
-        apiParameterOnly = 'styles';
-    }
-
-    const moduleApiUrl = encodeURI(
-        `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
-    );
-    logger.info(`Getting [${type}] module [${moduleApiUrl}]`);
-    return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
-        .then(async (redisResult) => {
-            if (redisResult === 1) {
-                const { content } = await downloader.downloadContent(moduleApiUrl);
-                let text = content.toString();
-                if (module === 'startup' && type === 'js') {
-                    text = hackStartUpModule(text);
-                } else if (module === 'mediawiki' && type === 'js') {
-                    text = hackMediaWikiModule(text);
-                }
-
-                try {
-                    const articleId = type === 'js'
-                        ? jsPath(config, module)
-                        : cssPath(config, module);
-                    const article = new ZimArticle(articleId, text, 'A');
-                    await zimCreator.addArticle(article);
-                    logger.info(`created dep ${module} for article ${articleId}`);
-                } catch (e) {
-                    logger.warn(`Error writing file ${moduleUri} ${e}`);
-                }
-            } else {
-                return Promise.resolve();
-            }
-        })
-        .catch((e) => {
-            logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
-        });
 }
 
 function addNoIndexCommentToElement(element: DominoElement) {

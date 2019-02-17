@@ -19,7 +19,8 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
                         .then((resps) => {
                             return resps.reduce((acc, body) => {
                                 if (body.error) {
-                                    throw new Error(`Failed to parse JSON response: [${body.error}]`);
+                                    logger.warn(`Invalid JSON resonse:`, body);
+                                    throw new Error(`Failed to parse JSON response`);
                                 }
                                 const { pages, normalized } = body.query;
 
