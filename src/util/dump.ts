@@ -63,7 +63,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                     if (!url.match('^data')) {
                         const filePathname = urlParser.parse(url, false, true).pathname;
                         if (filePathname) {
-                            const filename = pathParser.basename(filePathname);
+                            const filename = pathParser.basename(filePathname).replace(/-.*x./, '.');
 
                             /* Rewrite the CSS */
                             rewrittenCss = rewrittenCss.replace(url, filename);
@@ -100,4 +100,42 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
             mediaItemsToDownload,
         };
     });
+}
+
+export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: string }>) {
+    items = items.sort((a, b) => {
+        return a.url.localeCompare(b.url);
+    });
+
+    const uniqueItems = items.filter((it, index, arr) => {
+        if (index >= arr.length - 1) {
+            return true;
+        }
+        return it.path !== arr[index + 1].path;
+    });
+
+    const itemsWithHighestRequiredRes = uniqueItems.map((it) => {
+        const similarItems = items.filter((item) => item.path === it.path);
+
+        const itemsWithMult = similarItems.map((item) => {
+            const hasMult = item.url.includes('x.');
+            let multiplier = '1x';
+            if (hasMult) {
+                multiplier = item.url.split('-').slice(-1)[0].split('.').slice(0, -1).join('.'); // e.g. "1.5x"
+            }
+
+            const mult = Number(multiplier.slice(0, -1));
+
+            return {
+                ...item,
+                mult,
+            };
+        });
+
+        const itemsSortedByMult = itemsWithMult.sort((a, b) => a.mult < b.mult ? 1 : -1);
+        return itemsSortedByMult[0];
+    });
+
+    logger.info(`Not downloading [${items.length - itemsWithHighestRequiredRes.length}] low-res images`);
+    return itemsWithHighestRequiredRes;
 }
