@@ -222,7 +222,7 @@ export function getIso3(langIso2: string): Promise<string> {
 }
 
 /* Internal path/url functions */
-export function getMediaBase(url: string, escape: boolean) {
+export function getMediaBase(url: string, escape: boolean, dir: string = config.output.dirs.media) {
   let root;
 
   const parts = MEDIA_REGEX.exec(decodeURI(url));
@@ -247,7 +247,6 @@ export function getMediaBase(url: string, escape: boolean) {
   let filename = decodeURIComponent(
     filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant,
   );
-
   /* Need to shorten the file due to filesystem limitations */
   if (unicodeCutter.getBinarySize(filename) > 249) {
     const ext = pathParser.extname(filename).split('.')[1] || '';
@@ -256,5 +255,5 @@ export function getMediaBase(url: string, escape: boolean) {
       + crypto.createHash('md5').update(basename).digest('hex').substring(0, 2)}.${ext}`;
   }
 
-  return `${config.output.dirs.media}/${e(filename)}`;
+  return `${dir}/${e(filename)}`;
 }

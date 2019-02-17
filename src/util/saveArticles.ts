@@ -57,7 +57,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
             return mediaDependencies.reduce((acc, arr) => acc.concat(arr), []);
         },
-    ).then((a) => a.filter((a) => a).reduce((acc: string[], arr) => acc.concat(arr as string[]), []));
+    ).then((a) => a.filter((a) => a).reduce((acc: Array<{ url: string, path: string }>, arr) => acc.concat(arr as Array<{ url: string, path: string }>), []));
 
 }
 
@@ -114,16 +114,22 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
 }
 
 async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
-    let mediaDependencies: string[] = [];
+    let mediaDependencies: Array<{ url: string, path: string }> = [];
 
     let doc = domino.createDocument(html);
     const tmRet = treatMedias(doc, mw, dump, articleDetailXId);
     doc = tmRet.doc;
-    mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies);
+    mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies.map((url) => {
+        const path = getMediaBase(url, false);
+        return { url, path };
+    }));
 
     const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump, articleDetailXId);
     doc = ruRet.doc;
-    mediaDependencies = mediaDependencies.concat(ruRet.mediaDependencies);
+    mediaDependencies = mediaDependencies.concat(ruRet.mediaDependencies.map((url) => {
+        const path = getMediaBase(url, false);
+        return { url, path };
+    }));
 
     doc = applyOtherTreatments(doc, dump);
 
