@@ -20,7 +20,8 @@
     "prepublish": "npm run snyk-protect",
     "redis:start": "docker run -p 6379:6379 --name redis-della -d redis",
     "redis:kill": "docker rm -f redis-della || :",
-    "redis": "npm run redis:kill && npm run redis:start"
+    "redis": "npm run redis:kill && npm run redis:start",
+    "postinstall": "npm run build"
   },
   "bin": {
     "mwoffliner": "./bin/mwoffliner.script.js",
