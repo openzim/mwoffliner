@@ -23,7 +23,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -306,7 +306,7 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
-    let filesToDownload = [];
+    let filesToDownload: Array<{ url: string, path: string }> = [];
 
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
@@ -343,20 +343,7 @@ async function execute(argv: any) {
       finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
-
-    // Download Media Items
-    logger.log(`Downloading [${mediaItemsToDownload.length}] media items`);
-    await mapLimit(mediaItemsToDownload, speed, async ({ url, path }) => {
-      try {
-        let content;
-        const resp = await downloader.downloadContent(url);
-        content = resp.content;
-        const article = new ZimArticle(path, content, 'A');
-        return zimCreator.addArticle(article);
-      } catch (err) {
-        logger.warn(`Failed to download item [${url}], skipping`);
-      }
-    }).then((a) => a.filter((a) => a));
+    filesToDownload = filesToDownload.concat(mediaItemsToDownload);
 
     const article = new ZimArticle(`style.css`, finalCss, 'A');
     await zimCreator.addArticle(article);
@@ -369,7 +356,9 @@ async function execute(argv: any) {
       const thumbnailUrls = await getArticleThumbnails(downloader, mw, articleListLines);
       if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         for (const { articleId, imageUrl } of thumbnailUrls) {
-          filesToDownload.push(imageUrl);
+          const path = getMediaBase(imageUrl, false);
+          filesToDownload.push({ url: imageUrl, path });
+
           const internalSrc = getMediaBase(imageUrl, true);
 
           articleDetailXId[articleId] = Object.assign(
@@ -386,16 +375,24 @@ async function execute(argv: any) {
     logger.log(`Getting articles`);
     const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
     logger.log(`Found [${mediaDeps.length}] dependencies`);
-
     filesToDownload = filesToDownload.concat(mediaDeps);
 
-    await mapLimit(filesToDownload, downloader.speed, async (url) => {
+    filesToDownload = removeDuplicatesAndLowRes(filesToDownload);
+
+    // Download Media Items
+    logger.log(`Downloading [${filesToDownload.length}] files`);
+    await mapLimit(filesToDownload, speed, async ({ url, path }) => {
       try {
-        await downloadFileAndCache(zimCreator, url);
+        let content;
+        const resp = await downloader.downloadContent(url);
+        content = resp.content;
+
+        const article = new ZimArticle(path, content, 'A');
+        return zimCreator.addArticle(article);
       } catch (err) {
-        logger.warn(`Failed to download file [${url}] skipping...`);
+        logger.warn(`Failed to download item [${url}], skipping`);
       }
-    });
+    }).then((a) => a.filter((a) => a));
 
     logger.log(`Creating redirects`);
     await getRedirects(dump, zimCreator);
@@ -431,150 +428,6 @@ async function execute(argv: any) {
       'Unable to cache a redirect',
       'All redirects were cached successfuly.',
     );
-  }
-
-  /* Multiple developer friendly functions */
-  function downloadContentAndCache(url: string): Promise<{ content: any, responseHeaders: any }> {
-    return new Promise((resolve, reject) => {
-      const cachePath = cacheDirectory + crypto.createHash('sha1').update(url).digest('hex').substr(0, 20);
-      const cacheHeadersPath = `${cachePath}.h`;
-
-      async.series(
-        [
-          (finished) => {
-            fs.readFile(cachePath, (error, data) => {
-              finished(error, error ? undefined : data.toString());
-            });
-          },
-          (finished) => {
-            fs.readFile(cacheHeadersPath, (error, data) => {
-              try {
-                finished(error, error ? undefined : JSON.parse(data.toString()));
-              } catch (error) {
-                finished({ message: `Error in downloadContentAndCache() JSON parsing of ${cacheHeadersPath}`, error } as any);
-              }
-            });
-          },
-        ],
-        (error, results) => {
-          if (error) {
-            downloader.downloadContent(url)
-              .then(({ content, responseHeaders }) => {
-                if (useCache) {
-                  logger.info(`Caching ${url} at ${cachePath}...`);
-                  fs.writeFile(cacheHeadersPath, JSON.stringify(responseHeaders), () => {
-                    fs.writeFile(cachePath, content, () => {
-                      resolve({ content, responseHeaders });
-                    });
-                  });
-                } else {
-                  resolve({ content, responseHeaders });
-                }
-              })
-              .catch((err) => {
-                logger.warn(err);
-                reject(err);
-              });
-          } else {
-            logger.log(`Cache hit for ${url} (${cachePath})`);
-            touch(cachePath);
-            resolve({ content: results[0], responseHeaders: results[1] });
-          }
-        },
-      );
-    });
-  }
-
-  function downloadFileAndCache(zimCreator: ZimCreator, url: string) {
-    return new Promise((resolve, reject) => {
-      if (!url) {
-        reject(`Invalid url: [${url}]`);
-        return;
-      }
-
-      logger.info(`Downloading and Caching [${url}]`);
-
-      const parts = MEDIA_REGEX.exec(decodeURI(url));
-      const filenameBase = parts[2].length > parts[5].length
-        ? parts[2]
-        : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-      const width = parseInt(parts[4].replace(/px-/g, ''), 10) || INFINITY_WIDTH;
-
-      /* Check if we have already met this image during this dumping process */
-      redis.getMedia(filenameBase, (error: any, rWidth: number) => {
-        /* If no redis entry */
-        if (error || !rWidth || rWidth < width) {
-          /* Set the redis entry if necessary */
-          redis.saveMedia(filenameBase, width, () => {
-            const mediaPath = getMediaBase(url, false);
-            const cachePath = `${cacheDirectory}m/${crypto.createHash('sha1').update(filenameBase).digest('hex').substr(0, 20)}${pathParser.extname(urlParser.parse(url, false, true).pathname || '') || ''}`;
-            const cacheHeadersPath = `${cachePath}.h`;
-            let toDownload = false;
-
-            /* Check if the file exists in the cache */
-            if (fs.existsSync(cacheHeadersPath) && fs.existsSync(cachePath)) {
-              let responseHeaders;
-              try {
-                responseHeaders = JSON.parse(fs.readFileSync(cacheHeadersPath).toString());
-              } catch (err) {
-                logger.warn(`Error in downloadFileAndCache() JSON parsing of ${cacheHeadersPath}`, err);
-                responseHeaders = undefined;
-              }
-
-              /* If the cache file width higher than needed, use it. Otherwise download it and erase the cache */
-              if (!responseHeaders || responseHeaders.width < width) {
-                toDownload = true;
-              } else {
-                fs.symlink(cachePath, mediaPath, 'file', (error) => {
-                  if (error) {
-                    if (error.code !== 'EEXIST') {
-                      return reject({ message: `Unable to create symlink to ${mediaPath} at ${cachePath}`, error });
-                    }
-                    if (!skipCacheCleaning) {
-                      touch(cachePath);
-                    }
-                  }
-
-                  if (!skipCacheCleaning) {
-                    touch(cacheHeadersPath);
-                  }
-                });
-                redis.deleteOrCacheMedia(responseHeaders.width === width, width, filenameBase);
-                resolve();
-              }
-            } else {
-              toDownload = true;
-            }
-
-            /* Download the file if necessary */
-            if (toDownload) {
-              const dlPromise = downloader.downloadContent(url);
-              if (useCache) {
-                dlPromise
-                  .then(async ({ content }) => {
-                    logger.info(`Caching ${filenameBase} at ${cachePath}...`);
-                    await writeFilePromise(cachePath, content);
-                  });
-              }
-
-              dlPromise
-                .then(({ content }) => {
-                  const article = new ZimArticle(mediaPath, content, 'A');
-                  return zimCreator.addArticle(article);
-                })
-                .then(resolve)
-                .catch(reject);
-
-            } else {
-              logger.info(`Cache hit for ${url}`);
-            }
-          });
-        } else {
-          /* We already have this image with a resolution equal or higher to what we need */
-          resolve();
-        }
-      });
-    });
   }
 
   async function saveFavicon(dump: Dump, zimCreator: ZimCreator) {
