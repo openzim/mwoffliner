@@ -23,7 +23,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -373,9 +373,20 @@ async function execute(argv: any) {
     await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
-    const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
-    logger.log(`Found [${mediaDeps.length}] dependencies`);
-    filesToDownload = filesToDownload.concat(mediaDeps);
+    const { mediaDependencies, moduleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
+
+    logger.log(`Found [${moduleDependencies.jsDependenciesList.length}] js module dependencies`);
+    logger.log(`Found [${moduleDependencies.styleDependenciesList.length}] style module dependencies`);
+
+    const allDependenciesWithType = [
+      { type: 'js', moduleList: moduleDependencies.jsDependenciesList },
+      { type: 'css', moduleList: moduleDependencies.styleDependenciesList },
+    ];
+
+    allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any)));
+
+    logger.log(`Found [${mediaDependencies.length}] media dependencies`);
+    filesToDownload = filesToDownload.concat(mediaDependencies);
 
     filesToDownload = removeDuplicatesAndLowRes(filesToDownload);
 
