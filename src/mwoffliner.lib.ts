@@ -14,7 +14,7 @@ import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
 import axios from 'axios';
-import { ZimCreator, ZimArticle } from 'libzim-binding';
+import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import homeDirExpander from 'expand-home-dir';
 import rimraf from 'rimraf';
 

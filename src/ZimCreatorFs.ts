@@ -1,4 +1,4 @@
-import { ZimCreator, ZimArticle } from 'libzim-binding';
+import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import mkdirp from 'mkdirp';
 import * as path from 'path';
 import { rmdirSync, symlink } from 'fs';

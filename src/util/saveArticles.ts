@@ -1,7 +1,7 @@
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
-import { ZimCreator, ZimArticle } from 'libzim-binding';
+import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import zlib from 'zlib';
 import * as urlParser from 'url';

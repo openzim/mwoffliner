@@ -6,7 +6,7 @@ import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser, { UrlWithStringQuery } from 'url';
 import { exec } from 'child_process';
-import { ZimCreator, ZimArticle } from 'libzim-binding';
+import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
 import { MEDIA_REGEX } from '.';
