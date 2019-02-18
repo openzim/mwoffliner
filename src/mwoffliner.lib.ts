@@ -23,7 +23,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -381,10 +381,22 @@ async function execute(argv: any) {
     await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
-    const mediaDeps = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
-    logger.log(`Found [${mediaDeps.length}] dependencies`);
+
+    const { mediaDependencies, moduleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
+
+    logger.log(`Found [${moduleDependencies.jsDependenciesList.length}] js module dependencies`);
+    logger.log(`Found [${moduleDependencies.styleDependenciesList.length}] style module dependencies`);
+
+    const allDependenciesWithType = [
+      { type: 'js', moduleList: moduleDependencies.jsDependenciesList },
+      { type: 'css', moduleList: moduleDependencies.styleDependenciesList },
+    ];
+
+    allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any)));
+
+    logger.log(`Found [${mediaDependencies.length}] dependencies`);
     filesToDownload = filesToDownload.concat(
-      mediaDeps.map((m) => {
+      mediaDependencies.map((m) => {
         return {
           ...m,
           namespace: 'I',
@@ -455,7 +467,7 @@ async function execute(argv: any) {
           if (error) {
             reject();
           } else {
-            readFilePromise(faviconPath).then((faviconContent) => {
+            readFilePromise(faviconPath, null).then((faviconContent) => {
               const article = new ZimArticle('favicon.png', faviconContent, 'I');
               return zimCreator.addArticle(article);
             }).then(resolve, reject);
@@ -482,7 +494,7 @@ async function execute(argv: any) {
           const ext = parsedUrl.pathname.split('.').slice(-1)[0];
 
           const faviconPath = pathParser.join(dumpTmpDir, `favicon.${ext}`);
-          const faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
+          let faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
           const logoContent = await downloader.downloadContent(logoUrl);
           await writeFilePromise(faviconPath, logoContent.content);
@@ -497,6 +509,8 @@ async function execute(argv: any) {
                 }
               });
             });
+          } else {
+            faviconFinalPath = faviconPath;
           }
           return resizeFavicon(zimCreator, faviconFinalPath);
         });
