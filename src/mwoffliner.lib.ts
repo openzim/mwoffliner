@@ -306,7 +306,7 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
-    let filesToDownload: Array<{ url: string, path: string }> = [];
+    let filesToDownload: Array<{ url: string, path: string, namespace: string }> = [];
 
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
@@ -343,9 +343,16 @@ async function execute(argv: any) {
       finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
-    filesToDownload = filesToDownload.concat(mediaItemsToDownload);
+    filesToDownload = filesToDownload.concat(
+      mediaItemsToDownload.map((m) => {
+        return {
+          ...m,
+          namespace: '-',
+        };
+      }),
+    );
 
-    const article = new ZimArticle(`style.css`, finalCss, 'A');
+    const article = new ZimArticle(`style.css`, finalCss, '-');
     await zimCreator.addArticle(article);
 
     logger.log(`Getting Favicon`);
@@ -357,9 +364,10 @@ async function execute(argv: any) {
       if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         for (const { articleId, imageUrl } of thumbnailUrls) {
           const path = getMediaBase(imageUrl, false);
-          filesToDownload.push({ url: imageUrl, path });
+          filesToDownload.push({ url: imageUrl, path, namespace: 'I' });
 
-          const internalSrc = getMediaBase(imageUrl, true);
+          const resourceNamespace = 'I';
+          const internalSrc = `/${resourceNamespace}/` + getMediaBase(imageUrl, true);
 
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
@@ -373,6 +381,7 @@ async function execute(argv: any) {
     await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
+
     const { mediaDependencies, moduleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
 
     logger.log(`Found [${moduleDependencies.jsDependenciesList.length}] js module dependencies`);
@@ -385,20 +394,27 @@ async function execute(argv: any) {
 
     allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any)));
 
-    logger.log(`Found [${mediaDependencies.length}] media dependencies`);
-    filesToDownload = filesToDownload.concat(mediaDependencies);
+    logger.log(`Found [${mediaDependencies.length}] dependencies`);
+    filesToDownload = filesToDownload.concat(
+      mediaDependencies.map((m) => {
+        return {
+          ...m,
+          namespace: 'I',
+        };
+      }),
+    );
 
     filesToDownload = removeDuplicatesAndLowRes(filesToDownload);
 
     // Download Media Items
     logger.log(`Downloading [${filesToDownload.length}] files`);
-    await mapLimit(filesToDownload, speed, async ({ url, path }) => {
+    await mapLimit(filesToDownload, speed, async ({ url, path, namespace }) => {
       try {
         let content;
         const resp = await downloader.downloadContent(url);
         content = resp.content;
 
-        const article = new ZimArticle(path, content, 'A');
+        const article = new ZimArticle(path, content, namespace);
         return zimCreator.addArticle(article);
       } catch (err) {
         logger.warn(`Failed to download item [${url}], skipping`);
@@ -428,7 +444,7 @@ async function execute(argv: any) {
         const url = dump.getArticleBase(redirectId);
         const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', 'A/' + dump.getArticleBase(target, false), `A/${url}`, redirectId.replace(/_/g, ' '));
         zimCreator.addArticle(redirectArticle)
-          .then(finished, (err) => {
+          .then(finished, (err: any) => {
             logger.warn(`Failed to create redirect, skipping: `, err);
             finished();
           });
