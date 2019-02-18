@@ -156,7 +156,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
     .map(async (css) => {
       try {
         const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
-        const article = new ZimArticle(cssPath(config, css), cssCont, 'A');
+        const article = new ZimArticle(cssPath(config, css), cssCont, '-');
         await zimCreator.addArticle(article);
       } catch (error) {
         logger.warn(`Could not create ${css} file : ${error}`);
@@ -166,7 +166,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
       const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
-      const article = new ZimArticle(jsPath(config, js), jsCont, 'A');
+      const article = new ZimArticle(jsPath(config, js), jsCont, '-');
       await zimCreator.addArticle(article);
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`);
@@ -185,10 +185,12 @@ export function jsPath({ output: { dirs } }: Config, js: string) {
   return [dirs.javascript, `${dirs.jsModules}-${js.replace(/(\.js)?$/, '')}.js`].join('/');
 }
 export function genHeaderCSSLink(config: Config, css: string, classList = '') {
-  return `<link href="${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+  const resourceNamespace = '-';
+  return `<link href="/${resourceNamespace}/${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
 }
 export function genHeaderScript(config: Config, js: string, classList = '') {
-  return `<script src="${jsPath(config, js)}" class="${classList}"></script>`;
+  const resourceNamespace = '-';
+  return `<script src="/${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
 }
 
 export function getDumps(format: boolean | boolean[]) {
