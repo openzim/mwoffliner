@@ -52,7 +52,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html');
             await zimCreator.addArticle(zimArticle);
 
-            const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, 'A');
+            const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, '-');
             await zimCreator.addArticle(article);
 
             return mediaDependencies.reduce((acc, arr) => acc.concat(arr), []);
@@ -201,8 +201,10 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
         sourcesToRemove.forEach(DU.deleteNode);
 
         const sourceEl = videoSources[0]; // Use first source (smallest resolution)
+
         const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
-        const newUrl = getMediaBase(sourceUrl, true);
+        const resourceNamespace = 'I';
+        const newUrl = `/${resourceNamespace}/` + getMediaBase(sourceUrl, true);
 
         if (!newUrl) {
             DU.deleteNode(sourceEl);
@@ -257,7 +259,8 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
                 const src = getFullUrl(webUrlHost, img.getAttribute('src'));
                 let newSrc: string;
                 try {
-                    newSrc = getMediaBase(src, true);
+                    const resourceNamespace = 'I';
+                    newSrc = `/${resourceNamespace}/` + getMediaBase(src, true);
                 } catch (err) { /* NOOP */ }
 
                 if (newSrc) {
@@ -848,7 +851,7 @@ function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: MediaWi
                     const articleId = type === 'js'
                         ? jsPath(config, module)
                         : cssPath(config, module);
-                    const article = new ZimArticle(articleId, text, 'A');
+                    const article = new ZimArticle(articleId, text, '-');
                     await zimCreator.addArticle(article);
                     logger.info(`created dep ${module} for article ${articleId}`);
                 } catch (e) {

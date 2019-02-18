@@ -102,7 +102,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     });
 }
 
-export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: string }>) {
+export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: string, namespace: string }>) {
     items = items.sort((a, b) => {
         return a.url.localeCompare(b.url);
     });
@@ -116,6 +116,9 @@ export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: stri
 
     const itemsWithHighestRequiredRes = uniqueItems.map((it) => {
         const similarItems = items.filter((item) => item.path === it.path);
+
+        // const uniqueNamespaces = items.map((it) => it.namespace).sort().filter((it, i, arr) => it !== arr[i + 1]);
+        // This de-dup could cause issues if the duplicate files are in different namespaces, ignoring for now.
 
         const itemsWithMult = similarItems.map((item) => {
             const hasMult = item.url.includes('x.');
