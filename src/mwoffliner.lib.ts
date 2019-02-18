@@ -451,7 +451,7 @@ async function execute(argv: any) {
           if (error) {
             reject();
           } else {
-            readFilePromise(faviconPath).then((faviconContent) => {
+            readFilePromise(faviconPath, null).then((faviconContent) => {
               const article = new ZimArticle('favicon.png', faviconContent, 'I');
               return zimCreator.addArticle(article);
             }).then(resolve, reject);
@@ -478,7 +478,7 @@ async function execute(argv: any) {
           const ext = parsedUrl.pathname.split('.').slice(-1)[0];
 
           const faviconPath = pathParser.join(dumpTmpDir, `favicon.${ext}`);
-          const faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
+          let faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
           const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
           const logoContent = await downloader.downloadContent(logoUrl);
           await writeFilePromise(faviconPath, logoContent.content);
@@ -493,6 +493,8 @@ async function execute(argv: any) {
                 }
               });
             });
+          } else {
+            faviconFinalPath = faviconPath;
           }
           return resizeFavicon(zimCreator, faviconFinalPath);
         });
