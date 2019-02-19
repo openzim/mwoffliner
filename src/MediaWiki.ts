@@ -200,8 +200,21 @@ class MediaWiki {
     const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
     const siteName = entries.sitename;
 
-    const langIso2 = entries.lang;
-    const langIso3 = await U.getIso3(langIso2);
+    const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code));
+
+    const [langIso2, langIso3] = await Promise.all(langs.map(async (lang: string) => {
+      try {
+        return [
+          lang,
+          await U.getIso3(lang),
+        ];
+      } catch (err) {
+        return false;
+      }
+    })).then((possibleLangPairs) => {
+      possibleLangPairs = possibleLangPairs.filter((a) => a);
+      return possibleLangPairs[0] || ['en', 'eng'];
+    });
 
     return {
       mainPage,
