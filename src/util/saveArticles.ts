@@ -799,19 +799,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             });
         }
 
-        if (dump.opts.deflateTmpHtml) {
-            return new Promise((resolve, reject) => {
-                zlib.deflate(outHtml, (error, deflatedHtml) => {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(deflatedHtml);
-                    }
-                });
-            });
-        } else {
-            return outHtml;
-        }
+        return outHtml;
     } catch (err) {
         throw new Error(`Unable to get the details from redis for article ${articleId}: \n${err}`);
     }
