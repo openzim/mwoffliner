@@ -135,7 +135,7 @@ class Downloader {
     return new Promise<T>((resolve, reject) => {
       const call = backoff.call(getJSON, url, (err: any, val: any) => {
         if (err) {
-          console.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
+          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
         } else {
           resolve(val);
@@ -156,7 +156,7 @@ class Downloader {
       const requestOptions = this.getRequestOptionsFromUrl(url, true);
       const call = backoff.call(getContent, requestOptions, (err: any, val: any) => {
         if (err) {
-          console.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
+          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
         } else {
           resolve(val);

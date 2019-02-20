@@ -1,5 +1,6 @@
 import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from '../Templates';
 import { Dump } from '../Dump';
+import logger from '../Logger';
 
 export function renderDesktopArticle(json: any) {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
@@ -10,7 +11,7 @@ export function renderDesktopArticle(json: any) {
     } else if (json.parse && json.parse.text) {
         return json.parse.text['*'];
     } else if (json.error) {
-        console.error(`Error retrieving article: ${json.error.info}`);
+        logger.error(`Error retrieving article: ${json.error.info}`);
         return '';
     }
 }

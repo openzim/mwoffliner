@@ -32,7 +32,7 @@ function _decodeURIComponent(uri: string) {
   try {
     return decodeURIComponent(uri);
   } catch (error) {
-    console.warn(error);
+    logger.warn(error);
     return uri;
   }
 }
@@ -144,7 +144,7 @@ export function getStringsForLang(language: string, fallbackLanguage = 'en') {
   try {
     strings = require(`../../translation/${language}.json`);
   } catch (err) {
-    console.warn(`Couldn't find strings file for [${language}], falling back to [${fallbackLanguage}]`);
+    logger.warn(`Couldn't find strings file for [${language}], falling back to [${fallbackLanguage}]`);
     strings = require(`../../translation/${fallbackLanguage}.json`);
   }
   return strings;

@@ -478,38 +478,35 @@ async function execute(argv: any) {
     if (customZimFavicon) {
       return resizeFavicon(zimCreator, customZimFavicon);
     } else {
-      return downloader.downloadContent(mw.siteInfoUrl())
-        .then(async ({ content }) => {
-          const body = content.toString();
-          const entries = JSON.parse(body).query.general;
-          if (!entries.logo) {
-            throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
-          }
+      const body = await downloader.getJSON<any>(mw.siteInfoUrl());
+      const entries = body.query.general;
+      if (!entries.logo) {
+        throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
+      }
 
-          const parsedUrl = urlParser.parse(entries.logo);
-          const ext = parsedUrl.pathname.split('.').slice(-1)[0];
+      const parsedUrl = urlParser.parse(entries.logo);
+      const ext = parsedUrl.pathname.split('.').slice(-1)[0];
 
-          const faviconPath = pathParser.join(dumpTmpDir, `favicon.${ext}`);
-          let faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
-          const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
-          const logoContent = await downloader.downloadContent(logoUrl);
-          await writeFilePromise(faviconPath, logoContent.content);
-          if (ext !== 'png') {
-            logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
-            await new Promise((resolve, reject) => {
-              exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve();
-                }
-              });
-            });
-          } else {
-            faviconFinalPath = faviconPath;
-          }
-          return resizeFavicon(zimCreator, faviconFinalPath);
+      const faviconPath = pathParser.join(dumpTmpDir, `favicon.${ext}`);
+      let faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
+      const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
+      const logoContent = await downloader.downloadContent(logoUrl);
+      await writeFilePromise(faviconPath, logoContent.content);
+      if (ext !== 'png') {
+        logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+        await new Promise((resolve, reject) => {
+          exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
         });
+      } else {
+        faviconFinalPath = faviconPath;
+      }
+      return resizeFavicon(zimCreator, faviconFinalPath);
     }
   }
 
