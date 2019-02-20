@@ -46,7 +46,8 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
             }
 
             if (!articleHtml) {
-                throw new Error(`Invalid HTML returned for article [${articleId}]: ${articleHtml}`);
+                logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
+                return null;
             }
 
             const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId);

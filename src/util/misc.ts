@@ -179,10 +179,10 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 }
 
 export function cssPath({ output: { dirs } }: Config, css: string) {
-  return [dirs.style, `${dirs.styleModules}-${css.replace(/(\.css)?$/, '')}.css`].join('/');
+  return [dirs.style, `${dirs.styleModules}/${css.replace(/(\.css)?$/, '')}.css`].join('/');
 }
 export function jsPath({ output: { dirs } }: Config, js: string) {
-  return [dirs.javascript, `${dirs.jsModules}-${js.replace(/(\.js)?$/, '')}.js`].join('/');
+  return [dirs.javascript, `${dirs.jsModules}/${js.replace(/(\.js)?$/, '')}.js`].join('/');
 }
 export function genHeaderCSSLink(config: Config, css: string, classList = '') {
   const resourceNamespace = '-';
