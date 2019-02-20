@@ -66,12 +66,10 @@ async function execute(argv: any) {
     format,
     filenamePrefix,
     resume,
-    deflateTmpHtml,
     keepHtml: keepHtml,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     cacheDirectory: _cacheDirectory,
-    tmpDirectory: _tmpDirectory,
     addNamespaces: _addNamespaces,
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
@@ -86,7 +84,7 @@ async function execute(argv: any) {
 
   const outputDirectory = _outputDirectory ? `${homeDirExpander(_outputDirectory)}/` : 'out/';
   const cacheDirectory = _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : 'cac/';
-  const tmpDirectory = _tmpDirectory ? `${homeDirExpander(_tmpDirectory)}/` : 'tmp/';
+  const tmpDirectory = os.tmpdir();
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -254,7 +252,6 @@ async function execute(argv: any) {
       password: mwPassword,
       spaceDelimiter: '_',
       outputDirectory,
-      tmpDirectory,
       cacheDirectory,
       keepHtml,
       mainPage,
@@ -265,7 +262,6 @@ async function execute(argv: any) {
       customZimTags,
       customZimTitle,
       withoutZimFullTextIndex,
-      deflateTmpHtml,
       resume,
       minifyHtml,
       keepEmptyParagraphs,
@@ -519,20 +515,9 @@ async function execute(argv: any) {
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator) {
     function writeMainPage(html: string) {
-      // const mainPagePath = `${dump.computeHtmlRootPath}index`;
-      if (dump.opts.deflateTmpHtml) {
-        return new Promise((resolve, reject) => {
-          zlib.deflate(html, (error, deflatedHtml) => {
-            const article = new ZimArticle('index' + (dump.nozim ? '.htm' : ''), deflatedHtml, 'A', 'text/html');
-            zimCreator.addArticle(article).then(resolve, reject);
-            // writeFilePromise(mainPagePath, deflatedHtml).then(resolve, reject);
-          });
-        });
-      } else {
-        // return writeFilePromise(mainPagePath, html);
-        const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), html, 'A', 'text/html');
-        return zimCreator.addArticle(article);
-      }
+      // return writeFilePromise(mainPagePath, html);
+      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), html, 'A', 'text/html');
+      return zimCreator.addArticle(article);
     }
 
     function createMainPage() {

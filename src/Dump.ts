@@ -13,7 +13,6 @@ interface DumpOpts {
     password: string;
     spaceDelimiter: string;
     outputDirectory: string;
-    tmpDirectory: string;
     cacheDirectory: string;
     keepHtml: boolean;
     publisher: string;
@@ -24,7 +23,6 @@ interface DumpOpts {
     mainPage?: string;
     filenamePrefix?: string;
     articleList?: string;
-    deflateTmpHtml?: boolean;
     resume?: boolean;
     minifyHtml: boolean;
     keepEmptyParagraphs: boolean;

@@ -17,11 +17,6 @@ const parameterList = [
   { name: 'customZimTags', description: 'Allow to configure custom ZIM file tags (semi-colon separated).', required: false },
   { name: 'customMainPage', description: 'Allow to configure a custom page as welcome page.', required: false },
   {
-    name: 'deflateTmpHtml',
-    description: 'To reduce I/O, HTML pages might be deflated in tmpDirectory.',
-    required: false,
-  },
-  {
     name: 'filenamePrefix',
     description: 'For the part of the ZIM filename which is before the date part.',
     required: false,
@@ -60,7 +55,6 @@ const parameterList = [
     description: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.',
     required: false,
   },
-  { name: 'tmpDirectory', description: 'Directory where files are temporary stored', required: false },
   { name: 'verbose', description: 'Print debug information to the stdout', required: false },
   { name: 'withoutZimFullTextIndex', description: 'Don\'t include a fulltext search index to the ZIM', required: false },
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
