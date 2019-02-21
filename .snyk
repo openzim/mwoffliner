@@ -1,5 +1,5 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
-version: v1.12.0
+version: v1.13.3
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
   SNYK-JS-MERGE-72553:
@@ -233,7 +233,7 @@ ignore:
     - service-mobileapp-node > swagger-ui:
         reason: None given
         expires: '2019-01-25T17:23:01.942Z'
-      swagger-ui:
+    - swagger-ui:
         reason: None given
         expires: '2019-01-25T17:35:56.530Z'
 # patches apply the minimum changes required to fix a vulnerability
@@ -241,25 +241,23 @@ patch:
   'npm:lodash:20180130':
     - parsoid > service-runner > limitation > kad > lodash:
         patched: '2018-09-20T15:00:14.083Z'
-      parsoid > cli-table2 > lodash:
-        patched: '2018-12-26T17:35:12.223Z'
     - parsoid > kad > lodash:
         patched: '2018-11-14T10:51:38.590Z'
-      parsoid > nsp > cli-table2 > lodash:
-        patched: '2018-12-26T17:35:12.223Z'
     - service-runner > limitation > kad > lodash:
         patched: '2018-12-20T11:00:50.797Z'
-      parsoid > kad > lodash:
-        patched: '2018-12-26T17:35:12.223Z'
     - parsoid > service-runner > limitation > kad > lodash:
         patched: '2018-12-20T11:00:50.797Z'
     - mediawiki-services-mobileapps > service-runner > limitation > kad > lodash:
         patched: '2018-12-20T11:00:50.797Z'
+    - parsoid > cli-table2 > lodash:
+        patched: '2018-12-26T17:35:12.223Z'
+    - parsoid > nsp > cli-table2 > lodash:
+        patched: '2018-12-26T17:35:12.223Z'
+    - parsoid > kad > lodash:
+        patched: '2018-12-26T17:35:12.223Z'
   'npm:ms:20170412':
     - parsoid > service-runner > limitation > kad > ms:
         patched: '2018-09-20T15:00:14.083Z'
-      parsoid > kad > ms:
-        patched: '2018-12-26T17:35:12.223Z'
     - parsoid > eslint > debug > ms:
         patched: '2018-11-14T10:51:38.590Z'
     - parsoid > nock > debug > ms:
@@ -284,6 +282,8 @@ patch:
         patched: '2018-12-20T11:00:50.797Z'
     - mediawiki-services-mobileapps > service-runner > limitation > kad > ms:
         patched: '2018-12-20T11:00:50.797Z'
+    - parsoid > kad > ms:
+        patched: '2018-12-26T17:35:12.223Z'
   'npm:debug:20170905':
     - parsoid > nock > debug:
         patched: '2018-11-14T10:51:38.590Z'
@@ -325,3 +325,8 @@ patch:
   'npm:moment:20170905':
     - parsoid > nsp > joi > moment:
         patched: '2018-11-14T10:51:38.590Z'
+  'npm:tunnel-agent:20170305':
+    - imagemin-advpng > advpng-bin > bin-build > download > caw > tunnel-agent:
+        patched: '2019-02-21T18:42:48.193Z'
+    - imagemin-advpng > advpng-bin > bin-wrapper > download > caw > tunnel-agent:
+        patched: '2019-02-21T18:42:48.193Z'
