@@ -4,6 +4,11 @@ First, please read the
 [contributing guidelines for our parent project, openZIM](https://github.com/openzim/overview/blob/master/CONTRIBUTING.md).
 They cover the general process.
 
+## TypeScript
+We use TypeScript for development. You can find all `.ts` files in `src/**`.
+The best way to develop is to run `npm run watch` in a terminal, and then execute MWOffliner via the pre-configured debugger in Visual Studio Code.
+The compiled `.js` files are not committed to Git, but they are published to NPM.
+
 ## Background
 
 Check the [Background section of README.md](README.md#background) for

@@ -17,6 +17,7 @@
     "prepare": "npm run snyk-protect",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./build.sh",
+    "watch": "./watch.sh",
     "prepublish": "npm run snyk-protect",
     "redis:start": "docker run -p 6379:6379 --name redis-della -d redis",
     "redis:kill": "docker rm -f redis-della || :",

@@ -80,7 +80,7 @@ mwoffliner.execute(parameters); // returns a Promise
 ```
 
 ## Development
-
+> Please see [CONTRIBUTING.md](./CONTRIBUTING.md)
 ```bash
 git clone https://github.com/openzim/mwoffliner.git
 cd mwoffliner
