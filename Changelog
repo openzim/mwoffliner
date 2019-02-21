@@ -1,3 +1,14 @@
+1.8.0:
+* UPDATE: Removed 'tmp' files and directory #448 #575
+* UPDATE: Write ZIM files directly (Using Libzim) #184
+* UPDATE: Removed --deflateTmpHTML and --tmpDirectory arguments #575 #576
+* UPDATE: Implemented better request backoff #496
+* UPDATE: Change file names/paths #278
+* UPDATE: Removed --writeHtmlRedirects argument #506
+* UPDATE: Removed --localMCS option (automatically detect) #490
+* UPDATE: Updated documentation #423
+* FIX: Other stability, logging and error handling fixes
+
 1.7.1:
 * FIX: Broken Docker image #534
 
