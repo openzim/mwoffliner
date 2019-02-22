@@ -19,11 +19,11 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
                         .then((resps) => {
                             return resps.reduce((acc, body) => {
                                 if (body.error) {
-                                    if (body.code === 'too-many-titles') {
+                                    if (body.error.code === 'too-many-titles') {
                                         logger.warn(`Too many titles error, retrying with fewer`);
                                         throw new Error(`Too many titles error, retrying with fewer...`);
                                     } else {
-                                        logger.warn(`Invalid JSON resonse:`, body);
+                                        logger.warn(`Invalid JSON response:`, body);
                                         throw new Error(`Failed to parse JSON response`);
                                     }
                                 }
