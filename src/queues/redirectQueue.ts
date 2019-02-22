@@ -19,8 +19,13 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
                         .then((resps) => {
                             return resps.reduce((acc, body) => {
                                 if (body.error) {
-                                    logger.warn(`Invalid JSON resonse:`, body);
-                                    throw new Error(`Failed to parse JSON response`);
+                                    if (body.code === 'too-many-titles') {
+                                        logger.warn(`Too many titles error, retrying with fewer`);
+                                        throw new Error(`Too many titles error, retrying with fewer...`);
+                                    } else {
+                                        logger.warn(`Invalid JSON resonse:`, body);
+                                        throw new Error(`Failed to parse JSON response`);
+                                    }
                                 }
                                 const { pages, normalized } = body.query;
 
@@ -59,8 +64,7 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
                 logger.log(`${redirectsCount} redirect(s) found`);
                 redis.saveRedirects(redirectsCount, redirects, finished);
             } catch (err) {
-                logger.warn(`Failed to get redirects for ids: [${articleIds.join('|')}], retrying`);
-                logger.error(err);
+                logger.warn(`Failed to get redirects for [${articleIds.length}] ids, retrying fewer at a time`);
                 articlesPerQuery = Math.max(1, Math.round(articlesPerQuery - articlesPerQuery / 5));
                 for (const id of articleIds) {
                     redirectQueue.push(id);
