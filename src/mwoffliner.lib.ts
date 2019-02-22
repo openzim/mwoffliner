@@ -83,6 +83,7 @@ async function execute(argv: any) {
   let customZimFavicon = _customZimFavicon;
 
   const outputDirectory = _outputDirectory ? `${homeDirExpander(_outputDirectory)}/` : 'out/';
+  await mkdirPromise(outputDirectory);
   const cacheDirectory = _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : 'cac/';
   const tmpDirectory = os.tmpdir();
 
