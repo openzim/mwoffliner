@@ -14,10 +14,11 @@ Mediawiki.
 
 ## Prerequisites
 
-- *NIX Operating System (Linux/Unix/macOS)
+- *NIX Operating System (Linux/macOS)
 - [NodeJS](https://nodejs.org/en/)
 - [Redis](https://redis.io/)
 - [Libzim](https://github.com/openzim/libzim) (On linux we automatically download binaries)
+- Various build tools that are probably already installed on your machine (libjpeg, gcc)
 
 ## Setup
 
