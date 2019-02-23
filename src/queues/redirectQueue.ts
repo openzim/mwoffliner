@@ -4,7 +4,7 @@ import Downloader from '../Downloader';
 import Redis from '../redis';
 
 /* Get ids */
-let articlesPerQuery = 500;
+let articlesPerQuery = 50;
 export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPage: string) {
     const redirectQueue = async.cargo(async (articleIds, finished) => {
         articleIds = articleIds.filter((id) => id.trim());
