@@ -45,7 +45,7 @@ class Downloader {
     this.loginCookie = '';
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&action=parse&page=`;
+    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
   }
 
   public async initLocalMcs() {
