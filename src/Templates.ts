@@ -17,7 +17,6 @@ const jsScripts = config.output.jsResources.reduce((buf, js) => {
 }, '');
 
 /* Compile templates */
-const redirectTemplate = swig.compile(readTemplate(config.output.templates.redirects));
 const footerTemplate = swig.compile(readTemplate(config.output.templates.footer));
 const leadSectionTemplate = swig.compile(readTemplate(config.output.templates.lead_section_wrapper));
 const sectionTemplate = swig.compile(readTemplate(config.output.templates.section_wrapper));
@@ -29,7 +28,6 @@ const htmlTemplateCode = readTemplate(config.output.templates.page)
 const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate);
 
 export {
-    redirectTemplate,
     footerTemplate,
     leadSectionTemplate,
     sectionTemplate,

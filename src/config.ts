@@ -72,8 +72,6 @@ const config = {
 
     // Output templates (TODO: Needs more docs)
     templates: {
-      /* Template code for any redirect to be written on the FS */
-      redirects: './templates/redirects.html',
 
       /* In these files, the following replacements will occur:
        * __ARTICLE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
