@@ -37,10 +37,13 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
         async (articleId) => {
             const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
             let articleHtml: string;
+            let articleTitle = articleId;
             try {
-                articleHtml = await downloader.getArticle(articleId, dump, useParsoidFallback);
+                const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
+                articleHtml = ret.html;
+                articleTitle = ret.displayTitle;
             } catch (err) {
-                logger.warn(`Error downloading article [${articleId}], skipping`);
+                logger.warn(`Error downloading article [${articleId}], skipping`, err);
                 delete articleDetailXId[articleId];
                 return null;
             }
@@ -57,7 +60,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
             const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
 
-            const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html');
+            const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html', articleTitle);
             await zimCreator.addArticle(zimArticle);
 
             const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, '-');

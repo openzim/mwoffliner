@@ -103,7 +103,7 @@ class Downloader {
     return this.getJSON(url);
   }
 
-  public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<string> {
+  public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
     logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
@@ -113,12 +113,18 @@ class Downloader {
 
     try {
       // TODO: convert to downloader.getJSON
-      const json = await this.getJSON(articleApiUrl);
+      const json = await this.getJSON<any>(articleApiUrl);
 
       if (useParsoidFallback) {
-        return renderDesktopArticle(json);
+        return {
+          displayTitle: json.parse.title || articleId,
+          html: renderDesktopArticle(json),
+        };
       } else {
-        return renderMCSArticle(json, dump, dump.mwMetaData.langIso2);
+        return {
+          displayTitle: json.lead.displaytitle || articleId,
+          html: renderMCSArticle(json, dump, dump.mwMetaData.langIso2),
+        };
       }
 
     } catch (err) {
@@ -202,7 +208,7 @@ async function getContent(requestOptions: any, handler: any) {
     if (compressionWorked) {
       logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
     } else {
-      logger.warn(`Couldn't compress [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+      logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
     }
 
     handler(null, {

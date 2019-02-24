@@ -30,7 +30,7 @@ import logger from './Logger';
 import { getArticleThumbnails, getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
 import { getArticleIds, drainRedirectQueue } from './util/redirects';
-import { redirectTemplate, articleListHomeTemplate } from './Templates';
+import { articleListHomeTemplate } from './Templates';
 import { saveArticles } from './util/saveArticles';
 
 function getParametersList() {
@@ -439,7 +439,7 @@ async function execute(argv: any) {
       redis.getRedirect(redirectId, finished, (target: string) => {
         logger.info(`Storing redirect ${redirectId} (to ${target})...`);
         const url = dump.getArticleBase(redirectId);
-        const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', 'A/' + dump.getArticleBase(target, false), `A/${url}`, redirectId.replace(/_/g, ' '));
+        const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', redirectId.replace(/_/g, ' '), 'A/' + dump.getArticleBase(target, false), `A/${url}`);
         zimCreator.addArticle(redirectArticle)
           .then(finished, (err: any) => {
             logger.warn(`Failed to create redirect, skipping: `, err);
@@ -512,12 +512,6 @@ async function execute(argv: any) {
   }
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator) {
-    function writeMainPage(html: string) {
-      // return writeFilePromise(mainPagePath, html);
-      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), html, 'A', 'text/html');
-      return zimCreator.addArticle(article);
-    }
-
     function createMainPage() {
       logger.log('Creating main page...');
       const doc = domino.createDocument(
@@ -565,17 +559,14 @@ async function execute(argv: any) {
       // doc.getElementById('title').textContent = dumpTitle;
 
       /* Write the static html file */
-      return writeMainPage(doc.documentElement.outerHTML);
+      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), doc.documentElement.outerHTML, 'A', 'text/html', 'Main Page');
+      return zimCreator.addArticle(article);
     }
 
     function createMainPageRedirect() {
-      logger.log('Create main page redirection...');
-      const html = redirectTemplate({
-        title: mainPage.replace(/_/g, ' '),
-        target: dump.getArticleBase(mainPage, true),
-        strings: dump.strings,
-      });
-      return writeMainPage(html);
+      logger.log(`Create main page redirection from [index] to [${dump.getArticleBase(mainPage, true)}]`);
+      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), '', 'A', 'text/html', 'A/' + dump.getArticleBase(mainPage, true), mainPage);
+      return zimCreator.addArticle(article);
     }
 
     if (mainPage) {
