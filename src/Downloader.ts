@@ -117,7 +117,7 @@ class Downloader {
 
       if (useParsoidFallback) {
         return {
-          displayTitle: json.parse.title || articleId,
+          displayTitle: articleId.replace('_', ' '),
           html: renderDesktopArticle(json),
         };
       } else {

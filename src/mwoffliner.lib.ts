@@ -564,8 +564,8 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to [${dump.getArticleBase(mainPage, true)}]`);
-      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), '', 'A', 'text/html', 'A/' + dump.getArticleBase(mainPage, true), mainPage);
+      logger.log(`Create main page redirection from [index] to [${'A/' + dump.getArticleBase(mainPage, true)}]`);
+      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), '', 'A', 'text/html', mainPage, 'A/' + dump.getArticleBase(mainPage, true));
       return zimCreator.addArticle(article);
     }
 
