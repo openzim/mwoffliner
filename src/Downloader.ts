@@ -3,6 +3,7 @@ import logger from './Logger';
 
 import * as urlParser from 'url';
 import ServiceRunner from 'service-runner';
+import * as domino from 'domino';
 import * as imagemin from 'imagemin';
 import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminJpegtran from 'imagemin-jpegtran';
@@ -112,7 +113,6 @@ class Downloader {
     logger.log(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
 
     try {
-      // TODO: convert to downloader.getJSON
       const json = await this.getJSON<any>(articleApiUrl);
 
       if (useParsoidFallback) {
@@ -121,8 +121,10 @@ class Downloader {
           html: renderDesktopArticle(json),
         };
       } else {
+        const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
+        const strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
         return {
-          displayTitle: json.lead.displaytitle || articleId,
+          displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
           html: renderMCSArticle(json, dump, dump.mwMetaData.langIso2),
         };
       }
