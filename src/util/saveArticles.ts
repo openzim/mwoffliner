@@ -60,10 +60,10 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
             const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
 
-            const zimArticle = new ZimArticle(articleId + (dump.nozim ? '.html' : ''), outHtml, 'A', 'text/html', articleTitle);
+            const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
             await zimCreator.addArticle(zimArticle);
 
-            const article = new ZimArticle(jsPath(config, 'jsConfigVars'), moduleDependencies.jsConfigVars, '-');
+            const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: moduleDependencies.jsConfigVars, ns: '-' });
             await zimCreator.addArticle(article);
 
             return {

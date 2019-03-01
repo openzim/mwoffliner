@@ -156,7 +156,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
     .map(async (css) => {
       try {
         const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
-        const article = new ZimArticle(cssPath(config, css), cssCont, '-');
+        const article = new ZimArticle({ url: cssPath(config, css), data: cssCont, ns: '-' });
         await zimCreator.addArticle(article);
       } catch (error) {
         logger.warn(`Could not create ${css} file : ${error}`);
@@ -166,7 +166,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
       const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
-      const article = new ZimArticle(jsPath(config, js), jsCont, '-');
+      const article = new ZimArticle({ url: jsPath(config, js), data: jsCont, ns: '-' });
       await zimCreator.addArticle(article);
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`);

@@ -204,7 +204,7 @@ export function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: 
                     const articleId = type === 'js'
                         ? jsPath(config, module)
                         : cssPath(config, module);
-                    const article = new ZimArticle(articleId, text, '-');
+                    const article = new ZimArticle({ url: articleId, data: text, ns: '-' });
                     await zimCreator.addArticle(article);
                     logger.info(`created dep ${module} for article ${articleId}`);
                 } catch (e) {
