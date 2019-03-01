@@ -2,15 +2,12 @@
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 
-import async from 'async';
 import { exec } from 'child_process';
-import crypto from 'crypto';
 import domino from 'domino';
 import fs, { promises } from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
-import zlib from 'zlib';
 import semver from 'semver';
 import * as path from 'path';
 import axios from 'axios';
@@ -23,7 +20,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, jsPath, cssPath, getFullUrl, migrateChildren, touch, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, mapLimit, MEDIA_REGEX, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule } from './util';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -349,7 +346,7 @@ async function execute(argv: any) {
       }),
     );
 
-    const article = new ZimArticle(`style.css`, finalCss, '-');
+    const article = new ZimArticle({ url: `style.css`, data: finalCss, ns: '-' });
     await zimCreator.addArticle(article);
 
     logger.log(`Getting Favicon`);
@@ -411,7 +408,7 @@ async function execute(argv: any) {
         const resp = await downloader.downloadContent(url);
         content = resp.content;
 
-        const article = new ZimArticle(path, content, namespace);
+        const article = new ZimArticle({ url: path, data: content, ns: namespace });
         return zimCreator.addArticle(article);
       } catch (err) {
         logger.warn(`Failed to download item [${url}], skipping`);
@@ -439,7 +436,7 @@ async function execute(argv: any) {
       redis.getRedirect(redirectId, finished, (target: string) => {
         logger.info(`Storing redirect ${redirectId} (to ${target})...`);
         const url = dump.getArticleBase(redirectId);
-        const redirectArticle = new ZimArticle(url, '', 'A', 'text/plain', redirectId.replace(/_/g, ' '), 'A/' + dump.getArticleBase(target, false), `A/${url}`);
+        const redirectArticle = new ZimArticle({ url, data: '', ns: 'A', mimeType: 'text/plain', title: redirectId.replace(/_/g, ' '), redirectAid: 'A/' + dump.getArticleBase(target, false), aid: `A/${url}` });
         zimCreator.addArticle(redirectArticle)
           .then(finished, (err: any) => {
             logger.warn(`Failed to create redirect, skipping: `, err);
@@ -465,7 +462,7 @@ async function execute(argv: any) {
             reject();
           } else {
             readFilePromise(faviconPath, null).then((faviconContent) => {
-              const article = new ZimArticle('favicon.png', faviconContent, 'I');
+              const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
               return zimCreator.addArticle(article);
             }).then(resolve, reject);
           }
@@ -559,13 +556,13 @@ async function execute(argv: any) {
       // doc.getElementById('title').textContent = dumpTitle;
 
       /* Write the static html file */
-      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), doc.documentElement.outerHTML, 'A', 'text/html', 'Main Page');
+      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), data: doc.documentElement.outerHTML, ns: 'A', mimeType: 'text/html', title: 'Main Page' });
       return zimCreator.addArticle(article);
     }
 
     function createMainPageRedirect() {
       logger.log(`Create main page redirection from [index] to [${'A/' + dump.getArticleBase(mainPage, true)}]`);
-      const article = new ZimArticle('index' + (dump.nozim ? '.html' : ''), '', 'A', 'text/html', mainPage, 'A/' + dump.getArticleBase(mainPage, true));
+      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: 'A/' + dump.getArticleBase(mainPage, true) });
       return zimCreator.addArticle(article);
     }
 
