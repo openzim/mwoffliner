@@ -147,7 +147,6 @@ async function execute(argv: any) {
 
   const dumps = getDumps(format);
 
-  const INFINITY_WIDTH = 9999999;
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
   const dumpId = `mwo-dump-${Date.now()}`;
@@ -199,6 +198,7 @@ async function execute(argv: any) {
 
   /* Setup redis client */
   const redis = new Redis(argv, config);
+  await redis.flushDBs();
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -361,7 +361,7 @@ async function execute(argv: any) {
           filesToDownload.push({ url: imageUrl, path, namespace: 'I' });
 
           const resourceNamespace = 'I';
-          const internalSrc = `/${resourceNamespace}/` + getMediaBase(imageUrl, true);
+          const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl, true);
 
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
@@ -514,11 +514,11 @@ async function execute(argv: any) {
       const doc = domino.createDocument(
         articleListHomeTemplate
           .replace('</head>',
-            genHeaderCSSLink(config, 'mobile_main_page') + '\n' +
-            genHeaderCSSLink(config, 'style') + '\n' +
-            genHeaderScript(config, 'images_loaded.min') + '\n' +
-            genHeaderScript(config, 'masonry.min') + '\n' +
-            genHeaderScript(config, 'article_list_home') + '\n' +
+            genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) + '\n' +
             '\n</head>'),
       );
 

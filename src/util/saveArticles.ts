@@ -53,7 +53,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
                 return null;
             }
 
-            const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId);
+            const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId, articleId);
 
             const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
             // TODO: fix above warning
@@ -141,11 +141,11 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
     };
 }
 
-async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
+async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>, articleId: string) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
 
     let doc = domino.createDocument(html);
-    const tmRet = treatMedias(doc, mw, dump, articleDetailXId);
+    const tmRet = treatMedias(doc, mw, dump, articleDetailXId, articleId);
     doc = tmRet.doc;
     mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies.map((url) => {
         const path = getMediaBase(url, false);
@@ -167,7 +167,7 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
     };
 }
 
-function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
+function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>, articleId: string) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies = [];
     /* Clean/rewrite image tags */
@@ -232,7 +232,9 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
 
         const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
         const resourceNamespace = 'I';
-        const newUrl = `/${resourceNamespace}/` + getMediaBase(sourceUrl, true);
+        const slashesInUrl = articleId.split('/').length - 1;
+        const upStr = '../'.repeat(slashesInUrl + 1);
+        const newUrl = `${upStr}${resourceNamespace}/` + getMediaBase(sourceUrl, true);
 
         if (!newUrl) {
             DU.deleteNode(sourceEl);
@@ -288,7 +290,9 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
                 let newSrc: string;
                 try {
                     const resourceNamespace = 'I';
-                    newSrc = `/${resourceNamespace}/` + getMediaBase(src, true);
+                    const slashesInUrl = articleId.split('/').length - 1;
+                    const upStr = '../'.repeat(slashesInUrl + 1);
+                    newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true);
                 } catch (err) { /* NOOP */ }
 
                 if (newSrc) {
@@ -706,18 +710,18 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     };
 
     const htmlTemplateDoc = domino.createDocument(
-        htmlTemplateCode
-            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars') : '')
+        htmlTemplateCode(articleId)
+            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId) : '')
             .replace(
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
-                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep)).join('\n')
+                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')
                     : '',
             )
             .replace(
                 '__ARTICLE_CSS_LIST__',
                 styleDependenciesList.length !== 0
-                    ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep)).join('\n')
+                    ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId)).join('\n')
                     : '',
             ),
     );

@@ -184,13 +184,17 @@ export function cssPath({ output: { dirs } }: Config, css: string) {
 export function jsPath({ output: { dirs } }: Config, js: string) {
   return [dirs.javascript, `${dirs.jsModules}/${js.replace(/(\.js)?$/, '')}.js`].join('/');
 }
-export function genHeaderCSSLink(config: Config, css: string, classList = '') {
+export function genHeaderCSSLink(config: Config, css: string, articleId: string, classList = '') {
   const resourceNamespace = '-';
-  return `<link href="/${resourceNamespace}/${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+  const slashesInUrl = articleId.split('/').length - 1;
+  const upStr = '../'.repeat(slashesInUrl + 1);
+  return `<link href="${upStr}${resourceNamespace}/${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
 }
-export function genHeaderScript(config: Config, js: string, classList = '') {
+export function genHeaderScript(config: Config, js: string, articleId: string, classList = '') {
   const resourceNamespace = '-';
-  return `<script src="/${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
+  const slashesInUrl = articleId.split('/').length - 1;
+  const upStr = '../'.repeat(slashesInUrl + 1);
+  return `<script src="${upStr}${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
 }
 
 export function getDumps(format: boolean | boolean[]) {
