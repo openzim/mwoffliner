@@ -186,11 +186,11 @@ export function jsPath({ output: { dirs } }: Config, js: string) {
 }
 export function genHeaderCSSLink(config: Config, css: string, classList = '') {
   const resourceNamespace = '-';
-  return `<link href="/${resourceNamespace}/${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+  return `<link href="../${resourceNamespace}/${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
 }
 export function genHeaderScript(config: Config, js: string, classList = '') {
   const resourceNamespace = '-';
-  return `<script src="/${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
+  return `<script src="../${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
 }
 
 export function getDumps(format: boolean | boolean[]) {

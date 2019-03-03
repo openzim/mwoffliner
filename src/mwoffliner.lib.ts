@@ -361,7 +361,7 @@ async function execute(argv: any) {
           filesToDownload.push({ url: imageUrl, path, namespace: 'I' });
 
           const resourceNamespace = 'I';
-          const internalSrc = `/${resourceNamespace}/` + getMediaBase(imageUrl, true);
+          const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl, true);
 
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},

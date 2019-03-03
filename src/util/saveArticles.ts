@@ -232,7 +232,7 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
 
         const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
         const resourceNamespace = 'I';
-        const newUrl = `/${resourceNamespace}/` + getMediaBase(sourceUrl, true);
+        const newUrl = `../${resourceNamespace}/` + getMediaBase(sourceUrl, true);
 
         if (!newUrl) {
             DU.deleteNode(sourceEl);
@@ -288,7 +288,7 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
                 let newSrc: string;
                 try {
                     const resourceNamespace = 'I';
-                    newSrc = `/${resourceNamespace}/` + getMediaBase(src, true);
+                    newSrc = `../${resourceNamespace}/` + getMediaBase(src, true);
                 } catch (err) { /* NOOP */ }
 
                 if (newSrc) {
