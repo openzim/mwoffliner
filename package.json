@@ -42,7 +42,7 @@
     "node": ">=8.12.0"
   },
   "dependencies": {
-    "@openzim/libzim": "^2.0.10",
+    "@openzim/libzim": "^2.0.11",
     "@types/async": "^2.4.0",
     "@types/bluebird": "^3.5.25",
     "@types/html-minifier": "^3.5.2",
