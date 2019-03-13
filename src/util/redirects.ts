@@ -6,6 +6,7 @@ import { readFilePromise } from './misc';
 import { mapLimit } from '.';
 import Redis from '../redis';
 import MediaWiki from '../MediaWiki';
+import { articleDetailXId } from '../articleDetail';
 
 export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage: string, articleList?: string) {
     const redirectQueue = makeRedirectsQueue(downloader, redis, mainPage);
@@ -21,15 +22,13 @@ export async function getArticleIds(downloader: Downloader, redis: Redis, mw: Me
 
     articleVals.push(await getArticleIdsForLine(downloader, mainPage, mw));
 
-    const articleDetailXIdOut: KVS<any> = {};
-
-    for (const { redirectValues, articleDetailXId, next, scrapeDetails } of articleVals) {
-        Object.assign(articleDetailXIdOut, articleDetailXId);
+    for (const { redirectValues, articleDetailXId: _articleDetailXId, next, scrapeDetails } of articleVals) {
+        Object.assign(articleDetailXId, _articleDetailXId);
         if (redirectValues.length) { redirectQueue.push(redirectValues); }
         redis.saveArticles(scrapeDetails);
     }
 
-    return { redirectQueue, articleDetailXId: articleDetailXIdOut };
+    return { redirectQueue };
 }
 
 export function drainRedirectQueue(redirectQueue: AsyncCargo) {
@@ -51,7 +50,6 @@ function parseAPIResponse(body: KVS<any>, mw: MediaWiki) {
     let next = '';
     const entries = body.query && body.query.pages;
     const redirectQueueValues: string[] = [];
-    const articleDetailXId: KVS<any> = {};
     const scrapeDetails: KVS<string> = {};
 
     if (entries) {

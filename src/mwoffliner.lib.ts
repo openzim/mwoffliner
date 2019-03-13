@@ -29,6 +29,9 @@ import { Dump } from './Dump';
 import { getArticleIds, drainRedirectQueue } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles } from './util/saveArticles';
+import { getCategoriesForArticleIds } from './util/categories';
+import deepmerge = require('deepmerge');
+import { articleDetailXId } from './articleDetail';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -233,13 +236,15 @@ async function execute(argv: any) {
     throw err;
   }
 
-  // await mw.getTextDirection(env, downloader);
-  // await mw.getSiteInfo(env, downloader);
-  // await zim.getSubTitle();
   await mw.getNamespaces(addNamespaces, downloader);
-  // await zim.createDirectories();
 
-  const { redirectQueue, articleDetailXId } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
+  const { redirectQueue } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
+
+  const articleIds = Object.keys(articleDetailXId);
+  logger.log(`Getting categories for [${articleIds.length}] articles`);
+  await getCategoriesForArticleIds(downloader, mw, articleIds);
+  logger.log(`Got categories`);
+
   logger.info(`Redirect queue has [${redirectQueue.length()}] items`);
   await drainRedirectQueue(redirectQueue);
 
@@ -366,7 +371,7 @@ async function execute(argv: any) {
           articleDetailXId[articleId] = Object.assign(
             articleDetailXId[articleId] || {},
             { thumbnail: internalSrc },
-          );
+          ) as any;
         }
       }
     }

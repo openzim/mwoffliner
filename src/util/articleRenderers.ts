@@ -1,8 +1,9 @@
-import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from '../Templates';
+import { leadSectionTemplate, sectionTemplate, subSectionTemplate, categoriesTemplate } from '../Templates';
 import { Dump } from '../Dump';
 import logger from '../Logger';
+import { articleDetailXId } from '../articleDetail';
 
-export function renderDesktopArticle(json: any) {
+export function renderDesktopArticle(json: any, articleId: string) {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
         return json.visualeditor.content;
@@ -16,7 +17,7 @@ export function renderDesktopArticle(json: any) {
     }
 }
 
-export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
+export function renderMCSArticle(json: any, dump: Dump, articleId: string) {
 
     let html = '';
     // set the first section (open by default)
@@ -65,6 +66,19 @@ export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
             }
         });
     }
+    const categories = articleDetailXId[articleId].categories.map((category) => {
+        const resourceNamespace = 'A';
+        const slashesInUrl = articleId.split('/').length - 1;
+        const upStr = '../'.repeat(slashesInUrl + 1);
+        return {
+            name: category.title,
+            url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+        };
+    });
+    html += categoriesTemplate({
+        strings: dump.strings,
+        categories,
+    });
     html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
     return html;
 }

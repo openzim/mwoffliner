@@ -59,6 +59,7 @@
     "axios": "^0.18.0",
     "backoff": "^2.5.0",
     "country-language": "^0.1.7",
+    "deepmerge": "^3.2.0",
     "domino": "^2.0.1",
     "expand-home-dir": "^0.0.3",
     "follow-redirects": "^1.7.0",

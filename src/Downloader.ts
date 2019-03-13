@@ -15,6 +15,7 @@ import { renderDesktopArticle, renderMCSArticle } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
+import { articleDetailXId } from './articleDetail';
 
 const imageminOptions = {
   plugins: [
@@ -114,18 +115,23 @@ class Downloader {
 
     try {
       const json = await this.getJSON<any>(articleApiUrl);
+      if (json.lead.ns === 14) {
+        const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
+        const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+        articleDetailXId[articleId].subCategories = categoryMembers;
+      }
 
       if (useParsoidFallback) {
         return {
           displayTitle: articleId.replace('_', ' '),
-          html: renderDesktopArticle(json),
+          html: renderDesktopArticle(json, articleId),
         };
       } else {
         const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
         const strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
         return {
           displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
-          html: renderMCSArticle(json, dump, dump.mwMetaData.langIso2),
+          html: renderMCSArticle(json, dump, articleId),
         };
       }
 

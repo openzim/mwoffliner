@@ -36,3 +36,21 @@ interface MWMetaData {
     webUrlPath: string;
     modulePath: string;
 }
+
+interface CategoriesRet {
+    batchcomplete: string,
+    query: {
+        normalized?: { from: string, to: string }[],
+        pages: {
+            [pageId: string]: PageInfo & {
+                categories: PageInfo[]
+            }
+        }
+    }
+}
+
+interface PageInfo {
+    pageid: number;
+    ns: number;
+    title: string;
+}

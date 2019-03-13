@@ -55,7 +55,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
             const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId, articleId);
 
-            const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
+            const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVES DEPS
             // TODO: fix above warning
 
             const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);

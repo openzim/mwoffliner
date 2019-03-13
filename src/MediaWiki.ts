@@ -92,6 +92,14 @@ class MediaWiki {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
 
+  public categoriesApiUrl(articleIds: string[]) {
+    return `${this.apiUrl}action=query&prop=categories&format=json&cllimit=500&titles=${encodeURIComponent(articleIds.join('|'))}`;
+  }
+
+  public subCategoriesApiUrl(articleId: string) {
+    return `${this.apiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=500&format=json&cmtitle=${encodeURIComponent(articleId)}`;
+  }
+
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
@@ -105,6 +113,7 @@ class MediaWiki {
         const allowedSubpages = ('subpages' in entry);
         const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
         const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
+        const isCategory = canonical === 'Category';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
         self.namespaces[U.lcFirst(name)] = details;
@@ -115,7 +124,7 @@ class MediaWiki {
           self.namespaces[U.ucFirst(canonical)] = details;
         }
         /* Is content to mirror */
-        if (isContent) {
+        if (isContent || isCategory) {
           self.namespacesToMirror.push(name);
         }
       });
