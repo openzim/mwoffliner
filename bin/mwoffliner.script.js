@@ -4,7 +4,6 @@
 'use strict';
 
 const yargs = require('yargs');
-const mwofflinerLib = require('../lib/mwoffliner.lib.js');
 
 /************************************/
 /* Command Parsing ******************/
@@ -15,12 +14,12 @@ const parameterList = require('../lib/parameterList').default;
 let argv = yargs
     .usage(
         `Create a fancy HTML dump of a Mediawiki instance in a directory or as a ZIM file
-Usage: $0
-Example, as a system tool:
+    Usage: $0
+    Example, as a system tool:
     mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
-Or, as a node script:
+    Or, as a node script:
     node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
-Or, as a npm script: '
+    Or, as a npm script: '
     npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net`
     )
     .require(parameterList.filter(param => param.required).map(param => param.name));
@@ -33,6 +32,7 @@ argv = argv.strict().argv;
 
 const execStartTime = Date.now();
 
+const mwofflinerLib = require('../lib/mwoffliner.lib.js');
 mwofflinerLib.execute(argv)
     .then(() => {
         console.info(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`);
@@ -44,7 +44,7 @@ mwofflinerLib.execute(argv)
             loggableErr = JSON.stringify(err, null, '\t');
         } catch (err) { /* NOOP */ }
         console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr);
-        if(err && err.message) {
+        if (err && err.message) {
             console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
         }
         process.exit(2);
