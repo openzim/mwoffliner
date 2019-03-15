@@ -18,7 +18,7 @@
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./build.sh",
     "watch": "./watch.sh",
-    "prepublish": "npm run snyk-protect",
+    "prepublish": "npm run snyk-protect && npm run build",
     "redis:start": "docker run -p 6379:6379 --name redis-mwoffliner -d redis",
     "redis:kill": "docker rm -f redis-mwoffliner || :",
     "redis": "npm run redis:kill && npm run redis:start",
