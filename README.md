@@ -9,8 +9,10 @@ Mediawiki.
 
 [![NPM](https://nodei.co/npm/mwoffliner.png)](https://nodei.co/npm/mwoffliner/)
 
+![npm](https://img.shields.io/npm/v/mwoffliner.svg)
 [![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
+![NPM](https://img.shields.io/npm/l/mwoffliner.svg)
 
 ## Prerequisites
 
