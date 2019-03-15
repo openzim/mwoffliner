@@ -24,12 +24,11 @@ import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHead
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
-import { getArticleThumbnails, getAndProcessStylesheets } from './util';
+import { getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
-import { getArticleIds, drainRedirectQueue } from './util/redirects';
+import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles } from './util/saveArticles';
-import { getCategoriesForArticleIds } from './util/categories';
 import { articleDetailXId } from './articleDetail';
 
 function getParametersList() {
@@ -229,7 +228,7 @@ async function execute(argv: any) {
 
   let articleListLines: string[];
   try {
-    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n') : [];
+    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').filter((a) => a).map((a) => a.replace(/ /g, '_')) : [];
   } catch (err) {
     logger.error(`Failed to read articleList from [${articleList}]`, err);
     throw err;
@@ -237,34 +236,38 @@ async function execute(argv: any) {
 
   await mw.getNamespaces(addNamespaces, downloader);
 
-  let articleListIds;
-  if (articleList) {
-    const articleListContent = (await readFilePromise(articleList, 'utf8') as string).trim();
-    articleListIds = articleListContent.split('\n').filter((a) => a);
-  }
-  const redirectQueue = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleListIds);
+  const articlesRet = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList ? articleListLines : null);
 
-  const articleIds = Object.keys(articleDetailXId);
-  logger.log(`Getting categories for [${articleIds.length}] articles`);
-  await getCategoriesForArticleIds(downloader, mw, articleIds);
+  Object.assign(articleDetailXId, articlesRet);
+
   const categoriesWithArticleChildren = new Set<string>([]);
   for (const [articleId, articleDetail] of Object.entries(articleDetailXId)) {
     if (articleDetail.ns !== 14 && articleDetail.categories) {
       for (const category of articleDetail.categories) {
         const categoryArticleId = category.title.replace(/ /g, '_');
         categoriesWithArticleChildren.add(categoryArticleId);
-        articleDetailXId[categoryArticleId] = category;
       }
     }
   }
-  console.info(`Found [${categoriesWithArticleChildren.size}] category pages with at least one article child`);
+  logger.info(`Found [${categoriesWithArticleChildren.size}] category pages with at least one article child, deleting empty Categories`);
+  let categoryDeleteCount = 0;
+  for (const [categoryId, categoryDetail] of Object.entries(articleDetailXId)) {
+    if (categoryDetail.ns === 14) {
+      if (!categoriesWithArticleChildren.has(categoryId)) {
+        delete articleDetailXId[categoryId];
+        categoryDeleteCount += 1;
+      }
+    }
+  }
+  if (categoryDeleteCount) {
+    logger.info(`Deleted [${categoryDeleteCount}] empty categories`);
+  }
 
-  const categoryRedirectQueue = await getArticleIds(downloader, redis, mw, null, Array.from(categoriesWithArticleChildren));
-  logger.log(`Got categories`);
-
-  logger.info(`Redirect queue has [${redirectQueue.length()}] items`);
-  await drainRedirectQueue(redirectQueue);
-  await drainRedirectQueue(categoryRedirectQueue);
+  if (articleList) {
+    const categoriesRet = await getArticleIds(downloader, redis, mw, null, Array.from(categoriesWithArticleChildren));
+    logger.log(`Got [${Object.keys(categoriesRet).length}] Categories`);
+    Object.assign(articleDetailXId, categoriesRet);
+  }
 
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {
@@ -377,19 +380,23 @@ async function execute(argv: any) {
 
     if (articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
       logger.log(`Getting Article Thumbnails`);
-      const thumbnailUrls = await getArticleThumbnails(downloader, mw, articleListLines);
+      const thumbnailUrls = articleListLines.map((articleId) => {
+        return {
+          articleId,
+          imageUrl: articleDetailXId[articleId].thumbnail,
+        };
+      }).filter((a) => a);
       if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         for (const { articleId, imageUrl } of thumbnailUrls) {
-          const path = getMediaBase(imageUrl, false);
-          filesToDownload.push({ url: imageUrl, path, namespace: 'I' });
+          if (imageUrl) {
+            const path = getMediaBase(imageUrl, false);
+            filesToDownload.push({ url: imageUrl, path, namespace: 'I' });
 
-          const resourceNamespace = 'I';
-          const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl, true);
+            const resourceNamespace = 'I';
+            const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl, true);
 
-          articleDetailXId[articleId] = Object.assign(
-            articleDetailXId[articleId] || {},
-            { thumbnail: internalSrc },
-          ) as any;
+            articleDetailXId[articleId].internalTumbnailUrl = internalSrc;
+          }
         }
       }
     }

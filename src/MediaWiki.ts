@@ -3,6 +3,7 @@ import logger from './Logger';
 import urlParser from 'url';
 import * as U from './util';
 import * as domino from 'domino';
+import * as pathParser from 'path';
 
 // Stub for now
 class MediaWiki {
@@ -76,12 +77,8 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
-  public imageQueryUrl(title: string) {
-    return `${this.apiUrl}action=query&prop=pageimages&pithumbsize=300&format=json&titles=${encodeURIComponent(title)}`;
-  }
-
-  public articleQueryUrl(title: string) {
-    return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
+  public articleQueryUrl(titles: string[]) {
+    return `${this.apiUrl}action=query&redirects&format=json&cllimit=500&pithumbsize=300&prop=pageimages|revisions|coordinates|categories&titles=${encodeURIComponent(titles.join('|'))}`;
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
@@ -90,10 +87,6 @@ class MediaWiki {
 
   public articleApiUrl(articleId: string) {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
-  }
-
-  public categoriesApiUrl(articleIds: string[]) {
-    return `${this.apiUrl}action=query&prop=categories&format=json&cllimit=500&titles=${encodeURIComponent(articleIds.join('|'))}`;
   }
 
   public subCategoriesApiUrl(articleId: string) {
@@ -139,6 +132,9 @@ class MediaWiki {
       }
       if (pathname.indexOf(this.webUrlPath) === 0) {
         return U.decodeURIComponent(pathname.substr(this.webUrlPath.length));
+      }
+      if (pathParser.parse(href).dir.includes('../')) {
+        return pathParser.parse(href).name;
       }
 
       return null; /* Interwiki link? -- return null */

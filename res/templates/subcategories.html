@@ -4,8 +4,8 @@
 </h2>
 <div class="mf-section-{{ section_id }}" aria-pressed="true" aria-expanded="true">
     <ul>
-        {% for category in categories %}
-        <li>{{category.name}}<a href="{{category.url}}" rel="mw:WikiLink">{{category.name}}</a></li>
+        {% for category in subCategories %}
+        <li><a href="{{category.url}}" rel="mw:WikiLink">{{category.name}}</a></li>
         {% endfor %}
     </ul>
 </div>

@@ -100,11 +100,6 @@ class Downloader {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
-  public queryArticleThumbnail(articleId: string): KVS<any> {
-    const url = this.mw.imageQueryUrl(articleId);
-    return this.getJSON(url);
-  }
-
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
     logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
