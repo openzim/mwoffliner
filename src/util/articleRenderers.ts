@@ -1,4 +1,4 @@
-import { leadSectionTemplate, sectionTemplate, subSectionTemplate, categoriesTemplate } from '../Templates';
+import { leadSectionTemplate, sectionTemplate, subSectionTemplate, categoriesTemplate, subCategoriesTemplate } from '../Templates';
 import { Dump } from '../Dump';
 import logger from '../Logger';
 import { articleDetailXId } from '../articleDetail';
@@ -66,19 +66,33 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string) {
             }
         });
     }
-    const categories = articleDetailXId[articleId].categories.map((category) => {
-        const resourceNamespace = 'A';
-        const slashesInUrl = articleId.split('/').length - 1;
-        const upStr = '../'.repeat(slashesInUrl + 1);
-        return {
-            name: category.title,
-            url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
-        };
-    });
-    html += categoriesTemplate({
-        strings: dump.strings,
-        categories,
-    });
+    const resourceNamespace = 'A';
+    const slashesInUrl = articleId.split('/').length - 1;
+    const upStr = '../'.repeat(slashesInUrl + 1);
+    if (articleDetailXId[articleId].categories && articleDetailXId[articleId].categories.length) {
+        const categories = articleDetailXId[articleId].categories.map((category) => {
+            return {
+                name: category.title,
+                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+            };
+        });
+        html += categoriesTemplate({
+            strings: dump.strings,
+            categories,
+        });
+    }
+    if (articleDetailXId[articleId].subCategories && articleDetailXId[articleId].subCategories.length) {
+        const subCategories = articleDetailXId[articleId].subCategories.map((category) => {
+            return {
+                name: category.title,
+                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+            };
+        });
+        html += subCategoriesTemplate({
+            strings: dump.strings,
+            subCategories,
+        });
+    }
     html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
     return html;
 }

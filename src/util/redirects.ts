@@ -2,25 +2,27 @@ import { makeRedirectsQueue } from '../queues/redirectQueue';
 import Downloader from '../Downloader';
 import async, { AsyncCargo } from 'async';
 import logger from '../Logger';
-import { readFilePromise } from './misc';
 import { mapLimit } from '.';
 import Redis from '../redis';
 import MediaWiki from '../MediaWiki';
 import { articleDetailXId } from '../articleDetail';
 
-export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage: string, articleList?: string) {
+export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
     const redirectQueue = makeRedirectsQueue(downloader, redis, mainPage);
 
     let articleVals: Array<{ redirectValues: any, articleDetailXId: any, next: any, scrapeDetails: any }> = [];
-    if (articleList) {
-        const vals = await getArticleIdsForFile(articleList, downloader, mw);
+    if (articleIds) {
+        const vals = await getArticleIdsForList(articleIds, downloader, mw);
         articleVals = articleVals.concat(vals.filter((a) => a));
     } else {
         const vals = await getArticleIdsForNamespaces(downloader, mw);
         articleVals = articleVals.concat(vals);
     }
 
-    articleVals.push(await getArticleIdsForLine(downloader, mainPage, mw));
+    if (mainPage) {
+        const [mainPageRet] = await getArticleIdsForList([mainPage], downloader, mw);
+        articleVals.push(mainPageRet);
+    }
 
     for (const { redirectValues, articleDetailXId: _articleDetailXId, next, scrapeDetails } of articleVals) {
         Object.assign(articleDetailXId, _articleDetailXId);
@@ -28,7 +30,7 @@ export async function getArticleIds(downloader: Downloader, redis: Redis, mw: Me
         redis.saveArticles(scrapeDetails);
     }
 
-    return { redirectQueue };
+    return redirectQueue;
 }
 
 export function drainRedirectQueue(redirectQueue: AsyncCargo) {
@@ -68,7 +70,9 @@ function parseAPIResponse(body: KVS<any>, mw: MediaWiki) {
                     articleDetailXId[entry.title] = Object.assign(articleDetailXId[entry.title] || {}, {
                         title: entry.title,
                         oldId: entry.revisions[0].revid,
-                    });
+                        ns: entry.ns,
+                        pageid: entry.pageid,
+                    }) as PageInfo;
 
                     /* Get last revision id timestamp */
                     const articleDetails: { t: number, g?: string } = { t: new Date(entry.revisions[0].timestamp).getTime() / 1000 };
@@ -103,23 +107,11 @@ function parseAPIResponse(body: KVS<any>, mw: MediaWiki) {
     return { next, redirectValues: redirectQueueValues, articleDetailXId, scrapeDetails };
 }
 
-async function getArticleIdsForLine(downloader: Downloader, line: string, mw: MediaWiki) {
-    const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
-    try {
-        const body = await downloader.getJSON(mw.articleQueryUrl(title));
-        return parseAPIResponse(body, mw);
-    } catch (err) {
-        throw new Error(`Invalid body from query of [${title}]`);
-    }
-}
-
 /* Get ids from file */
-async function getArticleIdsForFile(articleList: string, downloader: Downloader, mw: MediaWiki) {
-    const lines: string[] = (await readFilePromise(articleList) as string).split('\n');
-
-    return mapLimit(lines, downloader.speed, async (line) => {
-        if (line) {
-            const title = line.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
+async function getArticleIdsForList(articleIds: string[], downloader: Downloader, mw: MediaWiki) {
+    return mapLimit(articleIds, downloader.speed, async (articleId) => {
+        if (articleId) {
+            const title = articleId.replace(/ /g, mw.spaceDelimiter).replace('\r', '');
             let body;
             try {
                 body = await downloader.getJSON(mw.articleQueryUrl(title));
@@ -134,7 +126,7 @@ async function getArticleIdsForFile(articleList: string, downloader: Downloader,
                 throw new Error(`Invalid body from query of [${title}]`);
             }
         } else {
-            logger.warn(`Invalid line value [${line}], skipping`);
+            logger.warn(`Invalid articleId value [${articleId}], skipping`);
             return null;
         }
     }).then((a) => a.filter((a) => a));

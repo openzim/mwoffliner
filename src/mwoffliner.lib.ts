@@ -4,7 +4,7 @@
 
 import { exec } from 'child_process';
 import domino from 'domino';
-import fs, { promises } from 'fs';
+import fs from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
@@ -30,7 +30,6 @@ import { getArticleIds, drainRedirectQueue } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles } from './util/saveArticles';
 import { getCategoriesForArticleIds } from './util/categories';
-import deepmerge = require('deepmerge');
 import { articleDetailXId } from './articleDetail';
 
 function getParametersList() {
@@ -238,15 +237,34 @@ async function execute(argv: any) {
 
   await mw.getNamespaces(addNamespaces, downloader);
 
-  const { redirectQueue } = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList);
+  let articleListIds;
+  if (articleList) {
+    const articleListContent = (await readFilePromise(articleList, 'utf8') as string).trim();
+    articleListIds = articleListContent.split('\n').filter((a) => a);
+  }
+  const redirectQueue = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleListIds);
 
   const articleIds = Object.keys(articleDetailXId);
   logger.log(`Getting categories for [${articleIds.length}] articles`);
   await getCategoriesForArticleIds(downloader, mw, articleIds);
+  const categoriesWithArticleChildren = new Set<string>([]);
+  for (const [articleId, articleDetail] of Object.entries(articleDetailXId)) {
+    if (articleDetail.ns !== 14 && articleDetail.categories) {
+      for (const category of articleDetail.categories) {
+        const categoryArticleId = category.title.replace(/ /g, '_');
+        categoriesWithArticleChildren.add(categoryArticleId);
+        articleDetailXId[categoryArticleId] = category;
+      }
+    }
+  }
+  console.info(`Found [${categoriesWithArticleChildren.size}] category pages with at least one article child`);
+
+  const categoryRedirectQueue = await getArticleIds(downloader, redis, mw, null, Array.from(categoriesWithArticleChildren));
   logger.log(`Got categories`);
 
   logger.info(`Redirect queue has [${redirectQueue.length()}] items`);
   await drainRedirectQueue(redirectQueue);
+  await drainRedirectQueue(categoryRedirectQueue);
 
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {

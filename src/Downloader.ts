@@ -115,7 +115,9 @@ class Downloader {
 
     try {
       const json = await this.getJSON<any>(articleApiUrl);
-      if (json.lead.ns === 14) {
+
+      const isCategoryArticle = articleDetailXId[articleId].ns === 14 || (json.lead || {}).ns === 14;
+      if (isCategoryArticle) {
         const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
         const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
         articleDetailXId[articleId].subCategories = categoryMembers;
@@ -137,6 +139,7 @@ class Downloader {
 
     } catch (err) {
       if (!useParsoidFallback) {
+        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, err);
         return this.getArticle(articleId, dump, true);
       } else {
         throw err;

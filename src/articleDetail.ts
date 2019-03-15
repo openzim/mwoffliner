@@ -1,10 +1,8 @@
 
 export const articleDetailXId: {
-    [articleId: string]: {
+    [articleId: string]: PageInfo & {
         subCategories?: PageInfo[],
         categories?: PageInfo[],
         thumbnail?: string,
-        title: string,
-        oldId: number,
     },
 } = {};
