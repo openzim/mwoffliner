@@ -203,10 +203,16 @@ class MediaWiki {
     const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code));
 
     const [langIso2, langIso3] = await Promise.all(langs.map(async (lang: string) => {
+      let langIso3;
+      try {
+        langIso3 = await U.getIso3(lang);
+      } catch (err) {
+        langIso3 = lang;
+      }
       try {
         return [
           lang,
-          lang.length === 3 ? lang : await U.getIso3(lang),
+          langIso3,
         ];
       } catch (err) {
         return false;
