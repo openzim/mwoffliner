@@ -1,6 +1,6 @@
 import { makeRedirectsQueue } from '../queues/redirectQueue';
 import Downloader from '../Downloader';
-import async, { AsyncCargo } from 'async';
+import { AsyncCargo } from 'async';
 import logger from '../Logger';
 import { readFilePromise } from './misc';
 import { mapLimit } from '.';

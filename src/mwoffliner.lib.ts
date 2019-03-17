@@ -122,8 +122,14 @@ async function execute(argv: any) {
   );
 
   /* Get MediaWiki Info */
-  const mwMetaData = await mw.getMwMetaData(downloader);
   let useLocalMCS = true;
+  let mwMetaData;
+  try {
+    mwMetaData = await mw.getMwMetaData(downloader);
+  } catch (err) {
+    logger.error(`FATAL - Failed to get MediaWiki Metadata`);
+    throw err;
+  }
 
   try {
     const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);

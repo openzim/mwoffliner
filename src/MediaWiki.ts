@@ -206,7 +206,7 @@ class MediaWiki {
       try {
         return [
           lang,
-          await U.getIso3(lang),
+          lang.length === 3 ? lang : await U.getIso3(lang),
         ];
       } catch (err) {
         return false;

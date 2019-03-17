@@ -46,7 +46,6 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
                 const pageIds = Object.keys(pages);
 
                 for (const pageId of pageIds) {
-
                     const { redirects: _redirects, title } = pages[pageId];
                     const originalArticleId = fromXTo[title] || title;
                     if (_redirects) {
