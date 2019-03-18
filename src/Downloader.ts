@@ -36,12 +36,16 @@ class Downloader {
   public requestTimeout: number;
   public mcsUrl: string;
   public parsoidFallbackUrl: string;
-  public speed: number; // TODO: consider moving queueing to the downloader class so the rest of the logic can forget about it
+  public speed: number;
+
+  private activeRequests = 0;
+  private maxActiveRequests = 1;
 
   constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
+    this.maxActiveRequests = speed * 4;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
 
@@ -138,10 +142,12 @@ class Downloader {
     }
   }
 
-  public getJSON<T>(url: string) {
-    logger.info(`Getting JSON from [${url}]`);
+  public async getJSON<T>(url: string) {
+    const self = this;
+    await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      const call = backoff.call(getJSON, url, (err: any, val: any) => {
+      const call = backoff.call(this.getJSONCb, url, (err: any, val: any) => {
+        self.releaseRequest();
         if (err) {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
@@ -155,14 +161,16 @@ class Downloader {
     });
   }
 
-  public downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
+  public async downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
     if (!url) {
       throw new Error(`Parameter [${url}] is not a valid url`);
     }
-    logger.info(`Downloading [${url}]`);
+    const self = this;
+    await self.claimRequest();
     return new Promise((resolve, reject) => {
       const requestOptions = this.getRequestOptionsFromUrl(url, true);
-      const call = backoff.call(getContent, requestOptions, (err: any, val: any) => {
+      const call = backoff.call(this.getContentCb, requestOptions, (err: any, val: any) => {
+        self.releaseRequest();
         if (err) {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
@@ -192,34 +200,83 @@ class Downloader {
       method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
     };
   }
+
+  private async claimRequest(): Promise<null> {
+    if (this.activeRequests < this.maxActiveRequests) {
+      this.activeRequests += 1;
+      return null;
+    } else {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 10);
+      });
+      return this.claimRequest();
+    }
+  }
+
+  private async releaseRequest(): Promise<null> {
+    this.activeRequests -= 1;
+    return null;
+  }
+
+  private getJSONCb<T>(url: string, handler: any) {
+    logger.info(`Getting JSON from [${url}]`);
+    axios.get<T>(url, { responseType: 'json' })
+      .then((a) => handler(null, a.data), handler)
+      .catch((err) => {
+        try {
+          if (err.response.status === 429) {
+            logger.log(`Received a [status=429], slowing down`);
+            const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+            logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+            this.maxActiveRequests = newMaxActiveRequests;
+            return this.getJSONCb(url, handler);
+          } else {
+            handler(err);
+          }
+        } catch (a) {
+          handler(err);
+        }
+      });
+  }
+
+  private async getContentCb(requestOptions: any, handler: any) {
+    logger.info(`Downloading [${requestOptions.url}]`);
+    try {
+      const resp = await axios(requestOptions);
+      const responseHeaders = resp.headers;
+
+      const shouldCompress = responseHeaders['content-type'].includes('image/');
+      const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+
+      const compressionWorked = compressed.length < resp.data.length;
+      if (compressionWorked) {
+        logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
+      } else if (shouldCompress) {
+        logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+      }
+
+      handler(null, {
+        responseHeaders,
+        content: compressionWorked ? compressed : resp.data,
+      });
+    } catch (err) {
+      try {
+        if (err.response.status === 429) {
+          logger.log(`Received a [status=429], slowing down`);
+          const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+          logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+          this.maxActiveRequests = newMaxActiveRequests;
+          this.getContentCb(requestOptions, handler);
+        } else {
+          handler(err);
+        }
+      } catch (a) {
+        handler(err);
+      }
+    }
+  }
+
 }
 
 export default Downloader;
 
-function getJSON<T>(url: string, handler: any) {
-  return axios.get<T>(url, { responseType: 'json' }).then((a) => handler(null, a.data), handler);
-}
-
-async function getContent(requestOptions: any, handler: any) {
-  try {
-    const resp = await axios(requestOptions);
-    const responseHeaders = resp.headers;
-
-    const shouldCompress = responseHeaders['content-type'].includes('image/');
-    const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-
-    const compressionWorked = compressed.length < resp.data.length;
-    if (compressionWorked) {
-      logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
-    } else if (shouldCompress) {
-      logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
-    }
-
-    handler(null, {
-      responseHeaders,
-      content: compressionWorked ? compressed : resp.data,
-    });
-  } catch (err) {
-    handler(err);
-  }
-}
