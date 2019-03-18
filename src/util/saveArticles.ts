@@ -35,41 +35,41 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
         articleIds,
         downloader.speed,
         async (articleId) => {
-            const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
-            let articleHtml: string;
-            let articleTitle = articleId;
             try {
+                const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
+                let articleHtml: string;
+                let articleTitle = articleId;
                 const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
                 articleHtml = ret.html;
                 articleTitle = ret.displayTitle;
+
+                if (!articleHtml) {
+                    logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
+                    return null;
+                }
+
+                const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId, articleId);
+
+                const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
+                // TODO: fix above warning
+
+                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
+
+                const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
+                await zimCreator.addArticle(zimArticle);
+
+                const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: moduleDependencies.jsConfigVars, ns: '-' });
+                await zimCreator.addArticle(article);
+
+                return {
+                    mediaDependencies: mediaDependencies.reduce((acc, arr) => acc.concat(arr), []),
+                    moduleDependencies,
+                };
             } catch (err) {
-                logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                logger.error(`Error downloading article [${articleId}], skipping`, err);
                 delete articleDetailXId[articleId];
                 return null;
             }
-
-            if (!articleHtml) {
-                logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
-                return null;
-            }
-
-            const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId, articleId);
-
-            const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
-            // TODO: fix above warning
-
-            const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
-
-            const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
-            await zimCreator.addArticle(zimArticle);
-
-            const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: moduleDependencies.jsConfigVars, ns: '-' });
-            await zimCreator.addArticle(article);
-
-            return {
-                mediaDependencies: mediaDependencies.reduce((acc, arr) => acc.concat(arr), []),
-                moduleDependencies,
-            };
         },
     ).then((a) => {
         const ret = a.filter((a) => a)

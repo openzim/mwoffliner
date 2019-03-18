@@ -73,7 +73,7 @@ export function makeRedirectsQueue(downloader: Downloader, redis: Redis, mainPag
         } else {
             finished();
         }
-    }, Math.min(downloader.speed * 100, 500));
+    });
     return redirectQueue;
 }
 
