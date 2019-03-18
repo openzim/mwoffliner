@@ -279,4 +279,3 @@ class Downloader {
 }
 
 export default Downloader;
-
