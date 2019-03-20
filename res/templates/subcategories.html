@@ -1,0 +1,11 @@
+<h2 class="section-heading in-block collapsible-heading" tabindex="0" aria-haspopup="true" data-section-id="Categories">
+    <div class="mw-ui-icon mw-ui-icon-arrow mw-ui-icon-element indicator" title=""></div>
+    <span class="mw-headline">Sub-Categories:</span>
+</h2>
+<div class="mf-section-{{ section_id }}" aria-pressed="true" aria-expanded="true">
+    <ul>
+        {% for category in subCategories %}
+        <li><a href="{{category.url}}" rel="mw:WikiLink">{{category.name}}</a></li>
+        {% endfor %}
+    </ul>
+</div>

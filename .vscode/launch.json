@@ -10,11 +10,11 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/bin/mwoffliner.script.js",
             "args": [
-                "--mwUrl=https://en.wikipedia.org",
+                "--mwUrl=https://bm.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
                 "--verbose",
-                // "--format=nozim",
-                "--articleList=./articleList",
+                "--format=nozim",
+                // "--articleList=./articleList",
                 "--redis=redis://127.0.0.1:6379"
                 // "--customZimFavicon=test.png"
             ]

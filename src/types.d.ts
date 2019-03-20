@@ -36,3 +36,35 @@ interface MWMetaData {
     webUrlPath: string;
     modulePath: string;
 }
+
+interface PageInfo {
+    pageid: number;
+    ns: number;
+    title: string;
+}
+
+type ArticleDetail = PageInfo & {
+    subCategories?: PageInfo[],
+    categories?: PageInfo[],
+    thumbnail?: {
+        source: string,
+        height: number,
+        width: number,
+    },
+    coordinates?: Array<{
+        lat: number,
+        lon: number,
+        primary: string,
+        globe: string,
+    }>,
+    redirects?: PageInfo[],
+    revisions?: Array<{
+        revid: number,
+        parentid: number,
+        minor: string,
+        user: string,
+        timestamp: string,
+        comment: string,
+    }>,
+    internalThumbnailUrl?: string,
+};

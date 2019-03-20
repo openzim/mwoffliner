@@ -1,13 +1,14 @@
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import mkdirp from 'mkdirp';
 import * as path from 'path';
-import { rmdirSync, symlink } from 'fs';
+import { symlink } from 'fs';
 import { writeFilePromise, mkdirPromise } from './util';
+import rimraf from 'rimraf';
 
 class ZimCreatorFs extends ZimCreator {
     public _createZimCreator({ fileName }: any) {
         try {
-            rmdirSync(fileName);
+            rimraf.sync(fileName);
         } catch (err) { /* NOOP */ }
         mkdirp.sync(fileName);
     }

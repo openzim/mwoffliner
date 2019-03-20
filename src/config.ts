@@ -80,6 +80,10 @@ const config = {
        */
       page: './templates/page.html',
 
+      categories: './templates/categories.html',
+
+      subCategories: './templates/subcategories.html',
+
       articleListHomeTemplate: './templates/article_list_home.html',
 
       /* License footer template code */

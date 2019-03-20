@@ -112,7 +112,7 @@ class Redis {
     });
   }
 
-  public saveArticles(articles: string[]) {
+  public saveArticles(articles: KVS<ArticleDetail>) {
     if (Object.keys(articles).length) {
       this.redisClient.hmset(this.redisArticleDetailsDatabase, articles, (error: any) => {
         if (error) {

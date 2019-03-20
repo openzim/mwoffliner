@@ -1,8 +1,8 @@
-import { leadSectionTemplate, sectionTemplate, subSectionTemplate } from '../Templates';
+import { leadSectionTemplate, sectionTemplate, subSectionTemplate, categoriesTemplate, subCategoriesTemplate } from '../Templates';
 import { Dump } from '../Dump';
 import logger from '../Logger';
 
-export function renderDesktopArticle(json: any) {
+export function renderDesktopArticle(json: any, articleId: string) {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
         return json.visualeditor.content;
@@ -16,7 +16,7 @@ export function renderDesktopArticle(json: any) {
     }
 }
 
-export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
+export function renderMCSArticle(json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail) {
 
     let html = '';
     // set the first section (open by default)
@@ -63,6 +63,33 @@ export function renderMCSArticle(json: any, dump: Dump, langIso2: string) {
                 });
                 html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
             }
+        });
+    }
+    const resourceNamespace = 'A';
+    const slashesInUrl = articleId.split('/').length - 1;
+    const upStr = '../'.repeat(slashesInUrl + 1);
+    if (articleDetail.categories && articleDetail.categories.length) {
+        const categories = articleDetail.categories.map((category) => {
+            return {
+                name: category.title,
+                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+            };
+        });
+        html += categoriesTemplate({
+            strings: dump.strings,
+            categories,
+        });
+    }
+    if (articleDetail.subCategories && articleDetail.subCategories.length) {
+        const subCategories = articleDetail.subCategories.map((category) => {
+            return {
+                name: category.title,
+                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+            };
+        });
+        html += subCategoriesTemplate({
+            strings: dump.strings,
+            subCategories,
         });
     }
     html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)

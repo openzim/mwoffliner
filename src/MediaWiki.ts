@@ -3,6 +3,7 @@ import logger from './Logger';
 import urlParser from 'url';
 import * as U from './util';
 import * as domino from 'domino';
+import * as pathParser from 'path';
 
 // Stub for now
 class MediaWiki {
@@ -76,12 +77,8 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
-  public imageQueryUrl(title: string) {
-    return `${this.apiUrl}action=query&prop=pageimages&pithumbsize=300&format=json&titles=${encodeURIComponent(title)}`;
-  }
-
-  public articleQueryUrl(title: string) {
-    return `${this.apiUrl}action=query&redirects&format=json&prop=revisions|coordinates&titles=${encodeURIComponent(title)}`;
+  public articleQueryUrl(titles: string[]) {
+    return `${this.apiUrl}action=query&redirects&format=json&cllimit=500&pithumbsize=300&prop=pageimages|revisions|coordinates|categories&titles=${encodeURIComponent(titles.join('|'))}`;
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
@@ -90,6 +87,10 @@ class MediaWiki {
 
   public articleApiUrl(articleId: string) {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
+  }
+
+  public subCategoriesApiUrl(articleId: string) {
+    return `${this.apiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=500&format=json&cmtitle=${encodeURIComponent(articleId)}`;
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
@@ -105,6 +106,7 @@ class MediaWiki {
         const allowedSubpages = ('subpages' in entry);
         const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
         const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
+        const isCategory = canonical === 'Category';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
         self.namespaces[U.lcFirst(name)] = details;
@@ -115,7 +117,7 @@ class MediaWiki {
           self.namespaces[U.ucFirst(canonical)] = details;
         }
         /* Is content to mirror */
-        if (isContent) {
+        if (isContent || isCategory) {
           self.namespacesToMirror.push(name);
         }
       });
@@ -130,6 +132,9 @@ class MediaWiki {
       }
       if (pathname.indexOf(this.webUrlPath) === 0) {
         return U.decodeURIComponent(pathname.substr(this.webUrlPath.length));
+      }
+      if (pathParser.parse(href).dir.includes('../')) {
+        return pathParser.parse(href).name;
       }
 
       return null; /* Interwiki link? -- return null */
