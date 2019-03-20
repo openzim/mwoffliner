@@ -10,27 +10,6 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import Redis from '../redis';
 import { Dump } from '../Dump';
 
-export async function getArticleThumbnails(downloader: Downloader, mw: MediaWiki, articleList: string[]) {
-    logger.info(`Getting article thumbnails`);
-    let articleIndex = 0;
-    const thumbnailsToDownload = [];
-
-    while (articleIndex < articleList.length - 1 && thumbnailsToDownload.length < 100) {
-        try {
-            const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
-            const articleId = articleList[articleIndex];
-            const resp = await downloader.queryArticleThumbnail(articleId);
-            const page = resp.query.pages[Object.keys(resp.query.pages)[0]];
-            const imageUrl = getFullUrl(webUrlHost, page.thumbnail.source);
-            const id = page.title.replace(/ /g, mw.spaceDelimiter);
-            thumbnailsToDownload.push({ articleId: id, imageUrl });
-        } catch (err) { /* NOOP */ }
-        articleIndex += 1;
-    }
-
-    return thumbnailsToDownload;
-}
-
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     const mediaItemsToDownload: Array<{ url: string, path: string }> = [];
     let finalCss = '';

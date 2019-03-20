@@ -36,3 +36,9 @@ interface MWMetaData {
     webUrlPath: string;
     modulePath: string;
 }
+
+interface PageInfo {
+    pageid: number;
+    ns: number;
+    title: string;
+}

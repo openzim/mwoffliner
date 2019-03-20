@@ -15,6 +15,7 @@ import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath,
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import Redis from '../redis';
+import { articleDetailXId } from '../articleDetail';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -50,10 +51,10 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
 
                 const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId, articleId);
 
-                const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVED DEPS
+                const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVES DEPS
                 // TODO: fix above warning
 
-                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetailXId);
+                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId);
 
                 const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                 await zimCreator.addArticle(zimArticle);
@@ -147,17 +148,25 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
     let doc = domino.createDocument(html);
     const tmRet = treatMedias(doc, mw, dump, articleDetailXId, articleId);
     doc = tmRet.doc;
-    mediaDependencies = mediaDependencies.concat(tmRet.mediaDependencies.map((url) => {
-        const path = getMediaBase(url, false);
-        return { url, path };
-    }));
+    mediaDependencies = mediaDependencies.concat(
+        tmRet.mediaDependencies
+            .filter((a) => a)
+            .map((url) => {
+                const path = getMediaBase(url, false);
+                return { url, path };
+            }),
+    );
 
-    const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump, articleDetailXId);
+    const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump);
     doc = ruRet.doc;
-    mediaDependencies = mediaDependencies.concat(ruRet.mediaDependencies.map((url) => {
-        const path = getMediaBase(url, false);
-        return { url, path };
-    }));
+    mediaDependencies = mediaDependencies.concat(
+        ruRet.mediaDependencies
+            .filter((a) => a)
+            .map((url) => {
+                const path = getMediaBase(url, false);
+                return { url, path };
+            }),
+    );
 
     doc = applyOtherTreatments(doc, dump);
 
@@ -268,7 +277,7 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
                 /* Check if the target is mirrored */
                 const href = linkNode.getAttribute('href') || '';
                 const title = mw.extractPageTitleFromHref(href);
-                const keepLink = title && isMirrored(title, dump, mw, articleDetailXId);
+                const keepLink = title && isMirrored(title);
 
                 /* Under certain condition it seems that this is possible
                                  * to have parentNode == undefined, in this case this
@@ -385,7 +394,7 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
     return { doc: parsoidDoc, mediaDependencies };
 }
 
-async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
+async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
     /* Go through all links */
@@ -399,7 +408,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: 
             return;
         }
 
-        if (isMirrored(title, dump, mw, articleDetailXId)) {
+        if (isMirrored(title)) {
             /* Deal with local anchor */
             const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
             linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
@@ -698,7 +707,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetailXId: KVS<any>): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string): Promise<string | Buffer> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -748,7 +757,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         let parentPath = '';
         parents.map((parent) => {
             const label = parent.replace(/_/g, ' ');
-            const isParentMirrored = isMirrored(parentPath + parent, dump, mw, articleDetailXId);
+            const isParentMirrored = isMirrored(parentPath + parent);
             subpages
                 += `&lt; ${
                 isParentMirrored
@@ -765,15 +774,12 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     /* Set footer */
     const div = htmlTemplateDoc.createElement('div');
-    const { oldId } = articleDetailXId[articleId];
+    const entity = articleDetailXId[articleId];
+    const oldId = entity.revisions[0].revid;
     try {
-        const detailsJson = await redis.getArticle(articleId);
-        /* Is seems that sporadically this goes wrong */
-        const details = JSON.parse(detailsJson);
-
         /* Revision date */
-        const timestamp = details.t;
-        const date = new Date(timestamp * 1000);
+        const timestamp = entity.revisions[0].timestamp;
+        const date = new Date(timestamp);
         div.innerHTML = footerTemplate({
             articleId: encodeURIComponent(articleId),
             webUrl: mw.webUrl,
@@ -786,11 +792,12 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         addNoIndexCommentToElement(div);
 
         /* Geo-coordinates */
-        const geoCoordinates = details.g;
-        if (geoCoordinates) {
+        if (entity.coordinates && entity.coordinates.length) {
+            const coords = entity.coordinates[0];
+            const geoCoordinates = `${coords.lat};${coords.lon}`;
             const metaNode = htmlTemplateDoc.createElement('meta');
             metaNode.name = 'geo.position';
-            metaNode.content = geoCoordinates; // latitude + ';' + longitude;
+            metaNode.content = geoCoordinates;
             htmlTemplateDoc.getElementsByTagName('head')[0].appendChild(metaNode);
         }
 
@@ -829,12 +836,6 @@ function isSubpage(id: string, mw: MediaWiki) {
     return false;
 }
 
-function isMirrored(id: string, dump: Dump, mw: MediaWiki, articleDetailXId: KVS<any>) {
-    if (!dump.opts.articleList && id && id.indexOf(':') >= 0) {
-        const namespace = mw.namespaces[id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter)];
-        if (namespace !== undefined) {
-            return namespace.isContent;
-        }
-    }
+function isMirrored(id: string) {
     return id in articleDetailXId;
 }

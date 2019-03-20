@@ -15,6 +15,7 @@ import { renderDesktopArticle, renderMCSArticle } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
+import { articleDetailXId } from './articleDetail';
 
 const imageminOptions = {
   plugins: [
@@ -103,11 +104,6 @@ class Downloader {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
-  public queryArticleThumbnail(articleId: string): KVS<any> {
-    const url = this.mw.imageQueryUrl(articleId);
-    return this.getJSON(url);
-  }
-
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
     logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
@@ -119,22 +115,30 @@ class Downloader {
     try {
       const json = await this.getJSON<any>(articleApiUrl);
 
+      const isCategoryArticle = articleDetailXId[articleId].ns === 14 || (json.lead || {}).ns === 14;
+      if (isCategoryArticle) {
+        const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
+        const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+        articleDetailXId[articleId].subCategories = categoryMembers;
+      }
+
       if (useParsoidFallback) {
         return {
           displayTitle: articleId.replace('_', ' '),
-          html: renderDesktopArticle(json),
+          html: renderDesktopArticle(json, articleId),
         };
       } else {
         const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
         const strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
         return {
           displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
-          html: renderMCSArticle(json, dump, dump.mwMetaData.langIso2),
+          html: renderMCSArticle(json, dump, articleId),
         };
       }
 
     } catch (err) {
       if (!useParsoidFallback) {
+        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, err);
         return this.getArticle(articleId, dump, true);
       } else {
         throw err;
