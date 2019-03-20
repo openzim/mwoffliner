@@ -29,7 +29,7 @@ import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles } from './util/saveArticles';
-import { articleDetailXId } from './articleDetail';
+import { articleDetailXId, populateArticleDetail } from './articleDetail';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -206,6 +206,7 @@ async function execute(argv: any) {
   /* Setup redis client */
   const redis = new Redis(argv, config);
   await redis.flushDBs();
+  populateArticleDetail(redis.redisClient);
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -244,36 +245,40 @@ async function execute(argv: any) {
 
   const articlesRet = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList ? articleListLines : null);
 
-  Object.assign(articleDetailXId, articlesRet);
+  await articleDetailXId.setMany(articlesRet as KVS<ArticleDetail>);
 
-  const categoriesWithArticleChildren = new Set<string>([]);
-  for (const [articleId, articleDetail] of Object.entries(articleDetailXId)) {
-    if (articleDetail.ns !== 14 && articleDetail.categories) {
-      for (const category of articleDetail.categories) {
-        const categoryArticleId = category.title.replace(/ /g, '_');
-        categoriesWithArticleChildren.add(categoryArticleId);
-      }
-    }
-  }
-  logger.info(`Found [${categoriesWithArticleChildren.size}] category pages with at least one article child, deleting empty Categories`);
-  let categoryDeleteCount = 0;
-  for (const [categoryId, categoryDetail] of Object.entries(articleDetailXId)) {
-    if (categoryDetail.ns === 14) {
-      if (!categoriesWithArticleChildren.has(categoryId)) {
-        delete articleDetailXId[categoryId];
-        categoryDeleteCount += 1;
-      }
-    }
-  }
-  if (categoryDeleteCount) {
-    logger.info(`Deleted [${categoryDeleteCount}] empty categories`);
-  }
+  // const categoriesWithArticleChildren = new Set<string>([]);
+  // let articleIds = await articleDetailXId.keys();
+  // await mapLimit(articleIds, downloader.speed, async (articleId) => {
+  //   const articleDetail = await articleDetailXId.get(articleId);
+  //   if (articleDetail.ns !== 14 && articleDetail.categories) {
+  //     for (const category of articleDetail.categories) {
+  //       const categoryArticleId = category.title.replace(/ /g, '_');
+  //       categoriesWithArticleChildren.add(categoryArticleId);
+  //     }
+  //   }
+  // });
+  // logger.info(`Found [${categoriesWithArticleChildren.size}] category pages with at least one article child, deleting empty Categories`);
+  // let categoryDeleteCount = 0;
+  // articleIds = await articleDetailXId.keys();
+  // await mapLimit(articleIds, downloader.speed, async (categoryId) => {
+  //   const categoryDetail = await articleDetailXId.get(categoryId);
+  //   if (categoryDetail.ns === 14) {
+  //     if (!categoriesWithArticleChildren.has(categoryId)) {
+  //       articleDetailXId.delete(categoryId); // Not Awaiting
+  //       categoryDeleteCount += 1;
+  //     }
+  //   }
+  // });
+  // if (categoryDeleteCount) {
+  //   logger.info(`Deleted [${categoryDeleteCount}] empty categories`);
+  // }
 
-  if (articleList) {
-    const categoriesRet = await getArticleIds(downloader, redis, mw, null, Array.from(categoriesWithArticleChildren));
-    logger.log(`Got [${Object.keys(categoriesRet).length}] Categories`);
-    Object.assign(articleDetailXId, categoriesRet);
-  }
+  // if (articleList) {
+  //   const categoriesRet = await getArticleIds(downloader, redis, mw, null, Array.from(categoriesWithArticleChildren));
+  //   logger.log(`Got [${Object.keys(categoriesRet).length}] Categories`);
+  //   await articleDetailXId.setMany(categoriesRet as KVS<ArticleDetail>);
+  // }
 
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {
@@ -384,35 +389,27 @@ async function execute(argv: any) {
     logger.log(`Getting Favicon`);
     await saveFavicon(dump, zimCreator);
 
-    if (articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-      logger.log(`Getting Article Thumbnails`);
-      const thumbnailUrls = articleListLines.map((articleId) => {
-        return {
-          articleId,
-          imageUrl: articleDetailXId[articleId].thumbnail,
-        };
-      }).filter((a) => a);
-      if (thumbnailUrls.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        for (const { articleId, imageUrl } of thumbnailUrls) {
-          if (imageUrl) {
-            const path = getMediaBase(imageUrl, false);
-            filesToDownload.push({ url: imageUrl, path, namespace: 'I' });
+    await mapLimit(articleListLines, downloader.speed, async (articleId) => {
+      const articleDetail = await articleDetailXId.get(articleId);
+      const imageUrl = articleDetail.thumbnail;
+      if (imageUrl) {
+        const path = getMediaBase(imageUrl.source, false);
+        filesToDownload.push({ url: imageUrl.source, path, namespace: 'I' });
 
-            const resourceNamespace = 'I';
-            const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl, true);
+        const resourceNamespace = 'I';
+        const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl.source, true);
 
-            articleDetailXId[articleId].internalTumbnailUrl = internalSrc;
-          }
-        }
+        articleDetail.internalThumbnailUrl = internalSrc;
+        await articleDetailXId.set(articleId, articleDetail);
       }
-    }
+    });
 
     logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
 
-    const { mediaDependencies, moduleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump, articleDetailXId);
+    const { mediaDependencies, moduleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump);
 
     logger.log(`Found [${moduleDependencies.jsDependenciesList.length}] js module dependencies`);
     logger.log(`Found [${moduleDependencies.styleDependenciesList.length}] style module dependencies`);
@@ -545,7 +542,7 @@ async function execute(argv: any) {
   }
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator) {
-    function createMainPage() {
+    async function createMainPage() {
       logger.log('Creating main page...');
       const doc = domino.createDocument(
         articleListHomeTemplate
@@ -558,27 +555,20 @@ async function execute(argv: any) {
             '\n</head>'),
       );
 
-      const titles = Object.keys(articleDetailXId).sort();
+      const titles = articleListLines.map((title) => title.replace(/ /g, '_'));
 
-      const {
-        articlesWithImages,
-        articlesWithoutImages,
-        allArticles,
-      } = titles.reduce((acc, title) => {
-        const articleDetail = articleDetailXId[title];
-        acc.allArticles.push(articleDetail);
+      const articlesWithImages: ArticleDetail[] = [];
+      const articlesWithoutImages: ArticleDetail[] = [];
+      const allArticles: ArticleDetail[] = [];
+      for (const title of titles) {
+        const articleDetail = await articleDetailXId.get(title);
+        allArticles.push(articleDetail);
         if (articleDetail.thumbnail) {
-          acc.articlesWithImages.push(articleDetail);
+          articlesWithImages.push(articleDetail);
         } else {
-          acc.articlesWithoutImages.push(articleDetail);
+          articlesWithoutImages.push(articleDetail);
         }
-        return acc;
-      }, {
-          articlesWithImages: [],
-          articlesWithoutImages: [],
-          allArticles: [],
-        },
-      );
+      }
 
       if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n');

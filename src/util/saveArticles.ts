@@ -3,9 +3,7 @@ import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
-import zlib from 'zlib';
 import * as urlParser from 'url';
-import * as pathParser from 'path';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
@@ -27,9 +25,9 @@ interface SaveArticlesRet {
         styleDependenciesList: string[];
     };
 }
-export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>) {
+export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
 
-    const articleIds = Object.keys(articleDetailXId);
+    const articleIds = await articleDetailXId.keys();
 
     logger.log('Saving articles...');
     return mapLimit(
@@ -37,6 +35,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
         downloader.speed,
         async (articleId) => {
             try {
+                const articleDetail = await articleDetailXId.get(articleId);
                 const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
                 let articleHtml: string;
                 let articleTitle = articleId;
@@ -49,12 +48,12 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
                     return null;
                 }
 
-                const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleDetailXId, articleId);
+                const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
 
                 const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVES DEPS
                 // TODO: fix above warning
 
-                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId);
+                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetail);
 
                 const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                 await zimCreator.addArticle(zimArticle);
@@ -68,7 +67,7 @@ export function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: D
                 };
             } catch (err) {
                 logger.error(`Error downloading article [${articleId}], skipping`, err);
-                delete articleDetailXId[articleId];
+                await articleDetailXId.delete(articleId);
                 return null;
             }
         },
@@ -142,11 +141,11 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
     };
 }
 
-async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>, articleId: string) {
+async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
 
     let doc = domino.createDocument(html);
-    const tmRet = treatMedias(doc, mw, dump, articleDetailXId, articleId);
+    const tmRet = await treatMedias(doc, mw, dump, articleId);
     doc = tmRet.doc;
     mediaDependencies = mediaDependencies.concat(
         tmRet.mediaDependencies
@@ -176,7 +175,7 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
     };
 }
 
-function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleDetailXId: KVS<any>, articleId: string) {
+async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies = [];
     /* Clean/rewrite image tags */
@@ -277,7 +276,7 @@ function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, artic
                 /* Check if the target is mirrored */
                 const href = linkNode.getAttribute('href') || '';
                 const title = mw.extractPageTitleFromHref(href);
-                const keepLink = title && isMirrored(title);
+                const keepLink = title && await isMirrored(title);
 
                 /* Under certain condition it seems that this is possible
                                  * to have parentNode == undefined, in this case this
@@ -408,7 +407,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: 
             return;
         }
 
-        if (isMirrored(title)) {
+        if (await isMirrored(title)) {
             /* Deal with local anchor */
             const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
             linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
@@ -707,7 +706,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<string | Buffer> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -755,18 +754,20 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         parents.pop();
         let subpages = '';
         let parentPath = '';
-        parents.map((parent) => {
-            const label = parent.replace(/_/g, ' ');
-            const isParentMirrored = isMirrored(parentPath + parent);
-            subpages
-                += `&lt; ${
-                isParentMirrored
-                    ? `<a href="${dump.getArticleUrl(parentPath + parent)}" title="${label}">`
-                    : ''
-                }${label
-                }${isParentMirrored ? '</a> ' : ' '}`;
-            parentPath += `${parent}/`;
-        });
+        await Promise.all(
+            parents.map(async (parent) => {
+                const label = parent.replace(/_/g, ' ');
+                const isParentMirrored = await isMirrored(parentPath + parent);
+                subpages
+                    += `&lt; ${
+                    isParentMirrored
+                        ? `<a href="${dump.getArticleUrl(parentPath + parent)}" title="${label}">`
+                        : ''
+                    }${label
+                    }${isParentMirrored ? '</a> ' : ' '}`;
+                parentPath += `${parent}/`;
+            }),
+        );
         subpagesNode.innerHTML = subpages;
         subpagesNode.setAttribute('class', 'subpages');
         headingNode.parentNode.insertBefore(subpagesNode, headingNode);
@@ -774,11 +775,10 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     /* Set footer */
     const div = htmlTemplateDoc.createElement('div');
-    const entity = articleDetailXId[articleId];
-    const oldId = entity.revisions[0].revid;
+    const oldId = articleDetail.revisions[0].revid;
     try {
         /* Revision date */
-        const timestamp = entity.revisions[0].timestamp;
+        const timestamp = articleDetail.revisions[0].timestamp;
         const date = new Date(timestamp);
         div.innerHTML = footerTemplate({
             articleId: encodeURIComponent(articleId),
@@ -792,8 +792,8 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         addNoIndexCommentToElement(div);
 
         /* Geo-coordinates */
-        if (entity.coordinates && entity.coordinates.length) {
-            const coords = entity.coordinates[0];
+        if (articleDetail.coordinates && articleDetail.coordinates.length) {
+            const coords = articleDetail.coordinates[0];
             const geoCoordinates = `${coords.lat};${coords.lon}`;
             const metaNode = htmlTemplateDoc.createElement('meta');
             metaNode.name = 'geo.position';
@@ -837,5 +837,5 @@ function isSubpage(id: string, mw: MediaWiki) {
 }
 
 function isMirrored(id: string) {
-    return id in articleDetailXId;
+    return articleDetailXId.get(id);
 }

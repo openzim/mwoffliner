@@ -1,10 +1,7 @@
 import Downloader from '../Downloader';
-import { AsyncCargo } from 'async';
-import logger from '../Logger';
 import { mapLimit } from '.';
 import Redis from '../redis';
 import MediaWiki from '../MediaWiki';
-import { articleDetailXId } from '../articleDetail';
 import { queryMw } from 'mw-query';
 
 export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
@@ -46,10 +43,11 @@ async function getInfoForArticleIds(articleIds: string[], mw: MediaWiki) {
         apiUrl: mw.apiUrl.replace('?', ''),
     },
         {
-            categories: { cllimit: 'max' },
+            // categories: { cllimit: 'max' },
             redirects: { rdlimit: 'max' },
             coordinates: {},
             revisions: {},
+            pageimages: {},
         },
         articleIds,
     );
@@ -62,9 +60,10 @@ async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, 
         apiUrl: mw.apiUrl.replace('?', ''),
     },
         {
-            categories: { cllimit: 'max' },
+            // categories: { cllimit: 'max' },
             coordinates: { colimit: 'max' },
             revisions: {},
+            pageimages: {},
             _opts: {
                 generator: 'allpages',
                 gapfilterredir: 'nonredirects',

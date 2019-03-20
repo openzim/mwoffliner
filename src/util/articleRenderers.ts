@@ -1,7 +1,6 @@
 import { leadSectionTemplate, sectionTemplate, subSectionTemplate, categoriesTemplate, subCategoriesTemplate } from '../Templates';
 import { Dump } from '../Dump';
 import logger from '../Logger';
-import { articleDetailXId } from '../articleDetail';
 
 export function renderDesktopArticle(json: any, articleId: string) {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
@@ -17,7 +16,7 @@ export function renderDesktopArticle(json: any, articleId: string) {
     }
 }
 
-export function renderMCSArticle(json: any, dump: Dump, articleId: string) {
+export function renderMCSArticle(json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail) {
 
     let html = '';
     // set the first section (open by default)
@@ -69,8 +68,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string) {
     const resourceNamespace = 'A';
     const slashesInUrl = articleId.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
-    if (articleDetailXId[articleId].categories && articleDetailXId[articleId].categories.length) {
-        const categories = articleDetailXId[articleId].categories.map((category) => {
+    if (articleDetail.categories && articleDetail.categories.length) {
+        const categories = articleDetail.categories.map((category) => {
             return {
                 name: category.title,
                 url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
@@ -81,8 +80,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string) {
             categories,
         });
     }
-    if (articleDetailXId[articleId].subCategories && articleDetailXId[articleId].subCategories.length) {
-        const subCategories = articleDetailXId[articleId].subCategories.map((category) => {
+    if (articleDetail.subCategories && articleDetail.subCategories.length) {
+        const subCategories = articleDetail.subCategories.map((category) => {
             return {
                 name: category.title,
                 url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,

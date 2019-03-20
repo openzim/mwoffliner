@@ -113,13 +113,15 @@ class Downloader {
     logger.log(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
 
     try {
+      const articleDetail = await articleDetailXId.get(articleId);
       const json = await this.getJSON<any>(articleApiUrl);
 
-      const isCategoryArticle = articleDetailXId[articleId].ns === 14 || (json.lead || {}).ns === 14;
+      const isCategoryArticle = articleDetail.ns === 14 || (json.lead || {}).ns === 14;
       if (isCategoryArticle) {
         const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
         const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
-        articleDetailXId[articleId].subCategories = categoryMembers;
+        articleDetail.subCategories = categoryMembers;
+        await articleDetailXId.set(articleId, articleDetail);
       }
 
       if (useParsoidFallback) {
@@ -132,7 +134,7 @@ class Downloader {
         const strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
         return {
           displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
-          html: renderMCSArticle(json, dump, articleId),
+          html: renderMCSArticle(json, dump, articleId, articleDetail),
         };
       }
 

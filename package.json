@@ -73,7 +73,7 @@
     "imagemin-pngquant": "^7.0.0",
     "mkdirp": "^0.5.1",
     "mocha": "^5.2.0",
-    "mw-query": "^1.0.4",
+    "mw-query": "^1.0.5",
     "parsoid": "^0.10.0",
     "redis": "^2.8.0",
     "rimraf": "^2.6.3",
