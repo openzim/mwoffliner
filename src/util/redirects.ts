@@ -63,7 +63,7 @@ async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, 
             // categories: { cllimit: 'max' },
             coordinates: { colimit: 'max' },
             revisions: {},
-            pageimages: {},
+            // pageimages: {},
             _opts: {
                 generator: 'allpages',
                 gapfilterredir: 'nonredirects',
