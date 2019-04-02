@@ -100,9 +100,9 @@ export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: stri
 
         const e = m.get(it.path);
         if (e === undefined) {
-            m.set(it.path, { ...it, mult, });
+            m.set(it.path, { ...it, mult });
         } else if (e.mult < mult) {
-            m.set(it.path, { ...it, mult, });
+            m.set(it.path, { ...it, mult });
         }
     });
     const itemsWithHighestRequiredRes = Object.values(m);
