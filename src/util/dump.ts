@@ -85,24 +85,25 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
 }
 
 export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: string, namespace: string }>) {
-    items = items.sort((a, b) => {
-        return a.url < b.url ? -1 : (a.url > b.url ? 1 : 0);
-    });
-
     const m = new Map();
     items.map((it) => {
-        const hasMult = it.url.includes('x.');
-        let multiplier = '1x';
-        if (hasMult) {
-            multiplier = it.url.split('-').slice(-1)[0].split('.').slice(0, -1).join('.'); // e.g. "1.5x"
+        let mult = 1;
+        let width = 1 * 10e6; // dummy value for unscaled media
+        const widthMatch = it.url.match(/\/([0-9]+)px-/);
+        if (widthMatch) {
+            width = Number(widthMatch[1]);
+        } else {
+            const multMatch = it.url.match(/-([0-9.]+)x\./);
+            if (multMatch) {
+                mult = Number(multMatch[1]);
+            }
         }
-        const mult = Number(multiplier.slice(0, -1));
 
         const e = m.get(it.path);
         if (e === undefined) {
-            m.set(it.path, { ...it, mult });
-        } else if (e.mult < mult) {
-            m.set(it.path, { ...it, mult });
+            m.set(it.path, { ...it, mult, width });
+        } else if (e.width < width || e.mult < mult) {
+            m.set(it.path, { ...it, mult, width });
         }
     });
     const itemsWithHighestRequiredRes = Array.from(m.values());
