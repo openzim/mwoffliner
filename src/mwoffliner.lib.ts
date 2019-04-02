@@ -243,7 +243,7 @@ async function execute(argv: any) {
 
   await mw.getNamespaces(addNamespaces, downloader);
 
-  const articlesRet = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList ? articleListLines : null);
+  const articlesRet = await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
 
   await articleDetailXId.setMany(articlesRet as KVS<ArticleDetail>);
 
@@ -406,9 +406,7 @@ async function execute(argv: any) {
     }
 
     logger.log(`Getting Main Page`);
-    if (mainPage) {
-      await getMainPage(dump, zimCreator);
-    }
+    await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
 
