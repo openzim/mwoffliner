@@ -105,7 +105,7 @@ export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: stri
             m.set(it.path, { ...it, mult });
         }
     });
-    const itemsWithHighestRequiredRes = Object.values(m);
+    const itemsWithHighestRequiredRes = Array.from(m.values());
 
     logger.info(`Not downloading [${items.length - itemsWithHighestRequiredRes.length}] low-res images`);
     return itemsWithHighestRequiredRes;
