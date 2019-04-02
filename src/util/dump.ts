@@ -86,40 +86,26 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
 
 export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: string, namespace: string }>) {
     items = items.sort((a, b) => {
-        return a.url.localeCompare(b.url);
+        return a.url < b.url ? -1 : (a.url > b.url ? 1 : 0);
     });
 
-    const uniqueItems = items.filter((it, index, arr) => {
-        if (index >= arr.length - 1) {
-            return true;
+    const m = new Map();
+    items.map((it) => {
+        const hasMult = it.url.includes('x.');
+        let multiplier = '1x';
+        if (hasMult) {
+            multiplier = it.url.split('-').slice(-1)[0].split('.').slice(0, -1).join('.'); // e.g. "1.5x"
         }
-        return it.path !== arr[index + 1].path;
+        const mult = Number(multiplier.slice(0, -1));
+
+        const e = m.get(it.path);
+        if (e === undefined) {
+            m.set(it.path, { ...it, mult });
+        } else if (e.mult < mult) {
+            m.set(it.path, { ...it, mult });
+        }
     });
-
-    const itemsWithHighestRequiredRes = uniqueItems.map((it) => {
-        const similarItems = items.filter((item) => item.path === it.path);
-
-        // const uniqueNamespaces = items.map((it) => it.namespace).sort().filter((it, i, arr) => it !== arr[i + 1]);
-        // This de-dup could cause issues if the duplicate files are in different namespaces, ignoring for now.
-
-        const itemsWithMult = similarItems.map((item) => {
-            const hasMult = item.url.includes('x.');
-            let multiplier = '1x';
-            if (hasMult) {
-                multiplier = item.url.split('-').slice(-1)[0].split('.').slice(0, -1).join('.'); // e.g. "1.5x"
-            }
-
-            const mult = Number(multiplier.slice(0, -1));
-
-            return {
-                ...item,
-                mult,
-            };
-        });
-
-        const itemsSortedByMult = itemsWithMult.sort((a, b) => a.mult < b.mult ? 1 : -1);
-        return itemsSortedByMult[0];
-    });
+    const itemsWithHighestRequiredRes = Array.from(m.values());
 
     logger.info(`Not downloading [${items.length - itemsWithHighestRequiredRes.length}] low-res images`);
     return itemsWithHighestRequiredRes;
