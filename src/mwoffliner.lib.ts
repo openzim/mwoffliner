@@ -146,7 +146,7 @@ async function execute(argv: any) {
     logger.log(`Using a remote MCS instance`);
   }
 
-  const mainPage = customMainPage || articleList ? '' : mwMetaData.mainPage;
+  const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
 
   /* *********************************** */
   /*       SYSTEM VARIABLE SECTION       */
@@ -243,7 +243,7 @@ async function execute(argv: any) {
 
   await mw.getNamespaces(addNamespaces, downloader);
 
-  const articlesRet = await getArticleIds(downloader, redis, mw, mainPage || mwMetaData.mainPage, articleList ? articleListLines : null);
+  const articlesRet = await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
 
   await articleDetailXId.setMany(articlesRet as KVS<ArticleDetail>);
 
@@ -388,21 +388,22 @@ async function execute(argv: any) {
 
     logger.log(`Getting Favicon`);
     await saveFavicon(dump, zimCreator);
+    if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
+      await mapLimit(articleListLines, downloader.speed, async (articleId) => {
+        const articleDetail = await articleDetailXId.get(articleId);
+        const imageUrl = articleDetail.thumbnail;
+        if (imageUrl) {
+          const path = getMediaBase(imageUrl.source, false);
+          filesToDownload.push({ url: imageUrl.source, path, namespace: 'I' });
 
-    await mapLimit(articleListLines, downloader.speed, async (articleId) => {
-      const articleDetail = await articleDetailXId.get(articleId);
-      const imageUrl = articleDetail.thumbnail;
-      if (imageUrl) {
-        const path = getMediaBase(imageUrl.source, false);
-        filesToDownload.push({ url: imageUrl.source, path, namespace: 'I' });
+          const resourceNamespace = 'I';
+          const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl.source, true);
 
-        const resourceNamespace = 'I';
-        const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl.source, true);
-
-        articleDetail.internalThumbnailUrl = internalSrc;
-        await articleDetailXId.set(articleId, articleDetail);
-      }
-    });
+          articleDetail.internalThumbnailUrl = internalSrc;
+          await articleDetailXId.set(articleId, articleDetail);
+        }
+      });
+    }
 
     logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
