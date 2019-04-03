@@ -47,6 +47,9 @@ export function touch(paths: string[] | string) {
 }
 
 export function getFullUrl(webUrlHost: string, url: string, baseUrl?: string) {
+  if (typeof url !== 'string' || !url) {
+    throw new Error(`Expected url to be a string, got [${url}] instead`);
+  }
   const urlObject = urlParser.parse(url, false, true);
   if (!urlObject.protocol) {
     const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
