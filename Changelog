@@ -1,3 +1,10 @@
+1.8.2:
+* UPDATE: Improved dump performance
+* FIX: Reduce memory usage
+* FIX: #654 Duplicate jsConfigVars.js
+* FIX: #645 Welcome page mirroring
+* FIX: #643 --customMainPage
+
 1.8.1:
 * FIX: ZIM filename language code #624
 
