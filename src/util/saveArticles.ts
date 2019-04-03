@@ -50,16 +50,12 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
 
                 const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
 
-                const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVES DEPS
-                // TODO: fix above warning
+                const moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
 
                 const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetail);
 
                 const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                 await zimCreator.addArticle(zimArticle);
-
-                const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: moduleDependencies.jsConfigVars, ns: '-' });
-                await zimCreator.addArticle(article);
 
                 return {
                     mediaDependencies: mediaDependencies.reduce((acc, arr) => acc.concat(arr), []),
@@ -71,7 +67,9 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                 return null;
             }
         },
-    ).then((a) => {
+    ).then(async (a) => {
+        const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: a[0].moduleDependencies.jsConfigVars[0], ns: '-' });
+        await zimCreator.addArticle(article);
         const ret = a.filter((a) => a)
             .reduce((acc: SaveArticlesRet, val) => {
                 acc.mediaDependencies = acc.mediaDependencies.concat(val.mediaDependencies);
@@ -96,7 +94,7 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
 
 }
 
-async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump) {
+async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
     // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
     let jsConfigVars: string | RegExpExecArray = '';
     let jsDependenciesList: string[] = [];
@@ -131,6 +129,7 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
             jsConfigVars = regex.exec(scriptTags[i].text);
         }
     }
+
     jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
