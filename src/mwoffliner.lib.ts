@@ -391,6 +391,9 @@ async function execute(argv: any) {
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
       await mapLimit(articleListLines, downloader.speed, async (articleId) => {
         const articleDetail = await articleDetailXId.get(articleId);
+        if (!articleDetail) {
+          return null;
+        }
         const imageUrl = articleDetail.thumbnail;
         if (imageUrl) {
           const path = getMediaBase(imageUrl.source, false);
@@ -563,11 +566,13 @@ async function execute(argv: any) {
       const allArticles: ArticleDetail[] = [];
       for (const title of titles) {
         const articleDetail = await articleDetailXId.get(title);
-        allArticles.push(articleDetail);
-        if (articleDetail.thumbnail) {
-          articlesWithImages.push(articleDetail);
-        } else {
-          articlesWithoutImages.push(articleDetail);
+        if (articleDetail) {
+          allArticles.push(articleDetail);
+          if (articleDetail.thumbnail) {
+            articlesWithImages.push(articleDetail);
+          } else {
+            articlesWithoutImages.push(articleDetail);
+          }
         }
       }
 
