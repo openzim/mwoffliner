@@ -28,7 +28,7 @@ interface SaveArticlesRet {
 export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
 
     const articleIds = await articleDetailXId.keys();
-    console.log(`Found [${articleIds.length}] article ids`);
+    logger.info(`Found [${articleIds.length}] article ids`);
 
     logger.log('Saving articles...');
     return mapLimit(
@@ -68,10 +68,11 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                 return null;
             }
         },
-    ).then(async (a) => {
-        const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: a[0].moduleDependencies.jsConfigVars[0], ns: '-' });
+    ).then(async (as) => {
+        const a = as.filter((a) => a)[0];
+        const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: a.moduleDependencies.jsConfigVars[0], ns: '-' });
         await zimCreator.addArticle(article);
-        const ret = a.filter((a) => a)
+        const ret = as.filter((a) => a)
             .reduce((acc: SaveArticlesRet, val) => {
                 acc.mediaDependencies = acc.mediaDependencies.concat(val.mediaDependencies);
                 acc.moduleDependencies.jsDependenciesList = acc.moduleDependencies.jsDependenciesList.concat(val.moduleDependencies.jsDependenciesList);
