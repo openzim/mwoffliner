@@ -166,7 +166,8 @@ async function execute(argv: any) {
     throw err;
   }
 
-  process.on('exit', () => {
+  process.on('exit', (code) => {
+    logger.log(`Exiting with code [${code}]`);
     logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
     rimraf.sync(dumpTmpDir);
   });
@@ -423,9 +424,14 @@ async function execute(argv: any) {
       { type: 'css', moduleList: moduleDependencies.styleDependenciesList },
     ];
 
-    allDependenciesWithType.forEach(({ type, moduleList }) => moduleList.forEach((oneModule) => downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any)));
+    logger.log(`Downloading module dependencies`);
+    await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {
+      return await mapLimit(moduleList, downloader.speed, (oneModule) => {
+        return downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any);
+      });
+    }));
 
-    logger.log(`Found [${mediaDependencies.length}] dependencies`);
+    logger.log(`Downloading [${mediaDependencies.length}] media dependencies`);
     filesToDownload = filesToDownload.concat(
       mediaDependencies.map((m) => {
         return {

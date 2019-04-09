@@ -64,6 +64,16 @@ class Downloader {
         module: 'node_modules/parsoid/lib/index.js',
         entrypoint: 'apiServiceWorker',
         conf: {
+          timeouts: {
+            // request: 4 * 60 * 1000, // Default
+            request: 8 * 60 * 1000,
+          },
+          limits: {
+            wt2html: {
+              // maxWikitextSize: 1000000, // Default
+              maxWikitextSize: 1000000 * 2,
+            },
+          },
           mwApis: [{
             uri: `${this.mw.base + this.mw.apiPath}`,
           }],

@@ -112,7 +112,7 @@ export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: stri
     return itemsWithHighestRequiredRes;
 }
 
-export function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
     // param :
     //   module : string : the name of the module
     //   moduleUri : string : the path where the module will be saved into the zim
@@ -141,13 +141,10 @@ export function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: 
         return jsCode;
     }
 
-    let moduleUri: string;
     let apiParameterOnly;
     if (type === 'js') {
-        moduleUri = pathParser.resolve(dump.opts.tmpDir, jsPath(config, module));
         apiParameterOnly = 'scripts';
     } else if (type === 'css') {
-        moduleUri = pathParser.resolve(dump.opts.tmpDir, cssPath(config, module));
         apiParameterOnly = 'styles';
     }
 
@@ -155,32 +152,24 @@ export function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: 
         `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
     );
     logger.info(`Getting [${type}] module [${moduleApiUrl}]`);
-    return redis.saveModuleIfNotExists(dump, module, moduleUri, type)
-        .then(async (redisResult) => {
-            if (redisResult === 1) {
-                const { content } = await downloader.downloadContent(moduleApiUrl);
-                let text = content.toString();
-                if (module === 'startup' && type === 'js') {
-                    text = hackStartUpModule(text);
-                } else if (module === 'mediawiki' && type === 'js') {
-                    text = hackMediaWikiModule(text);
-                }
 
-                try {
-                    const articleId = type === 'js'
-                        ? jsPath(config, module)
-                        : cssPath(config, module);
-                    const article = new ZimArticle({ url: articleId, data: text, ns: '-' });
-                    await zimCreator.addArticle(article);
-                    logger.info(`created dep ${module} for article ${articleId}`);
-                } catch (e) {
-                    logger.warn(`Error writing file ${moduleUri} ${e}`);
-                }
-            } else {
-                return Promise.resolve();
-            }
-        })
-        .catch((e) => {
-            logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
-        });
+    const { content } = await downloader.downloadContent(moduleApiUrl);
+    let text = content.toString();
+    if (module === 'startup' && type === 'js') {
+        text = hackStartUpModule(text);
+    } else if (module === 'mediawiki' && type === 'js') {
+        text = hackMediaWikiModule(text);
+    }
+
+    try {
+        const articleId = type === 'js'
+            ? jsPath(config, module)
+            : cssPath(config, module);
+        const article = new ZimArticle({ url: articleId, data: text, ns: '-' });
+        await zimCreator.addArticle(article);
+        logger.info(`Saved module [${module}]`);
+    } catch (e) {
+        logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
+        throw e;
+    }
 }
