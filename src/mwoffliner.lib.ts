@@ -318,7 +318,7 @@ async function execute(argv: any) {
         debugger;
         throw err;
       }
-      logger.log(`Finished dump: [${dump}]`);
+      logger.log(`Finished dump`);
     }
   }
 
