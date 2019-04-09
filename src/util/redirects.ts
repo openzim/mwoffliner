@@ -3,11 +3,12 @@ import { mapLimit } from '.';
 import Redis from '../redis';
 import MediaWiki from '../MediaWiki';
 import { queryMw } from 'mw-query';
+import { articleDetailXId } from '../articleDetail';
 
 export async function getArticleIds(downloader: Downloader, redis: Redis, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
     let out;
     if (articleIds) {
-        out = getInfoForArticleIds(articleIds, mw);
+        await getInfoForArticleIds(articleIds, mw);
     } else {
         const namespaceVals = await getInfoForNamespaces(downloader, mw);
         out = namespaceVals
@@ -34,6 +35,7 @@ export async function getArticleIds(downloader: Downloader, redis: Redis, mw: Me
             getInfoForArticleIds([mainPage], mw),
         );
     }
+
     return out;
 }
 
@@ -50,6 +52,10 @@ async function getInfoForArticleIds(articleIds: string[], mw: MediaWiki) {
             pageimages: {},
         },
         articleIds,
+        async (articlesRet) => {
+            console.info(`Found [${Object.keys(articlesRet).length}] article ids`);
+            articleDetailXId.setMany(articlesRet as KVS<ArticleDetail>);
+        },
     );
 }
 
@@ -71,6 +77,11 @@ async function getArticleIdsForNamespace(downloader: Downloader, mw: MediaWiki, 
                 gapnamespace: String(mw.namespaces[namespace].num),
                 rawcontinue: 'true',
             },
+        },
+        null,
+        async (articlesRet) => {
+            console.info(`Found [${Object.keys(articlesRet).length}] article ids for namespace`);
+            articleDetailXId.setMany(articlesRet as KVS<ArticleDetail>);
         },
     );
 

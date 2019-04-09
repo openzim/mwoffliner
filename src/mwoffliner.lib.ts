@@ -236,6 +236,7 @@ async function execute(argv: any) {
   let articleListLines: string[];
   try {
     articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').filter((a) => a).map((a) => a.replace(/ /g, '_')) : [];
+    logger.info(`ArticleList has [${articleListLines.length}] items`);
   } catch (err) {
     logger.error(`Failed to read articleList from [${articleList}]`, err);
     throw err;
@@ -243,9 +244,8 @@ async function execute(argv: any) {
 
   await mw.getNamespaces(addNamespaces, downloader);
 
-  const articlesRet = await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
-
-  await articleDetailXId.setMany(articlesRet as KVS<ArticleDetail>);
+  logger.info(`Getting article ids`);
+  await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
 
   // const categoriesWithArticleChildren = new Set<string>([]);
   // let articleIds = await articleDetailXId.keys();

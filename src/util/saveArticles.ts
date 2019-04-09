@@ -28,6 +28,7 @@ interface SaveArticlesRet {
 export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
 
     const articleIds = await articleDetailXId.keys();
+    console.log(`Found [${articleIds.length}] article ids`);
 
     logger.log('Saving articles...');
     return mapLimit(
