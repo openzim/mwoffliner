@@ -106,7 +106,7 @@ class MediaWiki {
         const allowedSubpages = ('subpages' in entry);
         const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
         const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
-        const isCategory = canonical === 'Category';
+        const isCategory = false && canonical === 'Category';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
         self.namespaces[U.lcFirst(name)] = details;

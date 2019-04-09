@@ -13,8 +13,8 @@
                 "--mwUrl=https://bm.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
                 "--verbose",
-                "--format=nozim",
-                // "--articleList=./articleList",
+                "--format=novid",
+                // "--articleList=https://download.kiwix.org/wp1/enwiki_2019-01/tops/100",
                 "--redis=redis://127.0.0.1:6379"
                 // "--customZimFavicon=test.png"
             ]
