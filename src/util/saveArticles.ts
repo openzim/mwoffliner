@@ -30,11 +30,25 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
     const articleIds = await articleDetailXId.keys();
     logger.info(`Found [${articleIds.length}] article ids`);
 
+    const mediaDependencies: {
+        [url: string]: string,
+    } = {};
+    const jsModuleDependencies = new Set<string>();
+    const cssModuleDependencies = new Set<string>();
+
     logger.log('Saving articles...');
-    return mapLimit(
+    let savingArticleIndex = 0;
+    let jsConfigVars: string;
+    await mapLimit(
         articleIds,
         downloader.speed,
         async (articleId) => {
+            savingArticleIndex += 1;
+
+            if ((savingArticleIndex % 50) === 0) {
+                logger.log(`Progress saving articles [${savingArticleIndex}/${articleIds.length}] [${Math.floor(savingArticleIndex / articleIds.length * 100)}%]`);
+            }
+
             try {
                 const articleDetail = await articleDetailXId.get(articleId);
                 const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
@@ -49,51 +63,43 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                     return null;
                 }
 
-                const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
+                const { articleDoc, mediaDependencies: _mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
 
-                const moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
+                for (const dep of _mediaDependencies) {
+                    mediaDependencies[dep.url] = dep.path;
+                }
 
-                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetail);
+                const _moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
+
+                for (const dep of _moduleDependencies.jsDependenciesList) {
+                    jsModuleDependencies.add(dep);
+                }
+                for (const dep of _moduleDependencies.styleDependenciesList) {
+                    cssModuleDependencies.add(dep);
+                }
+
+                jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
+
+                const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
 
                 const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                 await zimCreator.addArticle(zimArticle);
 
-                return {
-                    mediaDependencies: mediaDependencies.reduce((acc, arr) => acc.concat(arr), []),
-                    moduleDependencies,
-                };
             } catch (err) {
                 logger.error(`Error downloading article [${articleId}], skipping`, err);
                 await articleDetailXId.delete(articleId);
-                return null;
             }
         },
-    ).then(async (as) => {
-        const a = as.filter((a) => a)[0];
-        const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: a.moduleDependencies.jsConfigVars[0], ns: '-' });
-        await zimCreator.addArticle(article);
-        const ret = as.filter((a) => a)
-            .reduce((acc: SaveArticlesRet, val) => {
-                acc.mediaDependencies = acc.mediaDependencies.concat(val.mediaDependencies);
-                acc.moduleDependencies.jsDependenciesList = acc.moduleDependencies.jsDependenciesList.concat(val.moduleDependencies.jsDependenciesList);
-                acc.moduleDependencies.styleDependenciesList = acc.moduleDependencies.styleDependenciesList.concat(val.moduleDependencies.styleDependenciesList);
-                return acc;
-            }, {
-                    mediaDependencies: [],
-                    moduleDependencies: {
-                        jsDependenciesList: [],
-                        styleDependenciesList: [],
-                    },
-                },
-            );
+    );
 
-        // De-dup
-        ret.moduleDependencies.jsDependenciesList = ret.moduleDependencies.jsDependenciesList.sort().filter((a, i, arr) => a !== arr[i + 1]);
-        ret.moduleDependencies.styleDependenciesList = ret.moduleDependencies.styleDependenciesList.sort().filter((a, i, arr) => a !== arr[i + 1]);
+    const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
+    await zimCreator.addArticle(jsConfigVarArticle);
 
-        return ret;
-    });
-
+    return {
+        mediaDependencies,
+        jsModuleDependencies,
+        cssModuleDependencies,
+    };
 }
 
 async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {

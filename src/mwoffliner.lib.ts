@@ -414,14 +414,14 @@ async function execute(argv: any) {
 
     logger.log(`Getting articles`);
 
-    const { mediaDependencies, moduleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump);
+    const { mediaDependencies, jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump);
 
-    logger.log(`Found [${moduleDependencies.jsDependenciesList.length}] js module dependencies`);
-    logger.log(`Found [${moduleDependencies.styleDependenciesList.length}] style module dependencies`);
+    logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`);
+    logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`);
 
     const allDependenciesWithType = [
-      { type: 'js', moduleList: moduleDependencies.jsDependenciesList },
-      { type: 'css', moduleList: moduleDependencies.styleDependenciesList },
+      { type: 'js', moduleList: Array.from(jsModuleDependencies) },
+      { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ];
 
     logger.log(`Downloading module dependencies`);
@@ -433,9 +433,10 @@ async function execute(argv: any) {
 
     logger.log(`Downloading [${mediaDependencies.length}] media dependencies`);
     filesToDownload = filesToDownload.concat(
-      mediaDependencies.map((m) => {
+      Object.entries(mediaDependencies).map(([url, path]) => {
         return {
-          ...m,
+          url,
+          path,
           namespace: 'I',
         };
       }),
@@ -445,7 +446,13 @@ async function execute(argv: any) {
 
     // Download Media Items
     logger.log(`Downloading [${filesToDownload.length}] files`);
+    let fileDownloadIndex = 0;
     await mapLimit(filesToDownload, speed, async ({ url, path, namespace }) => {
+      fileDownloadIndex += 1;
+
+      if (fileDownloadIndex % 100 === 0) {
+        logger.log(`Downloading file [${fileDownloadIndex}/${filesToDownload.length}] [${Math.floor(fileDownloadIndex / filesToDownload.length * 100)}%]`);
+      }
       try {
         let content;
         const resp = await downloader.downloadContent(url);
