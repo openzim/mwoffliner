@@ -16,6 +16,8 @@ import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
 import { articleDetailXId } from './articleDetail';
+import { normalizeMwResponse } from './util/mw-api';
+import deepmerge from 'deepmerge';
 
 const imageminOptions = {
   plugins: [
@@ -112,6 +114,83 @@ class Downloader {
 
   public query(query: string): KVS<any> {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
+  }
+
+  public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
+    const queryOpts = {
+      titles: articleIds.join('|'),
+      prop: `redirects|coordinates|revisions|pageimages`,
+      action: 'query',
+      format: 'json',
+      rdlimit: 'max',
+      colimit: 'max',
+      ...(continuation || {}),
+    };
+
+    const queryString = objToQueryString(queryOpts);
+    const reqUrl = `${this.mw.apiUrl}${queryString}`;
+
+    const resp = await this.getJSON<MwApiResponse>(reqUrl);
+    const processedResponse = normalizeMwResponse(resp.query);
+    if (resp.continue) {
+
+      const nextResp = await this.getArticleDetailsIds(articleIds, resp.continue);
+
+      return deepmerge(processedResponse, nextResp);
+
+    } else {
+      return processedResponse;
+    }
+  }
+
+  public async getArticleDetailsNS(ns: number, gapcontinue: string = '', queryContinuation?: QueryContinueOpts): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
+    const queryOpts: KVS<string> = {
+      action: 'query',
+      format: 'json',
+      prop: `coordinates|revisions|redirects`, // categories
+      generator: 'allpages',
+      gapfilterredir: 'nonredirects',
+      gaplimit: 'max',
+      gapnamespace: String(ns),
+      rawcontinue: 'true',
+      rdlimit: 'max',
+      gapcontinue,
+    };
+
+    if (queryContinuation) {
+      if (queryContinuation.pageimages.picontinue) {
+        queryOpts.picontinue = queryContinuation.pageimages.picontinue
+      }
+    }
+
+    const queryString = objToQueryString(queryOpts);
+    const reqUrl = `${this.mw.apiUrl}${queryString}`;
+
+    const resp = await this.getJSON<MwApiResponse>(reqUrl);
+
+    const processedResponse = normalizeMwResponse(resp.query);
+
+    let gCont: string = null;
+    try {
+      gCont = resp['query-continue'].allpages.gapcontinue;
+    } catch (err) { /* NOOP */ }
+
+    const queryComplete = Object.keys(resp['query-continue'] || {}).filter(key => key !== 'allpages').length === 0;
+
+    if (!queryComplete) {
+      const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, queryContinuation);
+
+      return {
+        articleDetails: deepmerge(processedResponse, nextResp.articleDetails),
+        gapContinue: gCont,
+      };
+    } else {
+      return {
+        articleDetails: processedResponse,
+        gapContinue: gCont,
+      };
+    }
+
   }
 
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
@@ -295,3 +374,13 @@ class Downloader {
 }
 
 export default Downloader;
+
+function objToQueryString(obj: KVS<any>) {
+  const str = [];
+  for (const p in obj) {
+    if (obj.hasOwnProperty(p)) {
+      str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+    }
+  }
+  return str.join('&');
+}

@@ -73,4 +73,16 @@ export class RedisKvs<T> {
             });
         });
     }
+
+    public flush() {
+        return new Promise<void>((resolve, reject) => {
+            this.redisClient.hdel(this.dbName, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
 }
