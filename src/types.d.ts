@@ -147,6 +147,7 @@ interface MwApiResponse {
             [key: string]: string;
         },
     };
+    error?: any
 }
 
 interface QueryMwRet {

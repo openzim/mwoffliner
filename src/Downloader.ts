@@ -131,6 +131,14 @@ class Downloader {
     const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
+    if (resp.warnings) {
+      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    }
+
+    if (resp.error) {
+      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    }
+
     const processedResponse = normalizeMwResponse(resp.query);
     if (resp.continue) {
 
@@ -167,6 +175,13 @@ class Downloader {
     const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
+    if (resp.warnings) {
+      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    }
+
+    if (resp.error) {
+      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    }
 
     const processedResponse = normalizeMwResponse(resp.query);
 
