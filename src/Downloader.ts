@@ -159,7 +159,7 @@ class Downloader {
 
     if (queryContinuation) {
       if (queryContinuation.pageimages.picontinue) {
-        queryOpts.picontinue = queryContinuation.pageimages.picontinue
+        queryOpts.picontinue = queryContinuation.pageimages.picontinue;
       }
     }
 
@@ -175,7 +175,7 @@ class Downloader {
       gCont = resp['query-continue'].allpages.gapcontinue;
     } catch (err) { /* NOOP */ }
 
-    const queryComplete = Object.keys(resp['query-continue'] || {}).filter(key => key !== 'allpages').length === 0;
+    const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => key !== 'allpages').length === 0;
 
     if (!queryComplete) {
       const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, queryContinuation);
