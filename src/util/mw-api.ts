@@ -1,5 +1,5 @@
 import Downloader from '../Downloader';
-import { mapLimit } from './mapLimit';
+import { mapLimit } from 'promiso';
 import { articleDetailXId } from '../articleDetail';
 import logger from '../Logger';
 
