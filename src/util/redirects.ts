@@ -1,5 +1,5 @@
 import Downloader from '../Downloader';
-import { mapLimit } from '.';
+import { mapLimit } from 'promiso';
 import Redis from '../redis';
 import MediaWiki from '../MediaWiki';
 import { getArticlesByIds, getArticlesByNS } from './mw-api';

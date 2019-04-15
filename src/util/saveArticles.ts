@@ -8,7 +8,7 @@ import * as urlParser from 'url';
 import DU from '../DOMUtils';
 import * as domino from 'domino';
 import { Dump } from '../Dump';
-import { mapLimit } from './mapLimit';
+import { mapLimit } from 'promiso';
 import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
