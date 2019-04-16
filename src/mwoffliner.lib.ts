@@ -584,6 +584,9 @@ async function execute(argv: any) {
           allArticles.push(articleDetail);
           if (articleDetail.thumbnail) {
             articlesWithImages.push(articleDetail);
+            if (articlesWithImages.length >= 100) {
+              break;
+            }
           } else {
             articlesWithoutImages.push(articleDetail);
           }
