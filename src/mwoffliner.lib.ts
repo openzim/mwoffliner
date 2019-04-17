@@ -14,6 +14,7 @@ import axios from 'axios';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import homeDirExpander from 'expand-home-dir';
 import rimraf from 'rimraf';
+import im from 'imagemagick';
 
 import { config } from './config';
 import Downloader from './Downloader';
@@ -443,7 +444,7 @@ async function execute(argv: any) {
       });
     }));
 
-    logger.log(`Downloading [${mediaDependencies.length}] media dependencies`);
+    logger.log(`Downloading [${Object.keys(mediaDependencies).length}] media dependencies`);
     filesToDownload = filesToDownload.concat(
       Object.entries(mediaDependencies).map(([url, path]) => {
         return {
@@ -518,19 +519,15 @@ async function execute(argv: any) {
 
     function resizeFavicon(zimCreator: ZimCreator, faviconPath: string) {
       return new Promise((resolve, reject) => {
-        const cmd = `convert -thumbnail 48 "${faviconPath}" "${faviconPath}.tmp" ; mv "${faviconPath}.tmp" "${faviconPath}" `;
-        exec(cmd, (error) => {
-          if (error) {
-            reject();
+        im.convert([faviconPath, '-thumbnail', '48', faviconPath], (err) => {
+          if (err) {
+            reject(err);
           } else {
             readFilePromise(faviconPath, null).then((faviconContent) => {
               const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
               return zimCreator.addArticle(article);
             }).then(resolve, reject);
           }
-        }).on('error', (error) => {
-          reject(error);
-          // console.error(error);
         });
       });
     }
@@ -555,7 +552,7 @@ async function execute(argv: any) {
       if (ext !== 'png') {
         logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
         await new Promise((resolve, reject) => {
-          exec(`convert ${faviconPath} ${faviconFinalPath}`, (err) => {
+          im.convert([faviconPath, faviconFinalPath], (err) => {
             if (err) {
               reject(err);
             } else {
