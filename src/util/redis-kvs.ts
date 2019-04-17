@@ -76,7 +76,7 @@ export class RedisKvs<T> {
 
     public flush() {
         return new Promise<void>((resolve, reject) => {
-            this.redisClient.hdel(this.dbName, (err) => {
+            this.redisClient.del(this.dbName, (err) => {
                 if (err) {
                     reject(err);
                 } else {
