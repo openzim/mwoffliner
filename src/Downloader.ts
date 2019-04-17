@@ -3,15 +3,12 @@ import logger from './Logger';
 
 import * as urlParser from 'url';
 import ServiceRunner from 'service-runner';
-import * as domino from 'domino';
 import * as imagemin from 'imagemin';
 import imageminJpegoptim from 'imagemin-jpegoptim';
-import imageminJpegtran from 'imagemin-jpegtran';
 import imageminAdvPng from 'imagemin-advpng';
 import imageminPngquant from 'imagemin-pngquant';
-import imageminOptiPng from 'imagemin-optipng';
 import imageminGifsicle from 'imagemin-gifsicle';
-import { renderDesktopArticle, renderMCSArticle } from './util';
+import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
@@ -229,16 +226,18 @@ class Downloader {
       }
 
       if (useParsoidFallback) {
+        const html = renderDesktopArticle(json, articleId);
+        const strippedTitle = getStrippedTitleFromHtml(html);
         return {
-          displayTitle: articleId.replace('_', ' '),
-          html: renderDesktopArticle(json, articleId),
+          displayTitle: strippedTitle || articleId.replace('_', ' '),
+          html,
         };
       } else {
-        const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
-        const strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+        const html = renderMCSArticle(json, dump, articleId, articleDetail);
+        const strippedTitle = getStrippedTitleFromHtml(html);
         return {
           displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
-          html: renderMCSArticle(json, dump, articleId, articleDetail),
+          html,
         };
       }
 
