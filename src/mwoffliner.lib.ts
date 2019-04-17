@@ -86,6 +86,36 @@ async function execute(argv: any) {
   const cacheDirectory = _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : 'cac/';
   const tmpDirectory = os.tmpdir();
 
+  // Tmp Dirs
+  const dumpId = `mwo-dump-${Date.now()}`;
+  const dumpTmpDir = path.resolve(tmpDirectory, `${dumpId}`);
+  try {
+    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
+    await mkdirPromise(dumpTmpDir);
+  } catch (err) {
+    logger.error(`Failed to create dump temporary directory, exiting`, err);
+    throw err;
+  }
+
+  process.on('exit', async (code) => {
+    logger.log(`Exiting with code [${code}]`);
+    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
+    rimraf.sync(dumpTmpDir);
+
+    logger.log(`Flushing REDIS DBs`);
+    articleDetailXId.flush();
+    await redis.flushDBs();
+    await redis.quit();
+  });
+  process.on('SIGTERM', () => {
+    logger.log(`SIGTERM`);
+    process.exit(0);
+  });
+  process.on('SIGINT', () => {
+    logger.log(`SIGINT`);
+    process.exit(0);
+  });
+
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
   if (!isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
@@ -156,22 +186,6 @@ async function execute(argv: any) {
   const dumps = getDumps(format);
 
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
-
-  const dumpId = `mwo-dump-${Date.now()}`;
-  const dumpTmpDir = path.resolve(tmpDirectory, `${dumpId}`);
-  try {
-    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
-    await mkdirPromise(dumpTmpDir);
-  } catch (err) {
-    logger.error(`Failed to create dump temporary directory, exiting`, err);
-    throw err;
-  }
-
-  process.on('exit', (code) => {
-    logger.log(`Exiting with code [${code}]`);
-    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
-    rimraf.sync(dumpTmpDir);
-  });
 
   /* ZIM custom Favicon */
   if (customZimFavicon) {
@@ -303,7 +317,7 @@ async function execute(argv: any) {
       minifyHtml,
       keepEmptyParagraphs,
     }, mwMetaData);
-    logger.log(`Doing dump: [${dump}]`);
+    logger.log(`Doing dump`);
     let shouldSkip = false;
     try {
       dump.checkResume();
@@ -312,7 +326,7 @@ async function execute(argv: any) {
     }
 
     if (shouldSkip) {
-      logger.log(`Skipping dump: [${dump}]`);
+      logger.log(`Skipping dump`);
     } else {
       try {
         await doDump(dump);
@@ -331,9 +345,6 @@ async function execute(argv: any) {
     logger.log('Cleaning cache');
     await exec(`find "${cacheDirectory}" -type f -not -newer "${cacheDirectory}ref" -exec rm {} \\;`);
   }
-
-  await redis.flushDBs();
-  await redis.quit();
   logger.log('Closing HTTP agents...');
 
   logger.log('All dumping(s) finished with success.');

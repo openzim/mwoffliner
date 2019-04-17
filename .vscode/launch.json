@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/bin/mwoffliner.script.js",
             "args": [
-                "--mwUrl=https://en.wikipedia.org",
+                "--mwUrl=https://br.wikipedia.org",
                 "--adminEmail=admin@kiwix.com",
                 // "--verbose",
                 // "--format=nozim",
