@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import domino from 'domino';
 import unicodeCutter from 'utf8-binary-cutter';
 import countryLanguage from 'country-language';
 import fs from 'fs';
@@ -265,4 +266,9 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
   }
 
   return `${dir}/${e(filename)}`;
+}
+
+export function getStrippedTitleFromHtml(html: string) {
+  const doc = domino.createDocument(html);
+  return doc.querySelector('title').textContent;
 }

@@ -18,13 +18,6 @@ import { articleDetailXId } from '../articleDetail';
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
 
-interface SaveArticlesRet {
-    mediaDependencies: Array<{ url: string, path: string }>;
-    moduleDependencies: {
-        jsDependenciesList: string[];
-        styleDependenciesList: string[];
-    };
-}
 export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
 
     const articleIds = await articleDetailXId.keys();
@@ -86,7 +79,7 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                 await zimCreator.addArticle(zimArticle);
 
             } catch (err) {
-                logger.error(`Error downloading article [${articleId}], skipping`, err);
+                logger.warn(`Error downloading article [${articleId}], skipping`, err);
                 await articleDetailXId.delete(articleId);
             }
         },
