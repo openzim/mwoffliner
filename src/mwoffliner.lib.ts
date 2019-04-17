@@ -110,11 +110,11 @@ async function execute(argv: any) {
   });
   process.on('SIGTERM', () => {
     logger.log(`SIGTERM`);
-    process.exit(0);
+    process.exit(128 + 15);
   });
   process.on('SIGINT', () => {
     logger.log(`SIGINT`);
-    process.exit(0);
+    process.exit(128 + 2);
   });
 
   /* HTTP user-agent string */
