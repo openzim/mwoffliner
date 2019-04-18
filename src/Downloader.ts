@@ -122,7 +122,7 @@ class Downloader {
       format: 'json',
       rdlimit: 'max',
       colimit: 'max',
-      cllimit: 'max',
+      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
       ...(continuation || {}),
     };
 
@@ -161,8 +161,8 @@ class Downloader {
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
-      cllimit: 'max',
       gapcontinue,
+      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
     };
 
     if (queryContinuation) {
