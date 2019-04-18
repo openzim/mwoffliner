@@ -1,5 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import logger from './Logger';
+import domino from 'domino';
 
 import * as urlParser from 'url';
 import ServiceRunner from 'service-runner';
@@ -116,11 +117,12 @@ class Downloader {
   public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
     const queryOpts = {
       titles: articleIds.join('|'),
-      prop: `redirects|coordinates|revisions|pageimages`,
+      prop: `redirects|coordinates|revisions|pageimages${this.mw.getCategories ? '|categories' : ''}`,
       action: 'query',
       format: 'json',
       rdlimit: 'max',
       colimit: 'max',
+      cllimit: 'max',
       ...(continuation || {}),
     };
 
@@ -152,19 +154,29 @@ class Downloader {
     const queryOpts: KVS<string> = {
       action: 'query',
       format: 'json',
-      prop: `coordinates|revisions|redirects`, // categories
+      prop: `coordinates|revisions|redirects${this.mw.getCategories ? '|categories' : ''}`,
       generator: 'allpages',
       gapfilterredir: 'nonredirects',
       gaplimit: 'max',
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
+      cllimit: 'max',
       gapcontinue,
     };
 
     if (queryContinuation) {
-      if (queryContinuation.pageimages.picontinue) {
+      if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
+        queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
+      }
+      if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
+        queryOpts.clcontinue = queryContinuation.categories.clcontinue;
+      }
+      if (queryContinuation.pageimages && queryContinuation.pageimages.picontinue) {
         queryOpts.picontinue = queryContinuation.pageimages.picontinue;
+      }
+      if (queryContinuation.redirects && queryContinuation.redirects.rdcontinue) {
+        queryOpts.rdcontinue = queryContinuation.redirects.rdcontinue;
       }
     }
 
@@ -190,7 +202,7 @@ class Downloader {
     const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => key !== 'allpages').length === 0;
 
     if (!queryComplete) {
-      const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, queryContinuation);
+      const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, resp['query-continue']);
 
       return {
         articleDetails: deepmerge(processedResponse, nextResp.articleDetails),
@@ -234,7 +246,11 @@ class Downloader {
         };
       } else {
         const html = renderMCSArticle(json, dump, articleId, articleDetail);
-        const strippedTitle = getStrippedTitleFromHtml(html);
+        let strippedTitle = getStrippedTitleFromHtml(html);
+        if (!strippedTitle) {
+          const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
+          strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+        }
         return {
           displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
           html,

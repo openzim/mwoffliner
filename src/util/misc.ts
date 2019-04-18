@@ -68,6 +68,21 @@ export function getFullUrl(webUrlHost: string, url: string, baseUrl?: string) {
   return url;
 }
 
+export function getSizeFromUrl(url: string) {
+  let mult = 1;
+  let width = 1 * 10e6; // dummy value for unscaled media
+  const widthMatch = url.match(/\/([0-9]+)px-/);
+  if (widthMatch) {
+    width = Number(widthMatch[1]);
+  } else {
+    const multMatch = url.match(/-([0-9.]+)x\./);
+    if (multMatch) {
+      mult = Number(multMatch[1]);
+    }
+  }
+  return { mult, width };
+}
+
 export function randomString(len: number) {
   let str = '';
   const charSet = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -270,5 +285,10 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
 
 export function getStrippedTitleFromHtml(html: string) {
   const doc = domino.createDocument(html);
-  return doc.querySelector('title').textContent;
+  const titleEl = doc.querySelector('title');
+  if (titleEl) {
+    return titleEl.textContent;
+  } else {
+    return '';
+  }
 }

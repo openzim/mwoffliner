@@ -44,8 +44,17 @@ interface ContinueOpts {
 }
 
 interface QueryContinueOpts {
+    categories: {
+        clcontinue: string;
+    }
+    coordinates: {
+        cocontinue: string;
+    }
     allpages: {
         gapcontinue: string;
+    },
+    redirects: {
+        rdcontinue: string;
     },
     pageimages: {
         picontinue: string;

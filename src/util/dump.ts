@@ -9,9 +9,9 @@ import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import Redis from '../redis';
 import { Dump } from '../Dump';
+import { filesToDownloadXPath } from '../filesToDownload';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
-    const mediaItemsToDownload: Array<{ url: string, path: string }> = [];
     let finalCss = '';
     const urlCache: KVS<boolean> = {};
     const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
@@ -57,7 +57,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             /* Download CSS dependency, but avoid duplicate calls */
                             if (!urlCache.hasOwnProperty(url) && filename) {
                                 urlCache[url] = true;
-                                mediaItemsToDownload.push({ url, path: config.output.dirs.style + '/' + filename });
+                                filesToDownloadXPath.set(config.output.dirs.style + '/' + filename, { url, namespace: '-' });
                             }
                         } else {
                             logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
@@ -79,7 +79,6 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     }).then(() => {
         return {
             finalCss,
-            mediaItemsToDownload,
         };
     });
 }
