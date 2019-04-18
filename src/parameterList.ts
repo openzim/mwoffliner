@@ -58,6 +58,7 @@ const parameterList = [
   { name: 'verbose', description: 'Print debug information to the stdout', required: false },
   { name: 'withoutZimFullTextIndex', description: 'Don\'t include a fulltext search index to the ZIM', required: false },
   { name: 'addNamespaces', description: 'Force addional namespace (comma separated numbers)', required: false },
+  { name: 'getCategories', description: '[WIP] Download category pages', required: false },
 ];
 
 export default parameterList;

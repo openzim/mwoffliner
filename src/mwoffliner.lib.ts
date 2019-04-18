@@ -21,7 +21,7 @@ import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import parameterList from './parameterList';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl } from './util';
 import { mapLimit } from 'promiso';
 import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
@@ -30,8 +30,9 @@ import { getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
-import { saveArticles } from './util/saveArticles';
+import { saveArticles, downloadFiles } from './util/saveArticles';
 import { articleDetailXId, populateArticleDetail } from './articleDetail';
+import { filesToDownloadXPath, populateFilesToDownload } from './filesToDownload';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -136,6 +137,7 @@ async function execute(argv: any) {
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki({
+    getCategories: !!argv.getCategories,
     apiPath: mwApiPath,
     modulePath: mwModulePath,
     base: mwUrl,
@@ -224,6 +226,7 @@ async function execute(argv: any) {
   const redis = new Redis(argv, config);
   await redis.flushDBs();
   populateArticleDetail(redis.redisClient);
+  populateFilesToDownload(redis.redisClient);
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -351,8 +354,6 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
-    let filesToDownload: Array<{ url: string, path: string, namespace: string }> = [];
-
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
@@ -384,18 +385,9 @@ async function execute(argv: any) {
 
     logger.log(`Downloading stylesheets and populating media queue`);
     const {
-      mediaItemsToDownload,
       finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
-    logger.log(`Downloaded stylesheets, media queue is [${mediaItemsToDownload.length}] items`);
-    filesToDownload = filesToDownload.concat(
-      mediaItemsToDownload.map((m) => {
-        return {
-          ...m,
-          namespace: '-',
-        };
-      }),
-    );
+    logger.log(`Downloaded stylesheets`);
 
     const article = new ZimArticle({ url: `style.css`, data: finalCss, ns: '-' });
     await zimCreator.addArticle(article);
@@ -411,7 +403,8 @@ async function execute(argv: any) {
         const imageUrl = articleDetail.thumbnail;
         if (imageUrl) {
           const path = getMediaBase(imageUrl.source, false);
-          filesToDownload.push({ url: imageUrl.source, path, namespace: 'I' });
+          const { mult, width } = getSizeFromUrl(imageUrl.source);
+          filesToDownloadXPath.set(path, { url: imageUrl.source, namespace: 'I', mult, width });
 
           const resourceNamespace = 'I';
           const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl.source, true);
@@ -426,8 +419,7 @@ async function execute(argv: any) {
     await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
-
-    const { mediaDependencies, jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump);
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump);
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`);
     logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`);
@@ -444,39 +436,7 @@ async function execute(argv: any) {
       });
     }));
 
-    logger.log(`Downloading [${Object.keys(mediaDependencies).length}] media dependencies`);
-    filesToDownload = filesToDownload.concat(
-      Object.entries(mediaDependencies).map(([url, path]) => {
-        return {
-          url,
-          path,
-          namespace: 'I',
-        };
-      }),
-    );
-
-    filesToDownload = removeDuplicatesAndLowRes(filesToDownload);
-
-    // Download Media Items
-    logger.log(`Downloading [${filesToDownload.length}] files`);
-    let fileDownloadIndex = 0;
-    await mapLimit(filesToDownload, speed, async ({ url, path, namespace }) => {
-      fileDownloadIndex += 1;
-
-      if (fileDownloadIndex % 100 === 0) {
-        logger.log(`Downloading file [${fileDownloadIndex}/${filesToDownload.length}] [${Math.floor(fileDownloadIndex / filesToDownload.length * 100)}%]`);
-      }
-      try {
-        let content;
-        const resp = await downloader.downloadContent(url);
-        content = resp.content;
-
-        const article = new ZimArticle({ url: path, data: content, ns: namespace });
-        return zimCreator.addArticle(article);
-      } catch (err) {
-        logger.warn(`Failed to download item [${url}], skipping`);
-      }
-    }).then((a) => a.filter((a) => a));
+    await downloadFiles(zimCreator, downloader);
 
     logger.log(`Creating redirects`);
     await getRedirects(dump, zimCreator);
@@ -608,9 +568,6 @@ async function execute(argv: any) {
         const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n');
         doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
       }
-
-      // const dumpTitle = customZimTitle || (new URL(mwUrl)).host;
-      // doc.getElementById('title').textContent = dumpTitle;
 
       /* Write the static html file */
       const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), data: doc.documentElement.outerHTML, ns: 'A', mimeType: 'text/html', title: 'Main Page' });

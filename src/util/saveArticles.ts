@@ -14,82 +14,120 @@ import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import Redis from '../redis';
 import { articleDetailXId } from '../articleDetail';
+import { filesToDownloadXPath } from '../filesToDownload';
+import { getSizeFromUrl } from './misc';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
 
+export async function downloadFiles(zimCreator: ZimCreator, downloader: Downloader) {
+    const numKeys = await filesToDownloadXPath.len();
+    logger.log(`Downloading a total of [${numKeys}] files`);
+    let prevPercentProgress = -1;
+
+    await filesToDownloadXPath.iterateItems(async (fileDownloadPairs, fileDownloadIndex, percentProgress) => {
+        logger.log(`Processing batch of [${fileDownloadPairs.length}] files`);
+
+        await mapLimit(
+            fileDownloadPairs,
+            downloader.speed,
+            async ([path, { url, namespace, mult, width }]) => {
+
+                try {
+                    let content;
+                    const resp = await downloader.downloadContent(url);
+                    content = resp.content;
+
+                    const article = new ZimArticle({ url: path, data: content, ns: namespace });
+                    await zimCreator.addArticle(article);
+                } catch (err) {
+                    logger.warn(`Error downloading file [${url}], skipping`, err);
+                    await filesToDownloadXPath.delete(path);
+                }
+            },
+        );
+
+        if (percentProgress !== prevPercentProgress) {
+            prevPercentProgress = percentProgress;
+            logger.log(`Progress downloading files [${fileDownloadIndex}/${numKeys}] [${percentProgress}%]`);
+        }
+    });
+}
+
 export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
-
-    const articleIds = await articleDetailXId.keys();
-    logger.info(`Found [${articleIds.length}] article ids`);
-
-    const mediaDependencies: {
-        [url: string]: string,
-    } = {};
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
-
-    logger.log('Saving articles...');
-    let savingArticleIndex = 0;
     let jsConfigVars: string;
-    await mapLimit(
-        articleIds,
-        downloader.speed,
-        async (articleId) => {
-            savingArticleIndex += 1;
+    let prevPercentProgress = -1;
 
-            if ((savingArticleIndex % 50) === 0) {
-                logger.log(`Progress saving articles [${savingArticleIndex}/${articleIds.length}] [${Math.floor(savingArticleIndex / articleIds.length * 100)}%]`);
-            }
+    await articleDetailXId.iterateItems(async (articleKeyValuePairs, savingArticleIndex, percentProgress) => {
+        logger.log(`Processing batch of [${articleKeyValuePairs.length}] article ids`);
+        const numKeys = await articleDetailXId.len();
 
-            try {
-                const articleDetail = await articleDetailXId.get(articleId);
-                const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
-                let articleHtml: string;
-                let articleTitle = articleId;
-                const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
-                articleHtml = ret.html;
-                articleTitle = ret.displayTitle;
+        await mapLimit(
+            articleKeyValuePairs,
+            downloader.speed,
+            async ([articleId, articleDetail]) => {
 
-                if (!articleHtml) {
-                    logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
-                    return null;
+                try {
+                    const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
+                    let articleHtml: string;
+                    let articleTitle = articleId;
+                    const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
+                    articleHtml = ret.html;
+                    articleTitle = ret.displayTitle;
+
+                    if (!articleHtml) {
+                        logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
+                        return null;
+                    }
+
+                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
+
+                    for (const dep of mediaDependencies) {
+
+                        const { mult, width } = getSizeFromUrl(dep.url);
+
+                        const existingVal = await filesToDownloadXPath.get(dep.path);
+                        const currentDepIsHigherRes = !existingVal || existingVal.width < width || existingVal.mult < mult;
+                        if (currentDepIsHigherRes) {
+                            await filesToDownloadXPath.set(dep.path, { url: dep.url, namespace: 'I', mult, width });
+                        }
+                    }
+
+                    const _moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
+
+                    for (const dep of _moduleDependencies.jsDependenciesList) {
+                        jsModuleDependencies.add(dep);
+                    }
+                    for (const dep of _moduleDependencies.styleDependenciesList) {
+                        cssModuleDependencies.add(dep);
+                    }
+
+                    jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
+
+                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
+
+                    const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
+                    await zimCreator.addArticle(zimArticle);
+
+                } catch (err) {
+                    logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                    await articleDetailXId.delete(articleId);
                 }
+            },
+        );
 
-                const { articleDoc, mediaDependencies: _mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
-
-                for (const dep of _mediaDependencies) {
-                    mediaDependencies[dep.url] = dep.path;
-                }
-
-                const _moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
-
-                for (const dep of _moduleDependencies.jsDependenciesList) {
-                    jsModuleDependencies.add(dep);
-                }
-                for (const dep of _moduleDependencies.styleDependenciesList) {
-                    cssModuleDependencies.add(dep);
-                }
-
-                jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
-
-                const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
-
-                const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
-                await zimCreator.addArticle(zimArticle);
-
-            } catch (err) {
-                logger.warn(`Error downloading article [${articleId}], skipping`, err);
-                await articleDetailXId.delete(articleId);
-            }
-        },
-    );
+        if (percentProgress !== prevPercentProgress) {
+            prevPercentProgress = percentProgress;
+            logger.log(`Progress downloading articles [${savingArticleIndex}/${numKeys}] [${percentProgress}%]`);
+        }
+    });
 
     const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
     await zimCreator.addArticle(jsConfigVarArticle);
 
     return {
-        mediaDependencies,
         jsModuleDependencies,
         cssModuleDependencies,
     };
