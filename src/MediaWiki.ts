@@ -27,6 +27,7 @@ class MediaWiki {
     },
   };
   public namespacesToMirror: string[];
+  public numArticles: number;
 
   constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; getCategories: boolean; }) {
     // Normalize args
@@ -202,6 +203,7 @@ class MediaWiki {
     const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const body = await downloader.query(query);
     const entries = body.query.general;
+    this.numArticles = body.query.statistics.articles;
 
     const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
     const siteName = entries.sitename;
