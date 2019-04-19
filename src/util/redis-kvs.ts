@@ -21,6 +21,18 @@ export class RedisKvs<T> {
         });
     }
 
+    public getMany(prop: string[]) {
+        return new Promise<T[]>((resolve, reject) => {
+            this.redisClient.hmget(this.dbName, prop, (err, val) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(val.map((a) => JSON.parse(a)));
+                }
+            });
+        });
+    }
+
     public set(prop: string, val: T) {
         return new Promise((resolve, reject) => {
             const normalisedVal = typeof val !== 'string' ? JSON.stringify(val) : val;

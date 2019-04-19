@@ -70,6 +70,7 @@ interface PageInfo {
 type ArticleDetail = PageInfo & {
     subCategories?: PageInfo[],
     categories?: PageInfo[],
+    pages?: PageInfo[],
     thumbnail?: {
         source: string,
         height: number,

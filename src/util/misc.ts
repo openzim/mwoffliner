@@ -292,3 +292,11 @@ export function getStrippedTitleFromHtml(html: string) {
     return '';
   }
 }
+
+export function zip(...args: any[][]) {
+  const len = Math.max(...args.map((arr) => arr.length));
+  return ','.repeat(len).split(',')
+    .map((_, i) => {
+      return args.map((arr) => arr[i]);
+    });
+}
