@@ -121,7 +121,6 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
     return html;
 }
 
-
 function groupAlphabetical(items: Array<{ name: string, url: string }>) {
     const groupsAlphabetical = items.reduce((acc: any, item) => {
         const groupId = item.name[0].toLocaleUpperCase();
