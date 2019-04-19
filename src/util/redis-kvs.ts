@@ -101,7 +101,7 @@ export class RedisKvs<T> {
             const { cursor: nextCursor, items } = await this.hscan(cursor);
             cursor = nextCursor;
             index += items.length;
-            const percentageProgress = Math.round(index / len * 1000) / 100;
+            const percentageProgress = Math.round(index / len * 1000) / 10;
 
             const parsedItems: Array<[string, T]> = items.map(([key, strVal]) => [key, JSON.parse(strVal)]);
 
