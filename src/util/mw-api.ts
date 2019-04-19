@@ -2,6 +2,7 @@ import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
 import { articleDetailXId } from '../articleDetail';
 import logger from '../Logger';
+import { zip } from './misc';
 
 let batchSize = 50;
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, isCategory = false): Promise<void> {
@@ -26,17 +27,34 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                     if (articleIds.length) {
                         const articleDetails = await downloader.getArticleDetailsIds(articleIds);
                         await articleDetailXId.setMany(articleDetails);
-
+                        const foundCategoryMapping: { [categoryId: string]: string[] } = {};
                         if (downloader.mw.getCategories && !isCategory) {
-                            const categoriesToGet = Object.values(articleDetails)
-                                .reduce((acc, detail) => {
-                                    return acc.concat(detail.categories || []);
-                                }, [])
-                                .map((c) => c.title.replace(/ /g, '_'));
-                            if (categoriesToGet.length) {
-                                // TODO: check if category pages are already downloaded
-                                logger.log(`Found [${categoriesToGet.length}] categories for pages, downloading`);
-                                await getArticlesByIds(categoriesToGet, downloader, true);
+                            Object.assign(
+                                foundCategoryMapping,
+                                Object.entries(articleDetails)
+                                    .reduce((acc: any, [aId, detail]) => {
+                                        for (const cat of detail.categories || []) {
+                                            const catId = cat.title.replace(/ /g, '_');
+                                            acc[catId] = (acc[catId] || []).concat({ title: detail.title, pageid: detail.pageid, ns: detail.ns } as PageInfo);
+                                        }
+                                        return acc;
+                                    }, {}),
+                            );
+                        }
+                        // TODO: consider adding a --getSubCategories option
+
+                        const foundCategoryIds = Object.keys(foundCategoryMapping);
+                        if (foundCategoryIds.length) {
+                            const existingArticles = await articleDetailXId.getMany(foundCategoryIds);
+                            const categoriesToGet = foundCategoryIds.filter((c, index) => !existingArticles[index]);
+                            logger.log(`Found [${categoriesToGet.length}] categories for pages, downloading`);
+                            await getArticlesByIds(categoriesToGet, downloader, true);
+                            const catDetails = await articleDetailXId.getMany(foundCategoryIds);
+
+                            const catIdAndDetailPairs = zip(foundCategoryIds, catDetails);
+                            for (const [id, detail] of catIdAndDetailPairs) {
+                                detail.pages = (detail.pages || []).concat(foundCategoryMapping[id]);
+                                await articleDetailXId.set(id, detail);
                             }
                         }
                     }

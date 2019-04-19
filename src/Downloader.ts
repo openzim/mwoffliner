@@ -223,7 +223,7 @@ class Downloader {
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
       : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
 
-    logger.log(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
+    logger.info(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
 
     try {
       const articleDetail = await articleDetailXId.get(articleId);

@@ -21,6 +21,18 @@ export class RedisKvs<T> {
         });
     }
 
+    public getMany(prop: string[]) {
+        return new Promise<T[]>((resolve, reject) => {
+            this.redisClient.hmget(this.dbName, prop, (err, val) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(val.map((a) => JSON.parse(a)));
+                }
+            });
+        });
+    }
+
     public set(prop: string, val: T) {
         return new Promise((resolve, reject) => {
             const normalisedVal = typeof val !== 'string' ? JSON.stringify(val) : val;
@@ -101,7 +113,7 @@ export class RedisKvs<T> {
             const { cursor: nextCursor, items } = await this.hscan(cursor);
             cursor = nextCursor;
             index += items.length;
-            const percentageProgress = Math.round(index / len * 1000) / 100;
+            const percentageProgress = Math.round(index / len * 1000) / 10;
 
             const parsedItems: Array<[string, T]> = items.map(([key, strVal]) => [key, JSON.parse(strVal)]);
 

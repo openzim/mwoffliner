@@ -84,6 +84,8 @@ const config = {
 
       subCategories: './templates/subcategories.html',
 
+      subPages: './templates/subpages.html',
+
       articleListHomeTemplate: './templates/article_list_home.html',
 
       /* License footer template code */

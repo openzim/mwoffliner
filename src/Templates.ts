@@ -15,6 +15,7 @@ const sectionTemplate = swig.compile(readTemplate(config.output.templates.sectio
 const subSectionTemplate = swig.compile(readTemplate(config.output.templates.subsection_wrapper));
 const categoriesTemplate = swig.compile(readTemplate(config.output.templates.categories));
 const subCategoriesTemplate = swig.compile(readTemplate(config.output.templates.subCategories));
+const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPages));
 
 const htmlTemplateCode = (articleId: string) => {
     const cssLinks = config.output.cssResources.reduce((buf, css) => {
@@ -41,4 +42,5 @@ export {
     articleListHomeTemplate,
     categoriesTemplate,
     subCategoriesTemplate,
+    subPagesTemplate,
 };
