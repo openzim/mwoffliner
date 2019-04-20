@@ -402,12 +402,14 @@ async function execute(argv: any) {
         }
         const imageUrl = articleDetail.thumbnail;
         if (imageUrl) {
-          const path = getMediaBase(imageUrl.source, false);
-          const { mult, width } = getSizeFromUrl(imageUrl.source);
-          filesToDownloadXPath.set(path, { url: imageUrl.source, namespace: 'I', mult, width });
+          const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
+          const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
+          const { mult, width } = getSizeFromUrl(suitableResUrl);
+          const path = getMediaBase(suitableResUrl, false);
+          filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
 
           const resourceNamespace = 'I';
-          const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl.source, true);
+          const internalSrc = `../${resourceNamespace}/` + getMediaBase(suitableResUrl, true);
 
           articleDetail.internalThumbnailUrl = internalSrc;
           await articleDetailXId.set(articleId, articleDetail);

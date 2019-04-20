@@ -92,7 +92,43 @@ h2 {
     margin-left: 10%;
 }
 
-@media only screen and (min-width: 1024px) {
+@media only screen and (min-width: 4048px) {
+    h1 {
+        font-size: 1.5vw;
+    }
+    h2 {
+        font-size: 1vw;
+    }
+    #content .item {
+        width: 6.25%;
+    }
+    .nojs #content {
+        column-count: 16;
+    }
+    ul {
+        column-count: 16;
+    }
+}
+
+@media only screen and (max-width: 4047px) and (min-width: 2024px) {
+    h1 {
+        font-size: 3vw;
+    }
+    h2 {
+        font-size: 2vw;
+    }
+    #content .item {
+        width: 12.5%;
+    }
+    .nojs #content {
+        column-count: 8;
+    }
+    ul {
+        column-count: 8;
+    }
+}
+
+@media only screen and (max-width: 2023px) and (min-width: 1024px) {
     h1 {
         font-size: 6vw;
     }
