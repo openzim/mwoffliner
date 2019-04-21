@@ -9,15 +9,18 @@ html {
 } */
 
 body {
-    margin: 0; 
-    border-width: 0; 
+    margin: 0;
+    border-width: 0;
     padding: 0;
+    background: black;
+    display: flex;
+    justify-content: center;
 }
 
 h1,
 h2 {
     color: #333;
-    text-shadow:  #1114 1px 1px 1px;
+    text-shadow: #1114 1px 1px 1px;
     text-align: center;
     border-bottom: none;
     padding: 0;
@@ -28,6 +31,7 @@ h2 {
     overflow: hidden;
     font-size: 1em;
     background: black;
+    max-width: 8096px;
 }
 
 #list {
@@ -87,6 +91,7 @@ h2 {
 #footer {
     margin: 0;
 }
+
 #footer ul {
     margin: 0;
     margin-left: 10%;
@@ -96,15 +101,19 @@ h2 {
     h1 {
         font-size: 1.5vw;
     }
+
     h2 {
         font-size: 1vw;
     }
+
     #content .item {
         width: 6.25%;
     }
+
     .nojs #content {
         column-count: 16;
     }
+
     ul {
         column-count: 16;
     }
@@ -114,15 +123,19 @@ h2 {
     h1 {
         font-size: 3vw;
     }
+
     h2 {
         font-size: 2vw;
     }
+
     #content .item {
         width: 12.5%;
     }
+
     .nojs #content {
         column-count: 8;
     }
+
     ul {
         column-count: 8;
     }
@@ -132,15 +145,19 @@ h2 {
     h1 {
         font-size: 6vw;
     }
+
     h2 {
         font-size: 4vw;
     }
+
     #content .item {
         width: 25%;
     }
+
     .nojs #content {
         column-count: 4;
     }
+
     ul {
         column-count: 4;
     }
@@ -150,21 +167,27 @@ h2 {
     h1 {
         font-size: 6vw;
     }
+
     h2 {
         font-size: 4vw;
     }
+
     #content {
         font-size: 1em;
     }
+
     #content .item {
         width: 33.3333%;
     }
+
     .nojs #content {
         column-count: 3;
     }
+
     ul {
         column-count: 2;
     }
+
     #footer ul li {
         font-size: 0.9em;
     }
@@ -174,21 +197,27 @@ h2 {
     h1 {
         font-size: 7vw;
     }
+
     h2 {
         font-size: 5vw;
     }
+
     #content {
         font-size: 1.2em;
     }
+
     #content .item {
         width: 50%
     }
+
     .nojs #content {
         column-count: 2;
     }
+
     ul {
         column-count: 1;
     }
+
     #footer ul li {
         font-size: 1em;
     }
