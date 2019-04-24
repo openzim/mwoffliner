@@ -1,5 +1,6 @@
 #!/bin/sh
-':'; // # -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
+// tslint:disable-next-line
+':' //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
 
 'use strict';
 
