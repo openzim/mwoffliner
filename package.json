@@ -11,7 +11,6 @@
   },
   "scripts": {
     "mwoffliner": "node mwoffliner",
-    "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "./simple-test.sh",
     "snyk-protect": "exit 0;snyk protect",
     "prepare": "npm run snyk-protect",
@@ -22,11 +21,11 @@
     "redis:start": "docker run -p 6379:6379 --name redis-mwoffliner -d redis",
     "redis:kill": "docker rm -f redis-mwoffliner || :",
     "redis": "npm run redis:kill && npm run redis:start",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "debug": "TS_NODE_FILES=true node --inspect -r ts-node/register src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=admin@kiwix.com --verbose --redis=redis://127.0.0.1:6379 --format=nozim --articleList=../articleList"
   },
   "bin": {
-    "mwoffliner": "./bin/mwoffliner.script.js",
-    "mwmatrixoffliner": "./bin/mwmatrixoffliner.script.js"
+    "mwoffliner": "./lib/cli.js"
   },
   "repository": {
     "type": "git",
@@ -94,7 +93,8 @@
   "devDependencies": {
     "@percy/puppeteer": "^1.0.3",
     "eslint": "^5.14.0",
-    "puppeteer": "^1.12.2"
+    "puppeteer": "^1.12.2",
+    "ts-node": "^8.1.0"
   },
   "snyk": true
 }
