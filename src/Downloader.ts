@@ -1,21 +1,21 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import logger from './Logger';
+import domino from 'domino';
 
 import * as urlParser from 'url';
 import ServiceRunner from 'service-runner';
-import * as domino from 'domino';
 import * as imagemin from 'imagemin';
 import imageminJpegoptim from 'imagemin-jpegoptim';
-import imageminJpegtran from 'imagemin-jpegtran';
 import imageminAdvPng from 'imagemin-advpng';
 import imageminPngquant from 'imagemin-pngquant';
-import imageminOptiPng from 'imagemin-optipng';
 import imageminGifsicle from 'imagemin-gifsicle';
-import { renderDesktopArticle, renderMCSArticle } from './util';
+import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
 import { articleDetailXId } from './articleDetail';
+import { normalizeMwResponse } from './util/mw-api';
+import deepmerge from 'deepmerge';
 
 const imageminOptions = {
   plugins: [
@@ -64,6 +64,16 @@ class Downloader {
         module: 'node_modules/parsoid/lib/index.js',
         entrypoint: 'apiServiceWorker',
         conf: {
+          timeouts: {
+            // request: 4 * 60 * 1000, // Default
+            request: 8 * 60 * 1000,
+          },
+          limits: {
+            wt2html: {
+              // maxWikitextSize: 1000000, // Default
+              maxWikitextSize: 1000000 * 2,
+            },
+          },
           mwApis: [{
             uri: `${this.mw.base + this.mw.apiPath}`,
           }],
@@ -104,13 +114,116 @@ class Downloader {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
+  public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
+    const queryOpts = {
+      titles: articleIds.join('|'),
+      prop: `redirects|coordinates|revisions|pageimages${this.mw.getCategories ? '|categories' : ''}`,
+      action: 'query',
+      format: 'json',
+      rdlimit: 'max',
+      colimit: 'max',
+      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
+      ...(continuation || {}),
+    };
+
+    const queryString = objToQueryString(queryOpts);
+    const reqUrl = `${this.mw.apiUrl}${queryString}`;
+
+    const resp = await this.getJSON<MwApiResponse>(reqUrl);
+    if (resp.warnings) {
+      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    }
+
+    if (resp.error) {
+      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    }
+
+    const processedResponse = normalizeMwResponse(resp.query);
+    if (resp.continue) {
+
+      const nextResp = await this.getArticleDetailsIds(articleIds, resp.continue);
+
+      return deepmerge(processedResponse, nextResp);
+
+    } else {
+      return processedResponse;
+    }
+  }
+
+  public async getArticleDetailsNS(ns: number, gapcontinue: string = '', queryContinuation?: QueryContinueOpts): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
+    const queryOpts: KVS<string> = {
+      action: 'query',
+      format: 'json',
+      prop: `coordinates|revisions|redirects${this.mw.getCategories ? '|categories' : ''}`,
+      generator: 'allpages',
+      gapfilterredir: 'nonredirects',
+      gaplimit: 'max',
+      gapnamespace: String(ns),
+      rawcontinue: 'true',
+      rdlimit: 'max',
+      gapcontinue,
+      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
+    };
+
+    if (queryContinuation) {
+      if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
+        queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
+      }
+      if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
+        queryOpts.clcontinue = queryContinuation.categories.clcontinue;
+      }
+      if (queryContinuation.pageimages && queryContinuation.pageimages.picontinue) {
+        queryOpts.picontinue = queryContinuation.pageimages.picontinue;
+      }
+      if (queryContinuation.redirects && queryContinuation.redirects.rdcontinue) {
+        queryOpts.rdcontinue = queryContinuation.redirects.rdcontinue;
+      }
+    }
+
+    const queryString = objToQueryString(queryOpts);
+    const reqUrl = `${this.mw.apiUrl}${queryString}`;
+
+    const resp = await this.getJSON<MwApiResponse>(reqUrl);
+    if (resp.warnings) {
+      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    }
+
+    if (resp.error) {
+      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    }
+
+    const processedResponse = normalizeMwResponse(resp.query);
+
+    let gCont: string = null;
+    try {
+      gCont = resp['query-continue'].allpages.gapcontinue;
+    } catch (err) { /* NOOP */ }
+
+    const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => key !== 'allpages').length === 0;
+
+    if (!queryComplete) {
+      const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, resp['query-continue']);
+
+      return {
+        articleDetails: deepmerge(processedResponse, nextResp.articleDetails),
+        gapContinue: gCont,
+      };
+    } else {
+      return {
+        articleDetails: processedResponse,
+        gapContinue: gCont,
+      };
+    }
+
+  }
+
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
     logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
       : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
 
-    logger.log(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
+    logger.info(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
 
     try {
       const articleDetail = await articleDetailXId.get(articleId);
@@ -125,16 +238,22 @@ class Downloader {
       }
 
       if (useParsoidFallback) {
+        const html = renderDesktopArticle(json, articleId);
+        const strippedTitle = getStrippedTitleFromHtml(html);
         return {
-          displayTitle: articleId.replace('_', ' '),
-          html: renderDesktopArticle(json, articleId),
+          displayTitle: strippedTitle || articleId.replace('_', ' '),
+          html,
         };
       } else {
-        const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
-        const strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+        const html = renderMCSArticle(json, dump, articleId, articleDetail);
+        let strippedTitle = getStrippedTitleFromHtml(html);
+        if (!strippedTitle) {
+          const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
+          strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+        }
         return {
           displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
-          html: renderMCSArticle(json, dump, articleId, articleDetail),
+          html,
         };
       }
 
@@ -285,3 +404,13 @@ class Downloader {
 }
 
 export default Downloader;
+
+function objToQueryString(obj: KVS<any>) {
+  const str = [];
+  for (const p in obj) {
+    if (obj.hasOwnProperty(p)) {
+      str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+    }
+  }
+  return str.join('&');
+}

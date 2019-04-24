@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import domino from 'domino';
 import unicodeCutter from 'utf8-binary-cutter';
 import countryLanguage from 'country-language';
 import fs from 'fs';
@@ -47,6 +48,9 @@ export function touch(paths: string[] | string) {
 }
 
 export function getFullUrl(webUrlHost: string, url: string, baseUrl?: string) {
+  if (typeof url !== 'string' || !url) {
+    throw new Error(`Expected url to be a string, got [${url}] instead`);
+  }
   const urlObject = urlParser.parse(url, false, true);
   if (!urlObject.protocol) {
     const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
@@ -62,6 +66,21 @@ export function getFullUrl(webUrlHost: string, url: string, baseUrl?: string) {
   }
 
   return url;
+}
+
+export function getSizeFromUrl(url: string) {
+  let mult = 1;
+  let width = 1 * 10e6; // dummy value for unscaled media
+  const widthMatch = url.match(/\/([0-9]+)px-/);
+  if (widthMatch) {
+    width = Number(widthMatch[1]);
+  } else {
+    const multMatch = url.match(/-([0-9.]+)x\./);
+    if (multMatch) {
+      mult = Number(multMatch[1]);
+    }
+  }
+  return { mult, width };
 }
 
 export function randomString(len: number) {
@@ -262,4 +281,22 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
   }
 
   return `${dir}/${e(filename)}`;
+}
+
+export function getStrippedTitleFromHtml(html: string) {
+  const doc = domino.createDocument(html);
+  const titleEl = doc.querySelector('title');
+  if (titleEl) {
+    return titleEl.textContent;
+  } else {
+    return '';
+  }
+}
+
+export function zip(...args: any[][]) {
+  const len = Math.max(...args.map((arr) => arr.length));
+  return ','.repeat(len).split(',')
+    .map((_, i) => {
+      return args.map((arr) => arr[i]);
+    });
 }

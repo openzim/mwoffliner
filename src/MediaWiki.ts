@@ -18,6 +18,7 @@ class MediaWiki {
   public webUrl: string;
   public apiUrl: string;
   public webUrlPath: string;
+  public getCategories: boolean;
   public namespaces: {
     [namespace: string]: {
       num: number,
@@ -26,8 +27,9 @@ class MediaWiki {
     },
   };
   public namespacesToMirror: string[];
+  public numArticles: number;
 
-  constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; }) {
+  constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; getCategories: boolean; }) {
     // Normalize args
     this.base = `${config.base.replace(/\/$/, '')}/`;
     this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki/';
@@ -37,6 +39,7 @@ class MediaWiki {
     this.username = config.username;
     this.password = config.password;
     this.spaceDelimiter = config.spaceDelimiter;
+    this.getCategories = config.getCategories;
     // Computed properties
     this.webUrl = `${this.base + this.wikiPath}`;
     this.apiUrl = `${this.base + this.apiPath}?`;
@@ -106,7 +109,6 @@ class MediaWiki {
         const allowedSubpages = ('subpages' in entry);
         const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
         const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
-        const isCategory = canonical === 'Category';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
         self.namespaces[U.lcFirst(name)] = details;
@@ -117,7 +119,7 @@ class MediaWiki {
           self.namespaces[U.ucFirst(canonical)] = details;
         }
         /* Is content to mirror */
-        if (isContent || isCategory) {
+        if (isContent) {
           self.namespacesToMirror.push(name);
         }
       });
@@ -201,6 +203,7 @@ class MediaWiki {
     const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const body = await downloader.query(query);
     const entries = body.query.general;
+    this.numArticles = body.query.statistics.articles;
 
     const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
     const siteName = entries.sitename;

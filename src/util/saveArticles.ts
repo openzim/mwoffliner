@@ -8,95 +8,132 @@ import * as urlParser from 'url';
 import DU from '../DOMUtils';
 import * as domino from 'domino';
 import { Dump } from '../Dump';
-import { mapLimit } from './mapLimit';
+import { mapLimit } from 'promiso';
 import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import Redis from '../redis';
 import { articleDetailXId } from '../articleDetail';
+import { filesToDownloadXPath } from '../filesToDownload';
+import { getSizeFromUrl } from './misc';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
 
-interface SaveArticlesRet {
-    mediaDependencies: Array<{ url: string, path: string }>;
-    moduleDependencies: {
-        jsDependenciesList: string[];
-        styleDependenciesList: string[];
-    };
-}
-export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+export async function downloadFiles(zimCreator: ZimCreator, downloader: Downloader) {
+    const numKeys = await filesToDownloadXPath.len();
+    logger.log(`Downloading a total of [${numKeys}] files`);
+    let prevPercentProgress = -1;
 
-    const articleIds = await articleDetailXId.keys();
+    await filesToDownloadXPath.iterateItems(async (fileDownloadPairs, fileDownloadIndex, percentProgress) => {
+        logger.log(`Processing batch of [${fileDownloadPairs.length}] files`);
 
-    logger.log('Saving articles...');
-    return mapLimit(
-        articleIds,
-        downloader.speed,
-        async (articleId) => {
-            try {
-                const articleDetail = await articleDetailXId.get(articleId);
-                const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
-                let articleHtml: string;
-                let articleTitle = articleId;
-                const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
-                articleHtml = ret.html;
-                articleTitle = ret.displayTitle;
+        await mapLimit(
+            fileDownloadPairs,
+            downloader.speed,
+            async ([path, { url, namespace, mult, width }]) => {
 
-                if (!articleHtml) {
-                    logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
-                    return null;
+                try {
+                    let content;
+                    const resp = await downloader.downloadContent(url);
+                    content = resp.content;
+
+                    const article = new ZimArticle({ url: path, data: content, ns: namespace });
+                    await zimCreator.addArticle(article);
+                } catch (err) {
+                    logger.warn(`Error downloading file [${url}], skipping`, err);
+                    await filesToDownloadXPath.delete(path);
                 }
+            },
+        );
 
-                const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
+        if (percentProgress !== prevPercentProgress) {
+            prevPercentProgress = percentProgress;
+            logger.log(`Progress downloading files [${fileDownloadIndex}/${numKeys}] [${percentProgress}%]`);
+        }
+    });
+}
 
-                const moduleDependencies = await getModuleDependencies(articleId, zimCreator, redis, mw, downloader, dump); // WARNING: THIS LINE DOWNLOADS AND SAVES DEPS
-                // TODO: fix above warning
+export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+    const jsModuleDependencies = new Set<string>();
+    const cssModuleDependencies = new Set<string>();
+    let jsConfigVars: string;
+    let prevPercentProgress = -1;
 
-                const outHtml = await templateArticle(articleDoc, moduleDependencies, redis, mw, dump, articleId, articleDetail);
+    await articleDetailXId.iterateItems(async (articleKeyValuePairs, savingArticleIndex, percentProgress) => {
+        logger.log(`Processing batch of [${articleKeyValuePairs.length}] article ids`);
+        const numKeys = await articleDetailXId.len();
 
-                const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
-                await zimCreator.addArticle(zimArticle);
+        await mapLimit(
+            articleKeyValuePairs,
+            downloader.speed,
+            async ([articleId, articleDetail]) => {
 
-                const article = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: moduleDependencies.jsConfigVars, ns: '-' });
-                await zimCreator.addArticle(article);
+                try {
+                    const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
+                    let articleHtml: string;
+                    let articleTitle = articleId;
+                    const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
+                    articleHtml = ret.html;
+                    articleTitle = ret.displayTitle;
 
-                return {
-                    mediaDependencies: mediaDependencies.reduce((acc, arr) => acc.concat(arr), []),
-                    moduleDependencies,
-                };
-            } catch (err) {
-                logger.error(`Error downloading article [${articleId}], skipping`, err);
-                await articleDetailXId.delete(articleId);
-                return null;
-            }
-        },
-    ).then((a) => {
-        const ret = a.filter((a) => a)
-            .reduce((acc: SaveArticlesRet, val) => {
-                acc.mediaDependencies = acc.mediaDependencies.concat(val.mediaDependencies);
-                acc.moduleDependencies.jsDependenciesList = acc.moduleDependencies.jsDependenciesList.concat(val.moduleDependencies.jsDependenciesList);
-                acc.moduleDependencies.styleDependenciesList = acc.moduleDependencies.styleDependenciesList.concat(val.moduleDependencies.styleDependenciesList);
-                return acc;
-            }, {
-                    mediaDependencies: [],
-                    moduleDependencies: {
-                        jsDependenciesList: [],
-                        styleDependenciesList: [],
-                    },
-                },
-            );
+                    if (!articleHtml) {
+                        logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
+                        return null;
+                    }
 
-        // De-dup
-        ret.moduleDependencies.jsDependenciesList = ret.moduleDependencies.jsDependenciesList.sort().filter((a, i, arr) => a !== arr[i + 1]);
-        ret.moduleDependencies.styleDependenciesList = ret.moduleDependencies.styleDependenciesList.sort().filter((a, i, arr) => a !== arr[i + 1]);
+                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
 
-        return ret;
+                    for (const dep of mediaDependencies) {
+
+                        const { mult, width } = getSizeFromUrl(dep.url);
+
+                        const existingVal = await filesToDownloadXPath.get(dep.path);
+                        const currentDepIsHigherRes = !existingVal || existingVal.width < width || existingVal.mult < mult;
+                        if (currentDepIsHigherRes) {
+                            await filesToDownloadXPath.set(dep.path, { url: dep.url, namespace: 'I', mult, width });
+                        }
+                    }
+
+                    const _moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
+
+                    for (const dep of _moduleDependencies.jsDependenciesList) {
+                        jsModuleDependencies.add(dep);
+                    }
+                    for (const dep of _moduleDependencies.styleDependenciesList) {
+                        cssModuleDependencies.add(dep);
+                    }
+
+                    jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
+
+                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
+
+                    const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
+                    await zimCreator.addArticle(zimArticle);
+
+                } catch (err) {
+                    logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                    await articleDetailXId.delete(articleId);
+                }
+            },
+        );
+
+        if (percentProgress !== prevPercentProgress) {
+            prevPercentProgress = percentProgress;
+            logger.log(`Progress downloading articles [${savingArticleIndex}/${numKeys}] [${percentProgress}%]`);
+        }
     });
 
+    const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
+    await zimCreator.addArticle(jsConfigVarArticle);
+
+    return {
+        jsModuleDependencies,
+        cssModuleDependencies,
+    };
 }
 
-async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump) {
+async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
     // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
     let jsConfigVars: string | RegExpExecArray = '';
     let jsDependenciesList: string[] = [];
@@ -131,6 +168,7 @@ async function getModuleDependencies(articleId: string, zimCreator: ZimCreator, 
             jsConfigVars = regex.exec(scriptTags[i].text);
         }
     }
+
     jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 

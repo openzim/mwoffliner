@@ -1,3 +1,19 @@
+1.9.0:
+* FIX: Article title logic #605
+
+1.8.3:
+* FIX: Parsoid wt2html limit increased #664
+* FIX: Parsoid request timeout increased # 660
+* FIX: Logging bug #662
+* FIX: Remote article list fixed #661
+
+1.8.2:
+* UPDATE: Improved dump performance
+* FIX: Reduce memory usage
+* FIX: #654 Duplicate jsConfigVars.js
+* FIX: #645 Welcome page mirroring
+* FIX: #643 --customMainPage
+
 1.8.1:
 * FIX: ZIM filename language code #624
 

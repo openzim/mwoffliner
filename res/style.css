@@ -73,3 +73,48 @@ h1[tabindex="0"].collapsible-heading>.indicator {
 .open-block {
     display: block;
 }
+
+.mwo-catlinks {
+    border: 1px solid #a2a9b1;
+    background-color: #f8f9fa;
+    padding: 5px;
+    margin-top: 1em;
+    clear: both;
+}
+
+.mwo-catlinks ul {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    list-style: none none;
+}
+
+.mwo-catlinks li {
+    display: inline-block;
+    line-height: 1.25em;
+    border-left: 1px solid #a2a9b1;
+    margin: 0.125em 0;
+    padding: 0 0.5em;
+    zoom: 1;
+}
+
+.mwo-catlinks li:first-child {
+    padding-left: 0.25em;
+    border-left: 0;
+}
+
+.mwo-groups {
+    -webkit-column-count: 3;
+    -moz-column-count: 3;
+    column-count: 3;
+    -webkit-column-width: 24em;
+    -moz-column-width: 24em;
+    column-width: 24em;
+}
+
+.mwo-groups h3 {
+    line-height: 1.6;
+    margin-top: 0.3em;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
