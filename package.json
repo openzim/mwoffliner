@@ -10,7 +10,7 @@
     "url": "https://kiwix.org/"
   },
   "scripts": {
-    "mwoffliner": "node mwoffliner",
+    "mwoffliner": "./lib/cli.js",
     "test": "./simple-test.sh",
     "snyk-protect": "exit 0;snyk protect",
     "prepare": "npm run snyk-protect",
