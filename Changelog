@@ -1,6 +1,13 @@
 1.9.0:
 * FIX: Article title logic #605
 
+1.8.5:
+* FIX: Thumbnail nopic quality improvements #693
+* FIX: Add error handling for "URI malformed" error #697
+* FIX: Add checks to stop "normalized of undefined" errors #698
+* FIX: Clear file store between dumps #699
+* UPDATE: Re-implement useCache for downloader #700
+
 1.8.3:
 * FIX: Parsoid wt2html limit increased #664
 * FIX: Parsoid request timeout increased # 660
