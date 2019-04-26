@@ -391,26 +391,33 @@ async function execute(argv: any) {
 
     const article = new ZimArticle({ url: `style.css`, data: finalCss, ns: '-' });
     await zimCreator.addArticle(article);
-
-    logger.log(`Getting Favicon`);
     await saveFavicon(dump, zimCreator);
+
+    logger.log(`Updating article thumbnails for all articles`);
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
       await mapLimit(articleListLines, downloader.speed, async (articleId) => {
-        const articleDetail = await articleDetailXId.get(articleId);
-        if (!articleDetail) {
+        try {
+          const articleDetail = await articleDetailXId.get(articleId);
+          if (!articleDetail) {
+            return null;
+          }
+          const imageUrl = articleDetail.thumbnail;
+          if (imageUrl) {
+            const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
+            const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
+            const { mult, width } = getSizeFromUrl(suitableResUrl);
+            const path = getMediaBase(suitableResUrl, false);
+            filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
+
+            const resourceNamespace = 'I';
+            const internalSrc = `../${resourceNamespace}/` + getMediaBase(suitableResUrl, true);
+
+            articleDetail.internalThumbnailUrl = internalSrc;
+            await articleDetailXId.set(articleId, articleDetail);
+          }
+        } catch (err) {
+          logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`);
           return null;
-        }
-        const imageUrl = articleDetail.thumbnail;
-        if (imageUrl) {
-          const path = getMediaBase(imageUrl.source, false);
-          const { mult, width } = getSizeFromUrl(imageUrl.source);
-          filesToDownloadXPath.set(path, { url: imageUrl.source, namespace: 'I', mult, width });
-
-          const resourceNamespace = 'I';
-          const internalSrc = `../${resourceNamespace}/` + getMediaBase(imageUrl.source, true);
-
-          articleDetail.internalThumbnailUrl = internalSrc;
-          await articleDetailXId.set(articleId, articleDetail);
         }
       });
     }
@@ -483,10 +490,12 @@ async function execute(argv: any) {
           if (err) {
             reject(err);
           } else {
-            readFilePromise(faviconPath, null).then((faviconContent) => {
-              const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
-              return zimCreator.addArticle(article);
-            }).then(resolve, reject);
+            readFilePromise(faviconPath, null)
+              .then((faviconContent) => {
+                const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
+                return zimCreator.addArticle(article);
+              })
+              .then(resolve, reject);
           }
         });
       });
