@@ -9,13 +9,15 @@ import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminAdvPng from 'imagemin-advpng';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
-import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml } from './util';
+import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml, readFilePromise, writeFilePromise } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
-import { articleDetailXId } from './articleDetail';
 import { normalizeMwResponse } from './util/mw-api';
 import deepmerge from 'deepmerge';
+import { requestCacheXUrl, articleDetailXId } from './stores';
+import * as path from 'path';
+import md5 from 'md5';
 
 const imageminOptions = {
   plugins: [
@@ -38,17 +40,21 @@ class Downloader {
   public mcsUrl: string;
   public parsoidFallbackUrl: string;
   public speed: number;
+  public useCache: boolean;
+  public cacheDirectory: string;
 
   private activeRequests = 0;
   private maxActiveRequests = 1;
 
-  constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number) {
+  constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number, useCache: boolean, cacheDirectory: string) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
     this.maxActiveRequests = speed * 4;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
+    this.useCache = useCache;
+    this.cacheDirectory = cacheDirectory;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
@@ -269,6 +275,13 @@ class Downloader {
 
   public async getJSON<T>(url: string) {
     const self = this;
+    if (this.useCache) {
+      const cachedVal = await requestCacheXUrl.get(url);
+      if (cachedVal) {
+        logger.info(`Cache hit for [${url}]`);
+        return cachedVal;
+      }
+    }
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
       const call = backoff.call(this.getJSONCb, url, (err: any, val: any) => {
@@ -277,6 +290,9 @@ class Downloader {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
         } else {
+          if (self.useCache) {
+            requestCacheXUrl.set(url, val);
+          }
           resolve(val);
         }
       });
@@ -290,6 +306,18 @@ class Downloader {
     if (!url) {
       throw new Error(`Parameter [${url}] is not a valid url`);
     }
+    if (this.useCache) {
+      const cacheVal = await requestCacheXUrl.get(url);
+      if (cacheVal) {
+        logger.info(`Cache hit for [${url}]`);
+        const { filePath, responseHeaders } = cacheVal;
+        const content = await readFilePromise(filePath, null) as Buffer;
+        return {
+          content,
+          responseHeaders,
+        };
+      }
+    }
     const self = this;
     await self.claimRequest();
     return new Promise((resolve, reject) => {
@@ -300,12 +328,34 @@ class Downloader {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
         } else {
-          resolve(val);
+          if (self.useCache) {
+            self.cacheResponse(url, val)
+              .then(() => {
+                resolve(val);
+              })
+              .catch((err) => {
+                logger.warn(`Failed to cache response for [${url}]`, err);
+                reject({ message: `Failed to cache response`, err });
+              });
+          } else {
+            resolve(val);
+          }
         }
       });
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
+    });
+  }
+
+  private async cacheResponse(url: string, val: { content: Buffer, responseHeaders: any }) {
+    const fileName = md5(url);
+    const filePath = path.join(this.cacheDirectory, fileName);
+    logger.info(`Caching response for [${url}] to [${filePath}]`);
+    await writeFilePromise(filePath, val.content, null);
+    await requestCacheXUrl.set(url, {
+      filePath,
+      responseHeaders: val.responseHeaders,
     });
   }
 

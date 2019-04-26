@@ -13,7 +13,6 @@ interface DumpOpts {
     password: string;
     spaceDelimiter: string;
     outputDirectory: string;
-    cacheDirectory: string;
     keepHtml: boolean;
     publisher: string;
     withoutZimFullTextIndex: boolean;
@@ -53,8 +52,6 @@ export class Dump {
 
         const date = new Date();
         this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
-
-        this.opts.cacheDirectory = pathParser.join(opts.cacheDirectory, this.computeFilenameRadical(true, true, true));
 
         /* Get language specific strings */
         this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');

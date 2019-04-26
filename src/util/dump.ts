@@ -9,7 +9,7 @@ import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import Redis from '../redis';
 import { Dump } from '../Dump';
-import { filesToDownloadXPath } from '../filesToDownload';
+import { filesToDownloadXPath } from '../stores';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
