@@ -105,9 +105,9 @@ export function mkdirPromise(path: string) {
   });
 }
 
-export function writeFilePromise(path: string, content: string | Buffer) {
+export function writeFilePromise(path: string, content: string | Buffer, encoding = 'utf8') {
   return new Promise((resolve, reject) => {
-    fs.writeFile(path, content, (err) => {
+    fs.writeFile(path, content, { encoding }, (err) => {
       if (err) {
         reject(err);
       } else {

@@ -13,8 +13,7 @@ import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath,
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import Redis from '../redis';
-import { articleDetailXId } from '../articleDetail';
-import { filesToDownloadXPath } from '../filesToDownload';
+import { filesToDownloadXPath, articleDetailXId } from '../stores';
 import { getSizeFromUrl } from './misc';
 
 const genericJsModules = config.output.mw.js;
