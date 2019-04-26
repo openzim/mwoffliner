@@ -1,12 +1,15 @@
-1.9.0:
-* FIX: Article title logic #605
-
 1.8.5:
 * FIX: Thumbnail nopic quality improvements #693
 * FIX: Add error handling for "URI malformed" error #697
 * FIX: Add checks to stop "normalized of undefined" errors #698
 * FIX: Clear file store between dumps #699
 * UPDATE: Re-implement useCache for downloader #700
+
+1.8.4:
+* FIX: Article title logic #605
+* FIX: Log formatting issue #662
+* FIX: Clear Redis when exiting #448
+* UPDATE: Moved "convert" utility to a node library #681
 
 1.8.3:
 * FIX: Parsoid wt2html limit increased #664
