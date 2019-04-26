@@ -32,7 +32,6 @@ import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl } from './stores';
 
-
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
   return parameterList;
