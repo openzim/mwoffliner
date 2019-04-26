@@ -52,7 +52,8 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                             const catDetails = await articleDetailXId.getMany(foundCategoryIds);
 
                             const catIdAndDetailPairs = zip(foundCategoryIds, catDetails);
-                            for (const [id, detail] of catIdAndDetailPairs) {
+                            for (let [id, detail] of catIdAndDetailPairs) {
+                                detail = detail || {};
                                 detail.pages = (detail.pages || []).concat(foundCategoryMapping[id]);
                                 await articleDetailXId.set(id, detail);
                             }
