@@ -144,7 +144,8 @@ class Downloader {
       logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
     }
 
-    const processedResponse = normalizeMwResponse(resp.query);
+    const processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+
     if (resp.continue) {
 
       const nextResp = await this.getArticleDetailsIds(articleIds, resp.continue);
@@ -198,7 +199,7 @@ class Downloader {
       logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
     }
 
-    const processedResponse = normalizeMwResponse(resp.query);
+    const processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
     let gCont: string = null;
     try {
