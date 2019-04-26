@@ -1,8 +1,8 @@
 import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
-import { articleDetailXId } from '../articleDetail';
 import logger from '../Logger';
 import { zip } from './misc';
+import { articleDetailXId } from '../stores';
 
 let batchSize = 50;
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, isCategory = false): Promise<void> {

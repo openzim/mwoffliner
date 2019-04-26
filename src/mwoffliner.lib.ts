@@ -2,9 +2,8 @@
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 
-import { exec } from 'child_process';
 import domino from 'domino';
-import fs from 'fs';
+import fs, { rmdirSync } from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
@@ -31,8 +30,7 @@ import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
-import { articleDetailXId, populateArticleDetail } from './articleDetail';
-import { filesToDownloadXPath, populateFilesToDownload } from './filesToDownload';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl } from './stores';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -79,13 +77,21 @@ async function execute(argv: any) {
 
   (process as any).verbose = !!verbose;
 
+  /* Setup redis client */
+  const redis = new Redis(argv, config);
+  await redis.flushDBs();
+  populateArticleDetail(redis.redisClient);
+  populateFilesToDownload(redis.redisClient);
+  populateRequestCache(redis.redisClient);
+
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
 
-  const outputDirectory = _outputDirectory ? `${homeDirExpander(_outputDirectory)}/` : 'out/';
+  const outputDirectory = path.join(process.cwd(), _outputDirectory ? `${homeDirExpander(_outputDirectory)}/` : 'out/');
   await mkdirPromise(outputDirectory);
-  const cacheDirectory = _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : 'cac/';
+  const cacheDirectory = path.join(process.cwd(), _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : `cac/dumps-${Date.now()}/`);
+  await mkdirPromise(cacheDirectory);
   const tmpDirectory = os.tmpdir();
 
   // Tmp Dirs
@@ -99,13 +105,24 @@ async function execute(argv: any) {
     throw err;
   }
 
+  logger.log(`Using Tmp Directories:`, {
+    outputDirectory,
+    cacheDirectory,
+    dumpTmpDir,
+  });
+
   process.on('exit', async (code) => {
     logger.log(`Exiting with code [${code}]`);
     logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
     rimraf.sync(dumpTmpDir);
+    logger.log(`Clearing Cache Directory`);
+    rimraf.sync(cacheDirectory);
 
-    logger.log(`Flushing REDIS DBs`);
-    articleDetailXId.flush();
+    logger.log(`Flushing Redis DBs`);
+    await articleDetailXId.flush();
+    await filesToDownloadXPath.flush();
+    await requestCacheXUrl.flush();
+
     await redis.flushDBs();
     await redis.quit();
   });
@@ -154,6 +171,8 @@ async function execute(argv: any) {
     `${config.userAgent} (${adminEmail})`,
     speed,
     requestTimeout || config.defaults.requestTimeout,
+    useCache,
+    cacheDirectory,
   );
 
   /* Get MediaWiki Info */
@@ -215,18 +234,6 @@ async function execute(argv: any) {
 
     if (!fs.existsSync(customZimFavicon)) { throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`); }
   }
-
-  /* ********************************* */
-  /* RUNNING CODE ******************** */
-  /* ********************************* */
-
-  // await checkDependencies(env);
-
-  /* Setup redis client */
-  const redis = new Redis(argv, config);
-  await redis.flushDBs();
-  populateArticleDetail(redis.redisClient);
-  populateFilesToDownload(redis.redisClient);
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -307,7 +314,6 @@ async function execute(argv: any) {
       password: mwPassword,
       spaceDelimiter: '_',
       outputDirectory,
-      cacheDirectory,
       keepHtml,
       mainPage,
       filenamePrefix,
@@ -342,13 +348,6 @@ async function execute(argv: any) {
     }
   }
 
-  if (!useCache || skipCacheCleaning) {
-    logger.log('Skipping cache cleaning...');
-    await exec(`rm -f "${cacheDirectory}ref"`);
-  } else {
-    logger.log('Cleaning cache');
-    await exec(`find "${cacheDirectory}" -type f -not -newer "${cacheDirectory}ref" -exec rm {} \\;`);
-  }
   logger.log('Closing HTTP agents...');
 
   logger.log('All dumping(s) finished with success.');
@@ -358,6 +357,9 @@ async function execute(argv: any) {
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
+
+    logger.log(`Flushing redis file store`);
+    await filesToDownloadXPath.flush();
 
     const zimCreatorConstructor = dump.nozim ? ZimCreatorFs : ZimCreator;
 
@@ -391,32 +393,36 @@ async function execute(argv: any) {
 
     const article = new ZimArticle({ url: `style.css`, data: finalCss, ns: '-' });
     await zimCreator.addArticle(article);
-
-    logger.log(`Getting Favicon`);
     await saveFavicon(dump, zimCreator);
+
+    logger.log(`Updating article thumbnails for all articles`);
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
       await mapLimit(articleListLines, downloader.speed, async (articleId) => {
-        const articleDetail = await articleDetailXId.get(articleId);
-        if (!articleDetail) {
+        try {
+          const articleDetail = await articleDetailXId.get(articleId);
+          if (!articleDetail) {
+            return null;
+          }
+          const imageUrl = articleDetail.thumbnail;
+          if (imageUrl) {
+            const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
+            const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
+            const { mult, width } = getSizeFromUrl(suitableResUrl);
+            const path = getMediaBase(suitableResUrl, false);
+            filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
+
+            const resourceNamespace = 'I';
+            const internalSrc = `../${resourceNamespace}/` + getMediaBase(suitableResUrl, true);
+
+            articleDetail.internalThumbnailUrl = internalSrc;
+            await articleDetailXId.set(articleId, articleDetail);
+          }
+        } catch (err) {
+          logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`);
           return null;
-        }
-        const imageUrl = articleDetail.thumbnail;
-        if (imageUrl) {
-          const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
-          const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
-          const { mult, width } = getSizeFromUrl(suitableResUrl);
-          const path = getMediaBase(suitableResUrl, false);
-          filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
-
-          const resourceNamespace = 'I';
-          const internalSrc = `../${resourceNamespace}/` + getMediaBase(suitableResUrl, true);
-
-          articleDetail.internalThumbnailUrl = internalSrc;
-          await articleDetailXId.set(articleId, articleDetail);
         }
       });
     }
-
     logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
 
@@ -485,10 +491,12 @@ async function execute(argv: any) {
           if (err) {
             reject(err);
           } else {
-            readFilePromise(faviconPath, null).then((faviconContent) => {
-              const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
-              return zimCreator.addArticle(article);
-            }).then(resolve, reject);
+            readFilePromise(faviconPath, null)
+              .then((faviconContent) => {
+                const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
+                return zimCreator.addArticle(article);
+              })
+              .then(resolve, reject);
           }
         });
       });
