@@ -1,15 +1,4 @@
-<!-- <h2 class="section-heading in-block collapsible-heading" tabindex="0" aria-haspopup="true" aria-controls="content-collapsible-block-{{ section_index }}"
-    data-section-id="{{section_id}}">
-    <div class="mw-ui-icon mw-ui-icon-arrow mw-ui-icon-element indicator" title=""></div>
-    <span class="mw-headline" id="{{ section_anchor }}">{% autoescape false %}{{ section_line }}{% endautoescape %}</span>
-</h2>
-<div id="mf-section-{{ section_id }}" class="mf-section-{{ section_id }} collapsible-block" id="content-collapsible-block-0"
-    aria-pressed="true" aria-expanded="true">
-    {% autoescape false %}{{ section_text }}{% endautoescape %}
-    __**SUB_LEVEL_SECTION_{{ section_id }}__
-</div> -->
-
-<details>
+<details id="{{ section_anchor }}">
     <summary class='section-heading summary-level-2'>{% autoescape false %}{{ section_line }}{% endautoescape %}</summary>
     {% autoescape false %}{{ section_text }}{% endautoescape %}
     __SUB_LEVEL_SECTION_{{ section_id }}__

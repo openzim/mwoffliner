@@ -1,26 +1,4 @@
-<!-- <h2 class="section-heading in-block collapsible-heading" tabindex="0" aria-haspopup="true"
-    data-section-id="SubCategories">
-    <div class="mw-ui-icon mw-ui-icon-arrow mw-ui-icon-element indicator" title=""></div>
-    <span class="mw-headline">Sub-Categories:</span>
-</h2>
-<div class="mf-section-{{ section_id }}" aria-pressed="true" aria-expanded="true">
-    <div class="mwo-groups">
-        <ul>
-            {% for categoryGroup in groups %}
-            <div>
-                <h3>{{categoryGroup.title}}</h3>
-                <ul>
-                    {% for category in categoryGroup.items %}
-                    <li><a href="{{category.url}}" rel="mw:WikiLink">{{category.name}}</a></li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endfor %}
-        </ul>
-    </div>
-</div> -->
-
-<details>
+<details id="sub-categories">
     <summary class='section-heading summary-level-2'>Sub-Categories</summary>
     <div class="mwo-groups">
         <ul>

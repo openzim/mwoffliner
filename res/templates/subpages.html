@@ -1,25 +1,4 @@
-<!-- <h2 class="section-heading in-block collapsible-heading" tabindex="0" aria-haspopup="true" data-section-id="Page">
-    <div class="mw-ui-icon mw-ui-icon-arrow mw-ui-icon-element indicator" title=""></div>
-    <span class="mw-headline">Pages:</span>
-</h2>
-<div class="mf-section-{{ section_id }}" aria-pressed="true" aria-expanded="true">
-    <div class="mwo-groups">
-        <ul>
-            {% for pageGroup in groups %}
-            <div>
-                <h3>{{pageGroup.title}}</h3>
-                <ul>
-                    {% for page in pageGroup.items %}
-                    <li><a href="{{page.url}}" rel="mw:WikiLink">{{page.name}}</a></li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endfor %}
-        </ul>
-    </div>
-</div> -->
-
-<details>
+<details id="sub-pages">
     <summary class='section-heading summary-level-2'>Pages</summary>
     <div class="mwo-groups">
         <ul>

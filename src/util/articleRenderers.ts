@@ -23,7 +23,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
     html += leadSectionTemplate({
         lead_display_title: json.lead.displaytitle,
         lead_section_text: json.lead.sections[0].text,
-        string: dump.strings,
+        strings: dump.strings,
     });
 
     // set all other section (closed by default)
