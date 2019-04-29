@@ -7,7 +7,7 @@ window.onload = function () {
         click: function (ev) {
             var targetId = ev.target.hash || ev.target.parentNode.hash;
             var refDetails = $(targetId).closest('details');
-            refDetails.click();
+            refDetails.attr('open', true);
         }
     });
 
