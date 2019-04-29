@@ -29,21 +29,25 @@
     font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
 }
 
-.mw-body h1 {
+.mw-body h1,
+.summary-level-1 {
     font-size: 42px;
 }
 
-.mw-body h2 {
+.mw-body h2,
+.summary-level-2 {
     font-size: 24px;
 }
 
-.mw-body h3 {
+.mw-body h3,
+.summary-level-3 {
     border-bottom: 0px solid #eaecf0;
     font-size: 19px;
     font-weight: bold;
 }
 
-.mw-body h4 {
+.mw-body h4,
+.summary-level-3 {
     border-bottom: 0px solid #eaecf0;
     font-size: 16px;
 }

@@ -812,21 +812,24 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     /* Set footer */
     const div = htmlTemplateDoc.createElement('div');
-    const oldId = articleDetail.revisions[0].revid;
+    const rev = articleDetail.revisions && articleDetail.revisions.length ? articleDetail.revisions[0] : null;
     try {
-        /* Revision date */
-        const timestamp = articleDetail.revisions[0].timestamp;
-        const date = new Date(timestamp);
-        div.innerHTML = footerTemplate({
-            articleId: encodeURIComponent(articleId),
-            webUrl: mw.webUrl,
-            creator: dump.mwMetaData.creator,
-            oldId,
-            date: date.toISOString().substring(0, 10),
-            strings: dump.strings,
-        });
-        htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
-        addNoIndexCommentToElement(div);
+        if (rev) {
+            /* Revision date */
+            const oldId = rev.revid;
+            const timestamp = rev.timestamp;
+            const date = new Date(timestamp);
+            div.innerHTML = footerTemplate({
+                articleId: encodeURIComponent(articleId),
+                webUrl: mw.webUrl,
+                creator: dump.mwMetaData.creator,
+                oldId,
+                date: date.toISOString().substring(0, 10),
+                strings: dump.strings,
+            });
+            htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
+            addNoIndexCommentToElement(div);
+        }
 
         /* Geo-coordinates */
         if (articleDetail.coordinates && articleDetail.coordinates.length) {

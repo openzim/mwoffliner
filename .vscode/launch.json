@@ -19,7 +19,7 @@
                 // "--articleList=https://ftp.nluug.nl/pub/kiwix/wp1/enwiki_2019-01/tops/100",
                 // "--articleList=https://download.kiwix.org/wp1/enwiki_2019-04/projects/Football",
                 "--redis=redis://127.0.0.1:6379",
-                // "--getCategories=true"
+                "--getCategories=true"
                 // "--customZimFavicon=test.png"
             ]
         }

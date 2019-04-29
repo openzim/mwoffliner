@@ -274,39 +274,6 @@ async function execute(argv: any) {
   logger.info(`Getting article ids`);
   await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
 
-  // const categoriesWithArticleChildren = new Set<string>([]);
-  // let articleIds = await articleDetailXId.keys();
-  // await mapLimit(articleIds, downloader.speed, async (articleId) => {
-  //   const articleDetail = await articleDetailXId.get(articleId);
-  //   if (articleDetail.ns !== 14 && articleDetail.categories) {
-  //     for (const category of articleDetail.categories) {
-  //       const categoryArticleId = category.title.replace(/ /g, '_');
-  //       categoriesWithArticleChildren.add(categoryArticleId);
-  //     }
-  //   }
-  // });
-  // logger.info(`Found [${categoriesWithArticleChildren.size}] category pages with at least one article child, deleting empty Categories`);
-  // let categoryDeleteCount = 0;
-  // articleIds = await articleDetailXId.keys();
-  // await mapLimit(articleIds, downloader.speed, async (categoryId) => {
-  //   const categoryDetail = await articleDetailXId.get(categoryId);
-  //   if (categoryDetail.ns === 14) {
-  //     if (!categoriesWithArticleChildren.has(categoryId)) {
-  //       articleDetailXId.delete(categoryId); // Not Awaiting
-  //       categoryDeleteCount += 1;
-  //     }
-  //   }
-  // });
-  // if (categoryDeleteCount) {
-  //   logger.info(`Deleted [${categoryDeleteCount}] empty categories`);
-  // }
-
-  // if (articleList) {
-  //   const categoriesRet = await getArticleIds(downloader, redis, mw, null, Array.from(categoriesWithArticleChildren));
-  //   logger.log(`Got [${Object.keys(categoriesRet).length}] Categories`);
-  //   await articleDetailXId.setMany(categoriesRet as KVS<ArticleDetail>);
-  // }
-
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {
       tmpDir: dumpTmpDir,

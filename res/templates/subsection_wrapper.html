@@ -1,7 +1,17 @@
-<h{{ section_toclevel }} class="section-heading in-block collapsible-heading open-block" tabindex="0" aria-haspopup="true" aria-controls="content-collapsible-block-{{ section_index }}">
-    <span class="mw-headline" id="{{ section_anchor }}">{% autoescape false %}{{ section_line }}{% endautoescape %}</span>
+<!-- <h{{ section_toclevel }} class="section-heading in-block collapsible-heading open-block" tabindex="0"
+    aria-haspopup="true" aria-controls="content-collapsible-block-{{ section_index }}">
+    <span class="mw-headline"
+        id="{{ section_anchor }}">{% autoescape false %}{{ section_line }}{% endautoescape %}</span>
 </h{{ section_toclevel }}>
-<div id="mf-section-{{ section_id }}" class="mf-section-{{ section_id }} collapsible-block open-block" id="content-collapsible-block-0" aria-pressed="true" aria-expanded="true">
+<div id="mf-section-{{ section_id }}" class="mf-section-{{ section_id }} collapsible-block open-block"
+    id="content-collapsible-block-0" aria-pressed="true" aria-expanded="true">
     {% autoescape false %}{{ section_text }}{% endautoescape %}
 </div>
-__SUB_LEVEL_SECTION_{{ section_id }}__
+__**SUB_LEVEL_SECTION_{{ section_id }}__ -->
+
+
+<details>
+    <summary class='section-heading summary-level-{{ section_toclevel }}'>{% autoescape false %}{{ section_line }}{% endautoescape %}</summary>
+    {% autoescape false %}{{ section_text }}{% endautoescape %}
+    __SUB_LEVEL_SECTION_{{ section_id }}__
+</details>
