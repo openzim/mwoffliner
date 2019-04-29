@@ -29,25 +29,21 @@
     font-family: 'Linux Libertine', 'Georgia', 'Times', serif;
 }
 
-.mw-body h1,
-.summary-level-1 {
+.mw-body h1 {
     font-size: 42px;
 }
 
-.mw-body h2,
-.summary-level-2 {
+.mw-body h2 {
     font-size: 24px;
 }
 
-.mw-body h3,
-.summary-level-3 {
+.mw-body h3 {
     border-bottom: 0px solid #eaecf0;
     font-size: 19px;
     font-weight: bold;
 }
 
-.mw-body h4,
-.summary-level-3 {
+.mw-body h4 {
     border-bottom: 0px solid #eaecf0;
     font-size: 16px;
 }
@@ -121,4 +117,12 @@ h1[tabindex="0"].collapsible-heading>.indicator {
     margin-top: 0.3em;
     margin-bottom: 0;
     padding-bottom: 0;
+}
+
+.section-heading>h1,
+.section-heading>h2,
+.section-heading>h3,
+.section-heading>h4 {
+    display: inline;
+    border: none;
 }

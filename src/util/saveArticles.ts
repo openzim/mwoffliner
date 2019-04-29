@@ -75,14 +75,12 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                     const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
                     articleHtml = ret.html;
                     articleTitle = ret.displayTitle;
-
                     if (!articleHtml) {
                         logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
                         return null;
                     }
 
                     const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
-
                     for (const dep of mediaDependencies) {
 
                         const { mult, width } = getSizeFromUrl(dep.url);
@@ -106,7 +104,6 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                     jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
                     const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
-
                     const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                     await zimCreator.addArticle(zimArticle);
 
@@ -192,7 +189,6 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
                 return { url, path };
             }),
     );
-
     const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
@@ -203,9 +199,7 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
                 return { url, path };
             }),
     );
-
     doc = applyOtherTreatments(doc, dump);
-
     return {
         articleDoc: doc,
         mediaDependencies,
@@ -698,20 +692,22 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
             for (let i = 0; i < paragraphNodes.length; i += 1) {
                 const paragraphNode = paragraphNodes[i];
                 const nextElementNode = DU.nextElementSibling(paragraphNode);
-
-                /* No nodes */
-                if (!nextElementNode) {
-                    DU.deleteNode(paragraphNode);
-                } else {
-                    /* Delete if nextElementNode is a paragraph with <= level */
-                    const nextElementNodeTag = nextElementNode.tagName.toLowerCase();
-                    if (
-                        nextElementNodeTag.length > 1
-                        && nextElementNodeTag[0] === 'h'
-                        && !isNaN(nextElementNodeTag[1])
-                        && nextElementNodeTag[1] <= level
-                    ) {
+                const isSummary = paragraphNode.parentElement.nodeName === 'SUMMARY';
+                if (!isSummary) {
+                    /* No nodes */
+                    if (!nextElementNode) {
                         DU.deleteNode(paragraphNode);
+                    } else {
+                        /* Delete if nextElementNode is a paragraph with <= level */
+                        const nextElementNodeTag = nextElementNode.tagName.toLowerCase();
+                        if (
+                            nextElementNodeTag.length > 1
+                            && nextElementNodeTag[0] === 'h'
+                            && !isNaN(nextElementNodeTag[1])
+                            && nextElementNodeTag[1] <= level
+                        ) {
+                            DU.deleteNode(paragraphNode);
+                        }
                     }
                 }
             }

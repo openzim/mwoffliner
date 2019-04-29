@@ -1,5 +1,5 @@
 <details id="{{ section_anchor }}">
-    <summary class='section-heading summary-level-{{ section_toclevel }}'>{% autoescape false %}{{ section_line }}{% endautoescape %}</summary>
+    <summary class='section-heading'><h{{ section_toclevel }}>{% autoescape false %}{{ section_line }}{% endautoescape %}</h{{ section_toclevel }}></summary>
     {% autoescape false %}{{ section_text }}{% endautoescape %}
 </details>
 __SUB_LEVEL_SECTION_{{ section_id }}__
