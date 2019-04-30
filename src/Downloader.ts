@@ -77,7 +77,17 @@ class Downloader {
           limits: {
             wt2html: {
               // maxWikitextSize: 1000000, // Default
-              maxWikitextSize: 1000000 * 2,
+              maxWikitextSize: 1000000 * 4,
+              // maxListItems: 30000, // Default
+              maxListItems: 30000 * 4,
+              // maxTableCells: 30000, // Default
+              maxTableCells: 30000 * 4,
+              // maxTransclusions: 10000, // Default
+              maxTransclusions: 10000 * 4,
+              // maxImages: 1000, // Default
+              maxImages: 1000 * 4,
+              // maxTokens: 1000000, // Default
+              maxTokens: 1000000 * 4,
             },
           },
           mwApis: [{

@@ -56,7 +56,7 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
 export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
-    let jsConfigVars: string;
+    let jsConfigVars = '';
     let prevPercentProgress = -1;
 
     await articleDetailXId.iterateItems(async (articleKeyValuePairs, savingArticleIndex, percentProgress) => {
