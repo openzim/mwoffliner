@@ -326,6 +326,7 @@ async function execute(argv: any) {
       resume,
       minifyHtml,
       keepEmptyParagraphs,
+      tags: customZimTags,
     }, mwMetaData);
     logger.log(`Doing dump`);
     let shouldSkip = false;
@@ -369,7 +370,7 @@ async function execute(argv: any) {
       welcome: 'A/' + (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
     }, {
         favicon: 'I/favicon.png',
-        Tags: dump.opts.customZimTags || '',
+        Tags: dump.computeZimTags(),
         Language: dump.mwMetaData.langIso3,
         Title: dump.opts.customZimTitle || dump.mwMetaData.title,
         Name: zimName,
