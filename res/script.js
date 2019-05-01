@@ -12,6 +12,6 @@ window.onload = function () {
     });
 
     if (window.innerWidth > 720) {
-        $('details > summary').click();
+        $('details[data-level=2]').attr('open', true);
     }
 }
