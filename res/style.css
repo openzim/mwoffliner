@@ -118,3 +118,16 @@ h1[tabindex="0"].collapsible-heading>.indicator {
     margin-bottom: 0;
     padding-bottom: 0;
 }
+
+summary.section-heading {
+    display: list-item !important;
+    cursor: pointer;
+}
+
+.section-heading>h1,
+.section-heading>h2,
+.section-heading>h3,
+.section-heading>h4 {
+    display: inline;
+    border: none;
+}
