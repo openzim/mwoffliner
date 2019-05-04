@@ -1,3 +1,9 @@
+1.8.6:
+* UPDATE: Parallel processing improvements
+* UPDATE: Increased Parsoid and MCS limits #710
+* UPDATE: Switched to native `<details>` element for collapsible sections #677
+* FIX: Re-introduced automatic ZIM tagging #709
+
 1.8.5:
 * FIX: Thumbnail nopic quality improvements #693
 * FIX: Add error handling for "URI malformed" error #697
