@@ -26,9 +26,9 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
     let prevPercentProgress = -1;
 
     await filesToDownloadXPath.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
-        logger.log(`Worker [${workerId}] Processing batch of [${fileDownloadPairs.length}] files`);
+        logger.log(`Worker [${workerId}] Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
 
-        for (const [path, { url, namespace, mult, width }] of fileDownloadPairs) {
+        for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
             try {
                 let content;
                 const resp = await downloader.downloadContent(url);
@@ -65,9 +65,10 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
-            logger.log(`Worker [${workerId}] Processing batch of [${articleKeyValuePairs.length}] article ids`);
+            const articleKeys = Object.keys(articleKeyValuePairs);
+            logger.log(`Worker [${workerId}] Processing batch of article ids [${logger.logifyArray(articleKeys)}]`);
             const numKeys = await articleDetailXId.len();
-            for (const [articleId, articleDetail] of articleKeyValuePairs) {
+            for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
                     let articleHtml: string;

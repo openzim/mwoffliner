@@ -101,7 +101,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `https://{{domain}}/${this.mw.apiPath}`,
+            uri: `http://{{domain}}/${this.mw.apiPath}`,
             headers: {
               'user-agent': '{{user-agent}}',
             },
@@ -164,6 +164,15 @@ class Downloader {
       return deepmerge(processedResponse, nextResp);
 
     } else {
+      logger.info(`Getting subCategories`);
+      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+        const isCategoryArticle = articleDetail.ns === 14;
+        if (isCategoryArticle) {
+          const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
+          const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+          (processedResponse[articleId] as any).subCategories = categoryMembers;
+        }
+      }
       return processedResponse;
     }
   }
@@ -228,6 +237,16 @@ class Downloader {
         gapContinue: gCont,
       };
     } else {
+      logger.info(`Getting subCategories`);
+      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+        const isCategoryArticle = articleDetail.ns === 14;
+        if (isCategoryArticle) {
+          const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
+          const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+          (processedResponse[articleId] as any).subCategories = categoryMembers;
+        }
+      }
+
       return {
         articleDetails: processedResponse,
         gapContinue: gCont,
@@ -237,6 +256,7 @@ class Downloader {
   }
 
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
+    articleId = articleId.replace(/ /g, '_');
     logger.info(`Getting article [${articleId}]`);
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
@@ -247,14 +267,6 @@ class Downloader {
     try {
       const articleDetail = await articleDetailXId.get(articleId);
       const json = await this.getJSON<any>(articleApiUrl);
-
-      const isCategoryArticle = articleDetail.ns === 14 || (json.lead || {}).ns === 14;
-      if (isCategoryArticle) {
-        const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
-        const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
-        articleDetail.subCategories = categoryMembers;
-        await articleDetailXId.set(articleId, articleDetail);
-      }
 
       if (useParsoidFallback) {
         const html = renderDesktopArticle(json, articleId);

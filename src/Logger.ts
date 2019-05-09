@@ -22,6 +22,15 @@ class Logger {
   public error(...args: any[]) {
     console.error(`[error] [${this.getTs()}]`, ...args);
   }
+
+  public logifyArray(arr: any[]) {
+    if (arr.length < 3) {
+      return JSON.stringify(arr);
+    } else {
+      const ret = arr.slice(0, 2).concat(`+${arr.length - 2} more`);
+      return JSON.stringify(ret);
+    }
+  }
 }
 
 // export default Logger;
