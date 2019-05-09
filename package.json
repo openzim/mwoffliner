@@ -10,6 +10,7 @@
     "url": "https://kiwix.org/"
   },
   "scripts": {
+    "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node mwoffliner",
     "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "./simple-test.sh",
