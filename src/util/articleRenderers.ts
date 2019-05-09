@@ -17,7 +17,6 @@ export function renderDesktopArticle(json: any, articleId: string) {
 }
 
 export function renderMCSArticle(json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail) {
-
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({
@@ -84,6 +83,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
             groups,
         });
     }
+
     if (articleDetail.pages && articleDetail.pages.length) {
         const pages = articleDetail.pages.map((page) => {
             return {
@@ -99,6 +99,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
             groups,
         });
     }
+
     if (articleDetail.categories && articleDetail.categories.length) {
         const categories = articleDetail.categories.map((category) => {
             return {

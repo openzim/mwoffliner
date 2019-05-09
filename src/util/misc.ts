@@ -300,3 +300,13 @@ export function zip(...args: any[][]) {
       return args.map((arr) => arr[i]);
     });
 }
+
+export function deDup<T>(_arr: T[], getter: (o: T) => any) {
+  const arr = _arr.sort((a, b) => getter(a) < getter(b) ? -1 : 1);
+  return arr.filter((item, index, arr) => {
+    if (index + 1 === arr.length) {
+      return true;
+    }
+    return getter(item) !== getter(arr[index + 1]);
+  });
+}

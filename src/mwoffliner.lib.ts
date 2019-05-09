@@ -31,6 +31,7 @@ import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl } from './stores';
+import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -273,6 +274,8 @@ async function execute(argv: any) {
 
   logger.info(`Getting article ids`);
   await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
+  await getCategoriesForArticles(articleDetailXId, downloader, redis);
+  await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
 
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {
@@ -366,6 +369,7 @@ async function execute(argv: any) {
     logger.log(`Updating article thumbnails for all articles`);
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
       await mapLimit(articleListLines, downloader.speed, async (articleId) => {
+        articleId = articleId.replace(/ /g, '_');
         try {
           const articleDetail = await articleDetailXId.get(articleId);
           if (!articleDetail) {
@@ -519,13 +523,13 @@ async function execute(argv: any) {
             '\n</head>'),
       );
 
-      const titles = articleListLines.map((title) => title.replace(/ /g, '_'));
+      const articleIds = articleListLines.map((title) => title.replace(/ /g, '_'));
 
       const articlesWithImages: ArticleDetail[] = [];
       const articlesWithoutImages: ArticleDetail[] = [];
       const allArticles: ArticleDetail[] = [];
-      for (const title of titles) {
-        const articleDetail = await articleDetailXId.get(title);
+      for (const articleId of articleIds) {
+        const articleDetail = await articleDetailXId.get(articleId);
         if (articleDetail) {
           allArticles.push(articleDetail);
           if (articleDetail.thumbnail) {

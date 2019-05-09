@@ -5,7 +5,6 @@ export class RedisKvs<T> {
     private redisClient: RedisClient;
     private dbName: string;
 
-    private scanCursor = '0';
     private pendingScan: Promise<{ cursor: string, items: Array<[string, string]> }> = Promise.resolve({} as any);
 
     constructor(redisClient: RedisClient, dbName: string) {
@@ -26,12 +25,21 @@ export class RedisKvs<T> {
     }
 
     public getMany(prop: string[]) {
-        return new Promise<T[]>((resolve, reject) => {
+        return new Promise<KVS<T>>((resolve, reject) => {
             this.redisClient.hmget(this.dbName, prop, (err, val) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(val.map((a) => JSON.parse(a)));
+                    resolve(
+                        val
+                            .map((a) => JSON.parse(a))
+                            .reduce((acc, val, index) => {
+                                return {
+                                    ...acc,
+                                    [prop[index]]: val,
+                                };
+                            }, {} as KVS<T>),
+                    );
                 }
             });
         });
@@ -108,8 +116,11 @@ export class RedisKvs<T> {
         });
     }
 
-    public async iterateItems(numWorkers: number, func: (items: Array<[string, T]>, workerId: number) => Promise<void>) {
+    public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<void>) {
         let hasLooped = false;
+
+        let scanCursor = '0';
+        let pendingScan: Promise<{ cursor: string, items: Array<[string, string]> }> = Promise.resolve(null);
 
         const workers = ','.repeat(numWorkers - 1).split(',').map((_, i) => i);
         await mapLimit(
@@ -117,7 +128,14 @@ export class RedisKvs<T> {
             numWorkers,
             async (workerId) => {
                 while (true) {
-                    const { cursor, items } = await this.scan();
+                    pendingScan = pendingScan.then(() => {
+                        return this.scan(scanCursor)
+                            .then(({ cursor, items }) => {
+                                scanCursor = cursor;
+                                return { cursor, items };
+                            });
+                    });
+                    const { cursor, items } = await pendingScan;
 
                     if (hasLooped) { // Must be after the await
                         return;
@@ -127,7 +145,12 @@ export class RedisKvs<T> {
                         hasLooped = true;
                     }
 
-                    const parsedItems: Array<[string, T]> = items.map(([key, strVal]) => [key, JSON.parse(strVal)]);
+                    const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => {
+                        return {
+                            ...acc,
+                            [key]: JSON.parse(strVal),
+                        };
+                    }, {} as KVS<T>);
 
                     await func(parsedItems, workerId);
                 }
@@ -135,14 +158,13 @@ export class RedisKvs<T> {
         );
     }
 
-    public scan() {
+    public scan(scanCursor: string) {
         const retPromise = this.pendingScan.then(() => {
             return new Promise<{ cursor: string, items: Array<[string, string]> }>((resolve, reject) => {
-                this.redisClient.hscan(this.dbName, this.scanCursor, (err, val) => {
+                this.redisClient.hscan(this.dbName, scanCursor, (err, val) => {
                     if (err) {
                         reject(err);
                     } else {
-                        this.scanCursor = val[0];
                         const items = val[1].reduce((acc, item, index, arr) => {
                             if (index % 2 === 0) {
                                 acc.push([item, arr[index + 1]]);
