@@ -194,7 +194,8 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
                 return { url, path };
             }),
     );
-    const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump);
+
+    const ruRet = await rewriteUrls(doc, articleId, redis, downloader, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
         ruRet.mediaDependencies
@@ -429,7 +430,7 @@ async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump,
     return { doc: parsoidDoc, mediaDependencies };
 }
 
-async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
     /* Go through all links */
@@ -571,6 +572,14 @@ async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: 
                 }
             } else { // This is MediaWiki HTML
                 await removeLinksToUnmirroredArticles(linkNode, href);
+
+                if (articleId.includes('/')) {
+                    const href = linkNode.getAttribute('href'); // href is modified above, so this is necessary
+                    const resourceNamespace = 'A';
+                    const slashesInUrl = articleId.split('/').length - 1;
+                    const upStr = '../'.repeat(slashesInUrl + 1);
+                    linkNode.setAttribute('href', `${upStr}${resourceNamespace}/${href}`);
+                }
             }
         }
     }
