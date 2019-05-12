@@ -276,10 +276,10 @@ async function execute(argv: any) {
   await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
   await getCategoriesForArticles(articleDetailXId, downloader, redis);
   await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
-  while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
-    // keep simplifying graph
-  }
-  await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
+  // while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
+  //   // keep simplifying graph
+  // }
+  // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
 
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {
