@@ -1,8 +1,7 @@
 import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
 import logger from '../Logger';
-import { zip } from './misc';
-import { articleDetailXId } from '../stores';
+import { articleDetailXId, redirectsXId } from '../stores';
 import deepmerge = require('deepmerge');
 
 let batchSize = 50;
@@ -27,6 +26,16 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 try {
                     if (articleIds.length) {
                         const articleDetails = await downloader.getArticleDetailsIds(articleIds);
+
+                        const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
+                        await redirectsXId.setMany(
+                            redirectIds.reduce((acc, id) => {
+                                return {
+                                    ...acc,
+                                    [id]: 1,
+                                };
+                            }, {}),
+                        );
 
                         const existingArticleDetails = await articleDetailXId.getMany(articleIds);
 
@@ -61,6 +70,17 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
     const numDetails = Object.keys(articleDetails).length;
     index += numDetails;
     await articleDetailXId.setMany(articleDetails);
+
+    const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
+    await redirectsXId.setMany(
+        redirectIds.reduce((acc, id) => {
+            return {
+                ...acc,
+                [id]: 1,
+            };
+        }, {}),
+    );
+
     logger.log(`Got [${index}] articles from namespace [${ns}]`);
 
     if (gapContinue) {
