@@ -107,20 +107,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                     await zimCreator.addArticle(zimArticle);
 
-                    for (const redirect of articleDetail.redirects) {
-                        const redirectId = redirect.title.replace(/ /g, '_');
-                        const redirectArticle = new ZimArticle({
-                            url: redirectId + (dump.nozim ? '.html' : ''),
-                            shouldIndex: true,
-                            data: '',
-                            ns: 'A',
-                            mimeType: 'text/html',
-                            title: redirect.title,
-                            redirectAid: `A/${articleId}` + (dump.nozim ? '.html' : ''),
-                        });
-                        await zimCreator.addArticle(redirectArticle);
-                    }
-
                     articlesCompleted += 1;
                 } catch (err) {
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);

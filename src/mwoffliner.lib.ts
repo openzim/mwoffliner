@@ -3,7 +3,7 @@
 /* ********************************** */
 
 import domino from 'domino';
-import fs, { rmdirSync } from 'fs';
+import fs from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
@@ -421,6 +421,9 @@ async function execute(argv: any) {
     }
     await downloadFiles(zimCreator, downloader);
 
+    logger.log(`Writing Article Redirects`);
+    await writeArticleRedirects(downloader, dump, zimCreator);
+
     logger.log(`Finishing Zim Creation`);
     zimCreator.finalise();
   }
@@ -428,6 +431,29 @@ async function execute(argv: any) {
   /* ********************************* */
   /* FUNCTIONS *********************** */
   /* ********************************* */
+
+  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
+    await articleDetailXId.iterateItems(
+      downloader.speed,
+      async (articles) => {
+        for (const [articleId, articleDetail] of Object.entries(articles)) {
+          for (const redirect of articleDetail.redirects) {
+            const redirectId = redirect.title.replace(/ /g, '_');
+            const redirectArticle = new ZimArticle({
+              url: redirectId + (dump.nozim ? '.html' : ''),
+              shouldIndex: true,
+              data: '',
+              ns: 'A',
+              mimeType: 'text/html',
+              title: redirect.title,
+              redirectAid: `A/${articleId}` + (dump.nozim ? '.html' : ''),
+            });
+            await zimCreator.addArticle(redirectArticle);
+          }
+        }
+      },
+    );
+  }
 
   async function saveFavicon(dump: Dump, zimCreator: ZimCreator) {
     logger.log('Saving favicon.png...');

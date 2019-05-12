@@ -29,10 +29,11 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
                         const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
                         await redirectsXId.setMany(
-                            redirectIds.reduce((acc, id) => {
+                            redirectIds.reduce((acc, redirect) => {
+                                const redirectId = redirect.title.replace(/ /g, '_');
                                 return {
                                     ...acc,
-                                    [id]: 1,
+                                    [redirectId]: 1,
                                 };
                             }, {}),
                         );
@@ -73,10 +74,11 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
 
     const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
     await redirectsXId.setMany(
-        redirectIds.reduce((acc, id) => {
+        redirectIds.reduce((acc, redirect) => {
+            const redirectId = redirect.title.replace(/ /g, '_');
             return {
                 ...acc,
-                [id]: 1,
+                [redirectId]: 1,
             };
         }, {}),
     );
