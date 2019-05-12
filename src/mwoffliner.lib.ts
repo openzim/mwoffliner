@@ -274,8 +274,10 @@ async function execute(argv: any) {
 
   logger.info(`Getting article ids`);
   await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
-  await getCategoriesForArticles(articleDetailXId, downloader, redis);
-  await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
+  if (mw.getCategories) {
+    await getCategoriesForArticles(articleDetailXId, downloader, redis);
+    await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
+  }
 
   for (const _dump of dumps) {
     const dump = new Dump(_dump, {
