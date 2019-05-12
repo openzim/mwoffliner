@@ -120,12 +120,12 @@ async function execute(argv: any) {
     rimraf.sync(cacheDirectory);
 
     logger.log(`Flushing Redis DBs`);
-    await articleDetailXId.flush();
-    await filesToDownloadXPath.flush();
-    await requestCacheXUrl.flush();
+    filesToDownloadXPath.flush();
+    articleDetailXId.flush();
+    requestCacheXUrl.flush();
 
-    await redis.flushDBs();
-    await redis.quit();
+    redis.flushDBs();
+    redis.quit();
   });
   process.on('SIGTERM', () => {
     logger.log(`SIGTERM`);
