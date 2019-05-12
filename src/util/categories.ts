@@ -33,73 +33,31 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
                     const categoriesToGet = Object.entries(existingArticles).filter(([id, detail]) => !detail).map(([id]) => id);
                     if (categoriesToGet.length) {
                         await getArticlesByIds(categoriesToGet, downloader, false);
-                        const catDetails = await articleDetailXId.getMany(foundCategoryIds);
+                    }
 
-                        for (const [id, detail] of Object.entries(catDetails)) {
-                            // detail = detail || {};
+                    const catDetails = await articleDetailXId.getMany(foundCategoryIds);
 
-                            if (!detail) {
-                                continue;
-                            }
-
-                            const parentCategories = (detail.categories || [])
-                                .reduce((acc, info) => {
-                                    const articleId = info.title.replace(/ /g, '_');
-                                    return {
-                                        ...acc,
-                                        [articleId]: info,
-                                    };
-                                }, {});
-                            await nextCategoriesBatch.setMany(parentCategories);
-
-                            detail.pages = (detail.pages || []).concat(pagesXCategoryId[id]);
-
-                            const subArticles = (detail.subCategories || []).concat(detail.pages || []);
-                            const shouldRemoveNode = subArticles.length <= 3;
-                            if (shouldRemoveNode) {
-                                // Update sub pages
-                                // Add parent categories to child pages
-                                for (const page of detail.pages) {
-                                    if (page.title) {
-                                        const pageId = page.title.replace(/ /g, '_');
-                                        const pageDetail = await articleDetailXId.get(pageId);
-                                        if (pageDetail) {
-                                            pageDetail.categories = (pageDetail.categories || [])
-                                                .filter((c) => c && c.title !== detail.title)
-                                                .concat(detail.categories || []);
-
-                                            pageDetail.categories = deDup(pageDetail.categories, (o) => o.title);
-
-                                            await articleDetailXId.set(pageId, pageDetail);
-                                        }
-                                    }
-                                }
-
-                                // Update parent categories
-                                // Add children to parent categories
-                                for (const cat of detail.categories || []) {
-                                    const catId = cat.title.replace(/ /g, '_');
-                                    const category = await articleDetailXId.get(catId);
-
-                                    const categoryData = Object.assign({ pages: [], subCategories: [] }, category || {}) as ArticleDetail;
-
-                                    categoryData.pages = categoryData.pages.concat(detail.pages);
-                                    categoryData.subCategories = categoryData.subCategories.concat(detail.subCategories).filter((c) => c.title === id);
-
-                                    categoryData.pages = deDup(categoryData.pages, (o) => o.title);
-                                    categoryData.subCategories = deDup(categoryData.subCategories, (o) => o.title);
-
-                                    await articleDetailXId.set(catId, categoryData);
-                                }
-
-                                await articleDetailXId.delete(id);
-                            } else {
-                                await articleDetailXId.set(id, detail);
-                            }
+                    for (const [id, detail] of Object.entries(catDetails)) {
+                        if (!detail) {
+                            continue;
                         }
+
+                        const parentCategories = (detail.categories || [])
+                            .reduce((acc, info) => {
+                                const articleId = info.title.replace(/ /g, '_');
+                                return {
+                                    ...acc,
+                                    [articleId]: info,
+                                };
+                            }, {});
+
+                        await nextCategoriesBatch.setMany(parentCategories);
+
+                        detail.pages = (detail.pages || []).concat(pagesXCategoryId[id]);
+
+                        await articleDetailXId.set(id, detail);
                     }
                 }
-
             },
         );
 
@@ -116,7 +74,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
 }
 
 export async function trimUnmirroredPages(downloader: Downloader) {
-    logger.log(`Trimming un-mirrored articles from [${await articleDetailXId.len()}] articles`);
+    logger.log(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`);
     const numKeys = await articleDetailXId.len();
     let prevPercentProgress = -1;
     let processedArticles = 0;
@@ -141,23 +99,25 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                         pageIds.length ? articleDetailXId.getMany(pageIds) : Promise.resolve({}),
                     ]);
 
-                    let hasUpdated = false;
-                    if (Object.entries(categories).some(([, a]) => isNull(a))) {
-                        hasUpdated = true;
-                        articleDetail.categories = articleDetail.categories.filter((c, i) => !!categories[i]);
-                    }
-                    if (Object.entries(subCategories).some(([, a]) => isNull(a))) {
-                        hasUpdated = true;
-                        articleDetail.subCategories = articleDetail.subCategories.filter((c, i) => !!subCategories[i]);
-                    }
-                    if (Object.entries(pages).some(([, a]) => isNull(a))) {
-                        hasUpdated = true;
-                        articleDetail.pages = articleDetail.pages.filter((c, i) => !!pages[i]);
-                    }
+                    articleDetail.categories = deDup(articleDetail.categories || [], (p) => p.title)
+                        .filter((c, i) => {
+                            const id = categoryIds[i];
+                            return !!categories[id];
+                        });
 
-                    if (hasUpdated) {
-                        await articleDetailXId.set(articleId, articleDetail);
-                    }
+                    articleDetail.subCategories = deDup(articleDetail.subCategories || [], (p) => p.title)
+                        .filter((c, i) => {
+                            const id = subCategoryIds[i];
+                            return !!subCategories[id];
+                        });
+
+                    articleDetail.pages = deDup(articleDetail.pages || [], (p) => p.title)
+                        .filter((c, i) => {
+                            const id = pageIds[i];
+                            return !!pages[id];
+                        });
+
+                    await articleDetailXId.set(articleId, articleDetail);
 
                     processedArticles += 1;
 
@@ -171,4 +131,75 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                 }
             },
         );
+}
+
+export async function simplifyGraph(downloader: Downloader) {
+    logger.log(`Simplifying graph (removing empty categories)`);
+    const numKeys = await articleDetailXId.len();
+    let prevPercentProgress = -1;
+    let processedArticles = 0;
+    let deletedNodes = 0;
+
+    await articleDetailXId
+        .iterateItems(
+            downloader.speed,
+            async (articleKeyValuePairs, workerId) => {
+                for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+                    processedArticles += 1;
+
+                    if (articleDetail.ns !== 14) {
+                        continue; // Only trim category articles
+                    }
+
+                    const subArticles = (articleDetail.subCategories || []).concat(articleDetail.pages || []);
+                    const shouldRemoveNode = subArticles.length <= 3;
+                    if (shouldRemoveNode) {
+                        // Update sub pages
+                        // Add parent categories to child pages
+                        const hasPages = articleDetail.pages && articleDetail.pages.length;
+                        const scrapedPages = hasPages ? await articleDetailXId.getMany(articleDetail.pages.map((p) => p.title.replace(/ /g, '_'))) : {};
+                        for (const [pageId, pageDetail] of Object.entries(scrapedPages)) {
+                            if (pageDetail) {
+                                pageDetail.categories = (pageDetail.categories || [])
+                                    .filter((c) => c && c.title !== articleDetail.title) // remove self
+                                    .concat(articleDetail.categories || []); // add parent categories
+
+                                pageDetail.categories = deDup(pageDetail.categories, (o) => o.title);
+
+                                await articleDetailXId.set(pageId, pageDetail);
+                            }
+                        }
+
+                        // Update parent categories
+                        // Add children to parent categories
+                        const hasCategories = articleDetail.categories && articleDetail.categories.length;
+                        const scrapedCategories = hasCategories ? await articleDetailXId.getMany(articleDetail.categories.map((p) => p.title.replace(/ /g, '_'))) : {};
+                        for (const [catId, catDetail] of Object.entries(scrapedCategories)) {
+                            if (catDetail) {
+                                const categoryDetail = Object.assign({ pages: [], subCategories: [] }, catDetail || {}) as ArticleDetail;
+
+                                categoryDetail.pages = categoryDetail.pages.concat(articleDetail.pages);
+                                categoryDetail.subCategories = categoryDetail.subCategories.concat(articleDetail.subCategories).filter((c) => c.title === articleDetail.title);
+
+                                categoryDetail.pages = deDup(categoryDetail.pages, (o) => o.title);
+                                categoryDetail.subCategories = deDup(categoryDetail.subCategories, (o) => o.title);
+
+                                await articleDetailXId.set(catId, categoryDetail);
+                            }
+                        }
+
+                        await articleDetailXId.delete(articleId);
+                        deletedNodes += 1;
+                    }
+                }
+
+                if (processedArticles % 10 === 0) {
+                    const percentProgress = Math.floor(processedArticles / numKeys * 1000) / 10;
+                    if (percentProgress !== prevPercentProgress) {
+                        prevPercentProgress = percentProgress;
+                        logger.log(`Progress simplifying graph [${processedArticles}/${numKeys}] [${percentProgress}%] deleted [${deletedNodes}]`);
+                    }
+                }
+            });
+    return { deletedNodes };
 }
