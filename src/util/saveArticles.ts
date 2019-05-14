@@ -12,8 +12,7 @@ import { mapLimit } from 'promiso';
 import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
-import Redis from '../redis';
-import { filesToDownloadXPath, articleDetailXId } from '../stores';
+import { filesToDownloadXPath, articleDetailXId, redirectsXId } from '../stores';
 import { getSizeFromUrl } from './misc';
 
 const genericJsModules = config.output.mw.js;
@@ -55,7 +54,7 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
     });
 }
 
-export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
     let jsConfigVars = '';
@@ -81,7 +80,7 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                         continue;
                     }
 
-                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
+                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                     for (const dep of mediaDependencies) {
 
                         const { mult, width } = getSizeFromUrl(dep.url);
@@ -104,7 +103,7 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
 
                     jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
-                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
+                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
                     const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                     await zimCreator.addArticle(zimArticle);
 
@@ -180,7 +179,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
     };
 }
 
-async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
+async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
 
     let doc = domino.createDocument(html);
@@ -195,7 +194,7 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
             }),
     );
 
-    const ruRet = await rewriteUrls(doc, articleId, redis, downloader, mw, dump);
+    const ruRet = await rewriteUrls(doc, articleId, downloader, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
         ruRet.mediaDependencies
@@ -430,7 +429,7 @@ async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump,
     return { doc: parsoidDoc, mediaDependencies };
 }
 
-async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
     /* Go through all links */
@@ -450,7 +449,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, redis: 
             linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
             return;
         } else {
-            const res = await redis.processRedirectIfExists(title);
+            const res = await redirectsXId.get(title.replace(/ /g, '_'));
             if (res) {
                 linkNode.setAttribute('href', dump.getArticleUrl(title));
             } else {
@@ -753,7 +752,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<string | Buffer> {
     const {
         jsConfigVars,
         jsDependenciesList,

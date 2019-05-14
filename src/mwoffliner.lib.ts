@@ -3,7 +3,7 @@
 /* ********************************** */
 
 import domino from 'domino';
-import fs, { rmdirSync } from 'fs';
+import fs from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
@@ -30,8 +30,8 @@ import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl } from './stores';
 import { getCategoriesForArticles, trimUnmirroredPages, simplifyGraph } from './util/categories';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects } from './stores';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -80,8 +80,8 @@ async function execute(argv: any) {
 
   /* Setup redis client */
   const redis = new Redis(argv, config);
-  await redis.flushDBs();
   populateArticleDetail(redis.redisClient);
+  populateRedirects(redis.redisClient);
   populateFilesToDownload(redis.redisClient);
   populateRequestCache(redis.redisClient);
 
@@ -120,12 +120,9 @@ async function execute(argv: any) {
     rimraf.sync(cacheDirectory);
 
     logger.log(`Flushing Redis DBs`);
-    await articleDetailXId.flush();
-    await filesToDownloadXPath.flush();
-    await requestCacheXUrl.flush();
-
-    await redis.flushDBs();
-    await redis.quit();
+    filesToDownloadXPath.flush();
+    articleDetailXId.flush();
+    requestCacheXUrl.flush();
   });
   process.on('SIGTERM', () => {
     logger.log(`SIGTERM`);
@@ -273,15 +270,18 @@ async function execute(argv: any) {
   await mw.getNamespaces(addNamespaces, downloader);
 
   logger.info(`Getting article ids`);
-  await getArticleIds(downloader, redis, mw, mainPage, articleList ? articleListLines : null);
-  await getCategoriesForArticles(articleDetailXId, downloader, redis);
-  await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
-  // while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
-  //   // keep simplifying graph
-  // }
-  // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
+  await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null);
+  if (mw.getCategories) {
+    await getCategoriesForArticles(articleDetailXId, downloader, redis);
+    await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
+    // while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
+    //   // keep simplifying graph
+    // }
+    // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
+  }
 
-  for (const _dump of dumps) {
+  for (let i = 0; i < dumps.length; i++) {
+    const _dump = dumps[i];
     const dump = new Dump(_dump, {
       tmpDir: dumpTmpDir,
       username: mwUsername,
@@ -314,7 +314,7 @@ async function execute(argv: any) {
       logger.log(`Skipping dump`);
     } else {
       try {
-        await doDump(dump);
+        await doDump(dump, i === (dumps.length - 1));
       } catch (err) {
         debugger;
         throw err;
@@ -327,7 +327,7 @@ async function execute(argv: any) {
 
   logger.log('All dumping(s) finished with success.');
 
-  async function doDump(dump: Dump) {
+  async function doDump(dump: Dump, isFinalDump = false) {
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
@@ -403,7 +403,7 @@ async function execute(argv: any) {
     await getMainPage(dump, zimCreator);
 
     logger.log(`Getting articles`);
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, redis, downloader, mw, dump);
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, mw, dump);
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`);
     logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`);
@@ -416,45 +416,46 @@ async function execute(argv: any) {
     logger.log(`Downloading module dependencies`);
     await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {
       return await mapLimit(moduleList, downloader.speed, (oneModule) => {
-        return downloadAndSaveModule(zimCreator, redis, mw, downloader, dump, oneModule, type as any);
+        return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any);
       });
     }));
 
+    if (isFinalDump) {
+      await articleDetailXId.flush();
+    }
     await downloadFiles(zimCreator, downloader);
 
-    logger.log(`Creating redirects`);
-    await getRedirects(dump, zimCreator);
+    logger.log(`Writing Article Redirects`);
+    await writeArticleRedirects(downloader, dump, zimCreator);
 
     logger.log(`Finishing Zim Creation`);
     zimCreator.finalise();
-
-    await redis.delMediaDB();
   }
 
   /* ********************************* */
   /* FUNCTIONS *********************** */
   /* ********************************* */
 
-  function getRedirects(dump: Dump, zimCreator: ZimCreator) {
-    logger.log('Reset redirects cache file (or create it)');
-
-    logger.log('Storing redirects...');
-    function cacheRedirect(redirectId: string, finished: Callback) {
-      redis.getRedirect(redirectId, finished, (target: string) => {
-        logger.info(`Storing redirect ${redirectId} (to ${target})...`);
-        const url = dump.getArticleBase(redirectId);
-        const redirectArticle = new ZimArticle({ url, data: '', ns: 'A', mimeType: 'text/plain', title: redirectId.replace(/_/g, ' '), redirectAid: 'A/' + dump.getArticleBase(target, false), aid: `A/${url}` });
-        zimCreator.addArticle(redirectArticle)
-          .then(finished, (err: any) => {
-            logger.warn(`Failed to create redirect, skipping: `, err);
-            finished();
-          });
-      });
-    }
-
-    return redis.processAllRedirects(speed, cacheRedirect,
-      'Unable to cache a redirect',
-      'All redirects were cached successfuly.',
+  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
+    await articleDetailXId.iterateItems(
+      downloader.speed,
+      async (articles) => {
+        for (const [articleId, articleDetail] of Object.entries(articles)) {
+          for (const redirect of articleDetail.redirects) {
+            const redirectId = redirect.title.replace(/ /g, '_');
+            const redirectArticle = new ZimArticle({
+              url: redirectId + (dump.nozim ? '.html' : ''),
+              shouldIndex: true,
+              data: '',
+              ns: 'A',
+              mimeType: 'text/html',
+              title: redirect.title,
+              redirectAid: `A/${articleId}` + (dump.nozim ? '.html' : ''),
+            });
+            await zimCreator.addArticle(redirectArticle);
+          }
+        }
+      },
     );
   }
 
