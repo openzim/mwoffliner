@@ -78,6 +78,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
     const numKeys = await articleDetailXId.len();
     let prevPercentProgress = -1;
     let processedArticles = 0;
+    let modifiedArticles = 0;
 
     await articleDetailXId
         .iterateItems(
@@ -85,6 +86,15 @@ export async function trimUnmirroredPages(downloader: Downloader) {
             async (articleKeyValuePairs, workerId) => {
 
                 for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+                    processedArticles += 1;
+                    if (typeof (articleDetail as any).missing === 'string') {
+                        articleDetailXId.delete(articleId);
+                        modifiedArticles += 1;
+
+                        // TODO: remove references to current article on delete
+                        continue;
+                    }
+
                     const categoryIds = (articleDetail.categories || []).map((c) => c.title.replace(/ /g, '_'));
                     const subCategoryIds = (articleDetail.subCategories || []).map((c) => c.title.replace(/ /g, '_'));
                     const pageIds = (articleDetail.pages || []).map((c) => c.title.replace(/ /g, '_'));
@@ -99,27 +109,42 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                         pageIds.length ? articleDetailXId.getMany(pageIds) : Promise.resolve({}),
                     ]);
 
-                    articleDetail.categories = deDup(articleDetail.categories || [], (p) => p.title)
+                    let hasUpdated = false;
+
+                    const newCategories = deDup(articleDetail.categories || [], (p) => p.title)
                         .filter((c, i) => {
                             const id = categoryIds[i];
                             return !!categories[id];
                         });
+                    if (newCategories.length !== categoryIds.length) {
+                        articleDetail.categories = newCategories;
+                        hasUpdated = true;
+                    }
 
-                    articleDetail.subCategories = deDup(articleDetail.subCategories || [], (p) => p.title)
+                    const newSubCategories = deDup(articleDetail.subCategories || [], (p) => p.title)
                         .filter((c, i) => {
                             const id = subCategoryIds[i];
                             return !!subCategories[id];
                         });
+                    if (newSubCategories.length !== subCategoryIds.length) {
+                        articleDetail.subCategories = newSubCategories;
+                        hasUpdated = true;
+                    }
 
-                    articleDetail.pages = deDup(articleDetail.pages || [], (p) => p.title)
+                    const newPages = deDup(articleDetail.pages || [], (p) => p.title)
                         .filter((c, i) => {
                             const id = pageIds[i];
                             return !!pages[id];
                         });
+                    if (newPages.length !== pageIds.length) {
+                        articleDetail.pages = newPages;
+                        hasUpdated = true;
+                    }
 
-                    await articleDetailXId.set(articleId, articleDetail);
-
-                    processedArticles += 1;
+                    if (hasUpdated) {
+                        await articleDetailXId.set(articleId, articleDetail);
+                        modifiedArticles += 1;
+                    }
 
                     if (processedArticles % 100 === 0) {
                         const percentProgress = Math.floor(processedArticles / numKeys * 1000) / 10;
@@ -131,6 +156,8 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                 }
             },
         );
+
+    return modifiedArticles;
 }
 
 export async function simplifyGraph(downloader: Downloader) {

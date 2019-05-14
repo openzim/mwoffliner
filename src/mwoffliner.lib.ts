@@ -273,7 +273,11 @@ async function execute(argv: any) {
   await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null);
   if (mw.getCategories) {
     await getCategoriesForArticles(articleDetailXId, downloader, redis);
-    await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
+
+    while (await trimUnmirroredPages(downloader)) { // Remove unmirrored pages, categories, subCategories
+      // trimUnmirroredPages returns number of modified articles
+    }
+
     // while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
     //   // keep simplifying graph
     // }
