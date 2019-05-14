@@ -13,6 +13,12 @@ export function populateArticleDetail(redisClient: RedisClient) {
 
 export let articleDetailXId: RedisKvs<ArticleDetail>;
 
+export function populateRedirects(redisClient: RedisClient) {
+    redirectsXId = new RedisKvs(redisClient, `${Date.now()}-redirects`);
+}
+
+export let redirectsXId: RedisKvs<number>;
+
 export function populateRequestCache(redisClient: RedisClient) {
     requestCacheXUrl = new RedisKvs(redisClient, `${Date.now()}-request`);
 }
