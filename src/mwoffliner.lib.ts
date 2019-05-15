@@ -424,16 +424,13 @@ async function execute(argv: any) {
       });
     }));
 
-    if (isFinalDump) {
-      await articleDetailXId.flush();
-    }
-    await downloadFiles(zimCreator, downloader);
-
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
 
+    await downloadFiles(zimCreator, downloader);
+
     logger.log(`Finishing Zim Creation`);
-    zimCreator.finalise();
+    await zimCreator.finalise();
   }
 
   /* ********************************* */
@@ -445,7 +442,7 @@ async function execute(argv: any) {
       downloader.speed,
       async (articles) => {
         for (const [articleId, articleDetail] of Object.entries(articles)) {
-          for (const redirect of articleDetail.redirects) {
+          for (const redirect of articleDetail.redirects || []) {
             const redirectId = redirect.title.replace(/ /g, '_');
             const redirectArticle = new ZimArticle({
               url: redirectId + (dump.nozim ? '.html' : ''),

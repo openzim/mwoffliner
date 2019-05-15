@@ -21,7 +21,12 @@ class ZimCreatorFs extends ZimCreator {
 
         if (article.redirectAid) {
             const target = article.redirectAid.split('/').slice(1).join('/'); // Hack
-            return symlinkPromise(target, articleFileName);
+            try {
+                const ret = await symlinkPromise(target, articleFileName);
+                return ret;
+            } catch (err) {
+                return Promise.resolve({});
+            }
         } else {
             return writeFilePromise(articleFileName, article.bufferData);
         }
