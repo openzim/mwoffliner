@@ -546,10 +546,10 @@ async function execute(argv: any) {
 
       if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n');
-        doc.getElementById('content').innerHTML = articlesWithImagesEl;
+        doc.body.innerHTML = `<div id='content'>${articlesWithImagesEl}</div>`;
       } else {
         const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n');
-        doc.getElementById('list').innerHTML = articlesWithoutImagesEl;
+        doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`;
       }
 
       /* Write the static html file */
@@ -558,7 +558,7 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to [${'A/' + dump.getArticleBase(mainPage, true)}]`);
+      logger.log(`Create main page redirection from[index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
       const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: 'A/' + dump.getArticleBase(mainPage, true) });
       return zimCreator.addArticle(article);
     }
