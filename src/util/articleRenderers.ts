@@ -17,13 +17,12 @@ export function renderDesktopArticle(json: any, articleId: string) {
 }
 
 export function renderMCSArticle(json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail) {
-
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({
         lead_display_title: json.lead.displaytitle,
         lead_section_text: json.lead.sections[0].text,
-        string: dump.strings,
+        strings: dump.strings,
     });
 
     // set all other section (closed by default)
@@ -69,12 +68,6 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
     const slashesInUrl = articleId.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
     if (articleDetail.subCategories && articleDetail.subCategories.length) {
-        const subCategoriesAlphabetical = articleDetail.subCategories.map((category) => {
-            return {
-                name: category.title.split(':').slice(1).join(':'),
-                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
-            };
-        });
 
         const subCategories = articleDetail.subCategories.map((category) => {
             return {
@@ -90,6 +83,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
             groups,
         });
     }
+
     if (articleDetail.pages && articleDetail.pages.length) {
         const pages = articleDetail.pages.map((page) => {
             return {
@@ -105,6 +99,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
             groups,
         });
     }
+
     if (articleDetail.categories && articleDetail.categories.length) {
         const categories = articleDetail.categories.map((category) => {
             return {

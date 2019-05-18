@@ -9,13 +9,15 @@ import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminAdvPng from 'imagemin-advpng';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
-import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml } from './util';
+import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml, readFilePromise, writeFilePromise } from './util';
 import MediaWiki from './MediaWiki';
 import { Dump } from './Dump';
 import * as backoff from 'backoff';
-import { articleDetailXId } from './articleDetail';
 import { normalizeMwResponse } from './util/mw-api';
 import deepmerge from 'deepmerge';
+import { requestCacheXUrl, articleDetailXId } from './stores';
+import * as path from 'path';
+import md5 from 'md5';
 
 const imageminOptions = {
   plugins: [
@@ -38,17 +40,22 @@ class Downloader {
   public mcsUrl: string;
   public parsoidFallbackUrl: string;
   public speed: number;
+  public useCache: boolean;
+  public cacheDirectory: string;
+  public forceParsoidFallback: boolean = false;
 
   private activeRequests = 0;
   private maxActiveRequests = 1;
 
-  constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number) {
+  constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number, useCache: boolean, cacheDirectory: string) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
     this.maxActiveRequests = speed * 4;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
+    this.useCache = useCache;
+    this.cacheDirectory = cacheDirectory;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
@@ -71,7 +78,17 @@ class Downloader {
           limits: {
             wt2html: {
               // maxWikitextSize: 1000000, // Default
-              maxWikitextSize: 1000000 * 2,
+              maxWikitextSize: 1000000 * 4,
+              // maxListItems: 30000, // Default
+              maxListItems: 30000 * 4,
+              // maxTableCells: 30000, // Default
+              maxTableCells: 30000 * 4,
+              // maxTransclusions: 10000, // Default
+              maxTransclusions: 10000 * 4,
+              // maxImages: 1000, // Default
+              maxImages: 1000 * 4,
+              // maxTokens: 1000000, // Default
+              maxTokens: 1000000 * 4,
             },
           },
           mwApis: [{
@@ -85,7 +102,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `https://{{domain}}/${this.mw.apiPath}`,
+            uri: `http://{{domain}}/${this.mw.apiPath}`,
             headers: {
               'user-agent': '{{user-agent}}',
             },
@@ -122,6 +139,7 @@ class Downloader {
       format: 'json',
       rdlimit: 'max',
       colimit: 'max',
+      clshow: '!hidden',
       ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
       ...(continuation || {}),
     };
@@ -138,7 +156,8 @@ class Downloader {
       logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
     }
 
-    const processedResponse = normalizeMwResponse(resp.query);
+    const processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+
     if (resp.continue) {
 
       const nextResp = await this.getArticleDetailsIds(articleIds, resp.continue);
@@ -146,6 +165,15 @@ class Downloader {
       return deepmerge(processedResponse, nextResp);
 
     } else {
+      logger.info(`Getting subCategories`);
+      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+        const isCategoryArticle = articleDetail.ns === 14;
+        if (isCategoryArticle) {
+          const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
+          const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+          (processedResponse[articleId] as any).subCategories = categoryMembers;
+        }
+      }
       return processedResponse;
     }
   }
@@ -161,6 +189,7 @@ class Downloader {
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
+      clshow: '!hidden',
       gapcontinue,
       ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
     };
@@ -192,7 +221,7 @@ class Downloader {
       logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
     }
 
-    const processedResponse = normalizeMwResponse(resp.query);
+    const processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
     let gCont: string = null;
     try {
@@ -209,6 +238,16 @@ class Downloader {
         gapContinue: gCont,
       };
     } else {
+      logger.info(`Getting subCategories`);
+      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+        const isCategoryArticle = articleDetail.ns === 14;
+        if (isCategoryArticle) {
+          const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
+          const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+          (processedResponse[articleId] as any).subCategories = categoryMembers;
+        }
+      }
+
       return {
         articleDetails: processedResponse,
         gapContinue: gCont,
@@ -218,7 +257,11 @@ class Downloader {
   }
 
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
+    articleId = articleId.replace(/ /g, '_');
     logger.info(`Getting article [${articleId}]`);
+    if (!useParsoidFallback) {
+      useParsoidFallback = this.forceParsoidFallback;
+    }
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
       : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
@@ -228,13 +271,10 @@ class Downloader {
     try {
       const articleDetail = await articleDetailXId.get(articleId);
       const json = await this.getJSON<any>(articleApiUrl);
-
-      const isCategoryArticle = articleDetail.ns === 14 || (json.lead || {}).ns === 14;
-      if (isCategoryArticle) {
-        const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
-        const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
-        articleDetail.subCategories = categoryMembers;
-        await articleDetailXId.set(articleId, articleDetail);
+      if (json.type === 'api_error') {
+        this.forceParsoidFallback = true;
+        console.info(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
+        throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
 
       if (useParsoidFallback) {
@@ -248,7 +288,8 @@ class Downloader {
         const html = renderMCSArticle(json, dump, articleId, articleDetail);
         let strippedTitle = getStrippedTitleFromHtml(html);
         if (!strippedTitle) {
-          const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
+          const title = (json.lead || { displaytitle: articleId }).displaytitle;
+          const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
           strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
         }
         return {
@@ -269,6 +310,13 @@ class Downloader {
 
   public async getJSON<T>(url: string) {
     const self = this;
+    if (this.useCache) {
+      const cachedVal = await requestCacheXUrl.get(url);
+      if (cachedVal) {
+        logger.info(`Cache hit for [${url}]`);
+        return cachedVal;
+      }
+    }
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
       const call = backoff.call(this.getJSONCb, url, (err: any, val: any) => {
@@ -277,6 +325,9 @@ class Downloader {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
         } else {
+          if (self.useCache) {
+            requestCacheXUrl.set(url, val);
+          }
           resolve(val);
         }
       });
@@ -290,6 +341,18 @@ class Downloader {
     if (!url) {
       throw new Error(`Parameter [${url}] is not a valid url`);
     }
+    if (this.useCache) {
+      const cacheVal = await requestCacheXUrl.get(url);
+      if (cacheVal) {
+        logger.info(`Cache hit for [${url}]`);
+        const { filePath, responseHeaders } = cacheVal;
+        const content = await readFilePromise(filePath, null) as Buffer;
+        return {
+          content,
+          responseHeaders,
+        };
+      }
+    }
     const self = this;
     await self.claimRequest();
     return new Promise((resolve, reject) => {
@@ -300,12 +363,34 @@ class Downloader {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
         } else {
-          resolve(val);
+          if (self.useCache) {
+            self.cacheResponse(url, val)
+              .then(() => {
+                resolve(val);
+              })
+              .catch((err) => {
+                logger.warn(`Failed to cache response for [${url}]`, err);
+                reject({ message: `Failed to cache response`, err });
+              });
+          } else {
+            resolve(val);
+          }
         }
       });
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
+    });
+  }
+
+  private async cacheResponse(url: string, val: { content: Buffer, responseHeaders: any }) {
+    const fileName = md5(url);
+    const filePath = path.join(this.cacheDirectory, fileName);
+    logger.info(`Caching response for [${url}] to [${filePath}]`);
+    await writeFilePromise(filePath, val.content, null);
+    await requestCacheXUrl.set(url, {
+      filePath,
+      responseHeaders: val.responseHeaders,
     });
   }
 

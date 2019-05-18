@@ -7,9 +7,8 @@ import { getFullUrl, jsPath, cssPath } from '.';
 import { config } from '../config';
 import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
-import Redis from '../redis';
 import { Dump } from '../Dump';
-import { filesToDownloadXPath } from '../filesToDownload';
+import { filesToDownloadXPath } from '../stores';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -111,7 +110,7 @@ export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: stri
     return itemsWithHighestRequiredRes;
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, redis: Redis, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
     // param :
     //   module : string : the name of the module
     //   moduleUri : string : the path where the module will be saved into the zim

@@ -1,11 +1,11 @@
 import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
-import { articleDetailXId } from '../articleDetail';
 import logger from '../Logger';
-import { zip } from './misc';
+import { articleDetailXId, redirectsXId } from '../stores';
+import deepmerge = require('deepmerge');
 
 let batchSize = 50;
-export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, isCategory = false): Promise<void> {
+export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let index = 0;
     let numArticleIds = _articleIds.length;
 
@@ -18,45 +18,35 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 const from = index;
                 const to = index + batchSize;
                 index += batchSize;
-                if (!isCategory) {
+                if (log) {
                     logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${Math.floor(to / numArticleIds * 100)}%]`);
                 }
-                const articleIds = _articleIds.slice(from, to);
+                const articleIds = _articleIds.slice(from, to).map((id) => id.replace(/ /g, '_'));
 
                 try {
                     if (articleIds.length) {
                         const articleDetails = await downloader.getArticleDetailsIds(articleIds);
-                        await articleDetailXId.setMany(articleDetails);
-                        const foundCategoryMapping: { [categoryId: string]: string[] } = {};
-                        if (downloader.mw.getCategories && !isCategory) {
-                            Object.assign(
-                                foundCategoryMapping,
-                                Object.entries(articleDetails)
-                                    .reduce((acc: any, [aId, detail]) => {
-                                        for (const cat of detail.categories || []) {
-                                            const catId = cat.title.replace(/ /g, '_');
-                                            acc[catId] = (acc[catId] || []).concat({ title: detail.title, pageid: detail.pageid, ns: detail.ns } as PageInfo);
-                                        }
-                                        return acc;
-                                    }, {}),
-                            );
-                        }
-                        // TODO: consider adding a --getSubCategories option
 
-                        const foundCategoryIds = Object.keys(foundCategoryMapping);
-                        if (foundCategoryIds.length) {
-                            const existingArticles = await articleDetailXId.getMany(foundCategoryIds);
-                            const categoriesToGet = foundCategoryIds.filter((c, index) => !existingArticles[index]);
-                            logger.log(`Found [${categoriesToGet.length}] categories for pages, downloading`);
-                            await getArticlesByIds(categoriesToGet, downloader, true);
-                            const catDetails = await articleDetailXId.getMany(foundCategoryIds);
+                        const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
+                        await redirectsXId.setMany(
+                            redirectIds.reduce((acc, redirect) => {
+                                const redirectId = redirect.title.replace(/ /g, '_');
+                                return {
+                                    ...acc,
+                                    [redirectId]: 1,
+                                };
+                            }, {}),
+                        );
 
-                            const catIdAndDetailPairs = zip(foundCategoryIds, catDetails);
-                            for (const [id, detail] of catIdAndDetailPairs) {
-                                detail.pages = (detail.pages || []).concat(foundCategoryMapping[id]);
-                                await articleDetailXId.set(id, detail);
-                            }
-                        }
+                        const existingArticleDetails = await articleDetailXId.getMany(articleIds);
+
+                        await articleDetailXId.setMany(
+                            deepmerge(
+                                existingArticleDetails,
+                                articleDetails,
+                            ),
+                        );
+
                     }
                 } catch (err) {
                     if (batchSize < 10) {
@@ -81,19 +71,19 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
     const numDetails = Object.keys(articleDetails).length;
     index += numDetails;
     await articleDetailXId.setMany(articleDetails);
-    logger.log(`Got [${index}] articles from namespace [${ns}]`);
 
-    if (downloader.mw.getCategories) {
-        const categoriesToGet = Object.values(articleDetails)
-            .reduce((acc, detail) => {
-                return acc.concat(detail.categories || []);
-            }, [])
-            .map((c) => c.title.replace(/ /g, '_'));
-        if (categoriesToGet.length) {
-            logger.log(`Found [${categoriesToGet.length}] categories for pages, downloading`);
-            await getArticlesByIds(categoriesToGet, downloader, false);
-        }
-    }
+    const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
+    await redirectsXId.setMany(
+        redirectIds.reduce((acc, redirect) => {
+            const redirectId = redirect.title.replace(/ /g, '_');
+            return {
+                ...acc,
+                [redirectId]: 1,
+            };
+        }, {}),
+    );
+
+    logger.log(`Got [${index}] articles from namespace [${ns}]`);
 
     if (gapContinue) {
         return getArticlesByNS(ns, downloader, gapContinue);
@@ -113,7 +103,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
 
     return Object.values(pages)
         .reduce((acc, page) => {
-            const articleId = normalized[page.title] || page.title;
+            const articleId = (normalized[page.title] || page.title).replace(/ /g, '_');
             return {
                 ...acc,
                 [articleId]: page,

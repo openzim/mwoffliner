@@ -13,7 +13,6 @@ interface DumpOpts {
     password: string;
     spaceDelimiter: string;
     outputDirectory: string;
-    cacheDirectory: string;
     keepHtml: boolean;
     publisher: string;
     withoutZimFullTextIndex: boolean;
@@ -26,6 +25,7 @@ interface DumpOpts {
     resume?: boolean;
     minifyHtml: boolean;
     keepEmptyParagraphs: boolean;
+    tags?: string;
 }
 
 export class Dump {
@@ -53,8 +53,6 @@ export class Dump {
 
         const date = new Date();
         this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
-
-        this.opts.cacheDirectory = pathParser.join(opts.cacheDirectory, this.computeFilenameRadical(true, true, true));
 
         /* Get language specific strings */
         this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
@@ -108,6 +106,31 @@ export class Dump {
                 throw new Error(`TODO: IMPLEMENT RESUME`);
             }
         }
+    }
+
+    public computeZimTags() {
+        let tags = (this.opts.tags || '').split(';');
+        /* Mediawiki hostname radical */
+        const mwUrlHostParts = urlParser.parse(this.mwMetaData.base).host.split('.');
+        const mwUrlHostPartsTag = mwUrlHostParts.length > 1
+            ? mwUrlHostParts[mwUrlHostParts.length - 2]
+            : mwUrlHostParts[mwUrlHostParts.length - 1];
+        if (!tags.find((tag) => tag.toLowerCase() === mwUrlHostPartsTag.toLowerCase())) {
+            tags.push(mwUrlHostPartsTag.toLowerCase());
+        }
+        /* novid/nopic */
+        if (this.nopic) {
+            tags.push('nopic');
+        } else if (this.novid) {
+            tags.push('novid');
+        } else if (this.nopdf) {
+            tags.push('nopdf');
+        }
+        /* nodet */
+        if (this.nodet) { tags.push('nodet'); }
+        /* Remove empty elements */
+        tags = tags.filter((x) => x);
+        return tags.join(';');
     }
 
     public computeZimRootPath() {

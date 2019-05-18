@@ -1,8 +1,5 @@
-<h2 class="section-heading in-block collapsible-heading" tabindex="0" aria-haspopup="true" data-section-id="Page">
-    <div class="mw-ui-icon mw-ui-icon-arrow mw-ui-icon-element indicator" title=""></div>
-    <span class="mw-headline">Pages:</span>
-</h2>
-<div class="mf-section-{{ section_id }}" aria-pressed="true" aria-expanded="true">
+<details id="sub-pages" data-level="2">
+    <summary class='section-heading'><h2>Pages</h2></summary>
     <div class="mwo-groups">
         <ul>
             {% for pageGroup in groups %}
@@ -17,4 +14,4 @@
             {% endfor %}
         </ul>
     </div>
-</div>
+</details>

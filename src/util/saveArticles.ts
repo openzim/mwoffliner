@@ -12,9 +12,7 @@ import { mapLimit } from 'promiso';
 import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
-import Redis from '../redis';
-import { articleDetailXId } from '../articleDetail';
-import { filesToDownloadXPath } from '../filesToDownload';
+import { filesToDownloadXPath, articleDetailXId, redirectsXId, scrapeStatus } from '../stores';
 import { getSizeFromUrl } from './misc';
 
 const genericJsModules = config.output.mw.js;
@@ -25,50 +23,50 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
     logger.log(`Downloading a total of [${numKeys}] files`);
     let prevPercentProgress = -1;
 
-    await filesToDownloadXPath.iterateItems(async (fileDownloadPairs, fileDownloadIndex, percentProgress) => {
-        logger.log(`Processing batch of [${fileDownloadPairs.length}] files`);
+    await filesToDownloadXPath.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
+        logger.log(`Worker [${workerId}] Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
 
-        await mapLimit(
-            fileDownloadPairs,
-            downloader.speed,
-            async ([path, { url, namespace, mult, width }]) => {
+        for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
+            try {
+                let content;
+                const resp = await downloader.downloadContent(url);
+                content = resp.content;
 
-                try {
-                    let content;
-                    const resp = await downloader.downloadContent(url);
-                    content = resp.content;
+                const article = new ZimArticle({ url: path, data: content, ns: namespace });
+                await zimCreator.addArticle(article);
 
-                    const article = new ZimArticle({ url: path, data: content, ns: namespace });
-                    await zimCreator.addArticle(article);
-                } catch (err) {
-                    logger.warn(`Error downloading file [${url}], skipping`, err);
-                    await filesToDownloadXPath.delete(path);
+                scrapeStatus.files.success += 1;
+
+            } catch (err) {
+                logger.warn(`Error downloading file [${url}], skipping`, err);
+                scrapeStatus.files.fail += 1;
+                await filesToDownloadXPath.delete(path);
+            }
+
+            if (scrapeStatus.files.success % 10 === 0) {
+                const percentProgress = Math.floor(scrapeStatus.files.success / numKeys * 1000) / 10;
+                if (percentProgress !== prevPercentProgress) {
+                    prevPercentProgress = percentProgress;
+                    logger.log(`Progress downloading files [${scrapeStatus.files.success}/${numKeys}] [${percentProgress}%]`);
                 }
-            },
-        );
-
-        if (percentProgress !== prevPercentProgress) {
-            prevPercentProgress = percentProgress;
-            logger.log(`Progress downloading files [${fileDownloadIndex}/${numKeys}] [${percentProgress}%]`);
+            }
         }
     });
 }
 
-export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
-    let jsConfigVars: string;
+    let jsConfigVars = '';
     let prevPercentProgress = -1;
 
-    await articleDetailXId.iterateItems(async (articleKeyValuePairs, savingArticleIndex, percentProgress) => {
-        logger.log(`Processing batch of [${articleKeyValuePairs.length}] article ids`);
-        const numKeys = await articleDetailXId.len();
-
-        await mapLimit(
-            articleKeyValuePairs,
-            downloader.speed,
-            async ([articleId, articleDetail]) => {
-
+    await articleDetailXId.iterateItems(
+        downloader.speed,
+        async (articleKeyValuePairs, workerId) => {
+            const articleKeys = Object.keys(articleKeyValuePairs);
+            logger.log(`Worker [${workerId}] Processing batch of article ids [${logger.logifyArray(articleKeys)}]`);
+            const numKeys = await articleDetailXId.len();
+            for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
                     let articleHtml: string;
@@ -76,14 +74,12 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
                     const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
                     articleHtml = ret.html;
                     articleTitle = ret.displayTitle;
-
                     if (!articleHtml) {
                         logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
-                        return null;
+                        continue;
                     }
 
-                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, redis, downloader, mw, dump, articleId);
-
+                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                     for (const dep of mediaDependencies) {
 
                         const { mult, width } = getSizeFromUrl(dep.url);
@@ -106,23 +102,27 @@ export async function saveArticles(zimCreator: ZimCreator, redis: Redis, downloa
 
                     jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
-                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, redis, mw, dump, articleId, articleDetail);
-
+                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
                     const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                     await zimCreator.addArticle(zimArticle);
 
+                    scrapeStatus.articles.success += 1;
                 } catch (err) {
+                    scrapeStatus.articles.fail += 1;
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
                     await articleDetailXId.delete(articleId);
                 }
-            },
-        );
 
-        if (percentProgress !== prevPercentProgress) {
-            prevPercentProgress = percentProgress;
-            logger.log(`Progress downloading articles [${savingArticleIndex}/${numKeys}] [${percentProgress}%]`);
-        }
-    });
+                if (scrapeStatus.articles.success % 10 === 0) {
+                    const percentProgress = Math.floor(scrapeStatus.articles.success / numKeys * 1000) / 10;
+                    if (percentProgress !== prevPercentProgress) {
+                        prevPercentProgress = percentProgress;
+                        logger.log(`Progress downloading articles [${scrapeStatus.articles.success}/${numKeys}] [${percentProgress}%]`);
+                    }
+                }
+            }
+        },
+    );
 
     const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
     await zimCreator.addArticle(jsConfigVarArticle);
@@ -179,7 +179,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
     };
 }
 
-async function processArticleHtml(html: string, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
+async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
 
     let doc = domino.createDocument(html);
@@ -194,7 +194,7 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
             }),
     );
 
-    const ruRet = await rewriteUrls(doc, redis, downloader, mw, dump);
+    const ruRet = await rewriteUrls(doc, articleId, downloader, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
         ruRet.mediaDependencies
@@ -204,9 +204,7 @@ async function processArticleHtml(html: string, redis: Redis, downloader: Downlo
                 return { url, path };
             }),
     );
-
     doc = applyOtherTreatments(doc, dump);
-
     return {
         articleDoc: doc,
         mediaDependencies,
@@ -431,7 +429,7 @@ async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump,
     return { doc: parsoidDoc, mediaDependencies };
 }
 
-async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
     /* Go through all links */
@@ -451,7 +449,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: 
             linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
             return;
         } else {
-            const res = await redis.processRedirectIfExists(title);
+            const res = await redirectsXId.get(title.replace(/ /g, '_'));
             if (res) {
                 linkNode.setAttribute('href', dump.getArticleUrl(title));
             } else {
@@ -573,6 +571,14 @@ async function rewriteUrls(parsoidDoc: DominoElement, redis: Redis, downloader: 
                 }
             } else { // This is MediaWiki HTML
                 await removeLinksToUnmirroredArticles(linkNode, href);
+
+                if (articleId.includes('/')) {
+                    const href = linkNode.getAttribute('href'); // href is modified above, so this is necessary
+                    const resourceNamespace = 'A';
+                    const slashesInUrl = articleId.split('/').length - 1;
+                    const upStr = '../'.repeat(slashesInUrl + 1);
+                    linkNode.setAttribute('href', `${upStr}${resourceNamespace}/${href}`);
+                }
             }
         }
     }
@@ -699,20 +705,22 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
             for (let i = 0; i < paragraphNodes.length; i += 1) {
                 const paragraphNode = paragraphNodes[i];
                 const nextElementNode = DU.nextElementSibling(paragraphNode);
-
-                /* No nodes */
-                if (!nextElementNode) {
-                    DU.deleteNode(paragraphNode);
-                } else {
-                    /* Delete if nextElementNode is a paragraph with <= level */
-                    const nextElementNodeTag = nextElementNode.tagName.toLowerCase();
-                    if (
-                        nextElementNodeTag.length > 1
-                        && nextElementNodeTag[0] === 'h'
-                        && !isNaN(nextElementNodeTag[1])
-                        && nextElementNodeTag[1] <= level
-                    ) {
+                const isSummary = paragraphNode.parentElement.nodeName === 'SUMMARY';
+                if (!isSummary) {
+                    /* No nodes */
+                    if (!nextElementNode) {
                         DU.deleteNode(paragraphNode);
+                    } else {
+                        /* Delete if nextElementNode is a paragraph with <= level */
+                        const nextElementNodeTag = nextElementNode.tagName.toLowerCase();
+                        if (
+                            nextElementNodeTag.length > 1
+                            && nextElementNodeTag[0] === 'h'
+                            && !isNaN(nextElementNodeTag[1])
+                            && nextElementNodeTag[1] <= level
+                        ) {
+                            DU.deleteNode(paragraphNode);
+                        }
                     }
                 }
             }
@@ -744,7 +752,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, redis: Redis, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<string | Buffer> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -813,21 +821,24 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     /* Set footer */
     const div = htmlTemplateDoc.createElement('div');
-    const oldId = articleDetail.revisions[0].revid;
+    const rev = articleDetail.revisions && articleDetail.revisions.length ? articleDetail.revisions[0] : null;
     try {
-        /* Revision date */
-        const timestamp = articleDetail.revisions[0].timestamp;
-        const date = new Date(timestamp);
-        div.innerHTML = footerTemplate({
-            articleId: encodeURIComponent(articleId),
-            webUrl: mw.webUrl,
-            creator: dump.mwMetaData.creator,
-            oldId,
-            date: date.toISOString().substring(0, 10),
-            strings: dump.strings,
-        });
-        htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
-        addNoIndexCommentToElement(div);
+        if (rev) {
+            /* Revision date */
+            const oldId = rev.revid;
+            const timestamp = rev.timestamp;
+            const date = new Date(timestamp);
+            div.innerHTML = footerTemplate({
+                articleId: encodeURIComponent(articleId),
+                webUrl: mw.webUrl,
+                creator: dump.mwMetaData.creator,
+                oldId,
+                date: date.toISOString().substring(0, 10),
+                strings: dump.strings,
+            });
+            htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
+            addNoIndexCommentToElement(div);
+        }
 
         /* Geo-coordinates */
         if (articleDetail.coordinates && articleDetail.coordinates.length) {

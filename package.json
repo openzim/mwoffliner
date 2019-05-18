@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "1.8.4",
+  "version": "1.8.6",
   "description": "Mediawiki HTML/ZIM scraper",
   "main": "mwoffliner.js",
   "license": "GPL-3.0",
@@ -10,7 +10,9 @@
     "url": "https://kiwix.org/"
   },
   "scripts": {
-    "mwoffliner": "./lib/cli.js",
+    "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
+    "mwoffliner": "node mwoffliner",
+    "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "./simple-test.sh",
     "snyk-protect": "exit 0;snyk protect",
     "prepare": "npm run snyk-protect",
@@ -50,6 +52,7 @@
     "@types/imagemin-gifsicle": "^5.2.0",
     "@types/imagemin-jpegtran": "^5.0.0",
     "@types/imagemin-optipng": "^5.2.0",
+    "@types/md5": "^2.1.33",
     "@types/node": "^11.9.4",
     "@types/redis": "^2.8.10",
     "@types/rimraf": "^2.0.2",
@@ -60,7 +63,7 @@
     "backoff": "^2.5.0",
     "country-language": "^0.1.7",
     "deepmerge": "^3.2.0",
-    "domino": "^2.0.1",
+    "domino": "^2.1.3",
     "expand-home-dir": "^0.0.3",
     "follow-redirects": "^1.7.0",
     "html-minifier": "^3.5.0",
@@ -72,6 +75,7 @@
     "imagemin-jpegtran": "^6.0.0",
     "imagemin-optipng": "^6.0.0",
     "imagemin-pngquant": "^7.0.0",
+    "md5": "^2.2.1",
     "mkdirp": "^0.5.1",
     "mocha": "^5.2.0",
     "parsoid": "^0.10.0",
