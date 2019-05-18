@@ -30,8 +30,8 @@ import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
+import { getCategoriesForArticles, trimUnmirroredPages, simplifyGraph } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects } from './stores';
-import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -273,7 +273,15 @@ async function execute(argv: any) {
   await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null);
   if (mw.getCategories) {
     await getCategoriesForArticles(articleDetailXId, downloader, redis);
-    await trimUnmirroredPages(downloader); // Remove unmirrored pages, categories, subCategories
+
+    while (await trimUnmirroredPages(downloader)) { // Remove unmirrored pages, categories, subCategories
+      // trimUnmirroredPages returns number of modified articles
+    }
+
+    // while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
+    //   // keep simplifying graph
+    // }
+    // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
   }
 
   for (let i = 0; i < dumps.length; i++) {
@@ -416,16 +424,13 @@ async function execute(argv: any) {
       });
     }));
 
-    if (isFinalDump) {
-      await articleDetailXId.flush();
-    }
-    await downloadFiles(zimCreator, downloader);
-
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
 
+    await downloadFiles(zimCreator, downloader);
+
     logger.log(`Finishing Zim Creation`);
-    zimCreator.finalise();
+    await zimCreator.finalise();
   }
 
   /* ********************************* */
@@ -437,7 +442,7 @@ async function execute(argv: any) {
       downloader.speed,
       async (articles) => {
         for (const [articleId, articleDetail] of Object.entries(articles)) {
-          for (const redirect of articleDetail.redirects) {
+          for (const redirect of articleDetail.redirects || []) {
             const redirectId = redirect.title.replace(/ /g, '_');
             const redirectArticle = new ZimArticle({
               url: redirectId + (dump.nozim ? '.html' : ''),
