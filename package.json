@@ -14,7 +14,7 @@
     "mwoffliner": "node mwoffliner",
     "mwmatrixoffliner": "node mwmatrixoffliner",
     "test": "./simple-test.sh",
-    "snyk-protect": "exit 0;snyk protect",
+    "snyk-protect": "snyk protect",
     "prepare": "npm run snyk-protect",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./build.sh",
@@ -89,7 +89,8 @@
     "tslint": "^5.11.0",
     "typescript": "^3.3.1",
     "utf8-binary-cutter": "^0.9.1",
-    "yargs": "^13.2.0"
+    "yargs": "^13.2.0",
+    "snyk": "^1.165.1"
   },
   "keywords": [
     "mediawiki",
