@@ -10,7 +10,8 @@
     "sourceMap": true,
     "declaration": true,
     "baseUrl": ".",
-    "outDir": "./lib",
+    "outDir": "./lib/",
+    "rootDir": "./src/",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "types": [

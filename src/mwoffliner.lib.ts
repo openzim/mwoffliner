@@ -6,7 +6,7 @@
 /* ********************************** */
 
 import domino from 'domino';
-import fs from 'fs';
+import fs, { readFileSync } from 'fs';
 import os from 'os';
 import pathParser from 'path';
 import urlParser from 'url';
@@ -25,7 +25,6 @@ import parameterList from './parameterList';
 import Redis from './redis';
 import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl } from './util';
 import { mapLimit } from 'promiso';
-import packageJSON from '../package.json';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
 import { getAndProcessStylesheets } from './util';
@@ -35,6 +34,7 @@ import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus } from './stores';
+const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
