@@ -11,8 +11,7 @@
   },
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
-    "mwoffliner": "node mwoffliner",
-    "mwmatrixoffliner": "node mwmatrixoffliner",
+    "mwoffliner": "node ./lib/cli.js",
     "test:e2e": "./simple-test.sh",
     "test": "nyc --extension .ts npm run test:no-spec | tap-spec && nyc report --reporter=text-lcov > coverage.lcov",
     "test:no-spec": "NODE_ENV=test ts-node --files -r tsconfig-paths/register node_modules/tape/bin/tape test/**/*.test.ts",
