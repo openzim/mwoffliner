@@ -12,7 +12,7 @@ import { mapLimit } from 'promiso';
 import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
-import { filesToDownloadXPath, articleDetailXId, redirectsXId } from '../stores';
+import { filesToDownloadXPath, articleDetailXId, redirectsXId, scrapeStatus } from '../stores';
 import { getSizeFromUrl } from './misc';
 
 const genericJsModules = config.output.mw.js;
@@ -20,7 +20,6 @@ const genericCssModules = config.output.mw.css;
 
 export async function downloadFiles(zimCreator: ZimCreator, downloader: Downloader) {
     const numKeys = await filesToDownloadXPath.len();
-    let filesDownloaded = 0;
     logger.log(`Downloading a total of [${numKeys}] files`);
     let prevPercentProgress = -1;
 
@@ -36,18 +35,19 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
                 const article = new ZimArticle({ url: path, data: content, ns: namespace });
                 await zimCreator.addArticle(article);
 
-                filesDownloaded += 1;
+                scrapeStatus.files.success += 1;
 
             } catch (err) {
                 logger.warn(`Error downloading file [${url}], skipping`, err);
+                scrapeStatus.files.fail += 1;
                 await filesToDownloadXPath.delete(path);
             }
 
-            if (filesDownloaded % 10 === 0) {
-                const percentProgress = Math.floor(filesDownloaded / numKeys * 1000) / 10;
+            if (scrapeStatus.files.success % 10 === 0) {
+                const percentProgress = Math.floor(scrapeStatus.files.success / numKeys * 1000) / 10;
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading files [${filesDownloaded}/${numKeys}] [${percentProgress}%]`);
+                    logger.log(`Progress downloading files [${scrapeStatus.files.success}/${numKeys}] [${percentProgress}%]`);
                 }
             }
         }
@@ -58,7 +58,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
     let jsConfigVars = '';
-    let articlesCompleted = 0;
     let prevPercentProgress = -1;
 
     await articleDetailXId.iterateItems(
@@ -107,17 +106,18 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                     await zimCreator.addArticle(zimArticle);
 
-                    articlesCompleted += 1;
+                    scrapeStatus.articles.success += 1;
                 } catch (err) {
+                    scrapeStatus.articles.fail += 1;
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
                     await articleDetailXId.delete(articleId);
                 }
 
-                if (articlesCompleted % 10 === 0) {
-                    const percentProgress = Math.floor(articlesCompleted / numKeys * 1000) / 10;
+                if (scrapeStatus.articles.success % 10 === 0) {
+                    const percentProgress = Math.floor(scrapeStatus.articles.success / numKeys * 1000) / 10;
                     if (percentProgress !== prevPercentProgress) {
                         prevPercentProgress = percentProgress;
-                        logger.log(`Progress downloading articles [${articlesCompleted}/${numKeys}] [${percentProgress}%]`);
+                        logger.log(`Progress downloading articles [${scrapeStatus.articles.success}/${numKeys}] [${percentProgress}%]`);
                     }
                 }
             }

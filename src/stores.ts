@@ -24,3 +24,17 @@ export function populateRequestCache(redisClient: RedisClient) {
 }
 
 export let requestCacheXUrl: RedisKvs<any>;
+
+export const scrapeStatus = {
+    files: {
+        success: 0,
+        fail: 0,
+    },
+    articles: {
+        success: 0,
+        fail: 0,
+    },
+    redirects: {
+        written: 0,
+    },
+};

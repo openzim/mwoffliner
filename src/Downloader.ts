@@ -42,6 +42,7 @@ class Downloader {
   public speed: number;
   public useCache: boolean;
   public cacheDirectory: string;
+  public forceParsoidFallback: boolean = false;
 
   private activeRequests = 0;
   private maxActiveRequests = 1;
@@ -258,6 +259,9 @@ class Downloader {
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
     articleId = articleId.replace(/ /g, '_');
     logger.info(`Getting article [${articleId}]`);
+    if (!useParsoidFallback) {
+      useParsoidFallback = this.forceParsoidFallback;
+    }
     const articleApiUrl = useParsoidFallback
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
       : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
@@ -267,6 +271,11 @@ class Downloader {
     try {
       const articleDetail = await articleDetailXId.get(articleId);
       const json = await this.getJSON<any>(articleApiUrl);
+      if (json.type === 'api_error') {
+        this.forceParsoidFallback = true;
+        console.info(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
+        throw new Error(`API Error when scraping [${articleApiUrl}]`);
+      }
 
       if (useParsoidFallback) {
         const html = renderDesktopArticle(json, articleId);
@@ -279,7 +288,8 @@ class Downloader {
         const html = renderMCSArticle(json, dump, articleId, articleDetail);
         let strippedTitle = getStrippedTitleFromHtml(html);
         if (!strippedTitle) {
-          const doc = domino.createDocument(`<span class='mw-title'>${json.lead.displaytitle}</span>`);
+          const title = (json.lead || { displaytitle: articleId }).displaytitle;
+          const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
           strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
         }
         return {

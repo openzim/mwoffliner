@@ -30,8 +30,8 @@ import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
-import { getCategoriesForArticles, trimUnmirroredPages, simplifyGraph } from './util/categories';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects } from './stores';
+import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus } from './stores';
 
 function getParametersList() {
   // Want to remove this anonymous function. Need to investigate to see if it's needed
@@ -274,7 +274,7 @@ async function execute(argv: any) {
   if (mw.getCategories) {
     await getCategoriesForArticles(articleDetailXId, downloader, redis);
 
-    while (await trimUnmirroredPages(downloader)) { // Remove unmirrored pages, categories, subCategories
+    while ((await trimUnmirroredPages(downloader)) > 0) { // Remove unmirrored pages, categories, subCategories
       // trimUnmirroredPages returns number of modified articles
     }
 
@@ -424,13 +424,15 @@ async function execute(argv: any) {
       });
     }));
 
+    await downloadFiles(zimCreator, downloader);
+
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
 
-    await downloadFiles(zimCreator, downloader);
-
     logger.log(`Finishing Zim Creation`);
     await zimCreator.finalise();
+
+    logger.log(`Summary of scrape actions:`, JSON.stringify(scrapeStatus, null, '\t'));
   }
 
   /* ********************************* */
@@ -454,6 +456,7 @@ async function execute(argv: any) {
               redirectAid: `A/${articleId}` + (dump.nozim ? '.html' : ''),
             });
             await zimCreator.addArticle(redirectArticle);
+            scrapeStatus.redirects.written += 1;
           }
         }
       },
