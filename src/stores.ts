@@ -36,5 +36,5 @@ export const scrapeStatus = {
     },
     redirects: {
         written: 0,
-    }
+    },
 };
