@@ -13,7 +13,9 @@
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node mwoffliner",
     "mwmatrixoffliner": "node mwmatrixoffliner",
-    "test": "./simple-test.sh",
+    "test:e2e": "./simple-test.sh",
+    "test": "nyc --extension .ts npm run test:no-spec | tap-spec && nyc report --reporter=text-lcov > coverage.lcov",
+    "test:no-spec": "NODE_ENV=test ts-node --files -r tsconfig-paths/register node_modules/tape/bin/tape test/**/*.test.ts",
     "snyk-protect": "exit 0;snyk protect",
     "prepare": "npm run snyk-protect",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
@@ -23,8 +25,7 @@
     "redis:start": "docker run -p 6379:6379 --name redis-mwoffliner -d redis",
     "redis:kill": "docker rm -f redis-mwoffliner || :",
     "redis": "npm run redis:kill && npm run redis:start",
-    "postinstall": "npm run build",
-    "debug": "TS_NODE_FILES=true node --inspect -r ts-node/register src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=admin@kiwix.com --verbose --redis=redis://127.0.0.1:6379 --format=nozim --articleList=../articleList"
+    "postinstall": "npm run build"
   },
   "bin": {
     "mwoffliner": "./lib/cli.js"
@@ -98,10 +99,15 @@
   ],
   "devDependencies": {
     "@percy/puppeteer": "^1.0.3",
+    "@types/blue-tape": "^0.1.32",
+    "blue-tape": "^1.0.0",
     "eslint": "^5.14.0",
+    "nyc": "^14.1.1",
     "puppeteer": "^1.12.2",
     "replace": "^1.1.0",
-    "ts-node": "^8.1.0"
+    "tap-spec": "^5.0.0",
+    "ts-node": "^8.1.0",
+    "tsconfig-paths": "^3.8.0"
   },
   "snyk": true
 }

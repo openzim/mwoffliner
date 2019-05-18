@@ -5,7 +5,6 @@ import logger from '../Logger';
 import { articleDetailXId } from '../stores';
 import { getArticlesByIds } from './mw-api';
 import { deDup } from '.';
-import { isNull } from 'util';
 
 export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDetail>, downloader: Downloader, redis: Redis, deleteArticleStore = false): Promise<void> {
     const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.redisClient, `${Date.now()}-request`);
