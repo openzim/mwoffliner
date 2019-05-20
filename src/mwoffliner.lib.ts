@@ -92,9 +92,16 @@ async function execute(argv: any) {
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
 
-  const outputDirectory = path.join(process.cwd(), _outputDirectory ? `${homeDirExpander(_outputDirectory)}/` : 'out/');
+  const expandedOutputDirectory = homeDirExpander(_outputDirectory || 'out/');
+  const outputDirectory = path.isAbsolute(expandedOutputDirectory) ?
+                            expandedOutputDirectory :
+                            path.join(process.cwd(), expandedOutputDirectory);
   await mkdirPromise(outputDirectory);
-  const cacheDirectory = path.join(process.cwd(), _cacheDirectory ? `${homeDirExpander(_cacheDirectory)}/` : `cac/dumps-${Date.now()}/`);
+
+  const expandedCacheDirectory = homeDirExpander(_cacheDirectory || `cac/dumps-${Date.now()}/`);
+  const cacheDirectory = path.isAbsolute(expandedCacheDirectory) ?
+                           expandedCacheDirectory :
+                           path.join(process.cwd(), expandedCacheDirectory);
   await mkdirPromise(cacheDirectory);
   const tmpDirectory = os.tmpdir();
 
