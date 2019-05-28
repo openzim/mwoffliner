@@ -12,18 +12,26 @@ import { mapLimit } from 'promiso';
 import { getFullUrl, migrateChildren, genHeaderScript, genHeaderCSSLink, jsPath, contains, cssPath, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
-import { filesToDownloadXPath, articleDetailXId, redirectsXId, scrapeStatus } from '../stores';
+import { filesToDownloadXPath, articleDetailXId, redirectsXId, scrapeStatus, filesToRetryXPath } from '../stores';
 import { getSizeFromUrl } from './misc';
+import { RedisKvs } from './redis-kvs';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
 
-export async function downloadFiles(zimCreator: ZimCreator, downloader: Downloader) {
-    const numKeys = await filesToDownloadXPath.len();
-    logger.log(`Downloading a total of [${numKeys}] files`);
+type FileStore = RedisKvs<{
+    url: string;
+    namespace: string;
+    mult?: number;
+    width?: number;
+}>;
+
+export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, downloader: Downloader, isRetry = false) {
+    const numKeys = await fileStore.len();
+    logger.log(`${isRetry ? 'Retrying' : 'Downloading'} a total of [${numKeys}] files`);
     let prevPercentProgress = -1;
 
-    await filesToDownloadXPath.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
+    await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
         logger.log(`Worker [${workerId}] Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
 
         for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
@@ -36,11 +44,14 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
                 await zimCreator.addArticle(article);
 
                 scrapeStatus.files.success += 1;
-
             } catch (err) {
-                logger.warn(`Error downloading file [${url}], skipping`, err);
-                scrapeStatus.files.fail += 1;
-                await filesToDownloadXPath.delete(path);
+                if (!isRetry) {
+                    await filesToRetryXPath.set(path, { url, namespace, mult, width });
+                } else {
+                    logger.warn(`Error downloading file [${url}], skipping`, err);
+                    scrapeStatus.files.fail += 1;
+                    await filesToDownloadXPath.delete(path);
+                }
             }
 
             if (scrapeStatus.files.success % 10 === 0) {
@@ -52,6 +63,10 @@ export async function downloadFiles(zimCreator: ZimCreator, downloader: Download
             }
         }
     });
+
+    if (!isRetry) {
+        await downloadFiles(filesToRetryXPath, zimCreator, downloader, true);
+    }
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {

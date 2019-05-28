@@ -33,7 +33,7 @@ import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus } from './stores';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function getParametersList() {
@@ -86,6 +86,7 @@ async function execute(argv: any) {
   populateArticleDetail(redis.redisClient);
   populateRedirects(redis.redisClient);
   populateFilesToDownload(redis.redisClient);
+  populateFilesToRetry(redis.redisClient);
   populateRequestCache(redis.redisClient);
 
   let articleList = _articleList ? String(_articleList) : _articleList;
@@ -94,14 +95,14 @@ async function execute(argv: any) {
 
   const expandedOutputDirectory = homeDirExpander(_outputDirectory || 'out/');
   const outputDirectory = path.isAbsolute(expandedOutputDirectory) ?
-                            expandedOutputDirectory :
-                            path.join(process.cwd(), expandedOutputDirectory);
+    expandedOutputDirectory :
+    path.join(process.cwd(), expandedOutputDirectory);
   await mkdirPromise(outputDirectory);
 
   const expandedCacheDirectory = homeDirExpander(_cacheDirectory || `cac/dumps-${Date.now()}/`);
   const cacheDirectory = path.isAbsolute(expandedCacheDirectory) ?
-                           expandedCacheDirectory :
-                           path.join(process.cwd(), expandedCacheDirectory);
+    expandedCacheDirectory :
+    path.join(process.cwd(), expandedCacheDirectory);
   await mkdirPromise(cacheDirectory);
   const tmpDirectory = os.tmpdir();
 
@@ -131,6 +132,7 @@ async function execute(argv: any) {
 
     logger.log(`Flushing Redis DBs`);
     filesToDownloadXPath.flush();
+    filesToRetryXPath.flush();
     articleDetailXId.flush();
     requestCacheXUrl.flush();
   });
@@ -349,6 +351,7 @@ async function execute(argv: any) {
 
     logger.log(`Flushing redis file store`);
     await filesToDownloadXPath.flush();
+    await filesToRetryXPath.flush();
 
     const zimCreatorConstructor = dump.nozim ? ZimCreatorFs : ZimCreator;
 
@@ -434,7 +437,7 @@ async function execute(argv: any) {
       });
     }));
 
-    await downloadFiles(zimCreator, downloader);
+    await downloadFiles(filesToDownloadXPath, zimCreator, downloader);
 
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
