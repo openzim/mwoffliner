@@ -7,6 +7,12 @@ export function populateFilesToDownload(redisClient: RedisClient) {
 
 export let filesToDownloadXPath: RedisKvs<{ url: string, namespace: string, mult?: number, width?: number }>;
 
+export function populateFilesToRetry(redisClient: RedisClient) {
+    filesToRetryXPath = new RedisKvs(redisClient, `${Date.now()}-media-retry`);
+}
+
+export let filesToRetryXPath: RedisKvs<{ url: string, namespace: string, mult?: number, width?: number }>;
+
 export function populateArticleDetail(redisClient: RedisClient) {
     articleDetailXId = new RedisKvs(redisClient, `${Date.now()}-detail`);
 }
