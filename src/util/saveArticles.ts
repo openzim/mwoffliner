@@ -84,44 +84,46 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
-                    let articleHtml: string;
-                    let articleTitle = articleId;
-                    const ret = await downloader.getArticle(articleId, dump, useParsoidFallback);
-                    articleHtml = ret.html;
-                    articleTitle = ret.displayTitle;
-                    if (!articleHtml) {
-                        logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
-                        continue;
-                    }
+                    const rets = await downloader.getArticle(articleId, dump, useParsoidFallback);
 
-                    const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
-                    for (const dep of mediaDependencies) {
-
-                        const { mult, width } = getSizeFromUrl(dep.url);
-
-                        const existingVal = await filesToDownloadXPath.get(dep.path);
-                        const currentDepIsHigherRes = !existingVal || existingVal.width < width || existingVal.mult < mult;
-                        if (currentDepIsHigherRes) {
-                            await filesToDownloadXPath.set(dep.path, { url: dep.url, namespace: 'I', mult, width });
+                    for (const { articleId, displayTitle, html } of rets) {
+                        const nonPaginatedArticleId = articleDetail.title.replace(/ /g, '_');
+                        const articleHtml = html;
+                        const articleTitle = displayTitle;
+                        if (!articleHtml) {
+                            logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
+                            continue;
                         }
+
+                        const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                        for (const dep of mediaDependencies) {
+
+                            const { mult, width } = getSizeFromUrl(dep.url);
+
+                            const existingVal = await filesToDownloadXPath.get(dep.path);
+                            const currentDepIsHigherRes = !existingVal || existingVal.width < width || existingVal.mult < mult;
+                            if (currentDepIsHigherRes) {
+                                await filesToDownloadXPath.set(dep.path, { url: dep.url, namespace: 'I', mult, width });
+                            }
+                        }
+
+                        const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader);
+
+                        for (const dep of _moduleDependencies.jsDependenciesList) {
+                            jsModuleDependencies.add(dep);
+                        }
+                        for (const dep of _moduleDependencies.styleDependenciesList) {
+                            cssModuleDependencies.add(dep);
+                        }
+
+                        jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
+
+                        const outHtml = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
+                        const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
+                        await zimCreator.addArticle(zimArticle);
+
+                        scrapeStatus.articles.success += 1;
                     }
-
-                    const _moduleDependencies = await getModuleDependencies(articleId, mw, downloader);
-
-                    for (const dep of _moduleDependencies.jsDependenciesList) {
-                        jsModuleDependencies.add(dep);
-                    }
-                    for (const dep of _moduleDependencies.styleDependenciesList) {
-                        cssModuleDependencies.add(dep);
-                    }
-
-                    jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
-
-                    const outHtml = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
-                    const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
-                    await zimCreator.addArticle(zimArticle);
-
-                    scrapeStatus.articles.success += 1;
                 } catch (err) {
                     scrapeStatus.articles.fail += 1;
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
