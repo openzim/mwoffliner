@@ -81,6 +81,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
         html += subCategoriesTemplate({
             strings: dump.strings,
             groups,
+            prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${resourceNamespace}/${articleDetail.prevArticleId.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}` : null,
+            nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${resourceNamespace}/${articleDetail.nextArticleId.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}` : null,
         });
     }
 

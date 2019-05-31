@@ -169,8 +169,7 @@ class Downloader {
       for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
         const isCategoryArticle = articleDetail.ns === 14;
         if (isCategoryArticle) {
-          const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
-          const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+          const categoryMembers = await this.getSubCategories(articleId);
           (processedResponse[articleId] as any).subCategories = categoryMembers;
         }
       }
@@ -242,8 +241,7 @@ class Downloader {
       for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
         const isCategoryArticle = articleDetail.ns === 14;
         if (isCategoryArticle) {
-          const res = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId));
-          const categoryMembers = res.query.categorymembers as Array<{ pageid: number, ns: number, title: string }>;
+          const categoryMembers = await this.getSubCategories(articleId);
           (processedResponse[articleId] as any).subCategories = categoryMembers;
         }
       }
@@ -256,7 +254,7 @@ class Downloader {
 
   }
 
-  public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<{ displayTitle: string, html: string }> {
+  public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<Array<{ articleId: string, displayTitle: string, html: string }>> {
     articleId = articleId.replace(/ /g, '_');
     logger.info(`Getting article [${articleId}]`);
     if (!useParsoidFallback) {
@@ -280,22 +278,53 @@ class Downloader {
       if (useParsoidFallback) {
         const html = renderDesktopArticle(json, articleId);
         const strippedTitle = getStrippedTitleFromHtml(html);
-        return {
+        return [{
+          articleId,
           displayTitle: strippedTitle || articleId.replace('_', ' '),
           html,
-        };
+        }];
       } else {
-        const html = renderMCSArticle(json, dump, articleId, articleDetail);
-        let strippedTitle = getStrippedTitleFromHtml(html);
-        if (!strippedTitle) {
-          const title = (json.lead || { displaytitle: articleId }).displaytitle;
-          const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
-          strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+        const articlesToReturn = [];
+
+        // Paginate when there are more than 200 subCategories
+        const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
+        for (let i = 0; i < numberOfPagesToSplitInto; i++) {
+          const pageId = i === 0 ? '' : `__${i}`;
+          const _articleId = articleId + pageId;
+          const _articleDetail = Object.assign(
+            {},
+            articleDetail,
+            {
+              subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
+              nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
+              prevArticleId: (i - 1) > 0 ?
+                `${articleId}__${i - 1}`
+                : (i - 1) === 0
+                  ? articleId
+                  : null,
+            },
+          );
+
+          if (articleDetail.subCategories.length > 200) {
+            await articleDetailXId.set(_articleId, _articleDetail);
+          }
+
+          const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
+          let strippedTitle = getStrippedTitleFromHtml(html);
+          if (!strippedTitle) {
+            const title = (json.lead || { displaytitle: articleId }).displaytitle;
+            const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
+            strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+          }
+
+          articlesToReturn.push({
+            articleId: _articleId,
+            displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
+            html,
+          });
         }
-        return {
-          displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
-          html,
-        };
+
+        return articlesToReturn;
       }
 
     } catch (err) {
@@ -483,6 +512,17 @@ class Downloader {
       } catch (a) {
         handler(err);
       }
+    }
+  }
+
+  private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
+    const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr));
+    const items = query.categorymembers.filter((a: any) => a && a.title);
+    if (cont && cont.cmcontinue) {
+      const nextItems = await this.getSubCategories(articleId, cont.cmcontinue);
+      return items.concat(nextItems);
+    } else {
+      return items;
     }
   }
 

@@ -1,6 +1,10 @@
 <details id="sub-categories" data-level="2">
-    <summary class='section-heading'><h2>Sub-Categories</h2></summary>
+    <summary class='section-heading'>
+        <h2>Sub-Categories</h2>
+    </summary>
     <div class="mwo-groups">
+        {% if !!prevArticleUrl %}(<a href="{{prevArticleUrl}}" rel="mw:WikiLink">previous page</a>){% endif %}
+        {% if !!nextArticleUrl %}(<a href="{{nextArticleUrl}}" rel="mw:WikiLink">next page</a>){% endif %}
         <ul>
             {% for categoryGroup in groups %}
             <div>
@@ -13,5 +17,7 @@
             </div>
             {% endfor %}
         </ul>
+        {% if !!prevArticleUrl %}(<a href="{{prevArticleUrl}}" rel="mw:WikiLink">previous page</a>){% endif %}
+        {% if !!nextArticleUrl %}(<a href="{{nextArticleUrl}}" rel="mw:WikiLink">next page</a>){% endif %}
     </div>
 </details>

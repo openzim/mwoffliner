@@ -169,10 +169,9 @@ export class Dump {
     }
 
     public getArticleBase(articleId: string, escape?: boolean) {
-        let filename = this.nozim ? articleId.replace(/\//g, this.opts.spaceDelimiter) : articleId;
         /* Filesystem is not able to handle with filename > 255 bytes */
-        while (Buffer.byteLength(filename, 'utf8') > 250) {
-            filename = filename.substr(0, filename.length - 1);
+        while (Buffer.byteLength(articleId, 'utf8') > 250) {
+            articleId = articleId.substr(0, articleId.length - 1);
         }
         function e(str: string) {
             if (typeof str === 'undefined') {
@@ -180,7 +179,9 @@ export class Dump {
             }
             return escape ? encodeURIComponent(str) : str;
         }
-        return e(filename) + (this.nozim ? '.html' : '');
+        const slashesInUrl = articleId.split('/').length - 1;
+        const upStr = '../'.repeat(slashesInUrl);
+        return upStr + e(articleId) + (this.nozim ? '.html' : '');
     }
 
 }

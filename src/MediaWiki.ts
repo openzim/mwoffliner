@@ -81,7 +81,7 @@ class MediaWiki {
   }
 
   public articleQueryUrl(titles: string[]) {
-    return `${this.apiUrl}action=query&redirects&format=json&cllimit=500&pithumbsize=300&prop=pageimages|revisions|coordinates|categories&titles=${encodeURIComponent(titles.join('|'))}`;
+    return `${this.apiUrl}action=query&redirects&format=json&cllimit=max&pithumbsize=300&prop=pageimages|revisions|coordinates|categories&titles=${encodeURIComponent(titles.join('|'))}`;
   }
 
   public pageGeneratorQueryUrl(namespace: string, init: string) {
@@ -92,8 +92,8 @@ class MediaWiki {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
 
-  public subCategoriesApiUrl(articleId: string) {
-    return `${this.apiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=500&format=json&cmtitle=${encodeURIComponent(articleId)}`;
+  public subCategoriesApiUrl(articleId: string, continueStr: string = '') {
+    return `${this.apiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
@@ -134,6 +134,13 @@ class MediaWiki {
       }
       if (pathname.indexOf(this.webUrlPath) === 0) {
         return U.decodeURIComponent(pathname.substr(this.webUrlPath.length));
+      }
+      const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
+      const isPaginated = isPaginatedRegExp.test(href);
+      if (isPaginated) {
+        const withoutDotHtml = href.split('.').slice(0, -1).join('.');
+        const lastTwoSlashes = withoutDotHtml.split('/').slice(-2).join('/');
+        return lastTwoSlashes;
       }
       if (pathParser.parse(href).dir.includes('../')) {
         return pathParser.parse(href).name;

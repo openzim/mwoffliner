@@ -87,54 +87,58 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                 for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                     processedArticles += 1;
                     if (typeof (articleDetail as any).missing === 'string') {
-                        articleDetailXId.delete(articleId);
+                        await articleDetailXId.delete(articleId);
                         modifiedArticles += 1;
 
                         // TODO: remove references to current article on delete
                         continue;
                     }
 
-                    const categoryIds = (articleDetail.categories || []).map((c) => c.title.replace(/ /g, '_'));
-                    const subCategoryIds = (articleDetail.subCategories || []).map((c) => c.title.replace(/ /g, '_'));
-                    const pageIds = (articleDetail.pages || []).map((c) => c.title.replace(/ /g, '_'));
+                    const categoriesXId: any = (articleDetail.categories || []).reduce((acc, c) => {
+                        return { ...acc, [c.title.replace(/ /g, '_')]: c };
+                    }, {});
+                    const categoryIds = Object.keys(categoriesXId);
+                    const subCategoriesXId: any = (articleDetail.subCategories || []).reduce((acc, c) => {
+                        return { ...acc, [c.title.replace(/ /g, '_')]: c };
+                    }, {});
+                    const subCategoryIds = Object.keys(subCategoriesXId);
+                    const pagesXId: any = (articleDetail.pages || []).reduce((acc, c) => {
+                        return { ...acc, [c.title.replace(/ /g, '_')]: c };
+                    }, {});
+                    const pageIds = Object.keys(pagesXId);
 
                     const [
-                        categories,
-                        subCategories,
-                        pages,
+                        categoriesExist,
+                        subCategoriesExist,
+                        pagesExist,
                     ] = await Promise.all([
-                        categoryIds.length ? articleDetailXId.getMany(categoryIds) : Promise.resolve({}),
-                        subCategoryIds.length ? articleDetailXId.getMany(subCategoryIds) : Promise.resolve({}),
-                        pageIds.length ? articleDetailXId.getMany(pageIds) : Promise.resolve({}),
+                        categoryIds.length ? articleDetailXId.exists(categoryIds) : Promise.resolve({}),
+                        subCategoryIds.length ? articleDetailXId.exists(subCategoryIds) : Promise.resolve({}),
+                        pageIds.length ? articleDetailXId.exists(pageIds) : Promise.resolve({}),
                     ]);
+
+                    const existingCategories = Object.keys(categoriesExist).filter((key) => !!categoriesExist[key]);
+                    const existingSubCategories = Object.keys(subCategoriesExist).filter((key) => !!subCategoriesExist[key]);
+                    const existingPages = Object.keys(pagesExist).filter((key) => !!pagesExist[key]);
 
                     let hasUpdated = false;
 
-                    const newCategories = deDup(articleDetail.categories || [], (p) => p.title)
-                        .filter((c, i) => {
-                            const id = categoryIds[i];
-                            return !!categories[id];
-                        });
+                    const newCategoryKeys = deDup(existingCategories || [], (p) => p);
+                    const newCategories = newCategoryKeys.map((key) => categoriesXId[key]);
                     if (newCategories.length !== categoryIds.length) {
                         articleDetail.categories = newCategories;
                         hasUpdated = true;
                     }
 
-                    const newSubCategories = deDup(articleDetail.subCategories || [], (p) => p.title)
-                        .filter((c, i) => {
-                            const id = subCategoryIds[i];
-                            return !!subCategories[id];
-                        });
+                    const newSubCategoryKeys = deDup(existingSubCategories || [], (p) => p);
+                    const newSubCategories = newSubCategoryKeys.map((key) => subCategoriesXId[key]);
                     if (newSubCategories.length !== subCategoryIds.length) {
                         articleDetail.subCategories = newSubCategories;
                         hasUpdated = true;
                     }
 
-                    const newPages = deDup(articleDetail.pages || [], (p) => p.title)
-                        .filter((c, i) => {
-                            const id = pageIds[i];
-                            return !!pages[id];
-                        });
+                    const newPageKeys = deDup(existingPages || [], (p) => p);
+                    const newPages = newPageKeys.map((key) => pagesXId[key]);
                     if (newPages.length !== pageIds.length) {
                         articleDetail.pages = newPages;
                         hasUpdated = true;

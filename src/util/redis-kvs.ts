@@ -1,5 +1,6 @@
 import { RedisClient } from 'redis';
 import { mapLimit } from 'promiso';
+import { cpus } from 'os';
 
 export class RedisKvs<T> {
     private redisClient: RedisClient;
@@ -43,6 +44,24 @@ export class RedisKvs<T> {
                 }
             });
         });
+    }
+
+    public exists(prop: string[]): Promise<{ [key: string]: number }> {
+        return mapLimit(
+            prop,
+            cpus().length * 4,
+            (key: string) => {
+                return new Promise((resolve, reject) => {
+                    this.redisClient.hexists(this.dbName, key, (err, val) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve({ [key]: val });
+                        }
+                    });
+                });
+            },
+        ).then((vals: any[]) => vals.reduce((acc, val) => Object.assign(acc, val), {}));
     }
 
     public set(prop: string, val: T) {

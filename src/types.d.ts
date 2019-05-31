@@ -92,6 +92,8 @@ type ArticleDetail = PageInfo & {
         comment: string,
     }>,
     internalThumbnailUrl?: string,
+    nextArticleId?: string,
+    prevArticleId?: string,
 };
 
 
