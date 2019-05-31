@@ -1,16 +1,37 @@
-{
-  "language": "node_js",
-  "node_js": "8",
-  "script": [
-    "npm run lint",
-    "npm run build",
-    "npm run test",
-    "npm run test:e2e",
-  ],
-  "install": [
-    "npm ci",
-  ],
-  "services": [
-    "redis-server",
-  ],
-}
+language: node_js
+dist: xenial
+
+node_js:
+  - "11"
+  - "10"
+  - "8"
+  # - "stable"
+  # - "latest"
+
+before_install:
+install:
+  - npm ci
+script:
+  - npm run lint
+  - npm run build
+  - npm run test
+  - npm run test:e2e
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+      - python3-pip
+      - libbz2-dev
+      - ccache
+      - zlib1g-dev
+      - uuid-dev
+services:
+  - redis-server
+# TODO: depends on node-libzim
+# matrix:
+#   include:
+#     - env: PLATFORM="native_dyn"
+#       os: osx
