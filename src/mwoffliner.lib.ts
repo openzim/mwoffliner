@@ -358,7 +358,7 @@ async function execute(argv: any) {
     const zimCreator = new zimCreatorConstructor({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-      welcome: 'A/' + (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
+      welcome: (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
     }, {
         favicon: 'I/favicon.png',
         Tags: dump.computeZimTags(),
