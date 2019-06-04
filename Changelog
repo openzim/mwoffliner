@@ -1,3 +1,18 @@
+1.9.1:
+* UPDATE: Update node-libzim (and libzim) to improve memory usage (#706)
+* UPDATE: Implement basic category scraping (#15)
+* UPDATE: Increase default scrape "speed" (#744)
+* UPDATE: Report on failed article downloads ()
+* UPDATE: Retry all failed media downloads at the end of scrape (#723)
+* UPDATE: Re-introduce --useCache option (#700)
+* UPDATE: Reduce system dependencies (#681)
+* UPDATE: Use native <details> element for collapsible sections in ZIM files (#677)
+* FIX: Update article title logic (#605)
+* FIX: Logging format improvements (#662)
+* FIX: Redis clearing improved (#732, #731, #448)
+* FIX: Text only article list main page background colour fixed (#728)
+* FIX: Resource relative url improvement (#726)
+
 1.8.6:
 * UPDATE: Parallel processing improvements
 * UPDATE: Increased Parsoid and MCS limits #710
