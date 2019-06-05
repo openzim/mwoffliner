@@ -102,7 +102,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `http://{{domain}}/${this.mw.apiPath}`,
+            uri: `https://{{domain}}/${this.mw.apiPath}`,
             headers: {
               'user-agent': '{{user-agent}}',
             },
