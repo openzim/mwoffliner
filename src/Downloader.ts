@@ -58,7 +58,7 @@ class Downloader {
     this.cacheDirectory = cacheDirectory;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&format=json&paction=parse&page=`;
+    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
   }
 
   public async initLocalMcs() {
@@ -122,9 +122,7 @@ class Downloader {
       },
     });
     const domain = (urlParser.parse(this.mw.base)).host;
-    const webUrlHost = urlParser.parse(this.mw.webUrl).host;
     this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
-    this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
   }
 
   public query(query: string): KVS<any> {
