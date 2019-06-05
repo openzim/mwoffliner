@@ -305,7 +305,7 @@ class Downloader {
             },
           );
 
-          if (articleDetail.subCategories.length > 200) {
+          if ((articleDetail.subCategories || []).length > 200) {
             await articleDetailXId.set(_articleId, _articleDetail);
           }
 
