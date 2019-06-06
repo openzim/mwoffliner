@@ -478,12 +478,16 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
     }
 
     async function rewriteUrl(linkNode: DominoElement) {
-        const rel = linkNode.getAttribute('rel');
+        let rel = linkNode.getAttribute('rel');
         let href = linkNode.getAttribute('href') || '';
         const hrefProtocol = urlParser.parse(href).protocol;
 
         if (hrefProtocol && !hrefProtocol.includes('http')) {
             return; // e.g. geo:11111,11111
+        }
+
+        if (hrefProtocol && hrefProtocol.includes('http') && !rel) {
+            rel = 'mw:ExtLink';
         }
 
         if (!href) {
@@ -595,7 +599,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
                 await removeLinksToUnmirroredArticles(linkNode, href);
 
                 if (articleId.includes('/')) {
-                    const href = linkNode.getAttribute('href'); // href is modified above, so this is necessary
+                    const href = linkNode.getAttribute('href').replace(/ /g, '_'); // href is modified above, so this is necessary
                     const resourceNamespace = 'A';
                     const slashesInUrl = articleId.split('/').length - 1;
                     const upStr = '../'.repeat(slashesInUrl + 1);
