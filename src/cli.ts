@@ -5,12 +5,11 @@
 'use strict';
 
 import yargs from 'yargs';
+import { parameterDescriptions, requiredParams } from './parameterList';
 
 /************************************/
 /* Command Parsing ******************/
 /************************************/
-
-import { parameterDescriptions, requiredParams } from './parameterList';
 
 const argv = yargs
   .help('help')
