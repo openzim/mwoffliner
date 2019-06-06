@@ -1,3 +1,12 @@
+1.9.2:
+* FIX: favicon writing logic
+* FIX: special uris no longer re-written (#771)
+* FIX: prefer remote Parsoid for fallbacks (#767)
+* FIX: redirect-writing issues (#769)
+* FIX: --help option (#768)
+* UPDATE: improve external link handling
+* UPDATE: stop retrying 404s (#600)
+
 1.9.1:
 * UPDATE: Update node-libzim (and libzim) to improve memory usage (#706)
 * UPDATE: Implement basic category scraping (#15)
