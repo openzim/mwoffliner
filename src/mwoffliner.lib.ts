@@ -181,6 +181,7 @@ async function execute(argv: any) {
 
   /* Get MediaWiki Info */
   let useLocalMCS = true;
+  let useLocalParsoid = true;
   let mwMetaData;
   try {
     mwMetaData = await mw.getMwMetaData(downloader);
@@ -196,9 +197,16 @@ async function execute(argv: any) {
     logger.warn(`Failed to get remote MCS:`, err);
   }
 
-  if (useLocalMCS) {
+  try {
+    const ParsoidMainPageQuery = await downloader.getJSON<any>(`${downloader.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+    useLocalParsoid = !ParsoidMainPageQuery.visualeditor.content;
+  } catch (err) {
+    logger.warn(`Failed to get remote MCS:`, err);
+  }
+
+  if (useLocalMCS || useLocalParsoid) {
     logger.log(`Using a local MCS instance, couldn't find a remote one`);
-    await downloader.initLocalMcs();
+    await downloader.initLocalMcs(useLocalParsoid);
   } else {
     logger.log(`Using a remote MCS instance`);
   }
