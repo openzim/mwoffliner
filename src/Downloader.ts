@@ -51,7 +51,7 @@ class Downloader {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
-    this.maxActiveRequests = speed * 4;
+    this.maxActiveRequests = speed * 10;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
     this.useCache = useCache;
