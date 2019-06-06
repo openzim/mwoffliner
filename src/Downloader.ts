@@ -167,12 +167,14 @@ class Downloader {
       return deepmerge(processedResponse, nextResp);
 
     } else {
-      logger.info(`Getting subCategories`);
-      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
-        const isCategoryArticle = articleDetail.ns === 14;
-        if (isCategoryArticle) {
-          const categoryMembers = await this.getSubCategories(articleId);
-          (processedResponse[articleId] as any).subCategories = categoryMembers;
+      if (this.mw.getCategories) {
+        logger.info(`Getting subCategories`);
+        for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+          const isCategoryArticle = articleDetail.ns === 14;
+          if (isCategoryArticle) {
+            const categoryMembers = await this.getSubCategories(articleId);
+            (processedResponse[articleId] as any).subCategories = categoryMembers;
+          }
         }
       }
       return processedResponse;
@@ -239,12 +241,14 @@ class Downloader {
         gapContinue: gCont,
       };
     } else {
-      logger.info(`Getting subCategories`);
-      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
-        const isCategoryArticle = articleDetail.ns === 14;
-        if (isCategoryArticle) {
-          const categoryMembers = await this.getSubCategories(articleId);
-          (processedResponse[articleId] as any).subCategories = categoryMembers;
+      if (this.mw.getCategories) {
+        logger.info(`Getting subCategories`);
+        for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+          const isCategoryArticle = articleDetail.ns === 14;
+          if (isCategoryArticle) {
+            const categoryMembers = await this.getSubCategories(articleId);
+            (processedResponse[articleId] as any).subCategories = categoryMembers;
+          }
         }
       }
 
