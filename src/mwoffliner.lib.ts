@@ -21,7 +21,6 @@ import im from 'imagemagick';
 import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
-import parameterList from './parameterList';
 import Redis from './redis';
 import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl } from './util';
 import { mapLimit } from 'promiso';
@@ -35,11 +34,6 @@ import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
-
-function getParametersList() {
-  // Want to remove this anonymous function. Need to investigate to see if it's needed
-  return parameterList;
-}
 
 async function execute(argv: any) {
   /* ********************************* */
@@ -594,6 +588,5 @@ async function execute(argv: any) {
 }
 
 export {
-  getParametersList,
   execute,
 };
