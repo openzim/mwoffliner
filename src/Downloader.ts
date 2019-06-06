@@ -51,7 +51,7 @@ class Downloader {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
-    this.maxActiveRequests = speed * 4;
+    this.maxActiveRequests = speed * 10;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
     this.useCache = useCache;
@@ -362,6 +362,7 @@ class Downloader {
           resolve(val);
         }
       });
+      call.retryIf((err: any) => err.response.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
@@ -408,6 +409,7 @@ class Downloader {
           }
         }
       });
+      call.retryIf((err: any) => err.response.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
@@ -471,7 +473,7 @@ class Downloader {
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
             return this.getJSONCb(url, handler);
-          } else {
+          } else if (err.response.status === 404) {
             handler(err);
           }
         } catch (a) {
