@@ -21,7 +21,6 @@ import im from 'imagemagick';
 import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
-import parameterList from './parameterList';
 import Redis from './redis';
 import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl } from './util';
 import { mapLimit } from 'promiso';
@@ -35,11 +34,6 @@ import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
-
-function getParametersList() {
-  // Want to remove this anonymous function. Need to investigate to see if it's needed
-  return parameterList;
-}
 
 async function execute(argv: any) {
   /* ********************************* */
@@ -187,6 +181,7 @@ async function execute(argv: any) {
 
   /* Get MediaWiki Info */
   let useLocalMCS = true;
+  let useLocalParsoid = true;
   let mwMetaData;
   try {
     mwMetaData = await mw.getMwMetaData(downloader);
@@ -202,9 +197,16 @@ async function execute(argv: any) {
     logger.warn(`Failed to get remote MCS:`, err);
   }
 
-  if (useLocalMCS) {
+  try {
+    const ParsoidMainPageQuery = await downloader.getJSON<any>(`${downloader.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+    useLocalParsoid = !ParsoidMainPageQuery.visualeditor.content;
+  } catch (err) {
+    logger.warn(`Failed to get remote MCS:`, err);
+  }
+
+  if (useLocalMCS || useLocalParsoid) {
     logger.log(`Using a local MCS instance, couldn't find a remote one`);
-    await downloader.initLocalMcs();
+    await downloader.initLocalMcs(useLocalParsoid);
   } else {
     logger.log(`Using a remote MCS instance`);
   }
@@ -466,7 +468,7 @@ async function execute(argv: any) {
               ns: 'A',
               mimeType: 'text/html',
               title: redirect.title,
-              redirectAid: `A/${articleId}` + (dump.nozim ? '.html' : ''),
+              redirectAid: `${articleId}` + (dump.nozim ? '.html' : ''),
             });
             await zimCreator.addArticle(redirectArticle);
             scrapeStatus.redirects.written += 1;
@@ -580,7 +582,7 @@ async function execute(argv: any) {
 
     function createMainPageRedirect() {
       logger.log(`Create main page redirection from[index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
-      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: 'A/' + dump.getArticleBase(mainPage, true) });
+      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: dump.getArticleBase(mainPage, true) });
       return zimCreator.addArticle(article);
     }
 
@@ -594,6 +596,5 @@ async function execute(argv: any) {
 }
 
 export {
-  getParametersList,
   execute,
 };

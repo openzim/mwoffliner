@@ -480,6 +480,11 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
     async function rewriteUrl(linkNode: DominoElement) {
         const rel = linkNode.getAttribute('rel');
         let href = linkNode.getAttribute('href') || '';
+        const hrefProtocol = urlParser.parse(href).protocol;
+
+        if (hrefProtocol && !hrefProtocol.includes('http')) {
+            return; // e.g. geo:11111,11111
+        }
 
         if (!href) {
             DU.deleteNode(linkNode);

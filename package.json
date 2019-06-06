@@ -42,7 +42,7 @@
     "node": ">=8.12.0"
   },
   "dependencies": {
-    "@openzim/libzim": "^2.0.16",
+    "@openzim/libzim": "^2.0.17",
     "@types/async": "^2.4.0",
     "@types/bluebird": "^3.5.25",
     "@types/html-minifier": "^3.5.2",
@@ -56,7 +56,7 @@
     "@types/redis": "^2.8.10",
     "@types/rimraf": "^2.0.2",
     "@types/semver": "^5.5.0",
-    "@types/yargs": "^12.0.8",
+    "@types/yargs": "^12.0.12",
     "async": "^2.6.2",
     "axios": "^0.18.0",
     "backoff": "^2.5.0",

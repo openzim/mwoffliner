@@ -61,7 +61,7 @@ class Downloader {
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
   }
 
-  public async initLocalMcs() {
+  public async initLocalMcs(forceLocalParsoid = true) {
     logger.log('Starting Parsoid & MCS');
 
     await runner.start({
@@ -102,7 +102,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `http://{{domain}}/${this.mw.apiPath}`,
+            uri: `https://{{domain}}/${this.mw.apiPath}`,
             headers: {
               'user-agent': '{{user-agent}}',
             },
@@ -123,6 +123,10 @@ class Downloader {
     });
     const domain = (urlParser.parse(this.mw.base)).host;
     this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+    if (forceLocalParsoid) {
+      const webUrlHost = urlParser.parse(this.mw.webUrl).host;
+      this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
+    }
   }
 
   public query(query: string): KVS<any> {
