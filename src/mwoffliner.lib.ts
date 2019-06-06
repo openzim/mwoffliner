@@ -460,7 +460,7 @@ async function execute(argv: any) {
               ns: 'A',
               mimeType: 'text/html',
               title: redirect.title,
-              redirectAid: `A/${articleId}` + (dump.nozim ? '.html' : ''),
+              redirectAid: `${articleId}` + (dump.nozim ? '.html' : ''),
             });
             await zimCreator.addArticle(redirectArticle);
             scrapeStatus.redirects.written += 1;
@@ -574,7 +574,7 @@ async function execute(argv: any) {
 
     function createMainPageRedirect() {
       logger.log(`Create main page redirection from[index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
-      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: 'A/' + dump.getArticleBase(mainPage, true) });
+      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: dump.getArticleBase(mainPage, true) });
       return zimCreator.addArticle(article);
     }
 
