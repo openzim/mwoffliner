@@ -362,7 +362,6 @@ async function execute(argv: any) {
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
       welcome: (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
     }, {
-        favicon: 'I/favicon.png',
         Tags: dump.computeZimTags(),
         Language: dump.mwMetaData.langIso3,
         Title: dump.opts.customZimTitle || dump.mwMetaData.title,
@@ -489,7 +488,7 @@ async function execute(argv: any) {
           } else {
             readFilePromise(faviconPath, null)
               .then((faviconContent) => {
-                const article = new ZimArticle({ url: 'favicon.png', data: faviconContent, ns: 'I' });
+                const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data: faviconContent, ns: '-' });
                 return zimCreator.addArticle(article);
               })
               .then(resolve, reject);
