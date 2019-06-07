@@ -11,6 +11,7 @@ Mediawiki.
 
 ![npm](https://img.shields.io/npm/v/mwoffliner.svg)
 [![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
+[![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
 ![NPM](https://img.shields.io/npm/l/mwoffliner.svg)
 
