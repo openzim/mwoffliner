@@ -194,14 +194,14 @@ async function execute(argv: any) {
     const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
     useLocalMCS = !MCSMainPageQuery.lead;
   } catch (err) {
-    logger.warn(`Failed to get remote MCS:`, err);
+    logger.warn(`Failed to get remote MCS`);
   }
 
   try {
     const ParsoidMainPageQuery = await downloader.getJSON<any>(`${downloader.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
     useLocalParsoid = !ParsoidMainPageQuery.visualeditor.content;
   } catch (err) {
-    logger.warn(`Failed to get remote MCS:`, err);
+    logger.warn(`Failed to get remote Parsoid`);
   }
 
   if (useLocalMCS || useLocalParsoid) {
