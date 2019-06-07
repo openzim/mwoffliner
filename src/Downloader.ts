@@ -140,9 +140,11 @@ class Downloader {
       action: 'query',
       format: 'json',
       rdlimit: 'max',
-      colimit: 'max',
-      clshow: '!hidden',
-      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
+      colimit: '1',
+      ...(this.mw.getCategories ? {
+        cllimit: 'max',
+        clshow: '!hidden',
+      } : {}),
       ...(continuation || {}),
     };
 
@@ -192,6 +194,7 @@ class Downloader {
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
+      colimit: '1',
       gapcontinue,
       ...(this.mw.getCategories ? {
         cllimit: 'max',
@@ -200,9 +203,6 @@ class Downloader {
     };
 
     if (queryContinuation) {
-      if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
-        queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
-      }
       if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
         queryOpts.clcontinue = queryContinuation.categories.clcontinue;
       }
@@ -337,7 +337,8 @@ class Downloader {
 
     } catch (err) {
       if (!useParsoidFallback) {
-        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, err);
+        const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
+        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, errMsg);
         return this.getArticle(articleId, dump, true);
       } else {
         throw err;
@@ -501,7 +502,7 @@ class Downloader {
       if (compressionWorked) {
         logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
       } else if (shouldCompress) {
-        logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+        // logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
       }
 
       handler(null, {
