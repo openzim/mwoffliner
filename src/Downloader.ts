@@ -192,9 +192,11 @@ class Downloader {
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
-      clshow: '!hidden',
       gapcontinue,
-      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
+      ...(this.mw.getCategories ? {
+        cllimit: 'max',
+        clshow: '!hidden',
+      } : {}),
     };
 
     if (queryContinuation) {
