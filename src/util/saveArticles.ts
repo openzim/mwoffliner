@@ -48,7 +48,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 if (!isRetry) {
                     await filesToRetryXPath.set(path, { url, namespace, mult, width });
                 } else {
-                    logger.warn(`Error downloading file [${url}], skipping`, err);
+                    logger.warn(`Error downloading file [${url}], skipping`);
                     scrapeStatus.files.fail += 1;
                     await filesToDownloadXPath.delete(path);
                 }
@@ -91,7 +91,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const articleHtml = html;
                         const articleTitle = displayTitle;
                         if (!articleHtml) {
-                            logger.warn(`No HTML returned for article [${articleId}], skipping: ${articleHtml}`);
+                            logger.warn(`No HTML returned for article [${articleId}], skipping`);
                             continue;
                         }
 

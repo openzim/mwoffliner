@@ -279,7 +279,7 @@ class Downloader {
       const json = await this.getJSON<any>(articleApiUrl);
       if (json.type === 'api_error') {
         this.forceParsoidFallback = true;
-        console.info(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
+        logger.error(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
         throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
 
