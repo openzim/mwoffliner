@@ -1,5 +1,6 @@
 import { RedisKvs } from './util/redis-kvs';
 import { RedisClient } from 'redis';
+import logger from './Logger';
 
 export function populateFilesToDownload(redisClient: RedisClient) {
     filesToDownloadXPath = new RedisKvs(redisClient, `${Date.now()}-media`);

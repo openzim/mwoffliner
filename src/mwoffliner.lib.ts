@@ -35,6 +35,17 @@ import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
+function closeRedis(redis: Redis) {
+  logger.log(`Flushing Redis DBs`);
+  if (redis.redisClient.connected) {
+    filesToDownloadXPath.flush();
+    filesToRetryXPath.flush();
+    articleDetailXId.flush();
+    requestCacheXUrl.flush();
+    redis.redisClient.quit();
+  }
+}
+
 async function execute(argv: any) {
   /* ********************************* */
   /* CUSTOM VARIABLE SECTION ********* */
@@ -124,19 +135,16 @@ async function execute(argv: any) {
     rimraf.sync(dumpTmpDir);
     logger.log(`Clearing Cache Directory`);
     rimraf.sync(cacheDirectory);
-
-    logger.log(`Flushing Redis DBs`);
-    filesToDownloadXPath.flush();
-    filesToRetryXPath.flush();
-    articleDetailXId.flush();
-    requestCacheXUrl.flush();
   });
+
   process.on('SIGTERM', () => {
     logger.log(`SIGTERM`);
+    closeRedis(redis);
     process.exit(128 + 15);
   });
   process.on('SIGINT', () => {
     logger.log(`SIGINT`);
+    closeRedis(redis);
     process.exit(128 + 2);
   });
 
@@ -594,6 +602,8 @@ async function execute(argv: any) {
       return createMainPage();
     }
   }
+
+  closeRedis(redis);
 
   return writtenFiles;
 }
