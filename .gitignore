@@ -13,3 +13,4 @@ npm-debug.log
 .env
 .nyc_output
 coverage.lcov
+mwo-test-*

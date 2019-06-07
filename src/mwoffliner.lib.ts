@@ -74,6 +74,7 @@ async function execute(argv: any) {
   } = argv;
 
   (process as any).verbose = !!verbose;
+  const writtenFiles: string[] = [];
 
   /* Setup redis client */
   const redis = new Redis(argv, config);
@@ -351,6 +352,8 @@ async function execute(argv: any) {
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
 
+    writtenFiles.push(outZim);
+
     logger.log(`Flushing redis file store`);
     await filesToDownloadXPath.flush();
     await filesToRetryXPath.flush();
@@ -592,6 +595,7 @@ async function execute(argv: any) {
     }
   }
 
+  return writtenFiles;
 }
 
 export {
