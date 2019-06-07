@@ -366,7 +366,7 @@ class Downloader {
           resolve(val);
         }
       });
-      call.retryIf((err: any) => err.response.status !== 404);
+      call.retryIf((err: any) => err.response && err.response.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
@@ -413,7 +413,7 @@ class Downloader {
           }
         }
       });
-      call.retryIf((err: any) => err.response.status !== 404);
+      call.retryIf((err: any) => err.response && err.response.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
@@ -471,13 +471,13 @@ class Downloader {
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
-          if (err.response.status === 429) {
+          if (err.response && err.response.status === 429) {
             logger.log(`Received a [status=429], slowing down`);
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
             return this.getJSONCb(url, handler);
-          } else if (err.response.status === 404) {
+          } else if (err.response && err.response.status === 404) {
             handler(err);
           }
         } catch (a) {
@@ -508,7 +508,7 @@ class Downloader {
       });
     } catch (err) {
       try {
-        if (err.response.status === 429) {
+        if (err.response && err.response.status === 429) {
           logger.log(`Received a [status=429], slowing down`);
           const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
           logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
