@@ -12,5 +12,5 @@ npm-debug.log
 .DS_Store
 .env
 .nyc_output
-coverage.lcov
+coverage
 mwo-test-*
