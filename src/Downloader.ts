@@ -44,6 +44,7 @@ class Downloader {
   public cacheDirectory: string;
   public forceParsoidFallback: boolean = false;
 
+  private canFetchCoordinates = true;
   private activeRequests = 0;
   private maxActiveRequests = 1;
 
@@ -136,13 +137,15 @@ class Downloader {
   public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
     const queryOpts = {
       titles: articleIds.join('|'),
-      prop: `redirects|coordinates|revisions|pageimages${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions|pageimages${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       action: 'query',
       format: 'json',
       rdlimit: 'max',
-      colimit: 'max',
-      clshow: '!hidden',
-      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
+      ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
+      ...(this.mw.getCategories ? {
+        cllimit: 'max',
+        clshow: '!hidden',
+      } : {}),
       ...(continuation || {}),
     };
 
@@ -152,6 +155,12 @@ class Downloader {
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
     if (resp.warnings) {
       logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+
+      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
+      if (isCoordinateWarning) {
+        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
+        this.canFetchCoordinates = false;
+      }
     }
 
     if (resp.error) {
@@ -167,12 +176,14 @@ class Downloader {
       return deepmerge(processedResponse, nextResp);
 
     } else {
-      logger.info(`Getting subCategories`);
-      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
-        const isCategoryArticle = articleDetail.ns === 14;
-        if (isCategoryArticle) {
-          const categoryMembers = await this.getSubCategories(articleId);
-          (processedResponse[articleId] as any).subCategories = categoryMembers;
+      if (this.mw.getCategories) {
+        logger.info(`Getting subCategories`);
+        for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+          const isCategoryArticle = articleDetail.ns === 14;
+          if (isCategoryArticle) {
+            const categoryMembers = await this.getSubCategories(articleId);
+            (processedResponse[articleId] as any).subCategories = categoryMembers;
+          }
         }
       }
       return processedResponse;
@@ -183,22 +194,22 @@ class Downloader {
     const queryOpts: KVS<string> = {
       action: 'query',
       format: 'json',
-      prop: `coordinates|revisions|redirects${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `revisions|redirects${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       generator: 'allpages',
       gapfilterredir: 'nonredirects',
       gaplimit: 'max',
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
-      clshow: '!hidden',
+      ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
       gapcontinue,
-      ...(this.mw.getCategories ? { cllimit: 'max' } : {}),
+      ...(this.mw.getCategories ? {
+        cllimit: 'max',
+        clshow: '!hidden',
+      } : {}),
     };
 
     if (queryContinuation) {
-      if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
-        queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
-      }
       if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
         queryOpts.clcontinue = queryContinuation.categories.clcontinue;
       }
@@ -216,6 +227,12 @@ class Downloader {
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
     if (resp.warnings) {
       logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+
+      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
+      if (isCoordinateWarning) {
+        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
+        this.canFetchCoordinates = false;
+      }
     }
 
     if (resp.error) {
@@ -239,12 +256,14 @@ class Downloader {
         gapContinue: gCont,
       };
     } else {
-      logger.info(`Getting subCategories`);
-      for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
-        const isCategoryArticle = articleDetail.ns === 14;
-        if (isCategoryArticle) {
-          const categoryMembers = await this.getSubCategories(articleId);
-          (processedResponse[articleId] as any).subCategories = categoryMembers;
+      if (this.mw.getCategories) {
+        logger.info(`Getting subCategories`);
+        for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
+          const isCategoryArticle = articleDetail.ns === 14;
+          if (isCategoryArticle) {
+            const categoryMembers = await this.getSubCategories(articleId);
+            (processedResponse[articleId] as any).subCategories = categoryMembers;
+          }
         }
       }
 
@@ -273,7 +292,7 @@ class Downloader {
       const json = await this.getJSON<any>(articleApiUrl);
       if (json.type === 'api_error') {
         this.forceParsoidFallback = true;
-        console.info(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
+        logger.error(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
         throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
 
@@ -331,7 +350,8 @@ class Downloader {
 
     } catch (err) {
       if (!useParsoidFallback) {
-        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, err);
+        const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
+        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, errMsg);
         return this.getArticle(articleId, dump, true);
       } else {
         throw err;
@@ -362,7 +382,7 @@ class Downloader {
           resolve(val);
         }
       });
-      call.retryIf((err: any) => err.response.status !== 404);
+      call.retryIf((err: any) => err.response && err.response.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
@@ -409,7 +429,7 @@ class Downloader {
           }
         }
       });
-      call.retryIf((err: any) => err.response.status !== 404);
+      call.retryIf((err: any) => err.response && err.response.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
       call.failAfter(5);
       call.start();
@@ -467,13 +487,13 @@ class Downloader {
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
-          if (err.response.status === 429) {
+          if (err.response && err.response.status === 429) {
             logger.log(`Received a [status=429], slowing down`);
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
             return this.getJSONCb(url, handler);
-          } else if (err.response.status === 404) {
+          } else if (err.response && err.response.status === 404) {
             handler(err);
           }
         } catch (a) {
@@ -495,7 +515,7 @@ class Downloader {
       if (compressionWorked) {
         logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
       } else if (shouldCompress) {
-        logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+        // logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
       }
 
       handler(null, {
@@ -504,7 +524,7 @@ class Downloader {
       });
     } catch (err) {
       try {
-        if (err.response.status === 429) {
+        if (err.response && err.response.status === 429) {
           logger.log(`Received a [status=429], slowing down`);
           const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
           logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
