@@ -15,7 +15,7 @@ install:
 script:
   - npm run lint
   - npm run build
-  - npm run test
+  - REDIS=redis://127.0.0.1:6379 npm run test
   - npm run test:e2e
 after_success:
   - codecov
