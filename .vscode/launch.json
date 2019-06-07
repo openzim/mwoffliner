@@ -31,6 +31,20 @@
                 // "--getCategories=true"
                 // "--customZimFavicon=test.png"
             ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Tests",
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "args": [
+                "--nolazy",
+                "-r",
+                "ts-node/register",
+                "${file}"
+            ]
         }
     ]
 }

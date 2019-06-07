@@ -2,7 +2,7 @@
   "name": "mwoffliner",
   "version": "1.9.2",
   "description": "Mediawiki HTML/ZIM scraper",
-  "main": "mwoffliner.js",
+  "main": "lib/mwoffliner.lib.js",
   "license": "GPL-3.0",
   "author": {
     "name": "Emmanuel Engelhart",
@@ -97,6 +97,7 @@
     "@percy/puppeteer": "^1.0.3",
     "@types/blue-tape": "^0.1.32",
     "blue-tape": "^1.0.0",
+    "dotenv": "^8.0.0",
     "eslint": "^5.14.0",
     "nyc": "^14.1.1",
     "puppeteer": "^1.12.2",
