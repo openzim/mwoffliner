@@ -44,6 +44,7 @@ class Downloader {
   public cacheDirectory: string;
   public forceParsoidFallback: boolean = false;
 
+  private canFetchCoordinates = true;
   private activeRequests = 0;
   private maxActiveRequests = 1;
 
@@ -136,11 +137,11 @@ class Downloader {
   public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
     const queryOpts = {
       titles: articleIds.join('|'),
-      prop: `redirects|coordinates|revisions|pageimages${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions|pageimages${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       action: 'query',
       format: 'json',
       rdlimit: 'max',
-      colimit: '1',
+      ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
       ...(this.mw.getCategories ? {
         cllimit: 'max',
         clshow: '!hidden',
@@ -154,6 +155,12 @@ class Downloader {
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
     if (resp.warnings) {
       logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+
+      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
+      if (isCoordinateWarning) {
+        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
+        this.canFetchCoordinates = false;
+      }
     }
 
     if (resp.error) {
@@ -187,14 +194,14 @@ class Downloader {
     const queryOpts: KVS<string> = {
       action: 'query',
       format: 'json',
-      prop: `coordinates|revisions|redirects${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `revisions|redirects${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       generator: 'allpages',
       gapfilterredir: 'nonredirects',
       gaplimit: 'max',
       gapnamespace: String(ns),
       rawcontinue: 'true',
       rdlimit: 'max',
-      colimit: '1',
+      ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
       gapcontinue,
       ...(this.mw.getCategories ? {
         cllimit: 'max',
@@ -220,6 +227,12 @@ class Downloader {
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
     if (resp.warnings) {
       logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+
+      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
+      if (isCoordinateWarning) {
+        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
+        this.canFetchCoordinates = false;
+      }
     }
 
     if (resp.error) {
