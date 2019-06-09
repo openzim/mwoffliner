@@ -202,11 +202,11 @@ class Downloader {
       rawcontinue: 'true',
       rdlimit: 'max',
       ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
-      gapcontinue,
       ...(this.mw.getCategories ? {
         cllimit: 'max',
         clshow: '!hidden',
       } : {}),
+      gapcontinue,
     };
 
     if (queryContinuation) {
@@ -246,7 +246,12 @@ class Downloader {
       gCont = resp['query-continue'].allpages.gapcontinue;
     } catch (err) { /* NOOP */ }
 
-    const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => key !== 'allpages').length === 0;
+    const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => {
+      return !(
+        key === 'allpages'
+        || (key === 'coordinates' && this.canFetchCoordinates)
+      );
+    }).length === 0;
 
     if (!queryComplete) {
       const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, resp['query-continue']);
