@@ -1,7 +1,7 @@
 FROM node:10
 
 # Basics
-RUN apt update && apt install -y --no-install-recommends make g++ curl git
+RUN apt update && apt install -y --no-install-recommends make g++ curl git nscd
 
 # Install mwoffliner
 RUN apt install -y --no-install-recommends imagemagick
@@ -10,5 +10,6 @@ RUN npm install -g mwoffliner@1.9.2
 RUN apt remove -y make g++
 
 # Boot commands
-COPY .custom-bashrc /root/
+RUN mv /root/.bashrc /root/.old-bashrc
+COPY .custom-bashrc /root/.bashrc
 CMD mwoffliner

@@ -1,2 +1,2 @@
-source ~/.bashrc
-alias mwoffliner='mwoffliner --redis="redis://redis"'
+source ~/.old-bashrc
+alias mwoffliner='/etc/init.d/nscd restart &> /dev/null ; mwoffliner --redis="redis://redis"'
