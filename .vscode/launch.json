@@ -14,6 +14,8 @@
             "args": [
                 "--nolazy",
                 "-r",
+                "tsconfig-paths/register",
+                "-r",
                 "ts-node/register",
                 "${workspaceRoot}/src/cli.ts",
                 /*
@@ -41,6 +43,8 @@
             "protocol": "inspector",
             "args": [
                 "--nolazy",
+                "-r",
+                "tsconfig-paths/register",
                 "-r",
                 "ts-node/register",
                 "${file}"

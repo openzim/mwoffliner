@@ -17,6 +17,7 @@ script:
   - npm run build
   - REDIS=redis://127.0.0.1:6379 npm run test
   - npm run test:e2e
+  - npm run report
 after_success:
   - codecov
 addons:
