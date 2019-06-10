@@ -311,7 +311,7 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   });
 }
 
-export function throttle(fn: Function, wait: number) {
+export function throttle(fn: (...args: any[]) => any, wait: number) {
   let isCalled = false;
 
   return function (...args: any[]) {
