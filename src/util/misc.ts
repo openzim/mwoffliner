@@ -310,3 +310,21 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
     return getter(item) !== getter(arr[index + 1]);
   });
 }
+
+export function throttle(fn: Function, wait: number) {
+  let isCalled = false;
+
+  return function (...args: any[]) {
+    if (!isCalled) {
+      fn(...args);
+      isCalled = true;
+      setTimeout(function () {
+        isCalled = false;
+      }, wait);
+    }
+  };
+}
+
+export const keepAlive = throttle(function keepAlive() {
+  logger.log(`Heartbeat - OK`);
+}, 1000 * 60 * 9);
