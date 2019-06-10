@@ -1,3 +1,6 @@
+// tslint:disable-next-line: no-reference
+///<reference path="../../src/types.d.ts" />
+
 import test from 'blue-tape';
 import { contains } from 'src/util';
 

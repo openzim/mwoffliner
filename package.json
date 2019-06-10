@@ -12,8 +12,9 @@
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node ./lib/cli.js",
-    "test:e2e": "./simple-test.sh",
-    "test": "tape -r tsconfig-paths/register -r ts-node/register test/*.test.ts | tap-spec",
+    "test:e2e": "tape -r tsconfig-paths/register -r ts-node/register test/e2e/*.test.ts | tap-spec",
+    "test:unit": "tape -r tsconfig-paths/register -r ts-node/register test/unit/*.test.ts | tap-spec",
+    "test": "npm run test:unit",
     "report": "nyc --reporter=lcov npm t",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./build.sh",

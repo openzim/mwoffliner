@@ -103,10 +103,14 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
 
     return Object.values(pages)
         .reduce((acc, page) => {
-            const articleId = (normalized[page.title] || page.title).replace(/ /g, '_');
-            return {
-                ...acc,
-                [articleId]: page,
-            };
+            const articleId = (normalized[page.title] || page.title || '').replace(/ /g, '_');
+            if (articleId) {
+                return {
+                    ...acc,
+                    [articleId]: page,
+                };
+            } else {
+                return acc;
+            }
         }, {});
 }
