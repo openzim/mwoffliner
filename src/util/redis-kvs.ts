@@ -1,6 +1,7 @@
 import { RedisClient } from 'redis';
 import { mapLimit } from 'promiso';
 import { cpus } from 'os';
+import { keepAlive } from './misc';
 
 export class RedisKvs<T> {
     private redisClient: RedisClient;
@@ -171,6 +172,7 @@ export class RedisKvs<T> {
                         };
                     }, {} as KVS<T>);
 
+                    keepAlive(); // TODO: remove from here (this is not generic)
                     await func(parsedItems, workerId);
                 }
             },
