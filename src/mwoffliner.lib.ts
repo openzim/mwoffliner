@@ -381,6 +381,12 @@ async function execute(argv: any) {
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
       });
+    const scraperArticle = new ZimArticle({
+      ns: 'M',
+      data: `mwoffliner ${packageJSON.version}`,
+      url: 'Scraper',
+    });
+    await zimCreator.addArticle(scraperArticle);
 
     logger.info('Copying Static Resource Files');
     await saveStaticFiles(config, zimCreator);
