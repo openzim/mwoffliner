@@ -179,9 +179,7 @@ export class Dump {
             }
             return escape ? encodeURIComponent(str) : str;
         }
-        const slashesInUrl = articleId.split('/').length - 1;
-        const upStr = '../'.repeat(slashesInUrl);
-        return upStr + e(articleId) + (this.nozim ? '.html' : '');
+        return e(articleId) + (this.nozim ? '.html' : '');
     }
 
 }
