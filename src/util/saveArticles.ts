@@ -741,7 +741,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             });
         }
 
-        return outHtml;
+        return `<!DOCTYPE html>\n` + outHtml;
     } catch (err) {
         throw new Error(`Unable to get the details from redis for article ${articleId}: \n${err}`);
     }
