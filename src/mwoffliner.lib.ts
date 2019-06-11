@@ -579,7 +579,7 @@ async function execute(argv: any) {
 
       if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
         const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n');
-        doc.body.innerHTML = `<div id='content'>${articlesWithImagesEl}</div>`;
+        doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`;
       } else {
         const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n');
         doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`;
