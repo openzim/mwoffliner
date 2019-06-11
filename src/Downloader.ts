@@ -135,12 +135,14 @@ class Downloader {
   }
 
   public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
+    const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num);
     const queryOpts = {
       titles: articleIds.join('|'),
       prop: `redirects|revisions|pageimages${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       action: 'query',
       format: 'json',
       rdlimit: 'max',
+      rdnamespace: validNamespaceIds.join('|'),
       ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
       ...(this.mw.getCategories ? {
         cllimit: 'max',
