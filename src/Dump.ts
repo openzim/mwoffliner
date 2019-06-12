@@ -158,7 +158,7 @@ export class Dump {
         }
 
         /* Push Mediawiki:Offline.css (at the end) */
-        const offlineCssUrl = `${this.mwMetaData.webUrl}Mediawiki:offline.css?action=raw`;
+        const offlineCssUrl = `${downloader.mw.base}w/index.php?title=Mediawiki:offline.css&action=raw`;
         sheetUrls.push(offlineCssUrl);
 
         return sheetUrls.filter((a) => a);
