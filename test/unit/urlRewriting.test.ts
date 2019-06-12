@@ -7,11 +7,11 @@ require('dotenv').config();
 import test from 'blue-tape';
 import domino from 'domino';
 
-import { rewriteUrl } from 'src/util/rewriteUrls';
+import { rewriteUrl } from '../../src/util/rewriteUrls';
 import { makeLink, setupScrapeClasses } from 'test/util';
-import { populateArticleDetail, articleDetailXId, populateRedirects, redirectsXId } from 'src/stores';
-import Redis from 'src/redis';
-import { config } from 'src/config';
+import { populateArticleDetail, articleDetailXId, populateRedirects, redirectsXId } from '../../src/stores';
+import Redis from '../../src/redis';
+import { config } from '../../src/config';
 
 const redis = new Redis({ redis: process.env.REDIS }, config);
 populateArticleDetail(redis.redisClient);

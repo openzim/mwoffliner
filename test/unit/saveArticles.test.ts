@@ -9,9 +9,9 @@ import domino from 'domino';
 
 import { setupScrapeClasses } from 'test/util';
 import { populateArticleDetail, articleDetailXId, populateRedirects, redirectsXId, populateFilesToDownload, filesToDownloadXPath } from 'src/stores';
-import Redis from 'src/redis';
-import { config } from 'src/config';
-import { saveArticles } from 'src/util/saveArticles';
+import Redis from '../../src/redis';
+import { config } from '../../src/config';
+import { saveArticles } from '../../src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 
 const redis = new Redis({ redis: process.env.REDIS }, config);

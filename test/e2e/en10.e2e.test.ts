@@ -1,5 +1,5 @@
 import test from 'blue-tape';
-import { execute } from 'src/mwoffliner.lib';
+import { execute } from '../../src/mwoffliner.lib';
 import { leftPad } from '../util';
 import rimraf from 'rimraf';
 // import { ZimReader } from '@openzim/libzim';
