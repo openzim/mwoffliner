@@ -1,7 +1,7 @@
 import domino from 'domino';
-import MediaWiki from 'src/MediaWiki';
-import Downloader from 'src/Downloader';
-import { Dump } from 'src/Dump';
+import MediaWiki from '../src/MediaWiki';
+import Downloader from '../src/Downloader';
+import { Dump } from '../src/Dump';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;

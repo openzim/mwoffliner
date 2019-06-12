@@ -1,11 +1,11 @@
 import * as urlParser from 'url';
 import { isMirrored } from './saveArticles';
 import { migrateChildren, getMediaBase, getFullUrl } from './misc';
-import { redirectsXId } from 'src/stores';
-import { Dump } from 'src/Dump';
-import MediaWiki from 'src/MediaWiki';
+import { redirectsXId } from '../stores';
+import { Dump } from '../Dump';
+import MediaWiki from '../MediaWiki';
 import DU from '../DOMUtils';
-import logger from 'src/Logger';
+import logger from '../Logger';
 
 export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump, linkNode: DominoElement, href: string) {
     const title = mw.extractPageTitleFromHref(href);

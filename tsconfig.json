@@ -25,14 +25,6 @@
       "es2017",
       "dom"
     ],
-    "paths": {
-      "src/*": [
-        "./src/*"
-      ],
-      "test/*": [
-        "./test/*"
-      ]
-    },
     "plugins": [
       {
         "name": "typescript-tslint-plugin",

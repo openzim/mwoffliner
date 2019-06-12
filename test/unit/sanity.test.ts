@@ -2,7 +2,7 @@
 ///<reference path="../../src/types.d.ts" />
 
 import test from 'blue-tape';
-import { contains } from 'src/util';
+import { contains } from '../../src/util';
 
 // Super Simple Sanity tests
 test(async (t) => {
