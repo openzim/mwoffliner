@@ -1,3 +1,14 @@
+1.9.3:
+* FIX: coordinate continue bug
+* FIX: MediaWiki:offline.css now properly scraped (#614)
+* FEATURE: add throttled keepalive log (#791)
+* FEATURE: add NSCD to docker image
+* FEATURE: add scraper metadata to ZIM file (#787)
+* UPDATE: only collect relevant redirects (#790)
+* UPDATE: disable quirks mode for article html (#717)
+* UPDATE: improve no-image articlelist home page (#759)
+* UPDATE: subsections open by default (#786)
+
 1.9.2:
 * FIX: favicon writing logic
 * FIX: special uris no longer re-written (#771)
