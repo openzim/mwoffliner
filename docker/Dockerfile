@@ -1,7 +1,7 @@
 FROM node:10
 
 # Basics
-RUN apt update && apt install -y --no-install-recommends make g++ curl git nscd
+RUN apt update && apt install -y --no-install-recommends make g++ curl git
 
 # Install mwoffliner
 RUN apt install -y --no-install-recommends imagemagick
