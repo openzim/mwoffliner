@@ -16,10 +16,10 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
 
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
+        const cssUrl = typeof link === 'object' ? getFullUrl(webUrlHost, link.getAttribute('href')) : link;
+        const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
         try {
             /* link might be a 'link' DOM node or an URL */
-            const cssUrl = typeof link === 'object' ? getFullUrl(webUrlHost, link.getAttribute('href')) : link;
-            const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
 
             if (cssUrl) {
                 const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
@@ -67,7 +67,8 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                 finished();
             }
         } catch (err) {
-            finished(err);
+            logger.warn(`Failed to get CSS from [${cssUrl}]`);
+            finished();
         }
     }, Number(downloader.speed));
 
