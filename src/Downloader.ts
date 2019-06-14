@@ -30,8 +30,6 @@ const imageminOptions = {
   ],
 };
 
-const runner = new ServiceRunner();
-
 class Downloader {
   public mw: MediaWiki;
   public uaString: string;
@@ -64,6 +62,8 @@ class Downloader {
 
   public async initLocalMcs(forceLocalParsoid = true) {
     logger.log('Starting Parsoid & MCS');
+
+    const runner = new ServiceRunner();
 
     await runner.start({
       num_workers: 0,
@@ -128,6 +128,7 @@ class Downloader {
       const webUrlHost = urlParser.parse(this.mw.webUrl).host;
       this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
     }
+    return runner;
   }
 
   public query(query: string): KVS<any> {
