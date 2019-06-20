@@ -136,14 +136,9 @@ class Downloader {
   }
 
   public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
-    const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num);
     const queryOpts = {
+      ...this.getArticleQueryOpts(),
       titles: articleIds.join('|'),
-      prop: `redirects|revisions|pageimages${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
-      action: 'query',
-      format: 'json',
-      rdlimit: 'max',
-      rdnamespace: validNamespaceIds.join('|'),
       ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
       ...(this.mw.getCategories ? {
         cllimit: 'max',
@@ -156,21 +151,9 @@ class Downloader {
     const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
-    if (resp.warnings) {
-      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    this.handleMWWarningsAndErrors(resp);
 
-      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
-      if (isCoordinateWarning) {
-        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
-        this.canFetchCoordinates = false;
-      }
-    }
-
-    if (resp.error) {
-      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
-    }
-
-    const processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+    let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
     if (resp.continue) {
 
@@ -180,35 +163,25 @@ class Downloader {
 
     } else {
       if (this.mw.getCategories) {
-        logger.info(`Getting subCategories`);
-        for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
-          const isCategoryArticle = articleDetail.ns === 14;
-          if (isCategoryArticle) {
-            const categoryMembers = await this.getSubCategories(articleId);
-            (processedResponse[articleId] as any).subCategories = categoryMembers;
-          }
-        }
+        processedResponse = await this.setArticleSubCategories(processedResponse);
       }
       return processedResponse;
     }
   }
 
   public async getArticleDetailsNS(ns: number, gapcontinue: string = '', queryContinuation?: QueryContinueOpts): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
-    const queryOpts: KVS<string> = {
-      action: 'query',
-      format: 'json',
-      prop: `revisions|redirects${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
-      generator: 'allpages',
-      gapfilterredir: 'nonredirects',
-      gaplimit: 'max',
-      gapnamespace: String(ns),
-      rawcontinue: 'true',
-      rdlimit: 'max',
+    const queryOpts: KVS<any> = {
+      ...this.getArticleQueryOpts(),
       ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
       ...(this.mw.getCategories ? {
         cllimit: 'max',
         clshow: '!hidden',
       } : {}),
+      rawcontinue: 'true',
+      generator: 'allpages',
+      gapfilterredir: 'nonredirects',
+      gaplimit: 'max',
+      gapnamespace: String(ns),
       gapcontinue,
     };
 
@@ -228,21 +201,9 @@ class Downloader {
     const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
-    if (resp.warnings) {
-      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    this.handleMWWarningsAndErrors(resp);
 
-      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
-      if (isCoordinateWarning) {
-        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
-        this.canFetchCoordinates = false;
-      }
-    }
-
-    if (resp.error) {
-      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
-    }
-
-    const processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+    let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
     let gCont: string = null;
     try {
@@ -265,14 +226,7 @@ class Downloader {
       };
     } else {
       if (this.mw.getCategories) {
-        logger.info(`Getting subCategories`);
-        for (const [articleId, articleDetail] of Object.entries(processedResponse)) {
-          const isCategoryArticle = articleDetail.ns === 14;
-          if (isCategoryArticle) {
-            const categoryMembers = await this.getSubCategories(articleId);
-            (processedResponse[articleId] as any).subCategories = categoryMembers;
-          }
-        }
+        processedResponse = await this.setArticleSubCategories(processedResponse);
       }
 
       return {
@@ -417,24 +371,21 @@ class Downloader {
     await self.claimRequest();
     return new Promise((resolve, reject) => {
       const requestOptions = this.getRequestOptionsFromUrl(url, true);
-      const call = backoff.call(this.getContentCb, requestOptions, (err: any, val: any) => {
+      const call = backoff.call(this.getContentCb, requestOptions, async (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
           reject(err);
-        } else {
-          if (self.useCache) {
-            self.cacheResponse(url, val)
-              .then(() => {
-                resolve(val);
-              })
-              .catch((err) => {
-                logger.warn(`Failed to cache response for [${url}]`, err);
-                reject({ message: `Failed to cache response`, err });
-              });
-          } else {
+        } else if (self.useCache) {
+          try {
+            await self.cacheResponse(url, val);
             resolve(val);
+          } catch (err) {
+            logger.warn(`Failed to cache response for [${url}]`, err);
+            reject({ message: `Failed to cache response`, err });
           }
+        } else {
+          resolve(val);
         }
       });
       call.retryIf((err: any) => err.response && err.response.status !== 404);
@@ -453,6 +404,45 @@ class Downloader {
       filePath,
       responseHeaders: val.responseHeaders,
     });
+  }
+
+  private async handleMWWarningsAndErrors(resp: MwApiResponse) {
+    if (resp.warnings) {
+      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+
+      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
+      if (isCoordinateWarning) {
+        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
+        this.canFetchCoordinates = false;
+      }
+    }
+
+    if (resp.error) {
+      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    }
+  }
+
+  private getArticleQueryOpts() {
+    const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num);
+    return {
+      action: 'query',
+      format: 'json',
+      prop: `redirects|revisions|pageimages${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
+      rdlimit: 'max',
+      rdnamespace: validNamespaceIds.join('|'),
+    };
+  }
+
+  private async setArticleSubCategories(articleDetails: KVS<ArticleDetail>) {
+    logger.info(`Getting subCategories`);
+    for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
+      const isCategoryArticle = articleDetail.ns === 14;
+      if (isCategoryArticle) {
+        const categoryMembers = await this.getSubCategories(articleId);
+        (articleDetails[articleId] as any).subCategories = categoryMembers;
+      }
+    }
+    return articleDetails;
   }
 
   private getRequestOptionsFromUrl(url: string, compression: boolean): AxiosRequestConfig {
