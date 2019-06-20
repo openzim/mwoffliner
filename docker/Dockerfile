@@ -1,5 +1,9 @@
 FROM node:10
 
+# Increase standards system limits
+RUN echo "* - nofile unlimited" >  /etc/security/limits.conf
+RUN echo "* - stack  unlimited" >> /etc/security/limits.conf
+
 # Basics
 RUN apt update && apt install -y --no-install-recommends make g++ curl git
 
