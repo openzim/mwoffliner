@@ -11,7 +11,7 @@ export function renderDesktopArticle(json: any, articleId: string) {
     } else if (json.parse && json.parse.text) {
         return json.parse.text['*'];
     } else if (json.error) {
-        logger.error(`Error retrieving article (${articleId}): ${json.error.info}`);
+        logger.error(`Error in retrieved article [${articleId}]:`, json.error);
         return '';
     }
 }
