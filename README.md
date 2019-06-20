@@ -86,11 +86,23 @@ mwoffliner.execute(parameters); // returns a Promise
 ## Development
 > Please see [CONTRIBUTING.md](./CONTRIBUTING.md)
 ```bash
+# Setup
 git clone https://github.com/openzim/mwoffliner.git
 cd mwoffliner
-
 npm i
-./watch.sh # Watch for changes in "src/*"
+
+# Running
+ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+```
+
+### Tests
+There are two test suites:
+- End to end (e2e)
+- Unit
+
+```bash
+npm run test:unit # (or just npm test)
+npm run test:e2e
 ```
 
 ### Code Style
