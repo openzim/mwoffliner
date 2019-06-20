@@ -597,8 +597,16 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from[index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
-      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), shouldIndex: true, data: '', ns: 'A', mimeType: 'text/html', title: mainPage, redirectAid: dump.getArticleBase(mainPage, true) });
+      logger.log(`Create main page redirection from [index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
+      const article = new ZimArticle({
+        url: 'index' + (dump.nozim ? '.html' : ''),
+        shouldIndex: true,
+        data: '',
+        ns: 'A',
+        mimeType: 'text/html',
+        title: mainPage,
+        redirectAid: mainPage,
+      });
       return zimCreator.addArticle(article);
     }
 
