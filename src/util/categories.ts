@@ -152,7 +152,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                     if (processedArticles % 100 === 0) {
                         const percentProgress = Math.floor(processedArticles / numKeys * 1000) / 10;
                         if (percentProgress !== prevPercentProgress) {
-                            prevPercentProgress = percentProgress;
+                            prevPercentProgress = Math.min(percentProgress, 100);
                             logger.log(`Progress trimming un-mirrored articles [${processedArticles}/${numKeys}] [${percentProgress}%]`);
                         }
                     }
@@ -226,7 +226,7 @@ export async function simplifyGraph(downloader: Downloader) {
                 if (processedArticles % 10 === 0) {
                     const percentProgress = Math.floor(processedArticles / numKeys * 1000) / 10;
                     if (percentProgress !== prevPercentProgress) {
-                        prevPercentProgress = percentProgress;
+                        prevPercentProgress = Math.min(percentProgress, 100);
                         logger.log(`Progress simplifying graph [${processedArticles}/${numKeys}] [${percentProgress}%] deleted [${deletedNodes}]`);
                     }
                 }

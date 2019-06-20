@@ -19,7 +19,8 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 const to = index + batchSize;
                 index += batchSize;
                 if (log) {
-                    logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${Math.floor(to / numArticleIds * 100)}%]`);
+                    const progressPercent = Math.min(Math.floor(to / numArticleIds * 100), 100);
+                    logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
                 }
                 const articleIds = _articleIds.slice(from, to).map((id) => id.replace(/ /g, '_'));
 
