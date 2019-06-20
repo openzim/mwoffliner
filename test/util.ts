@@ -1,4 +1,3 @@
-import domino from 'domino';
 import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
@@ -38,4 +37,10 @@ export async function setupScrapeClasses(mwUrl: string = 'https://en.wikipedia.o
         downloader,
         dump,
     };
+}
+
+export function sleep(ms: number) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
 }

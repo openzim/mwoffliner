@@ -311,16 +311,14 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   });
 }
 
+let lastCalled = 0;
 export function throttle(fn: (...args: any[]) => any, wait: number) {
-  let isCalled = false;
 
   return function (...args: any[]) {
-    if (!isCalled) {
+    const canCall = (Date.now() - lastCalled) >= wait;
+    if (canCall) {
       fn(...args);
-      isCalled = true;
-      setTimeout(function () {
-        isCalled = false;
-      }, wait);
+      lastCalled = Date.now();
     }
   };
 }
