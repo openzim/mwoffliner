@@ -11,7 +11,8 @@ export const parameterDescriptions = {
   customZimTags: 'Allow to configure custom ZIM file tags (semi-colon separated).',
   customMainPage: 'Allow to configure a custom page as welcome page.',
   filenamePrefix: 'For the part of the ZIM filename which is before the date part.',
-  format: 'To custom the output with comma separated values : "nopic,novid,nopdf,nozim,nodet"',
+  format: 'Each --format=... will cause a new file to be created, acceptable options are: "nopic,novid,nopdf,nozim,nodet"\n\
+  e.g. "--format=nopic --format=novid,nopdf"',
   keepEmptyParagraphs: 'Keep all paragraphs, even empty ones.',
   keepHtml: 'If ZIM built, keep the temporary HTML directory',
   mwWikiPath: 'Mediawiki wiki base path (per default "/wiki/")',
