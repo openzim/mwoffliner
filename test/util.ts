@@ -21,7 +21,7 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
     return $link;
 }
 
-export async function setupScrapeClasses(mwUrl: string = 'https://en.wikipedia.org', format: string = '') {
+export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '' } = {}) {
     const mw = new MediaWiki({
         base: mwUrl,
     } as any);

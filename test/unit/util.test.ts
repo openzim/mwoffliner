@@ -1,5 +1,4 @@
-// tslint:disable-next-line: no-reference
-///<reference path="../../src/types.d.ts" />
+import './bootstrap.test';
 
 import test from 'blue-tape';
 import { throttle } from 'src/util';

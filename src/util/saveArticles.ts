@@ -229,7 +229,7 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
     };
 }
 
-async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies = [];
     /* Clean/rewrite image tags */
