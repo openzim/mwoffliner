@@ -159,7 +159,9 @@ class Downloader {
 
       const nextResp = await this.getArticleDetailsIds(articleIds, resp.continue);
 
-      return deepmerge(processedResponse, nextResp);
+      const relevantDetails = this.stripNonContinuedProps(nextResp, continuation);
+
+      return deepmerge(processedResponse, relevantDetails);
 
     } else {
       if (this.mw.getCategories) {
@@ -219,9 +221,9 @@ class Downloader {
 
     if (!queryComplete) {
       const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, resp['query-continue']);
-
+      const relevantDetails = this.stripNonContinuedProps(nextResp.articleDetails, queryContinuation);
       return {
-        articleDetails: deepmerge(processedResponse, nextResp.articleDetails),
+        articleDetails: deepmerge(processedResponse, relevantDetails),
         gapContinue: gCont,
       };
     } else {
@@ -406,6 +408,38 @@ class Downloader {
       filePath,
       responseHeaders: val.responseHeaders,
     });
+  }
+
+  private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
+    const propsMap: KVS<string[]> = {
+      pageimages: ['thumbnail', 'pageimage'],
+      redirects: ['redirects'],
+      coordinates: ['coordinates'],
+      categories: ['categories'],
+    };
+    const keysToKeep = Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []);
+    const items = Object.entries(articleDetails)
+      .map(([aId, detail]) => {
+        const newDetail = keysToKeep
+          .reduce((acc, key) => {
+            const val = (detail as any)[key];
+            if (!val) {
+              return acc;
+            } else {
+              return {
+                ...acc,
+                [key]: val,
+              };
+            }
+          }, {});
+        return [
+          aId,
+          newDetail,
+        ];
+      });
+    return items.reduce((acc, [key, detail]) => {
+      return { ...acc, [key]: detail };
+    }, {});
   }
 
   private async handleMWWarningsAndErrors(resp: MwApiResponse) {
