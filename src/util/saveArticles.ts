@@ -12,7 +12,7 @@ import { mapLimit } from 'promiso';
 import { getFullUrl, genHeaderScript, genHeaderCSSLink, jsPath, contains, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
-import { filesToDownloadXPath, articleDetailXId, redirectsXId, scrapeStatus, filesToRetryXPath } from '../stores';
+import { filesToDownloadXPath, articleDetailXId, scrapeStatus, filesToRetryXPath } from '../stores';
 import { getSizeFromUrl } from './misc';
 import { RedisKvs } from './redis-kvs';
 import { rewriteUrl } from './rewriteUrls';

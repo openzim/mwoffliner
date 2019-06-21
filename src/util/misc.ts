@@ -10,7 +10,7 @@ import { exec } from 'child_process';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { MEDIA_REGEX } from '.';
+import { MEDIA_REGEX } from './const';
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -311,16 +311,14 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   });
 }
 
+let lastCalled = 0;
 export function throttle(fn: (...args: any[]) => any, wait: number) {
-  let isCalled = false;
 
   return function (...args: any[]) {
-    if (!isCalled) {
+    const canCall = (Date.now() - lastCalled) >= wait;
+    if (canCall) {
       fn(...args);
-      isCalled = true;
-      setTimeout(function () {
-        isCalled = false;
-      }, wait);
+      lastCalled = Date.now();
     }
   };
 }
