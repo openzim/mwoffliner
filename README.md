@@ -92,17 +92,22 @@ cd mwoffliner
 npm i
 
 # Running
-ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+./node_modules/.bin/ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
 ```
 
 ### Tests
 There are two test suites:
-- End to end (e2e)
+
 - Unit
 
 ```bash
 npm run test:unit # (or just npm test)
-npm run test:e2e
+```
+
+- End to end (e2e)
+
+```bash
+npm run test:unit # (or just npm test)
 ```
 
 ### Code Style
