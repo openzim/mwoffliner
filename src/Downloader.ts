@@ -335,7 +335,8 @@ class Downloader {
       const call = backoff.call(this.getJSONCb, url, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
+          const httpStatus = err.response && err.response.status;
+          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
         } else {
           if (self.useCache) {
@@ -374,7 +375,8 @@ class Downloader {
       const call = backoff.call(this.getContentCb, requestOptions, async (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times`);
+          const httpStatus = err.response && err.response.status;
+          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
         } else if (self.useCache) {
           try {
