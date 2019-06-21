@@ -43,6 +43,26 @@ test('Downloader class', async (t) => {
     const queryRet = await downloader.query(`?action=query&meta=siteinfo&siprop=statistics&format=json`);
     t.ok(!!queryRet, 'downloader.query returns valid JSON');
 
+    const JSONRes = await downloader.getJSON(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`);
+    t.ok(!!JSONRes, 'downloader.getJSON returns valid JSON');
+
+    try {
+        await downloader.getJSON(`https://en.wikipedia.org/w/thisisa404`);
+    } catch (err) {
+        t.ok(true, 'getJSON throws on non-existant url');
+        t.equal(err.response.status, 404, 'getJSON response status for non-existant url is 404');
+    }
+
+    const contentRes = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg`);
+    t.ok(!!contentRes.responseHeaders, 'downloader.downloadContent returns');
+
+    try {
+        await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg`);
+    } catch (err) {
+        t.ok(true, 'downloader.downloadContent throws on non-existant url');
+        t.equal(err.response.status, 404, 'downloadContent response status for non-existant url is 404');
+    }
+
     const articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
     articleDetailXId.setMany(articleDetailsRet);
     const { London, Paris, Zurich, THISARTICLEDOESNTEXIST } = articleDetailsRet;
