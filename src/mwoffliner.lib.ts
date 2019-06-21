@@ -477,17 +477,19 @@ async function execute(argv: any) {
         for (const [articleId, articleDetail] of Object.entries(articles)) {
           for (const redirect of articleDetail.redirects || []) {
             const redirectId = redirect.title.replace(/ /g, '_');
-            const redirectArticle = new ZimArticle({
-              url: redirectId + (dump.nozim ? '.html' : ''),
-              shouldIndex: true,
-              data: '',
-              ns: 'A',
-              mimeType: 'text/html',
-              title: redirect.title,
-              redirectAid: `${articleId}` + (dump.nozim ? '.html' : ''),
-            });
-            await zimCreator.addArticle(redirectArticle);
-            scrapeStatus.redirects.written += 1;
+            if (redirectId !== articleId) {
+              const redirectArticle = new ZimArticle({
+                url: redirectId + (dump.nozim ? '.html' : ''),
+                shouldIndex: true,
+                data: '',
+                ns: 'A',
+                mimeType: 'text/html',
+                title: redirect.title,
+                redirectAid: `${articleId}` + (dump.nozim ? '.html' : ''),
+              });
+              await zimCreator.addArticle(redirectArticle);
+              scrapeStatus.redirects.written += 1;
+            }
           }
         }
       },
