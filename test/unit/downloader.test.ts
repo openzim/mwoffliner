@@ -1,26 +1,12 @@
-// tslint:disable-next-line: no-reference
-///<reference path="../../src/types.d.ts" />
-
-// tslint:disable-next-line: no-var-requires
-require('dotenv').config();
-
+import './bootstrap.test';
 import test from 'blue-tape';
-
-import { populateArticleDetail, articleDetailXId, populateRedirects, redirectsXId, populateFilesToDownload, filesToDownloadXPath, populateRequestCache, requestCacheXUrl } from 'src/stores';
-import Redis from '../../src/redis';
-import { config } from '../../src/config';
 import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
 import { mkdirPromise } from 'src/util';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
-
-const redis = new Redis({ redis: process.env.REDIS }, config);
-populateArticleDetail(redis.redisClient);
-populateRedirects(redis.redisClient);
-populateFilesToDownload(redis.redisClient);
-populateRequestCache(redis.redisClient);
+import { articleDetailXId } from 'src/stores';
 
 test('Downloader class', async (t) => {
     const mw = new MediaWiki({
@@ -78,11 +64,6 @@ test('Downloader class', async (t) => {
     const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump);
     t.ok(PaginatedArticle.length > 100, 'Categories with many subCategories are paginated');
 
-    articleDetailXId.flush();
-    redirectsXId.flush();
-    filesToDownloadXPath.flush();
-    requestCacheXUrl.flush();
-    redis.redisClient.quit();
     rimraf.sync(cacheDir);
 
     // TODO: find a way to get service-runner to stop properly

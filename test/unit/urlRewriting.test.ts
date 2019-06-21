@@ -1,21 +1,11 @@
-// tslint:disable-next-line: no-reference
-///<reference path="../../src/types.d.ts" />
-
-// tslint:disable-next-line: no-var-requires
-require('dotenv').config();
+import './bootstrap.test';
 
 import test from 'blue-tape';
 import domino from 'domino';
 
 import { rewriteUrl } from '../../src/util/rewriteUrls';
 import { makeLink, setupScrapeClasses } from 'test/util';
-import { populateArticleDetail, articleDetailXId, populateRedirects, redirectsXId } from '../../src/stores';
-import Redis from '../../src/redis';
-import { config } from '../../src/config';
-
-const redis = new Redis({ redis: process.env.REDIS }, config);
-populateArticleDetail(redis.redisClient);
-populateRedirects(redis.redisClient);
+import { articleDetailXId } from '../../src/stores';
 
 test('Url re-writing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
@@ -83,7 +73,4 @@ test('Url re-writing', async (t) => {
     await rewriteUrl(parentArticleId, mw, dump, $nonScrapedWikiLink);
     t.assert(!$nonScrapedWikiLink.parentElement, 'nonScrapedWikiLink has been deleted');
 
-    articleDetailXId.flush();
-    redirectsXId.flush();
-    redis.redisClient.quit();
 });

@@ -1,23 +1,10 @@
-// tslint:disable-next-line: no-reference
-///<reference path="../../src/types.d.ts" />
-
-// tslint:disable-next-line: no-var-requires
-require('dotenv').config();
-
+import './bootstrap.test';
 import test from 'blue-tape';
-import domino from 'domino';
 
 import { setupScrapeClasses } from 'test/util';
-import { populateArticleDetail, articleDetailXId, populateRedirects, redirectsXId, populateFilesToDownload, filesToDownloadXPath } from 'src/stores';
-import Redis from '../../src/redis';
-import { config } from '../../src/config';
+import { articleDetailXId } from 'src/stores';
 import { getAndProcessStylesheets } from 'src/util';
 import Axios from 'axios';
-
-const redis = new Redis({ redis: process.env.REDIS }, config);
-populateArticleDetail(redis.redisClient);
-populateRedirects(redis.redisClient);
-populateFilesToDownload(redis.redisClient);
 
 test('Stylesheet downloading', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
@@ -39,9 +26,4 @@ test('Stylesheet downloading', async (t) => {
 
     t.assert(finalCss.includes(siteStylesUrl), `Contains site CSS url`);
     t.assert(!finalCss.includes(siteStylesContent), `Contains re-written site CSS content`);
-
-    articleDetailXId.flush();
-    redirectsXId.flush();
-    filesToDownloadXPath.flush();
-    redis.redisClient.quit();
 });
