@@ -82,6 +82,7 @@ async function execute(argv: any) {
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
     useCache,
+    noLocalParserFallback,
   } = argv;
 
   (process as any).verbose = !!verbose;
@@ -213,11 +214,11 @@ async function execute(argv: any) {
     logger.warn(`Failed to get remote Parsoid`);
   }
 
-  if (useLocalMCS || useLocalParsoid) {
-    logger.log(`Using a local MCS instance, couldn't find a remote one`);
+  if (!noLocalParserFallback && (useLocalMCS || useLocalParsoid)) {
+    logger.log(`Using a local MCS/Parsoid instance, couldn't find a remote one`);
     await downloader.initLocalMcs(useLocalParsoid);
   } else {
-    logger.log(`Using a remote MCS instance`);
+    logger.log(`Using a remote MCS/Parsoid instance`);
   }
 
   const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
