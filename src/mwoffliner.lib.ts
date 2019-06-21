@@ -22,7 +22,7 @@ import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
 import { mapLimit } from 'promiso';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -422,8 +422,7 @@ async function execute(argv: any) {
             const path = getMediaBase(suitableResUrl, false);
             filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
 
-            const resourceNamespace = 'I';
-            const internalSrc = `../${resourceNamespace}/` + getMediaBase(suitableResUrl, true);
+            const internalSrc = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I');
 
             articleDetail.internalThumbnailUrl = internalSrc;
             await articleDetailXId.set(articleId, articleDetail);
