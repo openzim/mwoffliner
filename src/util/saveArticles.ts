@@ -13,7 +13,7 @@ import { getFullUrl, genHeaderScript, genHeaderCSSLink, jsPath, contains, getMed
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import { filesToDownloadXPath, articleDetailXId, scrapeStatus, filesToRetryXPath } from '../stores';
-import { getSizeFromUrl } from './misc';
+import { getSizeFromUrl, getRelativeFilePath } from './misc';
 import { RedisKvs } from './redis-kvs';
 import { rewriteUrl } from './rewriteUrls';
 
@@ -229,219 +229,234 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
     };
 }
 
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+function widthXHeightSorter(a: DominoElement, b: DominoElement) {
+    // If there is no width/height, it counts as zero, probably best?
+    // Sometimes (pure audio) there will only be one item
+    // Sometimes (pure audio) there won't be width/height
+    const aWidth = Number(a.getAttribute('data-file-width') || a.getAttribute('data-width') || 0);
+    const aHeight = Number(a.getAttribute('data-file-height') || a.getAttribute('data-height') || 0);
+    const bWidth = Number(b.getAttribute('data-file-width') || b.getAttribute('data-width') || 0);
+    const bHeight = Number(b.getAttribute('data-file-height') || b.getAttribute('data-height') || 0);
+
+    const aVal = aWidth * aHeight;
+    const bVal = bWidth * bHeight;
+    return aVal > bVal ? 1 : -1;
+}
+
+async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[] }> {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
-    const mediaDependencies = [];
-    /* Clean/rewrite image tags */
-    const imgs = parsoidDoc.getElementsByTagName('img');
-    const videos = Array.from(parsoidDoc.getElementsByTagName('video'));
-    const srcCache: KVS<boolean> = {};
+    const mediaDependencies: string[] = [];
+    // Worth noting:
+    // Video tags are used for audio files too (as opposed to the audio tag)
+    // When it's only audio, there will be a single OGG file
+    // For video, we get multiple SOURCE tages with different resolutions
 
-    videos.forEach((videoEl: DominoElement) => {
-        // Worth noting:
-        // Video tags are used for audio files too (as opposed to the audio tag)
-        // When it's only audio, there will be a single OGG file
-        // For video, we get multiple SOURCE tages with different resolutions
+    const posterUrl = videoEl.getAttribute('poster');
+    const videoPosterUrl = getFullUrl(webUrlHost, posterUrl);
+    const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
+    let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
 
-        const posterUrl = videoEl.getAttribute('poster');
-        const videoPosterUrl = getFullUrl(webUrlHost, posterUrl);
-        const newVideoPosterUrl = getMediaBase(videoPosterUrl, true);
-        let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
+    // Firefox is not able to display correctly <video> nodes with a height < 40.
+    // In that case the controls are not displayed.
+    if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
+        videoEl.setAttribute('height', '40');
+    }
 
-        // Firefox is not able to display correctly <video> nodes with a height < 40.
-        // In that case the controls are not displayed.
-        if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
-            videoEl.setAttribute('height', '40');
-        }
+    // Always show controls
+    videoEl.setAttribute('controls', '40');
 
-        // Always show controls
-        videoEl.setAttribute('controls', '40');
+    if (dump.nopic || dump.novid || dump.nodet) {
+        DU.deleteNode(videoEl);
+        return { mediaDependencies };
+    }
 
-        if (dump.nopic || dump.novid || dump.nodet) {
-            DU.deleteNode(videoEl);
-            return;
-        }
+    if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
+    videoEl.removeAttribute('resource');
 
-        if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
-        videoEl.removeAttribute('resource');
+    if (!srcCache.hasOwnProperty(videoPosterUrl)) {
+        srcCache[videoPosterUrl] = true;
+        mediaDependencies.push(videoPosterUrl);
+    }
 
-        if (!srcCache.hasOwnProperty(videoPosterUrl)) {
-            srcCache[videoPosterUrl] = true;
-            mediaDependencies.push(videoPosterUrl);
-        }
+    videoSources = videoSources.sort(widthXHeightSorter);
 
-        function byWidthXHeight(a: DominoElement, b: DominoElement) {
-            // If there is no width/height, it counts as zero, probably best?
-            // Sometimes (pure audio) there will only be one item
-            // Sometimes (pure audio) there won't be width/height
-            const aWidth = Number(a.getAttribute('data-file-width') || a.getAttribute('data-width') || 0);
-            const aHeight = Number(a.getAttribute('data-file-height') || a.getAttribute('data-height') || 0);
-            const bWidth = Number(b.getAttribute('data-file-width') || b.getAttribute('data-width') || 0);
-            const bHeight = Number(b.getAttribute('data-file-height') || b.getAttribute('data-height') || 0);
+    const sourcesToRemove = videoSources.slice(1); // All but first
 
-            const aVal = aWidth * aHeight;
-            const bVal = bWidth * bHeight;
-            return aVal > bVal ? 1 : -1;
-        }
+    sourcesToRemove.forEach(DU.deleteNode);
 
-        videoSources = videoSources.sort(byWidthXHeight);
+    const sourceEl = videoSources[0]; // Use first source (smallest resolution)
 
-        const sourcesToRemove = videoSources.slice(1); // All but first
+    const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
+    const fileBase = getMediaBase(sourceUrl, true);
 
-        sourcesToRemove.forEach(DU.deleteNode);
+    if (!fileBase) {
+        DU.deleteNode(sourceEl);
+        return;
+    }
 
-        const sourceEl = videoSources[0]; // Use first source (smallest resolution)
+    const newUrl = getRelativeFilePath(articleId, fileBase, 'I');
 
-        const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
-        const resourceNamespace = 'I';
-        const slashesInUrl = articleId.split('/').length - 1;
-        const upStr = '../'.repeat(slashesInUrl + 1);
-        const newUrl = `${upStr}${resourceNamespace}/` + getMediaBase(sourceUrl, true);
+    /* Download content, but avoid duplicate calls */
+    if (!srcCache.hasOwnProperty(sourceUrl)) {
+        srcCache[sourceUrl] = true;
+        mediaDependencies.push(sourceUrl);
+    }
 
-        if (!newUrl) {
-            DU.deleteNode(sourceEl);
-            return;
-        }
+    sourceEl.setAttribute('src', newUrl);
+    return { mediaDependencies };
+}
 
-        /* Download content, but avoid duplicate calls */
-        if (!srcCache.hasOwnProperty(sourceUrl)) {
-            srcCache[sourceUrl] = true;
-            mediaDependencies.push(sourceUrl);
-        }
+async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ mediaDependencies: string[] }> {
+    const webUrlHost = urlParser.parse(mw.webUrl).host;
+    const mediaDependencies: string[] = [];
 
-        sourceEl.setAttribute('src', newUrl);
-    });
+    const imageNodeClass = img.getAttribute('class') || '';
 
-    // tslint:disable-next-line:prefer-for-of
-    for (let i = 0; i < imgs.length; i += 1) {
-        const img = imgs[i];
-        const imageNodeClass = img.getAttribute('class') || '';
+    if (
+        (!dump.nopic
+            || imageNodeClass.search('mwe-math-fallback-image-inline') >= 0
+            || img.getAttribute('typeof') === 'mw:Extension/math')
+        && img.getAttribute('src')
+        && img.getAttribute('src').indexOf('./Special:FilePath/') !== 0
+    ) {
+        /* Remove image link */
+        const linkNode = img.parentNode;
+        if (linkNode.tagName === 'A') {
+            /* Check if the target is mirrored */
+            const href = linkNode.getAttribute('href') || '';
+            const title = mw.extractPageTitleFromHref(href);
+            const keepLink = title && await isMirrored(title);
 
-        if (
-            (!dump.nopic
-                || imageNodeClass.search('mwe-math-fallback-image-inline') >= 0
-                || img.getAttribute('typeof') === 'mw:Extension/math')
-            && img.getAttribute('src')
-            && img.getAttribute('src').indexOf('./Special:FilePath/') !== 0
-        ) {
-            /* Remove image link */
-            const linkNode = img.parentNode;
-            if (linkNode.tagName === 'A') {
-                /* Check if the target is mirrored */
-                const href = linkNode.getAttribute('href') || '';
-                const title = mw.extractPageTitleFromHref(href);
-                const keepLink = title && await isMirrored(title);
-
-                /* Under certain condition it seems that this is possible
-                                 * to have parentNode == undefined, in this case this
-                                 * seems preferable to remove the whole link+content than
-                                 * keeping a wrong link. See for example this url
-                                 * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-                if (!keepLink) {
-                    if (linkNode.parentNode) {
-                        linkNode.parentNode.replaceChild(img, linkNode);
-                    } else {
-                        DU.deleteNode(img);
-                    }
-                }
-            }
-
-            /* Rewrite image src attribute */
-            if (img) {
-                const src = getFullUrl(webUrlHost, img.getAttribute('src'));
-                let newSrc: string;
-                try {
-                    const resourceNamespace = 'I';
-                    const slashesInUrl = articleId.split('/').length - 1;
-                    const upStr = '../'.repeat(slashesInUrl + 1);
-                    newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true);
-                } catch (err) { /* NOOP */ }
-
-                if (newSrc) {
-                    /* Download image, but avoid duplicate calls */
-                    if (!srcCache.hasOwnProperty(src)) {
-                        srcCache[src] = true;
-                        mediaDependencies.push(src);
-                    }
-
-                    /* Change image source attribute to point to the local image */
-                    img.setAttribute('src', newSrc);
-
-                    /* Remove useless 'resource' attribute */
-                    img.removeAttribute('resource');
-
-                    /* Remove srcset */
-                    img.removeAttribute('srcset');
+            /* Under certain condition it seems that this is possible
+                             * to have parentNode == undefined, in this case this
+                             * seems preferable to remove the whole link+content than
+                             * keeping a wrong link. See for example this url
+                             * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
+            if (!keepLink) {
+                if (linkNode.parentNode) {
+                    linkNode.parentNode.replaceChild(img, linkNode);
                 } else {
                     DU.deleteNode(img);
                 }
             }
-        } else {
-            DU.deleteNode(img);
         }
+
+        /* Rewrite image src attribute */
+        if (img) {
+            const src = getFullUrl(webUrlHost, img.getAttribute('src'));
+            let newSrc: string;
+            try {
+                const resourceNamespace = 'I';
+                const slashesInUrl = articleId.split('/').length - 1;
+                const upStr = '../'.repeat(slashesInUrl + 1);
+                newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true);
+            } catch (err) { /* NOOP */ }
+
+            if (newSrc) {
+                /* Download image, but avoid duplicate calls */
+                if (!srcCache.hasOwnProperty(src)) {
+                    srcCache[src] = true;
+                    mediaDependencies.push(src);
+                }
+
+                /* Change image source attribute to point to the local image */
+                img.setAttribute('src', newSrc);
+
+                /* Remove useless 'resource' attribute */
+                img.removeAttribute('resource');
+
+                /* Remove srcset */
+                img.removeAttribute('srcset');
+            } else {
+                DU.deleteNode(img);
+            }
+        }
+    } else {
+        DU.deleteNode(img);
+    }
+    return { mediaDependencies };
+}
+
+function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+    let image;
+    const numImages = imageNode.getElementsByTagName('img').length;
+    const numVideos = imageNode.getElementsByTagName('video').length;
+    if (numImages) {
+        image = imageNode.getElementsByTagName('img')[0];
+    } else if (numVideos) {
+        image = imageNode.getElementsByTagName('video')[0];
+    }
+    const isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
+
+    if (!dump.nopic && imageNode && image) {
+        const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
+        const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
+
+        const descriptions = imageNode.getElementsByTagName('figcaption');
+        const description = descriptions.length > 0 ? descriptions[0] : undefined;
+        const imageWidth = parseInt(image.getAttribute('width'), 10);
+
+        let thumbDiv = parsoidDoc.createElement('div');
+        thumbDiv.setAttribute('class', 'thumb');
+        if (imageNodeClass.search('mw-halign-right') >= 0) {
+            DU.appendToAttr(thumbDiv, 'class', 'tright');
+        } else if (imageNodeClass.search('mw-halign-left') >= 0) {
+            DU.appendToAttr(thumbDiv, 'class', 'tleft');
+        } else if (imageNodeClass.search('mw-halign-center') >= 0) {
+            DU.appendToAttr(thumbDiv, 'class', 'tnone');
+            const centerDiv = parsoidDoc.createElement('center');
+            centerDiv.appendChild(thumbDiv);
+            thumbDiv = centerDiv;
+        } else {
+            const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left';
+            DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
+        }
+
+        const thumbinnerDiv = parsoidDoc.createElement('div');
+        thumbinnerDiv.setAttribute('class', 'thumbinner');
+        thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
+
+        const thumbcaptionDiv = parsoidDoc.createElement('div');
+        thumbcaptionDiv.setAttribute('class', 'thumbcaption');
+        const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right';
+        thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
+        if (description) {
+            thumbcaptionDiv.innerHTML = description.innerHTML;
+        }
+
+        thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
+        thumbinnerDiv.appendChild(thumbcaptionDiv);
+        thumbDiv.appendChild(thumbinnerDiv);
+
+        imageNode.parentNode.replaceChild(thumbDiv, imageNode);
+    } else {
+        DU.deleteNode(imageNode);
+    }
+}
+
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+    let mediaDependencies: string[] = [];
+    /* Clean/rewrite image tags */
+    const imgs = Array.from(parsoidDoc.getElementsByTagName('img'));
+    const videos: DominoElement = Array.from(parsoidDoc.getElementsByTagName('video'));
+    const srcCache: KVS<boolean> = {};
+
+    for (const videoEl of videos) {
+        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
+        mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
+    }
+
+    for (const imgEl of imgs) {
+        const ret = await treatImage(mw, dump, srcCache, articleId, imgEl);
+        mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
 
     /* Improve image frames */
     const figures = parsoidDoc.getElementsByTagName('figure');
     const spans = parsoidDoc.querySelectorAll('span[typeof=mw:Image/Frameless]');
     const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans));
-    // tslint:disable-next-line:prefer-for-of
-    for (let i = 0; i < imageNodes.length; i += 1) {
-        const imageNode = imageNodes[i];
-        let image;
-        const numImages = imageNode.getElementsByTagName('img').length;
-        const numVideos = imageNode.getElementsByTagName('video').length;
-        if (numImages) {
-            image = imageNode.getElementsByTagName('img')[0];
-        } else if (numVideos) {
-            image = imageNode.getElementsByTagName('video')[0];
-        }
-        const isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
-
-        if (!dump.nopic && imageNode && image) {
-            const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
-            const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
-
-            const descriptions = imageNode.getElementsByTagName('figcaption');
-            const description = descriptions.length > 0 ? descriptions[0] : undefined;
-            const imageWidth = parseInt(image.getAttribute('width'), 10);
-
-            let thumbDiv = parsoidDoc.createElement('div');
-            thumbDiv.setAttribute('class', 'thumb');
-            if (imageNodeClass.search('mw-halign-right') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tright');
-            } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tleft');
-            } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-                DU.appendToAttr(thumbDiv, 'class', 'tnone');
-                const centerDiv = parsoidDoc.createElement('center');
-                centerDiv.appendChild(thumbDiv);
-                thumbDiv = centerDiv;
-            } else {
-                const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left';
-                DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
-            }
-
-            const thumbinnerDiv = parsoidDoc.createElement('div');
-            thumbinnerDiv.setAttribute('class', 'thumbinner');
-            thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
-
-            const thumbcaptionDiv = parsoidDoc.createElement('div');
-            thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-            const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right';
-            thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
-            if (description) {
-                thumbcaptionDiv.innerHTML = description.innerHTML;
-            }
-
-            thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
-            thumbinnerDiv.appendChild(thumbcaptionDiv);
-            thumbDiv.appendChild(thumbinnerDiv);
-
-            imageNode.parentNode.replaceChild(thumbDiv, imageNode);
-        } else {
-            DU.deleteNode(imageNode);
-        }
+    for (const imageNode of imageNodes) {
+        treatImageFrames(mw, dump, parsoidDoc, imageNode);
     }
 
     return { doc: parsoidDoc, mediaDependencies };

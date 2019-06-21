@@ -326,3 +326,10 @@ export function throttle(fn: (...args: any[]) => any, wait: number) {
 export const keepAlive = throttle(function keepAlive() {
   logger.log(`Heartbeat - OK`);
 }, 1000 * 60 * 9);
+
+export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M') {
+  const slashesInUrl = parentArticleId.split('/').length - 1;
+  const upStr = '../'.repeat(slashesInUrl + 1);
+  const newUrl = `${upStr}${resourceNamespace}/` + fileBase;
+  return newUrl;
+}
