@@ -12,7 +12,7 @@ export const parameterDescriptions = {
   customMainPage: 'Allow to configure a custom page as welcome page.',
   filenamePrefix: 'For the part of the ZIM filename which is before the date part.',
   format: 'Each --format=... will cause a new file to be created, acceptable options are: "nopic,novid,nopdf,nozim,nodet"\n\
-  e.g. "--format=nopic --format=novid,nopdf"',
+  e.g. "--format=nopic --format=novid,nopdf" will create two ZIM files',
   keepEmptyParagraphs: 'Keep all paragraphs, even empty ones.',
   keepHtml: 'If ZIM built, keep the temporary HTML directory',
   mwWikiPath: 'Mediawiki wiki base path (per default "/wiki/")',
@@ -34,4 +34,5 @@ export const parameterDescriptions = {
   withoutZimFullTextIndex: 'Don\'t include a fulltext search index to the ZIM',
   addNamespaces: 'Force addional namespace (comma separated numbers)',
   getCategories: '[WIP] Download category pages',
+  noLocalParserFallback: 'Don\'t fall back to a local MCS or Parsoid, only use remote APIs',
 };
