@@ -417,7 +417,10 @@ class Downloader {
       coordinates: ['coordinates'],
       categories: ['categories'],
     };
-    const keysToKeep = Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []);
+    const keysToKeep: string[] = ['subCategories']
+      .concat(
+        Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []),
+      );
     const items = Object.entries(articleDetails)
       .map(([aId, detail]) => {
         const newDetail = keysToKeep
@@ -437,7 +440,7 @@ class Downloader {
           newDetail,
         ];
       });
-    return items.reduce((acc, [key, detail]) => {
+    return items.reduce((acc, [key, detail]: any[]) => {
       return { ...acc, [key]: detail };
     }, {});
   }
@@ -475,7 +478,7 @@ class Downloader {
       const isCategoryArticle = articleDetail.ns === 14;
       if (isCategoryArticle) {
         const categoryMembers = await this.getSubCategories(articleId);
-        (articleDetails[articleId] as any).subCategories = categoryMembers;
+        (articleDetails[articleId] as any).subCategories = categoryMembers.slice();
       }
     }
     return articleDetails;
