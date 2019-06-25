@@ -252,7 +252,7 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     // For video, we get multiple SOURCE tages with different resolutions
 
     const posterUrl = videoEl.getAttribute('poster');
-    const videoPosterUrl = getFullUrl(webUrlHost, posterUrl);
+    const videoPosterUrl = getFullUrl(webUrlHost, posterUrl, mw.base);
     const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
     let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
 
@@ -286,7 +286,7 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
     const sourceEl = videoSources[0]; // Use first source (smallest resolution)
 
-    const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'));
+    const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'), mw.base);
     const fileBase = getMediaBase(sourceUrl, true);
 
     if (!fileBase) {
@@ -343,7 +343,7 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
         /* Rewrite image src attribute */
         if (img) {
-            const src = getFullUrl(webUrlHost, img.getAttribute('src'));
+            const src = getFullUrl(webUrlHost, img.getAttribute('src'), mw.base);
             let newSrc: string;
             try {
                 const resourceNamespace = 'I';

@@ -47,7 +47,7 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function getFullUrl(webUrlHost: string, url: string, baseUrl?: string) {
+export function getFullUrl(webUrlHost: string, url: string, baseUrl: string) {
   if (typeof url !== 'string' || !url) {
     throw new Error(`Expected url to be a string, got [${url}] instead`);
   }
