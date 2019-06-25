@@ -2,6 +2,7 @@ import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { leftPad } from '../util';
 import rimraf from 'rimraf';
+import { execPromise } from '../../src/util';
 // import { ZimReader } from '@openzim/libzim';
 // tslint:disable-next-line: no-var-requires
 require('dotenv').config();
@@ -22,6 +23,8 @@ const parameters = {
 };
 
 test('Simple articleList', async (t) => {
+    await execPromise(`redis-cli flushall`);
+
     // const { data: articleIds } = await axios.get(articleListUrl);
     const outFiles = await execute(parameters);
 
@@ -35,4 +38,7 @@ test('Simple articleList', async (t) => {
     t.ok(true, 'Scraped EN top 10');
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
+
+    const redisScan = await execPromise(`redis-cli --scan`);
+    t.equal(redisScan, '', 'Redis has been cleared');
 });
