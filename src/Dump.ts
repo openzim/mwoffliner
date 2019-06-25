@@ -41,6 +41,20 @@ export class Dump {
 
     public mediaQueue: AsyncQueue<string>;
 
+    public status = {
+        files: {
+            success: 0,
+            fail: 0,
+        },
+        articles: {
+            success: 0,
+            fail: 0,
+        },
+        redirects: {
+            written: 0,
+        },
+    };
+
     constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData) {
         this.mwMetaData = mwMetaData;
         this.opts = opts;

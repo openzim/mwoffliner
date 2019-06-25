@@ -12,7 +12,7 @@ import { mapLimit } from 'promiso';
 import { getFullUrl, genHeaderScript, genHeaderCSSLink, jsPath, contains, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
-import { filesToDownloadXPath, articleDetailXId, scrapeStatus, filesToRetryXPath } from '../stores';
+import { filesToDownloadXPath, articleDetailXId, filesToRetryXPath } from '../stores';
 import { getSizeFromUrl, getRelativeFilePath } from './misc';
 import { RedisKvs } from './redis-kvs';
 import { rewriteUrl } from './rewriteUrls';
@@ -27,7 +27,7 @@ type FileStore = RedisKvs<{
     width?: number;
 }>;
 
-export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, downloader: Downloader, isRetry = false) {
+export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, isRetry = false) {
     const numKeys = await fileStore.len();
     logger.log(`${isRetry ? 'Retrying' : 'Downloading'} a total of [${numKeys}] files`);
     let prevPercentProgress = -1;
@@ -44,29 +44,29 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 const article = new ZimArticle({ url: path, data: content, ns: namespace });
                 await zimCreator.addArticle(article);
 
-                scrapeStatus.files.success += 1;
+                dump.status.files.success += 1;
             } catch (err) {
                 if (!isRetry) {
                     await filesToRetryXPath.set(path, { url, namespace, mult, width });
                 } else {
                     logger.warn(`Error downloading file [${url}], skipping`);
-                    scrapeStatus.files.fail += 1;
+                    dump.status.files.fail += 1;
                     await filesToDownloadXPath.delete(path);
                 }
             }
 
-            if (scrapeStatus.files.success % 10 === 0) {
-                const percentProgress = Math.floor(scrapeStatus.files.success / numKeys * 1000) / 10;
+            if (dump.status.files.success % 10 === 0) {
+                const percentProgress = Math.floor(dump.status.files.success / numKeys * 1000) / 10;
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = Math.min(percentProgress, 100);
-                    logger.log(`Progress downloading files [${scrapeStatus.files.success}/${numKeys}] [${percentProgress}%]`);
+                    logger.log(`Progress downloading files [${dump.status.files.success}/${numKeys}] [${percentProgress}%]`);
                 }
             }
         }
     });
 
     if (!isRetry) {
-        await downloadFiles(filesToRetryXPath, zimCreator, downloader, true);
+        await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, true);
     }
 }
 
@@ -123,19 +123,19 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
                         await zimCreator.addArticle(zimArticle);
 
-                        scrapeStatus.articles.success += 1;
+                        dump.status.articles.success += 1;
                     }
                 } catch (err) {
-                    scrapeStatus.articles.fail += 1;
+                    dump.status.articles.fail += 1;
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
                     await articleDetailXId.delete(articleId);
                 }
 
-                if (scrapeStatus.articles.success % 10 === 0) {
-                    const percentProgress = Math.floor(scrapeStatus.articles.success / numKeys * 1000) / 10;
+                if (dump.status.articles.success % 10 === 0) {
+                    const percentProgress = Math.floor(dump.status.articles.success / numKeys * 1000) / 10;
                     if (percentProgress !== prevPercentProgress) {
                         prevPercentProgress = Math.min(percentProgress, 100);
-                        logger.log(`Progress downloading articles [${scrapeStatus.articles.success}/${numKeys}] [${percentProgress}%]`);
+                        logger.log(`Progress downloading articles [${dump.status.articles.success}/${numKeys}] [${percentProgress}%]`);
                     }
                 }
             }
