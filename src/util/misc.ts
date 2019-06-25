@@ -130,7 +130,7 @@ export function readFilePromise(path: string, encoding = 'utf8') {
 }
 
 export function execPromise(cmd: string) {
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     exec(cmd, (err, stdout) => {
       if (err) {
         reject(err);

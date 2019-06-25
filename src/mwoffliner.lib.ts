@@ -32,7 +32,7 @@ import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry } from './stores';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -42,6 +42,7 @@ function closeRedis(redis: Redis) {
     filesToRetryXPath.flush();
     articleDetailXId.flush();
     requestCacheXUrl.flush();
+    redirectsXId.flush();
     redis.redisClient.quit();
   }
 }
@@ -56,7 +57,6 @@ async function execute(argv: any) {
     adminEmail,
     verbose,
     minifyHtml,
-    skipCacheCleaning,
     keepEmptyParagraphs,
     mwUrl,
     mwWikiPath,
