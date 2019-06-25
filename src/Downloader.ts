@@ -139,7 +139,7 @@ class Downloader {
     const queryOpts = {
       ...this.getArticleQueryOpts(),
       titles: articleIds.join('|'),
-      ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
+      ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
       ...(this.mw.getCategories ? {
         cllimit: 'max',
         clshow: '!hidden',
@@ -174,7 +174,7 @@ class Downloader {
   public async getArticleDetailsNS(ns: number, gapcontinue: string = '', queryContinuation?: QueryContinueOpts): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
     const queryOpts: KVS<any> = {
       ...this.getArticleQueryOpts(),
-      ...(this.canFetchCoordinates ? { colimit: '1' } : {}),
+      ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
       ...(this.mw.getCategories ? {
         cllimit: 'max',
         clshow: '!hidden',
@@ -188,6 +188,9 @@ class Downloader {
     };
 
     if (queryContinuation) {
+      if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
+        queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
+      }
       if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
         queryOpts.clcontinue = queryContinuation.categories.clcontinue;
       }
@@ -215,7 +218,6 @@ class Downloader {
     const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => {
       return !(
         key === 'allpages'
-        || (key === 'coordinates' && this.canFetchCoordinates)
       );
     }).length === 0;
 
