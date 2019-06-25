@@ -32,7 +32,7 @@ import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, scrapeStatus, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -455,7 +455,7 @@ async function execute(argv: any) {
       });
     }));
 
-    await downloadFiles(filesToDownloadXPath, zimCreator, downloader);
+    await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
 
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
@@ -463,7 +463,7 @@ async function execute(argv: any) {
     logger.log(`Finishing Zim Creation`);
     await zimCreator.finalise();
 
-    logger.log(`Summary of scrape actions:`, JSON.stringify(scrapeStatus, null, '\t'));
+    logger.log(`Summary of scrape actions:`, JSON.stringify(dump.status, null, '\t'));
   }
 
   /* ********************************* */
@@ -488,7 +488,7 @@ async function execute(argv: any) {
                 redirectAid: `${articleId}` + (dump.nozim ? '.html' : ''),
               });
               await zimCreator.addArticle(redirectArticle);
-              scrapeStatus.redirects.written += 1;
+              dump.status.redirects.written += 1;
             }
           }
         }
