@@ -34,7 +34,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     let rel = linkNode.getAttribute('rel');
     let href = linkNode.getAttribute('href') || '';
-    const hrefProtocol = urlParser.parse(href).protocol;
+    let hrefProtocol = urlParser.parse(href).protocol;
     const mediaDependencies: string[] = [];
 
     if (hrefProtocol && !hrefProtocol.includes('http')) {
@@ -43,6 +43,13 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
 
     if (hrefProtocol && hrefProtocol.includes('http') && !rel) {
         rel = 'mw:ExtLink';
+    }
+
+    if (!hrefProtocol && href.slice(0, 2) === '//') {
+        const wikiProtocol = urlParser.parse(mw.webUrl).protocol;
+        href = `${wikiProtocol}${href}`;
+        linkNode.setAttribute('href', href);
+        hrefProtocol = urlParser.parse(href).protocol;
     }
 
     if (!href) {

@@ -23,6 +23,7 @@ test('Url re-writing', async (t) => {
     const $extHttp = makeLink($doc, 'http://google.com', 'mw:ExtLink', 'Google\'s Homepage (HTTP)');
     const $extHttps = makeLink($doc, 'https://google.com', 'mw:ExtLink', 'Google\'s Homepage (HTTPS)');
     const $extHttpsNoRel = makeLink($doc, 'https://google.com', '', 'Google\'s Homepage (HTTPS)');
+    const $extNoProtocol = makeLink($doc, '//google.com', '', 'Google\'s Homepage (no protocol)');
     const $wikiLink = makeLink($doc, '/wiki/British_Museum', '', 'British Museum');
     const $wikiLink2 = makeLink($doc, '/wiki/British_Museum', '', 'British Museum');
     const $wikiLinkWithSlash = makeLink($doc, '/wiki/Farnborough/Aldershot_Built-up_Area', '', 'Farnborough/Aldershot Built-up Area');
@@ -45,6 +46,10 @@ test('Url re-writing', async (t) => {
     await rewriteUrl(parentArticleId, mw, dump, $extHttps);
     t.assert($extHttps.nodeName === 'A', 'extHttps is still a link');
     t.equal($extHttps.getAttribute('href'), 'https://google.com', 'extHttps HREF is correct');
+
+    await rewriteUrl(parentArticleId, mw, dump, $extNoProtocol);
+    t.assert($extNoProtocol.nodeName === 'A', 'extNoProtocol is still a link');
+    t.equal($extNoProtocol.getAttribute('href'), 'https://google.com', '$extNoProtocol HREF has HTTPS Protocol');
 
     await rewriteUrl(parentArticleId, mw, dump, $extHttpsNoRel);
     t.assert($extHttpsNoRel.nodeName === 'A', 'extHttpsNoRel is still a link');
