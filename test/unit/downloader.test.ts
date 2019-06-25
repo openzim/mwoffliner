@@ -32,6 +32,12 @@ test('Downloader class', async (t) => {
     const JSONRes = await downloader.getJSON(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`);
     t.ok(!!JSONRes, 'downloader.getJSON returns valid JSON');
 
+    const urlExists = await downloader.canGetUrl(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`);
+    t.ok(urlExists, 'downloader.canGetUrl returns valid answer (positive)');
+
+    const urlNotExists = await downloader.canGetUrl(`https://en.wikipedia.org/w/thisisa404`);
+    t.ok(!urlNotExists, 'downloader.canGetUrl returns valid answer (negative)');
+
     try {
         await downloader.getJSON(`https://en.wikipedia.org/w/thisisa404`);
     } catch (err) {
