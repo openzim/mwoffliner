@@ -399,6 +399,15 @@ class Downloader {
     });
   }
 
+  public async canGetUrl(url: string) {
+    try {
+      await axios.get(url);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
   private async cacheResponse(url: string, val: { content: Buffer, responseHeaders: any }) {
     const fileName = md5(url);
     const filePath = path.join(this.cacheDirectory, fileName);
