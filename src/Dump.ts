@@ -38,6 +38,7 @@ export class Dump {
     public opts: DumpOpts;
     public strings: KVS<string>;
     public mwMetaData: MWMetaData;
+    public outFile: string;
 
     public mediaQueue: AsyncQueue<string>;
 
