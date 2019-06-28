@@ -86,7 +86,6 @@ async function execute(argv: any) {
   } = argv;
 
   (process as any).verbose = !!verbose;
-  const writtenFiles: string[] = [];
 
   /* Setup redis client */
   const redis = new Redis(argv, config);
@@ -227,7 +226,7 @@ async function execute(argv: any) {
   /*       SYSTEM VARIABLE SECTION       */
   /* *********************************** */
 
-  const dumps = getDumps(format);
+  const dumpFormats = getDumps(format);
 
   const addNamespaces = _addNamespaces ? String(_addNamespaces).split(',').map((a: string) => Number(a)) : [];
 
@@ -308,9 +307,10 @@ async function execute(argv: any) {
     // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
   }
 
-  for (let i = 0; i < dumps.length; i++) {
-    const _dump = dumps[i];
-    const dump = new Dump(_dump, {
+  const dumps: Dump[] = [];
+
+  for (const dumpFormat of dumpFormats) {
+    const dump = new Dump(dumpFormat, {
       tmpDir: dumpTmpDir,
       username: mwUsername,
       password: mwPassword,
@@ -330,6 +330,7 @@ async function execute(argv: any) {
       keepEmptyParagraphs,
       tags: customZimTags,
     }, mwMetaData);
+    dumps.push(dump);
     logger.log(`Doing dump`);
     let shouldSkip = false;
     try {
@@ -342,7 +343,7 @@ async function execute(argv: any) {
       logger.log(`Skipping dump`);
     } else {
       try {
-        await doDump(dump, i === (dumps.length - 1));
+        await doDump(dump);
       } catch (err) {
         debugger;
         throw err;
@@ -355,13 +356,12 @@ async function execute(argv: any) {
 
   logger.log('All dumping(s) finished with success.');
 
-  async function doDump(dump: Dump, isFinalDump = false) {
+  async function doDump(dump: Dump) {
     const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
-
-    writtenFiles.push(outZim);
+    dump.outFile = outZim;
 
     logger.log(`Flushing redis file store`);
     await filesToDownloadXPath.flush();
@@ -621,7 +621,7 @@ async function execute(argv: any) {
 
   closeRedis(redis);
 
-  return writtenFiles;
+  return dumps;
 }
 
 export {
