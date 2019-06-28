@@ -7,12 +7,16 @@ export function leftPad(_num: number, length: number) {
     return '0'.repeat(length - num.length) + num;
 }
 
-export function makeLink($doc: Document, href: string, rel: string, title: string, text: string = href) {
+export function makeLink($doc: Document, href: string, rel: string, title: string, text: string = href, attributes: KVS<string> = {}) {
     const $link = $doc.createElement('a');
     $link.setAttribute('href', href);
     $link.setAttribute('rel', rel);
     $link.setAttribute('title', title);
     $link.innerHTML = text;
+
+    for (const [key, value] of Object.entries(attributes)) {
+        $link.setAttribute(key, value);
+    }
 
     const $wrapper = $doc.createElement('div');
     $wrapper.appendChild($link);

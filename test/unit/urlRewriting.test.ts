@@ -30,10 +30,11 @@ test('Url re-writing', async (t) => {
     const $nonScrapedWikiLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'fake link');
     const $specialMap = makeLink($doc, '/wiki/Special:Map/9/51.51/-0.08/en', '', 'Interactive map outlining London');
     const $hashLink = makeLink($doc, '#cite_note-LAS-150', '', 'The London Air Ambulance');
+    const $resourceLink = makeLink($doc, '//upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', '', 'De-Z%C3%BCrich.ogg', 'Zurich', { resource: './Media:De-Zürich.ogg' });
 
     await rewriteUrl(parentArticleId, mw, dump, $geo);
     t.assert($geo.nodeName === 'A', 'Geo is still a link');
-    t.equal($geo.getAttribute('href'), 'geo:37.786971,-122.399677', 'Geo HREF is correct'); // seems to be a bug in Domino which forces ://
+    t.equal($geo.getAttribute('href'), 'geo:37.786971,-122.399677', 'Geo HREF is correct');
 
     await rewriteUrl(parentArticleId, mw, dump, $geoHack);
     t.assert($geoHack.nodeName === 'A', 'GeoHack is still a link');
@@ -77,5 +78,9 @@ test('Url re-writing', async (t) => {
 
     await rewriteUrl(parentArticleId, mw, dump, $nonScrapedWikiLink);
     t.assert(!$nonScrapedWikiLink.parentElement, 'nonScrapedWikiLink has been deleted');
+
+    await rewriteUrl(parentArticleId, mw, dump, $resourceLink);
+    t.assert($resourceLink.nodeName === 'A', 'resourceLink is still a link');
+    t.equal($resourceLink.getAttribute('href'), '../I/m/De-Z%C3%BCrich.ogg', 'resourceLink has been re-written');
 
 });

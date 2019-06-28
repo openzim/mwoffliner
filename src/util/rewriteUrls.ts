@@ -1,6 +1,6 @@
 import * as urlParser from 'url';
 import { isMirrored } from './saveArticles';
-import { migrateChildren, getMediaBase, getFullUrl } from './misc';
+import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath } from './misc';
 import { redirectsXId } from '../stores';
 import { Dump } from '../Dump';
 import MediaWiki from '../MediaWiki';
@@ -50,6 +50,10 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
         href = `${wikiProtocol}${href}`;
         linkNode.setAttribute('href', href);
         hrefProtocol = urlParser.parse(href).protocol;
+    }
+
+    if (!rel && linkNode.getAttribute('resource')) {
+        rel = 'mw:MediaLink';
     }
 
     if (!href) {
@@ -115,9 +119,13 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
                 lat = parts[4];
                 lon = parts[5];
             } else if (rel === 'mw:MediaLink') {
-                if (!dump.nopdf && /\.pdf/i.test(href)) {
+                const shouldScrape = href.includes('.pdf') && !dump.nopdf ||
+                    href.includes('.ogg') && !dump.nopic && !dump.novid && !dump.nodet;
+
+                if (shouldScrape) {
                     try {
-                        linkNode.setAttribute('href', getMediaBase(href, true));
+                        const newHref = getRelativeFilePath(articleId, getMediaBase(href, true), 'I');
+                        linkNode.setAttribute('href', newHref);
                         mediaDependencies.push(href);
                     } catch (err) {
                         logger.warn('Error parsing url:', err);
