@@ -306,132 +306,135 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     return { mediaDependencies };
 }
 
+function shouldKeepImage(dump: Dump, img: DominoElement) {
+    const imageNodeClass = img.getAttribute('class') || '';
+    const src = img.getAttribute('src');
+    return (!dump.nopic
+        || imageNodeClass.includes('mwe-math-fallback-image-inline')
+        || img.getAttribute('typeof') === 'mw:Extension/math')
+        && src
+        && !src.includes('./Special:FilePath/');
+}
+
 async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ mediaDependencies: string[] }> {
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
 
-    const imageNodeClass = img.getAttribute('class') || '';
+    if (!shouldKeepImage(dump, img)) {
+        DU.deleteNode(img);
+        return { mediaDependencies };
+    }
 
-    if (
-        (!dump.nopic
-            || imageNodeClass.search('mwe-math-fallback-image-inline') >= 0
-            || img.getAttribute('typeof') === 'mw:Extension/math')
-        && img.getAttribute('src')
-        && img.getAttribute('src').indexOf('./Special:FilePath/') !== 0
-    ) {
-        /* Remove image link */
-        const linkNode = img.parentNode;
-        if (linkNode.tagName === 'A') {
-            /* Check if the target is mirrored */
-            const href = linkNode.getAttribute('href') || '';
-            const title = mw.extractPageTitleFromHref(href);
-            const keepLink = title && await isMirrored(title);
+    /* Remove image link */
+    const linkNode = img.parentNode;
+    if (linkNode.tagName === 'A') {
+        /* Check if the target is mirrored */
+        const href = linkNode.getAttribute('href') || '';
+        const title = mw.extractPageTitleFromHref(href);
+        const keepLink = title && await isMirrored(title);
 
-            /* Under certain condition it seems that this is possible
-                             * to have parentNode == undefined, in this case this
-                             * seems preferable to remove the whole link+content than
-                             * keeping a wrong link. See for example this url
-                             * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-            if (!keepLink) {
-                if (linkNode.parentNode) {
-                    linkNode.parentNode.replaceChild(img, linkNode);
-                } else {
-                    DU.deleteNode(img);
-                }
-            }
-        }
-
-        /* Rewrite image src attribute */
-        if (img) {
-            const src = getFullUrl(webUrlHost, img.getAttribute('src'), mw.base);
-            let newSrc: string;
-            try {
-                const resourceNamespace = 'I';
-                const slashesInUrl = articleId.split('/').length - 1;
-                const upStr = '../'.repeat(slashesInUrl + 1);
-                newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true);
-            } catch (err) { /* NOOP */ }
-
-            if (newSrc) {
-                /* Download image, but avoid duplicate calls */
-                if (!srcCache.hasOwnProperty(src)) {
-                    srcCache[src] = true;
-                    mediaDependencies.push(src);
-                }
-
-                /* Change image source attribute to point to the local image */
-                img.setAttribute('src', newSrc);
-
-                /* Remove useless 'resource' attribute */
-                img.removeAttribute('resource');
-
-                /* Remove srcset */
-                img.removeAttribute('srcset');
+        /* Under certain condition it seems that this is possible
+                         * to have parentNode == undefined, in this case this
+                         * seems preferable to remove the whole link+content than
+                         * keeping a wrong link. See for example this url
+                         * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
+        if (!keepLink) {
+            if (linkNode.parentNode) {
+                linkNode.parentNode.replaceChild(img, linkNode);
             } else {
                 DU.deleteNode(img);
+                return { mediaDependencies };
             }
         }
-    } else {
+    }
+
+    /* Rewrite image src attribute */
+    const src = getFullUrl(webUrlHost, img.getAttribute('src'), mw.base);
+    let newSrc: string;
+    try {
+        const resourceNamespace = 'I';
+        const slashesInUrl = articleId.split('/').length - 1;
+        const upStr = '../'.repeat(slashesInUrl + 1);
+        newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true);
+        /* Download image, but avoid duplicate calls */
+        if (!srcCache.hasOwnProperty(src)) {
+            srcCache[src] = true;
+            mediaDependencies.push(src);
+        }
+
+        /* Change image source attribute to point to the local image */
+        img.setAttribute('src', newSrc);
+
+        /* Remove useless 'resource' attribute */
+        img.removeAttribute('resource');
+
+        /* Remove srcset */
+        img.removeAttribute('srcset');
+    } catch (err) {
         DU.deleteNode(img);
     }
     return { mediaDependencies };
 }
 
-function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
-    let image;
-    const numImages = imageNode.getElementsByTagName('img').length;
-    const numVideos = imageNode.getElementsByTagName('video').length;
-    if (numImages) {
-        image = imageNode.getElementsByTagName('img')[0];
-    } else if (numVideos) {
-        image = imageNode.getElementsByTagName('video')[0];
-    }
-    const isStillLinked = image && image.parentNode && image.parentNode.tagName === 'A';
+function isStillLinked(image: DominoElement) {
+    return image && image.parentNode && image.parentNode.tagName === 'A';
+}
 
-    if (!dump.nopic && imageNode && image) {
-        const imageNodeClass = imageNode.getAttribute('class') || ''; // imageNodeClass already defined
-        const imageNodeTypeof = imageNode.getAttribute('typeof') || '';
+function shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
+    return !dump.nopic && imageNode && image;
+}
 
-        const descriptions = imageNode.getElementsByTagName('figcaption');
-        const description = descriptions.length > 0 ? descriptions[0] : undefined;
-        const imageWidth = parseInt(image.getAttribute('width'), 10);
-
-        let thumbDiv = parsoidDoc.createElement('div');
-        thumbDiv.setAttribute('class', 'thumb');
-        if (imageNodeClass.search('mw-halign-right') >= 0) {
-            DU.appendToAttr(thumbDiv, 'class', 'tright');
-        } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-            DU.appendToAttr(thumbDiv, 'class', 'tleft');
-        } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-            DU.appendToAttr(thumbDiv, 'class', 'tnone');
-            const centerDiv = parsoidDoc.createElement('center');
-            centerDiv.appendChild(thumbDiv);
-            thumbDiv = centerDiv;
-        } else {
-            const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left';
-            DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
-        }
-
-        const thumbinnerDiv = parsoidDoc.createElement('div');
-        thumbinnerDiv.setAttribute('class', 'thumbinner');
-        thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
-
-        const thumbcaptionDiv = parsoidDoc.createElement('div');
-        thumbcaptionDiv.setAttribute('class', 'thumbcaption');
-        const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right';
-        thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
-        if (description) {
-            thumbcaptionDiv.innerHTML = description.innerHTML;
-        }
-
-        thumbinnerDiv.appendChild(isStillLinked ? image.parentNode : image);
-        thumbinnerDiv.appendChild(thumbcaptionDiv);
-        thumbDiv.appendChild(thumbinnerDiv);
-
-        imageNode.parentNode.replaceChild(thumbDiv, imageNode);
+function makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+    const imageNodeClass = imageNode.getAttribute('class') || '';
+    let thumbDiv = parsoidDoc.createElement('div');
+    thumbDiv.setAttribute('class', 'thumb');
+    if (imageNodeClass.search('mw-halign-right') >= 0) {
+        DU.appendToAttr(thumbDiv, 'class', 'tright');
+    } else if (imageNodeClass.search('mw-halign-left') >= 0) {
+        DU.appendToAttr(thumbDiv, 'class', 'tleft');
+    } else if (imageNodeClass.search('mw-halign-center') >= 0) {
+        DU.appendToAttr(thumbDiv, 'class', 'tnone');
+        const centerDiv = parsoidDoc.createElement('center');
+        centerDiv.appendChild(thumbDiv);
+        thumbDiv = centerDiv;
     } else {
-        DU.deleteNode(imageNode);
+        const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left';
+        DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`);
     }
+    return thumbDiv;
+}
+
+function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+    const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0];
+
+    if (!shouldKeepNode(dump, imageNode, image)) {
+        DU.deleteNode(imageNode);
+        return;
+    }
+
+    const descriptions = imageNode.getElementsByTagName('figcaption');
+    const description = descriptions.length > 0 ? descriptions[0] : undefined;
+    const imageWidth = parseInt(image.getAttribute('width'), 10);
+
+    const thumbDiv = makeThumbDiv(dump, parsoidDoc, imageNode);
+
+    const thumbinnerDiv = parsoidDoc.createElement('div');
+    thumbinnerDiv.setAttribute('class', 'thumbinner');
+    thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`);
+
+    const thumbcaptionDiv = parsoidDoc.createElement('div');
+    thumbcaptionDiv.setAttribute('class', 'thumbcaption');
+    const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right';
+    thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`);
+    if (description) {
+        thumbcaptionDiv.innerHTML = description.innerHTML;
+    }
+
+    thumbinnerDiv.appendChild(isStillLinked(image) ? image.parentNode : image);
+    thumbinnerDiv.appendChild(thumbcaptionDiv);
+    thumbDiv.appendChild(thumbinnerDiv);
+
+    imageNode.parentNode.replaceChild(thumbDiv, imageNode);
 }
 
 export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
@@ -467,7 +470,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
     /* Go through all links */
     const as = parsoidDoc.getElementsByTagName('a');
     const areas = parsoidDoc.getElementsByTagName('area');
-    const linkNodes = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas));
+    const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas));
 
     await mapLimit(
         linkNodes,
@@ -536,7 +539,7 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     });
 
     /* Delete them all */
-    nodesToDelete.forEach((t) => {
+    for (const t of nodesToDelete) {
         let nodes;
         if (t.tag) {
             nodes = parsoidDoc.getElementsByTagName(t.tag);
@@ -546,20 +549,16 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
             return; /* throw error? */
         }
 
-        const f = t.filter;
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < nodes.length; i += 1) {
-            if (!f || f(nodes[i])) {
-                DU.deleteNode(nodes[i]);
+        for (const node of Array.from(nodes)) {
+            if (!t.filter || t.filter(node)) {
+                DU.deleteNode(node);
             }
         }
-    });
+    }
 
     /* Go through all reference calls */
-    const spans = parsoidDoc.getElementsByTagName('span');
-    // tslint:disable-next-line:prefer-for-of
-    for (let i = 0; i < spans.length; i += 1) {
-        const span = spans[i];
+    const spans: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('span'));
+    for (const span of spans) {
         const rel = span.getAttribute('rel');
         if (rel === 'dc:references') {
             const sup = parsoidDoc.createElement('sup');
@@ -583,20 +582,17 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
 
     /* Force display of element with that CSS class */
     filtersConfig.cssClassDisplayList.map((classname: string) => {
-        const nodes = parsoidDoc.getElementsByClassName(classname);
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < nodes.length; i += 1) {
-            nodes[i].style.removeProperty('display');
+        const nodes: DominoElement[] = Array.from(parsoidDoc.getElementsByClassName(classname));
+        for (const node of nodes) {
+            node.style.removeProperty('display');
         }
     });
 
     /* Remove empty paragraphs */
     if (!dump.opts.keepEmptyParagraphs) {
         for (let level = 5; level > 0; level--) {
-            const paragraphNodes = parsoidDoc.getElementsByTagName(`h${level}`);
-            // tslint:disable-next-line:prefer-for-of
-            for (let i = 0; i < paragraphNodes.length; i += 1) {
-                const paragraphNode = paragraphNodes[i];
+            const paragraphNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName(`h${level}`));
+            for (const paragraphNode of paragraphNodes) {
                 const nextElementNode = DU.nextElementSibling(paragraphNode);
                 const isSummary = paragraphNode.parentElement.nodeName === 'SUMMARY';
                 if (!isSummary) {
@@ -621,10 +617,8 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     }
 
     /* Clean the DOM of all uncessary code */
-    const allNodes = parsoidDoc.getElementsByTagName('*');
-    // tslint:disable-next-line:prefer-for-of
-    for (let i = 0; i < allNodes.length; i += 1) {
-        const node = allNodes[i];
+    const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'));
+    for (const node of allNodes) {
         node.removeAttribute('data-parsoid');
         node.removeAttribute('typeof');
         node.removeAttribute('about');
