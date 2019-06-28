@@ -107,7 +107,7 @@ npm run test:unit # (or just npm test)
 - End to end (e2e)
 
 ```bash
-npm run test:unit # (or just npm test)
+npm run test:e2e
 ```
 
 ### Code Style
