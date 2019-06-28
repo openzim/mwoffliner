@@ -244,6 +244,7 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
 }
 
 async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[] }> {
+    // This function handles audio tags as well as video tags
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
     // Worth noting:
@@ -251,9 +252,6 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     // When it's only audio, there will be a single OGG file
     // For video, we get multiple SOURCE tages with different resolutions
 
-    const posterUrl = videoEl.getAttribute('poster');
-    const videoPosterUrl = getFullUrl(webUrlHost, posterUrl, mw.base);
-    const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
     let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
 
     // Firefox is not able to display correctly <video> nodes with a height < 40.
@@ -270,14 +268,6 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
         return { mediaDependencies };
     }
 
-    if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
-    videoEl.removeAttribute('resource');
-
-    if (!srcCache.hasOwnProperty(videoPosterUrl)) {
-        srcCache[videoPosterUrl] = true;
-        mediaDependencies.push(videoPosterUrl);
-    }
-
     videoSources = videoSources.sort(widthXHeightSorter);
 
     const sourcesToRemove = videoSources.slice(1); // All but first
@@ -292,6 +282,22 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     if (!fileBase) {
         DU.deleteNode(sourceEl);
         return;
+    }
+
+    /* Remove useless 'resource' attribute */
+    videoEl.removeAttribute('resource');
+
+    const posterUrl = videoEl.getAttribute('poster');
+    if (posterUrl) {
+        const videoPosterUrl = getFullUrl(webUrlHost, posterUrl, mw.base);
+        const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
+        if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
+        videoEl.removeAttribute('resource');
+
+        if (!srcCache.hasOwnProperty(videoPosterUrl)) {
+            srcCache[videoPosterUrl] = true;
+            mediaDependencies.push(videoPosterUrl);
+        }
     }
 
     const newUrl = getRelativeFilePath(articleId, fileBase, 'I');
@@ -441,10 +447,10 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     let mediaDependencies: string[] = [];
     /* Clean/rewrite image tags */
     const imgs = Array.from(parsoidDoc.getElementsByTagName('img'));
-    const videos: DominoElement = Array.from(parsoidDoc.getElementsByTagName('video'));
+    const videos: DominoElement = Array.from(parsoidDoc.querySelectorAll('video, audio'));
     const srcCache: KVS<boolean> = {};
 
-    for (const videoEl of videos) {
+    for (const videoEl of videos) { // <video /> and <audio />
         const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
