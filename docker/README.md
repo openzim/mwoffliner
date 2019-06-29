@@ -1,6 +1,6 @@
 '''MWoffliner Docker image''' allows to quickly benefit of MWoffliner
 without having to install all dependencies. You just need a working
-Docker (http://www.docker.com).
+[Docker](https://www.docker.com).
 
 ## Standalone
 
