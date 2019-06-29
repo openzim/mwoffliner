@@ -34,3 +34,10 @@ This allows to run both, Redis & MWoffliner, containers simultaneously:
 ```
 docker-compose --file docker-compose.yml run mwoffliner
 ```
+
+## Build the Docker image
+
+Run from the repository root:
+```
+docker build . -f docker/Dockerfile -t openzim/mwoffliner
+```
