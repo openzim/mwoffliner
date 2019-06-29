@@ -1,19 +1,23 @@
 FROM node:10
 
-# Basics
-RUN apt update && apt install -y --no-install-recommends make g++ curl git
+# Install dependences
+RUN apt update && apt install -y --no-install-recommends make g++ curl git imagemagick
 
 # Install mwoffliner
-RUN apt install -y --no-install-recommends imagemagick
-RUN npm --global config set user root
-WORKDIR /mwoffliner
+WORKDIR /tmp/mwoffliner
 COPY package*.json ./
-RUN npm install
-COPY . .
+COPY src src
+COPY lib lib
+COPY res res
+COPY translation translation
+COPY index.js .
+COPY build.sh .
+RUN npm --global config set user root
+RUN npm i
 RUN npm i -g .
-RUN apt remove -y make g++
 
-# Boot commands
+# Configure launch environment
+WORKDIR /
 RUN mv /root/.bashrc /root/.old-bashrc
-COPY .custom-bashrc /root/.bashrc
+COPY docker/.custom-bashrc /root/.bashrc
 CMD mwoffliner
