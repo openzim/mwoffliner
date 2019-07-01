@@ -32,55 +32,55 @@ test('Url re-writing', async (t) => {
     const $hashLink = makeLink($doc, '#cite_note-LAS-150', '', 'The London Air Ambulance');
     const $resourceLink = makeLink($doc, '//upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', '', 'De-Z%C3%BCrich.ogg', 'Zurich', { resource: './Media:De-Zürich.ogg' });
 
-    await rewriteUrl(parentArticleId, mw, dump, $geo);
+    await rewriteUrl(complexParentArticleId, mw, dump, $geo);
     t.assert($geo.nodeName === 'A', 'Geo is still a link');
     t.equal($geo.getAttribute('href'), 'geo:37.786971,-122.399677', 'Geo HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $geoHack);
+    await rewriteUrl(complexParentArticleId, mw, dump, $geoHack);
     t.assert($geoHack.nodeName === 'A', 'GeoHack is still a link');
     t.equal($geoHack.getAttribute('href'), 'geo:51.507222222222225,-0.1275', 'GeoHack HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $extHttp);
+    await rewriteUrl(complexParentArticleId, mw, dump, $extHttp);
     t.assert($extHttp.nodeName === 'A', 'extHttp is still a link');
     t.equal($extHttp.getAttribute('href'), 'http://google.com', 'extHttp HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $extHttps);
+    await rewriteUrl(complexParentArticleId, mw, dump, $extHttps);
     t.assert($extHttps.nodeName === 'A', 'extHttps is still a link');
     t.equal($extHttps.getAttribute('href'), 'https://google.com', 'extHttps HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $extNoProtocol);
+    await rewriteUrl(complexParentArticleId, mw, dump, $extNoProtocol);
     t.assert($extNoProtocol.nodeName === 'A', 'extNoProtocol is still a link');
     t.equal($extNoProtocol.getAttribute('href'), 'https://google.com', '$extNoProtocol HREF has HTTPS Protocol');
 
-    await rewriteUrl(parentArticleId, mw, dump, $extHttpsNoRel);
+    await rewriteUrl(complexParentArticleId, mw, dump, $extHttpsNoRel);
     t.assert($extHttpsNoRel.nodeName === 'A', 'extHttpsNoRel is still a link');
     t.equal($extHttpsNoRel.getAttribute('href'), 'https://google.com', 'extHttpsNoRel HREF is correct');
 
     await rewriteUrl(parentArticleId, mw, dump, $wikiLink);
-    t.assert($wikiLink.nodeName === 'A', 'wikiLink is still a link');
-    t.equal($wikiLink.getAttribute('href'), 'British_Museum', 'wikiLink HREF is correct');
+    t.assert($wikiLink.nodeName === 'A', 'wikiLink is still a link with simple parent id');
+    t.equal($wikiLink.getAttribute('href'), 'British_Museum', 'wikiLink HREF is correct with simple parent id');
 
     await rewriteUrl(complexParentArticleId, mw, dump, $wikiLink2);
     t.assert($wikiLink2.nodeName === 'A', 'wikiLink is still a link with complex parent id');
     t.equal($wikiLink2.getAttribute('href'), '../../A/British_Museum', 'wikiLink HREF is correct with complex parent id');
 
-    await rewriteUrl(parentArticleId, mw, dump, $wikiLinkWithSlash);
+    await rewriteUrl(complexParentArticleId, mw, dump, $wikiLinkWithSlash);
     t.assert($wikiLinkWithSlash.nodeName === 'A', 'wikiLinkWithSlash is still a link');
-    t.equal($wikiLinkWithSlash.getAttribute('href'), 'Farnborough%2FAldershot_Built-up_Area', 'wikiLinkWithSlash HREF is correct');
+    t.equal($wikiLinkWithSlash.getAttribute('href'), '../../A/Farnborough%2FAldershot_Built-up_Area', 'wikiLinkWithSlash HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $specialMap);
+    await rewriteUrl(complexParentArticleId, mw, dump, $specialMap);
     t.assert($specialMap.nodeName === 'A', 'specialMap is still a link');
     t.equal($specialMap.getAttribute('href'), 'geo:51.51,-0.08', 'specialMap HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $hashLink);
+    await rewriteUrl(complexParentArticleId, mw, dump, $hashLink);
     t.assert($hashLink.nodeName === 'A', 'hashLink is still a link');
     t.equal($hashLink.getAttribute('href'), '#cite_note-LAS-150', 'hashLink HREF is correct');
 
-    await rewriteUrl(parentArticleId, mw, dump, $nonScrapedWikiLink);
+    await rewriteUrl(complexParentArticleId, mw, dump, $nonScrapedWikiLink);
     t.assert(!$nonScrapedWikiLink.parentElement, 'nonScrapedWikiLink has been deleted');
 
-    await rewriteUrl(parentArticleId, mw, dump, $resourceLink);
+    await rewriteUrl(complexParentArticleId, mw, dump, $resourceLink);
     t.assert($resourceLink.nodeName === 'A', 'resourceLink is still a link');
-    t.equal($resourceLink.getAttribute('href'), '../I/m/De-Z%C3%BCrich.ogg', 'resourceLink has been re-written');
+    t.equal($resourceLink.getAttribute('href'), '../../I/m/De-Z%C3%BCrich.ogg', 'resourceLink has been re-written');
 
 });
