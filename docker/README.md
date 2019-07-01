@@ -1,6 +1,6 @@
 '''MWoffliner Docker image''' allows to quickly benefit of MWoffliner
 without having to install all dependencies. You just need a working
-Docker (http://www.docker.com).
+[Docker](https://www.docker.com).
 
 ## Standalone
 
@@ -33,4 +33,11 @@ This allows to run both, Redis & MWoffliner, containers simultaneously:
 
 ```
 docker-compose --file docker-compose.yml run mwoffliner
+```
+
+## Build the Docker image
+
+Run from the repository root:
+```
+docker build . -f docker/Dockerfile -t openzim/mwoffliner
 ```
