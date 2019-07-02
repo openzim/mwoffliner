@@ -104,7 +104,11 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
 
     return Object.values(pages)
         .reduce((acc, page) => {
-            const articleId = (normalized[page.title] || page.title || '').replace(/ /g, '_');
+            const id = (normalized[page.title] || page.title || '');
+            if (typeof id !== 'string') {
+                throw new Error(`Article Id is invalid - expected a string but got [${id}]`);
+            }
+            const articleId = id.replace(/ /g, '_');
             if (articleId) {
                 return {
                     ...acc,
