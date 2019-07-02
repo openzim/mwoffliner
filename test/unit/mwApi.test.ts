@@ -51,7 +51,6 @@ test('MWApi NS', async (t) => {
     t.assert(!!Ladies, 'Article ""...And_Ladies_of_the_Club"" has been scraped');
     t.assert(!!Circle, 'Article ""M"_Circle" has been scraped');
 
-
     t.assert(Ladies.categories.length, 'Ladies article has categories');
     t.assert(Ladies.revisions.length, 'Ladies article has revision');
 
