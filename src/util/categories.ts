@@ -94,16 +94,19 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                         continue;
                     }
 
-                    const categoriesXId: any = (articleDetail.categories || []).reduce((acc, c) => {
-                        return { ...acc, [c.title.replace(/ /g, '_')]: c };
+                    const categoriesXId: any = (articleDetail.categories || []).reduce((acc: any, c) => {
+                        acc[c.title.replace(/ /g, '_')] = c;
+                        return acc;
                     }, {});
                     const categoryIds = Object.keys(categoriesXId);
-                    const subCategoriesXId: any = (articleDetail.subCategories || []).reduce((acc, c) => {
-                        return { ...acc, [c.title.replace(/ /g, '_')]: c };
+                    const subCategoriesXId: any = (articleDetail.subCategories || []).reduce((acc: any, c) => {
+                        acc[c.title.replace(/ /g, '_')] = c;
+                        return acc;
                     }, {});
                     const subCategoryIds = Object.keys(subCategoriesXId);
-                    const pagesXId: any = (articleDetail.pages || []).reduce((acc, c) => {
-                        return { ...acc, [c.title.replace(/ /g, '_')]: c };
+                    const pagesXId: any = (articleDetail.pages || []).reduce((acc: any, c) => {
+                        acc[c.title.replace(/ /g, '_')] = c;
+                        return acc;
                     }, {});
                     const pageIds = Object.keys(pagesXId);
 

@@ -41,6 +41,10 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
         return { mediaDependencies }; // e.g. geo:11111,11111
     }
 
+    if (rel === 'mwo:NoRewrite') {
+        return { mediaDependencies };
+    }
+
     if (!hrefProtocol && href.slice(0, 2) === '//') {
         const wikiProtocol = urlParser.parse(mw.webUrl).protocol;
         href = `${wikiProtocol}${href}`;

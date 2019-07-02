@@ -7,7 +7,7 @@
                 <h3>{{pageGroup.title}}</h3>
                 <ul>
                     {% for page in pageGroup.items %}
-                    <li><a href="{{page.url}}" rel="mw:WikiLink">{{page.name}}</a></li>
+                    <li><a href="{{page.url}}" rel="mwo:NoRewrite">{{page.name}}</a></li>
                     {% endfor %}
                 </ul>
             </div>
