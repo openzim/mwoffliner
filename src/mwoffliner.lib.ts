@@ -407,31 +407,37 @@ async function execute(argv: any) {
     await zimCreator.addArticle(article);
     await saveFavicon(dump, zimCreator);
 
-    logger.log(`Updating article thumbnails for all articles`);
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-      await mapLimit(articleListLines, downloader.speed, async (articleId) => {
-        articleId = articleId.replace(/ /g, '_');
-        try {
-          const articleDetail = await articleDetailXId.get(articleId);
-          if (!articleDetail) {
-            return null;
-          }
-          const imageUrl = articleDetail.thumbnail;
-          if (imageUrl) {
-            const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
-            const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
-            const { mult, width } = getSizeFromUrl(suitableResUrl);
-            const path = getMediaBase(suitableResUrl, false);
-            filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
+      logger.log(`Updating article thumbnails for articles`);
+      let articleIndex = 0;
+      let articlesWithImages = 0;
+      await mapLimit(','.repeat(downloader.speed).split(','), downloader.speed, async () => {
+        while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
+          const articleId = articleListLines[articleIndex].replace(/ /g, '_');
+          articleIndex += 1;
+          try {
+            const articleDetail = await articleDetailXId.get(articleId);
+            if (!articleDetail) {
+              continue;
+            }
+            const imageUrl = articleDetail.thumbnail;
+            if (imageUrl) {
+              const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
+              const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
+              const { mult, width } = getSizeFromUrl(suitableResUrl);
+              const path = getMediaBase(suitableResUrl, false);
 
-            const internalSrc = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I');
+              const internalSrc = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I');
 
-            articleDetail.internalThumbnailUrl = internalSrc;
-            await articleDetailXId.set(articleId, articleDetail);
+              articlesWithImages += 1;
+
+              await filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
+              articleDetail.internalThumbnailUrl = internalSrc;
+              await articleDetailXId.set(articleId, articleDetail);
+            }
+          } catch (err) {
+            logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`);
           }
-        } catch (err) {
-          logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`);
-          return null;
         }
       });
     }
