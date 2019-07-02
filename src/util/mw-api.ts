@@ -64,7 +64,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     );
 }
 
-export async function getArticlesByNS(ns: number, downloader: Downloader, _gapContinue?: string): Promise<void> {
+export async function getArticlesByNS(ns: number, downloader: Downloader, _gapContinue?: string, continueLimit?: number): Promise<void> {
     let index = 0;
 
     const { articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
@@ -86,8 +86,11 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
 
     logger.log(`Got [${index}] articles from namespace [${ns}]`);
 
-    if (gapContinue) {
-        return getArticlesByNS(ns, downloader, gapContinue);
+    const canContinue = typeof continueLimit === 'undefined' || continueLimit > 0; // used for testing
+
+    if (gapContinue && canContinue) {
+        const nextContinueLimit = typeof continueLimit === 'undefined' ? undefined : continueLimit - 1;
+        return getArticlesByNS(ns, downloader, gapContinue, nextContinueLimit);
     }
 }
 

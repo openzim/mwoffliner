@@ -6,6 +6,9 @@ import domino from 'domino';
 import { rewriteUrl } from '../../src/util/rewriteUrls';
 import { makeLink, setupScrapeClasses } from 'test/util';
 import { articleDetailXId } from '../../src/stores';
+import { getArticleIds } from 'src/util/redirects';
+import { saveArticles, isMirrored } from 'src/util/saveArticles';
+import { ZimArticle } from '@openzim/libzim';
 
 test('Url re-writing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
@@ -83,4 +86,37 @@ test('Url re-writing', async (t) => {
     t.assert($resourceLink.nodeName === 'A', 'resourceLink is still a link');
     t.equal($resourceLink.getAttribute('href'), '../../I/m/De-Z%C3%BCrich.ogg', 'resourceLink has been re-written');
 
+});
+
+test('e2e url rewriting', async (t) => {
+    await articleDetailXId.flush();
+    const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
+
+    await getArticleIds(downloader, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_Built-up_Area']);
+
+    let LondonArticle: ZimArticle;
+
+    await saveArticles({
+        addArticle(article: ZimArticle) {
+            if (article.title === 'London') {
+                LondonArticle = article;
+            }
+            return Promise.resolve();
+        },
+    } as any,
+        downloader,
+        mw,
+        dump,
+    );
+
+    const html = LondonArticle.bufferData.toString();
+    const doc = domino.createDocument(html);
+
+    const relevantAs = Array.from(doc.querySelectorAll('a')).filter((a) => !a.hash && !a.className.includes('external') && !a.host && a.getAttribute('href'));
+
+    const linkedArticleIds = relevantAs.map((a) => decodeURIComponent(a.getAttribute('href')));
+    for (const aId of linkedArticleIds) {
+        const article = await isMirrored(aId);
+        t.assert(!!article, `Article [${aId}] exists`);
+    }
 });

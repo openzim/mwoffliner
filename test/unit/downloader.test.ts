@@ -55,10 +55,11 @@ test('Downloader class', async (t) => {
         t.equal(err.response.status, 404, 'downloadContent response status for non-existant url is 404');
     }
 
-    const articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
+    const articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
     articleDetailXId.setMany(articleDetailsRet);
-    const { London, Paris, Zurich, THISARTICLEDOESNTEXIST } = articleDetailsRet;
+    const { London, Paris, Zurich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet;
     t.ok(!!London, 'getArticleDetailsIds Scraped "London" successfully');
+    t.ok(!!United_Kingdom, 'getArticleDetailsIds Scraped "United_Kingdom" successfully');
     t.ok(!!Paris, 'getArticleDetailsIds Scraped "Paris" successfully');
     t.ok(!!Zurich, 'getArticleDetailsIds Scraped "Zurich" successfully');
     t.ok(typeof (THISARTICLEDOESNTEXIST as any).missing === 'string', 'getArticleDetailsIds Didn\'t scrape "THISARTICLEDOESNTEXIST" successfully');
