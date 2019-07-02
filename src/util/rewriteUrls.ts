@@ -132,7 +132,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
                         linkNode.setAttribute('href', newHref);
                         mediaDependencies.push(href);
                     } catch (err) {
-                        logger.warn('Error parsing url:', err);
+                        logger.error('Error parsing url:', err);
                         DU.deleteNode(linkNode);
                     }
                 }

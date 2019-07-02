@@ -317,7 +317,7 @@ class Downloader {
     } catch (err) {
       if (!useParsoidFallback) {
         const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
-        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, errMsg);
+        logger.error(`Failed to download mobile article [${articleId}], trying desktop article instead`, errMsg);
         return this.getArticle(articleId, dump, true);
       } else {
         throw err;
@@ -340,7 +340,7 @@ class Downloader {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
+          logger.error(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
         } else {
           if (self.useCache) {
@@ -380,14 +380,14 @@ class Downloader {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
+          logger.error(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
         } else if (self.useCache) {
           try {
             await self.cacheResponse(url, val);
             resolve(val);
           } catch (err) {
-            logger.warn(`Failed to cache response for [${url}]`, err);
+            logger.error(`Failed to cache response for [${url}]`, err);
             reject({ message: `Failed to cache response`, err });
           }
         } else {

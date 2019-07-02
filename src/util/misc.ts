@@ -178,7 +178,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
         const article = new ZimArticle({ url: cssPath(config, css), data: cssCont, ns: '-' });
         await zimCreator.addArticle(article);
       } catch (error) {
-        logger.warn(`Could not create ${css} file : ${error}`);
+        logger.error(`Could not create ${css} file : ${error}`);
       }
     });
 
@@ -188,7 +188,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
       const article = new ZimArticle({ url: jsPath(config, js), data: jsCont, ns: '-' });
       await zimCreator.addArticle(article);
     } catch (error) {
-      logger.warn(`Could not create ${js} file : ${error}`);
+      logger.error(`Could not create ${js} file : ${error}`);
     }
   });
   return Promise.all([
@@ -256,7 +256,7 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
   }
 
   if (!root) {
-    logger.warn(`Unable to parse media url "${url}"`);
+    logger.error(`Unable to parse media url "${url}"`);
     return '';
   }
 

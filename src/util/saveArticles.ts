@@ -49,7 +49,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 if (!isRetry) {
                     await filesToRetryXPath.set(path, { url, namespace, mult, width });
                 } else {
-                    logger.warn(`Error downloading file [${url}], skipping`);
+                    logger.error(`Error downloading file [${url}], skipping`);
                     dump.status.files.fail += 1;
                     await filesToDownloadXPath.delete(path);
                 }
@@ -92,7 +92,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const articleHtml = html;
                         const articleTitle = displayTitle;
                         if (!articleHtml) {
-                            logger.warn(`No HTML returned for article [${articleId}], skipping`);
+                            logger.error(`No HTML returned for article [${articleId}], skipping`);
                             continue;
                         }
 
@@ -134,7 +134,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     }
                 } catch (err) {
                     dump.status.articles.fail += 1;
-                    logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                    logger.error(`Error downloading article [${articleId}], skipping`, err);
                     await articleDetailXId.delete(articleId);
                 }
 

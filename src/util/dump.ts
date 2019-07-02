@@ -59,7 +59,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                                 filesToDownloadXPath.set(config.output.dirs.style + '/' + filename, { url, namespace: '-' });
                             }
                         } else {
-                            logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
+                            logger.error(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
                         }
                     }
                 }
@@ -67,7 +67,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                 finished();
             }
         } catch (err) {
-            logger.warn(`Failed to get CSS from [${cssUrl}]`);
+            logger.error(`Failed to get CSS from [${cssUrl}]`);
             finished();
         }
     }, Number(downloader.speed));

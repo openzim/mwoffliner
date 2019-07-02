@@ -56,7 +56,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                         _articleIds = _articleIds.concat(articleIds);
                         numArticleIds = _articleIds.length;
                         batchSize = Math.floor(batchSize * 0.8);
-                        logger.warn(`Failed to get article ids, reducing batch size to [${batchSize}]`, err);
+                        logger.error(`Failed to get article ids, reducing batch size to [${batchSize}]`, err);
                     }
                 }
             }
