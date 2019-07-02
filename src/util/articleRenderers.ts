@@ -64,7 +64,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
             }
         });
     }
-    const resourceNamespace = 'A';
+    const articleResourceNamespace = 'A';
+    const categoryResourceNamespace = 'U';
     const slashesInUrl = articleId.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
     if (articleDetail.subCategories && articleDetail.subCategories.length) {
@@ -72,7 +73,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
         const subCategories = articleDetail.subCategories.map((category) => {
             return {
                 name: category.title.split(':').slice(1).join(':'),
-                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+                url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
             };
         });
 
@@ -81,8 +82,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
         html += subCategoriesTemplate({
             strings: dump.strings,
             groups,
-            prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${resourceNamespace}/${articleDetail.prevArticleId.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}` : null,
-            nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${resourceNamespace}/${articleDetail.nextArticleId.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}` : null,
+            prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.prevArticleId.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}` : null,
+            nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.nextArticleId.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}` : null,
         });
     }
 
@@ -90,7 +91,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
         const pages = articleDetail.pages.map((page) => {
             return {
                 name: page.title,
-                url: `${upStr}${resourceNamespace}/${page.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+                url: `${upStr}${articleResourceNamespace}/${page.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
             };
         });
 
@@ -106,7 +107,7 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
         const categories = articleDetail.categories.map((category) => {
             return {
                 name: category.title.split(':').slice(1).join(':'),
-                url: `${upStr}${resourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
+                url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
             };
         });
         html += categoriesTemplate({

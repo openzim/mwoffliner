@@ -120,7 +120,14 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
                         const outHtml = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
-                        const zimArticle = new ZimArticle({ url: articleId + (dump.nozim ? '.html' : ''), data: outHtml, ns: 'A', mimeType: 'text/html', title: articleTitle, shouldIndex: true });
+                        const zimArticle = new ZimArticle({
+                            url: articleId + (dump.nozim ? '.html' : ''),
+                            data: outHtml,
+                            ns: articleDetail.ns === 14 ? 'U' : 'A',
+                            mimeType: 'text/html',
+                            title: articleTitle,
+                            shouldIndex: true,
+                        });
                         await zimCreator.addArticle(zimArticle);
 
                         dump.status.articles.success += 1;

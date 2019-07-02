@@ -56,6 +56,10 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
         rel = 'mw:MediaLink';
     }
 
+    if (rel === 'mwo:NoRewrite') {
+        return { mediaDependencies };
+    }
+
     if (!href) {
         DU.deleteNode(linkNode);
         return { mediaDependencies };
