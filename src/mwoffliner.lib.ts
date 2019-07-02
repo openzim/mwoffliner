@@ -130,6 +130,7 @@ async function execute(argv: any) {
   });
 
   process.on('exit', async (code) => {
+    closeRedis(redis);
     logger.log(`Exiting with code [${code}]`);
     logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
     rimraf.sync(dumpTmpDir);
