@@ -221,6 +221,11 @@ async function execute(argv: any) {
     logger.log(`Using a remote MCS/Parsoid instance`);
   }
 
+  if (noLocalParserFallback && useLocalMCS) {
+    // No remote MCS available, so don't even try
+    downloader.forceParsoidFallback = true;
+  }
+
   const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
 
   /* *********************************** */
