@@ -41,8 +41,8 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
         return { mediaDependencies }; // e.g. geo:11111,11111
     }
 
-    if (hrefProtocol && hrefProtocol.includes('http') && !rel) {
-        rel = 'mw:ExtLink';
+    if (rel === 'mwo:NoRewrite') {
+        return { mediaDependencies };
     }
 
     if (!hrefProtocol && href.slice(0, 2) === '//') {
@@ -56,8 +56,8 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
         rel = 'mw:MediaLink';
     }
 
-    if (rel === 'mwo:NoRewrite') {
-        return { mediaDependencies };
+    if (hrefProtocol && hrefProtocol.includes('http') && !rel) {
+        rel = 'mw:ExtLink';
     }
 
     if (!href) {
@@ -141,6 +141,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
             if (!isNaN(lat) && !isNaN(lon)) {
                 href = `geo:${lat},${lon}`;
                 linkNode.setAttribute('href', href);
+                return { mediaDependencies };
             }
         }
 
