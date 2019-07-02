@@ -779,5 +779,5 @@ function isSubpage(id: string, mw: MediaWiki) {
 }
 
 export function isMirrored(id: string) {
-    return articleDetailXId.get(id);
+    return articleDetailXId.get(id.replace(/ /g, '_'));
 }
