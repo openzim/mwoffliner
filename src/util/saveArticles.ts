@@ -496,7 +496,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
     return { doc: parsoidDoc, mediaDependencies };
 }
 
-function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
+export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     const filtersConfig = config.filters;
 
     /* Don't need <link> and <input> tags */
@@ -603,28 +603,10 @@ function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
 
     /* Remove empty paragraphs */
     if (!dump.opts.keepEmptyParagraphs) {
-        for (let level = 5; level > 0; level--) {
-            const paragraphNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName(`h${level}`));
-            for (const paragraphNode of paragraphNodes) {
-                const nextElementNode = DU.nextElementSibling(paragraphNode);
-                const isSummary = paragraphNode.parentElement.nodeName === 'SUMMARY';
-                if (!isSummary) {
-                    /* No nodes */
-                    if (!nextElementNode) {
-                        DU.deleteNode(paragraphNode);
-                    } else {
-                        /* Delete if nextElementNode is a paragraph with <= level */
-                        const nextElementNodeTag = nextElementNode.tagName.toLowerCase();
-                        if (
-                            nextElementNodeTag.length > 1
-                            && nextElementNodeTag[0] === 'h'
-                            && !isNaN(nextElementNodeTag[1])
-                            && nextElementNodeTag[1] <= level
-                        ) {
-                            DU.deleteNode(paragraphNode);
-                        }
-                    }
-                }
+        const paragraphNodes: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('p'));
+        for (const pNode of paragraphNodes) {
+            if (!pNode.textContent) {
+                DU.deleteNode(pNode);
             }
         }
     }

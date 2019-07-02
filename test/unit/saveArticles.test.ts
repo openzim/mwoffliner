@@ -4,8 +4,9 @@ import domino from 'domino';
 
 import { setupScrapeClasses } from 'test/util';
 import { articleDetailXId } from 'src/stores';
-import { saveArticles, treatMedias } from '../../src/util/saveArticles';
+import { saveArticles, treatMedias, applyOtherTreatments } from '../../src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
+import { Dump } from 'src/Dump';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -41,6 +42,35 @@ test('Article html processing', async (t) => {
 
     t.assert(articleDoc.querySelector('meta[name="geo.position"]'), 'Geo Position meta exists');
     t.equal(articleDoc.querySelector('meta[name="geo.position"]').getAttribute('content'), '51.50722222;-0.1275', 'Geo Position data is correct');
+});
+
+test('applyOtherTreatments', async (t) => {
+    const { downloader, mw, dump } = await setupScrapeClasses({}); // en wikipedia
+
+    const html = `
+    <h1>Header</h1>
+    <p></p>
+    <p></p>
+    <h2>Header</h2>
+    <p></p>
+    <p></p>
+    <h3>Header</h3>
+    <p></p>
+    <p>NOT EMPTY</p>
+    `;
+
+    const doc1 = domino.createDocument(html);
+    await applyOtherTreatments(doc1, dump);
+
+    const pEls = doc1.querySelectorAll('p');
+    t.equal(pEls.length, 1, 'Empty paragraphs are being stripped');
+
+    const dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData);
+    const doc2 = domino.createDocument(html);
+    await applyOtherTreatments(doc2, dump2);
+
+    const pEls2 = doc2.querySelectorAll('p');
+    t.equal(pEls2.length, 6, 'Empty paragraphs are not stripped with [keepEmptyParagraphs=true]');
 });
 
 test('treatMedias format=""', async (t) => {
