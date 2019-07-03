@@ -11,7 +11,7 @@ COPY lib lib
 COPY res res
 COPY translation translation
 COPY index.js .
-COPY build.sh .
+COPY dev dev
 RUN npm --global config set user root
 RUN npm i
 RUN npm i -g .

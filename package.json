@@ -17,12 +17,13 @@
     "test": "npm run test:unit",
     "report": "nyc --reporter=lcov npm t",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
-    "build": "./build.sh",
-    "watch": "./watch.sh",
+    "build": "./dev/build.sh",
+    "watch": "./dev/watch.sh",
     "prepublish": "npm run build",
     "redis:start": "docker run -p 6379:6379 --name redis-mwoffliner -d redis",
     "redis:kill": "docker rm -f redis-mwoffliner || :",
-    "redis": "npm run redis:kill && npm run redis:start"
+    "redis": "npm run redis:kill && npm run redis:start",
+    "start": "./node_modules/.bin/ts-node ./src/cli.ts"
   },
   "nyc": {
     "extension": [
@@ -115,6 +116,5 @@
     "tap-spec": "^5.0.0",
     "ts-node": "^8.1.0",
     "tsconfig-paths": "^3.8.0"
-  },
-  "snyk": true
+  }
 }
