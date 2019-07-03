@@ -67,7 +67,7 @@ node --version
     --adminEmail=foo@bar.net \
     --verbose \
     --format=nozim \ # Won't make a final ZIM file
-    --articleList=./articleList # Will download one article
+    --articleList=./dev/articleList # Will download one article
 ```
 
 ### Programmatic API
@@ -92,7 +92,7 @@ cd mwoffliner
 npm i
 
 # Running
-./node_modules/.bin/ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+npm start -- --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
 ```
 
 ### Tests
@@ -124,8 +124,8 @@ Make sure you read [CONTRIBUTING.md](./CONTRIBUTING.md) for tips on how to best 
 To publish, it's best to use a clean clone of the project:
 ```
 git clone https://github.com/openzim/mwoffliner.git
-npm i # required for Snyk checks
-./build.sh
+npm i
+./dev/build.sh
 npm publish  # you must be logged in already (npm login)
 ```
 
