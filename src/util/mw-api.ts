@@ -6,7 +6,7 @@ import deepmerge = require('deepmerge');
 
 let batchSize = 50;
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
-    let index = 0;
+    let from = 0;
     let numArticleIds = _articleIds.length;
 
     // using mapLimit to spawn workers
@@ -14,15 +14,14 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
         downloader.speed,
         async (workerId) => {
-            while (index < numArticleIds) {
-                const from = index;
-                const to = index + batchSize;
-                index += batchSize;
+            while (from < numArticleIds) {
+                const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
+                const to = from + articleIds.length;
                 if (log) {
-                    const progressPercent = Math.min(Math.floor(to / numArticleIds * 100), 100);
+                    const progressPercent = Math.floor(to / numArticleIds * 100);
                     logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
                 }
-                const articleIds = _articleIds.slice(from, to).map((id) => id.replace(/ /g, '_'));
+                from = to;
 
                 try {
                     if (articleIds.length) {
