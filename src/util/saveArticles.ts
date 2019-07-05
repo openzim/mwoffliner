@@ -58,7 +58,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
             if (dump.status.files.success % 10 === 0) {
                 const percentProgress = Math.floor(dump.status.files.success / numKeys * 1000) / 10;
                 if (percentProgress !== prevPercentProgress) {
-                    prevPercentProgress = Math.min(percentProgress, 100);
+                    prevPercentProgress = percentProgress;
                     logger.log(`Progress downloading files [${dump.status.files.success}/${numKeys}] [${percentProgress}%]`);
                 }
             }
@@ -141,7 +141,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 if (dump.status.articles.success % 10 === 0) {
                     const percentProgress = Math.floor(dump.status.articles.success / numKeys * 1000) / 10;
                     if (percentProgress !== prevPercentProgress) {
-                        prevPercentProgress = Math.min(percentProgress, 100);
+                        prevPercentProgress = percentProgress;
                         logger.log(`Progress downloading articles [${dump.status.articles.success}/${numKeys}] [${percentProgress}%]`);
                     }
                 }
