@@ -85,13 +85,21 @@ mwoffliner.execute(parameters); // returns a Promise
 
 ## Development
 > Please see [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+To setup mwoffliner locally:
 ```bash
-# Setup
 git clone https://github.com/openzim/mwoffliner.git
 cd mwoffliner
 npm i
 
-# Running
+To run it (this is only an example):
+```bash
+./node_modules/.bin/ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+```
+
+or
+
+```bash
 npm start -- --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
 ```
 
