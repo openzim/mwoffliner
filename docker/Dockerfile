@@ -5,15 +5,15 @@ RUN apt update && apt install -y --no-install-recommends make g++ curl git image
 
 # Install mwoffliner
 WORKDIR /tmp/mwoffliner
-COPY package*.json ./
+COPY *.json ./
 COPY src src
 COPY res res
 COPY translation translation
 COPY index.js .
 COPY dev dev
 RUN npm --global config set user root
+RUN npm config set unsafe-perm true
 RUN npm i
-COPY lib lib
 RUN npm i -g .
 
 # Configure launch environment
