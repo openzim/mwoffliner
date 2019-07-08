@@ -1,3 +1,14 @@
+1.9.4:
+* UPDATE: README improvements (#880)
+* UPDATE: Smarter and more efficient article fetching
+* UPDATE: remove hard-coded font-sizes for ehadings (#825)
+* UPDATE: write categories to 'U' namespace
+* UPDATE: redis handling improvements (#448)
+* UPDATE: improve code quality (#687)
+* UPDATE: improve testing
+* FIX: implement scraping of <audio> elements
+* FIX: Thumbnail image fetching on nopic (#867)
+
 1.9.3:
 * FIX: coordinate retrieval continue bug
 * FEATURE: add throttled keepalive log (#791)
