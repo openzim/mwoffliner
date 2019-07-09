@@ -28,17 +28,6 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
     // set all other section (closed by default)
     if (!dump.nodet) {
         json.remaining.sections.forEach((oneSection: any, i: number) => {
-            if (i === 0 && oneSection.toclevel !== 1) { // We need at least one Top Level Section
-                html += sectionTemplate({
-                    section_index: i,
-                    section_id: i,
-                    section_anchor: 'TopLevelSection',
-                    section_line: 'Disambiguation',
-                    section_text: '',
-                    strings: dump.strings,
-                });
-            }
-
             // if below is to test if we need to nest a subsections into a section
             if (oneSection.toclevel === 1) {
                 html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
@@ -51,7 +40,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
                     strings: dump.strings,
                 });
             } else {
-                const replacement = subSectionTemplate({
+                html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, '');
+                html += subSectionTemplate({
                     section_index: i + 1,
                     section_toclevel: oneSection.toclevel + 1,
                     section_id: oneSection.id,
@@ -60,7 +50,6 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
                     section_text: oneSection.text,
                     strings: dump.strings,
                 });
-                html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, replacement);
             }
         });
     }
