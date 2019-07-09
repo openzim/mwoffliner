@@ -13,7 +13,9 @@ test('MWApi Article Ids', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader(mw, '', 1, 1000 * 60, false, '');
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useCache: false, cacheDirectory: '', noLocalParserFallback: false });
+
+    await downloader.checkCapabilities();
 
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_Built-up_Area'];
     await getArticleIds(downloader, mw, 'Main_Page', aIds);
@@ -38,7 +40,9 @@ test('MWApi NS', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader(mw, '', 1, 1000 * 60, false, '');
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useCache: false, cacheDirectory: '', noLocalParserFallback: false });
+
+    await downloader.checkCapabilities();
 
     await getArticlesByNS(0, downloader, '', 5); // Get 5 continues/pages of NSes
 

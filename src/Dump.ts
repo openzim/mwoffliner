@@ -161,12 +161,10 @@ export class Dump {
         const { content } = await downloader.downloadContent(this.mwMetaData.webUrl);
         const html = content.toString();
         const doc = domino.createDocument(html);
-        const links = doc.getElementsByTagName('link');
+        const links = Array.from(doc.getElementsByTagName('link'));
 
         /* Go through all CSS links */
-        // tslint:disable-next-line:prefer-for-of
-        for (let i = 0; i < links.length; i += 1) {
-            const link = links[i];
+        for (const link of links) {
             if (link.getAttribute('rel') === 'stylesheet') {
                 sheetUrls.push(link);
             }

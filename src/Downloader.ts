@@ -30,6 +30,16 @@ const imageminOptions = {
   ],
 };
 
+interface DownloaderOpts {
+  mw: MediaWiki;
+  uaString: string;
+  speed: number;
+  reqTimeout: number;
+  useCache: boolean;
+  cacheDirectory: string;
+  noLocalParserFallback: boolean;
+}
+
 class Downloader {
   public mw: MediaWiki;
   public uaString: string;
@@ -45,8 +55,9 @@ class Downloader {
   private canFetchCoordinates = true;
   private activeRequests = 0;
   private maxActiveRequests = 1;
+  private noLocalParserFallback = false;
 
-  constructor(mw: MediaWiki, uaString: string, speed: number, reqTimeout: number, useCache: boolean, cacheDirectory: string) {
+  constructor({ mw, uaString, speed, reqTimeout, useCache, cacheDirectory, noLocalParserFallback }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -55,9 +66,61 @@ class Downloader {
     this.loginCookie = '';
     this.useCache = useCache;
     this.cacheDirectory = cacheDirectory;
+    this.noLocalParserFallback = noLocalParserFallback;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
+  }
+
+  public async checkCapabilities() {
+    let useLocalMCS = true;
+    let useLocalParsoid = true;
+
+    let mwMetaData;
+    try {
+      mwMetaData = await this.mw.getMwMetaData(this);
+    } catch (err) {
+      logger.error(`FATAL - Failed to get MediaWiki Metadata`);
+      throw err;
+    }
+
+    try {
+      const MCSMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+      useLocalMCS = !MCSMainPageQuery.lead;
+    } catch (err) {
+      logger.warn(`Failed to get remote MCS`);
+    }
+
+    try {
+      const ParsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+      useLocalParsoid = !ParsoidMainPageQuery.visualeditor.content;
+    } catch (err) {
+      logger.warn(`Failed to get remote Parsoid`);
+    }
+
+    if (!this.noLocalParserFallback) {
+      if (useLocalMCS || useLocalParsoid) {
+        logger.log(`Using a local MCS/Parsoid instance, couldn't find a remote one`);
+        await this.initLocalMcs(useLocalParsoid);
+      }
+    } else if (this.noLocalParserFallback && useLocalMCS) {
+      // No remote MCS available, so don't even try
+      this.forceParsoidFallback = true;
+      logger.log(`Using remote Parsoid only`);
+    } else {
+      logger.log(`Using a remote MCS/Parsoid instance`);
+    }
+
+    // Coordinate fetching
+    const reqOpts = objToQueryString({
+      ...this.getArticleQueryOpts(),
+    });
+    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl}${reqOpts}`);
+    const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
+    if (isCoordinateWarning) {
+      logger.info(`Coordinates not available on this wiki`);
+      this.canFetchCoordinates = false;
+    }
   }
 
   public async initLocalMcs(forceLocalParsoid = true) {
@@ -459,12 +522,6 @@ class Downloader {
   private async handleMWWarningsAndErrors(resp: MwApiResponse) {
     if (resp.warnings) {
       logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
-
-      const isCoordinateWarning = resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
-      if (isCoordinateWarning) {
-        logger.info(`Got a warning when fetching coordinates, will not try again for any article`);
-        this.canFetchCoordinates = false;
-      }
     }
 
     if (resp.error) {

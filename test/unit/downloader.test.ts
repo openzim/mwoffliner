@@ -16,7 +16,9 @@ test('Downloader class', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader(mw, '', 1, 1000 * 60, true, cacheDir);
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useCache: true, cacheDirectory: cacheDir, noLocalParserFallback: false });
+
+    await downloader.checkCapabilities();
 
     // const remoteMcsUrl = downloader.mcsUrl;
     // const remoteParsoidUrl = downloader.parsoidFallbackUrl;

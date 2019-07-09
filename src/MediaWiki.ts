@@ -28,6 +28,7 @@ class MediaWiki {
   };
   public namespacesToMirror: string[];
   public numArticles: number;
+  private metaData: MWMetaData;
 
   constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; getCategories: boolean; }) {
     // Normalize args
@@ -38,7 +39,7 @@ class MediaWiki {
     this.domain = config.domain || '';
     this.username = config.username;
     this.password = config.password;
-    this.spaceDelimiter = config.spaceDelimiter;
+    this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
     // Computed properties
     this.webUrl = `${this.base + this.wikiPath}`;
@@ -256,6 +257,8 @@ class MediaWiki {
 
   public async getMwMetaData(downloader: Downloader): Promise<MWMetaData> {
 
+    if (this.metaData) { return this.metaData; }
+
     const creator = this.getCreatorName() || 'Kiwix';
 
     const [
@@ -268,7 +271,7 @@ class MediaWiki {
       this.getSubTitle(downloader),
     ]);
 
-    return {
+    const mwMetaData: MWMetaData = {
       webUrl: this.webUrl,
       apiUrl: this.apiUrl,
       modulePath: this.modulePath,
@@ -286,6 +289,10 @@ class MediaWiki {
       creator,
       mainPage,
     };
+
+    this.metaData = mwMetaData;
+
+    return mwMetaData;
   }
 }
 
