@@ -45,32 +45,90 @@ test('Article html processing', async (t) => {
 });
 
 test('applyOtherTreatments', async (t) => {
-    const { downloader, mw, dump } = await setupScrapeClasses({}); // en wikipedia
+    const { downloader, mw, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }); // en wikipedia
 
-    const html = `
-    <h1>Header</h1>
-    <p></p>
-    <p></p>
-    <h2>Header</h2>
-    <p></p>
-    <p></p>
-    <h3>Header</h3>
-    <p></p>
-    <p>NOT EMPTY</p>
-    `;
+    const articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland']);
+    articleDetailXId.setMany(articleDetailsRet);
+    let [{ html }] = await downloader.getArticle('Western_Greenland', dump);
 
-    const doc1 = domino.createDocument(html);
-    await applyOtherTreatments(doc1, dump);
+    {
+        const doc = domino.createDocument(html);
+        await applyOtherTreatments(doc, dump);
 
-    const pEls = doc1.querySelectorAll('p');
-    t.equal(pEls.length, 1, 'Empty paragraphs are being stripped');
+        const details = Array.from(doc.querySelectorAll('details'));
+
+        let fewestChildren = null;
+        for (const d of details) {
+            if (fewestChildren === null || d.children.length < fewestChildren) {
+                fewestChildren = d.children.length;
+            }
+        }
+        if (fewestChildren <= 1) {
+            t.fail(`Found empty details elements when they should be stripped in mobile view`);
+        } else {
+            t.ok(`Found no empty details elements when they should be stripped in mobile view`);
+        }
+    }
 
     const dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData);
-    const doc2 = domino.createDocument(html);
-    await applyOtherTreatments(doc2, dump2);
+    {
+        const doc = domino.createDocument(html);
+        await applyOtherTreatments(doc, dump2);
 
-    const pEls2 = doc2.querySelectorAll('p');
-    t.equal(pEls2.length, 6, 'Empty paragraphs are not stripped with [keepEmptyParagraphs=true]');
+        const details = Array.from(doc.querySelectorAll('details'));
+
+        let fewestChildren = null;
+        for (const d of details) {
+            if (fewestChildren === null || d.children.length < fewestChildren) {
+                fewestChildren = d.children.length;
+            }
+        }
+        if (fewestChildren <= 1) {
+            t.ok(`Found empty details elements when they should be left im mobile view`);
+        } else {
+            t.fail(`Empty details elements were stripped when they shouldn't be in mobile view`);
+        }
+    }
+
+    [{ html }] = await downloader.getArticle('Western_Greenland', dump, true);
+
+    {
+        const doc = domino.createDocument(html);
+        await applyOtherTreatments(doc, dump);
+
+        const sections = Array.from(doc.querySelectorAll('section'));
+
+        let fewestChildren = null;
+        for (const d of sections) {
+            if (fewestChildren === null || d.children.length < fewestChildren) {
+                fewestChildren = d.children.length;
+            }
+        }
+        if (fewestChildren <= 1) {
+            t.fail(`Found empty sections when they should be stripped in desktop view`);
+        } else {
+            t.ok(`Found no empty sections when they should be stripped in desktop view`);
+        }
+    }
+
+    {
+        const doc = domino.createDocument(html);
+        await applyOtherTreatments(doc, dump2);
+
+        const sections = Array.from(doc.querySelectorAll('section'));
+
+        let fewestChildren = null;
+        for (const d of sections) {
+            if (fewestChildren === null || d.children.length < fewestChildren) {
+                fewestChildren = d.children.length;
+            }
+        }
+        if (fewestChildren <= 1) {
+            t.ok(`Found empty sections when they should be left im desktop view`);
+        } else {
+            t.fail(`Found no empty sections when they should be left in desktop view`);
+        }
+    }
 });
 
 test('treatMedias format=""', async (t) => {

@@ -603,10 +603,12 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
 
     /* Remove empty paragraphs */
     if (!dump.opts.keepEmptyParagraphs) {
-        const paragraphNodes: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('p'));
-        for (const pNode of paragraphNodes) {
-            if (!pNode.textContent) {
-                DU.deleteNode(pNode);
+        // Mobile view === details
+        // Desktop view === section
+        const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'));
+        for (const section of sections) {
+            if (section.children.length <= 1) {
+                DU.deleteNode(section);
             }
         }
     }
