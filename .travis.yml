@@ -19,6 +19,7 @@ script:
   - REDIS=redis://127.0.0.1:6379 npm run report # Unit tests
 after_success:
   - codecov
+  - ./dev/publish.sh
 addons:
   apt:
     sources:
