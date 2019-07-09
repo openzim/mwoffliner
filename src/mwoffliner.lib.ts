@@ -180,50 +180,25 @@ async function execute(argv: any) {
   });
 
   /* Download helpers; TODO: Merge with something else / expand this. */
-  const downloader = new Downloader(
+  const downloader = new Downloader({
     mw,
-    `${config.userAgent} (${adminEmail})`,
+    uaString: `${config.userAgent} (${adminEmail})`,
     speed,
-    requestTimeout || config.defaults.requestTimeout,
+    reqTimeout: requestTimeout || config.defaults.requestTimeout,
     useCache,
     cacheDirectory,
-  );
+    noLocalParserFallback,
+  });
+
+  await downloader.checkCapabilities();
 
   /* Get MediaWiki Info */
-  let useLocalMCS = true;
-  let useLocalParsoid = true;
   let mwMetaData;
   try {
     mwMetaData = await mw.getMwMetaData(downloader);
   } catch (err) {
     logger.error(`FATAL - Failed to get MediaWiki Metadata`);
     throw err;
-  }
-
-  try {
-    const MCSMainPageQuery = await downloader.getJSON<any>(`${downloader.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
-    useLocalMCS = !MCSMainPageQuery.lead;
-  } catch (err) {
-    logger.warn(`Failed to get remote MCS`);
-  }
-
-  try {
-    const ParsoidMainPageQuery = await downloader.getJSON<any>(`${downloader.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
-    useLocalParsoid = !ParsoidMainPageQuery.visualeditor.content;
-  } catch (err) {
-    logger.warn(`Failed to get remote Parsoid`);
-  }
-
-  if (!noLocalParserFallback && (useLocalMCS || useLocalParsoid)) {
-    logger.log(`Using a local MCS/Parsoid instance, couldn't find a remote one`);
-    await downloader.initLocalMcs(useLocalParsoid);
-  } else {
-    logger.log(`Using a remote MCS/Parsoid instance`);
-  }
-
-  if (noLocalParserFallback && useLocalMCS) {
-    // No remote MCS available, so don't even try
-    downloader.forceParsoidFallback = true;
   }
 
   const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
