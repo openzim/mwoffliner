@@ -39,6 +39,11 @@
     border-bottom: 0px solid #eaecf0;
 }
 
+h1[tabindex="0"].collapsible-heading {
+    cursor: none;
+    /* Article title is not collapsible */
+}
+
 h1[tabindex="0"].collapsible-heading>.indicator {
     display: none;
     /* hide the "v" icone for the main title */
