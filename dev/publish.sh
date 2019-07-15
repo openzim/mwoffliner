@@ -1,7 +1,7 @@
 # This should only be run by Travis
 if [ -n "$CI" ]; then
     npm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN -q
-    
+
     if [ -n "$TRAVIS_TAG" ]; then
         echo "Found tag [$TRAVIS_TAG], releasing"
         if [[ $TRAVIS_TAG == *"-rc"* ]]; then
@@ -12,7 +12,7 @@ if [ -n "$CI" ]; then
             npm publish
         fi
     else
-        if [ "$TRAVIS_BRANCH" == "master" ]; then
+        if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
             echo "No tag found, releasing dev"
             node dev/hackPackageVersion.js
             npm publish --tag dev
