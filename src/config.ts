@@ -30,8 +30,10 @@ const config = {
     /* All DOM nodes which we should for to display */
     cssClassDisplayList: ['thumb'],
 
-    /* List of style to be removed */
-    cssClassCallsBlackList: ['plainlinks'],
+    /* List of style to be removed. 'onlyoffline' is a *hack* to
+    /* display WPEN medical articles, see for example
+    /* [[Carcinoid_syndrome]] */
+    cssClassCallsBlackList: ['plainlinks', 'onlyoffline'],
 
     /* All nodes with one of these ids will be removed */
     idBlackList: ['purgelink'],
