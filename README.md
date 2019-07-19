@@ -25,44 +25,12 @@ Mediawiki.
 
 ## Setup
 
-### MacOS
-#### NodeJS
-```bash
-curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
-source ~/.bashrc && \
-nvm install stable && \
-node --version
-```
-
-#### Redis
-```bash
-> brew install redis
-```
-
-#### LibZim
-See instructions here: [https://github.com/openzim/libzim](https://github.com/openzim/libzim)
-
-### Linux (Debian)
-#### NodeJS
-```bash
-curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
-source ~/.bashrc && \
-nvm install stable && \
-node --version
-```
-
-#### Redis
-```bash
-> sudo apt-get install redis-server
-```
-
 ## Usage
 ### Command Line
 ```bash
-> npm i -g mwoffliner
-> mwoffliner --help
-
-> mwoffliner \
+npm i -g mwoffliner
+mwoffliner --help
+mwoffliner \
     --mwUrl=https://es.wikipedia.org \
     --adminEmail=foo@bar.net \
     --verbose \
@@ -152,3 +120,38 @@ npm publish  # you must be logged in already (npm login)
 *   mwoffliner uses Parsoid.
 *   mwoffliner calls Parsoid and then post-processes the results for
     offline format.
+
+## Environment setup hints
+
+### MacOS
+
+Install NodeJS:
+```bash
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
+source ~/.bashrc && \
+nvm install stable && \
+node --version
+```
+
+Install Redis:
+```bash
+brew install redis
+```
+
+Install libzim:
+Rease [https://github.com/openzim/libzim](these instructions)
+
+### GNU/Linux - Debian based distributions
+
+Install NodeJS:
+```bash
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
+source ~/.bashrc && \
+nvm install stable && \
+node --version
+```
+
+Install Redis:
+```bash
+sudo apt-get install redis-server
+```
