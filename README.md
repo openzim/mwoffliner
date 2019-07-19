@@ -1,10 +1,11 @@
 # MWoffliner
 
-MWoffliner is a tool for making a local offline HTML snapshot of any online
-Mediawiki instance. It goes through all articles (or a selection if
-specified) and writes the HTML/images to a local directory. It has
-mainly been tested against Wikimedia projects like Wikipedia,
-Wiktionary, ... But it should also work for any recent Mediawiki.
+MWoffliner is a tool for making a local offline HTML snapshot of any
+online [Mediawiki](https://mediawiki.org) instance. It goes through
+all articles (or a selection if specified) and writes the HTML/images
+to a local directory. It has mainly been tested against Wikimedia
+projects like Wikipedia, Wiktionary, ... But it should also work for
+any recent Mediawiki.
 
 It can write the raw HTML/JS/CSS/PNG... files to the filesystem
 or pack them all in a highly compressed [ZIM](https://openzim.org) file.
@@ -66,7 +67,7 @@ mwoffliner.execute(parameters); // returns a Promise
 Complementary information about MWoffliner:
 
 * MediaWiki software is used by dozen of thousands of wikis, the most
-  famous ones being the Wikimedia ones, including Wikipedia.
+  famous ones being the Wikimedia ones, including [Wikipedia](https://wikipedia.org).
 * MediaWiki is a PHP wiki runtime engine.
 * Wikitext is the name of the markup language that MediaWiki uses.
 * MediaWiki includes a parser for WikiText into HTML, and this
