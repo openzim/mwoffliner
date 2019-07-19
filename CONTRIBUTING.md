@@ -1,5 +1,5 @@
 We have gathered here a few things which should be helpful if you want
-to participate to MWoffliner developement or hack it.
+to participate to MWoffliner development or hack it.
 
 ## Setup
 
@@ -8,6 +8,7 @@ To setup MWoffliner locally:
 git clone https://github.com/openzim/mwoffliner.git
 cd mwoffliner
 npm ci
+```
 
 ## Usage
 
