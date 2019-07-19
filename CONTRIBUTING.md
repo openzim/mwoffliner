@@ -1,20 +1,61 @@
-# Contributing Guidelines
+We have gathered here a few things which should be helpful if you want
+to participate to MWoffliner developement or hack it.
 
-First, please read the
-[contributing guidelines for our parent project, openZIM](https://github.com/openzim/overview/blob/master/CONTRIBUTING.md).
-They cover the general process.
+## Setup
 
-## TypeScript
-We use TypeScript for development. You can find all `.ts` files in `src/**`.
-The best way to develop is to run `npm run watch` in a terminal, and then execute MWOffliner via the pre-configured debugger in Visual Studio Code.
-The compiled `.js` files are not committed to Git, but they are published to NPM.
+To setup MWoffliner locally:
+```bash
+git clone https://github.com/openzim/mwoffliner.git
+cd mwoffliner
+npm ci
 
-## Background
+## Usage
 
-Check the [Background section of README.md](README.md#background) for
-some important concepts that motivate the advice below.
+To run it (this is only an example):
+```bash
+./node_modules/.bin/ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+```
 
-## Advice for debugging mwoffliner issues
+or
+
+```bash
+npm start -- --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+```
+
+## Code
+
+We use TypeScript for development. You can find all `.ts` files in
+`src/**`.  The best way to develop is to run `npm run watch` in a
+terminal, and then execute MWOffliner via the pre-configured debugger
+in Visual Studio Code.  The compiled `.js` files are not committed to
+Git, but they are published to NPM.
+
+We follow a nearly exact `tslint:recommended` scheme -
+you can see more information here: [./tslint.json](./tslint.json)
+
+It's best to use TSLint to check your code as you develop, this
+project is pre-configured for development with VSCode and the TSLint
+plugin.
+
+## Tests
+
+To run the unit tests:
+```bash
+npm run test:unit # (or just npm test)
+```
+
+To run End-2-End tests:
+```bash
+npm run test:e2e
+```
+
+## Debugging
+
+There is a pre-configured debug config for
+[VSCode](https://code.visualstudio.com/), just click on the debugging
+tab.
+
+Advicse for debugging mwoffliner issues:
 
 1.  For pre-packaged Kiwix downloads, look at the scripts at
     https://github.com/kiwix/maintenance/tree/master/mwoffliner
@@ -41,3 +82,24 @@ some important concepts that motivate the advice below.
     `--articleList` and `--format=nozim` are useful.  Run mwoffliner
     with `--help` for details on those and other flags that may be
     useful.
+
+## Publishing
+To publish, it's best to use a clean clone of the project:
+```bash
+git clone https://github.com/openzim/mwoffliner.git
+npm i
+./dev/build.sh
+npm publish  # you must be logged in already (npm login)
+```
+
+## Contributing Guidelines
+
+First, please read the [contributing guidelines for our parent
+project,
+openZIM](https://github.com/openzim/overview/blob/master/CONTRIBUTING.md).
+They cover the general process.
+
+## Background
+
+Check the [Background section of README.md](README.md#background) for
+some important concepts that motivate the advice below.
