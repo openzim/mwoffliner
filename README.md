@@ -22,7 +22,8 @@ Wiktionary, ... But it should also work for any recent Mediawiki.
 - [Libzim](https://github.com/openzim/libzim) (On linux we automatically download binaries)
 - Various build tools that are probably already installed on your machine (libjpeg, gcc)
 
-See "Environment setup hints" section to know more about how to install them.
+See [Environment setup hints](#environment-setup-hints) to
+know more about how to install them.
 
 ## Usage
 
