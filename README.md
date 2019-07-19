@@ -1,10 +1,15 @@
 # MWoffliner
 
-MWoffliner is a tool for making a local HTML snapshot of any online
+MWoffliner is a tool for making a local offline HTML snapshot of any online
 Mediawiki instance. It goes through all articles (or a selection if
 specified) and writes the HTML/images to a local directory. It has
 mainly been tested against Wikimedia projects like Wikipedia,
 Wiktionary, ... But it should also work for any recent Mediawiki.
+
+It can write the raw HTML/JS/CSS/PNG... files to the filesystem
+or pack them all in a highly compressed [ZIM](https://openzim.org) file.
+
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) to know more about MWoffliner development.
 
 [![NPM](https://nodei.co/npm/mwoffliner.png)](https://nodei.co/npm/mwoffliner/)
 
@@ -91,7 +96,7 @@ brew install redis
 ```
 
 Install libzim:
-Read [these instructions](https://github.com/openzim/libzim]
+Read [these instructions](https://github.com/openzim/libzim)
 
 ### GNU/Linux - Debian based distributions
 
