@@ -226,9 +226,9 @@ class Downloader {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
-  public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts): Promise<QueryMwRet> {
+  public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts, shouldGetThumbnail = false): Promise<QueryMwRet> {
     const queryOpts = {
-      ...this.getArticleQueryOpts(),
+      ...this.getArticleQueryOpts(shouldGetThumbnail),
       titles: articleIds.join('|'),
       ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
       ...(this.mw.getCategories ? {
@@ -559,12 +559,12 @@ class Downloader {
     }
   }
 
-  private getArticleQueryOpts() {
+  private getArticleQueryOpts(includePageimages = false) {
     const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num);
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions|pageimages${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
     };

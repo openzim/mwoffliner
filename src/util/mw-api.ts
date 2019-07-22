@@ -8,6 +8,7 @@ let batchSize = 50;
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
     let numArticleIds = _articleIds.length;
+    let numThumbnails = 0;
 
     // using mapLimit to spawn workers
     await mapLimit(
@@ -25,19 +26,23 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
                 try {
                     if (articleIds.length) {
-                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds);
+                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, null, numThumbnails < 100);
+                        const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
+                        numThumbnails += articlesWithThumbnail.length;
+
                         const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
 
-                        const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
-                        await redirectsXId.setMany(
-                            redirectIds.reduce((acc, redirect) => {
-                                const redirectId = redirect.title.replace(/ /g, '_');
-                                return {
-                                    ...acc,
-                                    [redirectId]: 1,
-                                };
-                            }, {}),
-                        );
+                        for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+                            await redirectsXId.setMany(
+                                (articleDetail.redirects || []).reduce((acc, redirect) => {
+                                    const rId = redirect.title.replace(/ /g, '_');
+                                    return {
+                                        ...acc,
+                                        [rId]: { targetId: articleId, title: redirect.title },
+                                    };
+                                }, {}),
+                            );
+                        }
 
                         const existingArticleDetails = await articleDetailXId.getMany(articleIds);
 
@@ -75,16 +80,17 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
     index += numDetails;
     await articleDetailXId.setMany(articleDetails);
 
-    const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
-    await redirectsXId.setMany(
-        redirectIds.reduce((acc, redirect) => {
-            const redirectId = redirect.title.replace(/ /g, '_');
-            return {
-                ...acc,
-                [redirectId]: 1,
-            };
-        }, {}),
-    );
+    for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+        await redirectsXId.setMany(
+            (articleDetail.redirects || []).reduce((acc, redirect) => {
+                const rId = redirect.title.replace(/ /g, '_');
+                return {
+                    ...acc,
+                    [rId]: { targetId: articleId, title: redirect.title },
+                };
+            }, {}),
+        );
+    }
 
     logger.log(`Got [${index}] articles from namespace [${ns}]`);
 
@@ -144,7 +150,6 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
             cats: val.categories,
             subCats: val.subCats,
             thumbnail: newThumbnail,
-            redirects: val.redirects,
             missing: val.missing,
             ...(val.ns !== 0 ? { ns: val.ns } : {}),
             ...(rev ? { oId: rev.revid, t: rev.timestamp } : {}),

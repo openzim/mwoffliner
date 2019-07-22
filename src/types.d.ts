@@ -76,7 +76,6 @@ type ArticleDetail = PageInfo & {
         width: number,
     },
     g?: string, // coordinates.0.lat;coordinates.0.lon
-    redirects?: PageInfo[],
     t?: string, // revisions.0.timestamp
     oId?: number, //revisions.0.revid
     iThumb?: string, // internalThumbnailUrl

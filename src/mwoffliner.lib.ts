@@ -458,25 +458,22 @@ async function execute(argv: any) {
   /* ********************************* */
 
   async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
-    await articleDetailXId.iterateItems(
+    await redirectsXId.iterateItems(
       downloader.speed,
-      async (articles) => {
-        for (const [articleId, articleDetail] of Object.entries(articles)) {
-          for (const redirect of articleDetail.redirects || []) {
-            const redirectId = redirect.title.replace(/ /g, '_');
-            if (redirectId !== articleId) {
-              const redirectArticle = new ZimArticle({
-                url: redirectId + (dump.nozim ? '.html' : ''),
-                shouldIndex: true,
-                data: '',
-                ns: 'A',
-                mimeType: 'text/html',
-                title: redirect.title,
-                redirectAid: `${articleId}` + (dump.nozim ? '.html' : ''),
-              });
-              await zimCreator.addArticle(redirectArticle);
-              dump.status.redirects.written += 1;
-            }
+      async (redirects) => {
+        for (const [redirectId, { targetId, title }] of Object.entries(redirects)) {
+          if (redirectId !== targetId) {
+            const redirectArticle = new ZimArticle({
+              url: redirectId + (dump.nozim ? '.html' : ''),
+              shouldIndex: true,
+              data: '',
+              ns: 'A',
+              mimeType: 'text/html',
+              title,
+              redirectAid: `${targetId}` + (dump.nozim ? '.html' : ''),
+            });
+            await zimCreator.addArticle(redirectArticle);
+            dump.status.redirects.written += 1;
           }
         }
       },
