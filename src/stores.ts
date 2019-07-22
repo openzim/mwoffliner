@@ -1,6 +1,5 @@
 import { RedisKvs } from './util/redis-kvs';
 import { RedisClient } from 'redis';
-import logger from './Logger';
 
 export function populateFilesToDownload(redisClient: RedisClient) {
     filesToDownloadXPath = new RedisKvs(redisClient, `${Date.now()}-media`);
@@ -21,7 +20,7 @@ export function populateArticleDetail(redisClient: RedisClient) {
 export let articleDetailXId: RedisKvs<ArticleDetail>;
 
 export function populateRedirects(redisClient: RedisClient) {
-    redirectsXId = new RedisKvs(redisClient, `${Date.now()}-redirects`);
+    redirectsXId = new RedisKvs(redisClient, `${Date.now()}-redirect`);
 }
 
 export let redirectsXId: RedisKvs<number>;
