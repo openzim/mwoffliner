@@ -7,6 +7,7 @@ import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments } from '../../src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
+import { mwRetToArticleDetail } from 'src/util';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -16,7 +17,8 @@ const html = `
 test('Article html processing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
-    const articlesDetail = await downloader.getArticleDetailsIds(['London']);
+    const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
+    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 

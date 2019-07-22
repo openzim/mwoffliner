@@ -57,9 +57,9 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
     const categoryResourceNamespace = 'U';
     const slashesInUrl = articleId.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
-    if (articleDetail.subCategories && articleDetail.subCategories.length) {
+    if (articleDetail.subCats && articleDetail.subCats.length) {
 
-        const subCategories = articleDetail.subCategories.map((category) => {
+        const subCategories = articleDetail.subCats.map((category) => {
             return {
                 name: category.title.split(':').slice(1).join(':'),
                 url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,
@@ -92,8 +92,8 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
         });
     }
 
-    if (articleDetail.categories && articleDetail.categories.length) {
-        const categories = articleDetail.categories.map((category) => {
+    if (articleDetail.cats && articleDetail.cats.length) {
+        const categories = articleDetail.cats.map((category) => {
             return {
                 name: category.title.split(':').slice(1).join(':'),
                 url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}${dump.nozim ? '.html' : ''}`,

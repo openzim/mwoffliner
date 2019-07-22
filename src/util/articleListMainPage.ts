@@ -5,5 +5,5 @@ export function makeArticleListItem(dump: Dump, articleEntry: any) {
 }
 
 export function makeArticleImageTile(dump: Dump, articleEntry: ArticleDetail) {
-    return `<a class="item" href="${dump.getArticleBase(articleEntry.title.replace(/ /g, '_') || '', true)}"><figure><img src="${articleEntry.internalThumbnailUrl}" /><figcaption>${(articleEntry.title || '').replace(/_/g, ' ')}</figcaption></figure></a>\n`;
+    return `<a class="item" href="${dump.getArticleBase(articleEntry.title.replace(/ /g, '_') || '', true)}"><figure><img src="${articleEntry.iThumb}" /><figcaption>${(articleEntry.title || '').replace(/_/g, ' ')}</figcaption></figure></a>\n`;
 }

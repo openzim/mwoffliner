@@ -25,7 +25,8 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
                 try {
                     if (articleIds.length) {
-                        const articleDetails = await downloader.getArticleDetailsIds(articleIds);
+                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds);
+                        const articleDetails = mwRetToArticleDetail(_articleDetails);
 
                         const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
                         await redirectsXId.setMany(
@@ -66,7 +67,9 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 export async function getArticlesByNS(ns: number, downloader: Downloader, _gapContinue?: string, continueLimit?: number): Promise<void> {
     let index = 0;
 
-    const { articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
+    const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
+
+    const articleDetails = mwRetToArticleDetail(_articleDetails);
 
     const numDetails = Object.keys(articleDetails).length;
     index += numDetails;
@@ -120,4 +123,26 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
                 return acc;
             }
         }, {});
+}
+
+export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
+    const ret: KVS<ArticleDetail> = {};
+    for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        const rev = val.revisions && val.revisions[0];
+        const geo = val.coordinates && val.coordinates[0];
+        ret[key] = {
+            title: val.title,
+            pageid: val.pageid,
+            ns: val.ns,
+            cats: val.categories,
+            subCats: val.subCats,
+            thumbnail: val.thumbnail,
+            redirects: val.redirects,
+            missing: val.missing,
+            ...(rev ? { oId: rev.revid, t: rev.timestamp } : {}),
+            ...(geo ? { g: `${geo.lat};${geo.lon}` } : {}),
+        };
+    }
+    return ret;
 }

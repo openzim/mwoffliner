@@ -412,7 +412,7 @@ async function execute(argv: any) {
               articlesWithImages += 1;
 
               await filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
-              articleDetail.internalThumbnailUrl = internalSrc;
+              articleDetail.iThumb = internalSrc;
               await articleDetailXId.set(articleId, articleDetail);
             }
           } catch (err) {

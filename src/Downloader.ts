@@ -337,7 +337,7 @@ class Downloader {
         const articlesToReturn = [];
 
         // Paginate when there are more than 200 subCategories
-        const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
+        const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCats || []).length / 200), 1);
         for (let i = 0; i < numberOfPagesToSplitInto; i++) {
           const pageId = i === 0 ? '' : `__${i}`;
           const _articleId = articleId + pageId;
@@ -345,7 +345,7 @@ class Downloader {
             {},
             articleDetail,
             {
-              subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
+              subCats: (articleDetail.subCats || []).slice(i * 200, (i + 1) * 200),
               nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
               prevArticleId: (i - 1) > 0 ?
                 `${articleId}__${i - 1}`
@@ -355,7 +355,7 @@ class Downloader {
             },
           );
 
-          if ((articleDetail.subCategories || []).length > 200) {
+          if ((articleDetail.subCats || []).length > 200) {
             await articleDetailXId.set(_articleId, _articleDetail);
           }
 
@@ -546,7 +546,7 @@ class Downloader {
       const isCategoryArticle = articleDetail.ns === 14;
       if (isCategoryArticle) {
         const categoryMembers = await this.getSubCategories(articleId);
-        (articleDetails[articleId] as any).subCategories = categoryMembers.slice();
+        (articleDetails[articleId] as any).subCats = categoryMembers.slice();
       }
     }
     return articleDetails;
