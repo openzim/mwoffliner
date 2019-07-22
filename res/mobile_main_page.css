@@ -111,6 +111,28 @@ h2 {
     margin-left: 10%;
 }
 
+@media only screen and (min-width: 8096px) {
+    h1 {
+        font-size: 0.75vw;
+    }
+
+    h2 {
+        font-size: 0.5vw;
+    }
+
+    #content .item {
+        width: 3.125%;
+    }
+
+    .nojs #content {
+        column-count: 32;
+    }
+
+    ul {
+        column-count: 32;
+    }
+}
+
 @media only screen and (min-width: 4048px) {
     h1 {
         font-size: 1.5vw;
