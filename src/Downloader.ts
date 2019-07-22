@@ -56,6 +56,7 @@ class Downloader {
   private activeRequests = 0;
   private maxActiveRequests = 1;
   private noLocalParserFallback = false;
+  private urlPartCache: KVS<string> = {};
 
   constructor({ mw, uaString, speed, reqTimeout, useCache, cacheDirectory, noLocalParserFallback }: DownloaderOpts) {
     this.mw = mw;
@@ -70,6 +71,33 @@ class Downloader {
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
+  }
+
+  public serialiseUrl(url: string) {
+    const { path } = urlParser.parse(url);
+    const cacheablePart = url.replace(path, '');
+    const cacheEntry = Object.entries(this.urlPartCache).find(([cacheId, value]) => value === cacheablePart);
+    let cacheKey;
+    if (!cacheEntry) {
+      const cacheId = String(Object.keys(this.urlPartCache).length + 1);
+      this.urlPartCache[cacheId] = cacheablePart;
+      cacheKey = `_${cacheId}_`;
+    } else {
+      cacheKey = `_${cacheEntry[0]}_`;
+    }
+    const shrunkUrl = `${cacheKey}${path}`;
+    return shrunkUrl;
+  }
+
+  public deserialiseUrl(url: string) {
+    if (url.startsWith('_')) {
+      const [, cacheId, ...pathParts] = url.split('_');
+      const path = pathParts.join('_');
+      const cachedPart = this.urlPartCache[cacheId];
+      return `${cachedPart}${path}`;
+    } else {
+      return url;
+    }
   }
 
   public async checkCapabilities() {
@@ -388,8 +416,9 @@ class Downloader {
     }
   }
 
-  public async getJSON<T>(url: string) {
+  public async getJSON<T>(_url: string) {
     const self = this;
+    const url = this.deserialiseUrl(_url);
     if (this.useCache) {
       const cachedVal = await requestCacheXUrl.get(url);
       if (cachedVal) {
@@ -419,10 +448,11 @@ class Downloader {
     });
   }
 
-  public async downloadContent(url: string): Promise<{ content: Buffer, responseHeaders: any }> {
-    if (!url) {
-      throw new Error(`Parameter [${url}] is not a valid url`);
+  public async downloadContent(_url: string): Promise<{ content: Buffer, responseHeaders: any }> {
+    if (!_url) {
+      throw new Error(`Parameter [${_url}] is not a valid url`);
     }
+    const url = this.deserialiseUrl(_url);
     if (this.useCache) {
       const cacheVal = await requestCacheXUrl.get(url);
       if (cacheVal) {

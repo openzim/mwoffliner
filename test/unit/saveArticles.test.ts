@@ -18,7 +18,7 @@ test('Article html processing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
+    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 

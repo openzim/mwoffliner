@@ -2,6 +2,7 @@ import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
 import logger from '../Logger';
 import { articleDetailXId, redirectsXId } from '../stores';
+import { parse as parseUrl } from 'url';
 import deepmerge = require('deepmerge');
 
 let batchSize = 50;
@@ -26,7 +27,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 try {
                     if (articleIds.length) {
                         const _articleDetails = await downloader.getArticleDetailsIds(articleIds);
-                        const articleDetails = mwRetToArticleDetail(_articleDetails);
+                        const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
 
                         const redirectIds = Object.values(articleDetails).reduce((acc, d) => acc.concat(d.redirects || []), []);
                         await redirectsXId.setMany(
@@ -69,7 +70,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
 
     const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
 
-    const articleDetails = mwRetToArticleDetail(_articleDetails);
+    const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
 
     const numDetails = Object.keys(articleDetails).length;
     index += numDetails;
@@ -125,19 +126,27 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
         }, {});
 }
 
-export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
+export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): KVS<ArticleDetail> {
     const ret: KVS<ArticleDetail> = {};
     for (const key of Object.keys(obj)) {
         const val = obj[key];
         const rev = val.revisions && val.revisions[0];
         const geo = val.coordinates && val.coordinates[0];
+        let newThumbnail = null;
+        if (val.thumbnail) {
+            newThumbnail = {
+                width: val.thumbnail.width,
+                height: val.thumbnail.height,
+                source: downloader.serialiseUrl(val.thumbnail.source),
+            };
+        }
         ret[key] = {
             title: val.title,
             pageid: val.pageid,
             ns: val.ns,
             cats: val.categories,
             subCats: val.subCats,
-            thumbnail: val.thumbnail,
+            thumbnail: newThumbnail,
             redirects: val.redirects,
             missing: val.missing,
             ...(rev ? { oId: rev.revid, t: rev.timestamp } : {}),

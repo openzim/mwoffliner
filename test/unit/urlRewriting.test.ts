@@ -15,7 +15,7 @@ test('Url re-writing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_Built-up_Area']);
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
+    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
