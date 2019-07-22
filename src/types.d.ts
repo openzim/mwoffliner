@@ -62,7 +62,7 @@ interface QueryContinueOpts {
 }
 
 interface PageInfo {
-    ns: number;
+    ns?: number;
     title: string;
 }
 

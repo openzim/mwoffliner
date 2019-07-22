@@ -2,7 +2,6 @@ import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
 import logger from '../Logger';
 import { articleDetailXId, redirectsXId } from '../stores';
-import { parse as parseUrl } from 'url';
 import deepmerge = require('deepmerge');
 
 let batchSize = 50;
@@ -142,12 +141,12 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         }
         ret[key] = {
             title: val.title,
-            ns: val.ns,
             cats: val.categories,
             subCats: val.subCats,
             thumbnail: newThumbnail,
             redirects: val.redirects,
             missing: val.missing,
+            ...(val.ns !== 0 ? { ns: val.ns } : {}),
             ...(rev ? { oId: rev.revid, t: rev.timestamp } : {}),
             ...(geo ? { g: `${geo.lat};${geo.lon}` } : {}),
         };
