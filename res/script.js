@@ -6,7 +6,8 @@ window.onload = function () {
     $('.mw-ref').on({
         click: function (ev) {
             var targetId = ev.target.hash || ev.target.parentNode.hash;
-            var refDetails = $(targetId).closest('details');
+            var targetEl = document.getElementById(targetId.slice(1));
+            var refDetails = $(targetEl).closest('details');
             refDetails.attr('open', true);
         }
     });
