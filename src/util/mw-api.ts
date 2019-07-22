@@ -142,7 +142,6 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         }
         ret[key] = {
             title: val.title,
-            pageid: val.pageid,
             ns: val.ns,
             cats: val.categories,
             subCats: val.subCats,
