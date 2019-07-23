@@ -22,13 +22,13 @@ test('MWApi Article Ids', async (t) => {
     const articlesById = await articleDetailXId.getMany(aIds);
     const { United_Kingdom, London } = articlesById;
     t.assert(!!United_Kingdom, 'Article "United_Kingdom" was scraped');
-    t.assert(United_Kingdom.cats.length > 15, 'Article "United_Kingdom" has categories');
+    t.assert(United_Kingdom.categories.length > 15, 'Article "United_Kingdom" has categories');
     // t.assert((United_Kingdom as any).pageimage, 'Article "United_Kingdom" has pageimage');
     t.assert(United_Kingdom.thumbnail, 'Article "United_Kingdom" has thumbnail');
-    t.assert(!!United_Kingdom.oId, 'Article "United_Kingdom" has revision');
+    t.assert(!!United_Kingdom.revisionId, 'Article "United_Kingdom" has revision');
 
     t.assert(!!London, 'Article "London" was scraped');
-    t.assert(!!London.g, 'Article "London" has geo coords');
+    t.assert(!!London.coordinates, 'Article "London" has geo coords');
 
     t.assert(!!articlesById['Farnborough/Aldershot_Built-up_Area'], 'Complex article was scraped');
 });
@@ -55,10 +55,10 @@ test('MWApi NS', async (t) => {
     t.assert(!!Ladies, 'Article ""...And_Ladies_of_the_Club"" has been scraped');
     t.assert(!!Circle, 'Article ""M"_Circle" has been scraped');
 
-    t.assert(Ladies.cats.length, 'Ladies article has categories');
-    t.assert(!!Ladies.oId, 'Ladies article has revision');
+    t.assert(Ladies.categories.length, 'Ladies article has categories');
+    t.assert(!!Ladies.revisionId, 'Ladies article has revision');
 
-    t.assert(!!Circle.g, 'Circle article has coordinates');
+    t.assert(!!Circle.coordinates, 'Circle article has coordinates');
     // t.assert((Circle as any).pageimage, 'Circle article has pageimage');
     // t.assert(Circle.thumbnail, 'Circle article has thumbnail');
 });

@@ -26,7 +26,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
                 try {
                     if (articleIds.length) {
-                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, null, numThumbnails < 100);
+                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, undefined, numThumbnails < 100);
                         const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
                         numThumbnails += articlesWithThumbnail.length;
 
@@ -137,7 +137,7 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         const val = obj[key];
         const rev = val.revisions && val.revisions[0];
         const geo = val.coordinates && val.coordinates[0];
-        let newThumbnail = null;
+        let newThumbnail;
         if (val.thumbnail) {
             newThumbnail = {
                 width: val.thumbnail.width,
@@ -147,13 +147,13 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         }
         ret[key] = {
             title: val.title,
-            cats: val.categories,
-            subCats: val.subCats,
+            categories: val.categories,
+            subCategories: val.subCategories,
             thumbnail: newThumbnail,
             missing: val.missing,
             ...(val.ns !== 0 ? { ns: val.ns } : {}),
-            ...(rev ? { oId: rev.revid, t: rev.timestamp } : {}),
-            ...(geo ? { g: `${geo.lat};${geo.lon}` } : {}),
+            ...(rev ? { revisionId: rev.revid, timestamp: rev.timestamp } : {}),
+            ...(geo ? { coordinates: `${geo.lat};${geo.lon}` } : {}),
         };
     }
     return ret;

@@ -14,13 +14,27 @@ export function populateFilesToRetry(redisClient: RedisClient) {
 export let filesToRetryXPath: RedisKvs<{ url: string, namespace: string, mult?: number, width?: number }>;
 
 export function populateArticleDetail(redisClient: RedisClient) {
-    articleDetailXId = new RedisKvs(redisClient, `${Date.now()}-detail`);
+    articleDetailXId = new RedisKvs(redisClient, `${Date.now()}-detail`, {
+        s: 'subCategories',
+        c: 'categories',
+        p: 'pages',
+        h: 'thumbnail',
+        g: 'coordinates',
+        t: 'timestamp',
+        r: 'revisionId',
+        i: 'internalThumbnailUrl',
+        m: 'missing',
+        n: 'title',
+    });
 }
 
 export let articleDetailXId: RedisKvs<ArticleDetail>;
 
 export function populateRedirects(redisClient: RedisClient) {
-    redirectsXId = new RedisKvs(redisClient, `${Date.now()}-redirect`);
+    redirectsXId = new RedisKvs(redisClient, `${Date.now()}-redirect`, {
+        t: 'targetId',
+        n: 'title',
+    });
 }
 
 export let redirectsXId: RedisKvs<{ targetId: string, title: string }>;

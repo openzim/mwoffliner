@@ -19,7 +19,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
 
                 const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs)
                     .reduce((acc: any, [aId, detail]) => {
-                        for (const cat of detail.cats || []) {
+                        for (const cat of detail.categories || []) {
                             const catId = cat.title.replace(/ /g, '_');
                             acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo);
                         }
@@ -41,7 +41,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
                             continue;
                         }
 
-                        const parentCategories = (detail.cats || [])
+                        const parentCategories = (detail.categories || [])
                             .reduce((acc, info) => {
                                 const articleId = info.title.replace(/ /g, '_');
                                 return {
@@ -94,12 +94,12 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                         continue;
                     }
 
-                    const categoriesXId: any = (articleDetail.cats || []).reduce((acc: any, c) => {
+                    const categoriesXId: any = (articleDetail.categories || []).reduce((acc: any, c) => {
                         acc[c.title.replace(/ /g, '_')] = c;
                         return acc;
                     }, {});
                     const categoryIds = Object.keys(categoriesXId);
-                    const subCategoriesXId: any = (articleDetail.subCats || []).reduce((acc: any, c) => {
+                    const subCategoriesXId: any = (articleDetail.subCategories || []).reduce((acc: any, c) => {
                         acc[c.title.replace(/ /g, '_')] = c;
                         return acc;
                     }, {});
@@ -129,14 +129,14 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                     const newCategoryKeys = deDup(existingCategories || [], (p) => p);
                     const newCategories = newCategoryKeys.map((key) => categoriesXId[key]);
                     if (newCategories.length !== categoryIds.length) {
-                        articleDetail.cats = newCategories;
+                        articleDetail.categories = newCategories;
                         hasUpdated = true;
                     }
 
                     const newSubCategoryKeys = deDup(existingSubCategories || [], (p) => p);
                     const newSubCategories = newSubCategoryKeys.map((key) => subCategoriesXId[key]);
                     if (newSubCategories.length !== subCategoryIds.length) {
-                        articleDetail.subCats = newSubCategories;
+                        articleDetail.subCategories = newSubCategories;
                         hasUpdated = true;
                     }
 
@@ -184,7 +184,7 @@ export async function simplifyGraph(downloader: Downloader) {
                         continue; // Only trim category articles
                     }
 
-                    const subArticles = (articleDetail.subCats || []).concat(articleDetail.pages || []);
+                    const subArticles = (articleDetail.subCategories || []).concat(articleDetail.pages || []);
                     const shouldRemoveNode = subArticles.length <= 3;
                     if (shouldRemoveNode) {
                         // Update sub pages
@@ -193,11 +193,11 @@ export async function simplifyGraph(downloader: Downloader) {
                         const scrapedPages = hasPages ? await articleDetailXId.getMany(articleDetail.pages.map((p) => p.title.replace(/ /g, '_'))) : {};
                         for (const [pageId, pageDetail] of Object.entries(scrapedPages)) {
                             if (pageDetail) {
-                                pageDetail.cats = (pageDetail.cats || [])
+                                pageDetail.categories = (pageDetail.categories || [])
                                     .filter((c) => c && c.title !== articleDetail.title) // remove self
-                                    .concat(articleDetail.cats || []); // add parent categories
+                                    .concat(articleDetail.categories || []); // add parent categories
 
-                                pageDetail.cats = deDup(pageDetail.cats, (o) => o.title);
+                                pageDetail.categories = deDup(pageDetail.categories, (o) => o.title);
 
                                 await articleDetailXId.set(pageId, pageDetail);
                             }
@@ -205,17 +205,17 @@ export async function simplifyGraph(downloader: Downloader) {
 
                         // Update parent categories
                         // Add children to parent categories
-                        const hasCategories = articleDetail.cats && articleDetail.cats.length;
-                        const scrapedCategories = hasCategories ? await articleDetailXId.getMany(articleDetail.cats.map((p) => p.title.replace(/ /g, '_'))) : {};
+                        const hasCategories = articleDetail.categories && articleDetail.categories.length;
+                        const scrapedCategories = hasCategories ? await articleDetailXId.getMany(articleDetail.categories.map((p) => p.title.replace(/ /g, '_'))) : {};
                         for (const [catId, catDetail] of Object.entries(scrapedCategories)) {
                             if (catDetail) {
-                                const categoryDetail = Object.assign({ pages: [], subCats: [] }, catDetail || {}) as ArticleDetail;
+                                const categoryDetail = Object.assign({ pages: [], subCategories: [] }, catDetail || {}) as ArticleDetail;
 
                                 categoryDetail.pages = categoryDetail.pages.concat(articleDetail.pages);
-                                categoryDetail.subCats = categoryDetail.subCats.concat(articleDetail.subCats).filter((c) => c.title === articleDetail.title);
+                                categoryDetail.subCategories = categoryDetail.subCategories.concat(articleDetail.subCategories).filter((c) => c.title === articleDetail.title);
 
                                 categoryDetail.pages = deDup(categoryDetail.pages, (o) => o.title);
-                                categoryDetail.subCats = deDup(categoryDetail.subCats, (o) => o.title);
+                                categoryDetail.subCategories = deDup(categoryDetail.subCategories, (o) => o.title);
 
                                 await articleDetailXId.set(catId, categoryDetail);
                             }

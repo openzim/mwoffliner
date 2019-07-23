@@ -67,18 +67,18 @@ interface PageInfo {
 }
 
 type ArticleDetail = PageInfo & {
-    subCats?: PageInfo[],
-    cats?: PageInfo[],
+    subCategories?: PageInfo[],
+    categories?: PageInfo[],
     pages?: PageInfo[],
     thumbnail?: {
         source: string,
         height: number,
         width: number,
     },
-    g?: string, // coordinates.0.lat;coordinates.0.lon
-    t?: string, // revisions.0.timestamp
-    oId?: number, //revisions.0.revid
-    iThumb?: string, // internalThumbnailUrl
+    coordinates?: string, // coordinates.0.lat;coordinates.0.lon
+    timestamp?: string, // revisions.0.timestamp
+    revisionId?: number, //revisions.0.revid
+    internalThumbnailUrl?: string, // internalThumbnailUrl
     nextArticleId?: string,
     prevArticleId?: string,
     missing?: string,
@@ -105,7 +105,7 @@ type QueryCoordinatesRet = Array<{
 type QueryRedirectsRet = PageInfo[];
 
 interface QueryRet {
-    subCats?: PageInfo[], // :(
+    subCategories?: PageInfo[], // :(
     categories?: QueryCategoriesRet;
     revisions?: QueryRevisionsRet;
     coordinates?: QueryCoordinatesRet;

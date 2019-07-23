@@ -706,10 +706,10 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     /* Set footer */
     const div = htmlTemplateDoc.createElement('div');
     try {
-        if (articleDetail.oId) {
+        if (articleDetail.revisionId) {
             /* Revision date */
-            const oldId = articleDetail.oId;
-            const timestamp = articleDetail.t;
+            const oldId = articleDetail.revisionId;
+            const timestamp = articleDetail.timestamp;
             const date = new Date(timestamp);
             div.innerHTML = footerTemplate({
                 articleId: encodeURIComponent(articleId),
@@ -724,8 +724,8 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         }
 
         /* Geo-coordinates */
-        if (articleDetail.g) {
-            const geoCoordinates = articleDetail.g;
+        if (articleDetail.coordinates) {
+            const geoCoordinates = articleDetail.coordinates;
             const metaNode = htmlTemplateDoc.createElement('meta');
             metaNode.name = 'geo.position';
             metaNode.content = geoCoordinates;
