@@ -435,9 +435,6 @@ class Downloader {
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
         } else {
-          if (self.useCache) {
-            requestCacheXUrl.set(url, val);
-          }
           resolve(val);
         }
       });
