@@ -83,34 +83,6 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     });
 }
 
-export function removeDuplicatesAndLowRes(items: Array<{ url: string, path: string, namespace: string }>) {
-    const m = new Map();
-    items.map((it) => {
-        let mult = 1;
-        let width = 1 * 10e6; // dummy value for unscaled media
-        const widthMatch = it.url.match(/\/([0-9]+)px-/);
-        if (widthMatch) {
-            width = Number(widthMatch[1]);
-        } else {
-            const multMatch = it.url.match(/-([0-9.]+)x\./);
-            if (multMatch) {
-                mult = Number(multMatch[1]);
-            }
-        }
-
-        const e = m.get(it.path);
-        if (e === undefined) {
-            m.set(it.path, { ...it, mult, width });
-        } else if (e.width < width || e.mult < mult) {
-            m.set(it.path, { ...it, mult, width });
-        }
-    });
-    const itemsWithHighestRequiredRes = Array.from(m.values());
-
-    logger.info(`Not downloading [${items.length - itemsWithHighestRequiredRes.length}] low-res images`);
-    return itemsWithHighestRequiredRes;
-}
-
 export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
     // param :
     //   module : string : the name of the module

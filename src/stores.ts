@@ -2,16 +2,26 @@ import { RedisKvs } from './util/redis-kvs';
 import { RedisClient } from 'redis';
 
 export function populateFilesToDownload(redisClient: RedisClient) {
-    filesToDownloadXPath = new RedisKvs(redisClient, `${Date.now()}-media`);
+    filesToDownloadXPath = new RedisKvs(redisClient, `${Date.now()}-media`, {
+        u: 'url',
+        n: 'namespace',
+        m: 'mult',
+        w: 'width',
+    });
 }
 
-export let filesToDownloadXPath: RedisKvs<{ url: string, namespace: string, mult?: number, width?: number }>;
+export let filesToDownloadXPath: RedisKvs<{ url: string, namespace?: string, mult?: number, width?: number }>;
 
 export function populateFilesToRetry(redisClient: RedisClient) {
-    filesToRetryXPath = new RedisKvs(redisClient, `${Date.now()}-media-retry`);
+    filesToRetryXPath = new RedisKvs(redisClient, `${Date.now()}-media-retry`, {
+        u: 'url',
+        n: 'namespace',
+        m: 'mult',
+        w: 'width',
+    });
 }
 
-export let filesToRetryXPath: RedisKvs<{ url: string, namespace: string, mult?: number, width?: number }>;
+export let filesToRetryXPath: RedisKvs<{ url: string, namespace?: string, mult?: number, width?: number }>;
 
 export function populateArticleDetail(redisClient: RedisClient) {
     articleDetailXId = new RedisKvs(redisClient, `${Date.now()}-detail`, {

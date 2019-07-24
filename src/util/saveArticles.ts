@@ -22,7 +22,7 @@ const genericCssModules = config.output.mw.css;
 
 type FileStore = RedisKvs<{
     url: string;
-    namespace: string;
+    namespace?: string;
     mult?: number;
     width?: number;
 }>;
@@ -41,7 +41,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 const resp = await downloader.downloadContent(url);
                 content = resp.content;
 
-                const article = new ZimArticle({ url: path, data: content, ns: namespace });
+                const article = new ZimArticle({ url: path, data: content, ns: namespace || 'I' });
                 await zimCreator.addArticle(article);
 
                 dump.status.files.success += 1;
@@ -102,9 +102,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             const { mult, width } = getSizeFromUrl(dep.url);
 
                             const existingVal = await filesToDownloadXPath.get(dep.path);
-                            const currentDepIsHigherRes = !existingVal || existingVal.width < width || existingVal.mult < mult;
+                            const currentDepIsHigherRes = !existingVal || (existingVal.width < (width || 10e6)) || existingVal.mult < (mult || 1);
                             if (currentDepIsHigherRes) {
-                                await filesToDownloadXPath.set(dep.path, { url: dep.url, namespace: 'I', mult, width });
+                                await filesToDownloadXPath.set(dep.path, { url: dep.url, mult, width });
                             }
                         }
 
