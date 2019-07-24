@@ -104,7 +104,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             const existingVal = await filesToDownloadXPath.get(dep.path);
                             const currentDepIsHigherRes = !existingVal || (existingVal.width < (width || 10e6)) || existingVal.mult < (mult || 1);
                             if (currentDepIsHigherRes) {
-                                await filesToDownloadXPath.set(dep.path, { url: dep.url, mult, width });
+                                await filesToDownloadXPath.set(dep.path, { url: downloader.serialiseUrl(dep.url), mult, width });
                             }
                         }
 

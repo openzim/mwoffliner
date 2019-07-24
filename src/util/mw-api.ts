@@ -142,7 +142,7 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
             newThumbnail = {
                 width: val.thumbnail.width,
                 height: val.thumbnail.height,
-                source: downloader.serialiseUrl(val.thumbnail.source),
+                source: val.thumbnail.source,
             };
         }
         ret[key] = {
