@@ -21,7 +21,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
                     .reduce((acc: any, [aId, detail]) => {
                         for (const cat of detail.categories || []) {
                             const catId = cat.title.replace(/ /g, '_');
-                            acc[catId] = (acc[catId] || []).concat({ title: detail.title, pageid: detail.pageid, ns: detail.ns } as PageInfo);
+                            acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo);
                         }
                         return acc;
                     }, {});

@@ -9,11 +9,13 @@ import { articleDetailXId } from '../../src/stores';
 import { getArticleIds } from 'src/util/redirects';
 import { saveArticles, isMirrored } from 'src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
+import { mwRetToArticleDetail } from 'src/util';
 
 test('Url re-writing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
-    const articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_Built-up_Area']);
+    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_Built-up_Area']);
+    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 

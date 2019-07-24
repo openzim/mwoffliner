@@ -3,13 +3,14 @@ import test from 'blue-tape';
 
 import { setupScrapeClasses } from 'test/util';
 import { articleDetailXId } from 'src/stores';
-import { getAndProcessStylesheets } from 'src/util';
+import { getAndProcessStylesheets, mwRetToArticleDetail } from 'src/util';
 import Axios from 'axios';
 
 test('Stylesheet downloading', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
-    const articlesDetail = await downloader.getArticleDetailsIds(['London']);
+    const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
+    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 

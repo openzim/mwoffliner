@@ -62,8 +62,7 @@ interface QueryContinueOpts {
 }
 
 interface PageInfo {
-    pageid: number;
-    ns: number;
+    ns?: number;
     title: string;
 }
 
@@ -76,36 +75,16 @@ type ArticleDetail = PageInfo & {
         height: number,
         width: number,
     },
-    coordinates?: Array<{
-        lat: number,
-        lon: number,
-        primary: string,
-        globe: string,
-    }>,
-    redirects?: PageInfo[],
-    revisions?: Array<{
-        revid: number,
-        parentid: number,
-        minor: string,
-        user: string,
-        timestamp: string,
-        comment: string,
-    }>,
-    internalThumbnailUrl?: string,
+    coordinates?: string, // coordinates.0.lat;coordinates.0.lon
+    timestamp?: string, // revisions.0.timestamp
+    revisionId?: number, //revisions.0.revid
+    internalThumbnailUrl?: string, // internalThumbnailUrl
     nextArticleId?: string,
     prevArticleId?: string,
+    missing?: string,
 };
 
-
-
-
-interface Page {
-    pageid: number;
-    ns: number;
-    title: string;
-}
-
-type QueryCategoriesRet = Page[];
+type QueryCategoriesRet = PageInfo[];
 
 type QueryRevisionsRet = Array<{
     revid: number,
@@ -123,9 +102,10 @@ type QueryCoordinatesRet = Array<{
     globe: string,
 }>;
 
-type QueryRedirectsRet = Page[];
+type QueryRedirectsRet = PageInfo[];
 
 interface QueryRet {
+    subCategories?: PageInfo[], // :(
     categories?: QueryCategoriesRet;
     revisions?: QueryRevisionsRet;
     coordinates?: QueryCoordinatesRet;
@@ -137,13 +117,13 @@ interface QueryRet {
         height: number,
     };
 
-    pageimage?: string;
+    missing?: string;
 }
 
 interface MwApiQueryResponse {
     normalized?: Array<{ from: string, to: string }>;
     pages: {
-        [pageId: string]: Page & QueryRet,
+        [pageId: string]: PageInfo & QueryRet,
     };
 }
 
@@ -163,5 +143,5 @@ interface MwApiResponse {
 }
 
 interface QueryMwRet {
-    [articleId: string]: Page & QueryRet;
+    [articleId: string]: PageInfo & QueryRet;
 }

@@ -6,12 +6,18 @@ import { keepAlive } from './misc';
 export class RedisKvs<T> {
     private redisClient: RedisClient;
     private dbName: string;
+    private keyMapping?: { [key: string]: string };
+    private invertedKeyMapping?: { [key: string]: string };
 
     private pendingScan: Promise<{ cursor: string, items: Array<[string, string]> }> = Promise.resolve({} as any);
 
-    constructor(redisClient: RedisClient, dbName: string) {
+    constructor(redisClient: RedisClient, dbName: string, keyMapping?: { [key: string]: string }) {
         this.redisClient = redisClient;
         this.dbName = dbName;
+        this.keyMapping = keyMapping;
+        if (keyMapping) {
+            this.invertedKeyMapping = Object.entries(keyMapping).reduce((acc, [key, val]) => ({ ...acc, [val]: key }), {});
+        }
     }
 
     public get(prop: string) {
@@ -20,7 +26,9 @@ export class RedisKvs<T> {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(JSON.parse(val));
+                    const d = JSON.parse(val);
+                    const mappedVal = this.mapKeysGet(d);
+                    resolve(mappedVal);
                 }
             });
         });
@@ -38,7 +46,7 @@ export class RedisKvs<T> {
                             .reduce((acc, val, index) => {
                                 return {
                                     ...acc,
-                                    [prop[index]]: val,
+                                    [prop[index]]: this.mapKeysGet(val),
                                 };
                             }, {} as KVS<T>),
                     );
@@ -67,7 +75,8 @@ export class RedisKvs<T> {
 
     public set(prop: string, val: T) {
         return new Promise((resolve, reject) => {
-            const normalisedVal = typeof val !== 'string' ? JSON.stringify(val) : val;
+            const valToSet = this.mapKeysSet(val);
+            const normalisedVal = typeof valToSet !== 'string' ? JSON.stringify(valToSet) : valToSet;
             this.redisClient.hset(this.dbName, prop, normalisedVal as string, (err, val) => {
                 if (err) {
                     reject(err);
@@ -87,7 +96,8 @@ export class RedisKvs<T> {
             }
             const normalisedVal = Object.entries(val)
                 .reduce((acc: KVS<string>, [key, val]) => {
-                    acc[key] = typeof val !== 'string' ? JSON.stringify(val) : val;
+                    const newVal = this.mapKeysSet(val);
+                    acc[key] = typeof newVal !== 'string' ? JSON.stringify(newVal) : newVal;
                     return acc;
                 }, {});
             this.redisClient.hmset(this.dbName, normalisedVal as string, (err, val) => {
@@ -168,7 +178,7 @@ export class RedisKvs<T> {
                     const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => {
                         return {
                             ...acc,
-                            [key]: JSON.parse(strVal),
+                            [key]: this.mapKeysGet(JSON.parse(strVal)),
                         };
                     }, {} as KVS<T>);
 
@@ -216,5 +226,37 @@ export class RedisKvs<T> {
                 }
             });
         });
+    }
+
+    private mapKeysGet(obj: any): T {
+        let mappedVal = obj;
+        if (obj && this.keyMapping && typeof obj === 'object') {
+            mappedVal = Object.entries(obj)
+                .reduce((acc, [key, val]) => {
+                    if (this.keyMapping[key]) {
+                        const newKey = this.keyMapping[key];
+                        return { ...acc, [newKey]: val };
+                    } else {
+                        return { ...acc, [key]: val };
+                    }
+                }, {});
+        }
+        return mappedVal;
+    }
+
+    private mapKeysSet(obj: any): T {
+        let mappedVal = obj;
+        if (obj && this.invertedKeyMapping && typeof obj === 'object') {
+            mappedVal = Object.entries(obj)
+                .reduce((acc, [key, val]) => {
+                    if (this.invertedKeyMapping[key]) {
+                        const newKey = this.invertedKeyMapping[key];
+                        return { ...acc, [newKey]: val };
+                    } else {
+                        return { ...acc, [key]: val };
+                    }
+                }, {});
+        }
+        return mappedVal;
     }
 }
