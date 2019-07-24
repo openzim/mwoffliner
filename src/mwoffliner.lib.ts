@@ -32,7 +32,7 @@ import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRequestCache, requestCacheXUrl, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
+import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -41,7 +41,6 @@ function closeRedis(redis: Redis) {
     filesToDownloadXPath.flush();
     filesToRetryXPath.flush();
     articleDetailXId.flush();
-    requestCacheXUrl.flush();
     redirectsXId.flush();
     redis.redisClient.quit();
   }
@@ -93,7 +92,6 @@ async function execute(argv: any) {
   populateRedirects(redis.redisClient);
   populateFilesToDownload(redis.redisClient);
   populateFilesToRetry(redis.redisClient);
-  populateRequestCache(redis.redisClient);
 
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
@@ -516,7 +514,7 @@ async function execute(argv: any) {
       let faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
       const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
       const logoContent = await downloader.downloadContent(logoUrl);
-      await writeFilePromise(faviconPath, logoContent.content);
+      await writeFilePromise(faviconPath, logoContent.content, null);
       if (ext !== 'png') {
         logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
         await new Promise((resolve, reject) => {

@@ -15,7 +15,7 @@ import { Dump } from './Dump';
 import * as backoff from 'backoff';
 import { normalizeMwResponse } from './util/mw-api';
 import deepmerge from 'deepmerge';
-import { requestCacheXUrl, articleDetailXId } from './stores';
+import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
 
@@ -419,13 +419,6 @@ class Downloader {
   public async getJSON<T>(_url: string) {
     const self = this;
     const url = this.deserialiseUrl(_url);
-    if (this.useCache) {
-      const cachedVal = await requestCacheXUrl.get(url);
-      if (cachedVal) {
-        logger.info(`Cache hit for [${url}]`);
-        return cachedVal;
-      }
-    }
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
       const call = backoff.call(this.getJSONCb, url, (err: any, val: any) => {
@@ -445,21 +438,20 @@ class Downloader {
     });
   }
 
-  public async downloadContent(_url: string): Promise<{ content: Buffer, responseHeaders: any }> {
+  public async downloadContent(_url: string): Promise<{ content: Buffer | string, responseHeaders: any }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`);
     }
     const url = this.deserialiseUrl(_url);
     if (this.useCache) {
-      const cacheVal = await requestCacheXUrl.get(url);
-      if (cacheVal) {
-        logger.info(`Cache hit for [${url}]`);
-        const { filePath, responseHeaders } = cacheVal;
-        const content = await readFilePromise(filePath, null) as Buffer;
-        return {
-          content,
-          responseHeaders,
-        };
+      try {
+        const cacheVal = await this.readCachedResponse(url);
+        if (cacheVal) {
+          logger.info(`Cache hit for [${url}]`);
+          return cacheVal;
+        }
+      } catch (err) {
+        // NOOP (cache miss)
       }
     }
     const self = this;
@@ -505,10 +497,20 @@ class Downloader {
     const filePath = path.join(this.cacheDirectory, fileName);
     logger.info(`Caching response for [${url}] to [${filePath}]`);
     await writeFilePromise(filePath, val.content, null);
-    await requestCacheXUrl.set(url, {
-      filePath,
-      responseHeaders: val.responseHeaders,
-    });
+    await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
+  }
+
+  private async readCachedResponse(url: string) {
+    const fileName = md5(url);
+    const filePath = path.join(this.cacheDirectory, fileName);
+    logger.info(`Finding cached response for [${url}] ([${filePath}])`);
+    const [content, responseHeaders] = await Promise.all([
+      readFilePromise(filePath, null),
+      readFilePromise(`${filePath}.headers`, 'utf8').catch(() => null),
+    ]);
+    return {
+      content, responseHeaders,
+    };
   }
 
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {

@@ -48,9 +48,3 @@ export function populateRedirects(redisClient: RedisClient) {
 }
 
 export let redirectsXId: RedisKvs<{ targetId: string, title: string }>;
-
-export function populateRequestCache(redisClient: RedisClient) {
-    requestCacheXUrl = new RedisKvs(redisClient, `${Date.now()}-request`);
-}
-
-export let requestCacheXUrl: RedisKvs<any>;
