@@ -56,7 +56,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             /* Download CSS dependency, but avoid duplicate calls */
                             if (!urlCache.hasOwnProperty(url) && filename) {
                                 urlCache[url] = true;
-                                filesToDownloadXPath.set(config.output.dirs.style + '/' + filename, { url, namespace: '-' });
+                                filesToDownloadXPath.set(config.output.dirs.style + '/' + filename, { url: downloader.serialiseUrl(url), namespace: '-' });
                             }
                         } else {
                             logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);
