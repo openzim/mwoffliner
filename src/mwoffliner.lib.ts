@@ -22,7 +22,7 @@ import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import Redis from './redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, removeDuplicatesAndLowRes, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
 import { mapLimit } from 'promiso';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -403,7 +403,7 @@ async function execute(argv: any) {
             const imageUrl = articleDetail.thumbnail;
             if (imageUrl) {
               const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
-              const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-');
+              const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-');
               const { mult, width } = getSizeFromUrl(suitableResUrl);
               const path = getMediaBase(suitableResUrl, false);
 
@@ -411,7 +411,7 @@ async function execute(argv: any) {
 
               articlesWithImages += 1;
 
-              await filesToDownloadXPath.set(path, { url: suitableResUrl, namespace: 'I', mult, width });
+              await filesToDownloadXPath.set(path, { url: suitableResUrl, mult, width });
               articleDetail.internalThumbnailUrl = internalSrc;
               await articleDetailXId.set(articleId, articleDetail);
             }

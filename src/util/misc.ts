@@ -69,9 +69,9 @@ export function getFullUrl(webUrlHost: string, url: string, baseUrl: string) {
 }
 
 export function getSizeFromUrl(url: string) {
-  let mult = 1;
-  let width = 1 * 10e6; // dummy value for unscaled media
-  const widthMatch = url.match(/\/([0-9]+)px-/);
+  let mult;
+  let width;
+  const widthMatch = url.match(/[\/-]([0-9]+)px-/);
   if (widthMatch) {
     width = Number(widthMatch[1]);
   } else {
