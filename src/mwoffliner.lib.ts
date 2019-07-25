@@ -77,6 +77,7 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     cacheDirectory: _cacheDirectory,
+    skipCacheCleaning,
     addNamespaces: _addNamespaces,
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
@@ -86,66 +87,9 @@ async function execute(argv: any) {
 
   (process as any).verbose = !!verbose;
 
-  /* Setup redis client */
-  const redis = new Redis(argv, config);
-  populateArticleDetail(redis.redisClient);
-  populateRedirects(redis.redisClient);
-  populateFilesToDownload(redis.redisClient);
-  populateFilesToRetry(redis.redisClient);
-
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
-
-  const expandedOutputDirectory = homeDirExpander(_outputDirectory || 'out/');
-  const outputDirectory = path.isAbsolute(expandedOutputDirectory) ?
-    expandedOutputDirectory :
-    path.join(process.cwd(), expandedOutputDirectory);
-  await mkdirPromise(outputDirectory);
-
-  const expandedCacheDirectory = homeDirExpander(_cacheDirectory || `cac/dumps-${Date.now()}/`);
-  const cacheDirectory = path.isAbsolute(expandedCacheDirectory) ?
-    expandedCacheDirectory :
-    path.join(process.cwd(), expandedCacheDirectory);
-  await mkdirPromise(cacheDirectory);
-  const tmpDirectory = os.tmpdir();
-
-  // Tmp Dirs
-  const dumpId = `mwo-dump-${Date.now()}`;
-  const dumpTmpDir = path.resolve(tmpDirectory, `${dumpId}`);
-  try {
-    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
-    await mkdirPromise(dumpTmpDir);
-  } catch (err) {
-    logger.error(`Failed to create dump temporary directory, exiting`, err);
-    throw err;
-  }
-
-  logger.log(`Using Tmp Directories:`, {
-    outputDirectory,
-    cacheDirectory,
-    dumpTmpDir,
-  });
-
-  process.on('exit', async (code) => {
-    closeRedis(redis);
-    logger.log(`Exiting with code [${code}]`);
-    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
-    rimraf.sync(dumpTmpDir);
-    logger.log(`Clearing Cache Directory`);
-    rimraf.sync(cacheDirectory);
-  });
-
-  process.on('SIGTERM', () => {
-    logger.log(`SIGTERM`);
-    closeRedis(redis);
-    process.exit(128 + 15);
-  });
-  process.on('SIGINT', () => {
-    logger.log(`SIGINT`);
-    closeRedis(redis);
-    process.exit(128 + 2);
-  });
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -184,7 +128,7 @@ async function execute(argv: any) {
     speed,
     reqTimeout: requestTimeout || config.defaults.requestTimeout,
     useCache,
-    cacheDirectory,
+    cacheDirectory: null,
     noLocalParserFallback,
   });
 
@@ -198,6 +142,70 @@ async function execute(argv: any) {
     logger.error(`FATAL - Failed to get MediaWiki Metadata`);
     throw err;
   }
+
+  const redis = new Redis(argv, config);
+  populateArticleDetail(redis.redisClient);
+  populateRedirects(redis.redisClient);
+  populateFilesToDownload(redis.redisClient);
+  populateFilesToRetry(redis.redisClient);
+
+  const expandedOutputDirectory = homeDirExpander(_outputDirectory || 'out/');
+  const outputDirectory = path.isAbsolute(expandedOutputDirectory) ?
+    expandedOutputDirectory :
+    path.join(process.cwd(), expandedOutputDirectory);
+  await mkdirPromise(outputDirectory);
+
+  const expandedCacheDirectory = homeDirExpander(_cacheDirectory || `cac/${mwMetaData.langIso2}_${mwMetaData.creator}`.toLowerCase());
+  const cacheDirectory = path.isAbsolute(expandedCacheDirectory) ?
+    expandedCacheDirectory :
+    path.join(process.cwd(), expandedCacheDirectory);
+  await mkdirPromise(cacheDirectory);
+
+  downloader.cacheDirectory = cacheDirectory;
+  if (!skipCacheCleaning) {
+    rimraf.sync(cacheDirectory + '/*');
+  }
+
+  const tmpDirectory = os.tmpdir();
+
+  // Tmp Dirs
+  const dumpId = `mwo-dump-${Date.now()}`;
+  const dumpTmpDir = path.resolve(tmpDirectory, `${dumpId}`);
+  try {
+    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
+    await mkdirPromise(dumpTmpDir);
+  } catch (err) {
+    logger.error(`Failed to create dump temporary directory, exiting`, err);
+    throw err;
+  }
+
+  logger.log(`Using Tmp Directories:`, {
+    outputDirectory,
+    cacheDirectory,
+    dumpTmpDir,
+  });
+
+  process.on('exit', async (code) => {
+    closeRedis(redis);
+    logger.log(`Exiting with code [${code}]`);
+    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
+    rimraf.sync(dumpTmpDir);
+    logger.log(`Clearing Cache Directory`);
+    if (!skipCacheCleaning) {
+      rimraf.sync(cacheDirectory);
+    }
+  });
+
+  process.on('SIGTERM', () => {
+    logger.log(`SIGTERM`);
+    closeRedis(redis);
+    process.exit(128 + 15);
+  });
+  process.on('SIGINT', () => {
+    logger.log(`SIGINT`);
+    closeRedis(redis);
+    process.exit(128 + 2);
+  });
 
   const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
 

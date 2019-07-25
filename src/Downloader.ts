@@ -36,7 +36,7 @@ interface DownloaderOpts {
   speed: number;
   reqTimeout: number;
   useCache: boolean;
-  cacheDirectory: string;
+  cacheDirectory?: string;
   noLocalParserFallback: boolean;
 }
 
@@ -49,7 +49,7 @@ class Downloader {
   public parsoidFallbackUrl: string;
   public speed: number;
   public useCache: boolean;
-  public cacheDirectory: string;
+  public cacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
 
   private canFetchCoordinates = true;
@@ -464,7 +464,7 @@ class Downloader {
           const httpStatus = err.response && err.response.status;
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
-        } else if (self.useCache) {
+        } else if (self.useCache && self.cacheDirectory) {
           try {
             await self.cacheResponse(url, val);
             resolve(val);
@@ -501,6 +501,9 @@ class Downloader {
   }
 
   private async readCachedResponse(url: string) {
+    if (!this.cacheDirectory) {
+      throw new Error('No Cache Directory Defined');
+    }
     const fileName = md5(url);
     const filePath = path.join(this.cacheDirectory, fileName);
     logger.info(`Finding cached response for [${url}] ([${filePath}])`);
