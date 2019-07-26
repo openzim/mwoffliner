@@ -52,9 +52,10 @@ export function sleep(ms: number) {
     });
 }
 
+const zimcheckPath = process.env.ZIMCHECK_PATH || 'zimcheck';
 export async function zimcheckAvailable() {
     try {
-        await execPromise('which zimcheck');
+        await execPromise(`which ${zimcheckPath}`);
         return true;
     } catch (err) {
         return false;
@@ -62,5 +63,5 @@ export async function zimcheckAvailable() {
 }
 
 export async function zimcheck(filePath: string) {
-    return execPromise(`zimcheck ${filePath}`);
+    return execPromise(`${zimcheckPath} ${filePath}`);
 }
