@@ -3,6 +3,7 @@ import { execute } from '../../src/mwoffliner.lib';
 
 import rimraf from 'rimraf';
 import { execPromise } from '../../src/util';
+import { zimcheckAvailable, zimcheck } from 'test/util';
 // import { ZimReader } from '@openzim/libzim';
 // tslint:disable-next-line: no-var-requires
 require('dotenv').config();
@@ -34,6 +35,18 @@ test('Simple articleList', async (t) => {
     }
 
     t.ok(true, 'Scraped BM Full');
+
+    if (await zimcheckAvailable()) {
+        try {
+            await zimcheck(outFiles[0].outFile);
+            t.ok(true, `Zimcheck passes`);
+        } catch (err) {
+            t.ok(false, `Zimcheck passes`);
+        }
+    } else {
+        console.log(`Zimcheck not installed, skipping test`);
+    }
+
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 

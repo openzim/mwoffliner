@@ -1,6 +1,6 @@
 import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
-import { leftPad } from '../util';
+import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
 import { execPromise } from '../../src/util';
 // import { ZimReader } from '@openzim/libzim';
@@ -52,12 +52,23 @@ test('Simple articleList', async (t) => {
             t.ok(dump.status.redirects.written > 300, 'nodet has enough redirects');
             t.ok(dump.status.articles.success === 10, 'nodet has 10 articles');
         }
+
+        if (await zimcheckAvailable()) {
+            try {
+                await zimcheck(dump.outFile);
+                t.ok(true, `Zimcheck passes`);
+            } catch (err) {
+                t.ok(false, `Zimcheck passes`);
+            }
+        } else {
+            console.log(`Zimcheck not installed, skipping test`);
+        }
     }
 
     // TODO: fix node-libzim
     // const zimReader = new ZimReader(writtenZimFile);
     // const numArticles = await zimReader.getCountArticles();
-    // console.log(numArticles);
+    // console.log(numArticles)
 
     t.ok(true, 'Scraped EN top 10');
     // TODO: clear test dir
