@@ -338,7 +338,7 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
-    const zimName = (dump.opts.publisher ? `${dump.opts.publisher.toLowerCase()}.` : '') + dump.computeFilenameRadical(false, true, true);
+    const zimName = dump.computeFilenameRadical(false, true, true);
 
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
