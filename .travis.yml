@@ -16,7 +16,7 @@ install:
 script:
   - npm run lint
   - npm run build
-  - REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=../zim-tools_linux-x86_64-1.0.2/zimcheck npm run test:e2e
+  - REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=`find .. --name=zimcheck` npm run test:e2e
   - REDIS=redis://127.0.0.1:6379 npm run report # Unit tests
 after_success:
   - codecov
