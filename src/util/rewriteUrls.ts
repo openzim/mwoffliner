@@ -147,7 +147,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
 
         if (rel) { // This is Parsoid HTML
             /* Add 'external' class to interwiki links */
-            if (rel === 'mw:WikiLink/Interwiki') {
+            if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'mw:WikiLink/Interwiki') {
                 DU.appendToAttr(linkNode, 'class', 'external');
             }
 

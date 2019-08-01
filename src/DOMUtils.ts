@@ -10,7 +10,7 @@ const DOMUtils = {
 
   appendToAttr(node: DominoElement, attr: string, val: any) {
     const oldVal = node.getAttribute(attr);
-    const valToSet = oldVal ? `${oldVal} ${val}` : oldVal;
+    const valToSet = oldVal ? `${oldVal} ${val}` : val;
     node.setAttribute(attr, valToSet as any);
   },
 
