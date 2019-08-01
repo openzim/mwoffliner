@@ -117,9 +117,9 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
         .reduce((acc, page) => {
             const id = (normalized[page.title] || page.title || '');
             if (typeof id !== 'string') {
-                throw new Error(`Article Id is invalid - expected a string but got [${id}]`);
+                logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`);
             }
-            const articleId = id.replace(/ /g, '_');
+            const articleId = String(id).replace(/ /g, '_');
             if (articleId) {
                 return {
                     ...acc,
