@@ -340,7 +340,7 @@ async function execute(argv: any) {
     logger.log(`Writing zim to [${outZim}]`);
     dump.outFile = outZim;
 
-    logger.log(`Flushing redis file store`);
+    logger.log(`Flushing Redis file store`);
     await filesToDownloadXPath.flush();
     await filesToRetryXPath.flush();
 

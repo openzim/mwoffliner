@@ -88,9 +88,9 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     //   module : string : the name of the module
     //   moduleUri : string : the path where the module will be saved into the zim
     //   type : string : either 'js' or 'css'
-    // this function save a key into redis db in the form of module.type -> moduleUri
+    // this function save a key into Redis db in the form of module.type -> moduleUri
     // return :
-    //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in redis
+    //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in Redis
 
     // the 2 variable functions below are a hack to call startUp() (from module startup) when the 3 generic dependencies (startup, jquery, mediawiki) are loaded.
     // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
