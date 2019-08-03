@@ -7,7 +7,7 @@ import { getArticlesByIds } from './mw-api';
 import { deDup } from '.';
 
 export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDetail>, downloader: Downloader, redis: Redis, deleteArticleStore = false): Promise<void> {
-    const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.redisClient, `${Date.now()}-request`);
+    const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.client, `${Date.now()}-request`);
     logger.log(`Fetching categories for [${await articleStore.len()}] articles`);
 
     await articleStore
