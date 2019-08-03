@@ -14,7 +14,6 @@ import semver from 'semver';
 import * as path from 'path';
 import axios from 'axios';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
-import homeDirExpander from 'expand-home-dir';
 import rimraf from 'rimraf';
 import im from 'imagemagick';
 
@@ -148,44 +147,37 @@ async function execute(argv: any) {
   populateFilesToDownload(redis.redisClient);
   populateFilesToRetry(redis.redisClient);
 
-  const expandedOutputDirectory = homeDirExpander(_outputDirectory || 'out/');
-  const outputDirectory = path.isAbsolute(expandedOutputDirectory) ?
-    expandedOutputDirectory :
-    path.join(process.cwd(), expandedOutputDirectory);
+  // Output directory
+  const outputDirectory = path.isAbsolute(_outputDirectory || '') ?
+    _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out');
   await mkdirPromise(outputDirectory);
+  logger.log(`Using output directory ${outputDirectory}`);
 
-  const expandedCacheDirectory = homeDirExpander(_cacheDirectory || `cac/${mwMetaData.langIso2}_${mwMetaData.creator}`.toLowerCase());
-  const cacheDirectory = path.isAbsolute(expandedCacheDirectory) ?
-    expandedCacheDirectory :
-    path.join(process.cwd(), expandedCacheDirectory);
-  await mkdirPromise(cacheDirectory);
-
-  downloader.cacheDirectory = cacheDirectory;
-
-  const tmpDirectory = os.tmpdir();
-
-  // Tmp Dirs
-  const dumpId = `mwo-dump-${Date.now()}`;
-  const dumpTmpDir = path.resolve(tmpDirectory, `${dumpId}`);
-  try {
-    logger.info(`Creating dump temporary directory [${dumpTmpDir}]`);
-    await mkdirPromise(dumpTmpDir);
-  } catch (err) {
-    logger.error(`Failed to create dump temporary directory, exiting`, err);
-    throw err;
+  // Cache directory
+  const cacheDirectory = path.isAbsolute(_cacheDirectory || '') ?
+    _cacheDirectory : path.join(process.cwd(), _cacheDirectory || `cac/${mwMetaData.langIso2}_${mwMetaData.creator}`.toLowerCase());
+  if (useCache) {
+    await mkdirPromise(cacheDirectory);
+    downloader.cacheDirectory = cacheDirectory;
+    logger.log(`Using cache directory ${cacheDirectory}`);
   }
 
-  logger.log(`Using Tmp Directories:`, {
-    outputDirectory,
-    cacheDirectory,
-    dumpTmpDir,
-  });
+  // Temporary directory
+  const tmpDirectory = path.resolve(os.tmpdir(), `mwoffliner-${Date.now()}`);
+  try {
+    logger.info(`Creating temporary directory [${tmpDirectory}]`);
+    await mkdirPromise(tmpDirectory);
+  } catch (err) {
+    logger.error(`Failed to create temporary directory, exiting`, err);
+    throw err;
+  }
+  logger.log(`Using temporary directory ${tmpDirectory}`);
 
   process.on('exit', async (code) => {
-    closeRedis(redis);
     logger.log(`Exiting with code [${code}]`);
-    logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
-    rimraf.sync(dumpTmpDir);
+    closeRedis(redis);
+    logger.log(`Deleting tmp dump dir [${tmpDirectory}]`);
+    rimraf.sync(tmpDirectory);
   });
 
   process.on('SIGTERM', () => {
@@ -211,7 +203,7 @@ async function execute(argv: any) {
 
   /* ZIM custom Favicon */
   if (customZimFavicon) {
-    const faviconPath = path.join(dumpTmpDir, 'favicon.png');
+    const faviconPath = path.join(tmpDirectory, 'favicon.png');
     const faviconIsRemote = customZimFavicon.includes('http');
     logger.log(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`);
     let content;
@@ -244,7 +236,7 @@ async function execute(argv: any) {
   if (articleList && articleList.includes('http')) {
     try {
       const fileName = articleList.split('/').slice(-1)[0];
-      const tmpArticleListPath = path.join(dumpTmpDir, fileName);
+      const tmpArticleListPath = path.join(tmpDirectory, fileName);
       logger.log(`Downloading article list from [${articleList}] to [${tmpArticleListPath}]`);
       const { data: articleListContentStream } = await axios.get(articleList, { responseType: 'stream' });
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
@@ -290,7 +282,7 @@ async function execute(argv: any) {
 
   for (const dumpFormat of dumpFormats) {
     const dump = new Dump(dumpFormat, {
-      tmpDir: dumpTmpDir,
+      tmpDir: tmpDirectory,
       username: mwUsername,
       password: mwPassword,
       spaceDelimiter: '_',
@@ -508,8 +500,8 @@ async function execute(argv: any) {
       const parsedUrl = urlParser.parse(entries.logo);
       const ext = parsedUrl.pathname.split('.').slice(-1)[0];
 
-      const faviconPath = pathParser.join(dumpTmpDir, `favicon.${ext}`);
-      let faviconFinalPath = pathParser.join(dumpTmpDir, `favicon.png`);
+      const faviconPath = pathParser.join(tmpDirectory, `favicon.${ext}`);
+      let faviconFinalPath = pathParser.join(tmpDirectory, `favicon.png`);
       const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
       const logoContent = await downloader.downloadContent(logoUrl);
       await writeFilePromise(faviconPath, logoContent.content, null);
