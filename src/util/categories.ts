@@ -1,6 +1,6 @@
 import Downloader from '../Downloader';
 import { RedisKvs } from './redis-kvs';
-import Redis from '../redis';
+import Redis from '../Redis';
 import logger from '../Logger';
 import { articleDetailXId } from '../stores';
 import { getArticlesByIds } from './mw-api';

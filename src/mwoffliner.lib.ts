@@ -21,7 +21,7 @@ import im from 'imagemagick';
 import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
-import Redis from './redis';
+import Redis from './Redis';
 import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
 import { mapLimit } from 'promiso';
 import { ZimCreatorFs } from './ZimCreatorFs';
