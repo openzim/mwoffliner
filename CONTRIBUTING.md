@@ -99,8 +99,3 @@ First, please read the [contributing guidelines for our parent
 project,
 openZIM](https://github.com/openzim/overview/blob/master/CONTRIBUTING.md).
 They cover the general process.
-
-## Background
-
-Check the [Background section of README.md](README.md#background) for
-some important concepts that motivate the advice below.
