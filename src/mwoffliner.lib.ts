@@ -36,12 +36,12 @@ const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.jso
 
 function closeRedis(redis: Redis) {
   logger.log(`Flushing Redis DBs`);
-  if (redis.redisClient.connected) {
+  if (redis.client.connected) {
     filesToDownloadXPath.flush();
     filesToRetryXPath.flush();
     articleDetailXId.flush();
     redirectsXId.flush();
-    redis.redisClient.quit();
+    redis.client.quit();
   }
 }
 
@@ -142,10 +142,10 @@ async function execute(argv: any) {
   }
 
   const redis = new Redis(argv, config);
-  populateArticleDetail(redis.redisClient);
-  populateRedirects(redis.redisClient);
-  populateFilesToDownload(redis.redisClient);
-  populateFilesToRetry(redis.redisClient);
+  populateArticleDetail(redis.client);
+  populateRedirects(redis.client);
+  populateFilesToDownload(redis.client);
+  populateFilesToRetry(redis.client);
 
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ?
@@ -175,8 +175,7 @@ async function execute(argv: any) {
 
   process.on('exit', async (code) => {
     logger.log(`Exiting with code [${code}]`);
-    closeRedis(redis);
-    logger.log(`Deleting tmp dump dir [${tmpDirectory}]`);
+    logger.log(`Deleting temporary directory [${tmpDirectory}]`);
     rimraf.sync(tmpDirectory);
   });
 
