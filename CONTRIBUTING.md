@@ -56,7 +56,7 @@ There is a pre-configured debug config for
 [VSCode](https://code.visualstudio.com/), just click on the debugging
 tab.
 
-Advicse for debugging mwoffliner issues:
+Advices for debugging mwoffliner issues:
 
 1.  For pre-packaged Kiwix downloads, look at the scripts at
     https://github.com/kiwix/maintenance/tree/master/mwoffliner
