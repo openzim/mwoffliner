@@ -1,5 +1,5 @@
 import Downloader from '../Downloader';
-import { RedisKvs } from './redis-kvs';
+import { RedisKvs } from './RedisKvs';
 import Redis from '../Redis';
 import logger from '../Logger';
 import { articleDetailXId } from '../stores';
