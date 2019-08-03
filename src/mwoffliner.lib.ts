@@ -151,7 +151,7 @@ async function execute(argv: any) {
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ?
     _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out');
   await mkdirPromise(outputDirectory);
-  logger.log(`Using output directory ${outputDirectory}`);
+  logger.log(`Using output directory [${outputDirectory}]`);
 
   // Cache directory
   const cacheDirectory = path.isAbsolute(_cacheDirectory || '') ?
@@ -159,7 +159,7 @@ async function execute(argv: any) {
   if (useCache) {
     await mkdirPromise(cacheDirectory);
     downloader.cacheDirectory = cacheDirectory;
-    logger.log(`Using cache directory ${cacheDirectory});
+    logger.log(`Using cache directory ${cacheDirectory}`);
   }
 
   // Temporary directory
@@ -168,15 +168,16 @@ async function execute(argv: any) {
     logger.info(`Creating temporary directory [${tmpDirectory}]`);
     await mkdirPromise(tmpDirectory);
   } catch (err) {
-    logger.error(`Failed to create temporary directory, exiting`, err);
+    logger.error(`Failed to create temporary directory [${tmpDirectory}], exiting`, err);
     throw err;
   }
-  logger.log(`Using temporary directory ${tmpDirectory}`);
+  logger.log(`Using temporary directory [${tmpDirectory}]`);
 
   process.on('exit', async (code) => {
     logger.log(`Exiting with code [${code}]`);
     logger.log(`Deleting temporary directory [${tmpDirectory}]`);
     rimraf.sync(tmpDirectory);
+    closeRedis(redis);
   });
 
   process.on('SIGTERM', () => {
