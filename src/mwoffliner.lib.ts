@@ -190,8 +190,8 @@ async function execute(argv: any) {
     logger.log(`Exiting with code [${code}]`);
     logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
     rimraf.sync(dumpTmpDir);
-    logger.log(`Clearing Cache Directory`);
     if (!skipCacheCleaning) {
+      logger.log(`Clearing Cache Directory`);
       rimraf.sync(cacheDirectory);
     }
   });
