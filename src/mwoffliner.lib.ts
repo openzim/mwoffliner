@@ -316,7 +316,7 @@ async function execute(argv: any) {
       minifyHtml,
       keepEmptyParagraphs,
       tags: customZimTags,
-    }, mwMetaData);
+    }, { ...mwMetaData, mainPage });
     dumps.push(dump);
     logger.log(`Doing dump`);
     let shouldSkip = false;
