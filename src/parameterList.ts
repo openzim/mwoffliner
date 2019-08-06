@@ -27,7 +27,6 @@ export const parameterDescriptions = {
   requestTimeout: 'Request timeout (in seconds)',
   resume: 'Do not overwrite if ZIM file already created',
   useCache: 'Cache all assets and HTML',
-  skipCacheCleaning: 'Do not search for old/outdated files in the cache',
   speed: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.',
   verbose: 'Print debug information to the stdout',
   withoutZimFullTextIndex: 'Don\'t include a fulltext search index to the ZIM',
