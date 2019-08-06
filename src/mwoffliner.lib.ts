@@ -77,7 +77,6 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     cacheDirectory: _cacheDirectory,
-    skipCacheCleaning,
     addNamespaces: _addNamespaces,
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
@@ -162,9 +161,6 @@ async function execute(argv: any) {
   await mkdirPromise(cacheDirectory);
 
   downloader.cacheDirectory = cacheDirectory;
-  if (!skipCacheCleaning) {
-    rimraf.sync(cacheDirectory + '/*');
-  }
 
   const tmpDirectory = os.tmpdir();
 
@@ -190,10 +186,6 @@ async function execute(argv: any) {
     logger.log(`Exiting with code [${code}]`);
     logger.log(`Deleting tmp dump dir [${dumpTmpDir}]`);
     rimraf.sync(dumpTmpDir);
-    logger.log(`Clearing Cache Directory`);
-    if (!skipCacheCleaning) {
-      rimraf.sync(cacheDirectory);
-    }
   });
 
   process.on('SIGTERM', () => {
