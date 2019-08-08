@@ -19,7 +19,8 @@ const parameters = {
     outputDirectory: testId,
     redis: process.env.REDIS,
     useCache: true,
-    format: ['nopic', 'novid', 'nozim', 'nopdf', 'nodet'],
+    // format: ['nopic', 'novid', 'nozim', 'nopdf', 'nodet'],
+    format: ['nopic', 'nopdf'],
 };
 
 test('Simple articleList', async (t) => {
@@ -28,7 +29,7 @@ test('Simple articleList', async (t) => {
     // const { data: articleIds } = await axios.get(articleListUrl);
     const outFiles = await execute(parameters);
 
-    t.equal(outFiles.length, 5, `Created 5 outputs`);
+    t.equal(outFiles.length, 2, `Created 2 outputs`);
 
     for (const dump of outFiles) {
         if (dump.nopic) {
@@ -53,7 +54,7 @@ test('Simple articleList', async (t) => {
             t.ok(dump.status.articles.success === 10, 'nodet has 10 articles');
         }
 
-        if (await zimcheckAvailable()) {
+        if (!dump.nozim && await zimcheckAvailable()) {
             try {
                 await zimcheck(dump.outFile);
                 t.ok(true, `Zimcheck passes`);
