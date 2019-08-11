@@ -1,3 +1,16 @@
+1.9.6:
+* FEATURE: Add format aliasing option
+* UPDATE: Remove skipCacheCleaning parameter
+* FIX: Welcome page detection & rendering
+
+1.9.5:
+* UPDATE: Update node-libzim
+* UPDATE: Cache logic (only use FS)
+* UPDATE: Remove JSON request cache
+* UPDATE: Specify tile layout for screens ~8096px
+* FIX: Welcome page '/' rewriting
+* FIX: Empty paragraph removal
+
 1.9.4:
 * UPDATE: README improvements (#880)
 * UPDATE: Smarter and more efficient article fetching
