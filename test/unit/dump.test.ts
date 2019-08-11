@@ -12,6 +12,8 @@ test('Dump formats', async (t) => {
         'nopic,:extra_alias': '_extra_alias',
         'nopic:': '',
         'nopic,novid:': '',
+        'nopic,nodet' : '_nopic_nodet',
+        'nodet,nopic' : '_nopic_nodet',
     };
 
     for (const [format, expectedFormatTags] of Object.entries(formatTests)) {
