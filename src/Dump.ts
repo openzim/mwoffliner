@@ -39,9 +39,7 @@ export class Dump {
     public strings: KVS<string>;
     public mwMetaData: MWMetaData;
     public outFile: string;
-
     public mediaQueue: AsyncQueue<string>;
-
     public status = {
         files: {
             success: 0,
@@ -56,15 +54,19 @@ export class Dump {
         },
     };
 
+    private formatAlias: string;
+
     constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData) {
         this.mwMetaData = mwMetaData;
         this.opts = opts;
 
-        this.nopic = format.toString().search('nopic') >= 0;
-        this.novid = format.toString().search('novid') >= 0;
-        this.nopdf = format.toString().search('nopdf') >= 0;
-        this.nozim = format.toString().search('nozim') >= 0;
-        this.nodet = format.toString().search('nodet') >= 0;
+        const [formatStr, formatAlias] = format.split(':');
+        this.nopic = formatStr.includes('nopic');
+        this.novid = formatStr.includes('novid');
+        this.nopdf = formatStr.includes('nopdf');
+        this.nozim = formatStr.includes('nozim');
+        this.nodet = formatStr.includes('nodet');
+        this.formatAlias = formatAlias;
 
         const date = new Date();
         this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
@@ -81,7 +83,6 @@ export class Dump {
             radical = `${this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)}_`;
             const hostParts = urlParser.parse(this.mwMetaData.webUrl).hostname.split('.');
             let langSuffix = this.mwMetaData.langIso2;
-            // tslint:disable-next-line:prefer-for-of
             for (const part of hostParts) {
                 if (part === this.mwMetaData.langIso3) {
                     langSuffix = part;
@@ -98,14 +99,18 @@ export class Dump {
             }
         }
         if (!withoutContentSpecifier) {
-            if (this.nopic) {
-                radical += '_nopic';
-            } else if (this.nopdf) {
-                radical += '_nopdf';
-            } else if (this.novid && !this.nodet) {
-                radical += '_novid';
+            if (typeof this.formatAlias === 'string') {
+                radical += this.formatAlias ? `_${this.formatAlias}` : '';
+            } else {
+                if (this.nopic) {
+                    radical += '_nopic';
+                } else if (this.nopdf) {
+                    radical += '_nopdf';
+                } else if (this.novid && !this.nodet) {
+                    radical += '_novid';
+                }
+                radical += this.nodet ? '_nodet' : '';
             }
-            radical += this.nodet ? '_nodet' : '';
         }
         if (!withoutDate) {
             radical += `_${this.contentDate}`;
