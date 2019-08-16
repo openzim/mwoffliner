@@ -1,3 +1,6 @@
+1.9.7:
+* NEW: Add 'Flavour' ZIM metadata
+
 1.9.6:
 * FEATURE: Add format aliasing option
 * UPDATE: Remove skipCacheCleaning parameter

@@ -54,19 +54,19 @@ export class Dump {
         },
     };
 
-    private formatAlias: string;
+    private formatFlavour: string;
 
     constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData) {
         this.mwMetaData = mwMetaData;
         this.opts = opts;
 
-        const [formatStr, formatAlias] = format.split(':');
+        const [formatStr, formatFlavour] = format.split(':');
         this.nopic = formatStr.includes('nopic');
         this.novid = formatStr.includes('novid');
         this.nopdf = formatStr.includes('nopdf');
         this.nozim = formatStr.includes('nozim');
         this.nodet = formatStr.includes('nodet');
-        this.formatAlias = formatAlias;
+        this.formatFlavour = formatFlavour;
 
         const date = new Date();
         this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
@@ -75,7 +75,24 @@ export class Dump {
         this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
     }
 
-    public computeFilenameRadical(withoutSelection?: boolean, withoutContentSpecifier?: boolean, withoutDate?: boolean) {
+    public computeFlavour() {
+        let flavour = '';
+        if (typeof this.formatFlavour === 'string') {
+            flavour += this.formatFlavour ? `_${this.formatFlavour}` : '';
+        } else {
+            if (this.nopic) {
+                flavour += '_nopic';
+            } else if (this.nopdf) {
+                flavour += '_nopdf';
+            } else if (this.novid && !this.nodet) {
+                flavour += '_novid';
+            }
+            flavour += this.nodet ? '_nodet' : '';
+        }
+        return flavour;
+    }
+
+    public computeFilenameRadical(withoutSelection?: boolean, withoutFlavour?: boolean, withoutDate?: boolean) {
         let radical;
         if (this.opts.filenamePrefix) {
             radical = this.opts.filenamePrefix;
@@ -98,19 +115,8 @@ export class Dump {
                 radical += '_all';
             }
         }
-        if (!withoutContentSpecifier) {
-            if (typeof this.formatAlias === 'string') {
-                radical += this.formatAlias ? `_${this.formatAlias}` : '';
-            } else {
-                if (this.nopic) {
-                    radical += '_nopic';
-                } else if (this.nopdf) {
-                    radical += '_nopdf';
-                } else if (this.novid && !this.nodet) {
-                    radical += '_novid';
-                }
-                radical += this.nodet ? '_nodet' : '';
-            }
+        if (!withoutFlavour) {
+            radical += this.computeFlavour();
         }
         if (!withoutDate) {
             radical += `_${this.contentDate}`;
