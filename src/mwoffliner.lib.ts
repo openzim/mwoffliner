@@ -346,6 +346,7 @@ async function execute(argv: any) {
         Language: dump.mwMetaData.langIso3,
         Title: dump.opts.customZimTitle || dump.mwMetaData.title,
         Name: dump.computeFilenameRadical(false, true, true),
+        Flavour: dump.computeFlavour(),
         Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
