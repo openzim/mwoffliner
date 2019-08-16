@@ -1,13 +1,13 @@
 import Downloader from '../Downloader';
-import { RedisKvs } from './redis-kvs';
-import Redis from '../redis';
+import { RedisKvs } from './RedisKvs';
+import Redis from '../Redis';
 import logger from '../Logger';
 import { articleDetailXId } from '../stores';
 import { getArticlesByIds } from './mw-api';
 import { deDup } from '.';
 
 export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDetail>, downloader: Downloader, redis: Redis, deleteArticleStore = false): Promise<void> {
-    const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.redisClient, `${Date.now()}-request`);
+    const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.client, `${Date.now()}-request`);
     logger.log(`Fetching categories for [${await articleStore.len()}] articles`);
 
     await articleStore

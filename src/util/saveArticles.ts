@@ -14,7 +14,7 @@ import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import { filesToDownloadXPath, articleDetailXId, filesToRetryXPath } from '../stores';
 import { getSizeFromUrl, getRelativeFilePath } from './misc';
-import { RedisKvs } from './redis-kvs';
+import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 
 const genericJsModules = config.output.mw.js;
@@ -747,7 +747,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
         return `<!DOCTYPE html>\n` + outHtml;
     } catch (err) {
-        throw new Error(`Unable to get the details from redis for article ${articleId}: \n${err}`);
+        throw new Error(`Unable to get the details from Redis for article ${articleId}: \n${err}`);
     }
 }
 
