@@ -336,8 +336,6 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
-    const zimName = dump.computeFilenameRadical(false, true, true);
-
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
     dump.outFile = outZim;
@@ -356,8 +354,8 @@ async function execute(argv: any) {
         Tags: dump.computeZimTags(),
         Language: dump.mwMetaData.langIso3,
         Title: dump.opts.customZimTitle || dump.mwMetaData.title,
-        Name: zimName,
-        Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle || zimName,
+        Name: dump.computeFilenameRadical(false, true, true),
+        Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
       });
