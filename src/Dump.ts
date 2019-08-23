@@ -174,6 +174,9 @@ export class Dump {
             addTagWithoutDuplicate('_details:no');
         }
 
+        /* Add proper _ftindex tag */
+        addTagWithoutDuplicate('_ftindex:' + (this.opts.withoutZimFullTextIndex ? 'no' : 'yes'));
+
         /* Remove empty tags */
         tags = tags.filter((x) => x);
         return tags.join(';');
