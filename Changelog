@@ -1,5 +1,6 @@
 1.9.7:
 * NEW: Add 'Flavour' ZIM metadata
+* NEW: revamped tag system
 
 1.9.6:
 * FEATURE: Add format aliasing option
