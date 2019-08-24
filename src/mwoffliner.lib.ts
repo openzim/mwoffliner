@@ -457,7 +457,7 @@ async function execute(argv: any) {
               ns: 'A',
               mimeType: 'text/html',
               title,
-              redirectAid: `${targetId}` + (dump.nozim ? '.html' : ''),
+              redirectUrl: `${targetId}` + (dump.nozim ? '.html' : ''),
             });
             await zimCreator.addArticle(redirectArticle);
             dump.status.redirects.written += 1;
@@ -578,7 +578,7 @@ async function execute(argv: any) {
         ns: 'A',
         mimeType: 'text/html',
         title: mainPage,
-        redirectAid: mainPage,
+        redirectUrl: mainPage,
       });
       return zimCreator.addArticle(article);
     }
