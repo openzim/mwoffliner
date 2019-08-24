@@ -19,8 +19,8 @@ class ZimCreatorFs extends ZimCreator {
 
         const articleFileName = path.join(this.fileName, article.aid);
 
-        if (article.redirectAid) {
-            const target = article.redirectAid.split('/').slice(1).join('/'); // Hack
+        if (article.redirectUrl) {
+            const target = article.redirectUrl.split('/').slice(1).join('/'); // Hack
             try {
                 const ret = await symlinkPromise(target, articleFileName);
                 return ret;
