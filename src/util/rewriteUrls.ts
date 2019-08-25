@@ -172,14 +172,14 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
             }
         } else { // This is MediaWiki HTML
             await removeLinksToUnmirroredArticles(mw, dump, linkNode, href);
+        }
 
-            if (articleId.includes('/')) {
-                const href = linkNode.getAttribute('href').replace(/ /g, '_'); // href is modified above, so this is necessary
-                const resourceNamespace = 'A';
-                const slashesInUrl = articleId.split('/').length - 1;
-                const upStr = '../'.repeat(slashesInUrl + 1);
-                linkNode.setAttribute('href', `${upStr}${resourceNamespace}/${href}`);
-            }
+        if (articleId.includes('/')) {
+            const href = linkNode.getAttribute('href').replace(/ /g, '_'); // href is modified above, so this is necessary
+            const resourceNamespace = 'A';
+            const slashesInUrl = articleId.split('/').length - 1;
+            const upStr = '../'.repeat(slashesInUrl + 1);
+            linkNode.setAttribute('href', `${upStr}${resourceNamespace}/${href}`);
         }
     }
     return { mediaDependencies };
