@@ -114,3 +114,9 @@ Install Redis:
 ```bash
 sudo apt-get install redis-server
 ```
+
+License
+-------
+
+[GPLv3](https://www.gnu.org/licenses/gpl-3.0) or later, see
+[LICENSE](LICENSE) for more details.
