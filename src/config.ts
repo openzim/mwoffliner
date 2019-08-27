@@ -13,8 +13,7 @@ const config = {
     /* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */
     cssClassBlackList: [
       'noprint', 'metadata', 'ambox', 'stub',
-      'topicon', 'magnify', 'navbar',
-      'mwe-math-mathml-inline', 'mw-kartographer-container',
+      'topicon', 'magnify', 'navbar', 'mw-kartographer-container',
       'mw-dismissable-notice', 'navigation-only',
     ],
 
