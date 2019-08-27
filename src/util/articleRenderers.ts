@@ -40,16 +40,18 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
                     strings: dump.strings,
                 });
             } else {
-                html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, '');
-                html += subSectionTemplate({
-                    section_index: i + 1,
-                    section_toclevel: oneSection.toclevel + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings: dump.strings,
-                });
+                html = html.replace(
+                    `__SUB_LEVEL_SECTION_${oneSection.id - 1}__`,
+                    subSectionTemplate({
+                        section_index: i + 1,
+                        section_toclevel: oneSection.toclevel + 1,
+                        section_id: oneSection.id,
+                        section_anchor: oneSection.anchor,
+                        section_line: oneSection.line,
+                        section_text: oneSection.text,
+                        strings: dump.strings,
+                    }),
+                );
             }
         });
     }
