@@ -4,7 +4,8 @@ MWoffliner is a tool for making a local offline HTML snapshot of any
 online [Mediawiki](https://mediawiki.org) instance. It goes through
 all articles (or a selection if specified) and writes the HTML/images
 to a local directory. It has mainly been tested against Wikimedia
-projects like Wikipedia, Wiktionary, ... But it should also work for
+projects like [Wikipedia](https://wikipedia.org),
+[Wiktionary](https://wiktionary.org), ... But it should also work for
 any recent Mediawiki.
 
 It can write the raw HTML/JS/CSS/PNG... files to the filesystem
@@ -23,7 +24,7 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) to know more about MWoffliner developm
 
 ## Prerequisites
 
-- *NIX Operating System (Linux/macOS)
+- *NIX Operating System (GNU/Linux, macOS, ...)
 - [NodeJS](https://nodejs.org/en/)
 - [Redis](https://redis.io/)
 - [Libzim](https://github.com/openzim/libzim) (On linux we automatically download binaries)
@@ -40,7 +41,7 @@ npm i -g mwoffliner
 ```
 
 You might need to run this command with the `sudo` command, depending
-how your npm is configured.
+how your `npm` is configured.
 
 Then to run it:
 ```bash
@@ -82,7 +83,7 @@ Complementary information about MWoffliner:
 
 ## Environment setup hints
 
-### MacOS
+### macOS
 
 Install NodeJS:
 ```bash
