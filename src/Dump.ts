@@ -110,7 +110,7 @@ export class Dump {
         }
         if (!withoutSelection && !this.opts.filenamePrefix) {
             if (this.opts.articleList) {
-                radical += `_${pathParser.basename(this.opts.articleList, pathParser.extname(this.opts.articleList)).toLowerCase().replace(/ /g, this.opts.spaceDelimiter)}`;
+                radical += `_${pathParser.basename(this.opts.articleList).toLowerCase().replace(/ /g, this.opts.spaceDelimiter).replace(/\.\w{3}$/, '')}`;
             } else {
                 radical += '_all';
             }
