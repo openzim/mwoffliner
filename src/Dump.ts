@@ -135,26 +135,49 @@ export class Dump {
     }
 
     public computeZimTags() {
+
+        /* Add tag and avoid duplicates */
+        function addTagWithoutDuplicate(newTag: string) {
+            if (!tags.find((tag) => tag === newTag)) {
+                tags.push(newTag);
+            }
+        }
+
+        /* Split tags in a list */
         let tags = (this.opts.tags || '').split(';');
-        /* Mediawiki hostname radical */
+
+        /* Add Mediawiki hostname radical as a tag */
         const mwUrlHostParts = urlParser.parse(this.mwMetaData.base).host.split('.');
-        const mwUrlHostPartsTag = mwUrlHostParts.length > 1
+        const mwUrlHostPartsRadical = mwUrlHostParts.length > 1
             ? mwUrlHostParts[mwUrlHostParts.length - 2]
             : mwUrlHostParts[mwUrlHostParts.length - 1];
-        if (!tags.find((tag) => tag.toLowerCase() === mwUrlHostPartsTag.toLowerCase())) {
-            tags.push(mwUrlHostPartsTag.toLowerCase());
+        const mwUrlHostPartsTag = mwUrlHostPartsRadical.toLowerCase();
+        addTagWithoutDuplicate(mwUrlHostPartsTag);
+
+        /* Famous Web sites have their own hidden category */
+        if (mwUrlHostPartsTag.match(/^(gutenberg|phet|psiram|stack_exchange|ted|vikidia|wikibooks|wikinews|wikipedia|wikiquote|wikisource|wikiversity|wikivoyage|wiktionary)$/)) {
+            addTagWithoutDuplicate('_category:' + mwUrlHostPartsTag);
         }
-        /* novid/nopic */
+
+        /* Add --format tags */
         if (this.nopic) {
-            tags.push('nopic');
+            addTagWithoutDuplicate('_pictures:no');
+            addTagWithoutDuplicate('_videos:no');
         } else if (this.novid) {
-            tags.push('novid');
-        } else if (this.nopdf) {
-            tags.push('nopdf');
+            addTagWithoutDuplicate('_pictures:yes');
+            addTagWithoutDuplicate('_videos:no');
         }
-        /* nodet */
-        if (this.nodet) { tags.push('nodet'); }
-        /* Remove empty elements */
+        if (this.nodet) {
+            addTagWithoutDuplicate('_videos:no');
+            addTagWithoutDuplicate('_details:yes');
+        } else {
+            addTagWithoutDuplicate('_details:no');
+        }
+
+        /* Add proper _ftindex tag */
+        addTagWithoutDuplicate('_ftindex:' + (this.opts.withoutZimFullTextIndex ? 'no' : 'yes'));
+
+        /* Remove empty tags */
         tags = tags.filter((x) => x);
         return tags.join(';');
     }
