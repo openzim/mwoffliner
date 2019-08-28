@@ -39,35 +39,10 @@
     border-bottom: 0px solid #eaecf0;
 }
 
-h1[tabindex="0"].collapsible-heading {
-    cursor: none;
-    /* Article title is not collapsible */
-}
-
-h1[tabindex="0"].collapsible-heading>.indicator {
-    display: none;
-    /* hide the "v" icone for the main title */
-}
-
-@media all and (min-width: 720px) {
-    .client-js .collapsible-heading .indicator {
-        display: none !important;
-        /* this is to hide to "v" icone next to titles in desktop */
-    }
-}
-
 @media (max-width: 720px) {
     .content .thumb .thumbinner>.thumbcaption {
         flex: 1 1 auto !important;
     }
-}
-
-.collapsible-block {
-    display: none;
-}
-
-.open-block {
-    display: block;
 }
 
 .mwo-catlinks {
