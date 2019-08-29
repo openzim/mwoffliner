@@ -215,6 +215,9 @@ export function genHeaderScript(config: Config, js: string, articleId: string, c
   const upStr = '../'.repeat(slashesInUrl + 1);
   return `<script src="${upStr}${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
 }
+export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
+  return `<link rel="canonical" href="${ webUrl }${ encodeURIComponent(articleId) }" />`;
+}
 
 export function getDumps(format: boolean | boolean[]) {
   let dumps: any[];

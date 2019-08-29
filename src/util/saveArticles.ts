@@ -9,7 +9,7 @@ import DU from '../DOMUtils';
 import * as domino from 'domino';
 import { Dump } from '../Dump';
 import { mapLimit } from 'promiso';
-import { getFullUrl, genHeaderScript, genHeaderCSSLink, jsPath, contains, getMediaBase } from '.';
+import { getFullUrl, genHeaderScript, genCanonicalLink, genHeaderCSSLink, jsPath, contains, getMediaBase } from '.';
 import { config } from '../config';
 import { htmlTemplateCode, footerTemplate } from '../Templates';
 import { filesToDownloadXPath, articleDetailXId, filesToRetryXPath } from '../stores';
@@ -649,6 +649,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode(articleId)
+            .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl, articleId))
             .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId) : '')
             .replace(
                 '__ARTICLE_JS_LIST__',
