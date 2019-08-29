@@ -21,7 +21,7 @@ import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import Redis from './Redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
 import { mapLimit } from 'promiso';
 import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
@@ -534,6 +534,7 @@ async function execute(argv: any) {
             genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) + '\n' +
             genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) + '\n' +
             genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) + '\n' +
+            genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) + '\n' +
             '\n</head>'),
       );
 
