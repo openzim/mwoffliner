@@ -122,6 +122,18 @@ export class RedisKvs<T> {
         });
     }
 
+    public deleteMany(prop: string[]) {
+        return new Promise((resolve, reject) => {
+            this.redisClient.hdel(this.dbName, prop.join(' '), (err, val) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(val);
+                }
+            });
+        });
+    }
+
     public keys() {
         return new Promise<string[]>((resolve, reject) => {
             this.redisClient.hkeys(this.dbName, (err, val) => {

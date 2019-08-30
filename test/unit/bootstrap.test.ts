@@ -9,7 +9,7 @@ import test from 'blue-tape';
 import { config } from '../../src/config';
 import { articleDetailXId, redirectsXId, filesToDownloadXPath, populateArticleDetail, populateRedirects, populateFilesToDownload } from 'src/stores';
 
-const redis = new Redis({ redis: process.env.REDIS }, config);
+export const redis = new Redis({ redis: process.env.REDIS }, config);
 populateArticleDetail(redis.client);
 populateRedirects(redis.client);
 populateFilesToDownload(redis.client);

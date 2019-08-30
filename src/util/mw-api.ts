@@ -33,15 +33,17 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                         const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
 
                         for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
-                            await redirectsXId.setMany(
-                                (articleDetail.redirects || []).reduce((acc, redirect) => {
-                                    const rId = redirect.title.replace(/ /g, '_');
-                                    return {
-                                        ...acc,
-                                        [rId]: { targetId: articleId, title: redirect.title },
-                                    };
-                                }, {}),
-                            );
+                            if (articleDetail.redirects && articleDetail.redirects.length) {
+                                await redirectsXId.setMany(
+                                    articleDetail.redirects.reduce((acc, redirect) => {
+                                        const rId = redirect.title.replace(/ /g, '_');
+                                        return {
+                                            ...acc,
+                                            [rId]: { targetId: articleId, title: redirect.title },
+                                        };
+                                    }, {}),
+                                );
+                            }
                         }
 
                         const existingArticleDetails = await articleDetailXId.getMany(articleIds);
