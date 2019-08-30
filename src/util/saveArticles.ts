@@ -633,6 +633,12 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
         });
     }
 
+    const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink'))
+        .filter((n) => !!n.textContent);
+    for (const node of kartographerMaplinkNodes) {
+        node.textContent = '🌍';
+    }
+
     return parsoidDoc;
 }
 
