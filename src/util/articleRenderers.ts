@@ -27,31 +27,34 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
 
     // set all other section (closed by default)
     if (!dump.nodet) {
-        json.remaining.sections.forEach((oneSection: any, i: number) => {
-            // if below is to test if we need to nest a subsections into a section
-            if (oneSection.toclevel === 1) {
-                html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, ''); // remove unused anchor for subsection
-                html += sectionTemplate({
-                    section_index: i + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings: dump.strings,
-                });
-            } else {
-                html = html.replace(`__SUB_LEVEL_SECTION_${oneSection.id - 1}__`, '');
-                html += subSectionTemplate({
-                    section_index: i + 1,
-                    section_toclevel: oneSection.toclevel + 1,
-                    section_id: oneSection.id,
-                    section_anchor: oneSection.anchor,
-                    section_line: oneSection.line,
-                    section_text: oneSection.text,
-                    strings: dump.strings,
-                });
-            }
-        });
+        json.remaining.sections
+            .forEach((oneSection: any, i: number) => {
+                // if below is to test if we need to nest a subsections into a section
+                if (oneSection.toclevel === 1) {
+                    html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
+                    html += sectionTemplate({
+                        section_index: i + 1,
+                        section_id: oneSection.id,
+                        section_anchor: oneSection.anchor,
+                        section_line: oneSection.line,
+                        section_text: oneSection.text,
+                        strings: dump.strings,
+                    });
+                } else {
+                    html = html.replace(
+                        `__SUB_LEVEL_SECTION_${i}__`,
+                        subSectionTemplate({
+                            section_index: i + 1,
+                            section_toclevel: oneSection.toclevel + 1,
+                            section_id: oneSection.id,
+                            section_anchor: oneSection.anchor,
+                            section_line: oneSection.line,
+                            section_text: oneSection.text,
+                            strings: dump.strings,
+                        }),
+                    );
+                }
+            });
     }
     const articleResourceNamespace = 'A';
     const categoryResourceNamespace = 'U';
