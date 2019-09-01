@@ -457,7 +457,7 @@ class Downloader {
     const self = this;
     await self.claimRequest();
     return new Promise((resolve, reject) => {
-      const requestOptions = this.getRequestOptionsFromUrl(url, true);
+      const requestOptions = this.getRequestOptionsFromUrl(url);
       const call = backoff.call(this.getContentCb, requestOptions, async (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
@@ -584,11 +584,11 @@ class Downloader {
     return articleDetails;
   }
 
-  private getRequestOptionsFromUrl(url: string, compression: boolean): AxiosRequestConfig {
+  private getRequestOptionsFromUrl(url: string): AxiosRequestConfig {
     const headers = {
       'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
       'cache-control': 'public, max-stale=2678400',
-      'accept-encoding': (compression ? 'gzip, deflate' : ''),
+      'accept-encoding': 'gzip, deflate',
       'user-agent': this.uaString,
       'cookie': this.loginCookie,
     };
@@ -597,7 +597,7 @@ class Downloader {
       headers,
       responseType: 'arraybuffer',
       timeout: this.requestTimeout,
-      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+      method: 'POST',
     };
   }
 
