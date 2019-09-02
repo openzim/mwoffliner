@@ -102,3 +102,7 @@ summary.section-heading {
     display: inline;
     border: none;
 }
+
+body[data-useragent*='KAIOS'] h1 {
+    display: none !important;
+}
