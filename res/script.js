@@ -15,4 +15,6 @@ window.onload = function () {
     if (window.innerWidth > 720) {
         $('details[data-level=2]').attr('open', true);
     }
+    
+    document.querySelector('body').setAttribute('data-useragent',  navigator.userAgent);
 }
