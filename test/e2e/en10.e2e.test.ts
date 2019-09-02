@@ -2,7 +2,7 @@ import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
-import { execPromise } from '../../src/util';
+import execa = require('execa');
 // import { ZimReader } from '@openzim/libzim';
 // tslint:disable-next-line: no-var-requires
 require('dotenv').config();
@@ -24,7 +24,7 @@ const parameters = {
 };
 
 test('Simple articleList', async (t) => {
-    await execPromise(`redis-cli flushall`);
+    await execa.command(`redis-cli flushall`);
 
     // const { data: articleIds } = await axios.get(articleListUrl);
     const outFiles = await execute(parameters);
@@ -75,6 +75,6 @@ test('Simple articleList', async (t) => {
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
-    const redisScan = await execPromise(`redis-cli --scan`);
-    t.equal(redisScan, '', 'Redis has been cleared');
+    const redisScan = await execa.command(`redis-cli --scan`);
+    t.equal(redisScan.stdout, '', 'Redis has been cleared');
 });

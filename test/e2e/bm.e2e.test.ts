@@ -1,8 +1,7 @@
 import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
-
+import execa from 'execa';
 import rimraf from 'rimraf';
-import { execPromise } from '../../src/util';
 import { zimcheckAvailable, zimcheck } from 'test/util';
 // import { ZimReader } from '@openzim/libzim';
 // tslint:disable-next-line: no-var-requires
@@ -20,7 +19,7 @@ const parameters = {
 };
 
 test('Simple articleList', async (t) => {
-    await execPromise(`redis-cli flushall`);
+    await execa.command(`redis-cli flushall`);
 
     const outFiles = await execute(parameters);
 
@@ -50,6 +49,6 @@ test('Simple articleList', async (t) => {
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
-    const redisScan = await execPromise(`redis-cli --scan`);
-    t.equal(redisScan, '', 'Redis has been cleared');
+    const redisScan = await execa.command(`redis-cli --scan`);
+    t.equal(redisScan.stdout, '', 'Redis has been cleared');
 });
