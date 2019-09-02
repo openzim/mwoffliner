@@ -1,7 +1,7 @@
 import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
-import { execPromise } from 'src/util';
+import execa = require('execa');
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -55,7 +55,7 @@ export function sleep(ms: number) {
 const zimcheckPath = process.env.ZIMCHECK_PATH || 'zimcheck';
 export async function zimcheckAvailable() {
     try {
-        await execPromise(`which ${zimcheckPath}`);
+        await execa.command(`which ${zimcheckPath}`);
         return true;
     } catch (err) {
         return false;
@@ -63,5 +63,5 @@ export async function zimcheckAvailable() {
 }
 
 export async function zimcheck(filePath: string) {
-    return execPromise(`${zimcheckPath} ${filePath}`);
+    return execa.command(`${zimcheckPath} ${filePath}`);
 }

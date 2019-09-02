@@ -6,7 +6,6 @@ import fs from 'fs';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import urlParser, { UrlWithStringQuery } from 'url';
-import { exec } from 'child_process';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
@@ -124,18 +123,6 @@ export function readFilePromise(path: string, encoding = 'utf8') {
         reject(err);
       } else {
         resolve(content);
-      }
-    });
-  });
-}
-
-export function execPromise(cmd: string) {
-  return new Promise<string>((resolve, reject) => {
-    exec(cmd, (err, stdout) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(stdout);
       }
     });
   });

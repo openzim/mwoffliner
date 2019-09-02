@@ -2,8 +2,9 @@ import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
-import { execPromise, writeFilePromise, mkdirPromise } from '../../src/util';
+import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { join } from 'path';
+import execa = require('execa');
 // import { ZimReader } from '@openzim/libzim';
 // tslint:disable-next-line: no-var-requires
 require('dotenv').config();
@@ -13,8 +14,8 @@ const testId = join(process.cwd(), `mwo-test-${+now}`);
 
 const articleListUrl = join(testId, '/articleList');
 
-test.only('Simple customMainPage', async (t) => {
-    await execPromise(`redis-cli flushall`);
+test('Simple customMainPage', async (t) => {
+    await execa.command(`redis-cli flushall`);
     await mkdirPromise(testId);
 
     const articleListLines = `
@@ -57,6 +58,6 @@ Book:Eye_diseases`;
     // TODO: clear test dir
     rimraf.sync(testId);
 
-    const redisScan = await execPromise(`redis-cli --scan`);
-    t.equal(redisScan, '', 'Redis has been cleared');
+    const redisScan = await execa.command(`redis-cli --scan`);
+    t.equal(redisScan.stdout, '', 'Redis has been cleared');
 });
