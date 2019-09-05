@@ -55,7 +55,7 @@ const config = {
     mw: {
       css: [
         ['skins.minerva.base.reset', 'skins.minerva.content.styles',
-          'ext.cite.style', 'mobile.app.pagestyles.android',
+          'ext.cite.style', 'site.styles', 'mobile.app.pagestyles.android',
           'mediawiki.page.gallery.styles',
           'mediawiki.skinning.content.parsoid'].join('|'),
       ],
