@@ -1,3 +1,15 @@
+1.9.8:
+* UPDATE: update libzim
+* UPDATE: update zimcheck
+* UPDATE: KaiOS Rendering Hack (#931)
+* UPDATE: Use execa instead of execPromise (#948)
+* UPDATE: Add canonical meta
+* UPDATE: Keep inline mathml HTML (#164)
+* UPDATE: Replace Kartographer maplink numbers (#871)
+* FIX: Wikivoyage DE rendering (#873)
+* FIX: Remove duplicate article redirects (#889)
+* FIX: No-JS mobile rendering (#962)
+
 1.9.7:
 * NEW: Add 'Flavour' ZIM metadata
 * NEW: revamped tag system
