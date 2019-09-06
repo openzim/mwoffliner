@@ -11,3 +11,12 @@ npm-debug.log
 .DS_Store
 .env
 src
+test
+dev
+Changelog
+tslint.json
+tsconfig*
+.*
+README.md
+CONTRIBUTING.md
+docker
