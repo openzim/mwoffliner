@@ -1,3 +1,9 @@
+1.9.10:
+* NEW: nothing
+
+1.9.9:
+* FIX: lib imports
+
 1.9.8:
 * UPDATE: update libzim
 * UPDATE: update zimcheck
