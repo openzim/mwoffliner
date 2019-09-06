@@ -2,7 +2,7 @@ import Downloader from '../Downloader';
 import { mapLimit } from 'promiso';
 import MediaWiki from '../MediaWiki';
 import { getArticlesByIds, getArticlesByNS } from './mw-api';
-import { redirectsXId, articleDetailXId } from '../../src/stores';
+import { redirectsXId, articleDetailXId } from '../stores';
 
 export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
     if (mainPage) {
