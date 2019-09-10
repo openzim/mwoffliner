@@ -169,9 +169,9 @@ export class Dump {
         }
         if (this.nodet) {
             addTagWithoutDuplicate('_videos:no');
-            addTagWithoutDuplicate('_details:yes');
-        } else {
             addTagWithoutDuplicate('_details:no');
+        } else {
+            addTagWithoutDuplicate('_details:yes');
         }
 
         /* Add proper _ftindex tag */
