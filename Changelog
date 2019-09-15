@@ -1,5 +1,6 @@
 1.9.11:
 * FIX: broken '_details' tag values (#980)
+* NEW: --osTmpDir optional argument (#966)
 
 1.9.10:
 * NEW: nothing
