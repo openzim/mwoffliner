@@ -199,7 +199,9 @@ export class Dump {
 
         /* Go through all CSS links */
         for (const link of links) {
-            if (link.getAttribute('rel') === 'stylesheet') {
+            if (link.getAttribute('rel') === 'stylesheet' &&
+                link.getAttribute('href') &&
+                !link.getAttribute('href').match('^data')) {
                 sheetUrls.push(link);
             }
         }
