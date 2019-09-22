@@ -21,7 +21,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
         try {
             /* link might be a 'link' DOM node or an URL */
 
-            if (cssUrl) {
+            if (cssUrl && !cssUrl.match('^data')) {
                 const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi');
 
                 logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`);
