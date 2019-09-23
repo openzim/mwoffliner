@@ -27,6 +27,33 @@ const argv = yargs
   .require(requiredParams as any)
   .strict().argv;
 
+/* ***********************************/
+/* TMPDIR OVERRIDE HAS TO BE HANDLED */
+/* AT THE REALLY BEGIN               */
+/* ***********************************/
+
+import fs, { readFileSync } from 'fs';
+import logger from './Logger';
+
+if (argv.osTmpDir) {
+  const osTmpDir = argv.osTmpDir as string;
+
+  try {
+    if (fs.statSync(osTmpDir)) {
+      process.env.TMPDIR = osTmpDir;
+    } else {
+      throw new Error();
+    }
+  } catch {
+    console.error(`--osTmpDir value [${osTmpDir}] is not valid`);
+    process.exit(2);
+  }
+}
+
+/* ***********************************/
+/* GO THROUGH ENTRY POINT            */
+/* ***********************************/
+
 const execStartTime = Date.now();
 
 import * as  mwofflinerLib from './mwoffliner.lib';

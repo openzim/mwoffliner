@@ -33,4 +33,5 @@ export const parameterDescriptions = {
   addNamespaces: 'Force addional namespace (comma separated numbers)',
   getCategories: '[WIP] Download category pages',
   noLocalParserFallback: 'Don\'t fall back to a local MCS or Parsoid, only use remote APIs',
+  osTmpDir: 'Override default operating system temporary directory path environnement variable',
 };
