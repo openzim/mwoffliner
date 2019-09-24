@@ -66,7 +66,7 @@ test('applyOtherTreatments', async (t) => {
                 fewestChildren = d.children.length;
             }
         }
-        if (fewestChildren <= 1) {
+        if (fewestChildren < 1) {
             t.fail(`Found empty details elements when they should be stripped in mobile view`);
         } else {
             t.ok(`Found no empty details elements when they should be stripped in mobile view`);
@@ -107,7 +107,7 @@ test('applyOtherTreatments', async (t) => {
                 fewestChildren = d.children.length;
             }
         }
-        if (fewestChildren <= 1) {
+        if (fewestChildren < 1) {
             t.fail(`Found empty sections when they should be stripped in desktop view`);
         } else {
             t.ok(`Found no empty sections when they should be stripped in desktop view`);
