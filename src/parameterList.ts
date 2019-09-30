@@ -34,4 +34,5 @@ export const parameterDescriptions = {
   getCategories: '[WIP] Download category pages',
   noLocalParserFallback: 'Don\'t fall back to a local MCS or Parsoid, only use remote APIs',
   osTmpDir: 'Override default operating system temporary directory path environnement variable',
+  customProcessor: 'A custom processor that can filter and process articles (see extensions/*.js)',
 };

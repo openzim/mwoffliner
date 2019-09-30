@@ -18,6 +18,12 @@ type DominoElement = any;
 type Callback = (err?: any, data?: any, extra?: any) => void;
 type KVS<T> = { [key: string]: T };
 
+interface CustomProcessor {
+    shouldKeepArticle?: (articleId: string, doc: Document) => Promise<boolean>;
+    preProcessArticle?: (articleId: string, doc: Document) => Promise<Document>;
+    postProcessArticle?: (articleId: string, doc: Document) => Promise<Document>;
+}
+
 interface MWMetaData {
     langIso2: string;
     langIso3: string;
