@@ -81,6 +81,7 @@ async function execute(argv: any) {
     customZimFavicon: _customZimFavicon,
     useCache,
     noLocalParserFallback,
+    customFlavour: customProcessorPath,
   } = argv;
 
   (process as any).verbose = !!verbose;
@@ -104,6 +105,14 @@ async function execute(argv: any) {
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
   if (!nodeVersionSatisfiesPackage) {
     logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
+  }
+
+  let customProcessor = null;
+  if (customProcessorPath) {
+    const CustomProcessor = require(
+      path.join(process.cwd(), customProcessorPath),
+    );
+    customProcessor = new CustomProcessor();
   }
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
@@ -299,7 +308,10 @@ async function execute(argv: any) {
       minifyHtml,
       keepEmptyParagraphs,
       tags: customZimTags,
-    }, { ...mwMetaData, mainPage });
+    },
+      { ...mwMetaData, mainPage },
+      customProcessor,
+    );
     dumps.push(dump);
     logger.log(`Doing dump`);
     let shouldSkip = false;

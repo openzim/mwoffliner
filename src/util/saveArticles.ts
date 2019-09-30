@@ -96,7 +96,21 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             continue;
                         }
 
-                        const { articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                        const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                        let articleDoc = _articleDoc;
+
+                        if (dump.customProcessor) {
+                            if (dump.customProcessor.shouldKeepArticle) {
+                                const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
+                                if (!shouldContinue) {
+                                    continue;
+                                }
+                            }
+                            if (dump.customProcessor.preProcessArticle) {
+                                articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
+                            }
+                        }
+
                         for (const dep of mediaDependencies) {
 
                             const { mult, width } = getSizeFromUrl(dep.url);
@@ -119,15 +133,36 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
                         jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
-                        const outHtml = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
+                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
+
+                        if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
+                            templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc);
+                        }
+
+                        let outHtml = templatedDoc.documentElement.outerHTML;
+
+                        if (dump.opts.minifyHtml) {
+                            outHtml = htmlMinifier.minify(outHtml, {
+                                removeComments: true,
+                                conservativeCollapse: true,
+                                collapseBooleanAttributes: true,
+                                removeRedundantAttributes: true,
+                                removeEmptyAttributes: true,
+                                minifyCSS: true,
+                            });
+                        }
+
+                        const finalHTML = `<!DOCTYPE html>\n` + outHtml;
+
                         const zimArticle = new ZimArticle({
                             url: articleId + (dump.nozim ? '.html' : ''),
-                            data: outHtml,
+                            data: finalHTML,
                             ns: articleDetail.ns === 14 ? 'U' : 'A',
                             mimeType: 'text/html',
                             title: articleTitle,
                             shouldIndex: true,
                         });
+
                         await zimCreator.addArticle(zimArticle);
 
                         dump.status.articles.success += 1;
@@ -642,7 +677,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<string | Buffer> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<Document> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -739,20 +774,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             htmlTemplateDoc.getElementsByTagName('head')[0].appendChild(metaNode);
         }
 
-        let outHtml = htmlTemplateDoc.documentElement.outerHTML;
-
-        if (dump.opts.minifyHtml) {
-            outHtml = htmlMinifier.minify(outHtml, {
-                removeComments: true,
-                conservativeCollapse: true,
-                collapseBooleanAttributes: true,
-                removeRedundantAttributes: true,
-                removeEmptyAttributes: true,
-                minifyCSS: true,
-            });
-        }
-
-        return `<!DOCTYPE html>\n` + outHtml;
+        return htmlTemplateDoc;
     } catch (err) {
         throw new Error(`Unable to get the details from Redis for article ${articleId}: \n${err}`);
     }

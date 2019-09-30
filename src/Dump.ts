@@ -29,6 +29,7 @@ interface DumpOpts {
 }
 
 export class Dump {
+    public customProcessor?: CustomProcessor;
     public nopic: boolean;
     public novid: boolean;
     public nopdf: boolean;
@@ -56,9 +57,10 @@ export class Dump {
 
     private formatFlavour: string;
 
-    constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData) {
+    constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor?: CustomProcessor) {
         this.mwMetaData = mwMetaData;
         this.opts = opts;
+        this.customProcessor = customProcessor;
 
         const [formatStr, formatFlavour] = format.split(':');
         this.nopic = formatStr.includes('nopic');
