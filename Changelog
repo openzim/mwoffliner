@@ -1,6 +1,11 @@
+1.9.12:
+* UPDATE: Release documentation
+
 1.9.11:
 * FIX: broken '_details' tag values (#980)
+* FIX: non-empty sections removal (#986)
 * NEW: --osTmpDir optional argument (#966)
+* NEW: --flavour for specifying pre/post processing scripts
 
 1.9.10:
 * NEW: nothing
