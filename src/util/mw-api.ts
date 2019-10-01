@@ -72,14 +72,12 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 }
 
 export async function getArticlesByNS(ns: number, downloader: Downloader, _gapContinue?: string, continueLimit?: number): Promise<void> {
-    let index = 0;
 
     const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
 
     const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
 
     const numDetails = Object.keys(articleDetails).length;
-    index += numDetails;
     await articleDetailXId.setMany(articleDetails);
 
     for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
@@ -94,7 +92,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
         );
     }
 
-    logger.log(`Got [${index}] articles from namespace [${ns}]`);
+    logger.log(`Got [${numDetails}] articles from namespace [${ns}]`);
 
     const canContinue = typeof continueLimit === 'undefined' || continueLimit > 0; // used for testing
 
@@ -118,7 +116,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
     return Object.values(pages)
         .reduce((acc, page) => {
             const id = (normalized[page.title] || page.title || '');
-            if (typeof id !== 'string') {
+            if (typeof id !== 'string' || !id) {
                 logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`);
             }
             const articleId = String(id).replace(/ /g, '_');
