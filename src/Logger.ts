@@ -27,7 +27,7 @@ class Logger {
     if (arr.length < 3) {
       return JSON.stringify(arr);
     } else {
-      const ret = arr.slice(0, 2).concat(`+${arr.length - 2} more`);
+      const ret = arr.slice(0, 1).concat(`+${arr.length - 2} more +`).concat(arr[arr.length - 1]);
       return JSON.stringify(ret);
     }
   }
