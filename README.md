@@ -116,6 +116,12 @@ Install Redis:
 sudo apt-get install redis-server
 ```
 
+### Releasing
+1. Update `package.json`
+2. Commit `:package: Release version vX.X.X`
+3. Run `git tag vX.X.X`
+4. Run `git push origin master --tags`
+
 License
 -------
 
