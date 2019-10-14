@@ -23,7 +23,6 @@ import MediaWiki from './MediaWiki';
 import Redis from './Redis';
 import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
 import { mapLimit } from 'promiso';
-import { ZimCreatorFs } from './ZimCreatorFs';
 import logger from './Logger';
 import { getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
@@ -72,7 +71,6 @@ async function execute(argv: any) {
     format,
     filenamePrefix,
     resume,
-    keepHtml: keepHtml,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     cacheDirectory: _cacheDirectory,
@@ -295,7 +293,6 @@ async function execute(argv: any) {
       password: mwPassword,
       spaceDelimiter: '_',
       outputDirectory,
-      keepHtml,
       mainPage,
       filenamePrefix,
       articleList,
@@ -347,9 +344,7 @@ async function execute(argv: any) {
     await filesToDownloadXPath.flush();
     await filesToRetryXPath.flush();
 
-    const zimCreatorConstructor = dump.nozim ? ZimCreatorFs : ZimCreator;
-
-    const zimCreator = new zimCreatorConstructor({
+    const zimCreator = new ZimCreator({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
       welcome: (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
@@ -464,13 +459,13 @@ async function execute(argv: any) {
         for (const [redirectId, { targetId, title }] of Object.entries(redirects)) {
           if (redirectId !== targetId) {
             const redirectArticle = new ZimArticle({
-              url: redirectId + (dump.nozim ? '.html' : ''),
+              url: redirectId,
               shouldIndex: true,
               data: '',
               ns: 'A',
               mimeType: 'text/html',
               title,
-              redirectUrl: `${targetId}` + (dump.nozim ? '.html' : ''),
+              redirectUrl: targetId,
             });
             await zimCreator.addArticle(redirectArticle);
             dump.status.redirects.written += 1;
@@ -579,14 +574,14 @@ async function execute(argv: any) {
       }
 
       /* Write the static html file */
-      const article = new ZimArticle({ url: 'index' + (dump.nozim ? '.html' : ''), data: doc.documentElement.outerHTML, ns: 'A', mimeType: 'text/html', title: 'Main Page' });
+      const article = new ZimArticle({ url: 'index', data: doc.documentElement.outerHTML, ns: 'A', mimeType: 'text/html', title: 'Main Page' });
       return zimCreator.addArticle(article);
     }
 
     function createMainPageRedirect() {
       logger.log(`Create main page redirection from [index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
       const article = new ZimArticle({
-        url: 'index' + (dump.nozim ? '.html' : ''),
+        url: 'index',
         shouldIndex: true,
         data: '',
         ns: 'A',

@@ -155,7 +155,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const finalHTML = `<!DOCTYPE html>\n` + outHtml;
 
                         const zimArticle = new ZimArticle({
-                            url: articleId + (dump.nozim ? '.html' : ''),
+                            url: articleId,
                             data: finalHTML,
                             ns: articleDetail.ns === 14 ? 'U' : 'A',
                             mimeType: 'text/html',
