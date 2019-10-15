@@ -71,7 +71,7 @@ test('Url re-writing', async (t) => {
 
     await rewriteUrl(complexParentArticleId, mw, dump, $wikiLinkWithSlash);
     t.assert($wikiLinkWithSlash.nodeName === 'A', 'wikiLinkWithSlash is still a link');
-    t.equal($wikiLinkWithSlash.getAttribute('href'), '../../A/Farnborough%2FAldershot_Built-up_Area', 'wikiLinkWithSlash HREF is correct');
+    t.equal($wikiLinkWithSlash.getAttribute('href'), '../../A/Farnborough/Aldershot_Built-up_Area', 'wikiLinkWithSlash HREF is correct');
 
     await rewriteUrl(complexParentArticleId, mw, dump, $specialMap);
     t.assert($specialMap.nodeName === 'A', 'specialMap is still a link');

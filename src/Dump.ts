@@ -218,7 +218,7 @@ export class Dump {
     }
 
     public getArticleUrl(articleId: string) {
-        return this.getArticleBase(articleId, true);
+        return this.getArticleBase(articleId, false);
     }
 
     public getArticleBase(articleId: string, escape?: boolean) {
