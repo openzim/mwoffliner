@@ -13,7 +13,6 @@ interface DumpOpts {
     password: string;
     spaceDelimiter: string;
     outputDirectory: string;
-    keepHtml: boolean;
     publisher: string;
     withoutZimFullTextIndex: boolean;
     customZimTags?: string;
@@ -33,7 +32,6 @@ export class Dump {
     public nopic: boolean;
     public novid: boolean;
     public nopdf: boolean;
-    public nozim: boolean;
     public nodet: boolean;
     public contentDate: string;
     public opts: DumpOpts;
@@ -66,7 +64,6 @@ export class Dump {
         this.nopic = formatStr.includes('nopic');
         this.novid = formatStr.includes('novid');
         this.nopdf = formatStr.includes('nopdf');
-        this.nozim = formatStr.includes('nozim');
         this.nodet = formatStr.includes('nodet');
         this.formatFlavour = formatFlavour;
 
@@ -127,7 +124,7 @@ export class Dump {
     }
 
     public checkResume() {
-        if (this.opts.resume && !this.nozim) {
+        if (this.opts.resume) {
             const zimPath = this.computeZimRootPath();
             if (existsSync(zimPath)) {
                 logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
@@ -232,7 +229,7 @@ export class Dump {
             }
             return escape ? encodeURIComponent(str) : str;
         }
-        return e(articleId) + (this.nozim ? '.html' : '');
+        return e(articleId);
     }
 
 }

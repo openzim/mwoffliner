@@ -19,7 +19,7 @@ const parameters = {
     outputDirectory: testId,
     redis: process.env.REDIS,
     useCache: true,
-    // format: ['nopic', 'novid', 'nozim', 'nopdf', 'nodet'],
+    // format: ['nopic', 'novid', 'nopdf', 'nodet'],
     format: ['nopic', 'nopdf'],
 };
 
@@ -40,10 +40,6 @@ test('Simple articleList', async (t) => {
             t.ok(dump.status.files.success > 420, 'novid has enough files');
             t.ok(dump.status.redirects.written > 300, 'novid has enough redirects');
             t.ok(dump.status.articles.success === 10, 'novid has 10 articles');
-        } else if (dump.nozim) {
-            t.ok(dump.status.files.success > 450, 'nozim has enough files');
-            t.ok(dump.status.redirects.written > 300, 'nozim has enough redirects');
-            t.ok(dump.status.articles.success === 10, 'nozim has 10 articles');
         } else if (dump.nopdf) {
             t.ok(dump.status.files.success > 450, 'nopdf has enough files');
             t.ok(dump.status.redirects.written > 300, 'nopdf has enough redirects');
@@ -54,7 +50,7 @@ test('Simple articleList', async (t) => {
             t.ok(dump.status.articles.success === 10, 'nodet has 10 articles');
         }
 
-        if (!dump.nozim && await zimcheckAvailable()) {
+        if (await zimcheckAvailable()) {
             try {
                 await zimcheck(dump.outFile);
                 t.ok(true, `Zimcheck passes`);
