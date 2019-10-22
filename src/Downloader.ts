@@ -35,8 +35,8 @@ interface DownloaderOpts {
   uaString: string;
   speed: number;
   reqTimeout: number;
-  useCache: boolean;
-  cacheDirectory?: string;
+  useDownloadCache: boolean;
+  downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
 }
 
@@ -48,8 +48,8 @@ class Downloader {
   public mcsUrl: string;
   public parsoidFallbackUrl: string;
   public speed: number;
-  public useCache: boolean;
-  public cacheDirectory?: string;
+  public useDownloadCache: boolean;
+  public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
 
   private canFetchCoordinates = true;
@@ -58,15 +58,15 @@ class Downloader {
   private noLocalParserFallback = false;
   private urlPartCache: KVS<string> = {};
 
-  constructor({ mw, uaString, speed, reqTimeout, useCache, cacheDirectory, noLocalParserFallback }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
     this.maxActiveRequests = speed * 10;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
-    this.useCache = useCache;
-    this.cacheDirectory = cacheDirectory;
+    this.useDownloadCache = useDownloadCache;
+    this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
@@ -443,15 +443,15 @@ class Downloader {
       throw new Error(`Parameter [${_url}] is not a valid url`);
     }
     const url = this.deserialiseUrl(_url);
-    if (this.useCache) {
+    if (this.useDownloadCache) {
       try {
-        const cacheVal = await this.readCachedResponse(url);
-        if (cacheVal) {
-          logger.info(`Cache hit for [${url}]`);
-          return cacheVal;
+        const downloadCacheVal = await this.readFromDownloadCache(url);
+        if (downloadCacheVal) {
+          logger.info(`Download cache hit for [${url}]`);
+          return downloadCacheVal;
         }
       } catch (err) {
-        // NOOP (cache miss)
+        // NOOP (download cache miss)
       }
     }
     const self = this;
@@ -464,13 +464,13 @@ class Downloader {
           const httpStatus = err.response && err.response.status;
           logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
           reject(err);
-        } else if (self.useCache && self.cacheDirectory) {
+        } else if (self.useDownloadCache && self.downloadCacheDirectory) {
           try {
-            await self.cacheResponse(url, val);
+            await self.writeToDownloadCache(url, val);
             resolve(val);
           } catch (err) {
-            logger.warn(`Failed to cache response for [${url}]`, err);
-            reject({ message: `Failed to cache response`, err });
+            logger.warn(`Failed to cache download for [${url}]`, err);
+            reject({ message: `Failed to cache download`, err });
           }
         } else {
           resolve(val);
@@ -492,21 +492,21 @@ class Downloader {
     }
   }
 
-  private async cacheResponse(url: string, val: { content: Buffer, responseHeaders: any }) {
+  private async writeToDownloadCache(url: string, val: { content: Buffer, responseHeaders: any }) {
     const fileName = md5(url);
-    const filePath = path.join(this.cacheDirectory, fileName);
+    const filePath = path.join(this.downloadCacheDirectory, fileName);
     logger.info(`Caching response for [${url}] to [${filePath}]`);
     await writeFilePromise(filePath, val.content, null);
     await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
   }
 
-  private async readCachedResponse(url: string) {
-    if (!this.cacheDirectory) {
-      throw new Error('No Cache Directory Defined');
+  private async readFromDownloadCache(url: string) {
+    if (!this.downloadCacheDirectory) {
+      throw new Error('No Download Cache Directory Defined');
     }
     const fileName = md5(url);
-    const filePath = path.join(this.cacheDirectory, fileName);
-    logger.info(`Finding cached response for [${url}] ([${filePath}])`);
+    const filePath = path.join(this.downloadCacheDirectory, fileName);
+    logger.info(`Finding cached donwload for [${url}] ([${filePath}])`);
     const [content, responseHeaders] = await Promise.all([
       readFilePromise(filePath, null),
       readFilePromise(`${filePath}.headers`, 'utf8').catch(() => null),

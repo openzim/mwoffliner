@@ -73,11 +73,11 @@ async function execute(argv: any) {
     resume,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
-    cacheDirectory: _cacheDirectory,
+    downloadCacheDirectory: _downloadCacheDirectory,
     addNamespaces: _addNamespaces,
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
-    useCache,
+    useDownloadCache,
     noLocalParserFallback,
     customFlavour: customProcessorPath,
   } = argv;
@@ -132,8 +132,8 @@ async function execute(argv: any) {
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout || config.defaults.requestTimeout,
-    useCache,
-    cacheDirectory: null,
+    useDownloadCache,
+    downloadCacheDirectory: null,
     noLocalParserFallback,
   });
 
@@ -160,13 +160,13 @@ async function execute(argv: any) {
   await mkdirPromise(outputDirectory);
   logger.log(`Using output directory ${outputDirectory}`);
 
-  // Cache directory
-  const cacheDirectory = path.isAbsolute(_cacheDirectory || '') ?
-    _cacheDirectory : path.join(process.cwd(), _cacheDirectory || `cac/${mwMetaData.langIso2}_${mwMetaData.creator}`.toLowerCase());
-  if (useCache) {
-    await mkdirPromise(cacheDirectory);
-    downloader.cacheDirectory = cacheDirectory;
-    logger.log(`Using cache directory ${cacheDirectory}`);
+  // Download Cache directory
+  const downloadCacheDirectory = path.isAbsolute(_downloadCacheDirectory || '') ?
+    _downloadCacheDirectory : path.join(process.cwd(), _downloadCacheDirectory || `cac/${mwMetaData.langIso2}_${mwMetaData.creator}`.toLowerCase());
+  if (useDownloadCache) {
+    await mkdirPromise(downloadCacheDirectory);
+    downloader.downloadCacheDirectory = downloadCacheDirectory;
+    logger.log(`Using download cache directory ${downloadCacheDirectory}`);
   }
 
   // Temporary directory
