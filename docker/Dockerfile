@@ -1,4 +1,4 @@
-FROM openzim/node-redis:latest
+FROM openzim/node-redis:10-5
 
 # Install dependences
 RUN apt-get update && \
