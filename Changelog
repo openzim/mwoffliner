@@ -1,5 +1,7 @@
 1.9.13:
 * DEL: --keepHtml and --format=nozim
+* UPDATE: Rename --useCache in --useDownloadCache
+* UPDATE: Rename --cacheDirectory in --downloadCacheDirectory
 
 1.9.12:
 * UPDATE: Release documentation
