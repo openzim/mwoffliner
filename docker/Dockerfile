@@ -1,7 +1,11 @@
-FROM node:10
+FROM openzim/node-redis
 
 # Install dependences
-RUN apt update && apt install -y --no-install-recommends make g++ curl git imagemagick
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    make g++ curl git imagemagick && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install mwoffliner
 WORKDIR /tmp/mwoffliner
