@@ -1,4 +1,5 @@
 1.9.13:
+* NEW: Docker image has an embedded Redis daemon
 * DEL: --keepHtml and --format=nozim
 * UPDATE: Rename --useCache in --useDownloadCache
 * UPDATE: Rename --cacheDirectory in --downloadCacheDirectory
