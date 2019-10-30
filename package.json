@@ -71,6 +71,7 @@
     "backoff": "^2.5.0",
     "country-language": "^0.1.7",
     "deepmerge": "^3.3.0",
+    "details-element-polyfill": "^2.3.1",
     "domino": "^2.1.3",
     "execa": "^2.0.4",
     "follow-redirects": "^1.7.0",
