@@ -1,2 +1,3 @@
 source ~/.old-bashrc
-alias mwoffliner='mwoffliner --redis="redis://redis"'
+alias mwoffliner='mwoffliner --redis=/dev/shm/redis.sock'
+alias redis-cli='redis-cli -s /dev/shm/redis.sock'
