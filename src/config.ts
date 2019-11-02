@@ -49,7 +49,8 @@ const config = {
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
 
-    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', 'details_polyfill'],
+    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min',
+    '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
