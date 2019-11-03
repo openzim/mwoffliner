@@ -188,7 +188,8 @@ export function cssPath({ output: { dirs } }: Config, css: string) {
   return [dirs.style, `${dirs.styleModules}/${css.replace(/(\.css)?$/, '')}.css`].join('/');
 }
 export function jsPath({ output: { dirs } }: Config, js: string) {
-  return [dirs.javascript, `${dirs.jsModules}/${js.replace(/(\.js)?$/, '')}.js`].join('/');
+  const path = (isNodeModule(js)) ? normalizeModule(js) : js;
+  return [dirs.javascript, `${dirs.jsModules}/${path.replace(/(\.js)?$/, '')}.js`].join('/');
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, classList = '') {
   const resourceNamespace = '-';
@@ -200,7 +201,8 @@ export function genHeaderScript(config: Config, js: string, articleId: string, c
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
-  return `<script src="${upStr}${resourceNamespace}/${jsPath(config, js)}" class="${classList}"></script>`;
+  const path = (isNodeModule(js)) ? normalizeModule(js) : js;
+  return `<script src="${upStr}${resourceNamespace}/${jsPath(config, path)}" class="${classList}"></script>`;
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${ webUrl }${ encodeURIComponent(articleId) }" />`;
@@ -322,4 +324,12 @@ export function getRelativeFilePath(parentArticleId: string, fileBase: string, r
   const upStr = '../'.repeat(slashesInUrl + 1);
   const newUrl = `${upStr}${resourceNamespace}/` + fileBase;
   return newUrl;
+}
+
+export function normalizeModule(path: string) {
+  return path.replace('../node_modules', 'node_module');
+}
+
+export function isNodeModule(path: string) {
+  return path.startsWith('../node_module');
 }
