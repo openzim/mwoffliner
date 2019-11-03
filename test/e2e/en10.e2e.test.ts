@@ -10,7 +10,7 @@ require('dotenv').config();
 const now = new Date();
 const testId = `mwo-test-${+now}`;
 
-const articleListUrl = `https://download.kiwix.org/wp1/enwiki/tops/10`;
+const articleListUrl = `https://download.openzim.org/wp1/enwiki/tops/10.tsv`;
 
 const parameters = {
     mwUrl: `https://en.wikipedia.org`,
