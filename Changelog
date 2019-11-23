@@ -1,3 +1,5 @@
+1.9.14:
+
 1.9.13:
 * NEW: Docker image has an embedded Redis daemon
 * DEL: --keepHtml and --format=nozim
