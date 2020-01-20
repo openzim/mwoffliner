@@ -18,6 +18,8 @@ import deepmerge from 'deepmerge';
 import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
+import Aws from './util/aws';
+
 
 const imageminOptions = {
   plugins: [
@@ -51,14 +53,16 @@ class Downloader {
   public useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
+  public wasabiAwsUrl: string;
 
   private canFetchCoordinates = true;
   private activeRequests = 0;
   private maxActiveRequests = 1;
   private noLocalParserFallback = false;
   private urlPartCache: KVS<string> = {};
+  private s3WasabiConfig = {};
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback}: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -648,10 +652,12 @@ class Downloader {
       const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
 
       const compressionWorked = compressed.length < resp.data.length;
+      //const uploadImage =  await Aws.uploadImage(requestOptions.url);
       if (compressionWorked) {
+        logger.log('image URL', requestOptions.url);
         logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
       } else if (shouldCompress) {
-        // logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+        //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
       }
 
       handler(null, {
