@@ -556,6 +556,7 @@ async function execute(argv: any) {
           allArticles.push(articleDetail);
           if (articleDetail.thumbnail) {
             articlesWithImages.push(articleDetail);
+            logger.log('ARTICLE WITH IMAGES')
             if (articlesWithImages.length >= 100) {
               break;
             }

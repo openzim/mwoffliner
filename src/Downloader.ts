@@ -652,9 +652,12 @@ class Downloader {
       const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
       
       const compressionWorked = compressed.length < resp.data.length;
-      const awsUpload = shouldCompress ? await Aws.uploadImage(resp, requestOptions.url) : false;
+      //const isImageInAws = await Aws.checkIfImageAlreadyExistsInAws(requestOptions.url); 
+      //const awsUpload = shouldCompress ? await Aws.uploadImage(resp, requestOptions.url) : false;
       if (compressionWorked) {
-        logger.log('image URL', requestOptions.url);
+        // logger.log('image URL', requestOptions.url);
+        const imageAlreadyExist = await Aws.checkIfImageAlreadyExistsInAws(requestOptions.url);
+        const imageExistence =  !imageAlreadyExist ? await Aws.uploadImage(resp, requestOptions.url) : false
         logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
       } else if (shouldCompress) {
         //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);

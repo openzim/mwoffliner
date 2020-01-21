@@ -28,7 +28,7 @@ export async function uploadImage(imagresponseHeaders: any, filepath: string){
        
         s3WasabiConfig.putObject(params, function(data, err){
             if (!err) {
-                logger.log('COMING INSIDE-------ERROR', data);
+                logger.log('COMING INSIDE-------SUCCESS', data);
             } else {
                 logger.log('COMING INSIDE-------ERROR', err);
             }
@@ -37,6 +37,23 @@ export async function uploadImage(imagresponseHeaders: any, filepath: string){
 
 }
 
+export function checkIfImageAlreadyExistsInAws(filepath: string){
+    let params = {
+        Bucket:'poler',
+        Key: path.basename(filepath)
+    }
+    logger.log(params);
+   
+     return s3WasabiConfig.getObject(params, function(err : any, data) : boolean{
+        if (err.response && err.response.statusCode === 404) {
+            return false;
+        } 
+        return true;
+    }) 
+
+}
+
 export default{
-    uploadImage
+    uploadImage,
+    checkIfImageAlreadyExistsInAws
 }
