@@ -1,6 +1,7 @@
 import AWS from 'aws-sdk';
 import fs, { readFileSync } from 'fs';
 import * as path from 'path';
+import logger from '../Logger';
 
 const wasabiAwsUrl : any = new AWS.Endpoint('s3.us-east-1.wasabisys.com');
 const s3WasabiConfig = new AWS.S3({
@@ -9,26 +10,31 @@ const s3WasabiConfig = new AWS.S3({
   secretAccessKey: "oNiEt0YfmZ4IShJBlU7XJu0EmWXtcDwdoKsmQZAC"
 });
 
-export async function uploadImage(url: string){
-    var filePath = url;
-    var params = {
-        Bucket: 'poler',
-        Key: path.basename(filePath),
-        Body: fs.createReadStream(filePath)
-    };
-
-    var options = {
-        partSize: 10 * 1024 * 1024, // 10 MB
-        queueSize: 10
-    };
-
-    s3WasabiConfig.upload(params, options, function (err, data) {
-        if (!err) {
-            console.log(data); // successful response
-        } else {
-            console.log(err); // an error occurred
-        }
+export async function uploadImage(imagresponseHeaders: any, filepath: string){
+    logger.log('INSIDE CACGING FUNCTION-------------------------------')
+    fs.writeFile('/tmp/tempFile',imagresponseHeaders.data, function(){
+        let params = {
+            Bucket: 'poler',
+            ContentType: imagresponseHeaders.headers['content-type'],
+            ContentLength: imagresponseHeaders.headers['content-length'],
+            Key: path.basename(filepath),
+            Body: fs.createReadStream('/tmp/tempFile')
+        };
+    
+        // var options = {
+        //     partSize: 10 * 1024 * 1024, // 10 MB
+        //     queueSize: 10
+        // };
+       
+        s3WasabiConfig.putObject(params, function(data, err){
+            if (!err) {
+                logger.log('COMING INSIDE-------ERROR', data);
+            } else {
+                logger.log('COMING INSIDE-------ERROR', err);
+            }
+        }) 
     });
+
 }
 
 export default{
