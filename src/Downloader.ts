@@ -650,9 +650,9 @@ class Downloader {
 
       const shouldCompress = responseHeaders['content-type'].includes('image/');
       const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-
+      
       const compressionWorked = compressed.length < resp.data.length;
-      //const uploadImage =  await Aws.uploadImage(requestOptions.url);
+      const awsUpload = shouldCompress ? await Aws.uploadImage(resp, requestOptions.url) : false;
       if (compressionWorked) {
         logger.log('image URL', requestOptions.url);
         logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
