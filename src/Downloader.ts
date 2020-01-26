@@ -19,6 +19,7 @@ import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
 import Aws from './util/aws';
+import { any } from 'async';
 
 
 const imageminOptions = {
@@ -642,35 +643,103 @@ class Downloader {
       });
   }
 
+  // private async getContentCb(requestOptions: any, handler: any) {
+  //   try {
+  //   const resp = await axios(requestOptions);
+  //   const responseHeaders = resp.headers;
+  //   const shouldCompress = responseHeaders['content-type'].includes('image/');
+    
+  //   if(shouldCompress){//means this is a image
+  //     logger.log('RACHEAL MOVED O INSIDE IF', requestOptions.url);
+  //     Aws.checkIfImageAlreadyExistsInAws(requestOptions.url).then(async data => {
+  //       if(data === undefined){
+  //         const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+        
+  //       const compressionWorked = compressed.length < resp.data.length;
+        
+  //       if (compressionWorked) {
+  //         logger.log('image URL', requestOptions.url);
+  //         const imageAlreadyExist =  await Aws.uploadImage(resp, requestOptions.url);
+          
+  //         logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
+  //       } else if (shouldCompress) {
+  //         //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+  //       }
+
+  //       handler(null, {
+  //         responseHeaders,
+  //         content: compressionWorked ? compressed : resp.data,
+  //       });
+  //       } else {
+  //         handler(null, {
+  //           data,
+  //           content: data.Body,
+  //         });
+  //         logger.log('RACHEAL MOVED O', data);
+  //       }
+        
+  //     }, err => {
+  //       handler(err);
+  //     })
+  //   } 
+  //       //logger.info(`Downloading [${requestOptions.url}]`);
+     
+  //       // const resp = await axios(requestOptions);
+  //       // const responseHeaders = resp.headers;
+  //       // logger.info(`Response Headers [${responseHeaders}]`);
+  //       // const shouldCompress = responseHeaders['content-type'].includes('image/');
+        
+        
+  //     } catch (err) {
+  //       try {
+  //         if (err.response && err.response.status === 429) {
+  //           logger.log(`Received a [status=429], slowing down`);
+  //           const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+  //           logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+  //           this.maxActiveRequests = newMaxActiveRequests;
+  //           this.getContentCb(requestOptions, handler);
+  //         } else {
+  //           handler(err);
+  //         }
+  //       } catch (a) {
+  //         handler(err);
+  //       }
+  //     }
+  //   }
+  // }
+
   private async getContentCb(requestOptions: any, handler: any) {
     logger.info(`Downloading [${requestOptions.url}]`);
     try {
       const resp = await axios(requestOptions);
       const responseHeaders = resp.headers;
-
+      logger.info(`Response Headers [${responseHeaders}]`);
       const shouldCompress = responseHeaders['content-type'].includes('image/');
-      const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-      
-      const compressionWorked = compressed.length < resp.data.length;
-      
-      if (compressionWorked) {
-        logger.log('image URL', requestOptions.url);
-        const imageAlreadyExist =  await Aws.checkIfImageAlreadyExistsInAws(resp, requestOptions.url);
-        // .then(data =>{
-        //   //Write the image with data.Body(it returns a buffer Object)
-        // }).catch(err =>{
-        //   Aws.uploadImage(resp, requestOptions.url);
-        // });
-        
-        logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
-      } else if (shouldCompress) {
-        //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+      if(shouldCompress){
+        Aws.checkIfImageAlreadyExistsInAws(requestOptions.url).then(async awsDataHeaders => {
+          if(awsDataHeaders === undefined){
+            const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+            const compressionWorked = compressed.length < resp.data.length;
+            if (compressionWorked) {
+              const imageAlreadyExist = await Aws.uploadImage(resp, requestOptions.url);
+              logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
+            } else if (shouldCompress) {
+              //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+            }
+            handler(null, {
+              responseHeaders,
+              content: compressionWorked ? compressed : resp.data,
+            });
+          } else {
+            handler(null, {
+              awsDataHeaders,
+              content: awsDataHeaders.Body,
+            });
+          }
+        }).catch(err => {
+          logger.log('Image check from Aws failed', err)
+        });
       }
-
-      handler(null, {
-        responseHeaders,
-        content: compressionWorked ? compressed : resp.data,
-      });
     } catch (err) {
       try {
         if (err.response && err.response.status === 429) {
@@ -687,6 +756,8 @@ class Downloader {
       }
     }
   }
+
+
 
   private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
     const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr));

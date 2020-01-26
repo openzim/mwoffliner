@@ -42,35 +42,50 @@ export async function uploadImage(imagresponse: any, filepath: string){
 
 }
 
-export async function checkIfImageAlreadyExistsInAws(respFromAxios: any, filepath: string) {
+export async function checkIfImageAlreadyExistsInAws(filepath: string): Promise<any>{
     let params = {
         Bucket:WASABI_CONFIG.BUCKET_NAME,
         Key: path.basename(filepath)
     }
     logger.log(params);
-    // return new Promise((resolve, reject) => {
-    //     const getUrl =  s3WasabiConfig.getObjectMetadata(params, async (err: any, val: any) =>{
-    //         if(err){
-    //             logger.log('Etag from request dont exist', headers);
-    //             reject(false);
-    //         } else {
-    //             //logger.log('Etag from aws', val.ETag);
-    //             logger.log('Etag from request exist', headers);
-    //             resolve(true);
-    //         }
-    //     })
-    // });
-    try { 
+    try{
         const headCode = await s3WasabiConfig.headObject(params).promise();
         const signedUrl = s3WasabiConfig.getSignedUrl('getObject', params);
-        logger.log('Found', filepath);
-        // Do something with signedUrl
-      } catch (headErr) {
-        if (headErr.code === 'NotFound') {
-          await uploadImage(respFromAxios, filepath);
-          logger.log('Not Found', filepath);
-        }
-      }
+        return new Promise((resolve, reject) => {
+            const getUrl =  s3WasabiConfig.getObject(params, async (err: any, val: any) =>{
+                logger.log('Etag fromdfdf djjdj', err);
+                if(err){
+                    logger.log('Etag from request dont exist', err);
+                    reject(err);
+                } else {
+                    //logger.log('Etag from aws', val.ETag);
+                    logger.log('Etag from request exist', val);
+                    resolve(val);
+                }
+            })
+        });
+    }
+    catch(err){
+
+    }
+    
+    // try {
+    //     logger.log('Inside try block', filepath); 
+    //     const headCode = await s3WasabiConfig.headObject(params).promise();
+    //     logger.log('Inside try block', headCode); 
+    //     const signedUrl = s3WasabiConfig.getSignedUrl('getObject', params);
+    //     s3WasabiConfig.getObject(params, function(err, data){
+    //         //logger.log('DATA---------------------------', data);
+    //         return data.Body;
+    //     })
+    //     logger.log('Found', signedUrl);
+    //     // Do something with signedUrl
+    //   } catch (headErr) {
+    //     if (headErr.code === 'NotFound') {
+    //     //   await uploadImage(respFromAxios, filepath);
+    //       logger.log('Not Found', filepath);
+    //     }
+    //   }
 
 }
 
