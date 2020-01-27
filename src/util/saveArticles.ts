@@ -241,7 +241,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
 
 async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
-    logger.log('COMING INSIDE PROCESS ARTICLE HTML')
+    //logger.log('COMING INSIDE PROCESS ARTICLE HTML')
     let doc = domino.createDocument(html);
     const tmRet = await treatMedias(doc, mw, dump, articleId);
     doc = tmRet.doc;
@@ -398,7 +398,7 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
     /* Rewrite image src attribute */
     const src = getFullUrl(webUrlHost, img.getAttribute('src'), mw.base);
-    logger.log('IMAGE URL IN SAVE ARTICLE------', src);
+    //logger.log('IMAGE URL IN SAVE ARTICLE------', src);
     let newSrc: string;
     try {
         const resourceNamespace = 'I';
@@ -499,7 +499,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     }
 
     for (const imgEl of imgs) {
-        logger.log(imgEl);
+        //logger.log(imgEl);
         const ret = await treatImage(mw, dump, srcCache, articleId, imgEl);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
