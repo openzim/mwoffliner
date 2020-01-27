@@ -63,7 +63,7 @@ class Downloader {
   private urlPartCache: KVS<string> = {};
   private s3WasabiConfig = {};
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback}: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -645,32 +645,14 @@ class Downloader {
 
   
   private async getContentCb(requestOptions: any, handler: any) {
-    logger.info(`Downloading [${requestOptions.url}]`);
     try {
-      if(requestOptions.url.indexOf('png')){
-        logger.log('INDEX-----', requestOptions.url)
+      logger.info(`Downloading [${requestOptions.url}]`);
+      if (requestOptions.url.indexOf('png')) {
         Aws.checkIfImageAlreadyExistsInAws(requestOptions.url).then(async awsDataHeaders => {
-          const resp = await axios(requestOptions);
-          const responseHeaders = resp.headers;
-          logger.info(`Response Headers [${responseHeaders}]`);
-          const shouldCompress = responseHeaders['content-type'].includes('image/');
-          if(awsDataHeaders === undefined){
-            const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-            const compressionWorked = compressed.length < resp.data.length;
-            if (compressionWorked) {
-              await Aws.uploadImage(resp, requestOptions.url);
-              logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
-            } else if (shouldCompress) {
-              //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
-            }
-            
-            handler(null, {
-              responseHeaders,
-              content: resp.data,
-            });
+          if (awsDataHeaders === undefined) {
+            await processImageAndUploadToAws(requestOptions, handler);
           } else {
-            logger.log('RESPONSE HEADERS', awsDataHeaders, requestOptions.url);
-            //logger.log('COMING ELSE PART', awsDataHeaders.Body)
+            logger.log('Skipping upload for: ', requestOptions.url);
             const imgResponseHeaders = awsDataHeaders.headers;
             handler(null, {
               imgResponseHeaders,
@@ -698,8 +680,6 @@ class Downloader {
     }
   }
 
-
-
   private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
     const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr));
     const items = query.categorymembers.filter((a: any) => a && a.title);
@@ -723,4 +703,26 @@ function objToQueryString(obj: KVS<any>) {
     }
   }
   return str.join('&');
+}
+
+async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
+  const resp = await axios(requestOptions);
+  const responseHeaders = resp.headers;
+  logger.log(`Response Headers [${responseHeaders}]`);
+  const shouldCompress = responseHeaders['content-type'].includes('image/');
+  const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+  logger.log('upload for: ', compressed.length, resp.data.length);
+  const compressionWorked = compressed.length < resp.data.length;
+  if (compressionWorked) {
+    await Aws.uploadImage(resp, compressed, requestOptions.url);
+    logger.log('upload for: ', requestOptions.url);
+    logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
+  } else if (shouldCompress) {
+    //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+  }
+
+  handler(null, {
+    responseHeaders,
+    content: compressionWorked ? compressed : resp.data,
+  });
 }
