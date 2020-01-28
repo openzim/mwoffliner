@@ -11,8 +11,8 @@ const s3WasabiConfig = new AWS.S3({
     secretAccessKey: WASABI_CONFIG.SECRET_ACCESS_KEY
 });
 
-export async function uploadImage(imagresponse: any, compressedImgData: any, filepath: string) {
-    logger.log('MALI  BAMKAO', compressedImgData, imagresponse.data)
+export async function uploadImage(imagresponse: any, filepath: string) {
+    logger.log('MALI  BAMKAO', imagresponse.data)
      fs.writeFile('/tmp/tempFile', imagresponse.data, function () {
         //Need to refactor so that params are not declared again and again
         let params = {
@@ -22,21 +22,27 @@ export async function uploadImage(imagresponse: any, compressedImgData: any, fil
             Key: path.basename(filepath),
             Body: fs.createReadStream('/tmp/tempFile')
         };
-
+       
+        logger.log('MALI  BAMKAO PUT', params);
         // var options = {
         //     partSize: 10 * 1024 * 1024, // 10 MB
         //     queueSize: 10
         // };
-
-        s3WasabiConfig.putObject(params, function (err, data) {
-            logger.log('MALI  BAMKAO PUT');
-            //make the method more generic with just change of s3Obj properties
-            if (!err) {
-                logger.log('Succefully uploaded the image', data);
-            } else {
-                logger.log(`Not able to upload ${filepath}:`, err);
-            }
-        })
+        try{
+            logger.log('MALI  BAMKAO PUT TRY');
+            s3WasabiConfig.putObject(params, function (err, data) {
+                logger.log('MALI  BAMKAO PUT');
+                //make the method more generic with just change of s3Obj properties
+                if (data) {
+                    logger.log('Succefully uploaded the image', data);
+                } else {
+                    logger.log(`Not able to upload ${filepath}:`, this.httpResponse.body.toString());
+                }
+            })
+        } catch(err){
+            logger.log('WASABI ERROR', err);
+        }
+       
     });
 
 }
