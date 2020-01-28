@@ -4,6 +4,7 @@ import * as path from 'path';
 import logger from '../Logger';
 import { WASABI_CONFIG } from './const';
 
+
 const wasabiAwsUrl: any = new AWS.Endpoint(WASABI_CONFIG.ENDPOINT_ZONE);
 const s3WasabiConfig = new AWS.S3({
     endpoint: wasabiAwsUrl,
@@ -12,7 +13,6 @@ const s3WasabiConfig = new AWS.S3({
 });
 
 export async function uploadImage(imagresponse: any, filepath: string) {
-    logger.log('MALI  BAMKAO', imagresponse.data)
      fs.writeFile('/tmp/tempFile', imagresponse.data, function () {
         //Need to refactor so that params are not declared again and again
         let params = {
@@ -22,16 +22,12 @@ export async function uploadImage(imagresponse: any, filepath: string) {
             Key: path.basename(filepath),
             Body: fs.createReadStream('/tmp/tempFile')
         };
-       
-        logger.log('MALI  BAMKAO PUT', params);
         // var options = {
         //     partSize: 10 * 1024 * 1024, // 10 MB
         //     queueSize: 10
         // };
         try{
-            logger.log('MALI  BAMKAO PUT TRY');
             s3WasabiConfig.putObject(params, function (err, data) {
-                logger.log('MALI  BAMKAO PUT');
                 //make the method more generic with just change of s3Obj properties
                 if (data) {
                     logger.log('Succefully uploaded the image', data);
@@ -67,10 +63,9 @@ export async function checkIfImageAlreadyExistsInAws(filepath: string): Promise<
         });
     }
     catch (err) {
-
+        
     }
 }
-
 
 export default {
     uploadImage,
