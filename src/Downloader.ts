@@ -642,15 +642,16 @@ class Downloader {
         }
       });
   }
-
-  
+ 
   private async getContentCb(requestOptions: any, handler: any) {
     try {
-      logger.info(`Downloading [${requestOptions.url}]`);
-      if (requestOptions.url.indexOf('png')) {
+      const resp = await axios(requestOptions);
+      const responseHeaders = resp.headers;
+      if (await checkForImage(requestOptions.url)) {
+        logger.log(`Downloading [${requestOptions.url}]`);
         Aws.checkIfImageAlreadyExistsInAws(requestOptions.url).then(async awsDataHeaders => {
           if (awsDataHeaders === undefined) {
-            await processImageAndUploadToAws(requestOptions, handler);
+            await processImageAndUploadToAws(resp, responseHeaders, requestOptions, handler);
           } else {
             logger.log('Skipping upload for: ', requestOptions.url);
             const imgResponseHeaders = awsDataHeaders.headers;
@@ -661,6 +662,11 @@ class Downloader {
           }
         }).catch(err => {
           logger.log('Image check from Aws failed', err)
+        });
+      } else {
+        handler(null, {
+          responseHeaders,
+          content: resp.data,
         });
       }
     } catch (err) {
@@ -705,9 +711,15 @@ function objToQueryString(obj: KVS<any>) {
   return str.join('&');
 }
 
-async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
-  const resp = await axios(requestOptions);
-  const responseHeaders = resp.headers;
+async function checkForImage<T>(url: string) : Promise<boolean>{
+  if(url.includes('png') || url.includes('jpeg') || url.includes('jpg') || url.includes('svg') || url.includes('gif')){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+async function processImageAndUploadToAws<T>(resp: any, responseHeaders: any, requestOptions: any, handler:any){
   
   const shouldCompress = responseHeaders['content-type'].includes('image/');
   const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
@@ -716,15 +728,15 @@ async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
   if (compressionWorked) {
     resp.data = compressed;
     resp.headers['content-length']= compressed.length;
-
-    await Aws.uploadImage(resp, requestOptions.url);
     logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
   } else if (shouldCompress) {
     //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
   }
+  await Aws.uploadImage(resp, requestOptions.url);
 
   handler(null, {
     responseHeaders,
     content: compressionWorked ? compressed : resp.data,
   });
 }
+
