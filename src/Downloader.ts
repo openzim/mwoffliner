@@ -645,13 +645,11 @@ class Downloader {
  
   private async getContentCb(requestOptions: any, handler: any) {
     try {
-      const resp = await axios(requestOptions);
-      const responseHeaders = resp.headers;
       if (await checkForImage(requestOptions.url)) {
         logger.log(`Downloading [${requestOptions.url}]`);
         Aws.checkIfImageAlreadyExistsInAws(requestOptions.url).then(async awsDataHeaders => {
           if (awsDataHeaders === undefined) {
-            await processImageAndUploadToAws(resp, responseHeaders, requestOptions, handler);
+            await processImageAndUploadToAws(requestOptions, handler);
           } else {
             logger.log('Skipping upload for: ', requestOptions.url);
             const imgResponseHeaders = awsDataHeaders.headers;
@@ -664,6 +662,8 @@ class Downloader {
           logger.log('Image check from Aws failed', err)
         });
       } else {
+        const resp = await axios(requestOptions);
+        const responseHeaders = resp.headers;
         handler(null, {
           responseHeaders,
           content: resp.data,
@@ -719,8 +719,9 @@ async function checkForImage<T>(url: string) : Promise<boolean>{
   }
 }
 
-async function processImageAndUploadToAws<T>(resp: any, responseHeaders: any, requestOptions: any, handler:any){
-  
+async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
+  const resp = await axios(requestOptions);
+  const responseHeaders = resp.headers;
   const shouldCompress = responseHeaders['content-type'].includes('image/');
   const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   
