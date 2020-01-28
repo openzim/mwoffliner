@@ -708,14 +708,16 @@ function objToQueryString(obj: KVS<any>) {
 async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
   const resp = await axios(requestOptions);
   const responseHeaders = resp.headers;
-  logger.log(`Response Headers [${responseHeaders}]`);
+  
   const shouldCompress = responseHeaders['content-type'].includes('image/');
   const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-  logger.log('upload for: ', compressed.length, resp.data.length);
+  
   const compressionWorked = compressed.length < resp.data.length;
   if (compressionWorked) {
-    await Aws.uploadImage(resp, compressed, requestOptions.url);
-    logger.log('upload for: ', requestOptions.url);
+    resp.data = compressed;
+    resp.headers['content-length']= compressed.length;
+
+    await Aws.uploadImage(resp, requestOptions.url);
     logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
   } else if (shouldCompress) {
     //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
