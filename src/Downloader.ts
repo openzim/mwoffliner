@@ -18,7 +18,7 @@ import deepmerge from 'deepmerge';
 import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
-import Aws from './util/aws';
+import S3 from './util/s3';
 import { any } from 'async';
 
 
@@ -54,7 +54,6 @@ class Downloader {
   public useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
-  public wasabiAwsUrl: string;
 
   private canFetchCoordinates = true;
   private activeRequests = 0;
@@ -645,21 +644,21 @@ class Downloader {
  
   private async getContentCb(requestOptions: any, handler: any) {
     try {
-      if (await checkForImage(requestOptions.url)) {
+      if (await isImageUrl(requestOptions.url)) {
         logger.log(`Downloading [${requestOptions.url}]`);
-        Aws.checkIfImageAlreadyExistsInAws(requestOptions.url).then(async awsDataHeaders => {
-          if (awsDataHeaders === undefined) {
-            await processImageAndUploadToAws(requestOptions, handler);
+        S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
+          if (s3ImageResp === undefined || s3ImageResp === false) {
+            await processImageAndUploadToS3(requestOptions, handler);
           } else {
-            logger.log('Skipping upload for: ', requestOptions.url);
-            const imgResponseHeaders = awsDataHeaders.headers;
+            //logger.log('Skipping upload for: ', requestOptions.url);
+            const imgResponseHeaders = s3ImageResp.headers;
             handler(null, {
               imgResponseHeaders,
-              content: awsDataHeaders.imgData,
+              content: s3ImageResp.imgData,
             });
           }
         }).catch(err => {
-          logger.log('Image check from Aws failed', err)
+          logger.log('Image check from s3 failed', err)
         });
       } else {
         const resp = await axios(requestOptions);
@@ -711,15 +710,19 @@ function objToQueryString(obj: KVS<any>) {
   return str.join('&');
 }
 
-async function checkForImage<T>(url: string) : Promise<boolean>{
-  if(url.includes('png') || url.includes('jpeg') || url.includes('jpg') || url.includes('svg') || url.includes('gif')){
+async function isImageUrl<T>(url: string) : Promise<boolean>{
+  if (path.extname(url).toLowerCase().includes('png') ||
+    path.extname(url).toLowerCase().includes('jpg') ||
+    path.extname(url).toLowerCase().includes('gif') ||
+    path.extname(url).toLowerCase().includes('svg') ||
+    path.extname(url).toLowerCase().includes('jpeg')) {
     return true;
   } else {
     return false;
   }
 }
 
-async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
+async function processImageAndUploadToS3<T>(requestOptions: any, handler:any){
   const resp = await axios(requestOptions);
   const responseHeaders = resp.headers;
   const shouldCompress = responseHeaders['content-type'].includes('image/');
@@ -733,7 +736,7 @@ async function processImageAndUploadToAws<T>(requestOptions: any, handler:any){
   } else if (shouldCompress) {
     //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
   }
-  await Aws.uploadImage(resp, requestOptions.url);
+  await S3.uploadImage(resp, requestOptions.url);
 
   handler(null, {
     responseHeaders,
