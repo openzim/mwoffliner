@@ -660,10 +660,9 @@ class Downloader {
     });
   }
 
-  private async imageType(resp:any):Promise<any>{
+  private async getBufferedData(resp:any):Promise<any>{
     const shouldCompress = resp.headers['content-type'].includes('image/');
-    const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data; 
-    return compressed;
+    return shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data; 
   }
  
   private getContentCb = async(requestOptions: any, handler: any) => {
@@ -674,7 +673,7 @@ class Downloader {
       } else {
         const resp = await axios(requestOptions);
         const responseHeaders = resp.headers;
-        const content = await this.imageType(resp);
+        const content = await this.getBufferedData(resp);
         handler(null, {
           responseHeaders,
           content: content,
@@ -700,7 +699,7 @@ class Downloader {
   private async processImageAndUploadToS3<T>(requestOptions: any, handler:any){
     const resp = await axios(requestOptions);
     const responseHeaders = resp.headers;
-    const content = await this.imageType(resp);
+    const content = await this.getBufferedData(resp);
     const compressionWorked = content.length < resp.data.length;
     
     if (compressionWorked) {
