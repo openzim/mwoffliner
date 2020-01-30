@@ -52,8 +52,6 @@ export async function existsInS3(filepath: string): Promise<any> {
     }
     try {
         const headCode = await s3Config.headObject(params).promise();
-        s3Config.getSignedUrl('getObject', params);
-
         return new Promise((resolve, reject) => {
             s3Config.getObject(params, async (err: any, val: any) => {
                 if (err) {
