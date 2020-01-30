@@ -642,31 +642,42 @@ class Downloader {
         }
       });
   }
+
+  private urlStatusInS3 = async(requestOptions:any, handler:any) => {
+    S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
+      if (s3ImageResp === undefined || s3ImageResp === false) {
+        await this.processImageAndUploadToS3(requestOptions, handler);
+      } else {
+        logger.log('Image already present in s3: ', requestOptions.url);
+        const imgResponseHeaders = s3ImageResp.headers;
+        handler(null, {
+          imgResponseHeaders,
+          content: s3ImageResp.imgData,
+        });
+      }
+    }).catch(err => {
+      logger.log('Image check from s3 failed', err)
+    });
+  }
+
+  private async imageType(resp:any):Promise<any>{
+    const shouldCompress = resp.headers['content-type'].includes('image/');
+    const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data; 
+    return compressed;
+  }
  
-  private getContentCb = async(requestOptions: any, handler: any)=> {
+  private getContentCb = async(requestOptions: any, handler: any) => {
     logger.log(`Downloading [${requestOptions.url}]`); 
     try {
-      if (await isImageUrl(requestOptions.url)) {
-        S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
-          if (s3ImageResp === undefined || s3ImageResp === false) {
-            await processImageAndUploadToS3(requestOptions, handler);
-          } else {
-            logger.log('Image already present in s3: ', requestOptions.url);
-            const imgResponseHeaders = s3ImageResp.headers;
-            handler(null, {
-              imgResponseHeaders,
-              content: s3ImageResp.imgData,
-            });
-          }
-        }).catch(err => {
-          logger.log('Image check from s3 failed', err)
-        });
+      if (await isImageUrl(requestOptions.url) && this.optimisationCacheUrl) {
+        this.urlStatusInS3(requestOptions, handler);
       } else {
         const resp = await axios(requestOptions);
         const responseHeaders = resp.headers;
+        const content = await this.imageType(resp);
         handler(null, {
           responseHeaders,
-          content: resp.data,
+          content: content,
         });
       }
     } catch (err) {
@@ -684,6 +695,32 @@ class Downloader {
         handler(err);
       }
     }
+  }
+
+  private async processImageAndUploadToS3<T>(requestOptions: any, handler:any){
+    const resp = await axios(requestOptions);
+    const responseHeaders = resp.headers;
+    const content = await this.imageType(resp);
+    const compressionWorked = content.length < resp.data.length;
+    
+    if (compressionWorked) {
+      resp.data = content;
+      resp.headers['content-length']= content.length;
+      logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${content.length}]`);
+    } else {
+      //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+    }
+  
+    if(resp.headers.etag){
+      await S3.uploadImage(resp, requestOptions.url);
+    } else {
+      logger.log(`Etag Not Found for ${requestOptions.url}`);
+    }
+    
+    handler(null, {
+      responseHeaders,
+      content: compressionWorked ? content : resp.data,
+    });
   }
 
   private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
@@ -723,30 +760,5 @@ async function isImageUrl<T>(url: string) : Promise<boolean>{
   }
 }
 
-async function processImageAndUploadToS3<T>(requestOptions: any, handler:any){
-  const resp = await axios(requestOptions);
-  const responseHeaders = resp.headers;
-  const shouldCompress = responseHeaders['content-type'].includes('image/');
-  const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-  
-  const compressionWorked = compressed.length < resp.data.length;
-  if (compressionWorked) {
-    resp.data = compressed;
-    resp.headers['content-length']= compressed.length;
-    logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
-  } else if (shouldCompress) {
-    //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
-  }
 
-  if(resp.headers.etag){
-    await S3.uploadImage(resp, requestOptions.url);
-  } else {
-    logger.log(`Etag Not Found for ${requestOptions.url}`);
-  }
-  
-  handler(null, {
-    responseHeaders,
-    content: compressionWorked ? compressed : resp.data,
-  });
-}
 
