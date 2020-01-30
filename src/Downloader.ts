@@ -19,8 +19,6 @@ import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
 import S3 from './util/s3';
-import { any } from 'async';
-
 
 const imageminOptions = {
   plugins: [
@@ -41,6 +39,7 @@ interface DownloaderOpts {
   useDownloadCache: boolean;
   downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
+  optimisationCacheUrl: string;
 }
 
 class Downloader {
@@ -54,15 +53,15 @@ class Downloader {
   public useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
+  public optimisationCacheUrl : string;
 
   private canFetchCoordinates = true;
   private activeRequests = 0;
   private maxActiveRequests = 1;
   private noLocalParserFallback = false;
   private urlPartCache: KVS<string> = {};
-  private s3WasabiConfig = {};
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -72,6 +71,7 @@ class Downloader {
     this.useDownloadCache = useDownloadCache;
     this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
+    this.optimisationCacheUrl = optimisationCacheUrl;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
@@ -458,6 +458,7 @@ class Downloader {
         // NOOP (download cache miss)
       }
     }
+
     const self = this;
     await self.claimRequest();
     return new Promise((resolve, reject) => {
@@ -642,10 +643,10 @@ class Downloader {
       });
   }
  
-  private async getContentCb(requestOptions: any, handler: any) {
+  private getContentCb = async(requestOptions: any, handler: any)=> {
     try {
       if (await isImageUrl(requestOptions.url)) {
-        logger.log(`Downloading [${requestOptions.url}]`);
+        logger.log(`Downloading [${requestOptions.url}]`); 
         S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
           if (s3ImageResp === undefined || s3ImageResp === false) {
             await processImageAndUploadToS3(requestOptions, handler);

@@ -16,6 +16,7 @@ import axios from 'axios';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import rimraf from 'rimraf';
 import im from 'imagemagick';
+import  * as QueryStringParser from 'querystring';
 
 import { config } from './config';
 import Downloader from './Downloader';
@@ -31,6 +32,7 @@ import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
+import S3 from './util/s3';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -78,6 +80,7 @@ async function execute(argv: any) {
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
     useDownloadCache,
+    optimisationCacheUrl,
     noLocalParserFallback,
     customFlavour: customProcessorPath,
   } = argv;
@@ -113,6 +116,12 @@ async function execute(argv: any) {
     customProcessor = new CustomProcessor();
   }
 
+  if(optimisationCacheUrl){
+    //Decompose the url with path and other s3 creds
+    const s3Url =  urlParser.parse(optimisationCacheUrl);
+    const queryReader = QueryStringParser.parse(s3Url.query, '?');
+    S3.initialiseS3Config(s3Url.pathname, queryReader);
+  }
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki({
     getCategories: !!argv.getCategories,
@@ -135,6 +144,7 @@ async function execute(argv: any) {
     useDownloadCache,
     downloadCacheDirectory: null,
     noLocalParserFallback,
+    optimisationCacheUrl
   });
 
   await downloader.checkCapabilities();
