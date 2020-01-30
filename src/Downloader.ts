@@ -644,14 +644,14 @@ class Downloader {
   }
  
   private getContentCb = async(requestOptions: any, handler: any)=> {
+    logger.log(`Downloading [${requestOptions.url}]`); 
     try {
       if (await isImageUrl(requestOptions.url)) {
-        logger.log(`Downloading [${requestOptions.url}]`); 
         S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
           if (s3ImageResp === undefined || s3ImageResp === false) {
             await processImageAndUploadToS3(requestOptions, handler);
           } else {
-            //logger.log('Skipping upload for: ', requestOptions.url);
+            logger.log('Image already present in s3: ', requestOptions.url);
             const imgResponseHeaders = s3ImageResp.headers;
             handler(null, {
               imgResponseHeaders,
@@ -737,8 +737,13 @@ async function processImageAndUploadToS3<T>(requestOptions: any, handler:any){
   } else if (shouldCompress) {
     //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
   }
-  await S3.uploadImage(resp, requestOptions.url);
 
+  if(resp.headers.etag){
+    await S3.uploadImage(resp, requestOptions.url);
+  } else {
+    logger.log(`Etag Not Found for ${requestOptions.url}`);
+  }
+  
   handler(null, {
     responseHeaders,
     content: compressionWorked ? compressed : resp.data,
