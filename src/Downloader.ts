@@ -656,7 +656,7 @@ class Downloader {
         });
       }
     }).catch(err => {
-      logger.log('Image check from s3 failed', err)
+      //logger.log('Image check from s3 failed', err)
     });
   }
 
