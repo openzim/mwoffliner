@@ -1,4 +1,4 @@
-import './bootstrap.test';
+import './bootstrap.test.ts';
 import test from 'blue-tape';
 import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
@@ -16,7 +16,7 @@ test('Downloader class', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false , optimisationCacheUrl: ''});
 
     await downloader.checkCapabilities();
 

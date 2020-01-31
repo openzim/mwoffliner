@@ -50,27 +50,24 @@ export async function existsInS3(filepath: string): Promise<any> {
         Bucket: bucketName,
         Key: path.basename(filepath)
     }
-    try {
-        const headCode = await s3Config.headObject(params).promise();
-        return new Promise((resolve, reject) => {
-            s3Config.getObject(params, async (err: any, val: any) => {
-                if (err) {
-                    reject(err);
+   
+    // const headCode = await s3Config.headObject(params).promise();
+    return new Promise((resolve, reject) => {
+        s3Config.getObject(params, async (err: any, val: any) => {
+            if (err && err.statusCode === 404) {
+                resolve(false);
+            } else {
+                const valHeaders = (({ Body, ...o }) => o)(val) 
+                const urlHeaders = await axios.head(filepath);
+                if(urlHeaders.headers.etag === val.Metadata.etag ){
+                    resolve({ 'headers': valHeaders, 'imgData': val.Body });
                 } else {
-                    const urlHeaders = await axios.head(filepath);
-                    if(urlHeaders.headers.etag === val.Metadata.etag ){
-                        resolve({ 'headers': headCode, 'imgData': val.Body });
-                    } else {
-                        resolve(false);
-                    }
-                    
+                    resolve(false);
                 }
-            });
+                
+            }
         });
-    }
-    catch (err) {
-        
-    }
+    });
 }
 
 export default {
