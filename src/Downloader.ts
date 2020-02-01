@@ -644,18 +644,15 @@ class Downloader {
   }
 
   private urlStatusInS3 = async(requestOptions:any, handler:any) => {
-    S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
-      if (s3ImageResp === undefined || s3ImageResp === false) {
-        await this.processImageAndUploadToS3(requestOptions, handler);
-      } else {
-        logger.log('Image already present in s3: ', requestOptions.url);
-        const imgResponseHeaders = s3ImageResp.headers;
-        handler(null, {
-          imgResponseHeaders,
-          content: s3ImageResp.imgData,
-        });
-      }
-    }).catch(err => {
+    S3.existsInS3(requestOptions.url).then(async s3ImageResp => {  
+      logger.log('Image already present in s3: ', requestOptions.url);
+      const imgResponseHeaders = s3ImageResp.headers;
+      handler(null, {
+        imgResponseHeaders,
+        content: s3ImageResp.imgData,
+      });
+    }).catch(async err => {
+      await this.processImageAndUploadToS3(requestOptions, handler);
       //logger.log('Image check from s3 failed', err)
     });
   }

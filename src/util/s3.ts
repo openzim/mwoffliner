@@ -14,7 +14,28 @@ export async function initialiseS3Config(url:string, params:any){
         accessKeyId: params.keyId,
         secretAccessKey: params.secretAccessKey
     })
-    bucketName = params.bucketName;
+   
+    try{
+        if (await bucketExists(params.bucketName) === true) {
+            bucketName = params.bucketName;
+            return true;
+        }
+    } catch(err){
+        return err;
+    }
+}
+
+export async function bucketExists(bucket: string) : Promise<any>{
+    const param ={
+        Bucket:bucket
+    }
+    return new Promise((resolve, reject )=>{
+        s3Config.headBucket(param, function(err:any, data:any){
+            if (err) reject(err)
+            else resolve(true);      
+        })
+    });
+    
 }
 
 export async function uploadImage(imageResp: any, filepath: string) {
@@ -55,23 +76,24 @@ export async function existsInS3(filepath: string): Promise<any> {
     return new Promise((resolve, reject) => {
         s3Config.getObject(params, async (err: any, val: any) => {
             if (err && err.statusCode === 404) {
-                resolve(false);
+                reject();
             } else {
                 const valHeaders = (({ Body, ...o }) => o)(val) 
                 const urlHeaders = await axios.head(filepath);
                 if(urlHeaders.headers.etag === val.Metadata.etag ){
                     resolve({ 'headers': valHeaders, 'imgData': val.Body });
                 } else {
-                    resolve(false);
-                }
-                
+                    reject();
+                }  
             }
         });
     });
+    
 }
 
 export default {
     uploadImage,
     existsInS3,
-    initialiseS3Config
+    initialiseS3Config,
+    bucketExists
 }
