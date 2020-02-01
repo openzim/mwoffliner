@@ -116,12 +116,6 @@ async function execute(argv: any) {
     customProcessor = new CustomProcessor();
   }
 
-  if(optimisationCacheUrl){
-    //Decompose the url with path and other s3 creds
-    const s3Url =  urlParser.parse(optimisationCacheUrl);
-    const queryReader = QueryStringParser.parse(s3Url.query, '?');
-    S3.initialiseS3Config(s3Url.pathname, queryReader);
-  }
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki({
     getCategories: !!argv.getCategories,
@@ -163,6 +157,20 @@ async function execute(argv: any) {
   populateRedirects(redis.client);
   populateFilesToDownload(redis.client);
   populateFilesToRetry(redis.client);
+
+  //Check for s3 creds
+  if(optimisationCacheUrl){
+    //Decompose the url with path and other s3 creds
+    const s3Url =  urlParser.parse(optimisationCacheUrl);
+    const queryReader = QueryStringParser.parse(s3Url.query, '?');
+    await S3.initialiseS3Config(s3Url.pathname, queryReader).then(data => {
+      logger.log('Successfuly Logged in s3')
+    }).catch(err => {
+      closeRedis(redis);
+      throw new Error(`Either Login creds for aws are wrong or bucket not found`);
+    })
+    
+  }
 
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ?
