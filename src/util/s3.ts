@@ -91,9 +91,20 @@ export async function existsInS3(filepath: string): Promise<any> {
     
 }
 
+//Only for testing purpose
+export async function deleteImage(params: any) : Promise<any>{
+    return new Promise((resolve, reject) => {
+        s3Config.deleteObject(params,  (err: any, val: any) => {
+            if(err) reject(err);
+            else resolve(val);
+        });
+    })
+    
+}
 export default {
     uploadImage,
     existsInS3,
     initialiseS3Config,
+    deleteImage,
     bucketExists
 }
