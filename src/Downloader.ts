@@ -665,7 +665,7 @@ class Downloader {
   private getContentCb = async(requestOptions: any, handler: any) => {
     logger.log(`Downloading [${requestOptions.url}]`); 
     try {
-      if (await isImageUrl(requestOptions.url) && this.optimisationCacheUrl) {
+      if (await this.isImageUrl(requestOptions.url) && this.optimisationCacheUrl) {
         this.urlStatusInS3(requestOptions, handler);
       } else {
         const resp = await axios(requestOptions);
@@ -708,7 +708,7 @@ class Downloader {
     }
   
     if(resp.headers.etag){
-      await S3.uploadImage(resp, requestOptions.url);
+      S3.uploadImage(resp, requestOptions.url);
     } else {
       logger.log(`Etag Not Found for ${requestOptions.url}`);
     }
@@ -730,6 +730,18 @@ class Downloader {
     }
   }
 
+  async isImageUrl<T>(url: string) : Promise<boolean>{
+    if (path.extname(url).toLowerCase().includes('png') ||
+      path.extname(url).toLowerCase().includes('jpg') ||
+      path.extname(url).toLowerCase().includes('gif') ||
+      path.extname(url).toLowerCase().includes('svg') ||
+      path.extname(url).toLowerCase().includes('jpeg')) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
 }
 
 export default Downloader;
@@ -744,17 +756,7 @@ function objToQueryString(obj: KVS<any>) {
   return str.join('&');
 }
 
-async function isImageUrl<T>(url: string) : Promise<boolean>{
-  if (path.extname(url).toLowerCase().includes('png') ||
-    path.extname(url).toLowerCase().includes('jpg') ||
-    path.extname(url).toLowerCase().includes('gif') ||
-    path.extname(url).toLowerCase().includes('svg') ||
-    path.extname(url).toLowerCase().includes('jpeg')) {
-    return true;
-  } else {
-    return false;
-  }
-}
+
 
 
 

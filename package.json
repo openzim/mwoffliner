@@ -109,6 +109,7 @@
   "devDependencies": {
     "@percy/puppeteer": "^1.0.3",
     "@types/blue-tape": "^0.1.33",
+    "@types/tape-promise": "^4.0.0",
     "blue-tape": "^1.0.0",
     "dotenv": "^8.0.0",
     "eslint": "^5.14.0",
@@ -116,6 +117,7 @@
     "puppeteer": "^1.18.1",
     "replace": "^1.1.0",
     "tap-spec": "^5.0.0",
+    "tape-promise": "^4.0.0",
     "ts-node": "^8.3.0",
     "tsconfig-paths": "^3.8.0"
   }
