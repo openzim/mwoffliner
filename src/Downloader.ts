@@ -681,10 +681,10 @@ class Downloader {
       } else {
         const resp = await axios(requestOptions);
         const responseHeaders = resp.headers;
-        const content = await this.getBufferedData(resp);
+        const bufferedContent = await this.getBufferedData(resp);
         handler(null, {
           responseHeaders,
-          content: content,
+          content: bufferedContent,
         });
       }
     } catch (err) {

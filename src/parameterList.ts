@@ -34,5 +34,5 @@ export const parameterDescriptions = {
   noLocalParserFallback: 'Don\'t fall back to a local MCS or Parsoid, only use remote APIs',
   osTmpDir: 'Override default operating system temporary directory path environnement variable',
   customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
-  optimisationCacheUrl: 'S3 url and credentials to the bucket'
+  optimisationCacheUrl: 'S3 url and credentials to the bucket',
 };

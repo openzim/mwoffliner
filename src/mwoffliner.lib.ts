@@ -16,7 +16,7 @@ import axios from 'axios';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import rimraf from 'rimraf';
 import im from 'imagemagick';
-import  * as QueryStringParser from 'querystring';
+import * as QueryStringParser from 'querystring';
 
 import { config } from './config';
 import Downloader from './Downloader';
@@ -138,7 +138,7 @@ async function execute(argv: any) {
     useDownloadCache,
     downloadCacheDirectory: null,
     noLocalParserFallback,
-    optimisationCacheUrl
+    optimisationCacheUrl,
   });
 
   await downloader.checkCapabilities();
