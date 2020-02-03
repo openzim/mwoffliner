@@ -12,7 +12,7 @@ export async function initialiseS3Config(url: string, params: any) {
     s3Config = new S3File.S3({
         endpoint: s3UrlBase,
         accessKeyId: params.keyId,
-        secretAccessKey: params.secretAccessKey
+        secretAccessKey: params.secretAccessKey,
     });
     try {
         if (await bucketExists(params.bucketName) === true) {
@@ -26,7 +26,7 @@ export async function initialiseS3Config(url: string, params: any) {
 
 export async function bucketExists(bucket: string): Promise<any> {
     const param = {
-        Bucket: bucket
+        Bucket: bucket,
     };
     return new Promise(( resolve, reject ) => {
         s3Config.headBucket(param, function(err: any, data: any) {
@@ -45,7 +45,7 @@ export async function uploadImage(imageResp: any, filepath: string) {
             ContentLength: imageResp.headers['content-length'],
             Key: path.basename(filepath),
             Metadata: {etag: imageResp.headers.etag },
-            Body: fs.createReadStream('/tmp/tempFile')
+            Body: fs.createReadStream('/tmp/tempFile'),
         };
 
         try {
@@ -65,7 +65,7 @@ export async function uploadImage(imageResp: any, filepath: string) {
 export async function existsInS3(filepath: string): Promise<any> {
     const params = {
         Bucket: bucketName,
-        Key: path.basename(filepath)
+        Key: path.basename(filepath),
     };
     // const headCode = await s3Config.headObject(params).promise();
     return new Promise((resolve, reject) => {
@@ -99,5 +99,5 @@ export default {
     existsInS3,
     initialiseS3Config,
     deleteImage,
-    bucketExists
+    bucketExists,
 };

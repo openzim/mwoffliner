@@ -137,8 +137,8 @@ _test('Downloader class with optimisation', async (t) => {
     await S3.initialiseS3Config(process.env.BASE_URL_TEST, {
         bucketName: process.env.BUCKET_NAME_TEST,
         keyId: process.env.KEY_ID_TEST,
-        secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST }
-    );
+        secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
+    });
 
     const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
     // Test for image where etag is not present

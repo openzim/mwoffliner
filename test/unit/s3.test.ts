@@ -10,8 +10,8 @@ _test('s3 checks', async(t) => {
     const credentialExists = await S3.initialiseS3Config(process.env.BASE_URL_TEST, {
         bucketName: process.env.BUCKET_NAME_TEST,
         keyId: process.env.KEY_ID_TEST,
-        secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST }
-      );
+        secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
+    });
 
     t.equals(credentialExists, true, 'Credentials on s3 exists');
 
