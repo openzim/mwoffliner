@@ -24,7 +24,7 @@ _test('s3 checks', async(t)=>{
     const imageExist = await S3.existsInS3('https://bm.wikipedia.org/static/images/project-logos/bmwiki.png')
    
     t.assert(!!imageExist, 'Image exists in s3');
-    //Checking the data related to image matches
+    // Checking the data related to image matches
     t.equals(imageExist.headers.Metadata.etag, '"41ed-52e0629e4f6a7"', 'Etag matches');
     t.equals(imageExist.headers.ContentLength, 7721, 'Content Length matches');
     t.equals(imageExist.headers.ContentType, 'image/png', 'Content Type matches');

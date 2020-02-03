@@ -143,23 +143,23 @@ _test('Downloader class with optimisation', async (t) => {
     );
 
     const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
-    //Test for image where etag is not present
+    // Test for image where etag is not present
     const etagNotPresent = await downloader.downloadContent(`https://bm.wikipedia.org/w/skins/Vector/images/unwatch-icon-hl.svg?71c12`)
     t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
 
-    //FLOW OF IMAGE CACHING
-    //Delete the image already present in s3
+    // FLOW OF IMAGE CACHING
+    // Delete the image already present in s3
     await S3.deleteImage({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' })
     t.ok(true, 'Image deleted from s3')
 
-    //Check if image exists after deleting from s3
+    // Check if image exists after deleting from s3
     const imageNotExists = S3.existsInS3(testImage)
     t.rejects(imageNotExists, 'Image not exists in s3 after deleting');
     
-    //Uploads the image to s3
+    // Uploads the image to s3
     await downloader.downloadContent(testImage)
     setTimeout(async function(){
-        //Check if image exists after uploading
+        // Check if image exists after uploading
         const imageExist = await S3.existsInS3(testImage);
         t.assert(imageExist, 'Image exists in s3 after uploading');
     }, 7000)

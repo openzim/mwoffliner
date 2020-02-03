@@ -32,16 +32,15 @@ export async function bucketExists(bucket: string) : Promise<any>{
     return new Promise((resolve, reject )=>{
         s3Config.headBucket(param, function(err:any, data:any){
             if (err) reject(err)
-            else resolve(true);      
+            else resolve(true);   
         })
     });
-    
-}
+};
 
 export async function uploadImage(imageResp: any, filepath: string) {
      fs.writeFile('/tmp/tempFile', imageResp.data, function () {
-        //Need to refactor so that params are not declared again and again
-        let params = {
+        // Need to refactor so that params are not declared again and again
+        const params = {
             Bucket: bucketName,
             ContentType: imageResp.headers['content-type'],
             ContentLength: imageResp.headers['content-length'],
@@ -60,46 +59,43 @@ export async function uploadImage(imageResp: any, filepath: string) {
             })
         } catch(err){
             logger.log('S3 ERROR', err);
-        }
-       
+        };
     });
 
 }
 
 export async function existsInS3(filepath: string): Promise<any> {
-    let params = {
+    const params = {
         Bucket: bucketName,
         Key: path.basename(filepath)
     }
-   
     // const headCode = await s3Config.headObject(params).promise();
     return new Promise((resolve, reject) => {
         s3Config.getObject(params, async (err: any, val: any) => {
             if (err && err.statusCode === 404) {
                 reject();
             } else {
-                const valHeaders = (({ Body, ...o }) => o)(val) 
+                const valHeaders = (({ Body, ...o }) => o)(val);
                 const urlHeaders = await axios.head(filepath);
                 if(urlHeaders.headers.etag === val.Metadata.etag ){
                     resolve({ 'headers': valHeaders, 'imgData': val.Body });
                 } else {
                     reject();
-                }  
+                }
             }
         });
     });
     
 }
 
-//Only for testing purpose
+// Only for testing purpose
 export async function deleteImage(params: any) : Promise<any>{
     return new Promise((resolve, reject) => {
         s3Config.deleteObject(params,  (err: any, val: any) => {
             if(err) reject(err);
             else resolve(val);
         });
-    })
-    
+    });
 }
 export default {
     uploadImage,
