@@ -159,16 +159,16 @@ async function execute(argv: any) {
   populateFilesToRetry(redis.client);
 
   // Check for s3 creds
-  if(optimisationCacheUrl){
+  if (optimisationCacheUrl) {
     // Decompose the url with path and other s3 creds
     const s3Url =  urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3Url.query, '?');
-    await S3.initialiseS3Config(s3Url.pathname, queryReader).then(data => {
-      logger.log('Successfuly Logged in s3')
-    }).catch(err => {
+    await S3.initialiseS3Config(s3Url.pathname, queryReader).then((data) => {
+      logger.log('Successfuly Logged in s3');
+    }).catch((err) => {
       closeRedis(redis);
       throw new Error(`Either Login creds for aws are wrong or bucket not found`);
-    }) 
+    });
   }
 
   // Output directory
@@ -573,7 +573,6 @@ async function execute(argv: any) {
           allArticles.push(articleDetail);
           if (articleDetail.thumbnail) {
             articlesWithImages.push(articleDetail);
-            logger.log('ARTICLE WITH IMAGES')
             if (articlesWithImages.length >= 100) {
               break;
             }

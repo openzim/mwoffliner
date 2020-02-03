@@ -53,7 +53,7 @@ class Downloader {
   public useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
-  public optimisationCacheUrl : string;
+  public optimisationCacheUrl: string;
 
   private canFetchCoordinates = true;
   private activeRequests = 0;
@@ -442,6 +442,18 @@ class Downloader {
     });
   }
 
+  public async isImageUrl<T>(url: string): Promise<boolean> {
+    if (path.extname(url).toLowerCase().includes('png') ||
+      path.extname(url).toLowerCase().includes('jpg') ||
+      path.extname(url).toLowerCase().includes('gif') ||
+      path.extname(url).toLowerCase().includes('svg') ||
+      path.extname(url).toLowerCase().includes('jpeg')) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   public async downloadContent(_url: string): Promise<{ content: Buffer | string, responseHeaders: any }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`);
@@ -643,26 +655,26 @@ class Downloader {
       });
   }
 
-  private urlStatusInS3 = async(requestOptions:any, handler:any) => {
-    S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
+  private urlStatusInS3 = async(requestOptions: any, handler: any) => {
+    S3.existsInS3(requestOptions.url).then(async (s3ImageResp) => {
       logger.log('Image already present in s3: ', requestOptions.url);
       const imgResponseHeaders = s3ImageResp.headers;
       handler(null, {
         imgResponseHeaders,
         content: s3ImageResp.imgData,
       });
-    }).catch(async err => {
+    }).catch(async (err) => {
       await this.processImageAndUploadToS3(requestOptions, handler);
     });
   }
 
-  private async getBufferedData(resp:any):Promise<any>{
+  private async getBufferedData(resp: any): Promise<any> {
     const shouldCompress = resp.headers['content-type'].includes('image/');
-    return shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data; 
+    return shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
- 
+
   private getContentCb = async(requestOptions: any, handler: any) => {
-    logger.log(`Downloading [${requestOptions.url}]`); 
+    logger.log(`Downloading [${requestOptions.url}]`);
     try {
       if (await this.isImageUrl(requestOptions.url) && this.optimisationCacheUrl) {
         this.urlStatusInS3(requestOptions, handler);
@@ -692,26 +704,23 @@ class Downloader {
     }
   }
 
-  private async processImageAndUploadToS3<T>(requestOptions: any, handler:any){
+  private async processImageAndUploadToS3<T>(requestOptions: any, handler: any) {
     const resp = await axios(requestOptions);
     const responseHeaders = resp.headers;
     const content = await this.getBufferedData(resp);
     const compressionWorked = content.length < resp.data.length;
-    
     if (compressionWorked) {
       resp.data = content;
-      resp.headers['content-length']= content.length;
+      resp.headers['content-length'] = content.length;
       logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${content.length}]`);
     } else {
-      //logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+      // logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
     }
-  
-    if(resp.headers.etag){
+    if (resp.headers.etag) {
       S3.uploadImage(resp, requestOptions.url);
     } else {
       logger.log(`Etag Not Found for ${requestOptions.url}`);
     }
-    
     handler(null, {
       responseHeaders,
       content: compressionWorked ? content : resp.data,
@@ -728,18 +737,6 @@ class Downloader {
       return items;
     }
   }
-
-  async isImageUrl<T>(url: string) : Promise<boolean>{
-    if (path.extname(url).toLowerCase().includes('png') ||
-      path.extname(url).toLowerCase().includes('jpg') ||
-      path.extname(url).toLowerCase().includes('gif') ||
-      path.extname(url).toLowerCase().includes('svg') ||
-      path.extname(url).toLowerCase().includes('jpeg')) {
-      return true;
-    } else {
-      return false;
-    }
-  }
 }
 
 export default Downloader;
@@ -753,8 +750,3 @@ function objToQueryString(obj: KVS<any>) {
   }
   return str.join('&');
 }
-
-
-
-
-

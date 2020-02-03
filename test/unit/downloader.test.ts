@@ -10,7 +10,7 @@ import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
 import { articleDetailXId } from 'src/stores';
 import logger from 'src/Logger';
-require('dotenv').config();
+import 'dotenv/config';
 
 test('Downloader class', async (t) => {
     const mw = new MediaWiki({
@@ -60,7 +60,6 @@ test('Downloader class', async (t) => {
         t.ok(true, 'downloader.downloadContent throws on non-existant url');
         t.equal(err.response.status, 404, 'downloadContent response status for non-existant url is 404');
     }
-
 
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
     const articleDetailsRet = mwRetToArticleDetail(downloader, _articleDetailsRet);
@@ -119,7 +118,6 @@ test('Downloader class', async (t) => {
     const isnotImage = await downloader.isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
     t.assert(!isnotImage, 'Url is not image type');
 
-
     // TODO: find a way to get service-runner to stop properly
     // await mcsHandle.stop();
 });
@@ -144,24 +142,22 @@ _test('Downloader class with optimisation', async (t) => {
 
     const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
     // Test for image where etag is not present
-    const etagNotPresent = await downloader.downloadContent(`https://bm.wikipedia.org/w/skins/Vector/images/unwatch-icon-hl.svg?71c12`)
+    const etagNotPresent = await downloader.downloadContent(`https://bm.wikipedia.org/w/skins/Vector/images/unwatch-icon-hl.svg?71c12`);
     t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
 
     // FLOW OF IMAGE CACHING
     // Delete the image already present in s3
-    await S3.deleteImage({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' })
-    t.ok(true, 'Image deleted from s3')
+    await S3.deleteImage({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' });
+    t.ok(true, 'Image deleted from s3');
 
     // Check if image exists after deleting from s3
-    const imageNotExists = S3.existsInS3(testImage)
+    const imageNotExists = S3.existsInS3(testImage);
     t.rejects(imageNotExists, 'Image not exists in s3 after deleting');
-    
     // Uploads the image to s3
-    await downloader.downloadContent(testImage)
-    setTimeout(async function(){
+    await downloader.downloadContent(testImage);
+    setTimeout(async function() {
         // Check if image exists after uploading
         const imageExist = await S3.existsInS3(testImage);
         t.assert(imageExist, 'Image exists in s3 after uploading');
-    }, 7000)
-
+    }, 7000);
 });
