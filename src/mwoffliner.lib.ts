@@ -158,9 +158,9 @@ async function execute(argv: any) {
   populateFilesToDownload(redis.client);
   populateFilesToRetry(redis.client);
 
-  //Check for s3 creds
+  // Check for s3 creds
   if(optimisationCacheUrl){
-    //Decompose the url with path and other s3 creds
+    // Decompose the url with path and other s3 creds
     const s3Url =  urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3Url.query, '?');
     await S3.initialiseS3Config(s3Url.pathname, queryReader).then(data => {
@@ -168,8 +168,7 @@ async function execute(argv: any) {
     }).catch(err => {
       closeRedis(redis);
       throw new Error(`Either Login creds for aws are wrong or bucket not found`);
-    })
-    
+    }) 
   }
 
   // Output directory

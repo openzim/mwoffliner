@@ -644,7 +644,7 @@ class Downloader {
   }
 
   private urlStatusInS3 = async(requestOptions:any, handler:any) => {
-    S3.existsInS3(requestOptions.url).then(async s3ImageResp => {  
+    S3.existsInS3(requestOptions.url).then(async s3ImageResp => {
       logger.log('Image already present in s3: ', requestOptions.url);
       const imgResponseHeaders = s3ImageResp.headers;
       handler(null, {
@@ -653,7 +653,6 @@ class Downloader {
       });
     }).catch(async err => {
       await this.processImageAndUploadToS3(requestOptions, handler);
-      //logger.log('Image check from s3 failed', err)
     });
   }
 
@@ -741,7 +740,6 @@ class Downloader {
       return false;
     }
   }
-
 }
 
 export default Downloader;
