@@ -151,8 +151,8 @@ _test('Downloader class with optimisation', async (t) => {
     t.ok(true, 'Image deleted from s3');
 
     // Check if image exists after deleting from s3
-    const imageNotExists = S3.existsInS3(testImage);
-    t.rejects(imageNotExists, 'Image not exists in s3 after deleting');
+    const imageNotExists = await S3.existsInS3(testImage);
+    t.equals(imageNotExists, false, 'Image not exists in s3 after deleting');
     // Uploads the image to s3
     await downloader.downloadContent(testImage);
     setTimeout(async function() {
