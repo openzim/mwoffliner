@@ -34,27 +34,29 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
         logger.log(`Worker [${workerId}] Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+        const listOfArguments = [];
 
         for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
+            listOfArguments.push({ path, url, namespace, mult, width });
+        }
+
+        const responses = await downloadBulk(listOfArguments, downloader);
+
+        responses.forEach(async function (resp: any) {
             try {
-                let content;
-                const resp = await downloader.downloadContent(url);
-                content = resp.content;
-
-                const article = new ZimArticle({ url: path, data: content, ns: namespace || 'I' });
+                const content = resp.result.content;
+                const article = new ZimArticle({ url: resp.path, data: content, ns: resp.namespace || 'I' });
                 await zimCreator.addArticle(article);
-
                 dump.status.files.success += 1;
             } catch (err) {
                 if (!isRetry) {
-                    await filesToRetryXPath.set(path, { url, namespace, mult, width });
+                    await filesToRetryXPath.set(resp.path, { url : resp.url, namespace : resp.namespace, mult : resp.mult, width: resp.width });
                 } else {
-                    logger.warn(`Error downloading file [${url}], skipping`);
+                    logger.warn(`Error downloading file [${resp.url}], skipping`);
                     dump.status.files.fail += 1;
-                    await filesToDownloadXPath.delete(path);
+                    await filesToDownloadXPath.delete(resp.path);
                 }
             }
-
             if (dump.status.files.success % 10 === 0) {
                 const percentProgress = Math.floor(dump.status.files.success / numKeys * 1000) / 10;
                 if (percentProgress !== prevPercentProgress) {
@@ -62,12 +64,48 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                     logger.log(`Progress downloading files [${dump.status.files.success}/${numKeys}] [${percentProgress}%]`);
                 }
             }
-        }
+        });
     });
 
     if (!isRetry) {
         await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, true);
     }
+}
+
+async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
+    const concurrencyLimit = 10;
+    // Enhance arguments array to have an index of the argument at hand
+    const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
+    const result = new Array(listOfArguments.length);
+    const promises = new Array(concurrencyLimit).fill(Promise.resolve());
+    // Recursively chain the next Promise to the currently executed Promise
+    function chainNext(p: any) {
+        if (argsCopy.length) {
+            const arg = argsCopy.shift();
+            return p.then(() => {
+                // Store the result into the array upon Promise completion
+                const operationPromise = downloader.downloadContent(arg.val.url).then((r) => {
+                    const resp = {
+                        result: r,
+                        path: arg.val.path,
+                        url: arg.val.url,
+                        namespace: arg.val.namespace,
+                        mult: arg.val.mult,
+                        width: arg.val.width,
+                    };
+                    result[arg.ind] = resp;
+                }, (err) => {
+                    logger.log('Not able to download content for', arg.val.url);
+                    return err;
+                });
+                return chainNext(operationPromise);
+            });
+        }
+        return p;
+    }
+
+    await Promise.all(promises.map(chainNext));
+    return result;
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {

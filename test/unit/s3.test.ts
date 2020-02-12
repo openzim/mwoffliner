@@ -24,11 +24,11 @@ _test('s3 checks', async(t) => {
     const imageExist = await S3.existsInS3('https://bm.wikipedia.org/static/images/project-logos/bmwiki.png');
     t.assert(!!imageExist, 'Image exists in s3');
     // Checking the data related to image matches
-    t.equals(imageExist.headers.Metadata.etag, '"41ed-52e0629e4f6a7"', 'Etag matches');
+    t.equals(imageExist.headers.Metadata.etag, '"41ed-52e0629e358c0"', 'Etag matches');
     t.equals(imageExist.headers.ContentLength, 7721, 'Content Length matches');
     t.equals(imageExist.headers.ContentType, 'image/png', 'Content Type matches');
-    t.equals(imageExist.headers.VersionId, '001580629672761821359-i_kTLp7jqh', 'Version matches');
+    t.equals(imageExist.headers.VersionId, '001581581045410462054-DY5OaP4haG', 'Version matches');
 
-    const imageNotExist = S3.existsInS3('https://bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
-    t.rejects(imageNotExist, 'Image doesnt exist in s3');
+    const imageNotExist = await S3.existsInS3('https://bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
+    t.equals(imageNotExist, false, 'Image doesnt exist in s3');
 });

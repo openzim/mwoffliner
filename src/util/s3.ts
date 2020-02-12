@@ -71,17 +71,19 @@ export async function existsInS3(filepath: string): Promise<any> {
     return new Promise((resolve, reject) => {
         s3Config.getObject(params, async (err: any, val: any) => {
             if (err && err.statusCode === 404) {
-                reject();
+                resolve(false);
             } else {
                 const valHeaders = (({ Body, ...o }) => o)(val);
                 const urlHeaders = await axios.head(filepath);
                 if (urlHeaders.headers.etag === val.Metadata.etag) {
                     resolve({ headers: valHeaders, imgData: val.Body });
                 } else {
-                    reject();
+                    resolve(false);
                 }
             }
         });
+    }).catch((err) => {
+        return err;
     });
 }
 
