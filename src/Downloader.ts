@@ -657,8 +657,8 @@ class Downloader {
 
   private urlStatusInS3 = async(requestOptions: any, handler: any) => {
     S3.existsInS3(requestOptions.url).then(async (s3ImageResp) => {
-      logger.log('Image already present in s3: ', requestOptions.url);
       if (s3ImageResp && s3ImageResp !== false) {
+        logger.log('Image already present in s3: ', requestOptions.url);
         const imgResponseHeaders = s3ImageResp.headers;
         handler(null, {
           imgResponseHeaders,
