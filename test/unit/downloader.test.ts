@@ -142,7 +142,7 @@ _test('Downloader class with optimisation', async (t) => {
 
     const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
     // Test for image where etag is not present
-    const etagNotPresent = await downloader.downloadContent(`https://bm.wikipedia.org/w/skins/Vector/images/unwatch-icon-hl.svg?71c12`);
+    const etagNotPresent = await downloader.downloadContent(`https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c`);
     t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
 
     // FLOW OF IMAGE CACHING

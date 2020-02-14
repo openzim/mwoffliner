@@ -38,20 +38,22 @@ export async function bucketExists(bucket: string): Promise<any> {
 
 export async function uploadImage(imageResp: any, filepath: string) {
      fs.writeFile('/tmp/tempFile', imageResp.data, function () {
-        // Need to refactor so that params are not declared again and again
         const params = {
             Bucket: bucketName,
-            ContentType: imageResp.headers['content-type'],
-            ContentLength: imageResp.headers['content-length'],
             Key: path.basename(filepath),
             Metadata: {etag: imageResp.headers.etag },
             Body: fs.createReadStream('/tmp/tempFile'),
         };
 
+        const options = {
+            partSize: 10 * 1024 * 1024,
+            queueSize: 1,
+        };
+
         try {
-            s3Config.putObject( params, function (err: any, data: any) {
+            s3Config.upload( params, options, function (err: any, data: any) {
                 if (data) {
-                    logger.log('Succefully uploaded the image', data);
+                    logger.log('Succefully uploaded the image');
                 } else {
                     logger.log(`Not able to upload ${filepath}:`, err);
                 }
