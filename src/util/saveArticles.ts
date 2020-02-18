@@ -73,7 +73,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
-    const concurrencyLimit = 10;
+    const concurrencyLimit = 15;
     // Enhance arguments array to have an index of the argument at hand
     const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
     const result = new Array(listOfArguments.length);
