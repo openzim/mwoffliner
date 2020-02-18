@@ -164,10 +164,11 @@ async function execute(argv: any) {
     const s3Url =  urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3Url.query, '?');
     await S3.initialiseS3Config(s3Url.pathname, queryReader).then((data) => {
-      logger.log('Successfuly Logged in s3');
-    }).catch((err) => {
-      closeRedis(redis);
-      throw new Error(`Either Login creds for aws are wrong or bucket not found`);
+      if (data !== true) {
+        closeRedis(redis);
+        throw new Error(`Either Login creds for aws are wrong or bucket not found`);
+      }
+      logger.log('Successfuly Logged in s3', data);
     });
   }
 
