@@ -36,44 +36,41 @@ export async function bucketExists(bucket: string): Promise<any> {
     });
 }
 
-
 function bufferToStream(binary: Buffer) {
     const readableInstanceStream = new Readable({
       read() {
         this.push(binary);
         this.push(null);
-      }
+      },
     });
     return readableInstanceStream;
 }
-  
+
 export async function uploadImage(imageResp: any, filepath: string) {
     let options;
-        const params = {
-            Bucket: bucketName,
-            Key: path.basename(filepath),
-            Metadata: {etag: imageResp.headers.etag },
-            Body: bufferToStream(imageResp.data),
+    const params = {
+        Bucket: bucketName,
+        Key: path.basename(filepath),
+        Metadata: {etag: imageResp.headers.etag },
+        Body: bufferToStream(imageResp.data),
+    };
+    if (!imageResp['content-length']) {
+        options = {
+            partSize: 10 * 1024 * 1024,
+            queueSize: 1,
         };
-        
-        if(!imageResp['content-length']){
-            options = {
-                partSize: 10 * 1024 * 1024,
-                queueSize: 1,
-            };
-        }
-        
-        try {
-            s3Config.upload( params, options, function (err: any, data: any) {
-                if (data) {
-                    logger.log('Succefully uploaded the image', filepath);
-                } else {
-                    logger.log(`Not able to upload ${filepath}:`, err);
-                }
-            });
-        } catch (err) {
-            logger.log('S3 ERROR', err);
-        }
+    }
+    try {
+        s3Config.upload( params, options, function (err: any, data: any) {
+            if (data) {
+                logger.log('Succefully uploaded the image', filepath);
+            } else {
+                logger.log(`Not able to upload ${filepath}:`, err);
+            }
+        });
+    } catch (err) {
+        logger.log('S3 ERROR', err);
+    }
 }
 
 export async function existsInS3(filepath: string): Promise<any> {
@@ -116,5 +113,5 @@ export default {
     existsInS3,
     initialiseS3Config,
     deleteImage,
-    bucketExists
+    bucketExists,
 };

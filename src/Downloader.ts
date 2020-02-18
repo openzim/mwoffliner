@@ -445,8 +445,7 @@ class Downloader {
   public async isImageUrl<T>(url: string): Promise<boolean> {
     const pathExtension = path.extname(url).toLowerCase();
     const regex = /([\w|\s|-])*\.(?:jpg|gif|png|svg|gif|jpeg)/g;
-    
-    if (regex.exec(pathExtension)) {
+    if (regex.exec(pathExtension) ) {
       return true;
     } else {
       return false;
@@ -714,7 +713,7 @@ class Downloader {
     const compressionWorked = content.length < resp.data.length;
     if (compressionWorked) {
       resp.data = content;
-      resp.headers['content-length'] =content.length;
+      resp.headers['content-length'] = content.length;
       logger.log(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${content.length}]`);
     } else {
       // logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
