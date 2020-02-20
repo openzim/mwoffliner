@@ -21,13 +21,13 @@ _test('s3 checks', async(t) => {
     const bucketNotExists = S3.bucketExists('random-string');
     t.rejects(bucketNotExists, 'Given bucket does not exists in s3');
 
-    const imageExist = await S3.existsInS3('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png');
+    const imageExist = await S3.checkStatusAndDownload('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png');
     t.assert(!!imageExist, 'Image exists in s3');
     // Checking the data related to image matches
     t.equals(imageExist.headers.Metadata.etag, '"aeff-54a391a807034"', 'Etag matches');
     t.equals(imageExist.headers.ContentLength, 19655, 'Content Length matches');
     t.equals(imageExist.headers.ContentType, 'application/octet-stream', 'Content Type matches');
 
-    const imageNotExist = await S3.existsInS3('https://bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
+    const imageNotExist = await S3.checkStatusAndDownload('https://bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
     t.equals(imageNotExist, false, 'Image doesnt exist in s3');
 });

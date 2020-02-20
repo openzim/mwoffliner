@@ -37,16 +37,16 @@ export async function bucketExists(bucket: string): Promise<any> {
 }
 
 function bufferToStream(binary: Buffer) {
-    const readableInstanceStream = new Readable({
+    return new Readable({
       read() {
         this.push(binary);
         this.push(null);
       },
     });
-    return readableInstanceStream;
 }
 
-export async function uploadImage(imageResp: any, filepath: string) {
+export async function uploadBlob(imageResp: any, filepath: string) {
+    logger.log(`Uploading [${filepath}] to S3`);
     let options;
     const params = {
         Bucket: bucketName,
@@ -63,7 +63,7 @@ export async function uploadImage(imageResp: any, filepath: string) {
     try {
         s3Config.upload( params, options, function (err: any, data: any) {
             if (data) {
-                logger.log('Succefully uploaded the image', filepath);
+                // logger.log(`Uploaded [${filepath}]`);
             } else {
                 logger.log(`Not able to upload ${filepath}:`, err);
             }
@@ -73,12 +73,12 @@ export async function uploadImage(imageResp: any, filepath: string) {
     }
 }
 
-export async function existsInS3(filepath: string): Promise<any> {
+export async function checkStatusAndDownload(filepath: string): Promise<any> {
     const params = {
         Bucket: bucketName,
         Key: path.basename(filepath),
     };
-    // const headCode = await s3Config.headObject(params).promise();
+
     return new Promise((resolve, reject) => {
         s3Config.getObject(params, async (err: any, val: any) => {
             if (err && err.statusCode === 404) {
@@ -86,6 +86,7 @@ export async function existsInS3(filepath: string): Promise<any> {
             } else {
                 const valHeaders = (({ Body, ...o }) => o)(val);
                 const urlHeaders = await axios.head(filepath);
+                // Check if e-tag is in sync
                 if (urlHeaders.headers.etag === val.Metadata.etag) {
                     resolve({ headers: valHeaders, imgData: val.Body });
                 } else {
@@ -99,7 +100,7 @@ export async function existsInS3(filepath: string): Promise<any> {
 }
 
 // Only for testing purpose
-export async function deleteImage(params: any): Promise<any> {
+export async function deleteBlob(params: any): Promise<any> {
     return new Promise((resolve, reject) => {
         s3Config.deleteObject(params,  (err: any, val: any) => {
             if (err) { reject(err);
@@ -109,9 +110,9 @@ export async function deleteImage(params: any): Promise<any> {
 }
 
 export default {
-    uploadImage,
-    existsInS3,
+    uploadBlob,
+    checkStatusAndDownload,
     initialiseS3Config,
-    deleteImage,
+    deleteBlob,
     bucketExists,
 };

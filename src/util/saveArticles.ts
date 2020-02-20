@@ -16,6 +16,7 @@ import { filesToDownloadXPath, articleDetailXId, filesToRetryXPath } from '../st
 import { getSizeFromUrl, getRelativeFilePath } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
+import { CONCURRENCY_LIMIT } from './const';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -73,11 +74,10 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
-    const concurrencyLimit = 15;
     // Enhance arguments array to have an index of the argument at hand
     const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
     const result = new Array(listOfArguments.length);
-    const promises = new Array(concurrencyLimit).fill(Promise.resolve());
+    const promises = new Array(CONCURRENCY_LIMIT).fill(Promise.resolve());
     // Recursively chain the next Promise to the currently executed Promise
     function chainNext(p: any) {
         if (argsCopy.length) {
