@@ -147,17 +147,17 @@ _test('Downloader class with optimisation', async (t) => {
 
     // FLOW OF IMAGE CACHING
     // Delete the image already present in s3
-    await S3.deleteImage({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' });
+    await S3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' });
     t.ok(true, 'Image deleted from s3');
 
     // Check if image exists after deleting from s3
-    const imageNotExists = await S3.existsInS3(testImage);
+    const imageNotExists = await S3.checkStatusAndDownload(testImage);
     t.equals(imageNotExists, false, 'Image not exists in s3 after deleting');
     // Uploads the image to s3
     await downloader.downloadContent(testImage);
     setTimeout(async function() {
         // Check if image exists after uploading
-        const imageExist = await S3.existsInS3(testImage);
+        const imageExist = await S3.checkStatusAndDownload(testImage);
         t.assert(imageExist, 'Image exists in s3 after uploading');
     }, 7000);
 });
