@@ -707,7 +707,7 @@ class Downloader {
     }
 
     if (etag) {
-      S3.uploadBlob(requestOptions.url, resp.data, etag, resp.headers['content-length']);
+      S3.uploadBlob(requestOptions.url, resp.data, etag);
     }
 
     handler(null, {

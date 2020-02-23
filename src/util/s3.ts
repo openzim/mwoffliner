@@ -45,23 +45,17 @@ function bufferToStream(binary: Buffer) {
     });
 }
 
-export async function uploadBlob(key: string, data: any, etag: string, contentLength: any) {
+export async function uploadBlob(key: string, data: any, eTag: string) {
     logger.log(`Uploading [${key}] to S3`);
-    let options;
     const params = {
         Bucket: bucketName,
         Key: path.basename(key),
-        Metadata: {etag: etag },
+        Metadata: {etag: eTag },
         Body: bufferToStream(data),
     };
-    // if (!contentLength) {
-    //     options = {
-    //         partSize: 10 * 1024 * 1024,
-    //         queueSize: 1,
-    //     };
-    // }
+
     try {
-        s3Config.upload( params, options, function (err: any, data: any) {
+        s3Config.upload( params, function (err: any, data: any) {
             if (data) {
                 // logger.log(`Uploaded [${filepath}]`);
             } else {

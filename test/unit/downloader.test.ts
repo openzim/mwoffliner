@@ -134,7 +134,7 @@ _test('Downloader class with optimisation', async (t) => {
     await mkdirPromise(cacheDir);
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, optimisationCacheUrl: 's3.us-west-1.wasabisys.com/?bucketName=mwoffliner?keyId=SJGJT2C2H0WM6S1744W1?secretAccessKey=oNiEt0YfmZ4IShJBlU7XJu0EmWXtcDwdoKsmQZA' });
 
-    await S3.initialiseS3Config(process.env.BASE_URL_TEST, {
+    await S3.initialise(process.env.BASE_URL_TEST, {
         bucketName: process.env.BUCKET_NAME_TEST,
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
@@ -152,7 +152,7 @@ _test('Downloader class with optimisation', async (t) => {
 
     // Check if image exists after deleting from s3
     const imageNotExists = await S3.checkStatusAndDownload(testImage);
-    t.equals(imageNotExists, false, 'Image not exists in s3 after deleting');
+    t.equals(imageNotExists, undefined, 'Image not exists in s3 after deleting');
     // Uploads the image to s3
     await downloader.downloadContent(testImage);
     setTimeout(async function() {

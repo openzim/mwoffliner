@@ -7,7 +7,7 @@ import 'dotenv/config';
 const _test = tapePromise(test);
 
 _test('s3 checks', async(t) => {
-    const credentialExists = await S3.initialiseS3Config(process.env.BASE_URL_TEST, {
+    const credentialExists = await S3.initialise(process.env.BASE_URL_TEST, {
         bucketName: process.env.BUCKET_NAME_TEST,
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
@@ -29,5 +29,5 @@ _test('s3 checks', async(t) => {
     t.equals(imageExist.headers.ContentType, 'application/octet-stream', 'Content Type matches');
 
     const imageNotExist = await S3.checkStatusAndDownload('https://bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
-    t.equals(imageNotExist, false, 'Image doesnt exist in s3');
+    t.equals(imageNotExist, undefined, 'Image doesnt exist in s3');
 });
