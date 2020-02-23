@@ -7,7 +7,7 @@ import { Readable } from 'stream';
 let s3Config: any;
 let bucketName: string;
 
-export async function initialiseS3Config(url: string, params: any) {
+export async function initialise(url: string, params: any) {
     const s3UrlBase: any = new S3File.Endpoint(url);
     s3Config = new S3File.S3({
         endpoint: s3UrlBase,
@@ -45,31 +45,31 @@ function bufferToStream(binary: Buffer) {
     });
 }
 
-export async function uploadBlob(imageResp: any, filepath: string) {
-    logger.log(`Uploading [${filepath}] to S3`);
+export async function uploadBlob(key: string, data: any, etag: string, contentLength: any) {
+    logger.log(`Uploading [${key}] to S3`);
     let options;
     const params = {
         Bucket: bucketName,
-        Key: path.basename(filepath),
-        Metadata: {etag: imageResp.headers.etag },
-        Body: bufferToStream(imageResp.data),
+        Key: path.basename(key),
+        Metadata: {etag: etag },
+        Body: bufferToStream(data),
     };
-    if (!imageResp['content-length']) {
-        options = {
-            partSize: 10 * 1024 * 1024,
-            queueSize: 1,
-        };
-    }
+    // if (!contentLength) {
+    //     options = {
+    //         partSize: 10 * 1024 * 1024,
+    //         queueSize: 1,
+    //     };
+    // }
     try {
         s3Config.upload( params, options, function (err: any, data: any) {
             if (data) {
                 // logger.log(`Uploaded [${filepath}]`);
             } else {
-                logger.log(`Not able to upload ${filepath}:`, err);
+                logger.log(`Not able to upload ${key}:`, err);
             }
         });
     } catch (err) {
-        logger.log('S3 ERROR', err);
+        logger.log('S3 error', err);
     }
 }
 
@@ -82,7 +82,7 @@ export async function checkStatusAndDownload(filepath: string): Promise<any> {
     return new Promise((resolve, reject) => {
         s3Config.getObject(params, async (err: any, val: any) => {
             if (err && err.statusCode === 404) {
-                resolve(false);
+                resolve();
             } else {
                 const valHeaders = (({ Body, ...o }) => o)(val);
                 const urlHeaders = await axios.head(filepath);
@@ -90,7 +90,7 @@ export async function checkStatusAndDownload(filepath: string): Promise<any> {
                 if (urlHeaders.headers.etag === val.Metadata.etag) {
                     resolve({ headers: valHeaders, imgData: val.Body });
                 } else {
-                    resolve(false);
+                    resolve();
                 }
             }
         });
@@ -112,7 +112,7 @@ export async function deleteBlob(params: any): Promise<any> {
 export default {
     uploadBlob,
     checkStatusAndDownload,
-    initialiseS3Config,
+    initialise,
     deleteBlob,
     bucketExists,
 };

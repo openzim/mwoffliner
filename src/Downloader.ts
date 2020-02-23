@@ -156,12 +156,12 @@ class Downloader {
     }
   }
 
-  public isImageUrl = (url: string): boolean => {
+  public isImageUrl (url: string): boolean {
     return IMAGE_REGEX.exec(path.extname(url).toLowerCase()) ? true : false;
   }
 
-  public isContentImage<T>(resp: any): boolean {
-    return resp.headers['content-type'].includes('image/') ? true : false;
+  public isMimeTypeImage (mimetype: string): boolean {
+    return mimetype.includes('image/') ? true : false;
   }
 
   public async initLocalMcs(forceLocalParsoid = true) {
@@ -653,7 +653,7 @@ class Downloader {
   }
 
   private async getBufferedData(resp: any): Promise<any> {
-    return resp.headers['content-type'].includes('image/') ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+    return this.isMimeTypeImage(resp.headers['content-type']) ? imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
   private getContentCb = async (requestOptions: any, handler: any) => {
@@ -662,10 +662,9 @@ class Downloader {
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
         S3.checkStatusAndDownload(requestOptions.url).then(async (s3ImageResp) => {
-          if (s3ImageResp && s3ImageResp !== false) {
-            const imgResponseHeaders = s3ImageResp.headers;
+          if (s3ImageResp) {
             handler(null, {
-              imgResponseHeaders,
+              responseHeaders: s3ImageResp.headers,
               content: s3ImageResp.imgData,
             });
           } else {
@@ -676,9 +675,8 @@ class Downloader {
         });
       } else {
         const resp = await axios(requestOptions);
-        const responseHeaders = resp.headers;
         handler(null, {
-          responseHeaders,
+          responseHeaders: resp.headers,
           content: await this.getBufferedData(resp),
         });
       }
@@ -701,20 +699,19 @@ class Downloader {
 
   private async compressImageAndUploadToS3<T>(requestOptions: any, handler: any) {
     const resp = await axios(requestOptions);
-    const responseHeaders = resp.headers;
+    const etag = resp.headers.etag;
     const content = await this.getBufferedData(resp);
     const compressionWorked = content.length < resp.data.length;
     if (compressionWorked) {
       resp.data = content;
-      resp.headers['content-length'] = content.length;
     }
 
-    if (resp.headers.etag) {
-      S3.uploadBlob(resp, requestOptions.url);
+    if (etag) {
+      S3.uploadBlob(requestOptions.url, resp.data, etag, resp.headers['content-length']);
     }
 
     handler(null, {
-      responseHeaders,
+      responseHeaders: resp.headers,
       content: compressionWorked ? content : resp.data,
     });
   }
