@@ -163,11 +163,20 @@ async function execute(argv: any) {
     // Decompose the url with path and other s3 creds
     const s3Url =  urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3Url.query, '?');
+<<<<<<< HEAD
     await S3.initialise(s3Url.pathname, queryReader).then((data) => {
       if (data !== true) {
         throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found`);
       }
       logger.log('Successfuly logged in S3', data);
+=======
+    await S3.initialiseS3Config(s3Url.pathname, queryReader).then((data) => {
+      if (data !== true) {
+        closeRedis(redis);
+        throw new Error(`Either Login creds for aws are wrong or bucket not found`);
+      }
+      logger.log('Successfuly Logged in s3', data);
+>>>>>>> 093d57c409dd1e0d86b1b6286224f2c6e4e17679
     });
   }
 
