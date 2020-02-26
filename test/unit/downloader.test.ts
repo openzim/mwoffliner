@@ -5,7 +5,7 @@ import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
 import { mkdirPromise, mwRetToArticleDetail } from 'src/util';
-import S3 from '../../src/s3';
+import S3 from 'src/s3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
 import { articleDetailXId } from 'src/stores';
@@ -160,13 +160,13 @@ _test('Downloader class with optimisation', async (t) => {
     t.ok(true, 'Image deleted from s3');
 
     // Check if image exists after deleting from s3
-    const imageNotExists = await s3.checkStatusAndDownload(testImage);
+    const imageNotExists = await s3.downloadBlob(testImage);
     t.equals(imageNotExists, undefined, 'Image not exists in s3 after deleting');
     // Uploads the image to s3
     await downloader.downloadContent(testImage);
     setTimeout(async function() {
         // Check if image exists after uploading
-        const imageExist = await s3.checkStatusAndDownload(testImage);
+        const imageExist = await s3.downloadBlob(testImage);
         t.assert(imageExist, 'Image exists in s3 after uploading');
     }, 7000);
 });

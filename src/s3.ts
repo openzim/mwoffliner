@@ -46,7 +46,7 @@ class S3 {
     }
 
     public async uploadBlob(key: string, data: any, eTag: string) {
-        logger.log(`Uploading [${key}] to S3`);
+        logger.info(`Uploading [${key}] to S3`);
         const params = {
             Bucket: this.bucketName,
             Key: path.basename(key),
@@ -67,7 +67,7 @@ class S3 {
         }
     }
 
-    public async checkStatusAndDownload(filepath: string): Promise<any> {
+    public async downloadBlob(filepath: string): Promise<any> {
         const params = {
             Bucket: this.bucketName,
             Key: path.basename(filepath),

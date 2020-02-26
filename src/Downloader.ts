@@ -655,33 +655,32 @@ class Downloader {
       });
   }
 
-  private async getBufferedData(resp: any): Promise<any> {
+  private async getHttpBufferRespIfImage(resp: any): Promise<any> {
     return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
   private getContentCb = async (requestOptions: any, handler: any) => {
-    logger.log(`Downloading [${requestOptions.url}]`);
+    logger.info(`Downloading [${requestOptions.url}]`);
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-        this.s3.checkStatusAndDownload(requestOptions.url).then(async (s3ImageResp) => {
+        this.s3.downloadBlob(requestOptions.url).then(async (s3ImageResp) => {
           if (s3ImageResp) {
             handler(null, {
               responseHeaders: s3ImageResp.headers,
               content: s3ImageResp.imgData,
             });
           } else {
-            await this.compressImageAndUploadToS3(requestOptions, handler);
+            await this.getCompressedImageAndUploadToS3(requestOptions, handler);
           }
         }).catch((err) => {
           handler(err);
         });
       } else {
-        logger.log('coming in else');
         const resp = await axios(requestOptions);
         handler(null, {
           responseHeaders: resp.headers,
-          content: await this.getBufferedData(resp),
+          content: await this.getHttpBufferRespIfImage(resp),
         });
       }
     } catch (err) {
@@ -701,10 +700,10 @@ class Downloader {
     }
   }
 
-  private async compressImageAndUploadToS3<T>(requestOptions: any, handler: any) {
+  private async getCompressedImageAndUploadToS3<T>(requestOptions: any, handler: any) {
     const resp = await axios(requestOptions);
     const etag = resp.headers.etag;
-    const content = await this.getBufferedData(resp);
+    const content = await this.getHttpBufferRespIfImage(resp);
     const compressionWorked = content.length < resp.data.length;
     if (compressionWorked) {
       resp.data = content;

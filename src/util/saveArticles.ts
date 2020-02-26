@@ -36,7 +36,6 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
         logger.log(`Worker [${workerId}] Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
         const listOfArguments = [];
-
         for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
             listOfArguments.push({ path, url, namespace, mult, width });
         }
