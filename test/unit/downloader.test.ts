@@ -5,7 +5,7 @@ import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
 import { mkdirPromise, mwRetToArticleDetail } from 'src/util';
-import S3 from '../../src/util/s3';
+import S3 from '../../src/s3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
 import { articleDetailXId } from 'src/stores';
@@ -100,24 +100,32 @@ test('Downloader class', async (t) => {
 
     rimraf.sync(cacheDir);
 
-    const isPngFile = await downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
+    const isPngFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
     t.assert(isPngFile, 'Checked Image type: png');
 
-    const isJpgFile = await downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
+    const isJpgFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
     t.assert(isJpgFile, 'Checked Image type: jpg');
 
-    const isSvgFile = await downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
+    const isSvgFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
     t.assert(isSvgFile, 'Checked Image type: svg');
 
-    const isJpegFile = await downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
+    const isJpegFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
     t.assert(isJpegFile, 'Checked Image type: jpeg');
 
-    const isgifFile = await downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
+    const isgifFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
     t.assert(isgifFile, 'Checked Image type: gif');
 
-    const isnotImage = await downloader.isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
+    const isnotImage =  downloader.isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
     t.assert(!isnotImage, 'Url is not image type');
 
+    const isEmptyString =  downloader.isImageUrl('');
+    t.assert(!isEmptyString, 'Url is empty string');
+
+    const imageHasNoExtension =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
+    t.assert(!imageHasNoExtension, 'Image Url has no extension');
+
+    const extensionIsUndefined =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined');
+    t.assert(!extensionIsUndefined, 'Image Url extension is undefined');
     // TODO: find a way to get service-runner to stop properly
     // await mcsHandle.stop();
 });
@@ -132,13 +140,14 @@ _test('Downloader class with optimisation', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, optimisationCacheUrl: 's3.us-west-1.wasabisys.com/?bucketName=mwoffliner?keyId=SJGJT2C2H0WM6S1744W1?secretAccessKey=oNiEt0YfmZ4IShJBlU7XJu0EmWXtcDwdoKsmQZA' });
-
-    await S3.initialise(process.env.BASE_URL_TEST, {
+    const s3 = new S3(process.env.BASE_URL_TEST, {
         bucketName: process.env.BUCKET_NAME_TEST,
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
     });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, optimisationCacheUrl: 'random-string' , s3});
+
+    await s3.initialise();
 
     const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
     // Test for image where etag is not present
@@ -147,17 +156,17 @@ _test('Downloader class with optimisation', async (t) => {
 
     // FLOW OF IMAGE CACHING
     // Delete the image already present in s3
-    await S3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' });
+    await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' });
     t.ok(true, 'Image deleted from s3');
 
     // Check if image exists after deleting from s3
-    const imageNotExists = await S3.checkStatusAndDownload(testImage);
+    const imageNotExists = await s3.checkStatusAndDownload(testImage);
     t.equals(imageNotExists, undefined, 'Image not exists in s3 after deleting');
     // Uploads the image to s3
     await downloader.downloadContent(testImage);
     setTimeout(async function() {
         // Check if image exists after uploading
-        const imageExist = await S3.checkStatusAndDownload(testImage);
+        const imageExist = await s3.checkStatusAndDownload(testImage);
         t.assert(imageExist, 'Image exists in s3 after uploading');
     }, 7000);
 });

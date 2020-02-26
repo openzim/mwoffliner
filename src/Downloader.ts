@@ -18,8 +18,8 @@ import deepmerge from 'deepmerge';
 import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
-import S3 from './util/s3';
-import { IMAGE_REGEX } from './util/const';
+import S3 from './s3';
+import { IMAGE_REGEX, MIME_TYPE_IMAGE_REGEX } from './util/const';
 
 const imageminOptions = {
   plugins: [
@@ -41,6 +41,7 @@ interface DownloaderOpts {
   downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
   optimisationCacheUrl: string;
+  s3?: S3;
 }
 
 class Downloader {
@@ -55,6 +56,7 @@ class Downloader {
   public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
   public optimisationCacheUrl: string;
+  public s3: S3;
 
   private canFetchCoordinates = true;
   private activeRequests = 0;
@@ -62,7 +64,7 @@ class Downloader {
   private noLocalParserFallback = false;
   private urlPartCache: KVS<string> = {};
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3 }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -73,6 +75,7 @@ class Downloader {
     this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
     this.optimisationCacheUrl = optimisationCacheUrl;
+    this.s3 = s3;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
@@ -157,11 +160,11 @@ class Downloader {
   }
 
   public isImageUrl (url: string): boolean {
-    return IMAGE_REGEX.exec(path.extname(url).toLowerCase()) ? true : false;
+    return IMAGE_REGEX.exec(path.extname(url)) ? true : false;
   }
 
   public isMimeTypeImage (mimetype: string): boolean {
-    return mimetype.includes('image/') ? true : false;
+    return MIME_TYPE_IMAGE_REGEX.exec(mimetype) ? true : false;
   }
 
   public async initLocalMcs(forceLocalParsoid = true) {
@@ -653,7 +656,7 @@ class Downloader {
   }
 
   private async getBufferedData(resp: any): Promise<any> {
-    return this.isMimeTypeImage(resp.headers['content-type']) ? imagemin.buffer(resp.data, imageminOptions) : resp.data;
+    return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
   private getContentCb = async (requestOptions: any, handler: any) => {
@@ -661,7 +664,7 @@ class Downloader {
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-        S3.checkStatusAndDownload(requestOptions.url).then(async (s3ImageResp) => {
+        this.s3.checkStatusAndDownload(requestOptions.url).then(async (s3ImageResp) => {
           if (s3ImageResp) {
             handler(null, {
               responseHeaders: s3ImageResp.headers,
@@ -674,6 +677,7 @@ class Downloader {
           handler(err);
         });
       } else {
+        logger.log('coming in else');
         const resp = await axios(requestOptions);
         handler(null, {
           responseHeaders: resp.headers,
@@ -707,7 +711,7 @@ class Downloader {
     }
 
     if (etag) {
-      S3.uploadBlob(requestOptions.url, resp.data, etag);
+      this.s3.uploadBlob(requestOptions.url, resp.data, etag);
     }
 
     handler(null, {

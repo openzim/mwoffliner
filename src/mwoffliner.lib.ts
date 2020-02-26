@@ -32,7 +32,7 @@ import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
-import S3 from './util/s3';
+import S3 from './s3';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -82,6 +82,7 @@ async function execute(argv: any) {
     useDownloadCache,
     optimisationCacheUrl,
     noLocalParserFallback,
+    s3Obj,
     customFlavour: customProcessorPath,
   } = argv;
 
@@ -116,6 +117,20 @@ async function execute(argv: any) {
     customProcessor = new CustomProcessor();
   }
 
+  // Check for S3 creds
+  if (optimisationCacheUrl) {
+    // Decompose the url with path and other s3 creds
+    const s3Url =  urlParser.parse(optimisationCacheUrl);
+    const queryReader = QueryStringParser.parse(s3Url.query, '?');
+    this.s3Obj = new S3(s3Url.pathname, queryReader);
+    await this.s3Obj.initialise().then((data: any) => {
+      logger.log('Successfuly logged in S3', data);
+    });
+  }
+
+  // Extract S3 obj to pass to downloader class
+  const s3 = this.s3Obj ? this.s3Obj : {};
+
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki({
     getCategories: !!argv.getCategories,
@@ -139,6 +154,7 @@ async function execute(argv: any) {
     downloadCacheDirectory: null,
     noLocalParserFallback,
     optimisationCacheUrl,
+    s3,
   });
 
   await downloader.checkCapabilities();
@@ -157,16 +173,6 @@ async function execute(argv: any) {
   populateRedirects(redis.client);
   populateFilesToDownload(redis.client);
   populateFilesToRetry(redis.client);
-
-  // Check for s3 creds
-  if (optimisationCacheUrl) {
-    // Decompose the url with path and other s3 creds
-    const s3Url =  urlParser.parse(optimisationCacheUrl);
-    const queryReader = QueryStringParser.parse(s3Url.query, '?');
-    await S3.initialise(s3Url.pathname, queryReader).then((data) => {
-      logger.log('Successfuly logged in S3', data);
-    });
-  }
 
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ?
