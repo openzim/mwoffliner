@@ -1,31 +1,29 @@
 import S3File from 'aws-sdk';
-import * as path from 'path';
 import logger from './Logger';
 import axios from 'axios';
 import { Readable } from 'stream';
 
 class S3 {
-    public s3Url: any;
-    public s3Params: any;
-    public s3Config: any;
+    public url: any;
+    public params: any;
+    public s3Handler: any;
     public bucketName: string;
 
     constructor(s3Url: any, s3Params: any) {
-        this.s3Url = s3Url;
-        this.s3Params = s3Params;
+        this.url = s3Url;
+        this.params = s3Params;
         this.bucketName = s3Params.bucketName;
     }
 
     public async initialise() {
-        const s3UrlBase: any = new S3File.Endpoint(this.s3Url);
-        this.s3Config = new S3File.S3({
+        const s3UrlBase: any = new S3File.Endpoint(this.url);
+        this.s3Handler = new S3File.S3({
             endpoint: s3UrlBase,
-            accessKeyId: this.s3Params.keyId,
-            secretAccessKey: this.s3Params.secretAccessKey,
+            accessKeyId: this.params.keyId,
+            secretAccessKey: this.params.secretAccessKey,
         });
         try {
             if (await this.bucketExists(this.bucketName) === true) {
-                this.s3Params.bucketName = this.bucketName;
                 return true;
             }
         } catch (err) {
@@ -34,31 +32,24 @@ class S3 {
     }
 
     public async bucketExists(bucket: string): Promise<any> {
-        const param = {
-            Bucket: bucket,
-        };
         return new Promise(( resolve, reject ) => {
-            this.s3Config.headBucket(param, function(err: any, data: any) {
-                if ( err ) { reject(err);
-                } else { resolve(true); }
+            this.s3Handler.headBucket({Bucket: bucket}, function(err: any) {
+                err ? reject(err) : resolve(true);
             });
         });
     }
 
     public async uploadBlob(key: string, data: any, eTag: string) {
-        logger.info(`Uploading [${key}] to S3`);
         const params = {
             Bucket: this.bucketName,
-            Key: path.basename(key),
+            Key: key,
             Metadata: {etag: eTag },
             Body: this.bufferToStream(data),
         };
 
         try {
-            this.s3Config.upload( params, function (err: any, data: any) {
-                if (data) {
-                    // logger.log(`Uploaded [${filepath}]`);
-                } else {
+            this.s3Handler.upload( params, function (err: any, data: any) {
+                if (err) {
                     logger.log(`Not able to upload ${key}: ${err}`);
                 }
             });
@@ -67,19 +58,14 @@ class S3 {
         }
     }
 
-    public async downloadBlob(filepath: string): Promise<any> {
-        const params = {
-            Bucket: this.bucketName,
-            Key: path.basename(filepath),
-        };
-
-        return new Promise((resolve, reject) => {
-            this.s3Config.getObject(params, async (err: any, val: any) => {
+    public async downloadIfPossible(upstreamUrl: string, requestUrl: string): Promise<any> {
+        return new Promise((resolve) => {
+            this.s3Handler.getObject({Bucket: this.bucketName, Key: upstreamUrl}, async (err: any, val: any) => {
                 if (err && err.statusCode === 404) {
                     resolve();
                 } else {
                     const valHeaders = (({ Body, ...o }) => o)(val);
-                    const urlHeaders = await axios.head(filepath);
+                    const urlHeaders = await axios.head(requestUrl);
                     // Check if ETag is in sync
                     if (urlHeaders.headers.etag === val.Metadata.etag) {
                         resolve({ headers: valHeaders, imgData: val.Body });
@@ -96,9 +82,8 @@ class S3 {
     // Only for testing purpose
     public async deleteBlob(params: any): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.s3Config.deleteObject(params,  (err: any, val: any) => {
-                if (err) { reject(err);
-                } else { resolve(val); }
+            this.s3Handler.deleteObject(params,  (err: any, val: any) => {
+                err ? reject(err) : resolve(val);
             });
         });
     }

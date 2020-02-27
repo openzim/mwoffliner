@@ -18,8 +18,8 @@ import deepmerge from 'deepmerge';
 import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
-import S3 from './s3';
-import { IMAGE_REGEX, MIME_TYPE_IMAGE_REGEX } from './util/const';
+import S3 from './S3';
+import { URL_IMAGE_REGEX, MIME_IMAGE_REGEX, FIND_HTTP_REGEX } from './util/const';
 
 const imageminOptions = {
   plugins: [
@@ -160,11 +160,15 @@ class Downloader {
   }
 
   public isImageUrl (url: string): boolean {
-    return IMAGE_REGEX.exec(path.extname(url)) ? true : false;
+    return URL_IMAGE_REGEX.exec(url) ? true : false;
   }
 
   public isMimeTypeImage (mimetype: string): boolean {
-    return MIME_TYPE_IMAGE_REGEX.exec(mimetype) ? true : false;
+    return MIME_IMAGE_REGEX.exec(mimetype) ? true : false;
+  }
+
+  public stripHttpFromUrl (url: string) {
+    return url.replace(FIND_HTTP_REGEX, '');
   }
 
   public async initLocalMcs(forceLocalParsoid = true) {
@@ -655,7 +659,7 @@ class Downloader {
       });
   }
 
-  private async getHttpBufferRespIfImage(resp: any): Promise<any> {
+  private async getCompressedBody(resp: any): Promise<any> {
     return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
@@ -664,14 +668,14 @@ class Downloader {
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-        this.s3.downloadBlob(requestOptions.url).then(async (s3ImageResp) => {
+        this.s3.downloadIfPossible(this.stripHttpFromUrl(requestOptions.url), requestOptions.url).then(async (s3ImageResp) => {
           if (s3ImageResp) {
             handler(null, {
               responseHeaders: s3ImageResp.headers,
               content: s3ImageResp.imgData,
             });
           } else {
-            await this.getCompressedImageAndUploadToS3(requestOptions, handler);
+            await this.imageDownloadCompressAndUploadToS3(requestOptions, handler);
           }
         }).catch((err) => {
           handler(err);
@@ -680,7 +684,7 @@ class Downloader {
         const resp = await axios(requestOptions);
         handler(null, {
           responseHeaders: resp.headers,
-          content: await this.getHttpBufferRespIfImage(resp),
+          content: await this.getCompressedBody(resp),
         });
       }
     } catch (err) {
@@ -700,17 +704,17 @@ class Downloader {
     }
   }
 
-  private async getCompressedImageAndUploadToS3<T>(requestOptions: any, handler: any) {
+  private async imageDownloadCompressAndUploadToS3<T>(requestOptions: any, handler: any) {
     const resp = await axios(requestOptions);
     const etag = resp.headers.etag;
-    const content = await this.getHttpBufferRespIfImage(resp);
+    const content = await this.getCompressedBody(resp);
     const compressionWorked = content.length < resp.data.length;
     if (compressionWorked) {
       resp.data = content;
     }
 
     if (etag) {
-      this.s3.uploadBlob(requestOptions.url, resp.data, etag);
+      this.s3.uploadBlob(this.stripHttpFromUrl(requestOptions.url), resp.data, etag);
     }
 
     handler(null, {

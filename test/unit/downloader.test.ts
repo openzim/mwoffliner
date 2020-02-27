@@ -5,7 +5,7 @@ import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
 import { mkdirPromise, mwRetToArticleDetail } from 'src/util';
-import S3 from 'src/s3';
+import S3 from 'src/S3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
 import { articleDetailXId } from 'src/stores';
@@ -154,19 +154,23 @@ _test('Downloader class with optimisation', async (t) => {
     const etagNotPresent = await downloader.downloadContent(`https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c`);
     t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
 
-    // FLOW OF IMAGE CACHING
-    // Delete the image already present in s3
-    await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: 'bmwiki-2x.png' });
-    t.ok(true, 'Image deleted from s3');
+    // Strip http(s) from url
+    const httpOrHttpsRemoved = downloader.stripHttpFromUrl(testImage);
+    t.assert(httpOrHttpsRemoved, 'http removed from url');
 
-    // Check if image exists after deleting from s3
-    const imageNotExists = await s3.downloadBlob(testImage);
-    t.equals(imageNotExists, undefined, 'Image not exists in s3 after deleting');
-    // Uploads the image to s3
+    // Flow of Image Caching
+    // Delete the image already present in S3
+    await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: httpOrHttpsRemoved });
+    t.ok(true, 'Image deleted from S3');
+
+    // Check if image exists after deleting from S3
+    const imageNotExists = await s3.downloadIfPossible(httpOrHttpsRemoved, testImage);
+    t.equals(imageNotExists, undefined, 'Image not exists in S3 after deleting');
+    // Uploads the image to S3
     await downloader.downloadContent(testImage);
     setTimeout(async function() {
         // Check if image exists after uploading
-        const imageExist = await s3.downloadBlob(testImage);
-        t.assert(imageExist, 'Image exists in s3 after uploading');
+        const imageExist = await s3.downloadIfPossible(httpOrHttpsRemoved, testImage);
+        t.assert(imageExist, 'Image exists in S3 after uploading');
     }, 7000);
 });

@@ -32,7 +32,7 @@ import { articleListHomeTemplate } from './Templates';
 import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
-import S3 from './s3';
+import S3 from './S3';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -124,7 +124,7 @@ async function execute(argv: any) {
     const queryReader = QueryStringParser.parse(s3Url.query, '?');
     this.s3Obj = new S3(s3Url.pathname, queryReader);
     await this.s3Obj.initialise().then((data: any) => {
-      logger.log('Successfuly logged in S3', data);
+      logger.log('Successfuly logged in S3');
     });
   }
 
