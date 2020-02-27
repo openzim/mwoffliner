@@ -119,7 +119,7 @@ async function execute(argv: any) {
 
   // Check for S3 creds
   if (optimisationCacheUrl) {
-    // Decompose the url with path and other s3 creds
+    // Decompose the url with path and other S3 creds
     const s3Url =  urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3Url.query, '?');
     this.s3Obj = new S3(s3Url.pathname, queryReader);
