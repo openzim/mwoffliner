@@ -18,6 +18,8 @@ import deepmerge from 'deepmerge';
 import { articleDetailXId } from './stores';
 import * as path from 'path';
 import md5 from 'md5';
+import S3 from './S3';
+import { URL_IMAGE_REGEX, MIME_IMAGE_REGEX, FIND_HTTP_REGEX } from './util/const';
 
 const imageminOptions = {
   plugins: [
@@ -38,6 +40,8 @@ interface DownloaderOpts {
   useDownloadCache: boolean;
   downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
+  optimisationCacheUrl: string;
+  s3?: S3;
 }
 
 class Downloader {
@@ -51,6 +55,8 @@ class Downloader {
   public useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
   public forceParsoidFallback: boolean = false;
+  public optimisationCacheUrl: string;
+  public s3: S3;
 
   private canFetchCoordinates = true;
   private activeRequests = 0;
@@ -58,7 +64,7 @@ class Downloader {
   private noLocalParserFallback = false;
   private urlPartCache: KVS<string> = {};
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3 }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -68,6 +74,8 @@ class Downloader {
     this.useDownloadCache = useDownloadCache;
     this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
+    this.optimisationCacheUrl = optimisationCacheUrl;
+    this.s3 = s3;
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
@@ -149,6 +157,18 @@ class Downloader {
       logger.info(`Coordinates not available on this wiki`);
       this.canFetchCoordinates = false;
     }
+  }
+
+  public isImageUrl (url: string): boolean {
+    return URL_IMAGE_REGEX.exec(url) ? true : false;
+  }
+
+  public isMimeTypeImage (mimetype: string): boolean {
+    return MIME_IMAGE_REGEX.exec(mimetype) ? true : false;
+  }
+
+  public stripHttpFromUrl (url: string) {
+    return url.replace(FIND_HTTP_REGEX, '');
   }
 
   public async initLocalMcs(forceLocalParsoid = true) {
@@ -454,6 +474,7 @@ class Downloader {
         // NOOP (download cache miss)
       }
     }
+
     const self = this;
     await self.claimRequest();
     return new Promise((resolve, reject) => {
@@ -638,26 +659,34 @@ class Downloader {
       });
   }
 
-  private async getContentCb(requestOptions: any, handler: any) {
+  private async getCompressedBody(resp: any): Promise<any> {
+    return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+  }
+
+  private getContentCb = async (requestOptions: any, handler: any) => {
     logger.info(`Downloading [${requestOptions.url}]`);
+
     try {
-      const resp = await axios(requestOptions);
-      const responseHeaders = resp.headers;
-
-      const shouldCompress = responseHeaders['content-type'].includes('image/');
-      const compressed = shouldCompress ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
-
-      const compressionWorked = compressed.length < resp.data.length;
-      if (compressionWorked) {
-        logger.info(`Compressed data from [${requestOptions.url}] from [${resp.data.length}] to [${compressed.length}]`);
-      } else if (shouldCompress) {
-        // logger.warn(`Failed to reduce file size after optimisation attempt [${requestOptions.url}]... Went from [${resp.data.length}] to [${compressed.length}]`);
+      if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
+        this.s3.downloadIfPossible(this.stripHttpFromUrl(requestOptions.url), requestOptions.url).then(async (s3ImageResp) => {
+          if (s3ImageResp) {
+            handler(null, {
+              responseHeaders: s3ImageResp.headers,
+              content: s3ImageResp.imgData,
+            });
+          } else {
+            await this.imageDownloadCompressAndUploadToS3(requestOptions, handler);
+          }
+        }).catch((err) => {
+          handler(err);
+        });
+      } else {
+        const resp = await axios(requestOptions);
+        handler(null, {
+          responseHeaders: resp.headers,
+          content: await this.getCompressedBody(resp),
+        });
       }
-
-      handler(null, {
-        responseHeaders,
-        content: compressionWorked ? compressed : resp.data,
-      });
     } catch (err) {
       try {
         if (err.response && err.response.status === 429) {
@@ -675,6 +704,25 @@ class Downloader {
     }
   }
 
+  private async imageDownloadCompressAndUploadToS3<T>(requestOptions: any, handler: any) {
+    const resp = await axios(requestOptions);
+    const etag = resp.headers.etag;
+    const content = await this.getCompressedBody(resp);
+    const compressionWorked = content.length < resp.data.length;
+    if (compressionWorked) {
+      resp.data = content;
+    }
+
+    if (etag) {
+      this.s3.uploadBlob(this.stripHttpFromUrl(requestOptions.url), resp.data, etag);
+    }
+
+    handler(null, {
+      responseHeaders: resp.headers,
+      content: compressionWorked ? content : resp.data,
+    });
+  }
+
   private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
     const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr));
     const items = query.categorymembers.filter((a: any) => a && a.title);
@@ -685,7 +733,6 @@ class Downloader {
       return items;
     }
   }
-
 }
 
 export default Downloader;
