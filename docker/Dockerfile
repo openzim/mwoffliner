@@ -13,12 +13,14 @@ COPY *.json ./
 COPY src src
 COPY res res
 COPY translation translation
+COPY extensions extensions
 COPY index.js .
 COPY dev dev
 RUN npm --global config set user root
 RUN npm config set unsafe-perm true
 RUN npm i
 RUN npm i -g .
+
 
 # Configure launch environment
 WORKDIR /
