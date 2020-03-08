@@ -44,8 +44,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
 
         responses.forEach(async function (resp: any) {
             try {
-                const content = resp.result.content;
-                const article = new ZimArticle({ url: resp.path, data: content, ns: resp.namespace || 'I' });
+                const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
                 await zimCreator.addArticle(article);
                 dump.status.files.success += 1;
             } catch (err) {
