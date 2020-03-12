@@ -1,3 +1,6 @@
+1.10.2:
+* FIX: Fix broken npm package
+
 1.10.1:
 * NEW: Support "http" prefixed URLs for --optimisationCacheUrl
 
