@@ -72,38 +72,42 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
-    // Enhance arguments array to have an index of the argument at hand
-    const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
-    const result = new Array(listOfArguments.length);
-    const promises = new Array(CONCURRENCY_LIMIT).fill(Promise.resolve());
-    // Recursively chain the next Promise to the currently executed Promise
-    function chainNext(p: any) {
-        if (argsCopy.length) {
-            const arg = argsCopy.shift();
-            return p.then(() => {
-                // Store the result into the array upon Promise completion
-                const operationPromise = downloader.downloadContent(arg.val.url).then((r) => {
-                    const resp = {
-                        result: r,
-                        path: arg.val.path,
-                        url: arg.val.url,
-                        namespace: arg.val.namespace,
-                        mult: arg.val.mult,
-                        width: arg.val.width,
-                    };
-                    result[arg.ind] = resp;
-                }, (err) => {
-                    logger.log('Not able to download content for', arg.val.url);
-                    return err;
+    try {
+        // Enhance arguments array to have an index of the argument at hand
+        const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
+        const result = new Array(listOfArguments.length);
+        const promises = new Array(CONCURRENCY_LIMIT).fill(Promise.resolve());
+        function chainNext(p: any) {
+            while (argsCopy.length > 0) {
+                const arg = argsCopy.shift();
+                return p.then(() => {
+                    // Store the result into the array upon Promise completion
+                    const operationPromise = downloader.downloadContent(arg.val.url).then((r) => {
+                        const resp = {
+                            result: r,
+                            path: arg.val.path,
+                            url: arg.val.url,
+                            namespace: arg.val.namespace,
+                            mult: arg.val.mult,
+                            width: arg.val.width,
+                        };
+                        result[arg.ind] = resp;
+                    }, (err) => {
+                        logger.log(`Not able to download content for ${arg.val.url}`);
+                        return err;
+                    });
+                    return operationPromise;
+                }, (err: any) => {
+                    logger.log(`Not able to resolve promise due to ${err}`);
                 });
-                return chainNext(operationPromise);
-            });
+            }
+            return p;
         }
-        return p;
+        await Promise.all(promises.map(chainNext));
+        return result;
+    } catch (err) {
+        logger.log(`Not able download in bulk due to ${err}`);
     }
-
-    await Promise.all(promises.map(chainNext));
-    return result;
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
