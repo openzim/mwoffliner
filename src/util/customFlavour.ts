@@ -4,15 +4,15 @@ import fs from 'fs';
 export function getCustomProcessorPath(customFlavour: string):string {
 
   /**
-   * Search for the customFlavour in the below order and 
+   * Search for the customFlavour in the below order and
    * returns the absolute path of the customFlavour.
-   * 
+   *
    * Order as follows
    * 1. Absolute Path
    * 2. Current directory in which command has been run
    * 3. mwoffliner's extensions directory
    * 4. Root folder
-   * 
+   *
    * Note: Extension(.js) does not necessarily be included in the customFlavour,
    * that's the reason .js is included in path resolution.
    */
@@ -28,7 +28,7 @@ export function getCustomProcessorPath(customFlavour: string):string {
 
   let fileFound = false;
 
-  for(let possiblePath of possiblePaths){
+  for(const possiblePath of possiblePaths){
     if(!fileFound && fs.existsSync(possiblePath)){
       fileFound = true;
       return possiblePath;
