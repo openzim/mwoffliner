@@ -25,7 +25,7 @@ import Redis from './Redis';
 import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
 import { mapLimit } from 'promiso';
 import logger from './Logger';
-import { getAndProcessStylesheets } from './util';
+import { getAndProcessStylesheets, getCustomProcessorPath } from './util';
 import { Dump } from './Dump';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
@@ -83,7 +83,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     noLocalParserFallback,
     s3Obj,
-    customFlavour: customProcessorPath,
+    customFlavour,
   } = argv;
 
   (process as any).verbose = !!verbose;
@@ -110,11 +110,17 @@ async function execute(argv: any) {
   }
 
   let customProcessor = null;
-  if (customProcessorPath) {
-    const CustomProcessor = require(
-      path.join(process.cwd(), customProcessorPath),
-    );
-    customProcessor = new CustomProcessor();
+  if (customFlavour) {
+    const customProcessorPath = getCustomProcessorPath(customFlavour);
+    if(customProcessorPath) {
+      logger.info("Using custom Flavour from - ", customProcessorPath);
+      const CustomProcessor = require(
+        customProcessorPath
+      );
+      customProcessor = new CustomProcessor();
+    } else {
+      throw Error('Custom Flavour not found');
+    }
   }
 
   // Check for S3 creds
