@@ -1,15 +1,20 @@
 import pathParser from 'path';
 import fs from 'fs';
 
-export function getCustomProcessorPath(customFlavour: string): string {
+/**
+ * Search for the customFlavour in the following order
+ *
+ * 1. Absolute Path
+ * 2. Current directory in which command has been run
+ * 3. mwoffliner's extensions directory
+ * 4. Root folder
+ *
+ * Note: CustomFlavour doesn't necessarily need be given with extension(.js)
+ * like --customFlavour=wiktionary_fr. Hence, .js is explicitly added for
+ * path resolution.
+ */
 
-  /**
-   * Priorities as follows
-   * 1. Absolute Path
-   * 2. Current directory in which command has been run
-   * 3. mwoffliner's extensions directory
-   * 4. Root folder
-   */
+export function getCustomProcessorPath(customFlavour: string): string {
   const possiblePaths = [
     customFlavour,
     pathParser.resolve(process.cwd(), customFlavour),
