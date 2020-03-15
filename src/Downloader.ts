@@ -235,6 +235,11 @@ class Downloader {
     });
     const domain = (urlParser.parse(this.mw.base)).host;
     this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+
+    if(this.mw.apiPath == 'api.php'){
+      this.mcsUrl = `http://localhost:8000/${{domain}}/v3/{+path}`
+    }
+    
     if (forceLocalParsoid) {
       const webUrlHost = urlParser.parse(this.mw.webUrl).host;
       this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
