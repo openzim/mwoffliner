@@ -14,7 +14,7 @@ import fs from 'fs';
  * path resolution.
  */
 
-export function getCustomProcessorPath(customFlavour: string): string {
+export function getCustomFlavourPath(customFlavour: string): string {
   const possiblePaths = [
     customFlavour,
     pathParser.resolve(process.cwd(), customFlavour),
