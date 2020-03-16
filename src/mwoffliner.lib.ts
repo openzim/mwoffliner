@@ -111,11 +111,11 @@ async function execute(argv: any) {
 
   let customProcessor = null;
   if (customFlavour) {
-    const customProcessorPath = getCustomFlavourPath(customFlavour);
-    if (customProcessorPath) {
-      logger.info('Using custom Flavour from - ', customProcessorPath);
+    const customFlavourPath = getCustomFlavourPath(customFlavour);
+    if (customFlavourPath) {
+      logger.info('Using custom Flavour from - ', customFlavourPath);
       const CustomProcessor = require(
-        customProcessorPath,
+        customFlavourPath,
       );
       customProcessor = new CustomProcessor();
     } else {
