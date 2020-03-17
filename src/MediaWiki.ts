@@ -128,6 +128,7 @@ class MediaWiki {
   }
 
   public extractPageTitleFromHref(href: any) {
+    const wikiPathinUrl = '/wiki/';
     try {
       const pathname = urlParser.parse(href, false, true).pathname || '';
       if (pathname.indexOf('./') === 0) {
@@ -135,6 +136,9 @@ class MediaWiki {
       }
       if (pathname.indexOf(this.webUrlPath) === 0) {
         return U.decodeURIComponent(pathname.substr(this.webUrlPath.length));
+      }
+      if (this.wikiPath === 'index.php') {
+        return U.decodeURIComponent(pathname.substr(wikiPathinUrl.length));
       }
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
