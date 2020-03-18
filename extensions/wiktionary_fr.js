@@ -9,7 +9,7 @@ module.exports = class WiktionaryFR { // implements CustomProcessor
             title.closest('details').remove();
         }
 
-        const h4titles = Array.from(doc.querySelectorAll(`h3`));
+        const h4titles = Array.from(doc.querySelectorAll(`h4`));
         for (const h4title of h4titles) {
             h4title.closest('details').remove();
         }
