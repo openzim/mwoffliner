@@ -137,7 +137,7 @@ class MediaWiki {
       if (pathname.indexOf(this.webUrlPath) === 0) {
         return U.decodeURIComponent(pathname.substr(this.webUrlPath.length));
       }
-      if (this.wikiPath === 'index.php') {
+      if (this.wikiPath === 'index.php' && pathname.includes(wikiPathinUrl)) {
         return U.decodeURIComponent(pathname.substr(wikiPathinUrl.length));
       }
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
