@@ -59,11 +59,9 @@ class S3 {
     }
 
     public async downloadIfPossible(upstreamUrl: string, requestUrl: string): Promise<any> {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             this.s3Handler.getObject({Bucket: this.bucketName, Key: upstreamUrl}, async (err: any, val: any) => {
-                if (err && err.statusCode === 404) {
-                    resolve();
-                } else {
+                if (val) {
                     const valHeaders = (({ Body, ...o }) => o)(val);
                     const urlHeaders = await axios.head(requestUrl);
                     // Check if ETag is in sync
@@ -72,6 +70,10 @@ class S3 {
                     } else {
                         resolve();
                     }
+                } else if (err && err.statusCode === 404) {
+                    resolve();
+                } else {
+                    reject(err);
                 }
             });
         }).catch((err) => {
