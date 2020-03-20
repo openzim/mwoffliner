@@ -13,6 +13,8 @@ module.exports = class WiktionaryFR { // implements CustomProcessor
         for (const h4title of h4titles) {
             h4title.closest('details').remove();
         }
+        //Remove h2 summary title
+        doc.querySelector('h2').closest('summary').setAttribute('style', 'display:none! important')
 
         return doc;
     }
