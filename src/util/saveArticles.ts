@@ -93,7 +93,6 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                         };
                         result[arg.ind] = resp;
                     }, (err) => {
-                        logger.log(`Not able to download content for ${arg.val.url}`);
                         return err;
                     });
                     return operationPromise;
