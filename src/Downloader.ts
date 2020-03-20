@@ -678,6 +678,7 @@ class Downloader {
             await this.imageDownloadCompressAndUploadToS3(requestOptions, handler);
           }
         }).catch((err) => {
+          logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
           handler(err);
         });
       } else {
@@ -696,6 +697,7 @@ class Downloader {
           this.maxActiveRequests = newMaxActiveRequests;
           this.getContentCb(requestOptions, handler);
         } else {
+          logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
           handler(err);
         }
       } catch (a) {
