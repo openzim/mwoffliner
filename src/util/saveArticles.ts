@@ -34,7 +34,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     let prevPercentProgress = -1;
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
-        logger.log(`Worker [${workerId}] Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+        logger.log(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
         const listOfArguments = [];
         for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
             listOfArguments.push({ path, url, namespace, mult, width });
@@ -119,7 +119,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
             const articleKeys = Object.keys(articleKeyValuePairs);
-            logger.log(`Worker [${workerId}] Processing batch of article ids [${logger.logifyArray(articleKeys)}]`);
+            logger.log(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(articleKeys)}]`);
             const numKeys = await articleDetailXId.len();
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
