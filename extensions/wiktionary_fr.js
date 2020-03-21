@@ -9,6 +9,13 @@ module.exports = class WiktionaryFR { // implements CustomProcessor
             title.closest('details').remove();
         }
 
+        const h4titles = Array.from(doc.querySelectorAll(`h4`));
+        for (const h4title of h4titles) {
+            h4title.closest('details').remove();
+        }
+        //Remove h2 summary title
+        doc.querySelector('h2').closest('summary').setAttribute('style', 'display:none! important')
+
         return doc;
     }
 }
