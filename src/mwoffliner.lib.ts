@@ -384,7 +384,7 @@ async function execute(argv: any) {
       data: `mwoffliner ${packageJSON.version}`,
       url: 'Scraper',
     });
-    await zimCreator.addArticle(scraperArticle);
+    zimCreator.addArticle(scraperArticle);
 
     logger.info('Copying Static Resource Files');
     await saveStaticFiles(config, zimCreator);
@@ -400,7 +400,7 @@ async function execute(argv: any) {
     logger.log(`Downloaded stylesheets`);
 
     const article = new ZimArticle({ url: `style.css`, data: finalCss, ns: '-' });
-    await zimCreator.addArticle(article);
+    zimCreator.addArticle(article);
     await saveFavicon(dump, zimCreator);
 
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
@@ -488,7 +488,7 @@ async function execute(argv: any) {
               title,
               redirectUrl: targetId,
             });
-            await zimCreator.addArticle(redirectArticle);
+            zimCreator.addArticle(redirectArticle);
             dump.status.redirects.written += 1;
           }
         }
@@ -613,11 +613,7 @@ async function execute(argv: any) {
       return zimCreator.addArticle(article);
     }
 
-    if (mainPage) {
-      return createMainPageRedirect();
-    } else {
-      return createMainPage();
-    }
+    return mainPage ? createMainPageRedirect() : createMainPage();
   }
 
   closeRedis(redis);

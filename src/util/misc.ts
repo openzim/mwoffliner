@@ -163,7 +163,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
       try {
         const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
         const article = new ZimArticle({ url: cssPath(config, css), data: cssCont, ns: '-' });
-        await zimCreator.addArticle(article);
+        zimCreator.addArticle(article);
       } catch (error) {
         logger.warn(`Could not create ${css} file : ${error}`);
       }
@@ -173,7 +173,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
     try {
       const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
       const article = new ZimArticle({ url: jsPath(config, js), data: jsCont, ns: '-' });
-      await zimCreator.addArticle(article);
+      zimCreator.addArticle(article);
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`);
     }

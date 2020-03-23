@@ -45,7 +45,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         responses.forEach(async function (resp: any) {
             try {
                 const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
-                await zimCreator.addArticle(article);
+                zimCreator.addArticle(article);
                 dump.status.files.success += 1;
             } catch (err) {
                 if (!isRetry) {
@@ -202,7 +202,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             shouldIndex: true,
                         });
 
-                        await zimCreator.addArticle(zimArticle);
+                        zimCreator.addArticle(zimArticle);
 
                         dump.status.articles.success += 1;
                     }
@@ -224,7 +224,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     );
 
     const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
-    await zimCreator.addArticle(jsConfigVarArticle);
+    zimCreator.addArticle(jsConfigVarArticle);
 
     return {
         jsModuleDependencies,

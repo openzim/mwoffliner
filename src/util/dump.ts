@@ -137,7 +137,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
             ? jsPath(config, module)
             : cssPath(config, module);
         const article = new ZimArticle({ url: articleId, data: text, ns: '-' });
-        await zimCreator.addArticle(article);
+        zimCreator.addArticle(article);
         logger.info(`Saved module [${module}]`);
     } catch (e) {
         logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
