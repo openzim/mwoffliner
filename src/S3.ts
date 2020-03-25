@@ -63,13 +63,16 @@ class S3 {
             this.s3Handler.getObject({Bucket: this.bucketName, Key: upstreamUrl}, async (err: any, val: any) => {
                 if (val) {
                     const valHeaders = (({ Body, ...o }) => o)(val);
-                    const urlHeaders = await axios.head(requestUrl);
-                    // Check if ETag is in sync
-                    if (urlHeaders.headers.etag === val.Metadata.etag) {
-                        resolve({ headers: valHeaders, imgData: val.Body });
-                    } else {
-                        resolve();
-                    }
+                    axios.head(requestUrl).then((urlHeaders) => {
+                         // Check if ETag is in sync
+                        if (urlHeaders.headers.etag === val.Metadata.etag) {
+                            resolve({ headers: valHeaders, imgData: val.Body });
+                        } else {
+                            resolve();
+                        }
+                    }).catch((err) => {
+                        reject(err);
+                    });
                 } else if (err && err.statusCode === 404) {
                     resolve();
                 } else {
