@@ -75,9 +75,8 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
     try {
         // Enhance arguments array to have an index of the argument at hand
         const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
-        const results = new Array(listOfArguments.length);
-
         const argList = [];
+        
         while (argsCopy.length > 0) {
             const arg = argsCopy.shift();
             argList.push(arg);
@@ -95,7 +94,6 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                 resp.width = arg.val.width;
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
-                    results[arg.ind] = resp;
                     return resp;
                 }).catch((err) => {
                     return resp;
