@@ -44,9 +44,11 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         const responses = await downloadBulk(listOfArguments, downloader);
         responses.forEach(async function (resp: any) {
             try {
-                const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
-                zimCreator.addArticle(article);
-                dump.status.files.success += 1;
+                if (resp.result && resp.result.content) {
+                    const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
+                    zimCreator.addArticle(article);
+                    dump.status.files.success += 1;
+                }
             } catch (err) {
                 if (!isRetry) {
                     await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
@@ -76,7 +78,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
         // Enhance arguments array to have an index of the argument at hand
         const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
         const argList = [];
-        
+
         while (argsCopy.length > 0) {
             const arg = argsCopy.shift();
             argList.push(arg);
