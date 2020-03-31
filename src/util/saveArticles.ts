@@ -34,42 +34,59 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     logger.log(`${isRetry ? 'Retrying' : 'Downloading'} a total of [${numKeys}] files`);
     let prevPercentProgress = -1;
 
-    await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
-        logger.log(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
-        const listOfArguments = [];
-        for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
-            listOfArguments.push({ path, url, namespace, mult, width });
-        }
-
-        const responses = await downloadBulk(listOfArguments, downloader);
-        responses.forEach(async function (resp: any) {
-            try {
-                if (resp.result && resp.result.content) {
-                    const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
-                    zimCreator.addArticle(article);
-                    dump.status.files.success += 1;
-                }
-            } catch (err) {
-                if (!isRetry) {
-                    await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
-                } else {
-                    logger.warn(`Error downloading file [${resp.url}], skipping`);
-                    dump.status.files.fail += 1;
-                    await filesToDownloadXPath.delete(resp.path);
-                }
+    try {
+        await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
+            logger.log(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+            const listOfArguments = [];
+            for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
+                listOfArguments.push({ path, url, namespace, mult, width });
             }
-            if (dump.status.files.success % 10 === 0) {
-                const percentProgress = Math.floor(dump.status.files.success / numKeys * 1000) / 10;
-                if (percentProgress !== prevPercentProgress) {
-                    prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading files [${dump.status.files.success}/${numKeys}] [${percentProgress}%]`);
-                }
+            try {
+                const responses = await downloadBulk(listOfArguments, downloader);
+                responses.forEach(async function (resp: any) {
+                    try {
+                        if (resp.result && resp.result.content) {
+                            const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
+                            zimCreator.addArticle(article);
+                            dump.status.files.success += 1;
+                        } else if (!isRetry) {
+                            await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
+                        } else {
+                            logger.warn(`Error downloading file as result or content is null [${resp.url}], skipping`);
+                            dump.status.files.fail += 1;
+                            await filesToDownloadXPath.delete(resp.path);
+                        }
+                    } catch (err) {
+                        if (!isRetry) {
+                            await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
+                        } else {
+                            logger.warn(`Error downloading file [${resp.url}], skipping`);
+                            dump.status.files.fail += 1;
+                            await filesToDownloadXPath.delete(resp.path);
+                        }
+                    }
+                    if (dump.status.files.success % 10 === 0) {
+                        const percentProgress = Math.floor(dump.status.files.success / numKeys * 1000) / 10;
+                        if (percentProgress !== prevPercentProgress) {
+                            prevPercentProgress = percentProgress;
+                            logger.log(`Progress downloading files [${dump.status.files.success}/${numKeys}] [${percentProgress}%]`);
+                        }
+                    }
+                });
+            } catch (errDownloadInBulk) {
+                logger.log(`Not able to download in bulk of files due to ${errDownloadInBulk}`);
             }
         });
-    });
+    } catch (errIterate) {
+        logger.log(`Not able to iteratively download files due to ${errIterate}`);
+    }
 
     if (!isRetry) {
-        await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, true);
+        try {
+            await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, true);
+        } catch (err) {
+            logger.log(`Not able to retry downloading of files due to ${err}`);
+        }
     }
 }
 
@@ -92,7 +109,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                 resp.path = arg.val.path;
                 resp.url = arg.val.url;
                 resp.namespace = arg.val.namespace;
-                resp.mult =  arg.val.mult;
+                resp.mult = arg.val.mult;
                 resp.width = arg.val.width;
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
