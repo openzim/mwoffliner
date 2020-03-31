@@ -252,110 +252,119 @@ class Downloader {
     return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
-  public async getArticleDetailsIds(articleIds: string[], continuation?: ContinueOpts, shouldGetThumbnail = false): Promise<QueryMwRet> {
-    const queryOpts = {
-      ...this.getArticleQueryOpts(shouldGetThumbnail),
-      titles: articleIds.join('|'),
-      ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
-      ...(this.mw.getCategories ? {
-        cllimit: 'max',
-        clshow: '!hidden',
-      } : {}),
-      ...(continuation || {}),
-    };
+  public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
+    let continuation: ContinueOpts;
+    let finalProcessedResp: QueryMwRet;
+    while (true) {
+      const queryOpts = {
+        ...this.getArticleQueryOpts(shouldGetThumbnail),
+        titles: articleIds.join('|'),
+        ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
+        ...(this.mw.getCategories ? {
+          cllimit: 'max',
+          clshow: '!hidden',
+        } : {}),
+        ...(continuation || {}),
+      };
+      const queryString = objToQueryString(queryOpts);
+      const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      const resp = await this.getJSON<MwApiResponse>(reqUrl);
+      Downloader.handleMWWarningsAndErrors(resp);
 
-    const queryString = objToQueryString(queryOpts);
-    const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+      if (resp.continue) {
+        continuation = resp.continue;
+        const relevantDetails = this.stripNonContinuedProps(processedResponse);
 
-    const resp = await this.getJSON<MwApiResponse>(reqUrl);
-    Downloader.handleMWWarningsAndErrors(resp);
-
-    let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
-
-    if (resp.continue) {
-
-      const nextResp = await this.getArticleDetailsIds(articleIds, resp.continue);
-
-      const relevantDetails = this.stripNonContinuedProps(nextResp, continuation);
-
-      return deepmerge(processedResponse, relevantDetails);
-
-    } else {
-      if (this.mw.getCategories) {
-        processedResponse = await this.setArticleSubCategories(processedResponse);
+        finalProcessedResp = finalProcessedResp === undefined ? relevantDetails :
+          deepmerge(finalProcessedResp, relevantDetails);
+      } else {
+        if (this.mw.getCategories) {
+          processedResponse = await this.setArticleSubCategories(processedResponse);
+        }
+        finalProcessedResp = finalProcessedResp === undefined ? processedResponse
+          : deepmerge(finalProcessedResp, processedResponse);
+        break;
       }
-      return processedResponse;
     }
+    return finalProcessedResp;
   }
 
-  public async getArticleDetailsNS(ns: number, gapcontinue: string = '', queryContinuation?: QueryContinueOpts): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
-    const queryOpts: KVS<any> = {
-      ...this.getArticleQueryOpts(),
-      ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
-      ...(this.mw.getCategories ? {
-        cllimit: 'max',
-        clshow: '!hidden',
-      } : {}),
-      rawcontinue: 'true',
-      generator: 'allpages',
-      gapfilterredir: 'nonredirects',
-      gaplimit: 'max',
-      gapnamespace: String(ns),
-      gapcontinue,
-    };
+  public async getArticleDetailsNS(ns: number, gapcontinue: string = ''): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
+    let queryContinuation: QueryContinueOpts;
+    let finalProcessedResp: QueryMwRet;
+    let gCont: string = null;
+    while (true) {
+      const queryOpts: KVS<any> = {
+        ...this.getArticleQueryOpts(),
+        ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
+        ...(this.mw.getCategories ? {
+          cllimit: 'max',
+          clshow: '!hidden',
+        } : {}),
+        rawcontinue: 'true',
+        generator: 'allpages',
+        gapfilterredir: 'nonredirects',
+        gaplimit: 'max',
+        gapnamespace: String(ns),
+        gapcontinue,
+      };
 
-    if (queryContinuation) {
-      if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
-        queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
+      if (queryContinuation) {
+        if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
+          queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
+        }
+        if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
+          queryOpts.clcontinue = queryContinuation.categories.clcontinue;
+        }
+        if (queryContinuation.pageimages && queryContinuation.pageimages.picontinue) {
+          queryOpts.picontinue = queryContinuation.pageimages.picontinue;
+        }
+        if (queryContinuation.redirects && queryContinuation.redirects.rdcontinue) {
+          queryOpts.rdcontinue = queryContinuation.redirects.rdcontinue;
+        }
       }
-      if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
-        queryOpts.clcontinue = queryContinuation.categories.clcontinue;
-      }
-      if (queryContinuation.pageimages && queryContinuation.pageimages.picontinue) {
-        queryOpts.picontinue = queryContinuation.pageimages.picontinue;
-      }
-      if (queryContinuation.redirects && queryContinuation.redirects.rdcontinue) {
-        queryOpts.rdcontinue = queryContinuation.redirects.rdcontinue;
-      }
-    }
 
-    const queryString = objToQueryString(queryOpts);
-    const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      const queryString = objToQueryString(queryOpts);
+      const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
     Downloader.handleMWWarningsAndErrors(resp);
 
-    let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+      let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
-    let gCont: string = null;
-    try {
-      gCont = resp['query-continue'].allpages.gapcontinue;
-    } catch (err) { /* NOOP */ }
+      try {
+        gCont = resp['query-continue'].allpages.gapcontinue;
+      } catch (err) { /* NOOP */ }
 
-    const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => {
-      return !(
-        key === 'allpages'
-      );
-    }).length === 0;
+      const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => {
+        return !(
+          key === 'allpages'
+        );
+      }).length === 0;
 
-    if (!queryComplete) {
-      const nextResp = await this.getArticleDetailsNS(ns, gapcontinue, resp['query-continue']);
-      const relevantDetails = this.stripNonContinuedProps(nextResp.articleDetails, queryContinuation);
-      return {
-        articleDetails: deepmerge(processedResponse, relevantDetails),
-        gapContinue: gCont,
-      };
-    } else {
-      if (this.mw.getCategories) {
-        processedResponse = await this.setArticleSubCategories(processedResponse);
+      if (!queryComplete) {
+        queryContinuation = resp['query-continue'];
+
+        const relevantDetails = this.stripNonContinuedProps(processedResponse);
+
+        finalProcessedResp = finalProcessedResp === undefined ? relevantDetails :
+          deepmerge(finalProcessedResp, relevantDetails);
+      } else {
+        if (this.mw.getCategories) {
+          processedResponse = await this.setArticleSubCategories(processedResponse);
+        }
+
+        finalProcessedResp = finalProcessedResp === undefined ? processedResponse
+          : deepmerge(finalProcessedResp, processedResponse);
+        break;
       }
-
-      return {
-        articleDetails: processedResponse,
-        gapContinue: gCont,
-      };
     }
 
+    return {
+      articleDetails: finalProcessedResp,
+      gapContinue: gCont,
+    };
   }
 
   public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<Array<{ articleId: string, displayTitle: string, html: string }>> {
