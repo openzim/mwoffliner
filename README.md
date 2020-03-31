@@ -20,7 +20,7 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) to know more about MWoffliner developm
 [![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
 [![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
-![NPM](https://img.shields.io/npm/l/mwoffliner.svg)
+![License](https://img.shields.io/npm/l/mwoffliner.svg)
 
 ## Prerequisites
 
