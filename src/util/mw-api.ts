@@ -26,7 +26,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
                 try {
                     if (articleIds.length) {
-                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, undefined, numThumbnails < 100);
+                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
                         const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
                         numThumbnails += articlesWithThumbnail.length;
 
