@@ -43,19 +43,26 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
 
         const responses = await downloadBulk(listOfArguments, downloader);
         responses.forEach(async function (resp: any) {
+            let isFailed = false;
             try {
                 if (resp.result && resp.result.content) {
                     const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
                     zimCreator.addArticle(article);
                     dump.status.files.success += 1;
+                } else {
+                    isFailed = true;
                 }
             } catch (err) {
-                if (!isRetry) {
-                    await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
-                } else {
-                    logger.warn(`Error downloading file [${resp.url}], skipping`);
-                    dump.status.files.fail += 1;
-                    await filesToDownloadXPath.delete(resp.path);
+                isFailed = true;
+            } finally {
+                if (isFailed) {
+                    if (!isRetry) {
+                        await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
+                    } else {
+                        logger.warn(`Error downloading file [${resp.url}], skipping`);
+                        dump.status.files.fail += 1;
+                        await filesToDownloadXPath.delete(resp.path);
+                    }
                 }
             }
             if (dump.status.files.success % 10 === 0) {
@@ -83,7 +90,6 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
             const arg = argsCopy.shift();
             argList.push(arg);
         }
-
         return mapLimit(
             argList,
             CONCURRENCY_LIMIT,
@@ -92,7 +98,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                 resp.path = arg.val.path;
                 resp.url = arg.val.url;
                 resp.namespace = arg.val.namespace;
-                resp.mult =  arg.val.mult;
+                resp.mult = arg.val.mult;
                 resp.width = arg.val.width;
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
