@@ -459,7 +459,7 @@ async function execute(argv: any) {
     }));
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
-   
+
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
 
