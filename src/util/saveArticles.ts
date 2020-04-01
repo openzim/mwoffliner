@@ -17,6 +17,7 @@ import { getSizeFromUrl, getRelativeFilePath } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT } from './const';
+import { any } from 'async';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -41,19 +42,27 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         }
 
         const responses = await downloadBulk(listOfArguments, downloader);
-
         responses.forEach(async function (resp: any) {
+            let isFailed = false;
             try {
-                const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
-                zimCreator.addArticle(article);
-                dump.status.files.success += 1;
-            } catch (err) {
-                if (!isRetry) {
-                    await filesToRetryXPath.set(resp.path, { url : resp.url, namespace : resp.namespace, mult : resp.mult, width: resp.width });
+                if (resp.result && resp.result.content) {
+                    const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
+                    zimCreator.addArticle(article);
+                    dump.status.files.success += 1;
                 } else {
-                    logger.warn(`Error downloading file [${resp.url}], skipping`);
-                    dump.status.files.fail += 1;
-                    await filesToDownloadXPath.delete(resp.path);
+                    isFailed = true;
+                }
+            } catch (err) {
+                isFailed = true;
+            } finally {
+                if (isFailed) {
+                    if (!isRetry) {
+                        await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
+                    } else {
+                        logger.warn(`Error downloading file [${resp.url}], skipping`);
+                        dump.status.files.fail += 1;
+                        await filesToDownloadXPath.delete(resp.path);
+                    }
                 }
             }
             if (dump.status.files.success % 10 === 0) {
@@ -75,35 +84,30 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
     try {
         // Enhance arguments array to have an index of the argument at hand
         const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })));
-        const result = new Array(listOfArguments.length);
-        const promises = new Array(CONCURRENCY_LIMIT).fill(Promise.resolve());
-        function chainNext(p: any) {
-            while (argsCopy.length > 0) {
-                const arg = argsCopy.shift();
-                return p.then(() => {
-                    // Store the result into the array upon Promise completion
-                    const operationPromise = downloader.downloadContent(arg.val.url).then((r) => {
-                        const resp = {
-                            result: r,
-                            path: arg.val.path,
-                            url: arg.val.url,
-                            namespace: arg.val.namespace,
-                            mult: arg.val.mult,
-                            width: arg.val.width,
-                        };
-                        result[arg.ind] = resp;
-                    }, (err) => {
-                        return err;
-                    });
-                    return operationPromise;
-                }, (err: any) => {
-                    logger.log(`Not able to resolve promise due to ${err}`);
-                });
-            }
-            return p;
+        const argList = [];
+
+        while (argsCopy.length > 0) {
+            const arg = argsCopy.shift();
+            argList.push(arg);
         }
-        await Promise.all(promises.map(chainNext));
-        return result;
+        return mapLimit(
+            argList,
+            CONCURRENCY_LIMIT,
+            async (arg) => {
+                const resp: any = {};
+                resp.path = arg.val.path;
+                resp.url = arg.val.url;
+                resp.namespace = arg.val.namespace;
+                resp.mult = arg.val.mult;
+                resp.width = arg.val.width;
+                return downloader.downloadContent(arg.val.url).then((r) => {
+                    resp.result = r;
+                    return resp;
+                }).catch((err) => {
+                    return resp;
+                });
+            },
+        );
     } catch (err) {
         logger.log(`Not able download in bulk due to ${err}`);
     }
