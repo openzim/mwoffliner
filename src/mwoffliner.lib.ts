@@ -458,7 +458,11 @@ async function execute(argv: any) {
       });
     }));
 
-    await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
+    try {
+      await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
+    } catch(err) {
+      logger.log(`Not able to download files due to ${err}`);
+    }
 
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
