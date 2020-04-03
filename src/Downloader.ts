@@ -678,8 +678,7 @@ class Downloader {
             await this.imageDownloadCompressAndUploadToS3(requestOptions, handler);
           }
         }).catch((err) => {
-          logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
-          handler(err);
+          this.errHandler(err, requestOptions, handler);
         });
       } else {
         const resp = await axios(requestOptions);
@@ -690,20 +689,22 @@ class Downloader {
       }
     } catch (err) {
       try {
-        if (err.response && err.response.status === 429) {
-          logger.log(`Received a [status=429], slowing down`);
-          const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
-          logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
-          this.maxActiveRequests = newMaxActiveRequests;
-          this.getContentCb(requestOptions, handler);
-        } else {
-          logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
-          handler(err);
-        }
+        this.errHandler(err, requestOptions, handler);
       } catch (a) {
         handler(err);
       }
     }
+  }
+
+  private errHandler(err: any, requestOptions: any, handler: any) {
+    if (err.response && err.response.status === 429) {
+      logger.log(`Received a [status=429], slowing down`);
+      const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+      logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+      this.maxActiveRequests = newMaxActiveRequests;
+    }
+    logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
+    handler(err);
   }
 
   private async imageDownloadCompressAndUploadToS3<T>(requestOptions: any, handler: any) {
