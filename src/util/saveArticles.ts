@@ -29,9 +29,9 @@ type FileStore = RedisKvs<{
     width?: number;
 }>;
 
-export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, isRetry = false) {
+export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retry_later = true) {
     const numKeys = await fileStore.len();
-    logger.log(`${isRetry ? 'Retrying' : 'Downloading'} a total of [${numKeys}] files`);
+    logger.log(`Downloading a total of [${numKeys}] files`);
     let prevPercentProgress = -1;
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
@@ -56,7 +56,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 isFailed = true;
             } finally {
                 if (isFailed) {
-                    if (!isRetry) {
+                    if (retry_later) {
                         await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
                     } else {
                         logger.warn(`Error downloading file [${resp.url}], skipping`);
@@ -75,8 +75,8 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         });
     });
 
-    if (!isRetry) {
-        await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, true);
+    if (retry_later) {
+        await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false);
     }
 }
 
