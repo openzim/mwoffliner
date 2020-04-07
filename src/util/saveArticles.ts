@@ -17,7 +17,6 @@ import { getSizeFromUrl, getRelativeFilePath } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT } from './const';
-import { any } from 'async';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -29,20 +28,22 @@ type FileStore = RedisKvs<{
     width?: number;
 }>;
 
-export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retry_later = true) {
-    const numKeys = await fileStore.len();
-    logger.log(`Downloading a total of [${numKeys}] files`);
-    let prevPercentProgress = -1;
+export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
+    const numKeys = (await fileStore.len()) + dump.status.files.success + dump.status.files.fail;
+    logger.log(`${!retryLater ? 'RE-' : ''}Downloading a total of [${numKeys}] files`);
+    let prevPercentProgress: string;
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
         logger.log(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+
+        // todo align fileDownloadPairs and listOfArguments
         const listOfArguments = [];
         for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
             listOfArguments.push({ path, url, namespace, mult, width });
         }
 
         const responses = await downloadBulk(listOfArguments, downloader);
-        responses.forEach(async function (resp: any) {
+        for (const resp of responses) {
             let isFailed = false;
             try {
                 if (resp.result && resp.result.content) {
@@ -56,7 +57,8 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 isFailed = true;
             } finally {
                 if (isFailed) {
-                    if (retry_later) {
+                    // todo don't queue 404 for retry
+                    if (retryLater) {
                         await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
                     } else {
                         logger.warn(`Error downloading file [${resp.url}], skipping`);
@@ -65,19 +67,21 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                     }
                 }
             }
-            if (dump.status.files.success % 10 === 0) {
-                const percentProgress = Math.floor(dump.status.files.success / numKeys * 1000) / 10;
+            if ((dump.status.files.success + dump.status.files.fail) % 10 === 0) {
+                const percentProgress = ((dump.status.files.success + dump.status.files.fail) / numKeys * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading files [${dump.status.files.success}/${numKeys}] [${percentProgress}%]`);
+                    logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${numKeys}] [${percentProgress}%]`);
                 }
             }
-        });
+        }
     });
 
-    if (retry_later) {
+    if (retryLater) {
         await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false);
     }
+
+    logger.log(`Done with ${!retryLater ? 'RE-' : ''}Downloading a total of [${numKeys}] files`);
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
