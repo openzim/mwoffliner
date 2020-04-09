@@ -29,8 +29,10 @@ type FileStore = RedisKvs<{
 }>;
 
 export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
-    const numKeys = (await fileStore.len()) + dump.status.files.success + dump.status.files.fail;
-    logger.log(`${!retryLater ? 'RE-' : ''}Downloading a total of [${numKeys}] files`);
+    const filesForAttempt = await fileStore.len();
+    const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail;
+
+    logger.log(`${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files...`);
     let prevPercentProgress: string;
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
@@ -68,10 +70,10 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 }
             }
             if ((dump.status.files.success + dump.status.files.fail) % 10 === 0) {
-                const percentProgress = ((dump.status.files.success + dump.status.files.fail) / numKeys * 100).toFixed(1);
+                const percentProgress = ((dump.status.files.success + dump.status.files.fail) / filesTotal * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${numKeys}] [${percentProgress}%]`);
+                    logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`);
                 }
             }
         }
@@ -81,7 +83,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false);
     }
 
-    logger.log(`Done with ${!retryLater ? 'RE-' : ''}Downloading a total of [${numKeys}] files`);
+    logger.log(`Done with ${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files`);
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
