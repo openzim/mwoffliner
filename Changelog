@@ -1,3 +1,6 @@
+1.10.3:
+* FIX: Better logging while fetching the articles
+
 1.10.2:
 * FIX: Fix broken npm package
 
