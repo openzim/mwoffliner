@@ -20,3 +20,5 @@ tsconfig*
 README.md
 CONTRIBUTING.md
 docker
+mwo-test-*
+*tmp
