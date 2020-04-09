@@ -17,7 +17,7 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) to know more about MWoffliner developm
 
 [![npm](https://img.shields.io/npm/v/mwoffliner.svg)](https://www.npmjs.com/package/mwoffliner)
 [![Docker Build Status](https://img.shields.io/docker/build/openzim/mwoffliner)](https://hub.docker.com/r/openzim/mwoffliner)
-[![Build Status](https://travis-ci.org/openzim/mwoffliner.svg?branch=master)](https://travis-ci.org/openzim/mwoffliner)
+[![Build Status](https://travis-ci.com/openzim/mwoffliner.svg?branch=master)](https://travis-ci.com/openzim/mwoffliner)
 [![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
 ![License](https://img.shields.io/npm/l/mwoffliner.svg)
