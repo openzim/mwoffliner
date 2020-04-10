@@ -1,22 +1,22 @@
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
-import { ZimCreator, ZimArticle } from '@openzim/libzim';
+import {ZimArticle, ZimCreator} from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
-import { Dump } from '../Dump';
-import { mapLimit } from 'promiso';
-import { getFullUrl, genHeaderScript, genCanonicalLink, genHeaderCSSLink, jsPath, contains, getMediaBase } from '.';
-import { config } from '../config';
-import { htmlTemplateCode, footerTemplate } from '../Templates';
-import { filesToDownloadXPath, articleDetailXId, filesToRetryXPath } from '../stores';
-import { getSizeFromUrl, getRelativeFilePath } from './misc';
-import { RedisKvs } from './RedisKvs';
-import { rewriteUrl } from './rewriteUrls';
-import { CONCURRENCY_LIMIT } from './const';
+import {Dump} from '../Dump';
+import {mapLimit} from 'promiso';
+import {contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath} from '.';
+import {config} from '../config';
+import {footerTemplate, htmlTemplateCode} from '../Templates';
+import {articleDetailXId, filesToDownloadXPath, filesToRetryXPath} from '../stores';
+import {getRelativeFilePath, getSizeFromUrl} from './misc';
+import {RedisKvs} from './RedisKvs';
+import {rewriteUrl} from './rewriteUrls';
+import {CONCURRENCY_LIMIT} from './const';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -80,7 +80,12 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     });
 
     if (retryLater) {
-        await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false);
+        const isThereAnythingToRetry = (await filesToRetryXPath.len()) > 0;
+        if (isThereAnythingToRetry) {
+            await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false);
+        } else {
+            logger.log('No files to retry');
+        }
     }
 
     logger.log(`Done with ${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files`);
@@ -167,7 +172,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             const existingVal = await filesToDownloadXPath.get(dep.path);
                             const currentDepIsHigherRes = !existingVal || (existingVal.width < (width || 10e6)) || existingVal.mult < (mult || 1);
                             if (currentDepIsHigherRes) {
-                                await filesToDownloadXPath.set(dep.path, { url: downloader.serialiseUrl(dep.url), mult, width });
+                                await filesToDownloadXPath.set(dep.path, { url: downloader.serializeUrl(dep.url), mult, width });
                             }
                         }
 

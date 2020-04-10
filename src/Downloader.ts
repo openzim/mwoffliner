@@ -1,25 +1,35 @@
-import axios, { AxiosRequestConfig } from 'axios';
-import logger from './Logger';
+import md5 from 'md5';
 import domino from 'domino';
-
+import * as path from 'path';
 import * as urlParser from 'url';
-import ServiceRunner from 'service-runner';
+import deepmerge from 'deepmerge';
+import * as backoff from 'backoff';
 import * as imagemin from 'imagemin';
-import imageminJpegoptim from 'imagemin-jpegoptim';
+import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
+import axios, {AxiosRequestConfig} from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
-import { renderDesktopArticle, renderMCSArticle, getStrippedTitleFromHtml, readFilePromise, writeFilePromise } from './util';
-import MediaWiki from './MediaWiki';
-import { Dump } from './Dump';
-import * as backoff from 'backoff';
-import { normalizeMwResponse } from './util/mw-api';
-import deepmerge from 'deepmerge';
-import { articleDetailXId } from './stores';
-import * as path from 'path';
-import md5 from 'md5';
+import imageminJpegoptim from 'imagemin-jpegoptim';
+
+import {
+  FIND_HTTP_REGEX,
+  getStrippedTitleFromHtml,
+  MIME_IMAGE_REGEX,
+  normalizeMwResponse,
+  objToQueryString,
+  readFilePromise,
+  renderDesktopArticle,
+  renderMCSArticle,
+  URL_IMAGE_REGEX,
+  writeFilePromise
+} from './util';
 import S3 from './S3';
-import { URL_IMAGE_REGEX, MIME_IMAGE_REGEX, FIND_HTTP_REGEX } from './util/const';
+import {Dump} from './Dump';
+import logger from './Logger';
+import MediaWiki from './MediaWiki';
+import {articleDetailXId} from './stores';
+
 
 const imageminOptions = {
   plugins: [
@@ -61,7 +71,7 @@ class Downloader {
   private canFetchCoordinates = true;
   private activeRequests = 0;
   private maxActiveRequests = 1;
-  private noLocalParserFallback = false;
+  private readonly noLocalParserFallback: boolean = false;
   private urlPartCache: KVS<string> = {};
 
   constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3 }: DownloaderOpts) {
@@ -81,7 +91,7 @@ class Downloader {
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
   }
 
-  public serialiseUrl(url: string) {
+  public serializeUrl(url: string): string {
     const { path } = urlParser.parse(url);
     const cacheablePart = url.replace(path, '');
     const cacheEntry = Object.entries(this.urlPartCache).find(([cacheId, value]) => value === cacheablePart);
@@ -93,22 +103,18 @@ class Downloader {
     } else {
       cacheKey = `_${cacheEntry[0]}_`;
     }
-    const shrunkUrl = `${cacheKey}${path}`;
-    return shrunkUrl;
+    return `${cacheKey}${path}`;
   }
 
-  public deserialiseUrl(url: string) {
-    if (url.startsWith('_')) {
-      const [, cacheId, ...pathParts] = url.split('_');
-      const path = pathParts.join('_');
-      const cachedPart = this.urlPartCache[cacheId];
-      return `${cachedPart}${path}`;
-    } else {
-      return url;
-    }
+  public deserializeUrl(url: string): string {
+    if (!url.startsWith('_')) return url;
+    const [, cacheId, ...pathParts] = url.split('_');
+    const path = pathParts.join('_');
+    const cachedPart = this.urlPartCache[cacheId];
+    return `${cachedPart}${path}`;
   }
 
-  public async checkCapabilities() {
+  public async checkCapabilities(): Promise<void> {
     let useLocalMCS = true;
     let useLocalParsoid = true;
 
@@ -160,14 +166,14 @@ class Downloader {
   }
 
   public isImageUrl (url: string): boolean {
-    return URL_IMAGE_REGEX.exec(url) ? true : false;
+    return !!URL_IMAGE_REGEX.exec(url);
   }
 
   public isMimeTypeImage (mimetype: string): boolean {
-    return MIME_IMAGE_REGEX.exec(mimetype) ? true : false;
+    return !!MIME_IMAGE_REGEX.exec(mimetype);
   }
 
-  public stripHttpFromUrl (url: string) {
+  public stripHttpFromUrl (url: string): string {
     return url.replace(FIND_HTTP_REGEX, '');
   }
 
@@ -262,7 +268,7 @@ class Downloader {
     const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
-    this.handleMWWarningsAndErrors(resp);
+    Downloader.handleMWWarningsAndErrors(resp);
 
     let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
@@ -317,7 +323,7 @@ class Downloader {
     const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
     const resp = await this.getJSON<MwApiResponse>(reqUrl);
-    this.handleMWWarningsAndErrors(resp);
+    Downloader.handleMWWarningsAndErrors(resp);
 
     let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
@@ -436,12 +442,12 @@ class Downloader {
     }
   }
 
-  public async getJSON<T>(_url: string) {
+  public async getJSON<T>(_url: string): Promise<T> {
     const self = this;
-    const url = this.deserialiseUrl(_url);
+    const url = this.deserializeUrl(_url);
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      const call = backoff.call(this.getJSONCb, url, (err: any, val: any) => {
+      const call = backoff.call(this.getJSONCb, url, this.requestTimeout, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
@@ -462,7 +468,7 @@ class Downloader {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`);
     }
-    const url = this.deserialiseUrl(_url);
+    const url = this.deserializeUrl(_url);
     if (this.useDownloadCache) {
       try {
         const downloadCacheVal = await this.readFromDownloadCache(url);
@@ -504,7 +510,7 @@ class Downloader {
     });
   }
 
-  public async canGetUrl(url: string) {
+  public async canGetUrl(url: string): Promise<boolean> {
     try {
       await axios.get(url);
       return true;
@@ -513,7 +519,7 @@ class Downloader {
     }
   }
 
-  private async writeToDownloadCache(url: string, val: { content: Buffer, responseHeaders: any }) {
+  private async writeToDownloadCache(url: string, val: { content: Buffer, responseHeaders: any }): Promise<void> {
     const fileName = md5(url);
     const filePath = path.join(this.downloadCacheDirectory, fileName);
     logger.info(`Caching response for [${url}] to [${filePath}]`);
@@ -572,14 +578,9 @@ class Downloader {
     }, {});
   }
 
-  private async handleMWWarningsAndErrors(resp: MwApiResponse) {
-    if (resp.warnings) {
-      logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
-    }
-
-    if (resp.error) {
-      logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
-    }
+  private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
+    if (resp.warnings) logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
+    if (resp.error) logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
   }
 
   private getArticleQueryOpts(includePageimages = false) {
@@ -638,9 +639,9 @@ class Downloader {
     return null;
   }
 
-  private getJSONCb<T>(url: string, handler: any) {
+  private getJSONCb<T>(url: string, timeout: number, handler: any): void {
     logger.info(`Getting JSON from [${url}]`);
-    axios.get<T>(url, { responseType: 'json' })
+    axios.get<T>(url, { responseType: 'json', timeout })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
@@ -649,7 +650,7 @@ class Downloader {
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
-            return this.getJSONCb(url, handler);
+            return this.getJSONCb(url, timeout, handler);
           } else if (err.response && err.response.status === 404) {
             handler(err);
           }
@@ -663,7 +664,7 @@ class Downloader {
     return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
-  private getContentCb = async (requestOptions: any, handler: any) => {
+  private getContentCb = async (requestOptions: any, handler: any): Promise<void> => {
     logger.info(`Downloading [${requestOptions.url}]`);
 
     try {
@@ -694,9 +695,9 @@ class Downloader {
         handler(err);
       }
     }
-  }
+  };
 
-  private errHandler(err: any, requestOptions: any, handler: any) {
+  private errHandler(err: any, requestOptions: any, handler: any): void {
     if (err.response && err.response.status === 429) {
       logger.log(`Received a [status=429], slowing down`);
       const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
@@ -707,7 +708,7 @@ class Downloader {
     handler(err);
   }
 
-  private async imageDownloadCompressAndUploadToS3<T>(requestOptions: any, handler: any) {
+  private async imageDownloadCompressAndUploadToS3<T>(requestOptions: any, handler: any): Promise<void> {
     const resp = await axios(requestOptions);
     const etag = resp.headers.etag;
     const content = await this.getCompressedBody(resp);
@@ -739,13 +740,3 @@ class Downloader {
 }
 
 export default Downloader;
-
-function objToQueryString(obj: KVS<any>) {
-  const str = [];
-  for (const p in obj) {
-    if (obj.hasOwnProperty(p)) {
-      str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
-    }
-  }
-  return str.join('&');
-}

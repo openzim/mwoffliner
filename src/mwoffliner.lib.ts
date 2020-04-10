@@ -427,7 +427,7 @@ async function execute(argv: any) {
 
               articlesWithImages += 1;
 
-              await filesToDownloadXPath.set(path, { url: downloader.serialiseUrl(suitableResUrl), mult, width });
+              await filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width });
               articleDetail.internalThumbnailUrl = internalSrc;
               await articleDetailXId.set(articleId, articleDetail);
             }
