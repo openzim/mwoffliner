@@ -96,8 +96,8 @@
     "service-mobileapp-node": "git+https://github.com/wikimedia/mediawiki-services-mobileapps.git#d244439",
     "service-runner": "^2.7.2",
     "swig-templates": "^2.0.2",
-    "tslint": "^5.18.0",
-    "typescript": "^3.5.3",
+    "tslint": "^5.20.1",
+    "typescript": "^3.8.3",
     "utf8-binary-cutter": "^0.9.1",
     "yargs": "^13.2.0"
   },
@@ -118,7 +118,7 @@
     "replace": "^1.1.0",
     "tap-spec": "^5.0.0",
     "tape-promise": "^4.0.0",
-    "ts-node": "^8.3.0",
+    "ts-node": "^8.8.2",
     "tsconfig-paths": "^3.8.0"
   }
 }
