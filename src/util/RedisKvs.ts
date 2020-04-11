@@ -100,7 +100,7 @@ export class RedisKvs<T> {
                     acc[key] = typeof newVal !== 'string' ? JSON.stringify(newVal) : newVal;
                     return acc;
                 }, {});
-            this.redisClient.hmset(this.dbName, normalisedVal as string, (err, val) => {
+            this.redisClient.hmset(this.dbName, normalisedVal, (err, val) => {
                 if (err) {
                     reject(err);
                 } else {

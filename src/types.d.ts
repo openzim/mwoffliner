@@ -31,7 +31,7 @@ interface MWMetaData {
     subTitle: string;
     creator: string;
     mainPage: string;
-    textDir: 'ltr' | 'rtl';
+    textDir: TextDirection;
 
     base: any;
     wikiPath: any;
@@ -109,6 +109,8 @@ type QueryCoordinatesRet = Array<{
 }>;
 
 type QueryRedirectsRet = PageInfo[];
+
+type TextDirection = "ltr" | "rtl";
 
 interface QueryRet {
     subCategories?: PageInfo[], // :(

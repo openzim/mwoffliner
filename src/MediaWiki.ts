@@ -183,7 +183,7 @@ class MediaWiki {
     return creator;
   }
 
-  public async getTextDirection(downloader: Downloader) {
+  public async getTextDirection(downloader: Downloader): Promise<TextDirection> {
     logger.log('Getting text direction...');
     const { content } = await downloader.downloadContent(this.webUrl);
     const body = content.toString();
@@ -281,7 +281,7 @@ class MediaWiki {
       apiPath: this.apiPath,
       domain: this.domain,
 
-      textDir,
+      textDir: textDir as TextDirection,
       langIso2,
       langIso3,
       title: siteName,

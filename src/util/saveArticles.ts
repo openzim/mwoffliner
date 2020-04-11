@@ -128,23 +128,22 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
     let jsConfigVars = '';
-    let prevPercentProgress = -1;
+    let prevPercentProgress: string;
+
+    const articlesTotal = await articleDetailXId.len();
 
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
-            const articleKeys = Object.keys(articleKeyValuePairs);
-            logger.log(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(articleKeys)}]`);
-            const numKeys = await articleDetailXId.len();
+            logger.log(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
+
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
                     const rets = await downloader.getArticle(articleId, dump, useParsoidFallback);
 
-                    for (const { articleId, displayTitle, html } of rets) {
+                    for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
                         const nonPaginatedArticleId = articleDetail.title.replace(/ /g, '_');
-                        const articleHtml = html;
-                        const articleTitle = displayTitle;
                         if (!articleHtml) {
                             logger.warn(`No HTML returned for article [${articleId}], skipping`);
                             continue;
@@ -153,16 +152,14 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                         let articleDoc = _articleDoc;
 
-                        if (dump.customProcessor) {
-                            if (dump.customProcessor.shouldKeepArticle) {
-                                const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
-                                if (!shouldContinue) {
-                                    continue;
-                                }
+                        if (dump.customProcessor?.shouldKeepArticle) {
+                            const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
+                            if (!shouldContinue) {
+                                continue;
                             }
-                            if (dump.customProcessor.preProcessArticle) {
-                                articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
-                            }
+                        }
+                        if (dump.customProcessor?.preProcessArticle) {
+                            articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
                         }
 
                         for (const dep of mediaDependencies) {
@@ -227,16 +224,19 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     await articleDetailXId.delete(articleId);
                 }
 
-                if (dump.status.articles.success % 10 === 0) {
-                    const percentProgress = Math.floor(dump.status.articles.success / numKeys * 1000) / 10;
+                if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
+                    const percentProgress = ((dump.status.articles.success + dump.status.articles.fail) / articlesTotal * 100).toFixed(1);
                     if (percentProgress !== prevPercentProgress) {
                         prevPercentProgress = percentProgress;
-                        logger.log(`Progress downloading articles [${dump.status.articles.success}/${numKeys}] [${percentProgress}%]`);
+                        logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
                     }
                 }
+
             }
         },
     );
+
+    logger.log(`Done with downloading a total of [${articlesTotal}] articles`);
 
     const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
     zimCreator.addArticle(jsConfigVarArticle);
