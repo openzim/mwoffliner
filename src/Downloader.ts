@@ -695,7 +695,7 @@ class Downloader {
         handler(err);
       }
     }
-  };
+  }
 
   private errHandler(err: any, requestOptions: any, handler: any): void {
     if (err.response && err.response.status === 429) {
