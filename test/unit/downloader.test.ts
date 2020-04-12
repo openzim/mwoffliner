@@ -86,7 +86,7 @@ test('Downloader class', async (t) => {
     const { data: LondonDetail } = await Axios.get(`${downloader.mcsUrl}London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
-    const LondonImage = await downloader.downloadContent(imgToGet);
+    const LondonImage = await downloader.downloadContent(imgToGet as string);
     t.ok(!!LondonImage.responseHeaders['content-type'].includes('image/'), 'downloadContent successfully downloaded an image');
 
     const mwMetadata = await mw.getMwMetaData(downloader);
