@@ -88,6 +88,8 @@ async function execute(argv: any) {
 
   (process as any).verbose = !!verbose;
 
+  logger.log(`Starting mwoffliner v${packageJSON.version}...`);
+
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
