@@ -36,7 +36,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     let prevPercentProgress: string;
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
-        logger.log(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+        logger.info(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
 
         // todo align fileDownloadPairs and listOfArguments
         const listOfArguments = [];
@@ -130,16 +130,21 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     let jsConfigVars = '';
     let prevPercentProgress: string;
 
+    const articleKeys = await articleDetailXId.keys();
     const articlesTotal = await articleDetailXId.len();
 
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
-            logger.log(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
+            logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
 
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
+
+                    // don't commit this
+                    console.log(` - ${articleId}`);
+
                     const rets = await downloader.getArticle(articleId, dump, useParsoidFallback);
 
                     for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
@@ -213,6 +218,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             title: articleTitle,
                             shouldIndex: true,
                         });
+
+                        // don't commit this
+                        console.log(articleTitle);
 
                         zimCreator.addArticle(zimArticle);
 
