@@ -162,9 +162,10 @@ export class RedisKvs<T> {
   }
 
   public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<void>) {
-    const workers = Array.from(Array(numWorkers - 1).keys());
+    const workers = Array.from(Array(numWorkers).keys());
 
     let scanCursor = '0';
+    let depleted = false;
     let pendingScan: Promise<ScanResult> = Promise.resolve(null);
 
     await mapLimit(
@@ -183,6 +184,8 @@ export class RedisKvs<T> {
 
           const { cursor, items } = await pendingScan;
 
+          if (depleted) break;
+
           const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => {
             return {
               ...acc,
@@ -190,7 +193,7 @@ export class RedisKvs<T> {
             };
           }, {} as KVS<T>);
 
-          if (cursor === '0') break;
+          if (cursor === '0') depleted = true;
           scanCursor = cursor;
 
           await func(parsedItems, workerId);

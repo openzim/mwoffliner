@@ -143,7 +143,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
 
                     // don't commit this
-                    console.log(` - ${articleId}`);
+                    // console.log(` - ${articleId}`);
 
                     const rets = await downloader.getArticle(articleId, dump, useParsoidFallback);
 
@@ -220,7 +220,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         });
 
                         // don't commit this
-                        console.log(articleTitle);
+                        // console.log(articleTitle);
 
                         zimCreator.addArticle(zimArticle);
 
@@ -239,7 +239,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
                     }
                 }
-
             }
         },
     );
