@@ -1,24 +1,18 @@
 // noinspection ES6UnusedImports
 import {} from 'ts-jest';
 import {createClient} from 'redis-mock';
-import {fetchMockData} from './mock/mock';
+import {initMockData} from './mock/mock';
 import type {RedisClient} from 'redis-mock';
 import {RedisKvs} from '../../src/util/RedisKvs';
+
 
 let client: RedisClient;
 let kvs: RedisKvs<any>;
 
 const items = 10000;
-const numWorkers = 24;
 
-const intermediateHandler = (items: KVS<any>, workerId: number): any => {
-  // nop
-};
-
-const delayedHandler = async (items: KVS<any>, workerId: number): Promise<any> => {
-  // console.table(items);
-  const t = Math.random() * 20;
-  // console.log(`${workerId} - ${t.toFixed()} ms - ${Object.keys(items).length} items`);
+const getHandler = (delay: number) => async (items: KVS<any>, workerId: number): Promise<any> => {
+  const t = Math.random() * delay;
   return new Promise(((resolve, reject) => {
     setTimeout(() => {
       resolve();
@@ -26,10 +20,8 @@ const delayedHandler = async (items: KVS<any>, workerId: number): Promise<any> =
   }));
 };
 
-// tslint:disable-next-line:ban-types
-const getHandler = (handler: (items: KVS<any>, workerId: number) => any | Promise<any>) => async () => {
+const getTestHandler = (handler: (items: KVS<any>, workerId: number) => any | Promise<any>, numWorkers: number) => async () => {
   const len = await kvs.len();
-  // @ts-ignore
   const mockHandler = jest.fn(handler);
 
   await kvs.iterateItems(numWorkers, mockHandler);
@@ -58,6 +50,7 @@ const getHandler = (handler: (items: KVS<any>, workerId: number) => any | Promis
   expect(workerIdsUnexpected.length).toEqual(0);
 };
 
+
 beforeAll(() => {
   client = createClient();
   kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
@@ -66,15 +59,24 @@ beforeAll(() => {
 
 describe('RedisKvs.iterateItems()', () => {
 
-  describe(`Workers: ${numWorkers}, items: ${items}`, () => {
+  describe(`Items: ${items}`, () => {
 
     beforeAll(async () => {
       client = createClient();
       kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
-      await fetchMockData(kvs, items);
+      await initMockData(kvs, items);
     });
 
-    test('With intermediate handler', getHandler(intermediateHandler));
-    test('With delayed handler', getHandler(delayedHandler));
+    describe(`Workers: 1`, () => {
+      test('Next tick', getTestHandler(getHandler(0), 1));
+      test('10 ms', getTestHandler(getHandler(10), 1));
+      test('50 ms', getTestHandler(getHandler(50), 1));
+    });
+
+    describe(`Workers: 12`, () => {
+      test('Next tick', getTestHandler(getHandler(0), 12));
+      test('10 ms', getTestHandler(getHandler(10), 12));
+      test('50 ms', getTestHandler(getHandler(50), 12));
+    });
   });
 });
