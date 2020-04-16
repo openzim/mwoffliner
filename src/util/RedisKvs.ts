@@ -1,6 +1,6 @@
 import {cpus} from 'os';
 import {mapLimit} from 'promiso';
-import {RedisClient} from 'redis';
+import type {RedisClient} from 'redis';
 
 interface ScanResult {
   cursor: string;
