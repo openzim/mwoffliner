@@ -333,3 +333,13 @@ export function normalizeModule(path: string) {
 export function isNodeModule(path: string) {
   return path.startsWith('../node_module');
 }
+
+export function objToQueryString(obj: KVS<any>): string {
+  const str = [];
+  for (const p in obj) {
+    if (obj.hasOwnProperty(p)) {
+      str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+    }
+  }
+  return str.join('&');
+}

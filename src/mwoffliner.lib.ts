@@ -88,6 +88,8 @@ async function execute(argv: any) {
 
   (process as any).verbose = !!verbose;
 
+  logger.log(`Starting mwoffliner v${packageJSON.version}...`);
+
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
@@ -427,7 +429,7 @@ async function execute(argv: any) {
 
               articlesWithImages += 1;
 
-              await filesToDownloadXPath.set(path, { url: downloader.serialiseUrl(suitableResUrl), mult, width });
+              await filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width });
               articleDetail.internalThumbnailUrl = internalSrc;
               await articleDetailXId.set(articleId, articleDetail);
             }
