@@ -11,6 +11,6 @@ export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<v
     Object.values(data).forEach((item, x) => {
       d.push({...item, n: `${data[x].n}_${i}`});
     });
-    await kvs.setMany(d);
+    await kvs.setMany(d, len * i);
   }
 };

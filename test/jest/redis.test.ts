@@ -1,15 +1,19 @@
 // noinspection ES6UnusedImports
 import {} from 'ts-jest';
 import {createClient} from 'redis-mock';
-import {initMockData} from './mock/mock';
 import type {RedisClient} from 'redis-mock';
+import {initMockData} from './mock/mock';
 import {RedisKvs} from '../../src/util/RedisKvs';
 
 
 let client: RedisClient;
 let kvs: RedisKvs<any>;
 
-const items = 10000;
+const numberOfItems = [100, 1000];
+const timeouts = [0, 10, 20];
+
+jest.setTimeout(10000);
+
 
 const getHandler = (delay: number) => async (items: KVS<any>, workerId: number): Promise<any> => {
   const t = Math.random() * delay;
@@ -59,24 +63,21 @@ beforeAll(() => {
 
 describe('RedisKvs.iterateItems()', () => {
 
-  describe(`Items: ${items}`, () => {
+  for (const numItems of numberOfItems) {
 
-    beforeAll(async () => {
-      client = createClient();
-      kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
-      await initMockData(kvs, items);
-    });
+    describe(`Items: ${numItems}`, () => {
 
-    describe(`Workers: 1`, () => {
-      test('Next tick', getTestHandler(getHandler(0), 1));
-      test('10 ms', getTestHandler(getHandler(10), 1));
-      test('50 ms', getTestHandler(getHandler(50), 1));
-    });
+      beforeAll(async () => {
+        client = createClient();
+        kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
+        await initMockData(kvs, numItems);
+      });
 
-    describe(`Workers: 12`, () => {
-      test('Next tick', getTestHandler(getHandler(0), 12));
-      test('10 ms', getTestHandler(getHandler(10), 12));
-      test('50 ms', getTestHandler(getHandler(50), 12));
+      describe(`Workers: 1`, () => {
+        for (const timeout of timeouts) {
+          test(`${timeout} ms`, getTestHandler(getHandler(timeout), 1));
+        }
+      });
     });
-  });
+  }
 });
