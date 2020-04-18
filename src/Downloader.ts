@@ -328,8 +328,8 @@ class Downloader {
       const queryString = objToQueryString(queryOpts);
       const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
-    const resp = await this.getJSON<MwApiResponse>(reqUrl);
-    Downloader.handleMWWarningsAndErrors(resp);
+      const resp = await this.getJSON<MwApiResponse>(reqUrl);
+      Downloader.handleMWWarningsAndErrors(resp);
 
       let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
 
