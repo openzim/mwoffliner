@@ -1,3 +1,7 @@
+1.10.4:
+* FIX: Optimizations/fixes for better scaling (#1025)
+* FIX: Refactoring / making the code clean
+
 1.10.3:
 * FIX: Better logging while fetching the articles
 
