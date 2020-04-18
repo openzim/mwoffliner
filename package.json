@@ -11,7 +11,7 @@
   },
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
-    "mwoffliner": "node ./lib/cli.js",
+    "mwoffliner": "node ./lib/src/cli.js",
     "test:e2e": "tape -r tsconfig-paths/register -r ts-node/register test/e2e/*.test.ts | tap-spec",
     "test:unit": "tape -r tsconfig-paths/register -r ts-node/register test/unit/*.test.ts | tap-spec",
     "test": "npm run test:unit",
@@ -36,7 +36,7 @@
     ]
   },
   "bin": {
-    "mwoffliner": "./lib/cli.js"
+    "mwoffliner": "./lib/src/cli.js"
   },
   "repository": {
     "type": "git",
