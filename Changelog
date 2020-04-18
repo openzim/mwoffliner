@@ -1,3 +1,6 @@
+1.10.5:
+* FIX: Fix docker build
+
 1.10.4:
 * FIX: Optimizations/fixes for better scaling (#1025)
 * FIX: Refactoring / making the code clean
