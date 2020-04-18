@@ -6,7 +6,7 @@ import packageJSON from '../../package.json';
 
 import execa from 'execa';
 
-const mwo = `node lib/src/cli.js`;
+const mwo = `node lib/cli.js`;
 
 test('Exec Command With Bash', async (t) => {
     const version = await execa.command(`${mwo} --version`);
