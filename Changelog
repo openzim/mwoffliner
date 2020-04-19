@@ -1,3 +1,6 @@
+1.10.6:
+* FIX: Hotfix for TypeScript build config
+
 1.10.5:
 * FIX: Fix docker build
 
