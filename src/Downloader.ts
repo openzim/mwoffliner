@@ -634,16 +634,20 @@ class Downloader {
   private async claimRequest(): Promise<null> {
     if (this.activeRequests < this.maxActiveRequests) {
       this.activeRequests += 1;
+      logger.info(`[queue] +1 [${this.activeRequests}/${this.maxActiveRequests}]`);
       return null;
     } else {
+      logger.info(`[queue] holding on [${this.activeRequests}/${this.maxActiveRequests}]`);
       await new Promise((resolve) => {
         setTimeout(resolve, 10);
       });
+      logger.info(`[queue] reclaiming [${this.activeRequests}/${this.maxActiveRequests}]`);
       return this.claimRequest();
     }
   }
 
   private async releaseRequest(): Promise<null> {
+    logger.info(`[queue] -1 [${this.activeRequests}/${this.maxActiveRequests}]`);
     this.activeRequests -= 1;
     return null;
   }
