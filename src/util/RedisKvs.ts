@@ -90,7 +90,7 @@ export class RedisKvs<T> {
     });
   }
 
-  public setMany(val: KVS<T>, indexShift: number = 0) {
+  public setMany(val: KVS<T>) {
     return new Promise((resolve, reject) => {
       const numKeys = Object.keys(val).length;
       if (!numKeys) {
@@ -100,7 +100,7 @@ export class RedisKvs<T> {
       const normalisedVal = Object.entries(val)
         .reduce((acc: KVS<string>, [key, val]) => {
           const newVal = this.mapKeysSet(val);
-          acc[(indexShift + parseInt(key, 10)).toString()] = typeof newVal !== 'string' ? JSON.stringify(newVal) : newVal;
+          acc[key] = typeof newVal !== 'string' ? JSON.stringify(newVal) : newVal;
           return acc;
         }, {});
       this.redisClient.hmset(this.dbName, normalisedVal, (err, val) => {
@@ -140,18 +140,6 @@ export class RedisKvs<T> {
   public keys() {
     return new Promise<string[]>((resolve, reject) => {
       this.redisClient.hkeys(this.dbName, (err, val) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(val);
-        }
-      });
-    });
-  }
-
-  public values() {
-    return new Promise<string[]>((resolve, reject) => {
-      this.redisClient.hvals(this.dbName, (err, val) => {
         if (err) {
           reject(err);
         } else {
