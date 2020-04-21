@@ -5,3 +5,4 @@ export const URL_IMAGE_REGEX = /(https?:\/\/.*\.(?:jpg|gif|png|svg|gif|jpeg))/i;
 export const CONCURRENCY_LIMIT = 10;
 export const MIME_IMAGE_REGEX = /^image+[/-\w.]+$/;
 export const FIND_HTTP_REGEX = /^(?:https?:\/\/)?/i;
+export const DB_ERROR = 'internal_api_error_DBQueryError';
