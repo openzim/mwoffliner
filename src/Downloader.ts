@@ -293,6 +293,7 @@ class Downloader {
   public async getArticleDetailsNS(ns: number, gapcontinue: string = ''): Promise<{ gapContinue: string, articleDetails: QueryMwRet }> {
     let queryContinuation: QueryContinueOpts;
     let finalProcessedResp: QueryMwRet;
+    let processedResponse: QueryMwRet;
     let gCont: string = null;
     while (true) {
       const queryOpts: KVS<any> = {
@@ -329,9 +330,12 @@ class Downloader {
       const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
-      Downloader.handleMWWarningsAndErrors(resp);
-
-      let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+      if (resp.query) {
+        processedResponse = normalizeMwResponse(resp.query);
+      } else {
+        processedResponse = {};
+        Downloader.handleMWWarningsAndErrors(resp);
+      }
 
       try {
         gCont = resp['query-continue'].allpages.gapcontinue;
@@ -597,7 +601,9 @@ class Downloader {
 
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
     if (resp.warnings) logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
-    if (resp.error) logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    if (resp.error) {
+      throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`);
+    }
   }
 
   private getArticleQueryOpts(includePageimages = false) {
