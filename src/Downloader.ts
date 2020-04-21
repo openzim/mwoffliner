@@ -22,6 +22,7 @@ import {
   renderDesktopArticle,
   renderMCSArticle,
   URL_IMAGE_REGEX,
+  DB_ERROR,
   writeFilePromise
 } from './util';
 import S3 from './S3';
@@ -588,8 +589,9 @@ class Downloader {
   }
 
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
-    if (resp.warnings) logger.warn(`Got warning from MW Query`, JSON.stringify(resp.warnings, null, '\t'));
-    if (resp.error) logger.error(`Got error from MW Query`, JSON.stringify(resp.error, null, '\t'));
+    if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`);
+    if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`);
+    if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`);
   }
 
   private getArticleQueryOpts(includePageimages = false) {
