@@ -466,9 +466,13 @@ class Downloader {
           resolve(val);
         }
       });
-      call.retryIf((err: any) => err.response && err.response.status !== 404);
+      // todo pull this logic up to the class
+      call.retryIf((err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(5);
+      call.failAfter(7);
+      call.on('backoff', (number: number, delay: number) => {
+        logger.info(`[backoff] #${number} after ${delay} ms`);
+      });
       call.start();
     });
   }
@@ -512,9 +516,13 @@ class Downloader {
           resolve(val);
         }
       });
-      call.retryIf((err: any) => err.response && err.response.status !== 404);
+      // todo pull this logic up to the class
+      call.retryIf((err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404);
       call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(5);
+      call.failAfter(7);
+      call.on('backoff', (number: number, delay: number) => {
+        logger.info(`[backoff] #${number} after ${delay} ms`);
+      });
       call.start();
     });
   }
