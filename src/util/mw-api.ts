@@ -5,6 +5,7 @@ import { articleDetailXId, redirectsXId } from '../stores';
 import deepmerge = require('deepmerge');
 
 let batchSize = 50;
+let totalArticles = 0;
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
     let numArticleIds = _articleIds.length;
@@ -93,7 +94,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, _gapCo
     }
 
     logger.log(`Got [${numDetails}] articles from namespace [${ns}]`);
-
+    totalArticles += numDetails;
     const canContinue = typeof continueLimit === 'undefined' || continueLimit > 0; // used for testing
 
     if (gapContinue && canContinue) {
@@ -157,4 +158,8 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         };
     }
     return ret;
+}
+
+export function getTotalArticlesNumberByNS() {
+    return totalArticles;
 }

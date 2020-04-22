@@ -1,6 +1,7 @@
 import {cpus} from 'os';
 import {mapLimit} from 'promiso';
 import type {RedisClient} from 'redis';
+import logger from '../Logger';
 
 interface ScanResult {
   cursor: string;
@@ -156,6 +157,7 @@ export class RedisKvs<T> {
           reject(err);
         } else {
           resolve(val);
+          logger.log(`Total Articles stored in redis ${val}`);
         }
       });
     });
