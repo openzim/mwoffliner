@@ -2,6 +2,7 @@ import S3File from 'aws-sdk';
 import logger from './Logger';
 import axios from 'axios';
 import { Readable } from 'stream';
+import publicIp from 'public-ip';
 
 class S3 {
     public url: any;
@@ -27,7 +28,10 @@ class S3 {
                 return true;
             }
         } catch (err) {
-            throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found`);
+            throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
+                            Bucket used: ${this.bucketName}
+                            End point used: ${s3UrlBase.href}
+                            Public IP used: ${await publicIp.v4()}`);
         }
     }
 
