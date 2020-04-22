@@ -90,6 +90,7 @@
     "mocha": "^5.2.0",
     "parsoid": "^0.10.0",
     "promiso": "^0.5.1",
+    "public-ip": "^4.0.1",
     "redis": "^2.8.0",
     "rimraf": "^2.6.3",
     "semver": "^5.6.0",
