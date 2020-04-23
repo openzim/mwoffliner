@@ -3,19 +3,29 @@ import test from 'blue-tape';
 import { RedisKvs } from 'src/util/RedisKvs';
 import { redis } from './bootstrap.test';
 
-test('Redis Tests', async (t) => {
+const mock = {
+    testItem1: { value: 1 },
+    testItem2: { value: 2 },
+    testItem3: { value: 3 },
+    testItem4: { value: 4 }
+};
+
+test.only('Redis Tests', async (t) => {
     const kvs = new RedisKvs<{ value: number }>(redis.client, 'test-kvs');
 
     const len = await kvs.len();
     t.equal(len, 0, `New RedisKVS should have 0 items`);
 
-    await kvs.set('testItem1', { value: 1 });
-    await kvs.set('testItem2', { value: 2 });
-    await kvs.set('testItem3', { value: 3 });
-    await kvs.set('testItem4', { value: 4 });
+    await Promise.all(Object.entries(mock).map(([k, v]) => kvs.set(k, v)));
 
     const newLen = await kvs.len();
     t.equal(newLen, 4, `Can set items`);
+
+    const newKeys = await kvs.keys();
+    const areKeysCorrect = newKeys.length === newLen
+      && newKeys.filter((x) => !Object.keys(mock).includes(x)).length === 0
+      && Object.keys(mock).filter((x) => !newKeys.includes(x)).length === 0;
+    t.true(areKeysCorrect, `Can get the keys properly`);
 
     const item2 = await kvs.get('testItem2');
     t.equal(item2.value, 2, `Can get single item`);
