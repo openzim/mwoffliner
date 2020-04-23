@@ -10,7 +10,7 @@ const mock = {
     testItem4: { value: 4 }
 };
 
-test.only('Redis Tests', async (t) => {
+test('Redis Tests', async (t) => {
     const kvs = new RedisKvs<{ value: number }>(redis.client, 'test-kvs');
 
     const len = await kvs.len();
