@@ -11,6 +11,7 @@ import axios, {AxiosRequestConfig} from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
+import type {BackoffStrategy, FunctionCallAny} from 'backoff';
 
 import {
   FIND_HTTP_REGEX,
@@ -53,7 +54,16 @@ interface DownloaderOpts {
   noLocalParserFallback: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
+  backoffOptions?: BackoffOptions;
 }
+
+interface BackoffOptions {
+  strategy: BackoffStrategy;
+  failAfter: number;
+  retryIf: (error?: any) => boolean;
+  backoffHandler: (number: number, delay: number, error?: any) => void;
+}
+
 
 class Downloader {
   public mw: MediaWiki;
@@ -74,8 +84,9 @@ class Downloader {
   private maxActiveRequests = 1;
   private readonly noLocalParserFallback: boolean = false;
   private urlPartCache: KVS<string> = {};
+  private backoffOptions: BackoffOptions;
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3 }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -87,6 +98,16 @@ class Downloader {
     this.noLocalParserFallback = noLocalParserFallback;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
+
+    this.backoffOptions =  {
+      strategy: new backoff.ExponentialStrategy(),
+      failAfter: 7,
+      retryIf: (err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404,
+      backoffHandler: (number: number, delay: number) => {
+        logger.info(`[backoff] #${number} after ${delay} ms`);
+      },
+      ...backoffOptions,
+    };
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
@@ -457,24 +478,16 @@ class Downloader {
     const url = this.deserializeUrl(_url);
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      const call = backoff.call(this.getJSONCb, url, this.requestTimeout, (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
+          logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
           reject(err);
         } else {
           resolve(val);
         }
       });
-      // todo pull this logic up to the class
-      call.retryIf((err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404);
-      call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(7);
-      call.on('backoff', (number: number, delay: number) => {
-        logger.info(`[backoff] #${number} after ${delay} ms`);
-      });
-      call.start();
     });
   }
 
@@ -499,11 +512,11 @@ class Downloader {
     await self.claimRequest();
     return new Promise((resolve, reject) => {
       const requestOptions = this.getRequestOptionsFromUrl(url);
-      const call = backoff.call(this.getContentCb, requestOptions, async (err: any, val: any) => {
+      this.backoffCall(this.getContentCb, requestOptions, async (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
+          logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
           reject(err);
         } else if (self.useDownloadCache && self.downloadCacheDirectory) {
           try {
@@ -517,14 +530,6 @@ class Downloader {
           resolve(val);
         }
       });
-      // todo pull this logic up to the class
-      call.retryIf((err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404);
-      call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(7);
-      call.on('backoff', (number: number, delay: number) => {
-        logger.info(`[backoff] #${number} after ${delay} ms`);
-      });
-      call.start();
     });
   }
 
@@ -762,6 +767,21 @@ class Downloader {
     } else {
       return items;
     }
+  }
+
+  private backoffCall(handler: (...args: any[]) => void, source: string | AxiosRequestConfig, cb: (...args: any[]) => void | Promise<void>): void {
+    let call: FunctionCallAny;
+    if (source as string) {
+      call = backoff.call(handler, source as string, this.requestTimeout, cb);
+    }
+    if (source as AxiosRequestConfig) {
+      call = backoff.call(handler, source as AxiosRequestConfig, cb);
+    }
+    call.setStrategy(this.backoffOptions.strategy);
+    call.retryIf(this.backoffOptions.retryIf);
+    call.failAfter(this.backoffOptions.failAfter);
+    call.on('backoff', this.backoffOptions.backoffHandler);
+    call.start();
   }
 }
 
