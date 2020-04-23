@@ -130,7 +130,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     let jsConfigVars = '';
     let prevPercentProgress: string;
 
-    const articleKeys = await articleDetailXId.keys();
     const articlesTotal = await articleDetailXId.len();
 
     await articleDetailXId.iterateItems(
@@ -141,10 +140,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
-
-                    // don't commit this
-                    // console.log(` - ${articleId}`);
-
                     const rets = await downloader.getArticle(articleId, dump, useParsoidFallback);
 
                     for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
