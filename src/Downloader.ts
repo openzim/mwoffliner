@@ -7,11 +7,11 @@ import * as backoff from 'backoff';
 import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
+import type {BackoffStrategy} from 'backoff';
 import axios, {AxiosRequestConfig} from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
-import type {BackoffStrategy, FunctionCallAny} from 'backoff';
 
 import {
   FIND_HTTP_REGEX,
@@ -478,7 +478,7 @@ class Downloader {
     const url = this.deserializeUrl(_url);
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, {url, timeout: this.requestTimeout}, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
@@ -670,7 +670,7 @@ class Downloader {
     return null;
   }
 
-  private getJSONCb<T>(url: string, timeout: number, handler: any): void {
+  private getJSONCb<T>({url, timeout}: AxiosRequestConfig, handler: (...args: any[]) => any): void {
     logger.info(`Getting JSON from [${url}]`);
     axios.get<T>(url, { responseType: 'json', timeout })
       .then((a) => handler(null, a.data), handler)
@@ -681,7 +681,7 @@ class Downloader {
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
-            return this.getJSONCb(url, timeout, handler);
+            return this.getJSONCb({url, timeout}, handler);
           } else if (err.response && err.response.status === 404) {
             handler(err);
           }
@@ -695,7 +695,7 @@ class Downloader {
     return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
-  private getContentCb = async (requestOptions: any, handler: any): Promise<void> => {
+  private getContentCb = async (requestOptions: AxiosRequestConfig, handler: any): Promise<void> => {
     logger.info(`Downloading [${requestOptions.url}]`);
 
     try {
@@ -769,14 +769,8 @@ class Downloader {
     }
   }
 
-  private backoffCall(handler: (...args: any[]) => void, source: string | AxiosRequestConfig, cb: (...args: any[]) => void | Promise<void>): void {
-    let call: FunctionCallAny;
-    if (source as string) {
-      call = backoff.call(handler, source as string, this.requestTimeout, cb);
-    }
-    if (source as AxiosRequestConfig) {
-      call = backoff.call(handler, source as AxiosRequestConfig, cb);
-    }
+  private backoffCall(handler: (...args: any[]) => void, config: AxiosRequestConfig, callback: (...args: any[]) => void | Promise<void>): void {
+    const call = backoff.call(handler, config, callback);
     call.setStrategy(this.backoffOptions.strategy);
     call.retryIf(this.backoffOptions.retryIf);
     call.failAfter(this.backoffOptions.failAfter);
