@@ -44,8 +44,9 @@ test('MWApi NS', async (t) => {
 
     await downloader.checkCapabilities();
 
-    await getArticlesByNS(0, downloader, '', 5); // Get 5 continues/pages of NSes
-
+    await getArticlesByNS(0, downloader, 5); // Get 5 continues/pages of NSes
+    
+    
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"M"_Circle'];
 
     const articles = await articleDetailXId.getMany(interestingAIds);

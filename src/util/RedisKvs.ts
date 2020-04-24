@@ -157,7 +157,6 @@ export class RedisKvs<T> {
           reject(err);
         } else {
           resolve(val);
-          logger.log(`Total Articles stored in redis ${val}`);
         }
       });
     });
