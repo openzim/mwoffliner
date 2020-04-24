@@ -7,6 +7,7 @@ import * as backoff from 'backoff';
 import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
+import type {BackoffStrategy} from 'backoff';
 import axios, {AxiosRequestConfig} from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
@@ -53,7 +54,16 @@ interface DownloaderOpts {
   noLocalParserFallback: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
+  backoffOptions?: BackoffOptions;
 }
+
+interface BackoffOptions {
+  strategy: BackoffStrategy;
+  failAfter: number;
+  retryIf: (error?: any) => boolean;
+  backoffHandler: (number: number, delay: number, error?: any) => void;
+}
+
 
 class Downloader {
   public mw: MediaWiki;
@@ -74,8 +84,9 @@ class Downloader {
   private maxActiveRequests = 1;
   private readonly noLocalParserFallback: boolean = false;
   private urlPartCache: KVS<string> = {};
+  private backoffOptions: BackoffOptions;
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3 }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -87,6 +98,16 @@ class Downloader {
     this.noLocalParserFallback = noLocalParserFallback;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
+
+    this.backoffOptions =  {
+      strategy: new backoff.ExponentialStrategy(),
+      failAfter: 7,
+      retryIf: (err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404,
+      backoffHandler: (number: number, delay: number) => {
+        logger.info(`[backoff] #${number} after ${delay} ms`);
+      },
+      ...backoffOptions,
+    };
 
     this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
@@ -457,20 +478,16 @@ class Downloader {
     const url = this.deserializeUrl(_url);
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      const call = backoff.call(this.getJSONCb, url, this.requestTimeout, (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, {url, timeout: this.requestTimeout}, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
+          logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
           reject(err);
         } else {
           resolve(val);
         }
       });
-      call.retryIf((err: any) => err.response && err.response.status !== 404);
-      call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(5);
-      call.start();
     });
   }
 
@@ -495,11 +512,11 @@ class Downloader {
     await self.claimRequest();
     return new Promise((resolve, reject) => {
       const requestOptions = this.getRequestOptionsFromUrl(url);
-      const call = backoff.call(this.getContentCb, requestOptions, async (err: any, val: any) => {
+      this.backoffCall(this.getContentCb, requestOptions, async (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
-          logger.warn(`Failed to get [${url}] [${call.getNumRetries()}] times [status=${httpStatus}]`);
+          logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
           reject(err);
         } else if (self.useDownloadCache && self.downloadCacheDirectory) {
           try {
@@ -513,10 +530,6 @@ class Downloader {
           resolve(val);
         }
       });
-      call.retryIf((err: any) => err.response && err.response.status !== 404);
-      call.setStrategy(new backoff.ExponentialStrategy());
-      call.failAfter(5);
-      call.start();
     });
   }
 
@@ -634,23 +647,30 @@ class Downloader {
   }
 
   private async claimRequest(): Promise<null> {
+    // @ts-ignore
+    logger.info(`[queue] RSS=${process.memoryUsage().rss / 1024 / 1024} / AH=${process._getActiveHandles().length} / AR=${process._getActiveRequests().length}`);
+
     if (this.activeRequests < this.maxActiveRequests) {
       this.activeRequests += 1;
+      logger.info(`[queue] +1 [${this.activeRequests}/${this.maxActiveRequests}]`);
       return null;
     } else {
+      logger.info(`[queue] holding on [${this.activeRequests}/${this.maxActiveRequests}]`);
       await new Promise((resolve) => {
-        setTimeout(resolve, 10);
+        setTimeout(resolve, 200);
       });
+      logger.info(`[queue] reclaiming [${this.activeRequests}/${this.maxActiveRequests}]`);
       return this.claimRequest();
     }
   }
 
   private async releaseRequest(): Promise<null> {
+    logger.info(`[queue] -1 [${this.activeRequests}/${this.maxActiveRequests}]`);
     this.activeRequests -= 1;
     return null;
   }
 
-  private getJSONCb<T>(url: string, timeout: number, handler: any): void {
+  private getJSONCb<T>({url, timeout}: AxiosRequestConfig, handler: (...args: any[]) => any): void {
     logger.info(`Getting JSON from [${url}]`);
     axios.get<T>(url, { responseType: 'json', timeout })
       .then((a) => handler(null, a.data), handler)
@@ -661,7 +681,7 @@ class Downloader {
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
-            return this.getJSONCb(url, timeout, handler);
+            return this.getJSONCb({url, timeout}, handler);
           } else if (err.response && err.response.status === 404) {
             handler(err);
           }
@@ -675,7 +695,7 @@ class Downloader {
     return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
-  private getContentCb = async (requestOptions: any, handler: any): Promise<void> => {
+  private getContentCb = async (requestOptions: AxiosRequestConfig, handler: any): Promise<void> => {
     logger.info(`Downloading [${requestOptions.url}]`);
 
     try {
@@ -747,6 +767,15 @@ class Downloader {
     } else {
       return items;
     }
+  }
+
+  private backoffCall(handler: (...args: any[]) => void, config: AxiosRequestConfig, callback: (...args: any[]) => void | Promise<void>): void {
+    const call = backoff.call(handler, config, callback);
+    call.setStrategy(this.backoffOptions.strategy);
+    call.retryIf(this.backoffOptions.retryIf);
+    call.failAfter(this.backoffOptions.failAfter);
+    call.on('backoff', this.backoffOptions.backoffHandler);
+    call.start();
   }
 }
 
