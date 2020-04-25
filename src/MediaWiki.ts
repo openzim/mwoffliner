@@ -10,6 +10,8 @@ class MediaWiki {
   public base: string;
   public wikiPath: string;
   public apiPath: string;
+  public readonly apiResolvedPath: string;
+  public readonly apiResolvedUrl: string;
   public modulePath: string;
   public domain: string;
   public username: string;

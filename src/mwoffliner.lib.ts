@@ -83,6 +83,7 @@ async function execute(argv: any) {
     useDownloadCache,
     optimisationCacheUrl,
     noLocalParserFallback,
+    forceLocalParsoid,
     s3Obj,
     customFlavour: customProcessorPath,
   } = argv;
@@ -157,6 +158,7 @@ async function execute(argv: any) {
     useDownloadCache,
     downloadCacheDirectory: null,
     noLocalParserFallback,
+    forceLocalParsoid,
     optimisationCacheUrl,
     s3,
   });
