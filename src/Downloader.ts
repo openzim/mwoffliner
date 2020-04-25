@@ -239,7 +239,7 @@ class Downloader {
             },
           },
           mwApis: [{
-            uri: `${this.mw.base + this.mw.apiPath}`,
+            uri: this.mw.apiResolvedUrl,
           }],
         },
       }, {
