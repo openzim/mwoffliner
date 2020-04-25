@@ -33,6 +33,7 @@ import { saveArticles, downloadFiles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
 import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
 import S3 from './S3';
+import { getTotalArticlesNumberByNS } from './util/mw-api';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -306,6 +307,13 @@ async function execute(argv: any) {
     // }
     // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
   }
+
+  // Getting total number of articles from namespace
+  logger.log(`Total articles found by namespace ${getTotalArticlesNumberByNS()}`);
+
+  // Getting total number of articles from Redis
+  logger.log(`Total articles found in Redis  ${await articleDetailXId.len()}`);
+
 
   const dumps: Dump[] = [];
 

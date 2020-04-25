@@ -5,6 +5,7 @@ import { articleDetailXId, redirectsXId } from '../stores';
 import deepmerge = require('deepmerge');
 
 let batchSize = 50;
+let totalArticles = 0;
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
     let numArticleIds = _articleIds.length;
@@ -71,35 +72,34 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     );
 }
 
-export async function getArticlesByNS(ns: number, downloader: Downloader, _gapContinue?: string, continueLimit?: number): Promise<void> {
+export async function getArticlesByNS(ns: number, downloader: Downloader, continueLimit?: number): Promise<void> {
+    let _gapContinue: string;
+    do {
+        const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
+        _gapContinue = gapContinue;
+        const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
 
-    const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
+        const numDetails = Object.keys(articleDetails).length;
+        await articleDetailXId.setMany(articleDetails);
 
-    const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
+        for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+            await redirectsXId.setMany(
+                (articleDetail.redirects || []).reduce((acc, redirect) => {
+                    const rId = redirect.title.replace(/ /g, '_');
+                    return {
+                        ...acc,
+                        [rId]: { targetId: articleId, title: redirect.title },
+                    };
+                }, {}),
+            );
+        }
 
-    const numDetails = Object.keys(articleDetails).length;
-    await articleDetailXId.setMany(articleDetails);
+        logger.log(`Got [${numDetails}] articles from namespace [${ns}]`);
+        totalArticles += numDetails;
 
-    for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
-        await redirectsXId.setMany(
-            (articleDetail.redirects || []).reduce((acc, redirect) => {
-                const rId = redirect.title.replace(/ /g, '_');
-                return {
-                    ...acc,
-                    [rId]: { targetId: articleId, title: redirect.title },
-                };
-            }, {}),
-        );
-    }
-
-    logger.log(`Got [${numDetails}] articles from namespace [${ns}]`);
-
-    const canContinue = typeof continueLimit === 'undefined' || continueLimit > 0; // used for testing
-
-    if (gapContinue && canContinue) {
-        const nextContinueLimit = typeof continueLimit === 'undefined' ? undefined : continueLimit - 1;
-        return getArticlesByNS(ns, downloader, gapContinue, nextContinueLimit);
-    }
+        // Only for testing purposes
+        if (--(continueLimit as number) < 0) break;
+    } while (_gapContinue);
 }
 
 export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
@@ -157,4 +157,8 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         };
     }
     return ret;
+}
+
+export function getTotalArticlesNumberByNS() {
+    return totalArticles;
 }
