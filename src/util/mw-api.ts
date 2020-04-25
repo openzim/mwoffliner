@@ -98,13 +98,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
         totalArticles += numDetails;
 
         // Only for testing purposes
-        if (typeof continueLimit !== 'undefined') {
-            if (continueLimit > 0) {
-                continueLimit = continueLimit - 1;
-            } else {
-                break;
-            }
-        }
+        if (--(continueLimit as number) < 0) break;
     } while (_gapContinue);
 }
 
