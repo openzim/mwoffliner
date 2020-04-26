@@ -575,7 +575,7 @@ async function execute(argv: any) {
             genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) + '\n' +
             '\n</head>'),
       );
-
+      doc.querySelector('title').innerHTML =  dump.mwMetaData.title || dump.opts.customZimTitle;
       const articleIds = articleListLines.map((title) => title.replace(/ /g, '_'));
 
       const articlesWithImages: ArticleDetail[] = [];
