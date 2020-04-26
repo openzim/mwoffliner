@@ -13,7 +13,7 @@ test('MWApi Article Ids', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: false, downloadCacheDirectory: '', noLocalParserFallback: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: false, downloadCacheDirectory: '', noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
 
     await downloader.checkCapabilities();
 
@@ -40,7 +40,7 @@ test('MWApi NS', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: false, downloadCacheDirectory: '', noLocalParserFallback: false , optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: false, downloadCacheDirectory: '', noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
 
     await downloader.checkCapabilities();
 

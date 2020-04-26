@@ -10,6 +10,8 @@ class MediaWiki {
   public base: string;
   public wikiPath: string;
   public apiPath: string;
+  public readonly apiResolvedPath: string;
+  public readonly apiResolvedUrl: string;
   public modulePath: string;
   public domain: string;
   public username: string;
@@ -34,17 +36,19 @@ class MediaWiki {
     // Normalize args
     this.base = `${config.base.replace(/\/$/, '')}/`;
     this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki/';
-    this.apiPath = config.apiPath === undefined ? 'w/api.php' : config.apiPath;
-    this.modulePath = config.modulePath === undefined ? 'w/load.php' : config.modulePath;
+    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.modulePath = config.modulePath ?? 'w/load.php';
     this.domain = config.domain || '';
     this.username = config.username;
     this.password = config.password;
     this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
     // Computed properties
-    this.webUrl = `${this.base + this.wikiPath}`;
-    this.apiUrl = `${this.base + this.apiPath}?`;
-    this.modulePath = `${this.base + this.modulePath}?`;
+    this.webUrl = `${urlParser.resolve(this.base, this.wikiPath)}`;
+    this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
+    this.apiUrl = `${this.apiResolvedUrl}?`;
+    this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
+    this.modulePath = `${urlParser.resolve(this.base, this.modulePath)}?`;
     this.webUrlPath = urlParser.parse(this.webUrl).pathname;
     // State
     this.namespaces = {};

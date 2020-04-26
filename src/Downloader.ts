@@ -52,6 +52,7 @@ interface DownloaderOpts {
   useDownloadCache: boolean;
   downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
+  forceLocalParsoid: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
   backoffOptions?: BackoffOptions;
@@ -83,10 +84,11 @@ class Downloader {
   private activeRequests = 0;
   private maxActiveRequests = 1;
   private readonly noLocalParserFallback: boolean = false;
+  private readonly forceLocalParsoid: boolean = false;
   private urlPartCache: KVS<string> = {};
   private backoffOptions: BackoffOptions;
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParsoid, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -96,6 +98,7 @@ class Downloader {
     this.useDownloadCache = useDownloadCache;
     this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
+    this.forceLocalParsoid = forceLocalParsoid;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
 
@@ -149,30 +152,34 @@ class Downloader {
     }
 
     try {
-      const MCSMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
-      useLocalMCS = !MCSMainPageQuery.lead;
+      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+      useLocalMCS = !mcsMainPageQuery.lead;
     } catch (err) {
       logger.warn(`Failed to get remote MCS`);
     }
 
-    try {
-      const ParsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
-      useLocalParsoid = !ParsoidMainPageQuery.visualeditor.content;
-    } catch (err) {
-      logger.warn(`Failed to get remote Parsoid`);
+    if (!this.forceLocalParsoid) {
+      try {
+        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+        useLocalParsoid = !parsoidMainPageQuery.visualeditor.content;
+      } catch (err) {
+        logger.warn(`Failed to get remote Parsoid`);
+      }
     }
 
     if (!this.noLocalParserFallback) {
       if (useLocalMCS || useLocalParsoid) {
-        logger.log(`Using a local MCS/Parsoid instance, couldn't find a remote one`);
+        logger.log(`Using local MCS and ${useLocalParsoid ? 'local' : 'remote'} Parsoid`);
         await this.initLocalMcs(useLocalParsoid);
+      } else {
+        logger.log(`Using REST API`);
       }
     } else if (this.noLocalParserFallback && useLocalMCS) {
       // No remote MCS available, so don't even try
       this.forceParsoidFallback = true;
-      logger.log(`Using remote Parsoid only`);
+      logger.log(`Using local MCS and remote Parsoid`);
     } else {
-      logger.log(`Using a remote MCS/Parsoid instance`);
+      logger.log(`Using remote MCS/Parsoid`);
     }
 
     // Coordinate fetching
@@ -232,7 +239,7 @@ class Downloader {
             },
           },
           mwApis: [{
-            uri: `${this.mw.base + this.mw.apiPath}`,
+            uri: this.mw.apiResolvedUrl,
           }],
         },
       }, {
@@ -242,7 +249,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `https://{{domain}}/${this.mw.apiPath}`,
+            uri: `https://{{domain}}${this.mw.apiResolvedPath}`,
             headers: {
               'user-agent': '{{user-agent}}',
             },
