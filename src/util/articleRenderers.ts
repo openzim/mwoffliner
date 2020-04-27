@@ -73,10 +73,20 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, us
 };
 
 
+const injectHeader = (content: string, articleId: string): string => {
+    const doc = domino.createDocument(content);
+    const header = doc.createElement('h1');
+    header.appendChild(doc.createTextNode(articleId));
+    const target = doc.querySelector('body.mw-body-content');
+    target.insertAdjacentElement('afterbegin', header);
+    return doc.documentElement.outerHTML;
+};
+
+
 const renderDesktopArticle = (json: any, articleId: string): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
-        return json.visualeditor.content;
+        return injectHeader(json.visualeditor.content, articleId);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
     } else if (json.parse && json.parse.text) {
