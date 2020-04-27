@@ -18,7 +18,7 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, us
     const articleDetail = await articleDetailXId.get(articleId);
 
     if (useParsoidFallback) {
-        const html = renderDesktopArticle(json, articleId);
+        const html = renderDesktopArticle(json, articleId, articleDetail);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
             articleId,
@@ -73,20 +73,20 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, us
 };
 
 
-const injectHeader = (content: string, articleId: string): string => {
+const injectHeader = (content: string, articleId: string, articleDetail: ArticleDetail): string => {
     const doc = domino.createDocument(content);
     const header = doc.createElement('h1');
-    header.appendChild(doc.createTextNode(articleId));
+    header.appendChild(doc.createTextNode(articleDetail.title));
     const target = doc.querySelector('body.mw-body-content');
     target.insertAdjacentElement('afterbegin', header);
     return doc.documentElement.outerHTML;
 };
 
 
-const renderDesktopArticle = (json: any, articleId: string): string => {
+const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
-        return injectHeader(json.visualeditor.content, articleId);
+        return injectHeader(json.visualeditor.content, articleId, articleDetail);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
     } else if (json.parse && json.parse.text) {
