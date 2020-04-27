@@ -73,6 +73,7 @@ class Downloader {
   public readonly speed: number;
   public readonly useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
+  public mcsUrl: string;
 
   private readonly uaString: string;
   private activeRequests = 0;
@@ -84,7 +85,6 @@ class Downloader {
   private readonly urlPartCache: KVS<string> = {};
   private readonly backoffOptions: BackoffOptions;
   private readonly optimisationCacheUrl: string;
-  private mcsUrl: string;
   private parsoidFallbackUrl: string;
   private s3: S3;
   private mwCapabilities: MWCapabilities; // todo move to MW
