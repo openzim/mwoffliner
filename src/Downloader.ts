@@ -1,5 +1,4 @@
 import md5 from 'md5';
-import domino from 'domino';
 import * as path from 'path';
 import * as urlParser from 'url';
 import deepmerge from 'deepmerge';
@@ -15,22 +14,18 @@ import imageminJpegoptim from 'imagemin-jpegoptim';
 
 import {
   FIND_HTTP_REGEX,
-  getStrippedTitleFromHtml,
   MIME_IMAGE_REGEX,
   normalizeMwResponse,
   objToQueryString,
   readFilePromise,
-  renderDesktopArticle,
-  renderMCSArticle,
   URL_IMAGE_REGEX,
   DB_ERROR,
-  writeFilePromise
+  writeFilePromise, renderArticle
 } from './util';
 import S3 from './S3';
 import {Dump} from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
-import {articleDetailXId} from './stores';
 
 
 const imageminOptions = {
@@ -65,28 +60,35 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void;
 }
 
+interface MWCapabilities {
+  parsoidAvailable: boolean;
+  mcsAvailable: boolean;
+  coordinatesAvailable: boolean;
+}
+
 
 class Downloader {
-  public mw: MediaWiki;
-  public uaString: string;
+  public readonly mw: MediaWiki;
   public loginCookie: string = '';
-  public requestTimeout: number;
-  public mcsUrl: string;
-  public parsoidFallbackUrl: string;
-  public speed: number;
-  public useDownloadCache: boolean;
+  public readonly speed: number;
+  public readonly useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
-  public forceParsoidFallback: boolean = false;
-  public optimisationCacheUrl: string;
-  public s3: S3;
 
-  private canFetchCoordinates = true;
+  private readonly uaString: string;
   private activeRequests = 0;
   private maxActiveRequests = 1;
+  private readonly requestTimeout: number;
   private readonly noLocalParserFallback: boolean = false;
   private readonly forceLocalParsoid: boolean = false;
-  private urlPartCache: KVS<string> = {};
-  private backoffOptions: BackoffOptions;
+  private forceParsoidFallback: boolean = false;
+  private readonly urlPartCache: KVS<string> = {};
+  private readonly backoffOptions: BackoffOptions;
+  private readonly optimisationCacheUrl: string;
+  private mcsUrl: string;
+  private parsoidFallbackUrl: string;
+  private s3: S3;
+  private mwCapabilities: MWCapabilities; // todo move to MW
+
 
   constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParsoid, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
@@ -101,6 +103,11 @@ class Downloader {
     this.forceLocalParsoid = forceLocalParsoid;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
+    this.mwCapabilities = {
+      parsoidAvailable: true,
+      mcsAvailable: true,
+      coordinatesAvailable: true,
+    };
 
     this.backoffOptions =  {
       strategy: new backoff.ExponentialStrategy(),
@@ -140,9 +147,6 @@ class Downloader {
   }
 
   public async checkCapabilities(): Promise<void> {
-    let useLocalMCS = true;
-    let useLocalParsoid = true;
-
     let mwMetaData;
     try {
       mwMetaData = await this.mw.getMwMetaData(this);
@@ -153,31 +157,36 @@ class Downloader {
 
     try {
       const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
-      useLocalMCS = !mcsMainPageQuery.lead;
+      this.mwCapabilities.mcsAvailable = !!mcsMainPageQuery.lead;
     } catch (err) {
-      logger.warn(`Failed to get remote MCS`);
+      this.mwCapabilities.mcsAvailable = false;
+      logger.warn(`Failed to get remote                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      MCS`);
     }
 
     if (!this.forceLocalParsoid) {
       try {
         const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
-        useLocalParsoid = !parsoidMainPageQuery.visualeditor.content;
+        this.mwCapabilities.parsoidAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
+        this.mwCapabilities.parsoidAvailable = false;
         logger.warn(`Failed to get remote Parsoid`);
       }
     }
 
     if (!this.noLocalParserFallback) {
-      if (useLocalMCS || useLocalParsoid) {
-        logger.log(`Using local MCS and ${useLocalParsoid ? 'local' : 'remote'} Parsoid`);
-        await this.initLocalMcs(useLocalParsoid);
+      if (!this.mwCapabilities.mcsAvailable || !this.mwCapabilities.parsoidAvailable) {
+        logger.log(`Using local MCS and ${this.mwCapabilities.parsoidAvailable ? 'remote' : 'local'} Parsoid`);
+        await this.initLocalServices();
+        const domain = (urlParser.parse(this.mw.base)).host;
+        this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+
+        if (!this.mwCapabilities.parsoidAvailable) {
+          const webUrlHost = urlParser.parse(this.mw.webUrl).host;
+          this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
+        }
       } else {
         logger.log(`Using REST API`);
       }
-    } else if (this.noLocalParserFallback && useLocalMCS) {
-      // No remote MCS available, so don't even try
-      this.forceParsoidFallback = true;
-      logger.log(`Using local MCS and remote Parsoid`);
     } else {
       logger.log(`Using remote MCS/Parsoid`);
     }
@@ -190,7 +199,7 @@ class Downloader {
     const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
     if (isCoordinateWarning) {
       logger.info(`Coordinates not available on this wiki`);
-      this.canFetchCoordinates = false;
+      this.mwCapabilities.coordinatesAvailable = false;
     }
   }
 
@@ -206,7 +215,7 @@ class Downloader {
     return url.replace(FIND_HTTP_REGEX, '');
   }
 
-  public async initLocalMcs(forceLocalParsoid = true) {
+  public async initLocalServices(): Promise<void> {
     logger.log('Starting Parsoid & MCS');
 
     const runner = new ServiceRunner();
@@ -268,13 +277,6 @@ class Downloader {
         level: 'info',
       },
     });
-    const domain = (urlParser.parse(this.mw.base)).host;
-    this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
-    if (forceLocalParsoid) {
-      const webUrlHost = urlParser.parse(this.mw.webUrl).host;
-      this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
-    }
-    return runner;
   }
 
   public query(query: string): KVS<any> {
@@ -288,7 +290,7 @@ class Downloader {
       const queryOpts = {
         ...this.getArticleQueryOpts(shouldGetThumbnail),
         titles: articleIds.join('|'),
-        ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
+        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories ? {
           cllimit: 'max',
           clshow: '!hidden',
@@ -326,7 +328,7 @@ class Downloader {
     while (true) {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(),
-        ...(this.canFetchCoordinates ? { colimit: 'max' } : {}),
+        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories ? {
           cllimit: 'max',
           clshow: '!hidden',
@@ -396,87 +398,32 @@ class Downloader {
     };
   }
 
-  public async getArticle(articleId: string, dump: Dump, useParsoidFallback = false): Promise<Array<{ articleId: string, displayTitle: string, html: string }>> {
+  public async getArticle(articleId: string, dump: Dump, forceParsoidFallback: boolean = false): Promise<RenderedArticle[]> {
     articleId = articleId.replace(/ /g, '_');
-    logger.info(`Getting article [${articleId}]`);
-    if (!useParsoidFallback) {
-      useParsoidFallback = this.forceParsoidFallback;
-    }
-    const articleApiUrl = useParsoidFallback
-      ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
-      : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
 
-    logger.info(`Getting ${useParsoidFallback ? 'desktop' : 'mobile'} article from ${articleApiUrl}`);
+    const isMainPage = articleId === dump.mwMetaData.mainPage;
+    const articleApiUrl = this.getArticleUrl(articleId, isMainPage, forceParsoidFallback);
+
+    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     try {
-      const articleDetail = await articleDetailXId.get(articleId);
       const json = await this.getJSON<any>(articleApiUrl);
       if (json.type === 'api_error') {
         this.forceParsoidFallback = true;
+        forceParsoidFallback = true;
         logger.error(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
         throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
-
-      if (useParsoidFallback) {
-        const html = renderDesktopArticle(json, articleId);
-        const strippedTitle = getStrippedTitleFromHtml(html);
-        return [{
-          articleId,
-          displayTitle: strippedTitle || articleId.replace('_', ' '),
-          html,
-        }];
-      } else {
-        const articlesToReturn = [];
-
-        // Paginate when there are more than 200 subCategories
-        const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
-        for (let i = 0; i < numberOfPagesToSplitInto; i++) {
-          const pageId = i === 0 ? '' : `__${i}`;
-          const _articleId = articleId + pageId;
-          const _articleDetail = Object.assign(
-            {},
-            articleDetail,
-            {
-              subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
-              nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
-              prevArticleId: (i - 1) > 0 ?
-                `${articleId}__${i - 1}`
-                : (i - 1) === 0
-                  ? articleId
-                  : null,
-            },
-          );
-
-          if ((articleDetail.subCategories || []).length > 200) {
-            await articleDetailXId.set(_articleId, _articleDetail);
-          }
-
-          const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
-          let strippedTitle = getStrippedTitleFromHtml(html);
-          if (!strippedTitle) {
-            const title = (json.lead || { displaytitle: articleId }).displaytitle;
-            const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
-            strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
-          }
-
-          articlesToReturn.push({
-            articleId: _articleId,
-            displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
-            html,
-          });
-        }
-
-        return articlesToReturn;
-      }
+      return await renderArticle(json, articleId, dump, forceParsoidFallback);
 
     } catch (err) {
-      if (!useParsoidFallback) {
-        const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
-        logger.warn(`Failed to download mobile article [${articleId}], trying desktop article instead`, errMsg);
-        return this.getArticle(articleId, dump, true);
-      } else {
-        throw err;
-      }
+      if (forceParsoidFallback) throw err;
+      if (err?.response?.status === 404) throw err;
+
+      // falling back to local Parsoid
+      const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
+      logger.warn(`Failed to get article [${articleId}] using remote Parsoid, trying with local one`, errMsg);
+      return await this.getArticle(articleId, dump, true);
     }
   }
 
@@ -557,6 +504,14 @@ class Downloader {
     await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
   }
 
+  // TODO #1058
+  private getArticleUrl(articleId: string, isMainPage: boolean, forceParsoidFallback: boolean): string {
+    const useParsoidFallback = forceParsoidFallback || this.forceParsoidFallback || isMainPage;
+    return useParsoidFallback || !this.mwCapabilities.mcsAvailable
+      ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
+      : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
+  }
+
   private async readFromDownloadCache(url: string) {
     if (!this.downloadCacheDirectory) {
       throw new Error('No Download Cache Directory Defined');
@@ -619,7 +574,7 @@ class Downloader {
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.canFetchCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
     };

@@ -139,8 +139,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
-                    const useParsoidFallback = articleId === dump.mwMetaData.mainPage;
-                    const rets = await downloader.getArticle(articleId, dump, useParsoidFallback);
+                    const rets = await downloader.getArticle(articleId, dump);
 
                     for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
                         const nonPaginatedArticleId = articleDetail.title.replace(/ /g, '_');

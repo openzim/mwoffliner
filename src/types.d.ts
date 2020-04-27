@@ -163,3 +163,10 @@ interface PageInfo {
   ns?: number;
   title: string;
 }
+
+
+interface RenderedArticle {
+  articleId: string;
+  displayTitle: string;
+  html: string;
+}
