@@ -7,6 +7,7 @@ import type Downloader from './Downloader';
 
 
 class MediaWiki {
+  public metaData: MWMetaData;
   public readonly base: string;
   public readonly apiResolvedPath: string;
   public readonly apiResolvedUrl: string;
@@ -18,7 +19,6 @@ class MediaWiki {
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
 
-  private metaData: MWMetaData;
   private readonly wikiPath: string;
   private readonly username: string;
   private readonly password: string;

@@ -147,16 +147,8 @@ class Downloader {
   }
 
   public async checkCapabilities(): Promise<void> {
-    let mwMetaData;
     try {
-      mwMetaData = await this.mw.getMwMetaData(this);
-    } catch (err) {
-      logger.error(`FATAL - Failed to get MediaWiki Metadata`);
-      throw err;
-    }
-
-    try {
-      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
       this.mwCapabilities.mcsAvailable = !!mcsMainPageQuery.lead;
     } catch (err) {
       this.mwCapabilities.mcsAvailable = false;
@@ -165,7 +157,7 @@ class Downloader {
 
     if (!this.forceLocalParsoid) {
       try {
-        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.parsoidAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
         this.mwCapabilities.parsoidAvailable = false;
