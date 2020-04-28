@@ -85,14 +85,6 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
-  public articleQueryUrl(titles: string[]) {
-    return `${this.apiUrl}action=query&redirects&format=json&cllimit=max&pithumbsize=300&prop=revisions|coordinates|categories&titles=${encodeURIComponent(titles.join('|'))}`;
-  }
-
-  public pageGeneratorQueryUrl(namespace: string, init: string) {
-    return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].num}&format=json&rawcontinue=${init}`;
-  }
-
   public articleApiUrl(articleId: string) {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
