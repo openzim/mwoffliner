@@ -1,7 +1,7 @@
 import './bootstrap.test';
 
 import test from 'blue-tape';
-import { throttle } from 'src/util';
+import { throttle, sanitizeString } from 'src/util';
 import { sleep } from 'test/util';
 
 test('util -> Throttle', async (t) => {
@@ -25,4 +25,8 @@ test('util -> Throttle', async (t) => {
 
     await sleep(100);
     t.equal(calledCount, 2, 'Call count is 2 after four times in under 200ms');
+
+    t.equals(sanitizeString('Mediawiki <script></script>'), 'Mediawiki  script   script ', 'Escaping HTML Tags');
+    t.equals(sanitizeString('SELECT * FROM db WHERE something="Poler"'), 'SELECT   FROM db WHERE something  Poler ', 'Escaping query characters');
+
 });

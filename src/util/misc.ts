@@ -343,3 +343,7 @@ export function objToQueryString(obj: KVS<any>): string {
   }
   return str.join('&');
 }
+
+export function sanitizeString(str: string) {
+  return str.replace(/[&<>"'*=//]/g, ' ');
+}
