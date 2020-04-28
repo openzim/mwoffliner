@@ -80,7 +80,10 @@ class MediaWiki {
   }
 
   public articleApiUrl(articleId: string) {
-    return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
+    if ( typeof articleApiUrl.base == 'undefined' ) {
+      articleApiUrl.base = `${this.apiUrl}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`
+    }
+    return `${articleApiUrl.base}${encodeURIComponent(articleId)}`;
   }
 
   public subCategoriesApiUrl(articleId: string, continueStr: string = '') {
