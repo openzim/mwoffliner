@@ -22,7 +22,7 @@ import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import Redis from './Redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath, sanitizeString } from './util';
 import { mapLimit } from 'promiso';
 import logger from './Logger';
 import { getAndProcessStylesheets } from './util';
@@ -575,7 +575,7 @@ async function execute(argv: any) {
             genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) + '\n' +
             '\n</head>'),
       );
-      doc.querySelector('title').innerHTML =  dump.mwMetaData.title || dump.opts.customZimTitle;
+      doc.querySelector('title').innerHTML =  sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle);
       const articleIds = articleListLines.map((title) => title.replace(/ /g, '_'));
 
       const articlesWithImages: ArticleDetail[] = [];
