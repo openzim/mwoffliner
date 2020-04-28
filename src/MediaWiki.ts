@@ -1,58 +1,52 @@
-import Downloader from './Downloader';
-import logger from './Logger';
 import urlParser from 'url';
-import * as U from './util';
-import * as domino from 'domino';
 import * as pathParser from 'path';
+import logger from './Logger';
+import * as util from './util';
+import * as domino from 'domino';
+import type Downloader from './Downloader';
 
-// Stub for now
+
 class MediaWiki {
-  public base: string;
-  public wikiPath: string;
-  public apiPath: string;
+  public readonly base: string;
   public readonly apiResolvedPath: string;
   public readonly apiResolvedUrl: string;
-  public modulePath: string;
-  public domain: string;
-  public username: string;
-  public password: string;
-  public spaceDelimiter: string;
-  public webUrl: string;
-  public apiUrl: string;
-  public webUrlPath: string;
-  public getCategories: boolean;
-  public namespaces: {
-    [namespace: string]: {
-      num: number,
-      allowedSubpages: boolean,
-      isContent: boolean,
-    },
-  };
-  public namespacesToMirror: string[];
-  public numArticles: number;
-  private metaData: MWMetaData;
+  public readonly modulePath: string;
+  public readonly spaceDelimiter: string;
+  public readonly webUrl: string;
+  public readonly apiUrl: string;
+  public readonly getCategories: boolean;
+  public readonly namespaces: MWNamespaces = {};
+  public readonly namespacesToMirror: string[] = [];
 
-  constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; getCategories: boolean; }) {
-    // Normalize args
-    this.base = `${config.base.replace(/\/$/, '')}/`;
-    this.wikiPath = config.wikiPath !== undefined && config.wikiPath !== true ? config.wikiPath : 'wiki/';
-    this.apiPath = config.apiPath ?? 'w/api.php';
-    this.modulePath = config.modulePath ?? 'w/load.php';
+  private metaData: MWMetaData;
+  private readonly wikiPath: string;
+  private readonly username: string;
+  private readonly password: string;
+  private readonly apiPath: string;
+  private readonly domain: string;
+  private readonly webUrlPath: string;
+
+  constructor(config: MWConfig) {
     this.domain = config.domain || '';
     this.username = config.username;
     this.password = config.password;
     this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
-    // Computed properties
+
+    this.base = `${config.base.replace(/\/$/, '')}/`;
+
+    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.wikiPath = config.wikiPath ?? 'wiki/';
+
     this.webUrl = `${urlParser.resolve(this.base, this.wikiPath)}`;
+
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
     this.apiUrl = `${this.apiResolvedUrl}?`;
     this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
-    this.modulePath = `${urlParser.resolve(this.base, this.modulePath)}?`;
+
+    this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
     this.webUrlPath = urlParser.parse(this.webUrl).pathname;
-    // State
-    this.namespaces = {};
-    this.namespacesToMirror = [];
+
   }
 
   public async login(downloader: Downloader) {
@@ -85,14 +79,6 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
-  public articleQueryUrl(titles: string[]) {
-    return `${this.apiUrl}action=query&redirects&format=json&cllimit=max&pithumbsize=300&prop=revisions|coordinates|categories&titles=${encodeURIComponent(titles.join('|'))}`;
-  }
-
-  public pageGeneratorQueryUrl(namespace: string, init: string) {
-    return `${this.apiUrl}action=query&generator=allpages&gapfilterredir=nonredirects&gaplimit=max&colimit=max&prop=revisions|coordinates&gapnamespace=${this.namespaces[namespace].num}&format=json&rawcontinue=${init}`;
-  }
-
   public articleApiUrl(articleId: string) {
     return `${this.apiUrl}action=parse&format=json&page=${encodeURIComponent(articleId)}&prop=${encodeURI('modules|jsconfigvars|headhtml')}`;
   }
@@ -112,16 +98,16 @@ class MediaWiki {
         const name = entry['*'].replace(/ /g, self.spaceDelimiter);
         const num = entry.id;
         const allowedSubpages = ('subpages' in entry);
-        const isContent = !!(entry.content !== undefined || U.contains(addNamespaces, num));
+        const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num));
         const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
-        self.namespaces[U.lcFirst(name)] = details;
-        self.namespaces[U.ucFirst(name)] = details;
+        self.namespaces[util.lcFirst(name)] = details;
+        self.namespaces[util.ucFirst(name)] = details;
         /* Namespaces in English (if available) */
         if (canonical) {
-          self.namespaces[U.lcFirst(canonical)] = details;
-          self.namespaces[U.ucFirst(canonical)] = details;
+          self.namespaces[util.lcFirst(canonical)] = details;
+          self.namespaces[util.ucFirst(canonical)] = details;
         }
         /* Is content to mirror */
         if (isContent) {
@@ -135,10 +121,10 @@ class MediaWiki {
     try {
       const pathname = urlParser.parse(href, false, true).pathname || '';
       if (pathname.indexOf('./') === 0) {
-        return U.decodeURIComponent(pathname.substr(2));
+        return util.decodeURIComponent(pathname.substr(2));
       }
       if (pathname.indexOf(this.webUrlPath) === 0) {
-        return U.decodeURIComponent(pathname.substr(this.webUrlPath.length));
+        return util.decodeURIComponent(pathname.substr(this.webUrlPath.length));
       }
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
@@ -215,7 +201,6 @@ class MediaWiki {
     const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const body = await downloader.query(query);
     const entries = body.query.general;
-    this.numArticles = body.query.statistics.articles;
 
     const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
     const siteName = entries.sitename;
@@ -225,7 +210,7 @@ class MediaWiki {
     const [langIso2, langIso3] = await Promise.all(langs.map(async (lang: string) => {
       let langIso3;
       try {
-        langIso3 = await U.getIso3(lang);
+        langIso3 = await util.getIso3(lang);
       } catch (err) {
         langIso3 = lang;
       }
