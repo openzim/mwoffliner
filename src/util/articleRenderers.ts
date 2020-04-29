@@ -1,11 +1,92 @@
-import { leadSectionTemplate, sectionTemplate, subSectionTemplate, categoriesTemplate, subCategoriesTemplate, subPagesTemplate } from '../Templates';
-import { Dump } from '../Dump';
+import domino from 'domino';
+import {
+    categoriesTemplate,
+    leadSectionTemplate,
+    sectionTemplate,
+    subCategoriesTemplate,
+    subPagesTemplate,
+    subSectionTemplate
+} from '../Templates';
 import logger from '../Logger';
+import type {Dump} from '../Dump';
+import {articleDetailXId} from '../stores';
+import {getStrippedTitleFromHtml} from './misc';
 
-export function renderDesktopArticle(json: any, articleId: string) {
+
+export const renderArticle = async (json: any, articleId: string, dump: Dump, useParsoidFallback: boolean): Promise<RenderedArticle[]> => {
+
+    const articleDetail = await articleDetailXId.get(articleId);
+
+    if (useParsoidFallback) {
+        const html = renderDesktopArticle(json, articleId, articleDetail);
+        const strippedTitle = getStrippedTitleFromHtml(html);
+        return [{
+            articleId,
+            displayTitle: strippedTitle || articleId.replace('_', ' '),
+            html,
+        }];
+
+    } else {
+
+        const result = [];
+
+        // Paginate when there are more than 200 subCategories
+        const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
+        for (let i = 0; i < numberOfPagesToSplitInto; i++) {
+            const pageId = i === 0 ? '' : `__${i}`;
+            const _articleId = articleId + pageId;
+            const _articleDetail = Object.assign(
+              {},
+              articleDetail,
+              {
+                  subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
+                  nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
+                  prevArticleId: (i - 1) > 0 ?
+                    `${articleId}__${i - 1}`
+                    : (i - 1) === 0
+                      ? articleId
+                      : null,
+              },
+            );
+
+            if ((articleDetail.subCategories || []).length > 200) {
+                await articleDetailXId.set(_articleId, _articleDetail);
+            }
+
+            const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
+            let strippedTitle = getStrippedTitleFromHtml(html);
+            if (!strippedTitle) {
+                const title = (json.lead || { displaytitle: articleId }).displaytitle;
+                const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
+                strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+            }
+
+            result.push({
+                articleId: _articleId,
+                displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
+                html,
+            });
+        }
+
+        return result;
+    }
+};
+
+
+const injectHeader = (content: string, articleId: string, articleDetail: ArticleDetail): string => {
+    const doc = domino.createDocument(content);
+    const header = doc.createElement('h1');
+    header.appendChild(doc.createTextNode(articleDetail.title));
+    const target = doc.querySelector('body.mw-body-content');
+    target.insertAdjacentElement('afterbegin', header);
+    return doc.documentElement.outerHTML;
+};
+
+
+const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
-        return json.visualeditor.content;
+        return injectHeader(json.visualeditor.content, articleId, articleDetail);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
     } else if (json.parse && json.parse.text) {
@@ -14,9 +95,10 @@ export function renderDesktopArticle(json: any, articleId: string) {
         logger.error(`Error in retrieved article [${articleId}]:`, json.error);
         return '';
     }
-}
+};
 
-export function renderMCSArticle(json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail) {
+
+const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({
@@ -109,9 +191,10 @@ export function renderMCSArticle(json: any, dump: Dump, articleId: string, artic
     }
     html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
     return html;
-}
+};
 
-function groupAlphabetical(items: Array<{ name: string, url: string }>) {
+
+const groupAlphabetical = (items: Array<{ name: string, url: string }>) => {
     const groupsAlphabetical = items.reduce((acc: any, item) => {
         const groupId = item.name[0].toLocaleUpperCase();
         acc[groupId] = (acc[groupId] || []).concat(item);
@@ -126,4 +209,4 @@ function groupAlphabetical(items: Array<{ name: string, url: string }>) {
                 items: groupsAlphabetical[letter],
             };
         });
-}
+};
