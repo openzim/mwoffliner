@@ -22,6 +22,7 @@ test('Downloader class', async (t) => {
     await mkdirPromise(cacheDir);
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
 
+    await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
 
     // const remoteMcsUrl = downloader.mcsUrl;
