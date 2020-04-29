@@ -18,7 +18,8 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, us
     const articleDetail = await articleDetailXId.get(articleId);
 
     if (useParsoidFallback) {
-        const html = renderDesktopArticle(json, articleId, articleDetail);
+        const isMainPage = articleId === dump.mwMetaData.mainPage;
+        const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
             articleId,
@@ -79,14 +80,15 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
     header.appendChild(doc.createTextNode(articleDetail.title));
     const target = doc.querySelector('body.mw-body-content');
     target.insertAdjacentElement('afterbegin', header);
+    target.insertAdjacentElement('afterend', doc.createElement('hr'));
     return doc.documentElement.outerHTML;
 };
 
 
-const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail): string => {
+const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail, isMainPage: boolean = false): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
-        return injectHeader(json.visualeditor.content, articleId, articleDetail);
+        return isMainPage ? json.visualeditor.content : injectHeader(json.visualeditor.content, articleId, articleDetail);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
     } else if (json.parse && json.parse.text) {
