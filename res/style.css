@@ -39,6 +39,10 @@
     border-bottom: 0px solid #eaecf0;
 }
 
+.mw-body h1.article-header {
+    border-bottom: 1px solid #eaecf0;
+}
+
 @media (max-width: 720px) {
     .content .thumb .thumbinner>.thumbcaption {
         flex: 1 1 auto !important;

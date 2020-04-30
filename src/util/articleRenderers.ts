@@ -78,9 +78,9 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
     const doc = domino.createDocument(content);
     const header = doc.createElement('h1');
     header.appendChild(doc.createTextNode(articleDetail.title));
+    header.classList.add('article-header');
     const target = doc.querySelector('body.mw-body-content');
     target.insertAdjacentElement('afterbegin', header);
-    target.insertAdjacentElement('afterend', doc.createElement('hr'));
     return doc.documentElement.outerHTML;
 };
 
