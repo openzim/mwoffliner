@@ -31,6 +31,7 @@ class MediaWiki {
   public namespacesToMirror: string[];
   public numArticles: number;
   private metaData: MWMetaData;
+  private readonly articleApiUrlBase: string;
 
   constructor(config: { base: any; wikiPath: any; apiPath: any; domain: any; username: any; password: any; spaceDelimiter: string; modulePath: string; getCategories: boolean; }) {
     // Normalize args
@@ -53,6 +54,8 @@ class MediaWiki {
     // State
     this.namespaces = {};
     this.namespacesToMirror = [];
+
+    this.articleApiUrlBase = `${this.apiUrl}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
   }
 
   public async login(downloader: Downloader) {
@@ -85,11 +88,8 @@ class MediaWiki {
     return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
-  public articleApiUrl(articleId: string) {
-    if ( typeof articleApiUrl.base == 'undefined' ) {
-      articleApiUrl.base = `${this.apiUrl}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`
-    }
-    return `${articleApiUrl.base}${encodeURIComponent(articleId)}`;
+  public articleApiUrl(articleId: string): string {
+    return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}`;
   }
 
   public subCategoriesApiUrl(articleId: string, continueStr: string = '') {
