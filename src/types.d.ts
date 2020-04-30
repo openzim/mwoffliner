@@ -187,6 +187,12 @@ interface PageInfo {
 }
 
 
+interface PageRef {
+  name: string;
+  url: string;
+}
+
+
 interface RenderedArticle {
   articleId: string;
   displayTitle: string;

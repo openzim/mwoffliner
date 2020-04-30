@@ -196,7 +196,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
 };
 
 
-const groupAlphabetical = (items: Array<{ name: string, url: string }>) => {
+const groupAlphabetical = (items: PageRef[]) => {
     const groupsAlphabetical = items.reduce((acc: any, item) => {
         const groupId = item.name[0].toLocaleUpperCase();
         acc[groupId] = (acc[groupId] || []).concat(item);
