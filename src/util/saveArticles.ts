@@ -804,14 +804,10 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     try {
         if (articleDetail.revisionId) {
             /* Revision date */
-            const oldId = articleDetail.revisionId;
-            const timestamp = articleDetail.timestamp;
-            const date = new Date(timestamp);
+            const date = new Date(articleDetail.timestamp);
             div.innerHTML = footerTemplate({
-                articleId: encodeURIComponent(articleId),
-                webUrl: mw.webUrl,
+                originArticleUrl: `${mw.webUrl}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}`,
                 creator: dump.mwMetaData.creator,
-                oldId,
                 date: date.toISOString().substring(0, 10),
                 strings: dump.strings,
             });
