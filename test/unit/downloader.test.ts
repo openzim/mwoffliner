@@ -99,6 +99,13 @@ test('Downloader class', async (t) => {
     const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump);
     t.ok(PaginatedArticle.length > 100, 'Categories with many subCategories are paginated');
 
+    try {
+        await downloader.getArticle('NeverExistingArticle', dump);
+    } catch (err) {
+        t.ok(true, 'downloader.downloadContent throws on non-existent article id');
+        t.equal(err.response.status, 404, 'getArticle response status for non-existent article id is 404');
+    }
+
     rimraf.sync(cacheDir);
 
     const isPngFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
