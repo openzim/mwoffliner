@@ -20,7 +20,8 @@ import {
   readFilePromise,
   URL_IMAGE_REGEX,
   DB_ERROR,
-  writeFilePromise, renderArticle
+  writeFilePromise,
+  renderArticle
 } from './util';
 import S3 from './S3';
 import {Dump} from './Dump';
@@ -496,7 +497,6 @@ class Downloader {
     await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
   }
 
-  // TODO #1058
   private getArticleUrl(articleId: string, isMainPage: boolean, forceParsoidFallback: boolean): string {
     const useParsoidFallback = forceParsoidFallback || this.forceParsoidFallback || isMainPage;
     return useParsoidFallback || !this.mwCapabilities.mcsAvailable

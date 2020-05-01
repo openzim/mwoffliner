@@ -13,9 +13,10 @@ import {articleDetailXId} from '../stores';
 import {getStrippedTitleFromHtml} from './misc';
 
 
-export const renderArticle = async (json: any, articleId: string, dump: Dump, useParsoidFallback: boolean): Promise<RenderedArticle[]> => {
+export const renderArticle = async (json: any, articleId: string, dump: Dump, forceParsoidFallback: boolean): Promise<RenderedArticle[]> => {
 
     const articleDetail = await articleDetailXId.get(articleId);
+    const useParsoidFallback = forceParsoidFallback || json.visualeditor?.result;
 
     if (useParsoidFallback) {
         const isMainPage = articleId === dump.mwMetaData.mainPage;
