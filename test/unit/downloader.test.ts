@@ -22,6 +22,7 @@ test('Downloader class', async (t) => {
     await mkdirPromise(cacheDir);
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
 
+    await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
 
     // const remoteMcsUrl = downloader.mcsUrl;
@@ -97,6 +98,13 @@ test('Downloader class', async (t) => {
 
     const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump);
     t.ok(PaginatedArticle.length > 100, 'Categories with many subCategories are paginated');
+
+    try {
+        await downloader.getArticle('NeverExistingArticle', dump);
+    } catch (err) {
+        t.ok(true, 'downloader.downloadContent throws on non-existent article id');
+        t.equal(err.response.status, 404, 'getArticle response status for non-existent article id is 404');
+    }
 
     rimraf.sync(cacheDir);
 

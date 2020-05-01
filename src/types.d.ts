@@ -68,8 +68,8 @@ interface QueryRet {
   redirects?: QueryRedirectsRet;
 
   thumbnail?: {
-    source: string
-    width: number
+    source: string,
+    width: number,
     height: number,
   };
 
@@ -133,6 +133,28 @@ interface MWMetaData {
 }
 
 
+interface MWNamespaces {
+  [namespace: string]: {
+    num: number,
+    allowedSubpages: boolean,
+    isContent: boolean,
+  };
+}
+
+
+interface MWConfig {
+  base: string;
+  wikiPath?: string;
+  apiPath?: string;
+  domain?: string;
+  username?: string;
+  password?: string;
+  spaceDelimiter?: string;
+  modulePath?: string;
+  getCategories?: boolean;
+}
+
+
 interface ContinueOpts {
   rdcontinue?: string;
   continue?: string;
@@ -162,6 +184,12 @@ interface QueryContinueOpts {
 interface PageInfo {
   ns?: number;
   title: string;
+}
+
+
+interface PageRef {
+  name: string;
+  url: string;
 }
 
 

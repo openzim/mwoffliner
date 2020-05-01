@@ -20,7 +20,8 @@ import {
   readFilePromise,
   URL_IMAGE_REGEX,
   DB_ERROR,
-  writeFilePromise, renderArticle
+  writeFilePromise,
+  renderArticle
 } from './util';
 import S3 from './S3';
 import {Dump} from './Dump';
@@ -147,25 +148,17 @@ class Downloader {
   }
 
   public async checkCapabilities(): Promise<void> {
-    let mwMetaData;
     try {
-      mwMetaData = await this.mw.getMwMetaData(this);
-    } catch (err) {
-      logger.error(`FATAL - Failed to get MediaWiki Metadata`);
-      throw err;
-    }
-
-    try {
-      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
       this.mwCapabilities.mcsAvailable = !!mcsMainPageQuery.lead;
     } catch (err) {
       this.mwCapabilities.mcsAvailable = false;
-      logger.warn(`Failed to get remote                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      MCS`);
+      logger.warn(`Failed to get remote MCS`);
     }
 
     if (!this.forceLocalParsoid) {
       try {
-        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(mwMetaData.mainPage)}`);
+        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.parsoidAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
         this.mwCapabilities.parsoidAvailable = false;
@@ -504,7 +497,6 @@ class Downloader {
     await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
   }
 
-  // TODO #1058
   private getArticleUrl(articleId: string, isMainPage: boolean, forceParsoidFallback: boolean): string {
     const useParsoidFallback = forceParsoidFallback || this.forceParsoidFallback || isMainPage;
     return useParsoidFallback || !this.mwCapabilities.mcsAvailable

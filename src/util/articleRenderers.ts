@@ -13,12 +13,14 @@ import {articleDetailXId} from '../stores';
 import {getStrippedTitleFromHtml} from './misc';
 
 
-export const renderArticle = async (json: any, articleId: string, dump: Dump, useParsoidFallback: boolean): Promise<RenderedArticle[]> => {
+export const renderArticle = async (json: any, articleId: string, dump: Dump, forceParsoidFallback: boolean): Promise<RenderedArticle[]> => {
 
     const articleDetail = await articleDetailXId.get(articleId);
+    const useParsoidFallback = forceParsoidFallback || json.visualeditor?.result;
 
     if (useParsoidFallback) {
-        const html = renderDesktopArticle(json, articleId, articleDetail);
+        const isMainPage = articleId === dump.mwMetaData.mainPage;
+        const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
             articleId,
@@ -77,16 +79,17 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
     const doc = domino.createDocument(content);
     const header = doc.createElement('h1');
     header.appendChild(doc.createTextNode(articleDetail.title));
+    header.classList.add('article-header');
     const target = doc.querySelector('body.mw-body-content');
     target.insertAdjacentElement('afterbegin', header);
     return doc.documentElement.outerHTML;
 };
 
 
-const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail): string => {
+const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail, isMainPage: boolean = false): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
-        return injectHeader(json.visualeditor.content, articleId, articleDetail);
+        return isMainPage ? json.visualeditor.content : injectHeader(json.visualeditor.content, articleId, articleDetail);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
     } else if (json.parse && json.parse.text) {
@@ -194,7 +197,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
 };
 
 
-const groupAlphabetical = (items: Array<{ name: string, url: string }>) => {
+const groupAlphabetical = (items: PageRef[]) => {
     const groupsAlphabetical = items.reduce((acc: any, item) => {
         const groupId = item.name[0].toLocaleUpperCase();
         acc[groupId] = (acc[groupId] || []).concat(item);

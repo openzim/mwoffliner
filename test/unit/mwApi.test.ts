@@ -15,6 +15,7 @@ test('MWApi Article Ids', async (t) => {
 
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: false, downloadCacheDirectory: '', noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
 
+    await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
 
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_Built-up_Area'];
@@ -42,7 +43,10 @@ test('MWApi NS', async (t) => {
 
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: false, downloadCacheDirectory: '', noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
 
+    await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
+
+    await mw.getNamespaces([], downloader);
 
     await getArticlesByNS(0, downloader, 5); // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"M"_Circle'];
@@ -59,4 +63,11 @@ test('MWApi NS', async (t) => {
     t.assert(!!Circle.coordinates, 'Circle article has coordinates');
     // t.assert((Circle as any).pageimage, 'Circle article has pageimage');
     // t.assert(Circle.thumbnail, 'Circle article has thumbnail');
+
+    t.notEqual(Object.keys(mw.namespaces).length, 0, 'Got items in namespaces');
+    let keysAreValid = true;
+    Object.values(mw.namespaces).forEach((item) => {
+        if (!Object.keys(item).includes('num') || !Object.keys(item).includes('allowedSubpages') || !Object.keys(item).includes('isContent')) keysAreValid = false;
+    });
+    t.true(keysAreValid, 'Namespaces have valid keys');
 });

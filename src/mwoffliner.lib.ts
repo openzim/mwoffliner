@@ -163,8 +163,6 @@ async function execute(argv: any) {
     s3,
   });
 
-  await downloader.checkCapabilities();
-
   /* Get MediaWiki Info */
   let mwMetaData;
   try {
@@ -173,6 +171,8 @@ async function execute(argv: any) {
     logger.error(`FATAL - Failed to get MediaWiki Metadata`);
     throw err;
   }
+
+  await downloader.checkCapabilities();
 
   const redis = new Redis(argv, config);
   populateArticleDetail(redis.client);
