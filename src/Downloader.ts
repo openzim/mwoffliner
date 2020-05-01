@@ -153,7 +153,7 @@ class Downloader {
       this.mwCapabilities.mcsAvailable = !!mcsMainPageQuery.lead;
     } catch (err) {
       this.mwCapabilities.mcsAvailable = false;
-      logger.warn(`Failed to get remote                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      MCS`);
+      logger.warn(`Failed to get remote MCS`);
     }
 
     if (!this.forceLocalParsoid) {
