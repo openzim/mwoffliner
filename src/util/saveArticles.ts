@@ -4,6 +4,8 @@ import MediaWiki from '../MediaWiki';
 import {ZimArticle, ZimCreator} from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
+import srt2vtt from 'srt-to-vtt';
+import fs from 'fs';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
@@ -13,7 +15,7 @@ import {contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUr
 import {config} from '../config';
 import {footerTemplate, htmlTemplateCode} from '../Templates';
 import {articleDetailXId, filesToDownloadXPath, filesToRetryXPath} from '../stores';
-import {getRelativeFilePath, getSizeFromUrl} from './misc';
+import {getRelativeFilePath, getSizeFromUrl, readFilePromise} from './misc';
 import {RedisKvs} from './RedisKvs';
 import {rewriteUrl} from './rewriteUrls';
 import {CONCURRENCY_LIMIT} from './const';
@@ -148,7 +150,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             continue;
                         }
 
-                        const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                        const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId, zimCreator);
                         let articleDoc = _articleDoc;
 
                         if (dump.customProcessor?.shouldKeepArticle) {
@@ -294,10 +296,10 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
     };
 }
 
-async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
+async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string, zimCreator: ZimCreator) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
     let doc = domino.createDocument(html);
-    const tmRet = await treatMedias(doc, mw, dump, articleId);
+    const tmRet = await treatMedias(doc, mw, dump, articleId, downloader, zimCreator);
     doc = tmRet.doc;
     mediaDependencies = mediaDependencies.concat(
         tmRet.mediaDependencies
@@ -339,7 +341,7 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
     return aVal > bVal ? 1 : -1;
 }
 
-async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[] }> {
+async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, downloader: Downloader, zimCreator: ZimCreator): Promise<{ mediaDependencies: string[] }> {
     // This function handles audio tags as well as video tags
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
@@ -405,6 +407,31 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     }
 
     sourceEl.setAttribute('src', newUrl);
+
+    /* Scrape Subtitles */
+    const trackEle = videoEl.querySelector('track');
+    if (trackEle) {
+        const src = trackEle.getAttribute('src').substring(2);
+        const srcLang =  videoEl.querySelector('track').getAttribute('srclang');
+        const { content }  = await downloader.downloadContent(`https://${src}`);
+
+        fs.writeFile(`/tmp/${srcLang}.srt`, content.toString(), 'utf8', function (err: any) {
+            if (!err) {
+                // Convert .srt to .vtt
+                const fsOperations = fs.createReadStream(`/tmp/${srcLang}.srt`, 'utf8')
+                .pipe(srt2vtt())
+                .pipe(fs.createWriteStream(`/tmp/${srcLang}.vtt`));
+
+                fsOperations.on('close', async function() {
+                    const article = new ZimArticle({ url: `${srcLang}.vtt`, mimeType: 'text/vtt', data: await readFilePromise(`/tmp/${srcLang}.vtt`), ns: 'I' });
+                    zimCreator.addArticle(article);
+                    videoEl.querySelector('track').setAttribute('src', `/I/${srcLang}.vtt`);
+                });
+            } else {
+                logger.log('Not able to convert subtitles');
+            }
+        });
+    }
     return { mediaDependencies };
 }
 
@@ -539,7 +566,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
     imageNode.parentNode.replaceChild(thumbDiv, imageNode);
 }
 
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, downloader?: Downloader, zimCreator?: ZimCreator) {
     let mediaDependencies: string[] = [];
     /* Clean/rewrite image tags */
     const imgs = Array.from(parsoidDoc.getElementsByTagName('img'));
@@ -547,7 +574,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     const srcCache: KVS<boolean> = {};
 
     for (const videoEl of videos) { // <video /> and <audio />
-        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
+        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, downloader, zimCreator);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
 

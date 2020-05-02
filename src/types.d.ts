@@ -12,6 +12,7 @@ declare module 'mkdirp';
 declare module 'country-language';
 declare module 'imagemin-advpng';
 declare module 'imagemin-jpegoptim';
+declare module 'srt-to-vtt';
 
 type DominoElement = any;
 
