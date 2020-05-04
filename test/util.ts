@@ -4,7 +4,9 @@ import { Dump } from '../src/Dump';
 import { ZimCreator } from '@openzim/libzim';
 import pathParser from 'path';
 import * as path from 'path';
+import fs from 'fs';
 import execa = require('execa');
+import logger from '../src/Logger';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -72,7 +74,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
 
 export function setupZimCreatorPath(dump: any) {
     const outputDirectory = path.join(process.cwd(), 'out');
-    const outZim = pathParser.resolve(outputDirectory, dump.computeFilenameRadical() + '.zim');
+    const outZim = fs.existsSync(outputDirectory) ? pathParser.resolve(outputDirectory, dump.computeFilenameRadical() + '.zim') : pathParser.resolve(dump.computeFilenameRadical() + '.zim')
     return outZim;
 }
 
