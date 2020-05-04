@@ -223,11 +223,12 @@ export class Dump {
         while (Buffer.byteLength(articleId, 'utf8') > 250) {
             articleId = articleId.substr(0, articleId.length - 1);
         }
+
         function e(str: string) {
             if (typeof str === 'undefined') {
                 return undefined;
             }
-            return escape ? encodeURIComponent(str) : str;
+            return escape ? encodeURIComponent(str) : str.replace('?', encodeURIComponent('?'));
         }
         return e(articleId);
     }
