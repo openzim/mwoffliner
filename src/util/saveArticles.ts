@@ -299,6 +299,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
 async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string, zimCreator: ZimCreator) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
     let doc = domino.createDocument(html);
+
     const tmRet = await treatMedias(doc, mw, dump, articleId, downloader, zimCreator);
     doc = tmRet.doc;
     mediaDependencies = mediaDependencies.concat(
@@ -409,30 +410,37 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     sourceEl.setAttribute('src', newUrl);
 
     /* Scrape Subtitles */
+    await treatSubtitles(videoEl, articleId, downloader, zimCreator);
+
+    return { mediaDependencies };
+}
+
+export async function treatSubtitles(videoEl: any, articleId: string, downloader: Downloader, zimCreator: ZimCreator) {
     const trackEle = videoEl.querySelector('track');
     if (trackEle) {
-        const src = trackEle.getAttribute('src').substring(2);
         const srcLang =  videoEl.querySelector('track').getAttribute('srclang');
-        const { content }  = await downloader.downloadContent(`https://${src}`);
+        const { content }  = await downloader.downloadContent(`https://${trackEle.getAttribute('src').substring(2)}`);
+        return new Promise((resolve, reject) => {
+            fs.writeFile(`/tmp/${srcLang}.srt`, content.toString(), 'utf8', function (err: any) {
+                if (!err) {
+                    // Convert .srt to .vtt
+                    const fsOperations = fs.createReadStream(`/tmp/${srcLang}.srt`, 'utf8')
+                    .pipe(srt2vtt())
+                    .pipe(fs.createWriteStream(`/tmp/${srcLang}.vtt`));
 
-        fs.writeFile(`/tmp/${srcLang}.srt`, content.toString(), 'utf8', function (err: any) {
-            if (!err) {
-                // Convert .srt to .vtt
-                const fsOperations = fs.createReadStream(`/tmp/${srcLang}.srt`, 'utf8')
-                .pipe(srt2vtt())
-                .pipe(fs.createWriteStream(`/tmp/${srcLang}.vtt`));
-
-                fsOperations.on('close', async function() {
-                    const article = new ZimArticle({ url: `${srcLang}.vtt`, mimeType: 'text/vtt', data: await readFilePromise(`/tmp/${srcLang}.vtt`), ns: 'I' });
-                    zimCreator.addArticle(article);
-                    videoEl.querySelector('track').setAttribute('src', `/I/${srcLang}.vtt`);
-                });
-            } else {
-                logger.log('Not able to convert subtitles');
-            }
+                    fsOperations.on('close', async function() {
+                        const article = new ZimArticle({ url: `${srcLang}.vtt`, mimeType: 'text/vtt', data: await readFilePromise(`/tmp/${srcLang}.vtt`), ns: 'I' });
+                        zimCreator.addArticle(article);
+                        videoEl.querySelector('track').setAttribute('src', `${getRelativeFilePath(articleId, srcLang, 'I')}.vtt`);
+                    });
+                    resolve(true);
+                } else {
+                    logger.log('Not able to convert subtitles');
+                    reject(false);
+                }
+            });
         });
     }
-    return { mediaDependencies };
 }
 
 function shouldKeepImage(dump: Dump, img: DominoElement) {

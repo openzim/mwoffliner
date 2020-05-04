@@ -4,10 +4,11 @@ import domino from 'domino';
 
 import { setupScrapeClasses } from 'test/util';
 import { articleDetailXId } from 'src/stores';
-import { saveArticles, treatMedias, applyOtherTreatments } from '../../src/util/saveArticles';
-import { ZimArticle } from '@openzim/libzim';
+import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles } from '../../src/util/saveArticles';
+import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
-import { mwRetToArticleDetail } from 'src/util';
+import { mwRetToArticleDetail, mkdirPromise } from 'src/util';
+import Downloader from '../../src/Downloader';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -237,3 +238,33 @@ test('--customFlavour', async (t) => {
     t.ok(ParisDocument.querySelector('#PRE_PROCESSOR'), `Paris was correctly pre-processed`);
     t.ok(PragueDocument.querySelector('#POST_PROCESSOR'), `Prague was correctly post-processed`);
 });
+
+
+test('treat article with Subtitles', async (t) => {
+    const { downloader, mw, dump, zimCreator } = await setupScrapeClasses({}, true)
+
+    const subtitleExists = await checkSubtitles('User:Kelson/test', downloader, dump, zimCreator);
+    t.equals(subtitleExists, true, 'Subtitles scraped succesfully');
+
+    const subtitleNotExists = await checkSubtitles('600-cell', downloader, dump, zimCreator);
+    t.equals(subtitleNotExists, undefined, 'Subtitles not found in this vedio');
+});
+
+
+async function getArticleHTML(downloader: any, articleId: string){
+    const _articlesDetail = await downloader.getArticleDetailsIds([articleId]);
+    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
+    await articleDetailXId.flush();
+    await articleDetailXId.setMany(articlesDetail);
+}
+
+async function checkSubtitles(articleId: string, downloader: Downloader, dump: Dump, zimCreator: ZimCreator){
+    await getArticleHTML(downloader, articleId);
+
+    const [{ html }] = await downloader.getArticle(articleId, dump);
+
+    const doc1 = domino.createDocument(html);
+
+    const videoEl1 = doc1.querySelector('video');
+    return await treatSubtitles(videoEl1, articleId, downloader, zimCreator);
+}
