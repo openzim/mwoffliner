@@ -43,7 +43,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
 
     if (shouldAddCreator) {
         const zimCreator = new ZimCreator({
-            fileName: setupZimCreatorPath(dump).outZim,
+            fileName: setupZimCreatorPath(dump),
             fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
             welcome: (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
           }, {
@@ -70,12 +70,10 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
     };
 }
 
-export function setupZimCreatorPath(dump: any){
+export function setupZimCreatorPath(dump: any) {
     const outputDirectory = path.join(process.cwd(), 'out');
     const outZim = pathParser.resolve(outputDirectory, dump.computeFilenameRadical() + '.zim');
-    return {
-        outZim
-    }
+    return outZim;
 }
 
 export function sleep(ms: number) {
