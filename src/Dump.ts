@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import * as domino from 'domino';
 import logger from './Logger';
 import Downloader from './Downloader';
-import { getStringsForLang } from './util';
+import { getStringsForLang, getArticleBase } from './util';
 
 interface DumpOpts {
     tmpDir: string;
@@ -215,22 +215,6 @@ export class Dump {
     }
 
     public getArticleUrl(articleId: string) {
-        return this.getArticleBase(articleId, false);
+        return getArticleBase(articleId);
     }
-
-    public getArticleBase(articleId: string, escape?: boolean) {
-        /* Filesystem is not able to handle with filename > 255 bytes */
-        while (Buffer.byteLength(articleId, 'utf8') > 250) {
-            articleId = articleId.substr(0, articleId.length - 1);
-        }
-
-        function e(str: string) {
-            if (typeof str === 'undefined') {
-                return undefined;
-            }
-            return escape ? encodeURIComponent(str) : str.replace('?', encodeURIComponent('?'));
-        }
-        return e(articleId);
-    }
-
 }

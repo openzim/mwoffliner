@@ -347,3 +347,11 @@ export function objToQueryString(obj: KVS<any>): string {
 export function sanitizeString(str: string) {
   return str.replace(/[&<>"'*=//]/g, ' ');
 }
+
+export function getArticleBase(articleId: string) {
+    if (typeof articleId === 'undefined') {
+        return undefined;
+    }
+    // Encoding ? char because it is not allowed directly in hrefs.
+    return articleId.replace('?', encodeURIComponent('?'));
+}

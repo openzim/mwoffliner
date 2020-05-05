@@ -22,7 +22,7 @@ import { config } from './config';
 import Downloader from './Downloader';
 import MediaWiki from './MediaWiki';
 import Redis from './Redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath, sanitizeString } from './util';
+import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath, sanitizeString, getArticleBase} from './util';
 import { mapLimit } from 'promiso';
 import logger from './Logger';
 import { getAndProcessStylesheets } from './util';
@@ -380,7 +380,7 @@ async function execute(argv: any) {
     const zimCreator = new ZimCreator({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-      welcome: (dump.opts.mainPage ? dump.getArticleBase(dump.opts.mainPage) : 'index'),
+      welcome: (dump.opts.mainPage ? getArticleBase(dump.opts.mainPage) : 'index'),
     }, {
         Tags: dump.computeZimTags(),
         Language: dump.mwMetaData.langIso3,
@@ -612,7 +612,7 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to[${'A/' + dump.getArticleBase(mainPage, true)}]`);
+      logger.log(`Create main page redirection from [index] to[${'A/' + encodeURIComponent(mainPage)}]`);
       const article = new ZimArticle({
         url: 'index',
         shouldIndex: true,

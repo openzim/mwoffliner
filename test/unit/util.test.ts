@@ -1,7 +1,7 @@
 import './bootstrap.test';
 
 import test from 'blue-tape';
-import { throttle, sanitizeString } from 'src/util';
+import { throttle, sanitizeString, getArticleBase } from 'src/util';
 import { sleep } from 'test/util';
 
 test('util -> Throttle', async (t) => {
@@ -30,3 +30,23 @@ test('util -> Throttle', async (t) => {
     t.equals(sanitizeString('SELECT * FROM db WHERE something="Poler"'), 'SELECT   FROM db WHERE something  Poler ', 'Escaping query characters');
 
 });
+
+test('Question Mark escape', async(t) => {
+    const escapeCharAtEnd = getArticleBase('Que_faire_?');
+    const escapeCharFromMiddle = getArticleBase('Que_faire_?_(Lénine)');
+    const noEscape =  getArticleBase('Michael_Jackson');
+
+    t.equal(escapeCharAtEnd, 'Que_faire_%3F', 'Question mark escaped at end of title');
+    t.equal(escapeCharFromMiddle, 'Que_faire_%3F_(Lénine)', 'Question mark escaped from the middle of title');
+    t.equal(noEscape, 'Michael_Jackson', 'No escaping from regular string');
+})
+
+test('Other Character should not escape', async(t) => {
+    const checkExclamationChar = getArticleBase('Avanti!');
+    const checkAndChar = getArticleBase('McCormick_Tribune_Plaza_&_Ice Rink');
+    const checkAddEqualChar = getArticleBase('2_+_2_=_5');
+
+    t.equal(checkExclamationChar, 'Avanti!', 'Not esacping ! char');
+    t.equal(checkAndChar, 'McCormick_Tribune_Plaza_&_Ice Rink', 'Not escaping & char');
+    t.equal(checkAddEqualChar, '2_+_2_=_5', 'Not escaping + and = char');
+})
