@@ -410,16 +410,19 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     sourceEl.setAttribute('src', newUrl);
 
     /* Scrape Subtitles */
-    await treatSubtitles(videoEl, articleId, downloader, zimCreator);
+   
+    await treatSubtitles(videoEl, articleId, downloader, zimCreator, webUrlHost, mw);
 
     return { mediaDependencies };
 }
 
-export async function treatSubtitles(videoEl: any, articleId: string, downloader: Downloader, zimCreator: ZimCreator) {
+export async function treatSubtitles(videoEl: any, articleId: string, downloader: Downloader, zimCreator: ZimCreator, webUrlHost: string, mw: MediaWiki) {
     const trackEle = videoEl.querySelector('track');
     if (trackEle) {
-        const srcLang =  videoEl.querySelector('track').getAttribute('srclang');
-        const { content }  = await downloader.downloadContent(`https://${trackEle.getAttribute('src').substring(2)}`);
+        const sourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
+        const srcLang =  videoEl.querySelector('track').getAttribute('title');
+        const { content }  = await downloader.downloadContent(sourceUrl);
+        logger.log(sourceUrl);
         return new Promise((resolve, reject) => {
             fs.writeFile(`/tmp/${srcLang}.srt`, content.toString(), 'utf8', function (err: any) {
                 if (!err) {
