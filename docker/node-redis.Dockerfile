@@ -1,6 +1,6 @@
 FROM redis:5.0 as redis
 
-FROM node:10-buster
+FROM node:12.16.3-buster
 
 COPY --from=redis /usr/local/bin/redis-* /usr/local/bin/
 RUN redis-cli --version
