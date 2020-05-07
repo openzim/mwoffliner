@@ -348,10 +348,7 @@ export function sanitizeString(str: string) {
   return str.replace(/[&<>"'*=//]/g, ' ');
 }
 
-export function getArticleBase(articleId: string) {
-    if (typeof articleId === 'undefined') {
-        return undefined;
-    }
-    // Encoding ? char because it is not allowed directly in hrefs.
-    return articleId.replace('?', encodeURIComponent('?'));
+export function encodeArticleId(articleId: string) {
+  // Encoding ? and # from the articleId to prevent path termination in browser.
+  return articleId.replace('?', encodeURIComponent('?')).replace('#', encodeURIComponent('#'));
 }

@@ -1,6 +1,6 @@
 import * as urlParser from 'url';
 import { isMirrored } from './saveArticles';
-import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath } from './misc';
+import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleId} from './misc';
 import { redirectsXId } from '../stores';
 import { Dump } from '../Dump';
 import MediaWiki from '../MediaWiki';
@@ -16,12 +16,12 @@ export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump,
     if (await isMirrored(title)) {
         /* Deal with local anchor */
         const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
-        linkNode.setAttribute('href', dump.getArticleUrl(title) + localAnchor);
+        linkNode.setAttribute('href', encodeArticleId(title) + localAnchor);
         return;
     } else {
         const res = await redirectsXId.get(title.replace(/ /g, '_'));
         if (res) {
-            linkNode.setAttribute('href', dump.getArticleUrl(title));
+            linkNode.setAttribute('href', encodeArticleId(title));
         } else {
             migrateChildren(linkNode, linkNode.parentNode, linkNode);
             linkNode.parentNode.removeChild(linkNode);

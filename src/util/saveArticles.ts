@@ -13,7 +13,7 @@ import {contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUr
 import {config} from '../config';
 import {footerTemplate, htmlTemplateCode} from '../Templates';
 import {articleDetailXId, filesToDownloadXPath, filesToRetryXPath} from '../stores';
-import {getRelativeFilePath, getSizeFromUrl} from './misc';
+import {getRelativeFilePath, getSizeFromUrl, encodeArticleId} from './misc';
 import {RedisKvs} from './RedisKvs';
 import {rewriteUrl} from './rewriteUrls';
 import {CONCURRENCY_LIMIT} from './const';
@@ -787,7 +787,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
                 subpages
                     += `&lt; ${
                     isParentMirrored
-                        ? `<a href="${dump.getArticleUrl(parentPath + parent)}" title="${label}">`
+                        ? `<a href="${encodeArticleId(parentPath + parent)}" title="${label}">`
                         : ''
                     }${label
                     }${isParentMirrored ? '</a> ' : ' '}`;

@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import * as domino from 'domino';
 import logger from './Logger';
 import Downloader from './Downloader';
-import { getStringsForLang, getArticleBase } from './util';
+import { getStringsForLang } from './util';
 
 interface DumpOpts {
     tmpDir: string;
@@ -212,9 +212,5 @@ export class Dump {
         }
 
         return sheetUrls.filter((a) => a);
-    }
-
-    public getArticleUrl(articleId: string) {
-        return getArticleBase(articleId);
     }
 }

@@ -1,7 +1,7 @@
 import './bootstrap.test';
 
 import test from 'blue-tape';
-import { throttle, sanitizeString, getArticleBase } from 'src/util';
+import { throttle, sanitizeString, encodeArticleId } from 'src/util';
 import { sleep } from 'test/util';
 
 test('util -> Throttle', async (t) => {
@@ -32,9 +32,9 @@ test('util -> Throttle', async (t) => {
 });
 
 test('Question Mark escape', async(t) => {
-    const escapeCharAtEnd = getArticleBase('Que_faire_?');
-    const escapeCharFromMiddle = getArticleBase('Que_faire_?_(Lénine)');
-    const noEscape =  getArticleBase('Michael_Jackson');
+    const escapeCharAtEnd = encodeArticleId('Que_faire_?');
+    const escapeCharFromMiddle = encodeArticleId('Que_faire_?_(Lénine)');
+    const noEscape =  encodeArticleId('Michael_Jackson');
 
     t.equal(escapeCharAtEnd, 'Que_faire_%3F', 'Question mark escaped at end of title');
     t.equal(escapeCharFromMiddle, 'Que_faire_%3F_(Lénine)', 'Question mark escaped from the middle of title');
@@ -42,11 +42,13 @@ test('Question Mark escape', async(t) => {
 })
 
 test('Other Character should not escape', async(t) => {
-    const checkExclamationChar = getArticleBase('Avanti!');
-    const checkAndChar = getArticleBase('McCormick_Tribune_Plaza_&_Ice Rink');
-    const checkAddEqualChar = getArticleBase('2_+_2_=_5');
+    const checkExclamationChar = encodeArticleId('Avanti!');
+    const checkAndChar = encodeArticleId('McCormick_Tribune_Plaza_&_Ice Rink');
+    const checkAddEqualChar = encodeArticleId('2_+_2_=_5');
+    const checkMixChar = encodeArticleId('Saint-Louis-du-Ha!_Ha!');
 
     t.equal(checkExclamationChar, 'Avanti!', 'Not esacping ! char');
     t.equal(checkAndChar, 'McCormick_Tribune_Plaza_&_Ice Rink', 'Not escaping & char');
     t.equal(checkAddEqualChar, '2_+_2_=_5', 'Not escaping + and = char');
+    t.equal(checkMixChar, 'Saint-Louis-du-Ha!_Ha!', 'Not escaping mix char');
 })
