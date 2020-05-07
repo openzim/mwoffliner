@@ -349,6 +349,6 @@ export function sanitizeString(str: string) {
 }
 
 export function encodeArticleId(articleId: string) {
-  // Encoding ? and # from the articleId to prevent path termination in browser.
-  return articleId.replace('?', encodeURIComponent('?')).replace('#', encodeURIComponent('#'));
+  // Encoding articleId string and then decoding / char from it.
+  return encodeURIComponent(articleId).replace(/%2F/g, '/');
 }

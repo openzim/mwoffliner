@@ -34,21 +34,25 @@ test('util -> Throttle', async (t) => {
 test('Question Mark escape', async(t) => {
     const escapeCharAtEnd = encodeArticleId('Que_faire_?');
     const escapeCharFromMiddle = encodeArticleId('Que_faire_?_(Lénine)');
-    const noEscape =  encodeArticleId('Michael_Jackson');
-
-    t.equal(escapeCharAtEnd, 'Que_faire_%3F', 'Question mark escaped at end of title');
-    t.equal(escapeCharFromMiddle, 'Que_faire_%3F_(Lénine)', 'Question mark escaped from the middle of title');
-    t.equal(noEscape, 'Michael_Jackson', 'No escaping from regular string');
-})
-
-test('Other Character should not escape', async(t) => {
+    const checkHashChar = encodeArticleId('Random_#hashtag');
+    const checkColonChar = encodeArticleId(`Guidelines:Règles_d'édition`);
     const checkExclamationChar = encodeArticleId('Avanti!');
     const checkAndChar = encodeArticleId('McCormick_Tribune_Plaza_&_Ice Rink');
     const checkAddEqualChar = encodeArticleId('2_+_2_=_5');
-    const checkMixChar = encodeArticleId('Saint-Louis-du-Ha!_Ha!');
 
-    t.equal(checkExclamationChar, 'Avanti!', 'Not esacping ! char');
-    t.equal(checkAndChar, 'McCormick_Tribune_Plaza_&_Ice Rink', 'Not escaping & char');
-    t.equal(checkAddEqualChar, '2_+_2_=_5', 'Not escaping + and = char');
-    t.equal(checkMixChar, 'Saint-Louis-du-Ha!_Ha!', 'Not escaping mix char');
+    t.equal(escapeCharAtEnd, 'Que_faire_%3F', 'Question mark encoded at end of title');
+    t.equal(escapeCharFromMiddle, 'Que_faire_%3F_(L%C3%A9nine)', 'Question mark encoded from the middle of title');
+    t.equal(checkHashChar, 'Random_%23hashtag', 'Encoding # char');
+    t.equal(checkColonChar, `Guidelines%3AR%C3%A8gles_d'%C3%A9dition`, 'Encoding : char');
+    t.equal(checkExclamationChar, 'Avanti!', 'Not Encoding ! char');
+    t.equal(checkAndChar, 'McCormick_Tribune_Plaza_%26_Ice%20Rink', 'Encoding & char');
+    t.equal(checkAddEqualChar, '2_%2B_2_%3D_5', 'Encoding + and = char');
+})
+
+test('Other Character should not escape', async(t) => {
+    const checkForwardSlash = encodeArticleId(`something/random/todo`);
+    const noEscape =  encodeArticleId('Michael_Jackson');
+
+    t.equal(checkForwardSlash, 'something/random/todo', 'Not encoding / char');
+    t.equal(noEscape, 'Michael_Jackson', 'Not encoding from regular string');
 })

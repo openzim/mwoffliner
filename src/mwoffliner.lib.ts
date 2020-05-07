@@ -611,7 +611,7 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to[${'A/' + mainPage}]`);
+      logger.log(`Create main page redirection from [index] to [${'A/' + mainPage}]`);
       const article = new ZimArticle({
         url: 'index',
         shouldIndex: true,
