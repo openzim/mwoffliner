@@ -96,10 +96,10 @@ test('e2e url rewriting', async (t) => {
 
     await getArticleIds(downloader, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_Built-up_Area']);
 
-    let LondonArticle: ZimArticle;
+    let LondonArticle: typeof ZimArticle;
 
     await saveArticles({
-        addArticle(article: ZimArticle) {
+        addArticle(article: typeof ZimArticle) {
             if (article.title === 'London') {
                 LondonArticle = article;
             }
