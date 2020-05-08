@@ -4,7 +4,7 @@ import domino from 'domino';
 
 import { setupScrapeClasses } from 'test/util';
 import { articleDetailXId } from 'src/stores';
-import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles } from '../../src/util/saveArticles';
+import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles } from 'src/util/saveArticles';
 import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import MediaWiki from '../../src/MediaWiki';
@@ -244,7 +244,7 @@ test('--customFlavour', async (t) => {
 test('treat article with Subtitles', async (t) => {
     const { downloader, mw, dump, zimCreator } = await setupScrapeClasses({}, true)
 
-    const subtitleExists = await checkSubtitles('User:Kelson/test', downloader, dump, zimCreator, mw);
+    const subtitleExists = await checkSubtitles('Mechanical energy', downloader, dump, zimCreator, mw);
     t.equals(subtitleExists, true, 'Subtitles scraped succesfully');
 
     const subtitleNotExists = await checkSubtitles('600-cell', downloader, dump, zimCreator, mw);
