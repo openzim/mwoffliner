@@ -1,8 +1,9 @@
 import './bootstrap.test';
 
 import test from 'blue-tape';
-import { throttle, sanitizeString, encodeArticleId } from 'src/util';
+import { throttle, sanitizeString, encodeArticleIdForZimHtmlUrl } from 'src/util';
 import { sleep } from 'test/util';
+import logger from '../../src/Logger';
 
 test('util -> Throttle', async (t) => {
     let calledCount = 0;
@@ -31,14 +32,17 @@ test('util -> Throttle', async (t) => {
 
 });
 
-test('Question Mark escape', async(t) => {
-    const escapeCharAtEnd = encodeArticleId('Que_faire_?');
-    const escapeCharFromMiddle = encodeArticleId('Que_faire_?_(Lénine)');
-    const checkHashChar = encodeArticleId('Random_#hashtag');
-    const checkColonChar = encodeArticleId(`Guidelines:Règles_d'édition`);
-    const checkExclamationChar = encodeArticleId('Avanti!');
-    const checkAndChar = encodeArticleId('McCormick_Tribune_Plaza_&_Ice Rink');
-    const checkAddEqualChar = encodeArticleId('2_+_2_=_5');
+test('Encoding ArticleId for Zim html Url', async(t) => {
+    const escapeCharAtEnd = encodeArticleIdForZimHtmlUrl('Que_faire_?');
+    const escapeCharFromMiddle = encodeArticleIdForZimHtmlUrl('Que_faire_?_(Lénine)');
+    const checkHashChar = encodeArticleIdForZimHtmlUrl('Random_#hashtag');
+    const checkColonChar = encodeArticleIdForZimHtmlUrl(`Guidelines:Règles_d'édition`);
+    const checkExclamationChar = encodeArticleIdForZimHtmlUrl('Avanti!');
+    const checkAndChar = encodeArticleIdForZimHtmlUrl('McCormick_Tribune_Plaza_&_Ice Rink');
+    const checkAddEqualChar = encodeArticleIdForZimHtmlUrl('2_+_2_=_5');
+    const checkForwardSlash = encodeArticleIdForZimHtmlUrl(`something/random/todo`);
+    const noEscape =  encodeArticleIdForZimHtmlUrl('Michael_Jackson');
+    const undefinedType =  encodeArticleIdForZimHtmlUrl(undefined);
 
     t.equal(escapeCharAtEnd, 'Que_faire_%3F', 'Question mark encoded at end of title');
     t.equal(escapeCharFromMiddle, 'Que_faire_%3F_(L%C3%A9nine)', 'Question mark encoded from the middle of title');
@@ -47,12 +51,7 @@ test('Question Mark escape', async(t) => {
     t.equal(checkExclamationChar, 'Avanti!', 'Not Encoding ! char');
     t.equal(checkAndChar, 'McCormick_Tribune_Plaza_%26_Ice%20Rink', 'Encoding & char');
     t.equal(checkAddEqualChar, '2_%2B_2_%3D_5', 'Encoding + and = char');
-})
-
-test('Other Character should not escape', async(t) => {
-    const checkForwardSlash = encodeArticleId(`something/random/todo`);
-    const noEscape =  encodeArticleId('Michael_Jackson');
-
     t.equal(checkForwardSlash, 'something/random/todo', 'Not encoding / char');
     t.equal(noEscape, 'Michael_Jackson', 'Not encoding from regular string');
-})
+    t.equal(undefinedType, 'undefined', 'Returning undefined articleId as string');
+});
