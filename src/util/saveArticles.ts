@@ -6,6 +6,7 @@ import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
 import srt2vtt from 'srt-to-vtt';
 import fs from 'fs';
+import * as QueryStringParser from 'querystring';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
@@ -410,7 +411,6 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     sourceEl.setAttribute('src', newUrl);
 
     /* Scrape Subtitles */
-   
     await treatSubtitles(videoEl, articleId, downloader, zimCreator, webUrlHost, mw);
 
     return { mediaDependencies };
@@ -420,21 +420,20 @@ export async function treatSubtitles(videoEl: any, articleId: string, downloader
     const trackEle = videoEl.querySelector('track');
     if (trackEle) {
         const sourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
-        const srcLang =  videoEl.querySelector('track').getAttribute('title');
+        const trackTitle: any =  QueryStringParser.parse(sourceUrl).title;
         const { content }  = await downloader.downloadContent(sourceUrl);
-        logger.log(sourceUrl);
         return new Promise((resolve, reject) => {
-            fs.writeFile(`/tmp/${srcLang}.srt`, content.toString(), 'utf8', function (err: any) {
+            fs.writeFile(`/tmp/${trackTitle}.srt`, content.toString(), 'utf8', function (err: any) {
                 if (!err) {
                     // Convert .srt to .vtt
-                    const fsOperations = fs.createReadStream(`/tmp/${srcLang}.srt`, 'utf8')
+                    const fsOperations = fs.createReadStream(`/tmp/${trackTitle}.srt`, 'utf8')
                     .pipe(srt2vtt())
-                    .pipe(fs.createWriteStream(`/tmp/${srcLang}.vtt`));
+                    .pipe(fs.createWriteStream(`/tmp/${trackTitle}.vtt`));
 
                     fsOperations.on('close', async function() {
-                        const article = new ZimArticle({ url: `${srcLang}.vtt`, mimeType: 'text/vtt', data: await readFilePromise(`/tmp/${srcLang}.vtt`), ns: 'I' });
+                        const article = new ZimArticle({ url: `${trackTitle}.vtt`, mimeType: 'text/vtt', data: await readFilePromise(`/tmp/${trackTitle}.vtt`), ns: 'I' });
                         zimCreator.addArticle(article);
-                        videoEl.querySelector('track').setAttribute('src', `${getRelativeFilePath(articleId, srcLang, 'I')}.vtt`);
+                        videoEl.querySelector('track').setAttribute('src', `${getRelativeFilePath(articleId, trackTitle, 'I')}.vtt`);
                     });
                     resolve(true);
                 } else {

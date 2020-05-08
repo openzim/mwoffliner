@@ -7,6 +7,7 @@ import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles } from '../../src/util/saveArticles';
 import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
+import MediaWiki from '../../src/MediaWiki';
 import { mwRetToArticleDetail, mkdirPromise } from 'src/util';
 import Downloader from '../../src/Downloader';
 
@@ -243,10 +244,10 @@ test('--customFlavour', async (t) => {
 test('treat article with Subtitles', async (t) => {
     const { downloader, mw, dump, zimCreator } = await setupScrapeClasses({}, true)
 
-    const subtitleExists = await checkSubtitles('User:Kelson/test', downloader, dump, zimCreator);
+    const subtitleExists = await checkSubtitles('User:Kelson/test', downloader, dump, zimCreator, mw);
     t.equals(subtitleExists, true, 'Subtitles scraped succesfully');
 
-    const subtitleNotExists = await checkSubtitles('600-cell', downloader, dump, zimCreator);
+    const subtitleNotExists = await checkSubtitles('600-cell', downloader, dump, zimCreator, mw);
     t.equals(subtitleNotExists, undefined, 'Subtitles not found in this vedio');
 });
 
@@ -258,13 +259,13 @@ async function getArticleHTML(downloader: any, articleId: string){
     await articleDetailXId.setMany(articlesDetail);
 }
 
-async function checkSubtitles(articleId: string, downloader: Downloader, dump: Dump, zimCreator: ZimCreator){
+async function checkSubtitles(articleId: string, downloader: Downloader, dump: Dump, zimCreator: ZimCreator, mw: MediaWiki){
     await getArticleHTML(downloader, articleId);
 
     const [{ html }] = await downloader.getArticle(articleId, dump);
 
-    const doc1 = domino.createDocument(html);
+    const doc = domino.createDocument(html);
 
-    const videoEl1 = doc1.querySelector('video');
-    return await treatSubtitles(videoEl1, articleId, downloader, zimCreator);
+    const videoEl = doc.querySelector('video');
+    return await treatSubtitles(videoEl, articleId, downloader, zimCreator, 'https://en.wikipedia.org/', mw);
 }

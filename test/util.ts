@@ -7,6 +7,7 @@ import * as path from 'path';
 import fs from 'fs';
 import execa = require('execa');
 import logger from '../src/Logger';
+import rmrf from 'rimraf';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -74,7 +75,17 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
 
 export function setupZimCreatorPath(dump: any) {
     const outputDirectory = path.join(process.cwd(), 'out');
-    const outZim = fs.existsSync(outputDirectory) ? pathParser.resolve(outputDirectory, dump.computeFilenameRadical() + '.zim') : pathParser.resolve(dump.computeFilenameRadical() + '.zim')
+    const outZim = fs.existsSync(outputDirectory) ? pathParser.resolve(outputDirectory,  dump.computeFilenameRadical() + '.zim') : pathParser.resolve(dump.computeFilenameRadical() + '.zim')
+    // Deleting the half created folders
+    const filesToDelete = [outZim.replace('zim', 'tmp'), outZim.replace('zim', 'tmp.idx.tmp'), outZim.replace('zim', 'tmp_title.idx.tmp')]
+    setTimeout(function(){
+        for (const file of filesToDelete) {
+            rmrf(file, function(){
+                logger.log(`${file} deleted.`)
+            });
+        }
+    }, 5000)
+
     return outZim;
 }
 
