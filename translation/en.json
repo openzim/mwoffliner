@@ -1,7 +1,6 @@
 {
     "__direction": "ltr",
-    "ISSUED_BY": "This article is issued from",
-    "LICENSED_UNDER": "The text is licensed under",
-    "ADDITIONAL_TERMS": "Additional terms may apply for the media files.",
-    "LAST_EDITED_ON": "Last edited on"
+    "DISCLAIMER": "This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.",
+    "LAST_EDITED_ON": "Last edited on ${date}",
+    "LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
 }

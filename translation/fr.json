@@ -1,7 +1,6 @@
 {
     "__direction": "ltr",
-    "ISSUED_BY": "Cet article est issu de",
-    "LICENSED_UNDER": "Le texte est sous licence",
-    "ADDITIONAL_TERMS": "Des conditions supplémentaires peuvent s'appliquer aux fichiers multimédias.",
-    "LAST_EDITED_ON": "Dernière édition sur"
+    "DISCLAIMER": "Cet article est issu de ${creator}. Le texte est sous licence ${license}. Des conditions supplémentaires peuvent s'appliquer aux fichiers multimédias.",
+    "LAST_EDITED_ON": "Dernière édition sur ${date}",
+    "LICENSE_NAME": "Creative Commons - Attribution - Partage dans les Mêmes"
 }
