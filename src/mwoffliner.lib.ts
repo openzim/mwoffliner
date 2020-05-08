@@ -5,6 +5,8 @@
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 
+import util from 'util';
+import fs, { readFileSync } from 'fs';
 import os from 'os';
 import axios from 'axios';
 import rimraf from 'rimraf';
@@ -13,7 +15,6 @@ import urlParser from 'url';
 import im from 'imagemagick';
 import domino from 'domino';
 import * as path from 'path';
-import fs, { readFileSync } from 'fs';
 import * as QueryStringParser from 'querystring';
 import { ZimArticle, ZimCreator } from '@openzim/libzim';
 
@@ -502,59 +503,48 @@ async function execute(argv: any) {
     );
   }
 
-  async function saveFavicon(dump: Dump, zimCreator: ZimCreator) {
+  async function saveFavicon(dump: Dump, zimCreator: ZimCreator): Promise<{}> {
     logger.log('Saving favicon.png...');
 
-    function resizeFavicon(zimCreator: ZimCreator, faviconPath: string) {
-      return new Promise((resolve, reject) => {
-        im.convert([faviconPath, '-thumbnail', '48', faviconPath], (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            readFilePromise(faviconPath, null)
-              .then((faviconContent) => {
-                const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data: faviconContent, ns: '-' });
-                return zimCreator.addArticle(article);
-              })
-              .then(resolve, reject);
-          }
-        });
-      });
+    async function resizeFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<{}> {
+      try {
+        await util.promisify(im.convert)([faviconPath, '-thumbnail', '48', faviconPath]);
+      } catch (e) {
+        throw new Error('Failed to convert favicon using imagemagick');
+      }
+      const data = await readFilePromise(faviconPath, null);
+      const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' });
+      return zimCreator.addArticle(article);
     }
 
     if (customZimFavicon) {
-      return resizeFavicon(zimCreator, customZimFavicon);
-    } else {
-      const body = await downloader.getJSON<any>(mw.siteInfoUrl());
-      const entries = body.query.general;
-      if (!entries.logo) {
-        throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
-      }
-
-      const parsedUrl = urlParser.parse(entries.logo);
-      const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-
-      const faviconPath = path.join(tmpDirectory, `favicon.${ext}`);
-      let faviconFinalPath = path.join(tmpDirectory, `favicon.png`);
-      const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
-      const logoContent = await downloader.downloadContent(logoUrl);
-      await writeFilePromise(faviconPath, logoContent.content, null);
-      if (ext !== 'png') {
-        logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
-        await new Promise((resolve, reject) => {
-          im.convert([faviconPath, faviconFinalPath], (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-      } else {
-        faviconFinalPath = faviconPath;
-      }
-      return resizeFavicon(zimCreator, faviconFinalPath);
+      return await resizeFavicon(zimCreator, customZimFavicon);
     }
+    const body = await downloader.getJSON<any>(mw.siteInfoUrl());
+    const entries = body.query.general;
+    if (!entries.logo) {
+      throw new Error(`********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`);
+    }
+
+    const parsedUrl = urlParser.parse(entries.logo);
+    const ext = parsedUrl.pathname.split('.').slice(-1)[0];
+
+    const faviconPath = path.join(tmpDirectory, `favicon.${ext}`);
+    let faviconFinalPath = path.join(tmpDirectory, `favicon.png`);
+    const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
+    const logoContent = await downloader.downloadContent(logoUrl);
+    await writeFilePromise(faviconPath, logoContent.content, null);
+    if (ext !== 'png') {
+      logger.info(`Original favicon is not a PNG ([${ext}]). Converting it to PNG`);
+      try {
+        await util.promisify(im.convert)([faviconPath, faviconFinalPath]);
+      } catch (e) {
+        throw new Error('Failed to convert favicon using imagemagick');
+      }
+    } else {
+      faviconFinalPath = faviconPath;
+    }
+    return await resizeFavicon(zimCreator, faviconFinalPath);
   }
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator) {
@@ -660,5 +650,5 @@ async function execute(argv: any) {
 }
 
 export {
-  execute,
+  execute
 };
