@@ -26,7 +26,8 @@
         "curly": false,
         "trailing-comma": false,
         "no-consecutive-blank-lines": false,
-        "member-ordering": false
+        "member-ordering": false,
+        "no-trailing-whitespace": true
     },
     "rulesDirectory": []
 }
