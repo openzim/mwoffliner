@@ -351,5 +351,5 @@ export function sanitizeString(str: string) {
 // We will need the encoded URL on article load so that we can set the hrefs of anchor tag correctly,
 // but we must not encode the '/' character or else relative links may fail
 export function encodeArticleIdForZimHtmlUrl(articleId: string) {
-  return encodeURIComponent(articleId).replace(/%2F/g, '/');
+  return articleId && encodeURIComponent(articleId).replace(/%2F/g, '/');
 }
