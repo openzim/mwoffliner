@@ -4,8 +4,6 @@ import MediaWiki from '../MediaWiki';
 import {ZimArticle, ZimCreator} from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
-import srt2vtt from 'srt-to-vtt';
-import fs from 'fs';
 import * as QueryStringParser from 'querystring';
 
 import DU from '../DOMUtils';
@@ -420,28 +418,16 @@ export async function treatSubtitles(videoEl: any, articleId: string, downloader
     const trackEle = videoEl.querySelector('track');
     if (trackEle) {
         const sourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
+        const trackformat: any = QueryStringParser.parse(sourceUrl).trackformat;
         const trackTitle: any =  QueryStringParser.parse(sourceUrl).title;
-        const { content }  = await downloader.downloadContent(sourceUrl);
-        return new Promise((resolve, reject) => {
-            fs.writeFile(`/tmp/${trackTitle}.srt`, content.toString(), 'utf8', function (err: any) {
-                if (!err) {
-                    // Convert .srt to .vtt
-                    const fsOperations = fs.createReadStream(`/tmp/${trackTitle}.srt`, 'utf8')
-                    .pipe(srt2vtt())
-                    .pipe(fs.createWriteStream(`/tmp/${trackTitle}.vtt`));
 
-                    fsOperations.on('close', async function() {
-                        const article = new ZimArticle({ url: `${trackTitle}.vtt`, mimeType: 'text/vtt', data: await readFilePromise(`/tmp/${trackTitle}.vtt`), ns: 'I' });
-                        zimCreator.addArticle(article);
-                        videoEl.querySelector('track').setAttribute('src', `${getRelativeFilePath(articleId, trackTitle, 'I')}.vtt`);
-                    });
-                    resolve(true);
-                } else {
-                    logger.log('Not able to convert subtitles');
-                    reject(false);
-                }
-            });
-        });
+        const vttSourceUrl = sourceUrl.replace(trackformat, 'vtt');
+        const { content }  = await downloader.downloadContent(vttSourceUrl);
+
+        const article = new ZimArticle({ url: `${trackTitle}.vtt`, mimeType: 'text/vtt', data: content, ns: 'I' });
+        zimCreator.addArticle(article);
+        videoEl.querySelector('track').setAttribute('src', `${getRelativeFilePath(articleId, trackTitle, 'I')}.vtt`);
+        return true;
     }
 }
 
