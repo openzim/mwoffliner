@@ -9,7 +9,7 @@ const _test = tapePromise(test);
 _test('S3 checks', async(t) => {
     if (!process.env.BUCKET_NAME_TEST) {
         logger.log('Skip S3 tests');
-        return false;
+        return;
     }
 
     const s3 = new S3(process.env.BASE_URL_TEST, {
