@@ -49,11 +49,16 @@ To run End-2-End tests:
 ```bash
 npm run test:e2e
 ```
-For S3 test to pass, create a '.env' file where you will configure the following keys:
-BASE_URL_TEST
-KEY_ID_TEST
-BUCKET_NAME_TEST
-SECRET_ACCESS_KEY_TEST
+
+For S3 tests to pass, create a '.env' file (at the root of your
+MWoffliner code directory) where you will configure the following
+keys:
+```
+BASE_URL_TEST=...
+KEY_ID_TEST=...
+BUCKET_NAME_TEST=...
+SECRET_ACCESS_KEY_TEST=...
+```
 
 ## Debugging
 
