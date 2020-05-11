@@ -3,6 +3,8 @@ dist: xenial
 
 node_js:
   - "12"
+  - "13"
+  - "14"
   # - "10"
   # - "8"
   # - "stable"
