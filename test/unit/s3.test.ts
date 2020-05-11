@@ -6,13 +6,18 @@ import 'dotenv/config';
 
 const _test = tapePromise(test);
 
-const s3 = new S3(process.env.BASE_URL_TEST, {
-    bucketName: process.env.BUCKET_NAME_TEST,
-    keyId: process.env.KEY_ID_TEST,
-    secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
-});
+_test('S3 checks', async(t) => {
+    if (!process.env.BUCKET_NAME_TEST) {
+        logger.log('Skip S3 tests');
+        return;
+    }
 
-_test('s3 checks', async(t) => {
+    const s3 = new S3(process.env.BASE_URL_TEST, {
+        bucketName: process.env.BUCKET_NAME_TEST,
+        keyId: process.env.KEY_ID_TEST,
+        secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
+    });
+
     const credentialExists = await s3.initialise();
     t.equals(credentialExists, true, 'Credentials on S3 exists');
 

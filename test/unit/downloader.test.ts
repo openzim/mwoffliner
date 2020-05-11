@@ -141,6 +141,11 @@ test('Downloader class', async (t) => {
 const _test = tapePromise(test);
 
 _test('Downloader class with optimisation', async (t) => {
+    if (!process.env.BUCKET_NAME_TEST) {
+        logger.log('Skip S3 tests in Downloader class');
+        return;
+    }
+
     const mw = new MediaWiki({
         base: 'https://en.wikipedia.org',
         getCategories: true,
