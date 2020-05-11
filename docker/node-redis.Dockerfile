@@ -1,4 +1,4 @@
-FROM redis:5.0 as redis
+FROM redis:6 as redis
 
 FROM node:12-buster
 
