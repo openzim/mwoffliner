@@ -213,23 +213,4 @@ export class Dump {
 
         return sheetUrls.filter((a) => a);
     }
-
-    public getArticleUrl(articleId: string) {
-        return this.getArticleBase(articleId, false);
-    }
-
-    public getArticleBase(articleId: string, escape?: boolean) {
-        /* Filesystem is not able to handle with filename > 255 bytes */
-        while (Buffer.byteLength(articleId, 'utf8') > 250) {
-            articleId = articleId.substr(0, articleId.length - 1);
-        }
-        function e(str: string) {
-            if (typeof str === 'undefined') {
-                return undefined;
-            }
-            return escape ? encodeURIComponent(str) : str;
-        }
-        return e(articleId);
-    }
-
 }
