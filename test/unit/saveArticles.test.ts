@@ -24,11 +24,11 @@ test('Article html processing', async (t) => {
 
     const [{ html }] = await downloader.getArticle('London', dump);
 
-    let addedArticle: ZimArticle;
+    let addedArticle: typeof ZimArticle;
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles({
-        addArticle(article: ZimArticle) {
+        addArticle(article: typeof ZimArticle) {
             if (article.mimeType === 'text/html') {
                 addedArticle = article;
             }
@@ -218,7 +218,7 @@ test('--customFlavour', async (t) => {
 
     const writtenArticles: any = {};
     await saveArticles({
-        addArticle(article: ZimArticle) {
+        addArticle(article: typeof ZimArticle) {
             if (article.mimeType === 'text/html') {
                 writtenArticles[article.title] = article;
             }
