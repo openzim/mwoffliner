@@ -39,6 +39,7 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
         'Avanti!',                            'Avanti!',
         'McCormick_Tribune_Plaza_&_Ice Rink', 'McCormick_Tribune_Plaza_%26_Ice%20Rink',
         '2_+_2_=_5',                          '2_%2B_2_%3D_5',
+        `Guidelines:Règles d'édition`,        `Guidelines%3AR%C3%A8gles%20d'%C3%A9dition`,
         'something/random/todo',              'something/random/todo',
         'Michael_Jackson',                    'Michael_Jackson',
         undefined,                            undefined
