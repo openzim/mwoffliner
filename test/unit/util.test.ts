@@ -31,49 +31,22 @@ test('util -> Throttle', async (t) => {
 });
 
 test('Encoding ArticleId for Zim HTML Url', async(t) => {
-    const articles = [{
-        article_name : 'Que_faire_?',
-        article_name_encoded: 'Que_faire_%3F'
-    },
-    {
-        article_name : 'Que_faire_?_(Lénine)',
-        article_name_encoded: 'Que_faire_%3F_(L%C3%A9nine)'
-    },
-    {
-        article_name : 'Random_#hashtag',
-        article_name_encoded: 'Random_%23hashtag'
-    },
-    {
-        article_name : `Guidelines:Règles_d'édition`,
-        article_name_encoded: `Guidelines%3AR%C3%A8gles_d'%C3%A9dition`
-    },
-    {
-        article_name : 'Avanti!',
-        article_name_encoded: 'Avanti!'
-    },
-    {
-        article_name : 'McCormick_Tribune_Plaza_&_Ice Rink',
-        article_name_encoded: 'McCormick_Tribune_Plaza_%26_Ice%20Rink'
-    },
-    {
-        article_name : '2_+_2_=_5',
-        article_name_encoded: '2_%2B_2_%3D_5'
-    },
-    {
-        article_name : 'something/random/todo',
-        article_name_encoded: 'something/random/todo'
-    },
-    {
-        article_name : 'Michael_Jackson',
-        article_name_encoded: 'Michael_Jackson'
-    },
-    {
-        article_name : undefined,
-        article_name_encoded: undefined
-    }]
+     const articles = [
+        'Que_faire_?',                        'Que_faire_%3F',
+        'Que_faire_?_(Lénine)',               'Que_faire_%3F_(L%C3%A9nine)',
+        'Random_#hashtag',                    'Random_%23hashtag',
+        `Guidelines:Règles_d'édition`,        `Guidelines%3AR%C3%A8gles_d'%C3%A9dition`,
+        'Avanti!',                            'Avanti!',
+        'McCormick_Tribune_Plaza_&_Ice Rink', 'McCormick_Tribune_Plaza_%26_Ice%20Rink',
+        '2_+_2_=_5',                          '2_%2B_2_%3D_5',
+        'something/random/todo',              'something/random/todo',
+        'Michael_Jackson',                    'Michael_Jackson',
+        undefined,                            undefined
+    ];
 
-    for (const article of articles) {
-        const enocdedResult = encodeArticleIdForZimHtmlUrl(article.article_name);
-        t.equal(enocdedResult, article.article_name_encoded, `Correct result for ${article.article_name} article`);
+    while (articles.length) {
+        const unencoded = articles.shift();
+        const   encoded = articles.shift();
+        t.equal(encoded, encodeArticleIdForZimHtmlUrl(unencoded), `encodeArticleIdForZimHtmlUrl() encoding`);
     }
 });
