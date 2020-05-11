@@ -814,7 +814,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
                 `<a class="external text" ` +
                 `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
                 `href="${mw.webUrl}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
-                `${dump.mwMetaData.creator}</a>`
+                `${dump.mwMetaData.creator}</a>`;
 
             const licenseLink =
                 `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`;
