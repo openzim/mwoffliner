@@ -1,6 +1,6 @@
 import './bootstrap.test';
 import test from 'blue-tape';
-import { throttle, sanitizeString, encodeArticleIdForZimHtmlUrl } from 'src/util';
+import { throttle, sanitizeString, encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
 import { sleep } from 'test/util';
 
 test('util -> Throttle', async (t) => {
@@ -28,6 +28,15 @@ test('util -> Throttle', async (t) => {
     t.equals(sanitizeString('Mediawiki <script></script>'), 'Mediawiki  script   script ', 'Escaping HTML Tags');
     t.equals(sanitizeString('SELECT * FROM db WHERE something="Poler"'), 'SELECT   FROM db WHERE something  Poler ', 'Escaping query characters');
 
+});
+
+test('util -> interpolateTranslationString', async (t) => {
+    t.equals(interpolateTranslationString('Hello world', {}), 'Hello world');
+    t.equals(interpolateTranslationString('Hello ${name}', { name: 'John' }), 'Hello John');
+    t.equals(interpolateTranslationString('Hello ${name} ${lastname}, bye ${name}', {
+        name: 'John',
+        lastname: 'Smith',
+    }), 'Hello John Smith, bye John');
 });
 
 test('Encoding ArticleId for Zim HTML Url', async(t) => {
