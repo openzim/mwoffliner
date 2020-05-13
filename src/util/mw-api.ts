@@ -94,7 +94,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
             );
         }
 
-        logger.log(`Got [${numDetails}] articles from namespace [${ns}]`);
+        logger.log(`Got [${numDetails}] articles chunk from namespace [${ns}]`);
         totalArticles += numDetails;
 
         // Only for testing purposes
