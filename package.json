@@ -14,7 +14,7 @@
     "mwoffliner": "node ./lib/cli.js",
     "test:e2e": "tape -r tsconfig-paths/register -r ts-node/register test/e2e/*.test.ts | tap-spec",
     "test:unit": "tape -r tsconfig-paths/register -r ts-node/register test/unit/*.test.ts | tap-spec",
-    "test": "npm run test:unit",
+    "test": "npm run test:unit && npm run test:e2e",
     "jest": "jest",
     "report": "nyc --reporter=lcov npm t",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
