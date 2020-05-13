@@ -40,12 +40,17 @@ plugin.
 
 ## Tests
 
-To run the unit tests:
+The run the automated tests (both unit and e2e):
 ```bash
-npm run test:unit # (or just npm test)
+npm test
 ```
 
-To run End-2-End tests:
+To run the unit tests:
+```bash
+npm run test:unit
+```
+
+To run end-2-end tests:
 ```bash
 npm run test:e2e
 ```
