@@ -125,6 +125,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+    logger.debug('saveArticles', {meta: {event: 'begin'}});
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
     let jsConfigVars = '';
@@ -135,12 +136,17 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
+            logger.debug('iterateItems', {meta: {event: 'begin', workerId, articleKeyValuePairs}});
+
             logger.verbose(`Worker [${workerId}] processing batch of article ids [${JSON.stringify(Object.keys(articleKeyValuePairs))}]`);
 
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
+                    logger.debug('getArticle', {meta: {event: 'before', workerId, articleId}});
                     const rets = await downloader.getArticle(articleId, dump);
+                    logger.debug('getArticle', {meta: {event: 'after', workerId, articleId}});
 
+                    logger.debug('process', {meta: {event: 'before', workerId, articleId}});
                     for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
                         const nonPaginatedArticleId = articleDetail.title.replace(/ /g, '_');
                         if (!articleHtml) {
@@ -220,10 +226,14 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
                         dump.status.articles.success += 1;
                     }
+                    logger.debug('process', {meta: {event: 'after', workerId, articleId}});
+
                 } catch (err) {
+                    logger.debug('iterateItems-catch', {meta: {event: 'before', workerId, articleId}});
                     dump.status.articles.fail += 1;
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
                     await articleDetailXId.delete(articleId);
+                    logger.debug('iterateItems-catch', {meta: {event: 'after', workerId, articleId}});
                 }
 
                 if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
@@ -234,8 +244,12 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     }
                 }
             }
+
+            logger.debug('iterateItems', {meta: {event: 'end', workerId, articleKeyValuePairs}});
         },
     );
+
+    logger.debug('saveArticles', {meta: {event: 'end'}});
 
     logger.info(`Done with downloading a total of [${articlesTotal}] articles`);
 

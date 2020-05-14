@@ -4,6 +4,10 @@ import moment from 'moment';
 
 moment.locale(process.env.API_LOCALE);
 
+const now = new Date();
+const collection = `log-${+now}`;
+
+
 const transports = [
 
   new winston.transports.Console({
@@ -25,7 +29,9 @@ const transports = [
   new MongoDB({
     db: process.env.MONGODB_URL,
     decolorize: true,
-    level: 'verbose'
+    level: 'debug',
+    metaKey: 'meta',
+    collection
   })
 ];
 

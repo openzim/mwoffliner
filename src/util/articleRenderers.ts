@@ -14,14 +14,21 @@ import {getStrippedTitleFromHtml} from './misc';
 
 
 export const renderArticle = async (json: any, articleId: string, dump: Dump, forceParsoidFallback: boolean): Promise<RenderedArticle[]> => {
+    logger.debug('renderArticle', {meta: {event: 'begin', articleId}});
 
     const articleDetail = await articleDetailXId.get(articleId);
     const useParsoidFallback = forceParsoidFallback || json.visualeditor?.result;
 
     if (useParsoidFallback) {
         const isMainPage = articleId === dump.mwMetaData.mainPage;
+        logger.debug('renderDesktopArticle', {meta: {event: 'before', articleId}});
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
+        logger.debug('renderDesktopArticle', {meta: {event: 'after', articleId}});
+        logger.debug('getStrippedTitleFromHtml', {meta: {event: 'before', articleId}});
         const strippedTitle = getStrippedTitleFromHtml(html);
+        logger.debug('getStrippedTitleFromHtml', {meta: {event: 'after', articleId}});
+
+        logger.debug('renderArticle', {meta: {event: 'after', articleId, useParsoidFallback}});
         return [{
             articleId,
             displayTitle: strippedTitle || articleId.replace('_', ' '),
@@ -70,6 +77,7 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, fo
             });
         }
 
+        logger.debug('renderArticle', {meta: {event: 'after', articleId, useParsoidFallback}});
         return result;
     }
 };
@@ -102,13 +110,17 @@ const renderDesktopArticle = (json: any, articleId: string, articleDetail: Artic
 
 
 const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
+    logger.debug('renderMCSArticle', {meta: {event: 'begin', articleId}});
     let html = '';
     // set the first section (open by default)
+
+    logger.debug('leadSectionTemplate', {meta: {event: 'before', articleId}});
     html += leadSectionTemplate({
         lead_display_title: json.lead.displaytitle,
         lead_section_text: json.lead.sections[0].text,
         strings: dump.strings,
     });
+    logger.debug('leadSectionTemplate', {meta: {event: 'after', articleId}});
 
     // set all other section (closed by default)
     if (!dump.nodet) {
@@ -145,6 +157,8 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
     const categoryResourceNamespace = 'U';
     const slashesInUrl = articleId.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
+
+    logger.debug('renderMCSArticle-subcats', {meta: {event: 'begin', articleId}});
     if (articleDetail.subCategories && articleDetail.subCategories.length) {
 
         const subCategories = articleDetail.subCategories.map((category) => {
@@ -154,16 +168,20 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
             };
         });
 
-        const groups = groupAlphabetical(subCategories);
+        const groups = groupAlphabetical(subCategories, articleId);
 
+        logger.debug('subCategoriesTemplate', {meta: {event: 'before', articleId}});
         html += subCategoriesTemplate({
             strings: dump.strings,
             groups,
             prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.prevArticleId.replace(/ /g, '_')}` : null,
             nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.nextArticleId.replace(/ /g, '_')}` : null,
         });
+        logger.debug('subCategoriesTemplate', {meta: {event: 'after', articleId}});
     }
+    logger.debug('renderMCSArticle-subcats', {meta: {event: 'begin', articleId}});
 
+    logger.debug('renderMCSArticle-pages', {meta: {event: 'begin', articleId}});
     if (articleDetail.pages && articleDetail.pages.length) {
         const pages = articleDetail.pages.map((page) => {
             return {
@@ -172,14 +190,18 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
             };
         });
 
-        const groups = groupAlphabetical(pages);
+        const groups = groupAlphabetical(pages, articleId);
 
+        logger.debug('subPagesTemplate', {meta: {event: 'before', articleId}});
         html += subPagesTemplate({
             strings: dump.strings,
             groups,
         });
+        logger.debug('subPagesTemplate', {meta: {event: 'after', articleId}});
     }
+    logger.debug('renderMCSArticle-pages', {meta: {event: 'end', articleId}});
 
+    logger.debug('renderMCSArticle-cats', {meta: {event: 'begin', articleId}});
     if (articleDetail.categories && articleDetail.categories.length) {
         const categories = articleDetail.categories.map((category) => {
             return {
@@ -187,29 +209,39 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
                 url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}`,
             };
         });
+        logger.debug('categoriesTemplate', {meta: {event: 'before', articleId}});
         html += categoriesTemplate({
             strings: dump.strings,
             categories,
         });
+        logger.debug('categoriesTemplate', {meta: {event: 'after', articleId}});
     }
+    logger.debug('renderMCSArticle-pages', {meta: {event: 'end', articleId}});
+
     html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
+
+    logger.debug('renderMCSArticle', {meta: {event: 'end', articleId}});
     return html;
 };
 
 
-const groupAlphabetical = (items: PageRef[]) => {
+const groupAlphabetical = (items: PageRef[], articleId: string) => {
+    logger.debug('groupAlphabetical', {meta: {event: 'begin', articleId}});
     const groupsAlphabetical = items.reduce((acc: any, item) => {
         const groupId = item.name[0].toLocaleUpperCase();
         acc[groupId] = (acc[groupId] || []).concat(item);
         return acc;
     }, {});
 
-    return Object.keys(groupsAlphabetical)
-        .sort()
-        .map((letter) => {
-            return {
-                title: letter,
-                items: groupsAlphabetical[letter],
-            };
-        });
+    const result = Object.keys(groupsAlphabetical)
+      .sort()
+      .map((letter) => {
+          return {
+              title: letter,
+              items: groupsAlphabetical[letter],
+          };
+      });
+
+    logger.debug('groupAlphabetical', {meta: {event: 'end', articleId}});
+    return result;
 };

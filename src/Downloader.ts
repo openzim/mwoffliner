@@ -392,6 +392,7 @@ class Downloader {
   }
 
   public async getArticle(articleId: string, dump: Dump, forceParsoidFallback: boolean = false): Promise<RenderedArticle[]> {
+    logger.debug('getArticle', {meta: {event: 'begin', articleId}});
     articleId = articleId.replace(/ /g, '_');
 
     const isMainPage = articleId === dump.mwMetaData.mainPage;
@@ -400,33 +401,46 @@ class Downloader {
     logger.verbose(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     try {
-      const json = await this.getJSON<any>(articleApiUrl);
+      logger.debug('getJSON', {meta: {event: 'before', articleId}});
+      const json = await this.getJSON<any>(articleApiUrl, articleId);
+      logger.debug('getJSON', {meta: {event: 'after', articleId}});
+
       if (json.type === 'api_error') {
+        logger.debug('getArticle', {meta: {event: 'apiError', articleId}});
         this.forceParsoidFallback = true;
         forceParsoidFallback = true;
         logger.error(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
         throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
-      return await renderArticle(json, articleId, dump, forceParsoidFallback);
+      logger.debug('renderArticle', {meta: {event: 'before', articleId}});
+      const result = await renderArticle(json, articleId, dump, forceParsoidFallback);
+      logger.debug('renderArticle', {meta: {event: 'after', articleId}});
+      logger.debug('getArticle', {meta: {event: 'end', articleId}});
+      return result;
 
     } catch (err) {
+      logger.debug('getJSON-catch', {meta: {event: 'begin', articleId}});
       if (forceParsoidFallback) throw err;
       if (err?.response?.status === 404) throw err;
 
       // falling back to local Parsoid
       const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
       logger.warn(`Failed to get article [${articleId}] using remote Parsoid, trying with local one`, errMsg);
+      logger.debug('getJSON-catch', {meta: {event: 'end', articleId}});
       return await this.getArticle(articleId, dump, true);
     }
   }
 
-  public async getJSON<T>(_url: string): Promise<T> {
+  public async getJSON<T>(_url: string, articleId: string = '-'): Promise<T> {
+    logger.debug('getJSON', {meta: {event: 'begin', articleId, _url}});
     const self = this;
     const url = this.deserializeUrl(_url);
-    await self.claimRequest();
-    return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, {url, timeout: this.requestTimeout}, (err: any, val: any) => {
-        self.releaseRequest();
+    await self.claimRequest(_url, articleId);
+    const result = new Promise<T>((resolve, reject) => {
+      logger.debug('getJSON-backoff', {meta: {event: 'before', articleId, _url}});
+      // @ts-ignore
+      this.backoffCall(this.getJSONCb, {url, timeout: this.requestTimeout, articleId}, (err: any, val: any) => {
+        self.releaseRequest(_url, articleId);
         if (err) {
           const httpStatus = err.response && err.response.status;
           logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
@@ -435,7 +449,10 @@ class Downloader {
           resolve(val);
         }
       });
+      logger.debug('getJSON-backoff', {meta: {event: 'after', articleId, _url}});
     });
+    logger.debug('getJSON', {meta: {event: 'end', articleId, _url}});
+    return result;
   }
 
   public async downloadContent(_url: string): Promise<{ content: Buffer | string, responseHeaders: any }> {
@@ -456,11 +473,11 @@ class Downloader {
     }
 
     const self = this;
-    await self.claimRequest();
+    await self.claimRequest(_url, '[file]');
     return new Promise((resolve, reject) => {
       const requestOptions = this.getRequestOptionsFromUrl(url);
       this.backoffCall(this.getContentCb, requestOptions, async (err: any, val: any) => {
-        self.releaseRequest();
+        self.releaseRequest(_url, '[file]');
         if (err) {
           const httpStatus = err.response && err.response.status;
           logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
@@ -600,40 +617,61 @@ class Downloader {
     };
   }
 
-  private async claimRequest(): Promise<null> {
+  private async claimRequest(_url: string, articleId: string): Promise<null> {
+    logger.debug('claim', {meta: {event: 'begin', articleId}});
     if (this.activeRequests < this.maxActiveRequests) {
+      logger.debug('claim', {meta: {event: 'approve', articleId}});
       this.activeRequests += 1;
       return null;
     } else {
+      logger.debug('claim', {meta: {event: 'holding', articleId}});
       await new Promise((resolve) => {
         setTimeout(resolve, 200);
       });
-      return this.claimRequest();
+      return this.claimRequest(_url, articleId);
     }
   }
 
-  private async releaseRequest(): Promise<null> {
+  private async releaseRequest(_url: string, articleId: string): Promise<null> {
+    logger.debug('claim', {meta: {event: 'release', articleId}});
     this.activeRequests -= 1;
     return null;
   }
 
-  private getJSONCb<T>({url, timeout}: AxiosRequestConfig, handler: (...args: any[]) => any): void {
+  private getJSONCb<T>({url, timeout, articleId}: AxiosRequestConfig & {articleId: string}, handler: (...args: any[]) => any): void {
+    logger.debug('getJSONCb', {meta: {event: 'begin', articleId, url}});
     logger.verbose(`Getting JSON from [${url}]`);
     axios.get<T>(url, { responseType: 'json', timeout })
-      .then((a) => handler(null, a.data), handler)
+      .then((a) => {
+        logger.debug('getJSONCb-then', {meta: {event: 'handler-before', articleId, url}});
+        const result = handler(null, a.data);
+        logger.debug('getJSONCb-then', {meta: {event: 'handler-after', articleId, url}});
+        return result;
+      }, handler)
       .catch((err) => {
         try {
+          logger.debug('getJSONCb-catch', {meta: {event: 'begin', articleId, url}});
           if (err.response && err.response.status === 429) {
+            logger.debug('getJSONCb-catch-429', {meta: {event: 'begin', articleId, url}});
             logger.verbose(`Received a [status=429], slowing down`);
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.verbose(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
-            return this.getJSONCb({url, timeout}, handler);
+            logger.debug('getJSONCb-catch-429', {meta: {event: 'recurse', articleId, url}});
+            const result = this.getJSONCb({url, timeout, articleId}, handler);
+            logger.debug('getJSONCb-catch-429', {meta: {event: 'end', articleId, url}});
+            logger.debug('getJSONCb-catch', {meta: {event: 'end', articleId, url}});
+            return result;
           } else if (err.response && err.response.status === 404) {
+            logger.debug('getJSONCb-catch', {meta: {event: 'handler-before', articleId, url}});
             handler(err);
+            logger.debug('getJSONCb-catch', {meta: {event: 'handler-after', articleId, url}});
+            logger.debug('getJSONCb-catch', {meta: {event: 'end', articleId, url}});
           }
         } catch (a) {
+          logger.debug('getJSONCb-catch-catch', {meta: {event: 'handler-before', articleId, url}});
           handler(err);
+          logger.debug('getJSONCb-catch-catch', {meta: {event: 'handler-end', articleId, url}});
         }
       });
   }
@@ -706,7 +744,7 @@ class Downloader {
   }
 
   private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
-    const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr));
+    const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr), articleId);
     const items = query.categorymembers.filter((a: any) => a && a.title);
     if (cont && cont.cmcontinue) {
       const nextItems = await this.getSubCategories(articleId, cont.cmcontinue);
