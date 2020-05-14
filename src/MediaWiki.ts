@@ -175,7 +175,7 @@ class MediaWiki {
   }
 
   public async getTextDirection(downloader: Downloader): Promise<TextDirection> {
-    logger.log('Getting text direction...');
+    logger.info('Getting text direction...');
     const { content } = await downloader.downloadContent(this.webUrl);
     const body = content.toString();
     const doc = domino.createDocument(body);
@@ -188,17 +188,17 @@ class MediaWiki {
     } else if (contentNode) {
       isLtr = (contentNode.getAttribute('dir') === 'ltr');
     } else {
-      logger.log('Unable to get the language direction, fallback to ltr');
+      logger.info('Unable to get the language direction, fallback to ltr');
       isLtr = true;
     }
     const textDir = isLtr ? 'ltr' : 'rtl';
-    logger.log(`Text direction is [${textDir}]`);
+    logger.info(`Text direction is [${textDir}]`);
     return textDir;
   }
 
   public async getSiteInfo(downloader: Downloader) {
     const self = this;
-    logger.log('Getting site info...');
+    logger.info('Getting site info...');
     const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const body = await downloader.query(query);
     const entries = body.query.general;
@@ -237,7 +237,7 @@ class MediaWiki {
   }
 
   public async getSubTitle(downloader: Downloader) {
-    logger.log('Getting sub-title...');
+    logger.info('Getting sub-title...');
     const { content } = await downloader.downloadContent(this.webUrl);
     const html = content.toString();
     const doc = domino.createDocument(html);

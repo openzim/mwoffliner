@@ -127,7 +127,7 @@ export class Dump {
         if (this.opts.resume) {
             const zimPath = this.computeZimRootPath();
             if (existsSync(zimPath)) {
-                logger.log(`${zimPath} is already done, skip dumping & ZIM file generation`);
+                logger.info(`${zimPath} is already done, skip dumping & ZIM file generation`);
                 throw new Error(`TODO: IMPLEMENT RESUME`);
             }
         }

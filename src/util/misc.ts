@@ -324,7 +324,7 @@ export function throttle(fn: (...args: any[]) => any, wait: number) {
 }
 
 export const keepAlive = throttle(function keepAlive() {
-  logger.log(`Heartbeat - OK`);
+  logger.info(`Heartbeat - OK`);
 }, 1000 * 60 * 9);
 
 export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M') {

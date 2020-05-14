@@ -8,14 +8,14 @@ import { deDup } from '.';
 
 export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDetail>, downloader: Downloader, redis: Redis, deleteArticleStore = false): Promise<void> {
     const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.client, `${Date.now()}-request`);
-    logger.log(`Fetching categories for [${await articleStore.len()}] articles`);
+    logger.info(`Fetching categories for [${await articleStore.len()}] articles`);
 
     await articleStore
         .iterateItems(
             downloader.speed,
             async (articleKeyValuePairs, workerId) => {
                 const articleKeys = Object.keys(articleKeyValuePairs);
-                logger.log(`Worker [${workerId}] getting categories for articles ${logger.logifyArray(articleKeys)}`);
+                logger.info(`Worker [${workerId}] getting categories for articles ${JSON.stringify(articleKeys)}`);
 
                 const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs)
                     .reduce((acc: any, [aId, detail]) => {
@@ -73,7 +73,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
 }
 
 export async function trimUnmirroredPages(downloader: Downloader) {
-    logger.log(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`);
+    logger.info(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`);
     const numKeys = await articleDetailXId.len();
     let prevPercentProgress = -1;
     let processedArticles = 0;
@@ -156,7 +156,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                         const percentProgress = Math.floor(processedArticles / numKeys * 1000) / 10;
                         if (percentProgress !== prevPercentProgress) {
                             prevPercentProgress = percentProgress;
-                            logger.log(`Progress trimming un-mirrored articles [${processedArticles}/${numKeys}] [${percentProgress}%]`);
+                            logger.info(`Progress trimming un-mirrored articles [${processedArticles}/${numKeys}] [${percentProgress}%]`);
                         }
                     }
                 }
@@ -167,7 +167,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
 }
 
 export async function simplifyGraph(downloader: Downloader) {
-    logger.log(`Simplifying graph (removing empty categories)`);
+    logger.info(`Simplifying graph (removing empty categories)`);
     const numKeys = await articleDetailXId.len();
     let prevPercentProgress = -1;
     let processedArticles = 0;
@@ -230,7 +230,7 @@ export async function simplifyGraph(downloader: Downloader) {
                     const percentProgress = Math.floor(processedArticles / numKeys * 1000) / 10;
                     if (percentProgress !== prevPercentProgress) {
                         prevPercentProgress = percentProgress;
-                        logger.log(`Progress simplifying graph [${processedArticles}/${numKeys}] [${percentProgress}%] deleted [${deletedNodes}]`);
+                        logger.info(`Progress simplifying graph [${processedArticles}/${numKeys}] [${percentProgress}%] deleted [${deletedNodes}]`);
                     }
                 }
             });

@@ -54,11 +54,11 @@ class S3 {
         try {
             this.s3Handler.upload( params, function (err: any, data: any) {
                 if (err) {
-                    logger.log(`Not able to upload ${key}: ${err}`);
+                    logger.info(`Not able to upload ${key}: ${err}`);
                 }
             });
         } catch (err) {
-            logger.log('S3 error', err);
+            logger.info('S3 error', err);
         }
     }
 

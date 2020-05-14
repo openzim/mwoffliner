@@ -38,7 +38,7 @@ import sharp from 'sharp';
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
-  logger.log(`Flushing Redis DBs`);
+  logger.info(`Flushing Redis DBs`);
   if (redis.client.connected) {
     filesToDownloadXPath.flush();
     filesToRetryXPath.flush();
@@ -91,7 +91,7 @@ async function execute(argv: any) {
 
   (process as any).verbose = !!verbose;
 
-  logger.log(`Starting mwoffliner v${packageJSON.version}...`);
+  logger.info(`Starting mwoffliner v${packageJSON.version}...`);
 
   let articleList = _articleList ? String(_articleList) : _articleList;
   const publisher = _publisher || config.defaults.publisher;
@@ -130,7 +130,7 @@ async function execute(argv: any) {
     const s3Url = (s3UrlObj.host || '') + (s3UrlObj.pathname || '');
     this.s3Obj = new S3(s3Url, queryReader);
     await this.s3Obj.initialise().then((data: any) => {
-      logger.log('Successfuly logged in S3');
+      logger.info('Successfuly logged in S3');
     });
   }
 
@@ -185,7 +185,7 @@ async function execute(argv: any) {
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ?
     _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out');
   await mkdirPromise(outputDirectory);
-  logger.log(`Using output directory ${outputDirectory}`);
+  logger.info(`Using output directory ${outputDirectory}`);
 
   // Download Cache directory
   const downloadCacheDirectory = path.isAbsolute(_downloadCacheDirectory || '') ?
@@ -193,7 +193,7 @@ async function execute(argv: any) {
   if (useDownloadCache) {
     await mkdirPromise(downloadCacheDirectory);
     downloader.downloadCacheDirectory = downloadCacheDirectory;
-    logger.log(`Using download cache directory ${downloadCacheDirectory}`);
+    logger.info(`Using download cache directory ${downloadCacheDirectory}`);
   }
 
   // Temporary directory
@@ -205,21 +205,21 @@ async function execute(argv: any) {
     logger.error(`Failed to create temporary directory, exiting`, err);
     throw err;
   }
-  logger.log(`Using temporary directory ${tmpDirectory}`);
+  logger.info(`Using temporary directory ${tmpDirectory}`);
 
   process.on('exit', async (code) => {
-    logger.log(`Exiting with code [${code}]`);
-    logger.log(`Deleting temporary directory [${tmpDirectory}]`);
+    logger.info(`Exiting with code [${code}]`);
+    logger.info(`Deleting temporary directory [${tmpDirectory}]`);
     rimraf.sync(tmpDirectory);
   });
 
   process.on('SIGTERM', () => {
-    logger.log(`SIGTERM`);
+    logger.info(`SIGTERM`);
     closeRedis(redis);
     process.exit(128 + 15);
   });
   process.on('SIGINT', () => {
-    logger.log(`SIGINT`);
+    logger.info(`SIGINT`);
     closeRedis(redis);
     process.exit(128 + 2);
   });
@@ -238,10 +238,10 @@ async function execute(argv: any) {
   if (customZimFavicon) {
     const faviconPath = path.join(tmpDirectory, 'favicon.png');
     const faviconIsRemote = customZimFavicon.includes('http');
-    logger.log(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`);
+    logger.info(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`);
     let content;
     if (faviconIsRemote) {
-      logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
+      logger.info(`Downloading remote zim favicon from [${customZimFavicon}]`);
       content = await axios.get(customZimFavicon, { responseType: 'arraybuffer' })
         .then((a) => a.data)
         .catch((err) => {
@@ -270,7 +270,7 @@ async function execute(argv: any) {
     try {
       const fileName = articleList.split('/').slice(-1)[0];
       const tmpArticleListPath = path.join(tmpDirectory, fileName);
-      logger.log(`Downloading article list from [${articleList}] to [${tmpArticleListPath}]`);
+      logger.info(`Downloading article list from [${articleList}] to [${tmpArticleListPath}]`);
       const { data: articleListContentStream } = await axios.get(articleList, { responseType: 'stream' });
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
       await new Promise((resolve, reject) => {
@@ -312,10 +312,10 @@ async function execute(argv: any) {
   }
 
   // Getting total number of articles from namespace
-  logger.log(`Total articles found by namespace ${getTotalArticlesNumberByNS()}`);
+  logger.info(`Total articles found by namespace ${getTotalArticlesNumberByNS()}`);
 
   // Getting total number of articles from Redis
-  logger.log(`Total articles found in Redis  ${await articleDetailXId.len()}`);
+  logger.info(`Total articles found in Redis  ${await articleDetailXId.len()}`);
 
 
   const dumps: Dump[] = [];
@@ -344,7 +344,7 @@ async function execute(argv: any) {
       customProcessor,
     );
     dumps.push(dump);
-    logger.log(`Doing dump`);
+    logger.info(`Doing dump`);
     let shouldSkip = false;
     try {
       dump.checkResume();
@@ -353,7 +353,7 @@ async function execute(argv: any) {
     }
 
     if (shouldSkip) {
-      logger.log(`Skipping dump`);
+      logger.info(`Skipping dump`);
     } else {
       try {
         await doDump(dump);
@@ -361,20 +361,20 @@ async function execute(argv: any) {
         debugger;
         throw err;
       }
-      logger.log(`Finished dump`);
+      logger.info(`Finished dump`);
     }
   }
 
-  logger.log('Closing HTTP agents...');
+  logger.info('Closing HTTP agents...');
 
-  logger.log('All dumping(s) finished with success.');
+  logger.info('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
     const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
-    logger.log(`Writing zim to [${outZim}]`);
+    logger.info(`Writing zim to [${outZim}]`);
     dump.outFile = outZim;
 
-    logger.log(`Flushing Redis file store`);
+    logger.info(`Flushing Redis file store`);
     await filesToDownloadXPath.flush();
     await filesToRetryXPath.flush();
     const zimCreator = new ZimCreator({
@@ -403,20 +403,20 @@ async function execute(argv: any) {
 
     logger.info('Finding stylesheets to download');
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader);
-    logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`);
+    logger.info(`Found [${stylesheetsToGet.length}] stylesheets to download`);
 
-    logger.log(`Downloading stylesheets and populating media queue`);
+    logger.info(`Downloading stylesheets and populating media queue`);
     const {
       finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
-    logger.log(`Downloaded stylesheets`);
+    logger.info(`Downloaded stylesheets`);
 
     const article = new ZimArticle({ url: `style.css`, data: finalCss, ns: '-' });
     zimCreator.addArticle(article);
     await saveFavicon(dump, zimCreator);
 
     if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-      logger.log(`Updating article thumbnails for articles`);
+      logger.info(`Updating article thumbnails for articles`);
       let articleIndex = 0;
       let articlesWithImages = 0;
       await mapLimit(','.repeat(downloader.speed).split(','), downloader.speed, async () => {
@@ -449,21 +449,21 @@ async function execute(argv: any) {
         }
       });
     }
-    logger.log(`Getting Main Page`);
+    logger.info(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
 
-    logger.log(`Getting articles`);
+    logger.info(`Getting articles`);
     const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, mw, dump);
 
-    logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`);
-    logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`);
+    logger.info(`Found [${jsModuleDependencies.size}] js module dependencies`);
+    logger.info(`Found [${cssModuleDependencies.size}] style module dependencies`);
 
     const allDependenciesWithType = [
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ];
 
-    logger.log(`Downloading module dependencies`);
+    logger.info(`Downloading module dependencies`);
     await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {
       return await mapLimit(moduleList, downloader.speed, (oneModule) => {
         return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any);
@@ -472,13 +472,13 @@ async function execute(argv: any) {
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
 
-    logger.log(`Writing Article Redirects`);
+    logger.info(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
 
-    logger.log(`Finishing Zim Creation`);
+    logger.info(`Finishing Zim Creation`);
     await zimCreator.finalise();
 
-    logger.log(`Summary of scrape actions:`, JSON.stringify(dump.status, null, '\t'));
+    logger.info(`Summary of scrape actions:`, JSON.stringify(dump.status, null, '\t'));
   }
 
   /* ********************************* */
@@ -509,7 +509,7 @@ async function execute(argv: any) {
   }
 
   async function saveFavicon(dump: Dump, zimCreator: ZimCreator): Promise<{}> {
-    logger.log('Saving favicon.png...');
+    logger.info('Saving favicon.png...');
 
     async function saveFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<{}> {
       try {
@@ -543,7 +543,7 @@ async function execute(argv: any) {
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator) {
     async function createMainPage() {
-      logger.log('Creating main page...');
+      logger.info('Creating main page...');
       const doc = domino.createDocument(
         articleListHomeTemplate
           .replace('</head>',
@@ -590,7 +590,7 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to [${'A/' + mainPage}]`);
+      logger.info(`Create main page redirection from [index] to [${'A/' + mainPage}]`);
       const article = new ZimArticle({
         url: 'index',
         shouldIndex: true,

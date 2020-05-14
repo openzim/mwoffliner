@@ -1,8 +1,8 @@
 import winston from 'winston';
+import { MongoDB } from 'winston-mongodb';
 import moment from 'moment';
 
 moment.locale(process.env.API_LOCALE);
-
 
 const transports = [
 
@@ -22,6 +22,11 @@ const transports = [
     ),
     level: 'debug'
   }),
+  new MongoDB({
+    db: process.env.MONGODB_URL,
+    decolorize: true,
+    level: 'verbose'
+  })
 ];
 
 export default winston.createLogger({transports});

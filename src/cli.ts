@@ -4,8 +4,11 @@
 
 'use strict';
 
+import {config} from 'dotenv';
 import yargs from 'yargs';
 import { parameterDescriptions, requiredParams } from './parameterList';
+
+config();
 
 /************************************/
 /* Command Parsing ******************/

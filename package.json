@@ -101,6 +101,7 @@
     "tslint": "^5.20.1",
     "typescript": "^3.8.3",
     "utf8-binary-cutter": "^0.9.1",
+    "winston-mongodb": "^5.0.1",
     "yargs": "^13.2.0"
   },
   "keywords": [
@@ -116,7 +117,7 @@
     "@types/redis-mock": "^0.17.0",
     "@types/tape-promise": "^4.0.0",
     "blue-tape": "^1.0.0",
-    "dotenv": "^8.0.0",
+    "dotenv": "^8.2.0",
     "eslint": "^5.14.0",
     "jest": "^25.3.0",
     "nyc": "^14.1.1",

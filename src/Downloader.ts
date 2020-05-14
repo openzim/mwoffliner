@@ -115,7 +115,7 @@ class Downloader {
       failAfter: 7,
       retryIf: (err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404,
       backoffHandler: (number: number, delay: number) => {
-        logger.info(`[backoff] #${number} after ${delay} ms`);
+        logger.verbose(`[backoff] #${number} after ${delay} ms`);
       },
       ...backoffOptions,
     };
@@ -168,7 +168,7 @@ class Downloader {
 
     if (!this.noLocalParserFallback) {
       if (!this.mwCapabilities.mcsAvailable || !this.mwCapabilities.parsoidAvailable) {
-        logger.log(`Using local MCS and ${this.mwCapabilities.parsoidAvailable ? 'remote' : 'local'} Parsoid`);
+        logger.info(`Using local MCS and ${this.mwCapabilities.parsoidAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
         const domain = (urlParser.parse(this.mw.base)).host;
         this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
@@ -178,10 +178,10 @@ class Downloader {
           this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
         }
       } else {
-        logger.log(`Using REST API`);
+        logger.info(`Using REST API`);
       }
     } else {
-      logger.log(`Using remote MCS/Parsoid`);
+      logger.info(`Using remote MCS/Parsoid`);
     }
 
     // Coordinate fetching
@@ -209,7 +209,7 @@ class Downloader {
   }
 
   public async initLocalServices(): Promise<void> {
-    logger.log('Starting Parsoid & MCS');
+    logger.info('Starting Parsoid & MCS');
 
     const runner = new ServiceRunner();
 
@@ -397,7 +397,7 @@ class Downloader {
     const isMainPage = articleId === dump.mwMetaData.mainPage;
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage, forceParsoidFallback);
 
-    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
+    logger.verbose(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     try {
       const json = await this.getJSON<any>(articleApiUrl);
@@ -447,7 +447,7 @@ class Downloader {
       try {
         const downloadCacheVal = await this.readFromDownloadCache(url);
         if (downloadCacheVal) {
-          logger.info(`Download cache hit for [${url}]`);
+          logger.verbose(`Download cache hit for [${url}]`);
           return downloadCacheVal;
         }
       } catch (err) {
@@ -492,7 +492,7 @@ class Downloader {
   private async writeToDownloadCache(url: string, val: { content: Buffer, responseHeaders: any }): Promise<void> {
     const fileName = md5(url);
     const filePath = path.join(this.downloadCacheDirectory, fileName);
-    logger.info(`Caching response for [${url}] to [${filePath}]`);
+    logger.verbose(`Caching response for [${url}] to [${filePath}]`);
     await writeFilePromise(filePath, val.content, null);
     await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
   }
@@ -510,7 +510,7 @@ class Downloader {
     }
     const fileName = md5(url);
     const filePath = path.join(this.downloadCacheDirectory, fileName);
-    logger.info(`Finding cached donwload for [${url}] ([${filePath}])`);
+    logger.verbose(`Finding cached donwload for [${url}] ([${filePath}])`);
     const [content, responseHeaders] = await Promise.all([
       readFilePromise(filePath, null),
       readFilePromise(`${filePath}.headers`, 'utf8').catch(() => null),
@@ -558,7 +558,7 @@ class Downloader {
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
     if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`);
     if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`);
-    if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`);
+    if (resp.error) logger.info(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`);
   }
 
   private getArticleQueryOpts(includePageimages = false) {
@@ -618,15 +618,15 @@ class Downloader {
   }
 
   private getJSONCb<T>({url, timeout}: AxiosRequestConfig, handler: (...args: any[]) => any): void {
-    logger.info(`Getting JSON from [${url}]`);
+    logger.verbose(`Getting JSON from [${url}]`);
     axios.get<T>(url, { responseType: 'json', timeout })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
           if (err.response && err.response.status === 429) {
-            logger.log(`Received a [status=429], slowing down`);
+            logger.verbose(`Received a [status=429], slowing down`);
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
-            logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+            logger.verbose(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
             return this.getJSONCb({url, timeout}, handler);
           } else if (err.response && err.response.status === 404) {
@@ -643,7 +643,7 @@ class Downloader {
   }
 
   private getContentCb = async (requestOptions: AxiosRequestConfig, handler: any): Promise<void> => {
-    logger.info(`Downloading [${requestOptions.url}]`);
+    logger.verbose(`Downloading [${requestOptions.url}]`);
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
@@ -677,12 +677,12 @@ class Downloader {
 
   private errHandler(err: any, requestOptions: any, handler: any): void {
     if (err.response && err.response.status === 429) {
-      logger.log(`Received a [status=429], slowing down`);
+      logger.verbose(`Received a [status=429], slowing down`);
       const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
-      logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+      logger.verbose(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
       this.maxActiveRequests = newMaxActiveRequests;
     }
-    logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
+    logger.error(`Not able to download content for ${requestOptions.url} due to ${err}`);
     handler(err);
   }
 

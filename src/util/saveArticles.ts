@@ -32,11 +32,11 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     const filesForAttempt = await fileStore.len();
     const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail;
 
-    logger.log(`${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files...`);
+    logger.info(`${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files...`);
     let prevPercentProgress: string;
 
     await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
-        logger.info(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+        logger.verbose(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
 
         // todo align fileDownloadPairs and listOfArguments
         const listOfArguments = [];
@@ -73,7 +73,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 const percentProgress = ((dump.status.files.success + dump.status.files.fail) / filesTotal * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`);
+                    logger.info(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`);
                 }
             }
         }
@@ -84,11 +84,11 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         if (isThereAnythingToRetry) {
             await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false);
         } else {
-            logger.log('No files to retry');
+            logger.info('No files to retry');
         }
     }
 
-    logger.log(`Done with ${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files`);
+    logger.info(`Done with ${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files`);
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
@@ -120,7 +120,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
             },
         );
     } catch (err) {
-        logger.log(`Not able download in bulk due to ${err}`);
+        logger.info(`Not able download in bulk due to ${err}`);
     }
 }
 
@@ -135,7 +135,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
-            logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
+            logger.verbose(`Worker [${workerId}] processing batch of article ids [${JSON.stringify(Object.keys(articleKeyValuePairs))}]`);
 
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
@@ -230,14 +230,14 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     const percentProgress = ((dump.status.articles.success + dump.status.articles.fail) / articlesTotal * 100).toFixed(1);
                     if (percentProgress !== prevPercentProgress) {
                         prevPercentProgress = percentProgress;
-                        logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
+                        logger.info(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
                     }
                 }
             }
         },
     );
 
-    logger.log(`Done with downloading a total of [${articlesTotal}] articles`);
+    logger.info(`Done with downloading a total of [${articlesTotal}] articles`);
 
     const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
     zimCreator.addArticle(jsConfigVarArticle);

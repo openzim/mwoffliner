@@ -21,7 +21,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 const to = from + articleIds.length;
                 if (log) {
                     const progressPercent = Math.floor(to / numArticleIds * 100);
-                    logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
+                    logger.info(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
                 }
                 from = to;
 
@@ -94,7 +94,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
             );
         }
 
-        logger.log(`Got [${numDetails}] articles chunk from namespace [${ns}]`);
+        logger.info(`Got [${numDetails}] articles chunk from namespace [${ns}]`);
         totalArticles += numDetails;
 
         // Only for testing purposes
