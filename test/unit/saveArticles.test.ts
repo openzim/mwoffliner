@@ -24,7 +24,7 @@ test('Article html processing', async (t) => {
 
     const [{ html }] = await downloader.getArticle('London', dump);
 
-    const addedArticles: Array<typeof ZimArticle> = [];
+    const addedArticles: typeof ZimArticle[] = [];
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles({
