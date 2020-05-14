@@ -1,8 +1,3 @@
 <div style="clear:both; background-image:linear-gradient(180deg, #E8E8E8, white); border-top: dashed 2px #AAAAAA; padding: 0.5em 0.5em 0.5em 0.5em; margin-top: 1em; direction: {{ strings.__direction }};">
-    {{ strings.ISSUED_BY }}
-    <a class="external text" {% if date %} title="{{ strings.LAST_EDITED_ON }} {{ date }}" {% endif %} href="{{ originArticleUrl }}">
-        {{ creator }}</a>.
-    {{strings.LICENSED_UNDER}} <a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative
-        Commons - Attribution - Sharealike</a>.
-    {{strings.ADDITIONAL_TERMS}}
+    {{ disclaimer|safe }}
 </div>

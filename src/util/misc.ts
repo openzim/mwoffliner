@@ -156,6 +156,14 @@ export function getStringsForLang(language: string, fallbackLanguage = 'en') {
   return strings;
 }
 
+export function interpolateTranslationString(str: string, parameters: { [key: string]: string }) {
+  let newString = str;
+  for (const key of Object.keys(parameters)) {
+    newString = newString.replace(new RegExp(`\\$\\{${key}\\}`, 'g'), parameters[key]);
+  }
+  return newString;
+}
+
 export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   const cssPromises = config.output.cssResources
     .concat(config.output.mainPageCssResources)

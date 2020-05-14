@@ -13,7 +13,7 @@ import {contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUr
 import {config} from '../config';
 import {footerTemplate, htmlTemplateCode} from '../Templates';
 import {articleDetailXId, filesToDownloadXPath, filesToRetryXPath} from '../stores';
-import {getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl} from './misc';
+import {getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString} from './misc';
 import {RedisKvs} from './RedisKvs';
 import {rewriteUrl} from './rewriteUrls';
 import {CONCURRENCY_LIMIT} from './const';
@@ -805,10 +805,25 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         if (articleDetail.revisionId) {
             /* Revision date */
             const date = new Date(articleDetail.timestamp);
+            const lastEditedOnString = date ?
+                interpolateTranslationString(dump.strings.LAST_EDITED_ON, {
+                    date: date.toISOString().substring(0, 10),
+                }) : null;
+
+            const creatorLink =
+                `<a class="external text" ` +
+                `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
+                `href="${mw.webUrl}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+                `${dump.mwMetaData.creator}</a>`;
+
+            const licenseLink =
+                `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`;
+
             div.innerHTML = footerTemplate({
-                originArticleUrl: `${mw.webUrl}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}`,
-                creator: dump.mwMetaData.creator,
-                date: date.toISOString().substring(0, 10),
+                disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {
+                    creator: creatorLink,
+                    license: licenseLink,
+                }),
                 strings: dump.strings,
             });
             htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
