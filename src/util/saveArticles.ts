@@ -213,9 +213,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             shouldIndex: true,
                         });
 
-                        // don't commit this
-                        // console.log(articleTitle);
-
                         zimCreator.addArticle(zimArticle);
 
                         dump.status.articles.success += 1;

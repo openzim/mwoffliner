@@ -17,30 +17,31 @@ const html = `
 test('Article html processing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
+    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Non-existent-town']);
     const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
     const [{ html }] = await downloader.getArticle('London', dump);
 
-    let addedArticle: typeof ZimArticle;
+    const addedArticles: Array<typeof ZimArticle> = [];
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles({
         addArticle(article: typeof ZimArticle) {
             if (article.mimeType === 'text/html') {
-                addedArticle = article;
+                addedArticles.push(article);
             }
             return Promise.resolve();
-        },
-    } as any,
+        }} as any,
         downloader,
         mw,
         dump,
     );
 
-    const articleDoc = domino.createDocument(addedArticle.bufferData.toString());
+    t.assert(addedArticles.length === 1 && addedArticles[0].aid === 'A/London' && dump.status.articles.fail === 1, 'Skip non-existent articles');
+
+    const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString());
 
     t.assert(articleDoc.querySelector('meta[name="geo.position"]'), 'Geo Position meta exists');
     t.equal(articleDoc.querySelector('meta[name="geo.position"]').getAttribute('content'), '51.50722222;-0.1275', 'Geo Position data is correct');
