@@ -1,38 +1,27 @@
-class Logger {
-  public getTs() {
-    return (new Date()).toISOString();
-  }
+import winston from 'winston';
+import moment from 'moment';
 
-  public info(...args: any[]) {
-    if (!!(process as any).verbose) {
-      console.info(`[info] [${this.getTs()}]`, ...args);
-    }
-  }
+moment.locale(process.env.API_LOCALE);
 
-  public log(...args: any[]) {
-    console.log(`[log] [${this.getTs()}]`, ...args);
-  }
 
-  public warn(...args: any[]) {
-    if (!!(process as any).verbose) {
-      console.warn(`[warn] [${this.getTs()}]`, ...args);
-    }
-  }
+const transports = [
 
-  public error(...args: any[]) {
-    console.error(`[error] [${this.getTs()}]`, ...args);
-  }
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.timestamp(),
+      winston.format.align(),
+      winston.format.printf((info) => {
+        const {
+          timestamp, level, message, ...args
+        } = info;
 
-  public logifyArray(arr: any[]) {
-    if (arr.length < 3) {
-      return JSON.stringify(arr);
-    } else {
-      const ret = arr.slice(0, 1).concat(`+${arr.length - 2} more +`).concat(arr[arr.length - 1]);
-      return JSON.stringify(ret);
-    }
-  }
-}
+        const ts = timestamp.slice(0, 19).replace('T', ' ');
+        return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+      }),
+    ),
+    level: 'debug'
+  }),
+];
 
-// export default Logger;
-const logger = new Logger();
-export default logger;
+export default winston.createLogger({transports});
