@@ -1,6 +1,6 @@
 # This should only be run by Travis
 if [ -n "$CI" ]; then
-    if [[ "$(node --version)" = *"v11."* ]]; then
+    if [[ "$(node --version)" = *"v12."* ]]; then
         npm config set //registry.npmjs.org/:_authToken=$NPM_TOKEN -q
 
         if [ -n "$TRAVIS_TAG" ]; then
