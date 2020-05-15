@@ -4,6 +4,7 @@ import MediaWiki from '../MediaWiki';
 import {ZimArticle, ZimCreator} from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
+import * as QueryStringParser from 'querystring';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
@@ -148,7 +149,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             continue;
                         }
 
-                        const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                        const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId, zimCreator);
                         let articleDoc = _articleDoc;
 
                         if (dump.customProcessor?.shouldKeepArticle) {
@@ -291,10 +292,10 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
     };
 }
 
-async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
+async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string, zimCreator: ZimCreator) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
     let doc = domino.createDocument(html);
-    const tmRet = await treatMedias(doc, mw, dump, articleId);
+    const tmRet = await treatMedias(doc, mw, dump, articleId, downloader, zimCreator);
     doc = tmRet.doc;
     mediaDependencies = mediaDependencies.concat(
         tmRet.mediaDependencies
@@ -336,7 +337,7 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
     return aVal > bVal ? 1 : -1;
 }
 
-async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[] }> {
+async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement,  downloader: Downloader, zimCreator: ZimCreator): Promise<{ mediaDependencies: string[] }> {
     // This function handles audio tags as well as video tags
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
@@ -402,7 +403,30 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     }
 
     sourceEl.setAttribute('src', newUrl);
+
+    /* Scrape subtitle */
+    const trackEle = videoEl.querySelector('track');
+    if (trackEle) {
+        const { content, trackTitle } = await treatSubtitles(trackEle, downloader, webUrlHost, mw);
+        const article = new ZimArticle({ url: `${trackTitle}.vtt`, mimeType: 'text/vtt', data: content, ns: 'I' });
+        zimCreator.addArticle(article);
+        trackEle.setAttribute('src', `${getRelativeFilePath(articleId, trackTitle, 'I')}.vtt`);
+    }
     return { mediaDependencies };
+}
+
+export async function treatSubtitles(trackEle: any, downloader: Downloader, webUrlHost: string, mw: MediaWiki) {
+    try {
+        const sourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
+        const trackformat: any = QueryStringParser.parse(sourceUrl).trackformat;
+        const trackTitle: any =  QueryStringParser.parse(sourceUrl).title;
+
+        const vttSourceUrl = sourceUrl.replace(trackformat, 'vtt');
+        const { content }  = await downloader.downloadContent(vttSourceUrl);
+        return { content, trackTitle };
+    } catch (err) {
+        logger.log(`Not able to download the subtitles due to: ${err}`);
+    }
 }
 
 function shouldKeepImage(dump: Dump, img: DominoElement) {
@@ -536,7 +560,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
     imageNode.parentNode.replaceChild(thumbDiv, imageNode);
 }
 
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, downloader?: Downloader, zimCreator?: ZimCreator) {
     let mediaDependencies: string[] = [];
     /* Clean/rewrite image tags */
     const imgs = Array.from(parsoidDoc.getElementsByTagName('img'));
@@ -544,7 +568,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     const srcCache: KVS<boolean> = {};
 
     for (const videoEl of videos) { // <video /> and <audio />
-        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
+        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, downloader, zimCreator);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
 

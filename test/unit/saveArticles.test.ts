@@ -4,7 +4,7 @@ import domino from 'domino';
 
 import { setupScrapeClasses } from 'test/util';
 import { articleDetailXId } from 'src/stores';
-import { saveArticles, treatMedias, applyOtherTreatments } from '../../src/util/saveArticles';
+import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles } from 'src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail } from 'src/util';
@@ -237,4 +237,19 @@ test('--customFlavour', async (t) => {
     t.ok(!writtenArticles.London, `London was correctly filtered out by customFlavour`);
     t.ok(ParisDocument.querySelector('#PRE_PROCESSOR'), `Paris was correctly pre-processed`);
     t.ok(PragueDocument.querySelector('#POST_PROCESSOR'), `Prague was correctly post-processed`);
+});
+
+test('Test Subtitles', async(t) => {
+    const { downloader, mw } = await setupScrapeClasses({ format: '' });
+    const results = [];
+    const videoHtmlArr = [`<div class="mwEmbedPlayer" id="mwe_player_0" style=""><video class="nativeEmbedPlayerPid" id="pid_mwe_player_0" src="//upload.wikimedia.org/wikipedia/commons/transcoded/d/d2/Cell600Cmp.ogv/Cell600Cmp.ogv.480p.vp9.webm" style="width: 100%; height: 100%; z-index: 1; left: 0px;"></video></div>`, `<div class="mediaContainer" style="width:320px"><video id="mwe_player_1" poster="//upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Physicsworks.ogv/320px--Physicsworks.ogv.jpg" controls="" preload="none" autoplay="" style="width:320px;height:240px" class="kskin" data-durationhint="203.33333333333" data-startoffset="0" data-mwtitle="Physicsworks.ogv" data-mwprovider="wikimediacommons"><source src="//upload.wikimedia.org/wikipedia/commons/transcoded/c/c4/Physicsworks.ogv/Physicsworks.ogv.240p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-title="Small VP9 (240P)" data-shorttitle="VP9 240P" data-transcodekey="240p.vp9.webm" data-width="320" data-height="240" data-bandwidth="186960" data-framerate="15"/><source src="//upload.wikimedia.org/wikipedia/commons/c/c4/Physicsworks.ogv" type="video/ogg; codecs=&quot;theora, vorbis&quot;" data-title="Original Ogg file, 320 × 240 (260 kbps)" data-shorttitle="Ogg source" data-width="320" data-height="240" data-bandwidth="260004" data-framerate="15"/><source src="//upload.wikimedia.org/wikipedia/commons/transcoded/c/c4/Physicsworks.ogv/Physicsworks.ogv.240p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-title="Small WebM (240P)" data-shorttitle="WebM 240P" data-transcodekey="240p.webm" data-width="320" data-height="240" data-bandwidth="320120" data-framerate="15"/><source src="//upload.wikimedia.org/wikipedia/commons/transcoded/c/c4/Physicsworks.ogv/Physicsworks.ogv.120p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-title="Lowest bandwidth VP9 (120P)" data-shorttitle="VP9 120P" data-transcodekey="120p.vp9.webm" data-width="160" data-height="120" data-bandwidth="114680" data-framerate="15"/><source src="//upload.wikimedia.org/wikipedia/commons/transcoded/c/c4/Physicsworks.ogv/Physicsworks.ogv.160p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-title="Low bandwidth WebM (160P)" data-shorttitle="WebM 160P" data-transcodekey="160p.webm" data-width="214" data-height="160" data-bandwidth="183056" data-framerate="15"/><source src="//upload.wikimedia.org/wikipedia/commons/transcoded/c/c4/Physicsworks.ogv/Physicsworks.ogv.180p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-title="Low bandwidth VP9 (180P)" data-shorttitle="VP9 180P" data-transcodekey="180p.vp9.webm" data-width="240" data-height="180" data-bandwidth="154752" data-framerate="15"/><track src="https://commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3APhysicsworks.ogv&amp;lang=en&amp;trackformat=srt&amp;origin=%2A" kind="subtitles" type="text/x-srt" srclang="en" label="English (en) subtitles" data-dir="ltr"/></video></div>`]
+    
+    for (let i = 0; i < videoHtmlArr.length; i++) {
+        const htmlDoc = domino.createDocument(videoHtmlArr[i]);
+        const contentRes = await treatSubtitles(htmlDoc.querySelector('track'), downloader, 'en.wikipedia.org', mw);
+        results.push(contentRes);
+    }
+
+    t.equals(results[0], undefined, 'No track was found in video');
+    t.ok(!!results[1].content, 'Successfully downloaded the subtitles');
 });
