@@ -10,7 +10,7 @@ if [ -n "$CI" ]; then
                 npm publish --tag rc
             else
                 echo "This is a production release"
-                npm publish
+                npm publish --tag latest
             fi
         else
             if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
