@@ -5,35 +5,63 @@
 /* MODULE VARIABLE SECTION ********** */
 /* ********************************** */
 
-import domino from 'domino';
-import fs, { readFileSync } from 'fs';
 import os from 'os';
-import pathParser from 'path';
-import urlParser from 'url';
-import semver from 'semver';
-import * as path from 'path';
 import axios from 'axios';
-import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import rimraf from 'rimraf';
+import semver from 'semver';
+import urlParser from 'url';
 import im from 'imagemagick';
+import domino from 'domino';
+import * as path from 'path';
+import fs, { readFileSync } from 'fs';
 import * as QueryStringParser from 'querystring';
+import { ZimArticle, ZimCreator } from '@openzim/libzim';
 
-import { config } from './config';
-import Downloader from './Downloader';
-import MediaWiki from './MediaWiki';
+import {
+  articleDetailXId,
+  filesToDownloadXPath,
+  filesToRetryXPath,
+  populateArticleDetail,
+  populateFilesToDownload,
+  populateFilesToRetry,
+  populateRedirects,
+  redirectsXId
+} from './stores';
+import {
+  downloadAndSaveModule,
+  genCanonicalLink,
+  genHeaderCSSLink,
+  genHeaderScript,
+  getAndProcessStylesheets,
+  getDumps,
+  getMediaBase,
+  getRelativeFilePath,
+  getSizeFromUrl,
+  getTotalArticlesNumberByNS,
+  isValidEmail,
+  makeArticleImageTile,
+  makeArticleListItem,
+  MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
+  mkdirPromise,
+  readFilePromise,
+  sanitizeString,
+  saveStaticFiles,
+  writeFilePromise
+} from './util';
+import S3 from './S3';
 import Redis from './Redis';
-import { writeFilePromise, mkdirPromise, isValidEmail, genHeaderCSSLink, genHeaderScript, genCanonicalLink, saveStaticFiles, readFilePromise, makeArticleImageTile, makeArticleListItem, getDumps, getMediaBase, MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE, downloadAndSaveModule, getSizeFromUrl, getRelativeFilePath, sanitizeString } from './util';
-import { mapLimit } from 'promiso';
 import logger from './Logger';
-import { getAndProcessStylesheets } from './util';
 import { Dump } from './Dump';
+import { config } from './config';
+import MediaWiki from './MediaWiki';
+import Downloader from './Downloader';
 import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
-import { saveArticles, downloadFiles } from './util/saveArticles';
+import { downloadFiles, saveArticles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
-import { filesToDownloadXPath, populateFilesToDownload, articleDetailXId, populateArticleDetail, populateRedirects, filesToRetryXPath, populateFilesToRetry, redirectsXId } from './stores';
-import S3 from './S3';
-import { getTotalArticlesNumberByNS } from './util/mw-api';
+import { mapLimit } from 'promiso';
+
+
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
@@ -84,7 +112,6 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     noLocalParserFallback,
     forceLocalParsoid,
-    s3Obj,
     customFlavour: customProcessorPath,
   } = argv;
 
@@ -128,8 +155,8 @@ async function execute(argv: any) {
     const queryReader = QueryStringParser.parse(s3UrlObj.query, '?');
     const s3Url = (s3UrlObj.host || '') + (s3UrlObj.pathname || '');
     this.s3Obj = new S3(s3Url, queryReader);
-    await this.s3Obj.initialise().then((data: any) => {
-      logger.log('Successfuly logged in S3');
+    await this.s3Obj.initialise().then(() => {
+      logger.log('Successfully logged in S3');
     });
   }
 
@@ -369,7 +396,7 @@ async function execute(argv: any) {
   logger.log('All dumping(s) finished with success.');
 
   async function doDump(dump: Dump) {
-    const outZim = pathParser.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
+    const outZim = path.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim');
     logger.log(`Writing zim to [${outZim}]`);
     dump.outFile = outZim;
 
@@ -414,40 +441,8 @@ async function execute(argv: any) {
     zimCreator.addArticle(article);
     await saveFavicon(dump, zimCreator);
 
-    if (!customMainPage && articleList && articleListLines.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-      logger.log(`Updating article thumbnails for articles`);
-      let articleIndex = 0;
-      let articlesWithImages = 0;
-      await mapLimit(','.repeat(downloader.speed).split(','), downloader.speed, async () => {
-        while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
-          const articleId = articleListLines[articleIndex].replace(/ /g, '_');
-          articleIndex += 1;
-          try {
-            const articleDetail = await articleDetailXId.get(articleId);
-            if (!articleDetail) {
-              continue;
-            }
-            const imageUrl = articleDetail.thumbnail;
-            if (imageUrl) {
-              const { mult: oldMult, width: oldWidth } = getSizeFromUrl(imageUrl.source);
-              const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-');
-              const { mult, width } = getSizeFromUrl(suitableResUrl);
-              const path = getMediaBase(suitableResUrl, false);
+    await getThumbnailsData();
 
-              const internalSrc = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I');
-
-              articlesWithImages += 1;
-
-              await filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width });
-              articleDetail.internalThumbnailUrl = internalSrc;
-              await articleDetailXId.set(articleId, articleDetail);
-            }
-          } catch (err) {
-            logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`);
-          }
-        }
-      });
-    }
     logger.log(`Getting Main Page`);
     await getMainPage(dump, zimCreator);
 
@@ -539,8 +534,8 @@ async function execute(argv: any) {
       const parsedUrl = urlParser.parse(entries.logo);
       const ext = parsedUrl.pathname.split('.').slice(-1)[0];
 
-      const faviconPath = pathParser.join(tmpDirectory, `favicon.${ext}`);
-      let faviconFinalPath = pathParser.join(tmpDirectory, `favicon.png`);
+      const faviconPath = path.join(tmpDirectory, `favicon.${ext}`);
+      let faviconFinalPath = path.join(tmpDirectory, `favicon.png`);
       const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
       const logoContent = await downloader.downloadContent(logoUrl);
       await writeFilePromise(faviconPath, logoContent.content, null);
@@ -580,7 +575,6 @@ async function execute(argv: any) {
       const articleIds = articleListLines.map((title) => title.replace(/ /g, '_'));
 
       const articlesWithImages: ArticleDetail[] = [];
-      const articlesWithoutImages: ArticleDetail[] = [];
       const allArticles: ArticleDetail[] = [];
       for (const articleId of articleIds) {
         const articleDetail = await articleDetailXId.get(articleId);
@@ -591,8 +585,6 @@ async function execute(argv: any) {
             if (articlesWithImages.length >= 100) {
               break;
             }
-          } else {
-            articlesWithoutImages.push(articleDetail);
           }
         }
       }
@@ -625,6 +617,41 @@ async function execute(argv: any) {
     }
 
     return mainPage ? createMainPageRedirect() : createMainPage();
+  }
+
+  async function getThumbnailsData(): Promise<void> {
+    if (customMainPage || !articleList || articleListLines.length <= MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) return;
+    logger.log(`Updating article thumbnails for articles`);
+    let articleIndex = 0;
+    let articlesWithImages = 0;
+
+    while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
+      const articleId = articleListLines[articleIndex].replace(/ /g, '_');
+      articleIndex++;
+      try {
+        const articleDetail = await articleDetailXId.get(articleId);
+        if (!articleDetail) continue;
+
+        const imageUrl = articleDetail.thumbnail;
+        if (!imageUrl) continue;
+
+        const { width: oldWidth } = getSizeFromUrl(imageUrl.source);
+        const suitableResUrl = imageUrl.source
+          .replace(`/${oldWidth}px-`, '/500px-')
+          .replace(`-${oldWidth}px-`, '-500px-');
+        const { mult, width } = getSizeFromUrl(suitableResUrl);
+        const path = getMediaBase(suitableResUrl, false);
+        articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I');
+
+        await Promise.all([
+          filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width }),
+          articleDetailXId.set(articleId, articleDetail)
+        ]);
+        articlesWithImages++;
+      } catch (err) {
+        logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`);
+      }
+    }
   }
 
   closeRedis(redis);

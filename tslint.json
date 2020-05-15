@@ -27,7 +27,8 @@
         "trailing-comma": false,
         "no-consecutive-blank-lines": false,
         "member-ordering": false,
-        "no-trailing-whitespace": true
+        "no-trailing-whitespace": true,
+        "array-type": false
     },
     "rulesDirectory": []
 }
