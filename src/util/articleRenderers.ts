@@ -37,6 +37,8 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, fo
 
     } else {
 
+        logger.debug('renderArticle-nofallback', {meta: {event: 'begin', articleId}});
+
         const result = [];
 
         // Paginate when there are more than 200 subCategories
@@ -62,13 +64,18 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, fo
                 await articleDetailXId.set(_articleId, _articleDetail);
             }
 
+            logger.debug('renderMCSArticle', {meta: {event: 'before', articleId}});
             const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
+            logger.debug('renderMCSArticle', {meta: {event: 'after', articleId}});
+
+            logger.debug('getStrippedTitleFromHtml', {meta: {event: 'before', articleId}});
             let strippedTitle = getStrippedTitleFromHtml(html);
             if (!strippedTitle) {
                 const title = (json.lead || { displaytitle: articleId }).displaytitle;
                 const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
                 strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
             }
+            logger.debug('getStrippedTitleFromHtml', {meta: {event: 'after', articleId}});
 
             result.push({
                 articleId: _articleId,
@@ -77,6 +84,8 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, fo
             });
         }
 
+        logger.debug('renderArticle-nofallback', {meta: {event: 'end', articleId}});
+
         logger.debug('renderArticle', {meta: {event: 'after', articleId, useParsoidFallback}});
         return result;
     }
@@ -84,12 +93,14 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, fo
 
 
 const injectHeader = (content: string, articleId: string, articleDetail: ArticleDetail): string => {
+    logger.debug('injectHeader', {meta: {event: 'begin', articleId}});
     const doc = domino.createDocument(content);
     const header = doc.createElement('h1');
     header.appendChild(doc.createTextNode(articleDetail.title));
     header.classList.add('article-header');
     const target = doc.querySelector('body.mw-body-content');
     target.insertAdjacentElement('afterbegin', header);
+    logger.debug('injectHeader', {meta: {event: 'end', articleId}});
     return doc.documentElement.outerHTML;
 };
 
