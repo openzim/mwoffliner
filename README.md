@@ -48,6 +48,11 @@ Then to run it:
 mwoffliner --help
 ```
 
+To use MWoffliner with a S3 cache, you should provide a S3 URL like this:
+```bash
+--optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket?keyId=my-key-id?secretAccessKey=my-sac"
+```
+
 ## API
 
 MWoffliner provides also an API and therefore can be used as a NodeJS
