@@ -24,13 +24,15 @@ const transports = [
         return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
       }),
     ),
-    level: 'debug'
+    level: 'info'
   }),
   new MongoDB({
     db: process.env.MONGODB_URL,
     decolorize: true,
     level: 'debug',
     metaKey: 'meta',
+    tryReconnect: true,
+    leaveConnectionOpen: false,
     collection
   })
 ];
