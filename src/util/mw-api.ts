@@ -73,18 +73,15 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 }
 
 export async function getArticlesByNS(ns: number, downloader: Downloader, continueLimit?: number): Promise<void> {
-    let _gapContinue: string;
     let totalArticles = 0;
+    let chunk: { articleDetails: QueryMwRet, gapContinue: string };
 
     do {
-        const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
-        _gapContinue = gapContinue;
-        const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
+        chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue);
 
-        const numDetails = Object.keys(articleDetails).length;
-        await articleDetailXId.setMany(articleDetails);
+        await articleDetailXId.setMany(mwRetToArticleDetail(downloader, chunk.articleDetails));
 
-        for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+        for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
             await redirectsXId.setMany(
                 (articleDetail.redirects || []).reduce((acc, redirect) => {
                     const rId = redirect.title.replace(/ /g, '_');
@@ -96,12 +93,13 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
             );
         }
 
+        const numDetails = Object.keys(chunk.articleDetails).length;
         logger.log(`Got [${numDetails}] articles chunk from namespace [${ns}]`);
         totalArticles += numDetails;
 
         // Only for testing purposes
         if (--(continueLimit as number) < 0) break;
-    } while (_gapContinue);
+    } while (chunk.gapContinue);
 
     logger.log(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`);
 }
