@@ -63,6 +63,7 @@
     "@types/imagemin-optipng": "^5.2.0",
     "@types/md5": "^2.1.33",
     "@types/node": "^11.13.17",
+    "@types/pino": "^6.0.1",
     "@types/rimraf": "^2.0.2",
     "@types/semver": "^5.5.0",
     "@types/sharp": "^0.25.0",
@@ -89,6 +90,9 @@
     "mkdirp": "^0.5.1",
     "mocha": "^5.2.0",
     "parsoid": "^0.10.0",
+    "pino": "^6.2.1",
+    "pino-pg": "^2.1.3",
+    "pino-pretty": "^4.0.0",
     "promiso": "^0.5.1",
     "public-ip": "^4.0.1",
     "redis": "^2.8.0",
@@ -101,7 +105,6 @@
     "tslint": "^5.20.1",
     "typescript": "^3.8.3",
     "utf8-binary-cutter": "^0.9.1",
-    "winston-mongodb": "^5.0.1",
     "yargs": "^13.2.0"
   },
   "keywords": [
