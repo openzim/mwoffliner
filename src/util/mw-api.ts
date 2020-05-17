@@ -5,7 +5,7 @@ import { articleDetailXId, redirectsXId } from '../stores';
 import deepmerge = require('deepmerge');
 
 let batchSize = 50;
-let totalArticles = 0;
+
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
     let numArticleIds = _articleIds.length;
@@ -74,6 +74,8 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
 export async function getArticlesByNS(ns: number, downloader: Downloader, continueLimit?: number): Promise<void> {
     let _gapContinue: string;
+    let totalArticles = 0;
+
     do {
         const { articleDetails: _articleDetails, gapContinue } = await downloader.getArticleDetailsNS(ns, _gapContinue);
         _gapContinue = gapContinue;
@@ -100,6 +102,8 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
         // Only for testing purposes
         if (--(continueLimit as number) < 0) break;
     } while (_gapContinue);
+
+    logger.log(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`);
 }
 
 export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
@@ -157,8 +161,4 @@ export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): K
         };
     }
     return ret;
-}
-
-export function getTotalArticlesNumberByNS() {
-    return totalArticles;
 }
