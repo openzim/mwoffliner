@@ -70,8 +70,8 @@ export async function zimcheck(filePath: string) {
 
 export async function convertWikicodeToHtml(wikicode: string, dump:Dump): Promise<string>{
     return axios.post(`${dump.mwMetaData.base}${WIKI_TO_HTML_API}`,  {
-        "wikitext": wikicode,
-        "body_only": true,
+        'wikitext': wikicode,
+        'body_only': true,
       })
       .then((resp: any) => {
           return resp.data;
