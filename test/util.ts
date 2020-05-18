@@ -67,7 +67,7 @@ export async function zimcheck(filePath: string) {
     return execa.command(`${zimcheckPath} ${filePath}`);
 }
 
-export async function convertWikicodeToHtml(wikicode: string, dump:Dump): Promise<string>{
+export async function convertWikicodeToHtml(wikicode: string, dump: Dump): Promise<string> {
     return axios.post(`${dump.mwMetaData.base}${WIKI_TO_HTML_API}`,  {
         'wikitext': wikicode,
         'body_only': true,
