@@ -1,3 +1,18 @@
+1.10.7:
+
+* FIX: Improving parsoid/source select logic
+* FIX: Better errors and timeouts handling
+* FIX: AWS S3 build errors and logging
+* FIX: title on main pages and footer links
+* FIX: scraping articles with question marks
+* UPDATE: Add support for node v12+
+* UPDATE: Migrate to node-libzim v2.2.2
+* UPDATE: Migrate to Redis 6 and
+* UPDATE: Migrate to sharp
+* UPDATE: Remove odd metadata and article dependencies requests
+* UPDATE: Add support for parametrized translatable strings + add Spanish translation
+* UPDATE: Simplify automated tests call
+
 1.10.6:
 * FIX: Hotfix for TypeScript build config
 
