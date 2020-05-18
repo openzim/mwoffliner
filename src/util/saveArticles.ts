@@ -406,12 +406,14 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
     /* Scrape subtitle */
     const trackEle = videoEl.querySelector('track');
-    if (trackEle) {
-        const { content, title } = await treatSubtitles(trackEle, downloader, webUrlHost, mw);
-        const article = new ZimArticle({ url: `${title}.vtt`, mimeType: 'text/vtt', data: content, ns: 'I' });
-        zimCreator.addArticle(article);
-        trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, 'I')}.vtt`);
+    if (!trackEle) {
+        return { mediaDependencies };
     }
+    
+    const { content, title } = await treatSubtitles(trackEle, downloader, webUrlHost, mw);
+    const article = new ZimArticle({ url: `${title}.vtt`, mimeType: 'text/vtt', data: content, ns: 'I' });
+    zimCreator.addArticle(article);
+    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, 'I')}.vtt`);
     return { mediaDependencies };
 }
 
