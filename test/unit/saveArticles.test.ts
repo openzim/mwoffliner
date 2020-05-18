@@ -8,7 +8,6 @@ import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles } from 
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail } from 'src/util';
-import logger from '../../src/Logger';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">

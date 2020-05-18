@@ -2,7 +2,6 @@ import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
 import axios from 'axios';
-import logger from '../src/Logger';
 import { WIKI_TO_HTML_API } from '../src/util/const';
 import execa = require('execa');
 
