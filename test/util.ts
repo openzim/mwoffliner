@@ -1,6 +1,9 @@
 import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
+import axios from 'axios';
+import logger from '../src/Logger';
+import { WIKI_TO_HTML_API } from '../src/util/const';
 import execa = require('execa');
 
 export function leftPad(_num: number, length: number) {
@@ -63,4 +66,16 @@ export async function zimcheckAvailable() {
 
 export async function zimcheck(filePath: string) {
     return execa.command(`${zimcheckPath} ${filePath}`);
+}
+
+export async function convertWikicodeToHtml(wikicode: string, dump:Dump): Promise<string>{
+    return axios.post(`${dump.mwMetaData.base}${WIKI_TO_HTML_API}`,  {
+        "wikitext": wikicode,
+        "body_only": true,
+      })
+      .then((resp: any) => {
+          return resp.data;
+      }).catch((err) => {
+          return err;
+    });
 }

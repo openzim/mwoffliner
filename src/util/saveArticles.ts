@@ -407,23 +407,22 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     /* Scrape subtitle */
     const trackEle = videoEl.querySelector('track');
     if (trackEle) {
-        const { content, trackTitle } = await treatSubtitles(trackEle, downloader, webUrlHost, mw);
-        const article = new ZimArticle({ url: `${trackTitle}.vtt`, mimeType: 'text/vtt', data: content, ns: 'I' });
+        const { content, title } = await treatSubtitles(trackEle, downloader, webUrlHost, mw);
+        const article = new ZimArticle({ url: `${title}.vtt`, mimeType: 'text/vtt', data: content, ns: 'I' });
         zimCreator.addArticle(article);
-        trackEle.setAttribute('src', `${getRelativeFilePath(articleId, trackTitle, 'I')}.vtt`);
+        trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, 'I')}.vtt`);
     }
     return { mediaDependencies };
 }
 
-export async function treatSubtitles(trackEle: any, downloader: Downloader, webUrlHost: string, mw: MediaWiki) {
+export async function treatSubtitles(trackEle: any, downloader: Downloader, webUrlHost: string, mw: MediaWiki): Promise<{ content: Buffer | string, title: string }> {
     try {
         const sourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
-        const trackformat: any = QueryStringParser.parse(sourceUrl).trackformat;
-        const trackTitle: any =  QueryStringParser.parse(sourceUrl).title;
+        const {trackformat, title} = QueryStringParser.parse(sourceUrl) as {title: string, trackformat: string};
 
         const vttSourceUrl = sourceUrl.replace(trackformat, 'vtt');
         const { content }  = await downloader.downloadContent(vttSourceUrl);
-        return { content, trackTitle };
+        return { content, title };
     } catch (err) {
         logger.log(`Not able to download the subtitles due to: ${err}`);
     }
