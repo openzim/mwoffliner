@@ -18,7 +18,7 @@ test('Article html processing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Non-existent-town']);
-    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
+    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
@@ -51,7 +51,7 @@ test('applyOtherTreatments', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }); // en wikipedia
 
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland']);
-    const articlesDetail = mwRetToArticleDetail(downloader, _articleDetailsRet);
+    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet);
     articleDetailXId.setMany(articlesDetail);
     let [{ html }] = await downloader.getArticle('Western_Greenland', dump);
 
@@ -213,7 +213,7 @@ test('--customFlavour', async (t) => {
     dump.customProcessor = customFlavour;
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague']);
-    const articlesDetail = mwRetToArticleDetail(downloader, _articlesDetail);
+    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
