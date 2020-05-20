@@ -1,5 +1,5 @@
+import pMap from 'p-map';
 import deepmerge from 'deepmerge';
-import { mapLimit } from 'promiso';
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import { articleDetailXId, redirectsXId } from '../stores';
@@ -11,17 +11,14 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     let numThumbnails = 0;
     let batchSize = 200;
 
-    // using mapLimit to spawn workers
-    await mapLimit(
-        ','.repeat(downloader.speed).split(',').map((_, i) => i),
-        downloader.speed,
+    await pMap(
+        [...Array(downloader.speed).keys()],
         async (workerId: number) => {
             while (from < numArticleIds) {
                 const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
                 const to = from + articleIds.length;
                 if (log) {
-                    const percentProgress = (to / numArticleIds * 100).toFixed(0);
-                    const progressPercent = Math.floor(to / numArticleIds * 100);
+                    const progressPercent = (to / numArticleIds * 100).toFixed(0);
                     logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
                 }
                 from = to;
@@ -70,7 +67,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                     }
                 }
             }
-        },
+        }, {concurrency: downloader.speed, stopOnError: false}
     );
 }
 
