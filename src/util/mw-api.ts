@@ -24,37 +24,32 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 from = to;
 
                 try {
-                    if (articleIds.length) {
-                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
-                        const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
-                        numThumbnails += articlesWithThumbnail.length;
+                    if (articleIds.length === 0) continue;
+                    const articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
+                    const articlesWithThumbnail = Object.values(articleDetails).filter((a) => !!a.thumbnail);
+                    numThumbnails += articlesWithThumbnail.length;
 
-                        const articleDetails = mwRetToArticleDetail(_articleDetails);
-
-                        for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
-                            if (articleDetail.redirects && articleDetail.redirects.length) {
-                                await redirectsXId.setMany(
-                                    articleDetail.redirects.reduce((acc, redirect) => {
-                                        const rId = redirect.title.replace(/ /g, '_');
-                                        return {
-                                            ...acc,
-                                            [rId]: { targetId: articleId, title: redirect.title },
-                                        };
-                                    }, {}),
-                                );
-                            }
-                        }
-
-                        const existingArticleDetails = await articleDetailXId.getMany(articleIds);
-
-                        await articleDetailXId.setMany(
-                            deepmerge(
-                                existingArticleDetails,
-                                articleDetails,
-                            ),
+                    for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
+                        if (articleDetail?.redirects?.length === 0) continue;
+                        await redirectsXId.setMany(
+                            articleDetail.redirects.reduce((acc, redirect) => {
+                                const rId = redirect.title.replace(/ /g, '_');
+                                return {
+                                    ...acc,
+                                    [rId]: { targetId: articleId, title: redirect.title },
+                                };
+                            }, {}),
                         );
-
                     }
+
+                    const existingArticleDetails = await articleDetailXId.getMany(articleIds);
+
+                    await articleDetailXId.setMany(
+                        deepmerge(
+                            existingArticleDetails,
+                            articleDetails,
+                        ),
+                    );
                 } catch (err) {
                     if (batchSize < 10) {
                         logger.error(`Failed to get article ids and batch size is less than 10. Skipping batch...`, err);
@@ -73,12 +68,14 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
 export async function getArticlesByNS(ns: number, downloader: Downloader, continueLimit?: number): Promise<void> {
     let totalArticles = 0;
-    let chunk: { articleDetails: QueryMwRet, gapContinue: string };
+    let chunk: { articleDetails: KVS<ArticleDetail>, gapContinue: string };
 
     do {
         chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue);
 
-        await articleDetailXId.setMany(mwRetToArticleDetail(chunk.articleDetails));
+        await articleDetailXId.setMany(chunk.articleDetails);
+
+        // chunks?
 
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
             await redirectsXId.setMany(
@@ -107,9 +104,9 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
     if (!response) {
         return {};
     }
-    const { normalized: _normalized, pages } = response;
+    const { normalized: _normalized = [], pages = {}} = response;
 
-    const normalized = (_normalized || []).reduce((acc: any, { from, to }) => {
+    const normalized = _normalized.reduce((acc: any, { from, to }) => {
         acc[to] = from;
         return acc;
     }, {});
@@ -121,41 +118,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
                 logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`);
             }
             const articleId = String(id).replace(/ /g, '_');
-            if (articleId) {
-                return {
-                    ...acc,
-                    [articleId]: page,
-                };
-            } else {
-                return acc;
-            }
+            return articleId ? {...acc, [articleId]: page} : acc;
         }, {});
 }
 
-export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
-    const ret: KVS<ArticleDetail> = {};
-    for (const key of Object.keys(obj)) {
-        const val = obj[key];
-        const rev = val.revisions && val.revisions[0];
-        const geo = val.coordinates && val.coordinates[0];
-        let newThumbnail;
-        if (val.thumbnail) {
-            newThumbnail = {
-                width: val.thumbnail.width,
-                height: val.thumbnail.height,
-                source: val.thumbnail.source,
-            };
-        }
-        ret[key] = {
-            title: val.title,
-            categories: val.categories,
-            subCategories: val.subCategories,
-            thumbnail: newThumbnail,
-            missing: val.missing,
-            ...(val.ns !== 0 ? { ns: val.ns } : {}),
-            ...(rev ? { revisionId: rev.revid, timestamp: rev.timestamp } : {}),
-            ...(geo ? { coordinates: `${geo.lat};${geo.lon}` } : {}),
-        };
-    }
-    return ret;
-}
