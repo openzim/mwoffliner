@@ -63,7 +63,7 @@ test('Downloader class', async (t) => {
     }
 
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
-    const articleDetailsRet = mwRetToArticleDetail(downloader, _articleDetailsRet);
+    const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet);
     articleDetailXId.setMany(articleDetailsRet);
     const { London, Paris, Zurich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet;
     t.ok(!!London, 'getArticleDetailsIds Scraped "London" successfully');

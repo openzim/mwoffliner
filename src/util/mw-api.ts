@@ -13,7 +13,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     // using async iterator to spawn workers
     await pmap(
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
-        async (workerId) => {
+        async (workerId: number) => {
             while (from < numArticleIds) {
                 const articleIds = _articleIds.slice(from, from + batchSize);
                 const to = from + articleIds.length;
@@ -29,7 +29,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                         const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
                         numThumbnails += articlesWithThumbnail.length;
 
-                        const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
+                        const articleDetails = mwRetToArticleDetail(_articleDetails);
 
                         for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
                             if (articleDetail.redirects && articleDetail.redirects.length) {
@@ -79,7 +79,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
     do {
         chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue);
 
-        await articleDetailXId.setMany(mwRetToArticleDetail(downloader, chunk.articleDetails));
+        await articleDetailXId.setMany(mwRetToArticleDetail(chunk.articleDetails));
 
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
             await redirectsXId.setMany(
@@ -133,7 +133,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
         }, {});
 }
 
-export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): KVS<ArticleDetail> {
+export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
     const ret: KVS<ArticleDetail> = {};
     for (const key of Object.keys(obj)) {
         const val = obj[key];
