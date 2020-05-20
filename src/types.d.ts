@@ -35,6 +35,9 @@ type ArticleDetail = PageInfo & {
   nextArticleId?: string,
   prevArticleId?: string,
   missing?: string,
+  redirects?: Array<{
+    title: string;
+  }>
 };
 
 type QueryCategoriesRet = PageInfo[];
@@ -86,7 +89,6 @@ interface MwApiQueryResponse {
 
 
 interface MwApiResponse {
-  batchcomplete: string;
   query: MwApiQueryResponse;
   continue?: {
     [key: string]: string;
