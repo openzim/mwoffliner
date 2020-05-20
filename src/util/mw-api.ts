@@ -8,7 +8,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     let from = 0;
     let numArticleIds = _articleIds.length;
     let numThumbnails = 0;
-    let batchSize = 200;
+    let batchSize = 50;
 
     // using mapLimit to spawn workers
     await mapLimit(
