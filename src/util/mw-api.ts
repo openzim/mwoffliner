@@ -1,8 +1,9 @@
-import Downloader from '../Downloader';
+import deepmerge from 'deepmerge';
 import { mapLimit } from 'promiso';
 import logger from '../Logger';
+import Downloader from '../Downloader';
 import { articleDetailXId, redirectsXId } from '../stores';
-import deepmerge = require('deepmerge');
+
 
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
@@ -14,11 +15,12 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     await mapLimit(
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
         downloader.speed,
-        async (workerId) => {
+        async (workerId: number) => {
             while (from < numArticleIds) {
                 const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
                 const to = from + articleIds.length;
                 if (log) {
+                    const percentProgress = (to / numArticleIds * 100).toFixed(0);
                     const progressPercent = Math.floor(to / numArticleIds * 100);
                     logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
                 }
@@ -30,7 +32,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                         const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
                         numThumbnails += articlesWithThumbnail.length;
 
-                        const articleDetails = mwRetToArticleDetail(downloader, _articleDetails);
+                        const articleDetails = mwRetToArticleDetail(_articleDetails);
 
                         for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
                             if (articleDetail.redirects && articleDetail.redirects.length) {
@@ -79,7 +81,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
     do {
         chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue);
 
-        await articleDetailXId.setMany(mwRetToArticleDetail(downloader, chunk.articleDetails));
+        await articleDetailXId.setMany(mwRetToArticleDetail(chunk.articleDetails));
 
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
             await redirectsXId.setMany(
@@ -133,7 +135,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
         }, {});
 }
 
-export function mwRetToArticleDetail(downloader: Downloader, obj: QueryMwRet): KVS<ArticleDetail> {
+export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
     const ret: KVS<ArticleDetail> = {};
     for (const key of Object.keys(obj)) {
         const val = obj[key];
