@@ -40,7 +40,7 @@ plugin.
 
 ## Tests
 
-The run the automated tests (both unit and e2e):
+To run the automated tests (both unit and e2e):
 ```bash
 npm test
 ```
