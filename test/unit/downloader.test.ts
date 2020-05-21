@@ -4,7 +4,7 @@ import tapePromise from 'tape-promise';
 import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
-import { mkdirPromise, mwRetToArticleDetail } from 'src/util';
+import { mkdirPromise } from 'src/util';
 import S3 from 'src/S3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
@@ -62,8 +62,7 @@ test('Downloader class', async (t) => {
         t.equal(err.response.status, 404, 'downloadContent response status for non-existant url is 404');
     }
 
-    const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
-    const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet);
+    const articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
     articleDetailXId.setMany(articleDetailsRet);
     const { London, Paris, Zurich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet;
     t.ok(!!London, 'getArticleDetailsIds Scraped "London" successfully');

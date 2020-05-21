@@ -7,7 +7,6 @@ import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments } from '../../src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
-import { mwRetToArticleDetail } from 'src/util';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -17,8 +16,7 @@ const html = `
 test('Article html processing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Non-existent-town']);
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
+    const articlesDetail = await downloader.getArticleDetailsIds(['London', 'Non-existent-town']);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
@@ -50,9 +48,8 @@ test('Article html processing', async (t) => {
 test('applyOtherTreatments', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }); // en wikipedia
 
-    const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland']);
-    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet);
-    articleDetailXId.setMany(articlesDetail);
+    const articleDetails = await downloader.getArticleDetailsIds(['Western_Greenland']);
+    articleDetailXId.setMany(articleDetails);
     let [{ html }] = await downloader.getArticle('Western_Greenland', dump);
 
     {
@@ -212,8 +209,7 @@ test('--customFlavour', async (t) => {
     const customFlavour = new CustomFlavour();
     dump.customProcessor = customFlavour;
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague']);
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail);
+    const articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague']);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
