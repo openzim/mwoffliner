@@ -1,7 +1,8 @@
 import {cpus} from 'os';
 import {mapLimit} from 'promiso';
+import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
-import logger from '../Logger';
+
 
 interface ScanResult {
   cursor: string;
@@ -112,6 +113,16 @@ export class RedisKvs<T> {
         }
       });
     });
+  }
+
+  public async addMany(idsToKeep: string[], items: KVS<T>) {
+    const itemsToKeep = await this.getMany(idsToKeep);
+    await this.setMany(
+      deepmerge(
+        itemsToKeep,
+        items
+      ),
+    );
   }
 
   public delete(prop: string) {

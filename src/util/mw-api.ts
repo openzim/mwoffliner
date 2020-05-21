@@ -1,5 +1,4 @@
 import pMap from 'p-map';
-import deepmerge from 'deepmerge';
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import { articleDetailXId, redirectsXId } from '../stores';
@@ -11,59 +10,42 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     let numThumbnails = 0;
     let batchSize = 200;
 
-    await pMap(
-        [...Array(downloader.speed).keys()],
-        async (workerId: number) => {
-            while (from < numArticleIds) {
-                const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
-                const to = from + articleIds.length;
-                if (log) {
-                    const progressPercent = (to / numArticleIds * 100).toFixed(0);
-                    logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
+    const handler = async (workerId: number) => {
+        while (from < numArticleIds) {
+            const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
+            const to = from + articleIds.length;
+            if (log) {
+                const progressPercent = (to / numArticleIds * 100).toFixed(0);
+                logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
+            }
+            from = to;
+
+            try {
+                if (!articleIds.length) continue;
+                const articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
+                const articlesWithThumbnail = Object.values(articleDetails).filter((a) => !!a.thumbnail);
+                numThumbnails += articlesWithThumbnail.length;
+
+                for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
+                    if (!articleDetail?.redirects?.length) continue;
+                    await getRedirectsFromArticle(articleId, articleDetail);
                 }
-                from = to;
+                await articleDetailXId.addMany(articleIds, articleDetails);
 
-                try {
-                    if (articleIds.length === 0) continue;
-                    const articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
-                    const articlesWithThumbnail = Object.values(articleDetails).filter((a) => !!a.thumbnail);
-                    numThumbnails += articlesWithThumbnail.length;
-
-                    for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
-                        if (articleDetail?.redirects?.length === 0) continue;
-                        await redirectsXId.setMany(
-                            articleDetail.redirects.reduce((acc, redirect) => {
-                                const rId = redirect.title.replace(/ /g, '_');
-                                return {
-                                    ...acc,
-                                    [rId]: { targetId: articleId, title: redirect.title },
-                                };
-                            }, {}),
-                        );
-                    }
-
-                    const existingArticleDetails = await articleDetailXId.getMany(articleIds);
-
-                    await articleDetailXId.setMany(
-                        deepmerge(
-                            existingArticleDetails,
-                            articleDetails,
-                        ),
-                    );
-                } catch (err) {
-                    if (batchSize < 10) {
-                        logger.error(`Failed to get article ids and batch size is less than 10. Skipping batch...`, err);
-                        process.exit(1);
-                    } else {
-                        _articleIds = _articleIds.concat(articleIds);
-                        numArticleIds = _articleIds.length;
-                        batchSize = Math.floor(batchSize * 0.8);
-                        logger.warn(`Failed to get article ids, reducing batch size to [${batchSize}]`, err);
-                    }
+            } catch (err) {
+                if (batchSize < 10) {
+                    logger.error(`Failed to get article ids and batch size is less than 10. Skipping batch...`, err);
+                    process.exit(1);
+                } else {
+                    _articleIds = _articleIds.concat(articleIds);
+                    numArticleIds = _articleIds.length;
+                    batchSize = Math.floor(batchSize * 0.8);
+                    logger.warn(`Failed to get article ids, reducing batch size to [${batchSize}]`, err);
                 }
             }
-        }, {concurrency: downloader.speed, stopOnError: false}
-    );
+        }
+    };
+    await pMap([...Array(downloader.speed).keys()], handler, {concurrency: downloader.speed, stopOnError: false});
 }
 
 export async function getArticlesByNS(ns: number, downloader: Downloader, continueLimit?: number): Promise<void> {
@@ -75,18 +57,8 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
 
         await articleDetailXId.setMany(chunk.articleDetails);
 
-        // chunks?
-
-        for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
-            await redirectsXId.setMany(
-                (articleDetail.redirects || []).reduce((acc, redirect) => {
-                    const rId = redirect.title.replace(/ /g, '_');
-                    return {
-                        ...acc,
-                        [rId]: { targetId: articleId, title: redirect.title },
-                    };
-                }, {}),
-            );
+        for (const item of Object.entries(chunk.articleDetails)) {
+            await redirectsXId.setMany(getRedirectsFromArticle(...item));
         }
 
         const numDetails = Object.keys(chunk.articleDetails).length;
@@ -98,6 +70,16 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
     } while (chunk.gapContinue);
 
     logger.log(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`);
+}
+
+function getRedirectsFromArticle(id: string, details: ArticleDetail): KVS<any> {
+    return (details.redirects || []).reduce((acc, redirect) => {
+        const rId = redirect.title.replace(/ /g, '_');
+        return {
+            ...acc,
+            [rId]: {targetId: id, title: redirect.title},
+        };
+    }, {});
 }
 
 export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {

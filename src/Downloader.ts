@@ -333,10 +333,12 @@ class Downloader {
         gapcontinue: gapContinue
       };
 
-      queryOpts.cocontinue = queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue;
-      queryOpts.clcontinue = queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue;
-      queryOpts.picontinue = queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue;
-      queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue;
+      if (queryContinuation) {
+        queryOpts.cocontinue = queryContinuation.coordinates?.cocontinue ?? queryOpts.cocontinue;
+        queryOpts.clcontinue = queryContinuation.categories?.clcontinue ?? queryOpts.clcontinue;
+        queryOpts.picontinue = queryContinuation.pageimages?.picontinue ?? queryOpts.picontinue;
+        queryOpts.rdcontinue = queryContinuation.redirects?.rdcontinue ?? queryOpts.rdcontinue;
+      }
 
       const queryString = objToQueryString(queryOpts);
       const reqUrl = `${this.mw.apiUrl}${queryString}`;
