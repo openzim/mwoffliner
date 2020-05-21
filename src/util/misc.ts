@@ -345,7 +345,7 @@ export function isNodeModule(path: string) {
 export function objToQueryString(obj: KVS<any>): string {
   const str = [];
   for (const p in obj) {
-    if (obj.hasOwnProperty(p) && p !== undefined) {
+    if (obj.hasOwnProperty(p) && p !== undefined && obj[p] !== undefined && obj[p] !== '') {
       str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
     }
   }
