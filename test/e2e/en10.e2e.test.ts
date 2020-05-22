@@ -23,7 +23,7 @@ const parameters = {
     format: ['nopic', 'nopdf'],
 };
 
-test('Simple articleList', async (t) => {
+test.only('Simple articleList', async (t) => {
     await execa.command(`redis-cli flushall`);
 
     // const { data: articleIds } = await axios.get(articleListUrl);
