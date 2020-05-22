@@ -717,6 +717,7 @@ class Downloader {
         subCategories: val.subCategories,
         thumbnail: val.thumbnail ?? undefined,
         missing: val.missing,
+        redirects: val.redirects,
         ...(val.ns !== 0 ? {ns: val.ns} : {}),
         ...(rev ? {revisionId: rev.revid, timestamp: rev.timestamp} : {}),
         ...(geo ? {coordinates: `${geo.lat};${geo.lon}`} : {})
