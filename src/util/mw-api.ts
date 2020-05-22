@@ -28,7 +28,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
                 for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
                     if (!articleDetail?.redirects?.length) continue;
-                    await getRedirectsFromArticle(articleId, articleDetail);
+                    await redirectsXId.setMany(getRedirectsFromArticle(articleId, articleDetail));
                 }
                 await articleDetailXId.addMany(articleIds, articleDetails);
 
