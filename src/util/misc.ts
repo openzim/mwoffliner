@@ -311,7 +311,23 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   });
 }
 
-export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M') {
+let lastCalled = 0;
+export function throttle(fn: (...args: any[]) => any, wait: number) {
+
+  return function (...args: any[]) {
+    const canCall = (Date.now() - lastCalled) >= wait;
+    if (canCall) {
+      fn(...args);
+      lastCalled = Date.now();
+    }
+  };
+}
+
+export const keepAlive = throttle(function keepAlive() {
+  logger.log(`Heartbeat - OK`);
+}, 1000 * 60 * 9);
+
+export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M'| '-') {
   const slashesInUrl = parentArticleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const newUrl = `${upStr}${resourceNamespace}/` + fileBase;
