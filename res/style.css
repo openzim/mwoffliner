@@ -12,6 +12,11 @@
     margin: 0.5em 0 1em 0;
 }
 
+.mw-body h1,
+.mw-body summary {
+	outline: none;
+}
+
 .mw-body h2,
 .mw-body h3,
 .mw-body h4,
@@ -32,7 +37,7 @@
 
 .mw-body h3 {
     border-bottom: 0px solid #eaecf0;
-    font-weight: bold;
+    font-weight: initial;
 }
 
 .mw-body h4 {
