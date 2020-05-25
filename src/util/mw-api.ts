@@ -30,7 +30,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                     if (!articleDetail?.redirects?.length) continue;
                     await redirectsXId.setMany(getRedirectsFromArticle(articleId, articleDetail));
                 }
-                await articleDetailXId.addMany(articleIds, articleDetails);
+                await articleDetailXId.addMany(articleDetails, articleIds);
 
             } catch (err) {
                 if (batchSize < 10) {
