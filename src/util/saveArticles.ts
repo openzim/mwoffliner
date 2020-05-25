@@ -429,13 +429,18 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
         return { mediaDependencies };
     }
 
-    const subtitileSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
-    const { trackformat, title } = QueryStringParser.parse(subtitileSourceUrl) as { title: string, trackformat: string };
-    const vttSourceUrl = subtitileSourceUrl.replace(trackformat, 'vtt');
-    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}.vtt`);
-
-    subtitles.push(vttSourceUrl);
+    const subtitleUrl = await treatSubtitles(trackEle, webUrlHost, mw, articleId);
+    subtitles.push(subtitleUrl);
     return { mediaDependencies, subtitles };
+}
+
+export async function treatSubtitles(trackEle: DominoElement, webUrlHost: string, mw: MediaWiki, articleId: string): Promise<string> {
+    const subtitleSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
+    const { title } = QueryStringParser.parse(subtitleSourceUrl) as { title: string };
+
+    const vttFormatUrl = subtitleSourceUrl.replace(/(trackformat=)[^\&]+/, `$1vtt`);
+    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}.vtt`);
+    return vttFormatUrl;
 }
 
 function shouldKeepImage(dump: Dump, img: DominoElement) {

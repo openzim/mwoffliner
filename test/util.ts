@@ -2,8 +2,8 @@ import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
 import axios from 'axios';
-import { WIKI_TO_HTML_API } from '../src/util/const';
 import execa = require('execa');
+import logger from '../src/Logger';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -67,8 +67,8 @@ export async function zimcheck(filePath: string) {
     return execa.command(`${zimcheckPath} ${filePath}`);
 }
 
-export async function convertWikicodeToHtml(wikicode: string, dump: Dump): Promise<string> {
-    return axios.post(`${dump.mwMetaData.base}${WIKI_TO_HTML_API}`,  {
+export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<string> {
+    return axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`,  {
         'wikitext': wikicode,
         'body_only': true,
       })

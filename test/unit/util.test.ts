@@ -1,6 +1,11 @@
 import './bootstrap.test';
 import test from 'blue-tape';
+<<<<<<< HEAD
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
+=======
+import { throttle, sanitizeString, encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
+import { sleep, convertWikicodeToHtml } from 'test/util';
+>>>>>>> test cases modified
 
 
 test('util -> interpolateTranslationString', async (t) => {
@@ -33,3 +38,10 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
         t.equal(encoded, encodeArticleIdForZimHtmlUrl(unencoded), `encodeArticleIdForZimHtmlUrl() encoding`);
     }
 });
+
+test('wikitext comparison', async(t) => {
+    const wikicode = `According to the principle of conservation of mechanical energy, the mechanical energy of an [[isolated system]] remains constant in time, as long as the system is free of [[friction]] and other non-conservative forces.`;
+    const html = `<p id="mwAQ">According to the principle of conservation of mechanical energy, the mechanical energy of an <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains constant in time, as long as the system is free of <a rel="mw:WikiLink" href="./Friction" title="Friction" id="mwAw">friction</a> and other non-conservative forces.</p>`;
+    const resultHtml = await convertWikicodeToHtml(wikicode, 'https://en.wikipedia.org/');
+    t.equals(html, resultHtml, 'HTML matches')
+})

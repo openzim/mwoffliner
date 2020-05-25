@@ -239,15 +239,13 @@ test('--customFlavour', async (t) => {
     t.ok(PragueDocument.querySelector('#POST_PROCESSOR'), `Prague was correctly post-processed`);
 });
 
-test('Test Subtitles', async(t) => {
+test('treat subtitles', async(t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: '' });
 
     // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
-    const wikicode = `==Conservation of mechanical energy==
-    [[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]`;
+    const wikicode = `[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]`;
+    const htmlDoc = domino.createDocument(await convertWikicodeToHtml(wikicode, dump.mwMetaData.base));
+    const contentRes = await treatSubtitles(htmlDoc.querySelector('track'), 'en.wikipedia.org', mw, 'Mechanical energy');
 
-    const htmlDoc = domino.createDocument(await convertWikicodeToHtml(wikicode, dump));
-    const contentRes = await treatSubtitles(htmlDoc.querySelector('track'), downloader, 'en.wikipedia.org', mw);
-
-    t.ok(contentRes, 'Successfully downloaded the subtitles');
+    t.ok(contentRes, 'Video with subtitle rewriting');
 });
