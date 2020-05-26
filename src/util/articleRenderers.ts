@@ -105,8 +105,8 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
     let html = '';
     // set the first section (open by default)
     html += leadSectionTemplate({
-        lead_display_title: json.lead.displaytitle,
-        lead_section_text: json.lead.sections[0].text,
+        lead_display_title: json?.lead?.displaytitle,
+        lead_section_text: json?.lead?.sections[0]?.text,
         strings: dump.strings,
     });
 
