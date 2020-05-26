@@ -63,7 +63,7 @@ const parameters = {
     mwUrl: "https://es.wikipedia.org",
     adminEmail: "foo@bar.net",
     verbose: true,
-    format: "nozim",
+    format: "nopic",
     articleList: "./articleList"
 };
 mwoffliner.execute(parameters); // returns a Promise
