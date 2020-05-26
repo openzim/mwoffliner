@@ -3,7 +3,6 @@ import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
 import axios from 'axios';
 import execa = require('execa');
-import logger from '../src/Logger';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -68,13 +67,9 @@ export async function zimcheck(filePath: string) {
 }
 
 export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<string> {
-    return axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`,  {
-        'wikitext': wikicode,
-        'body_only': true,
-      })
-      .then((resp: any) => {
-          return resp.data;
-      }).catch((err) => {
-          return err;
-    });
+    const resp = await axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`,  {
+        wikitext: wikicode,
+        body_only: true,
+    })
+    return resp.data;
 }
