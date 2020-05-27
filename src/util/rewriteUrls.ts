@@ -21,7 +21,8 @@ export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump,
     } else {
         const res = await redirectsXId.get(title.replace(/ /g, '_'));
         if (res) {
-            linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title));
+            const target = res.targetId.replace(/ /g, '_');
+            linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(target));
         } else {
             migrateChildren(linkNode, linkNode.parentNode, linkNode);
             linkNode.parentNode.removeChild(linkNode);
