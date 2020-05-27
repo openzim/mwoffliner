@@ -1,5 +1,5 @@
 import { Dump } from '../Dump';
-import { encodeArticleIdForZimHtmlUrl } from '../util';
+import { encodeArticleIdForZimHtmlUrl } from './misc';
 
 export function makeArticleListItem(dump: Dump, articleEntry: any) {
     return `<li><a href="${encodeArticleIdForZimHtmlUrl('./' + articleEntry.title.replace(/ /g, '_'))}">${articleEntry.title.replace(/_/g, ' ')}<a></li>\n`;
