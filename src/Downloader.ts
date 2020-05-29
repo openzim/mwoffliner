@@ -6,8 +6,8 @@ import * as backoff from 'backoff';
 import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
-import type {BackoffStrategy} from 'backoff';
-import axios, {AxiosRequestConfig} from 'axios';
+import type { BackoffStrategy } from 'backoff';
+import axios, { AxiosRequestConfig } from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
@@ -23,11 +23,10 @@ import {
   writeFilePromise,
 } from './util';
 import S3 from './S3';
-import {Dump} from './Dump';
+import { Dump } from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
-import { Article, ArticleRenderingOptions } from './Article/Article';
-import { ArticleRenderer } from './Article/ArticleRenderer';
+import { Article } from './Article/Article';
 
 
 const imageminOptions = {
@@ -409,10 +408,8 @@ class Downloader {
         throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
 
-      const article = new Article(articleId, json, {isMainPage, ...dump} as ArticleRenderingOptions);
-      const renderedArticle = await article.render();
-      return renderedArticle;
-      // return await renderArticle(json, articleId, dump, forceParsoidFallback);
+      const article = new Article(articleId, json, {isMainPage, ...dump});
+      return await article.render(forceParsoidFallback);
 
     } catch (err) {
       if (forceParsoidFallback) throw err;

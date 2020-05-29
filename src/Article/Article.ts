@@ -1,9 +1,8 @@
 // todo move logic here
 
 import { articleDetailXId } from '../stores';
-import { ArticleRenderer } from './ArticleRenderer';
-import { ArticleDesktopRenderer } from './ArticleDesktopRenderer';
 import { ArticleMcsRenderer } from './ArticleMcsRenderer';
+import { ArticleDesktopRenderer } from './ArticleDesktopRenderer';
 
 
 export interface ArticleRenderingOptions {
@@ -19,7 +18,6 @@ export class Article {
   public readonly isMainPage: boolean;
   public details: ArticleDetail;
   public readonly renderingOptions: ArticleRenderingOptions;
-  private renderer: ArticleRenderer;
 
 
   constructor(id: string, json: any, renderingOptions: ArticleRenderingOptions) {
@@ -32,16 +30,15 @@ export class Article {
   // todo remove the flag (#1139)
   public async render(forceParsoidFallback: boolean = false): Promise<RenderedArticle[]> {
     this.details = await articleDetailXId.get(this.id);
+
     const useParsoidFallback = forceParsoidFallback || this.json.visualeditor?.result;
 
     // pick the correct renderer
     // todo remove this (#1139)
     if (useParsoidFallback) {
-      this.renderer = ArticleDesktopRenderer;
+      return await ArticleDesktopRenderer.render(this);
     } else {
-      this.renderer = ArticleMcsRenderer;
+      return await ArticleMcsRenderer.render(this);
     }
-    // @ts-ignore
-    return this.renderer.render(this);  // todo
   }
 }
