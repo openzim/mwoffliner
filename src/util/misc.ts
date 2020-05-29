@@ -283,16 +283,6 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
   return `${dir}/${e(filename)}`;
 }
 
-export function getStrippedTitleFromHtml(html: string) {
-  const doc = domino.createDocument(html);
-  const titleEl = doc.querySelector('title');
-  if (titleEl) {
-    return titleEl.textContent;
-  } else {
-    return '';
-  }
-}
-
 export function zip(...args: any[][]) {
   const len = Math.max(...args.map((arr) => arr.length));
   return ','.repeat(len).split(',')

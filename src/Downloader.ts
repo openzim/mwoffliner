@@ -21,12 +21,13 @@ import {
   URL_IMAGE_REGEX,
   DB_ERROR,
   writeFilePromise,
-  renderArticle
 } from './util';
 import S3 from './S3';
 import {Dump} from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
+import { Article, ArticleRenderingOptions } from './Article/Article';
+import { ArticleRenderer } from './Article/ArticleRenderer';
 
 
 const imageminOptions = {
@@ -407,7 +408,11 @@ class Downloader {
         logger.error(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
         throw new Error(`API Error when scraping [${articleApiUrl}]`);
       }
-      return await renderArticle(json, articleId, dump, forceParsoidFallback);
+
+      const article = new Article(articleId, json, {isMainPage, ...dump} as ArticleRenderingOptions);
+      const renderedArticle = await article.render();
+      return renderedArticle;
+      // return await renderArticle(json, articleId, dump, forceParsoidFallback);
 
     } catch (err) {
       if (forceParsoidFallback) throw err;
