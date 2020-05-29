@@ -23,7 +23,6 @@ export class ArticleMcsRenderer extends ArticleRenderer {
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((article.details.subCategories || []).length / 200), 1);
     for (let i = 0; i < numberOfPagesToSplitInto; i++) {
-
       // todo move this down inside - begin
       const pageId = i === 0 ? '' : `__${i}`;
       const _articleId = article.id + pageId;
@@ -67,49 +66,49 @@ export class ArticleMcsRenderer extends ArticleRenderer {
   // todo fix crazy type
   // todo refactor this
   private static renderMCSArticle(article: Article, _articleId: string, _articleDetail: PageInfo & { subCategories?: PageInfo[]; categories?: PageInfo[]; pages?: PageInfo[]; thumbnail?: { source: string; height: number; width: number }; coordinates?: string; timestamp?: string; revisionId?: number; internalThumbnailUrl?: string; nextArticleId?: string; prevArticleId?: string; missing?: string } & { prevArticleId: string; nextArticleId: string | null; subCategories: PageInfo[] }) {
-    let html = '';
     // set the first section (open by default)
-    html += leadSectionTemplate({
+    let html: string = leadSectionTemplate({
       lead_display_title: article.json.lead.displaytitle,
-      lead_section_text: article.json.lead.sections[0]?.text,
+      lead_section_text: article.json.lead.sections[0].text,
       strings: article.renderingOptions.strings,
     });
 
     // set all other section (closed by default)
     if (!article.renderingOptions.nodet) {
-      article.json.remaining.sections
-        .forEach((oneSection: any, i: number) => {
-          // if below is to test if we need to nest a subsections into a section
-          if (oneSection.toclevel === 1) {
-            html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
-            html += sectionTemplate({
-              section_index: i + 1,
+      let i = 0;
+      for (const oneSection of article.json.remaining.sections) {
+        // if below is to test if we need to nest a subsections into a section
+        if (oneSection.toclevel === 1) {
+          html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
+          html += sectionTemplate({
+            section_index: ++i + 1,
+            section_id: oneSection.id,
+            section_anchor: oneSection.anchor,
+            section_line: oneSection.line,
+            section_text: oneSection.text,
+            strings: article.renderingOptions.strings,
+          });
+        } else {
+          html = html.replace(
+            `__SUB_LEVEL_SECTION_${i}__`,
+            subSectionTemplate({
+              section_index: ++i + 1,
+              section_toclevel: oneSection.toclevel + 1,
               section_id: oneSection.id,
               section_anchor: oneSection.anchor,
               section_line: oneSection.line,
               section_text: oneSection.text,
               strings: article.renderingOptions.strings,
-            });
-          } else {
-            html = html.replace(
-              `__SUB_LEVEL_SECTION_${i}__`,
-              subSectionTemplate({
-                section_index: i + 1,
-                section_toclevel: oneSection.toclevel + 1,
-                section_id: oneSection.id,
-                section_anchor: oneSection.anchor,
-                section_line: oneSection.line,
-                section_text: oneSection.text,
-                strings: article.renderingOptions.strings,
-              }),
-            );
-          }
-        });
+            }),
+          );
+        }
+      }
     }
     const articleResourceNamespace = 'A';
     const categoryResourceNamespace = 'U';
     const slashesInUrl = article.id.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
+
     if (article.details?.subCategories?.length) {
 
       const subCategories = article.details.subCategories.map((category) => {
@@ -145,7 +144,7 @@ export class ArticleMcsRenderer extends ArticleRenderer {
       });
     }
 
-    if (article.details.categories && article.details.categories.length) {
+    if (article.details?.categories?.length) {
       const categories = article.details.categories.map((category) => {
         return {
           name: category.title.split(':').slice(1).join(':'),
@@ -157,8 +156,8 @@ export class ArticleMcsRenderer extends ArticleRenderer {
         categories,
       });
     }
-    html = html.replace(`__SUB_LEVEL_SECTION_${article.json.remaining.sections.length}__`, ''); // remove the last subcestion anchor (all other anchor are removed in the forEach)
-    return html;
+    // remove the last subsection anchor (all other anchor are removed in the forEach)
+    return html.replace(`__SUB_LEVEL_SECTION_${article.json.remaining.sections.length}__`, '');
   }
 
 
