@@ -4,6 +4,10 @@ import { Article } from './Article';
 import { ArticleRenderer } from './ArticleRenderer';
 
 
+/**
+ * Here we deal with pre-rendered html. Class named historically.
+ */
+// todo pull this up
 // todo di
 export class ArticleDesktopRenderer extends ArticleRenderer {
 
@@ -24,7 +28,7 @@ export class ArticleDesktopRenderer extends ArticleRenderer {
       throw new Error(`Cannot render [${article.json}] into an article`);
     }
     if (article.json.visualeditor) {
-      return article.isMainPage ? article.json.visualeditor.content : this.injectHeader(article.json.visualeditor.content, article.details);
+      return article.renderingOptions.isMainPage ? article.json.visualeditor.content : this.injectHeader(article.json.visualeditor.content, article.details);
     } else if (article.json.contentmodel === 'wikitext' || (article.json.html && article.json.html.body)) {
       return article.json.html.body;
     } else if (article.json.parse && article.json.parse.text) {

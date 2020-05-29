@@ -12,6 +12,9 @@ import {
 } from '../Templates';
 
 
+/**
+ * Kind of adapter that renders article content from json
+ */
 // todo di
 export class ArticleMcsRenderer extends ArticleRenderer {
   public static async render(article: Article): Promise<RenderedArticle[]> {

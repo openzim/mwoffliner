@@ -15,30 +15,26 @@ export interface ArticleRenderingOptions {
 export class Article {
   public readonly id: string;
   public readonly json: any;
-  public readonly isMainPage: boolean;
   public details: ArticleDetail;
   public readonly renderingOptions: ArticleRenderingOptions;
+  private readonly isRendered: boolean;
 
 
   constructor(id: string, json: any, renderingOptions: ArticleRenderingOptions) {
     this.id = id;
     this.json = json;
-    this.isMainPage = false; // isMainPage; // todo
     this.renderingOptions = renderingOptions;
+
+    this.isRendered =
+      this.json?.visualeditor
+      || this.json?.parse?.text
+      || this.json?.contentmodel === 'wikitext';
   }
 
   // todo remove the flag (#1139)
-  public async render(forceParsoidFallback: boolean = false): Promise<RenderedArticle[]> {
+  public async render(forceRender: boolean = false): Promise<RenderedArticle[]> {
     this.details = await articleDetailXId.get(this.id);
-
-    const useParsoidFallback = forceParsoidFallback || this.json.visualeditor?.result;
-
-    // pick the correct renderer
-    // todo remove this (#1139)
-    if (useParsoidFallback) {
-      return await ArticleDesktopRenderer.render(this);
-    } else {
-      return await ArticleMcsRenderer.render(this);
-    }
+    if (this.isRendered || !forceRender) return ArticleDesktopRenderer.render(this);
+    return await ArticleMcsRenderer.render(this);
   }
 }
