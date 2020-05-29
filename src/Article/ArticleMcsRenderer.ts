@@ -74,8 +74,8 @@ export class ArticleMcsRenderer extends ArticleRenderer {
 
     // set the first section (open by default)
     html += leadSectionTemplate({
-      lead_display_title: article.json?.lead?.displaytitle,
-      lead_section_text: article.json?.lead?.sections[0]?.text,
+      lead_display_title: article.json.lead.displaytitle,
+      lead_section_text: article.json.lead.sections[0]?.text,
       strings: article.renderingOptions.strings,
     });
 
