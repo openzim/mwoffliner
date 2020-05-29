@@ -68,10 +68,6 @@ export class ArticleMcsRenderer extends ArticleRenderer {
   // todo refactor this
   private static renderMCSArticle(article: Article, _articleId: string, _articleDetail: PageInfo & { subCategories?: PageInfo[]; categories?: PageInfo[]; pages?: PageInfo[]; thumbnail?: { source: string; height: number; width: number }; coordinates?: string; timestamp?: string; revisionId?: number; internalThumbnailUrl?: string; nextArticleId?: string; prevArticleId?: string; missing?: string } & { prevArticleId: string; nextArticleId: string | null; subCategories: PageInfo[] }) {
     let html = '';
-
-    // todo move up #1138
-    // const isWikiText = article.json?.contentmodel === 'wikitext';
-
     // set the first section (open by default)
     html += leadSectionTemplate({
       lead_display_title: article.json.lead.displaytitle,

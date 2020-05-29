@@ -409,7 +409,7 @@ class Downloader {
       }
 
       const article = new Article(articleId, json, {isMainPage, ...dump});
-      return await article.render(forceParsoidFallback);
+      return await article.render();
 
     } catch (err) {
       if (forceParsoidFallback) throw err;

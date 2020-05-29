@@ -32,9 +32,9 @@ export class Article {
   }
 
   // todo remove the flag (#1139)
-  public async render(forceRender: boolean = false): Promise<RenderedArticle[]> {
+  public async render(): Promise<RenderedArticle[]> {
     this.details = await articleDetailXId.get(this.id);
-    if (this.isRendered && !forceRender) return await ArticleDesktopRenderer.render(this);
+    if (this.isRendered) return await ArticleDesktopRenderer.render(this);
     return await ArticleMcsRenderer.render(this);
   }
 }

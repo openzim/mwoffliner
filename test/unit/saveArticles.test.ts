@@ -48,7 +48,7 @@ test('Article html processing', async (t) => {
 });
 
 test('applyOtherTreatments', async (t) => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }); // en wikipedia
+    const { downloader, mw, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }); // en wikivoyage
 
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland']);
     const articlesDetail = mwRetToArticleDetail(downloader, _articleDetailsRet);
