@@ -3,7 +3,7 @@ import {} from 'ts-jest';
 import {createClient} from 'redis-mock';
 import type {RedisClient} from 'redis-mock';
 // @ts-ignore
-import {initMockData} from './mock/mock';
+import {initMockData} from './mock/redis';
 import {RedisKvs} from '../../src/util/RedisKvs';
 
 

@@ -96,9 +96,6 @@ test('Downloader class', async (t) => {
     const LondonArticle = await downloader.getArticle('London', dump);
     t.equal(LondonArticle.length, 1, 'getArticle of "London" returns one article');
 
-    const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump);
-    t.ok(PaginatedArticle.length > 100, 'Categories with many subCategories are paginated');
-
     try {
         await downloader.getArticle('NeverExistingArticle', dump);
     } catch (err) {

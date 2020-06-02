@@ -1,0 +1,44 @@
+{
+    "status": {
+        "files": {
+            "success": 0,
+            "fail": 0
+        },
+        "articles": {
+            "success": 0,
+            "fail": 0
+        },
+        "redirects": {
+            "written": 0
+        }
+    },
+    "mwMetaData": {
+        "webUrl": "https://en.wikipedia.org/wiki/",
+        "apiUrl": "https://en.wikipedia.org/w/api.php?",
+        "modulePath": "https://en.wikipedia.org/w/load.php?",
+        "webUrlPath": "/wiki/",
+        "wikiPath": "wiki/",
+        "base": "https://en.wikipedia.org/",
+        "apiPath": "w/api.php",
+        "domain": "",
+        "textDir": "ltr",
+        "langIso2": "en",
+        "langIso3": "eng",
+        "title": "Wikipedia",
+        "subTitle": "From Wikipedia, the free encyclopedia",
+        "creator": "Wikipedia",
+        "mainPage": "Main_Page"
+    },
+    "opts": {},
+    "nopic": false,
+    "novid": false,
+    "nopdf": false,
+    "nodet": false,
+    "contentDate": "2020-06",
+    "strings": {
+        "__direction": "ltr",
+        "DISCLAIMER": "This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.",
+        "LAST_EDITED_ON": "Last edited on ${date}",
+        "LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
+    }
+}
