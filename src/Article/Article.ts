@@ -25,10 +25,11 @@ export class Article {
     this.json = json;
     this.renderingOptions = renderingOptions;
 
-    this.isRendered =
+    this.isRendered = (
       this.json?.visualeditor
       || this.json?.parse?.text
-      || this.json?.contentmodel === 'wikitext';
+      || this.json?.contentmodel === 'wikitext'
+    ) as boolean;
   }
 
   // todo remove the flag (#1139)

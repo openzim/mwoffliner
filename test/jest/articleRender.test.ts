@@ -13,7 +13,7 @@ let article: Article;
 beforeAll(async () => {
   const client = createClient();
   populateArticleDetail(client);
-  await articleDetailXId.setMany(data as KVS<ArticleDetail>);
+  await articleDetailXId.setMany(data);
   article = new Article('Category:Container_categories', json, {} as ArticleRenderingOptions);
 });
 

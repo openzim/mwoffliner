@@ -22,50 +22,35 @@ export class ArticleMcsRenderer extends ArticleRenderer {
 
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((article.details.subCategories || []).length / 200), 1);
+
     for (let i = 0; i < numberOfPagesToSplitInto; i++) {
-      // todo move this down inside - begin
-      const pageId = i === 0 ? '' : `__${i}`;
-      const _articleId = article.id + pageId;
-      const _articleDetail = Object.assign(
-        {},
-        article.details,
-        {
-          subCategories: (article.details.subCategories || []).slice(i * 200, (i + 1) * 200),
-          nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${article.id}__${i + 1}` : null,
-          prevArticleId: (i - 1) > 0 ?
-            `${article.id}__${i - 1}`
-            : (i - 1) === 0
-              ? article.id
-              : null,
-        },
-      );
-
-      if ((article.details.subCategories || []).length > 200) {
-        await articleDetailXId.set(_articleId, _articleDetail);
-      }
-      // todo move this down inside - end
-
-      const html = this.renderMCSArticle(article, _articleId, _articleDetail);
-      let strippedTitle = this.getStrippedTitleFromHtml(html);
-      if (!strippedTitle) {
-        const title = (article?.json?.lead || {displaytitle: article.id})?.displaytitle;         // todo #1139 !
-        const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
-        strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
-      }
-
-      result.push({
-        articleId: _articleId,
-        displayTitle: (strippedTitle || article.id.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
-        html,
-      });
+      const page = await this.renderPage(article, i, numberOfPagesToSplitInto);
+      result.push(page);
     }
     return result;
   }
 
+  private static async renderPage(article: Article, page: number, totalPages: number): Promise<RenderedArticle> {
+    const pageId = page === 0 ? '' : `__${page}`;
+    const _articleId = article.id + pageId;
+    const _articleDetail = Object.assign(
+      {},
+      article.details,
+      {
+        subCategories: (article.details.subCategories || []).slice(page * 200, (page + 1) * 200),
+        nextArticleId: totalPages > page + 1 ? `${article.id}__${page + 1}` : null,
+        prevArticleId: (page - 1) > 0 ?
+          `${article.id}__${page - 1}`
+          : (page - 1) === 0
+            ? article.id
+            : null,
+      },
+    );
 
-  // todo fix crazy type
-  // todo refactor this
-  private static renderMCSArticle(article: Article, _articleId: string, _articleDetail: PageInfo & { subCategories?: PageInfo[]; categories?: PageInfo[]; pages?: PageInfo[]; thumbnail?: { source: string; height: number; width: number }; coordinates?: string; timestamp?: string; revisionId?: number; internalThumbnailUrl?: string; nextArticleId?: string; prevArticleId?: string; missing?: string } & { prevArticleId: string; nextArticleId: string | null; subCategories: PageInfo[] }) {
+    if ((article.details.subCategories || []).length > 200) {
+      await articleDetailXId.set(_articleId, _articleDetail);
+    }
+
     // set the first section (open by default)
     let html: string = leadSectionTemplate({
       lead_display_title: article.json.lead.displaytitle,
@@ -75,8 +60,7 @@ export class ArticleMcsRenderer extends ArticleRenderer {
 
     // set all other section (closed by default)
     if (!article.renderingOptions.nodet) {
-      let i = 0;
-      for (const oneSection of article.json.remaining.sections) {
+      article.json.remaining.sections.forEach((oneSection: any, i: number) => {
         // if below is to test if we need to nest a subsections into a section
         if (oneSection.toclevel === 1) {
           html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
@@ -102,16 +86,16 @@ export class ArticleMcsRenderer extends ArticleRenderer {
             }),
           );
         }
-      }
+      });
     }
     const articleResourceNamespace = 'A';
     const categoryResourceNamespace = 'U';
-    const slashesInUrl = article.id.split('/').length - 1;
+    const slashesInUrl = _articleId.split('/').length - 1;
     const upStr = '../'.repeat(slashesInUrl + 1);
 
-    if (article.details?.subCategories?.length) {
+    if (_articleDetail?.subCategories?.length) {
 
-      const subCategories = article.details.subCategories.map((category) => {
+      const subCategories = _articleDetail.subCategories.map((category) => {
         return {
           name: category.title.split(':').slice(1).join(':'),
           url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}`,
@@ -123,13 +107,13 @@ export class ArticleMcsRenderer extends ArticleRenderer {
       html += subCategoriesTemplate({
         strings: article.renderingOptions.strings,
         groups,
-        prevArticleUrl: article.details.prevArticleId ? `${upStr}${categoryResourceNamespace}/${article.details.prevArticleId.replace(/ /g, '_')}` : null,
-        nextArticleUrl: article.details.nextArticleId ? `${upStr}${categoryResourceNamespace}/${article.details.nextArticleId.replace(/ /g, '_')}` : null,
+        prevArticleUrl: _articleDetail.prevArticleId ? `${upStr}${categoryResourceNamespace}/${_articleDetail.prevArticleId.replace(/ /g, '_')}` : null,
+        nextArticleUrl: _articleDetail.nextArticleId ? `${upStr}${categoryResourceNamespace}/${_articleDetail.nextArticleId.replace(/ /g, '_')}` : null,
       });
     }
 
-    if (article.details?.pages?.length) {
-      const pages = article.details.pages.map((page) => {
+    if (_articleDetail?.pages?.length) {
+      const pages = _articleDetail.pages.map((page) => {
         return {
           name: page.title,
           url: `${upStr}${articleResourceNamespace}/${page.title.replace(/ /g, '_')}`,
@@ -144,8 +128,8 @@ export class ArticleMcsRenderer extends ArticleRenderer {
       });
     }
 
-    if (article.details?.categories?.length) {
-      const categories = article.details.categories.map((category) => {
+    if (_articleDetail?.categories?.length) {
+      const categories = _articleDetail.categories.map((category) => {
         return {
           name: category.title.split(':').slice(1).join(':'),
           url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}`,
@@ -157,7 +141,21 @@ export class ArticleMcsRenderer extends ArticleRenderer {
       });
     }
     // remove the last subsection anchor (all other anchor are removed in the forEach)
-    return html.replace(`__SUB_LEVEL_SECTION_${article.json.remaining.sections.length}__`, '');
+    let strippedTitle = this.getStrippedTitleFromHtml(
+      html.replace(`__SUB_LEVEL_SECTION_${article.json.remaining.sections.length}__`, '')
+    );
+
+    if (!strippedTitle) {
+      const title = (article?.json?.lead || {displaytitle: article.id})?.displaytitle;         // todo #1139 !
+      const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
+      strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+    }
+
+    return {
+      articleId: _articleId,
+      displayTitle: (strippedTitle || article.id.replace(/_/g, ' ')) + (page === 0 ? '' : `/${page}`),
+      html
+    };
   }
 
 
