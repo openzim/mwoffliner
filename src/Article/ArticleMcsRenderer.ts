@@ -65,7 +65,7 @@ export class ArticleMcsRenderer extends ArticleRenderer {
         if (oneSection.toclevel === 1) {
           html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
           html += sectionTemplate({
-            section_index: ++i + 1,
+            section_index: i + 1,
             section_id: oneSection.id,
             section_anchor: oneSection.anchor,
             section_line: oneSection.line,
@@ -76,7 +76,7 @@ export class ArticleMcsRenderer extends ArticleRenderer {
           html = html.replace(
             `__SUB_LEVEL_SECTION_${i}__`,
             subSectionTemplate({
-              section_index: ++i + 1,
+              section_index: i + 1,
               section_toclevel: oneSection.toclevel + 1,
               section_id: oneSection.id,
               section_anchor: oneSection.anchor,
