@@ -67,14 +67,14 @@ export async function zimcheck(filePath: string) {
     return execa.command(`${zimcheckPath} ${filePath}`);
 }
 
-export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<string> {
+export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<any> {
     try {
-        const resp = await axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`,  {
+        return await axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`,  {
             wikitext: wikicode,
             body_only: true,
         })
-        return resp.data;
     } catch (err){
-        logger.log(`Got err during conversion of wikicode to HTML due to ${err}`);
+        logger.log(`Got error during conversion of wikicode to HTML due to ${err}`);
+        return err;
     }
 }

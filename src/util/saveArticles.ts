@@ -174,8 +174,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             }
                         }
 
-                        for (const dep of subtitles) {
-                            await filesToDownloadXPath.set(dep.path, { url: dep.url, namespace: '-' });
+                        for (const subtitle of subtitles) {
+                            await filesToDownloadXPath.set(subtitle.path, { url: subtitle.url, namespace: '-' });
                         }
 
                         const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader);
@@ -317,12 +317,11 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
         tmRet.subtitles
             .filter((a) => a)
             .map((url) => {
-                const { title } = QueryStringParser.parse(url) as { title: string };
-                const path = `${title}.vtt`;
+                const { title, lang } = QueryStringParser.parse(url) as { title: string, lang: string };
+                const path = `${title}-${lang}.vtt`;
                 return { url, path };
             }),
     );
-
     const ruRet = await rewriteUrls(doc, articleId, downloader, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
@@ -355,7 +354,7 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
     return aVal > bVal ? 1 : -1;
 }
 
-async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[], subtitles?: string[] }> {
+export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
     // This function handles audio tags as well as video tags
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
@@ -378,7 +377,7 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
     if (dump.nopic || dump.novid || dump.nodet) {
         DU.deleteNode(videoEl);
-        return { mediaDependencies };
+        return { mediaDependencies, subtitles };
     }
 
     videoSources = videoSources.sort(widthXHeightSorter);
@@ -424,22 +423,21 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     sourceEl.setAttribute('src', newUrl);
 
     /* Scrape subtitle */
-    const trackEle = videoEl.querySelector('track');
-    if (!trackEle) {
-        return { mediaDependencies };
+    const trackEle = videoEl.querySelectorAll('track');
+    if (trackEle) {
+        for (const track of Array.from(trackEle)) {
+            subtitles.push(await treatSubtitles(track, webUrlHost, mw, articleId));
+        }
     }
-
-    const subtitleUrl = await treatSubtitles(trackEle, webUrlHost, mw, articleId);
-    subtitles.push(subtitleUrl);
     return { mediaDependencies, subtitles };
 }
 
 export async function treatSubtitles(trackEle: DominoElement, webUrlHost: string, mw: MediaWiki, articleId: string): Promise<string> {
     const subtitleSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
-    const { title } = QueryStringParser.parse(subtitleSourceUrl) as { title: string };
+    const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
 
     const vttFormatUrl = subtitleSourceUrl.replace(/(trackformat=)[^\&]+/, `$1vtt`);
-    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}.vtt`);
+    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`);
     return vttFormatUrl;
 }
 
