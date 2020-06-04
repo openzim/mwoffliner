@@ -1,5 +1,3 @@
-// todo move logic here
-
 import { articleDetailXId } from '../stores';
 import { ArticleMcsRenderer } from './ArticleMcsRenderer';
 import { ArticleDesktopRenderer } from './ArticleDesktopRenderer';
@@ -32,7 +30,6 @@ export class Article {
     ) as boolean;
   }
 
-  // todo remove the flag (#1139)
   public async render(): Promise<RenderedArticle[]> {
     this.details = await articleDetailXId.get(this.id);
     if (this.isRendered) return await ArticleDesktopRenderer.render(this);

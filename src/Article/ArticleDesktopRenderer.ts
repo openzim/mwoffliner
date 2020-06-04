@@ -22,13 +22,12 @@ export class ArticleDesktopRenderer extends ArticleRenderer {
   }
 
 
-  // todo move this to upper level! (#1139)
   private static renderDesktopArticle(article: Article) {
     if (!article.json) {
       throw new Error(`Cannot render [${article.json}] into an article`);
     }
     if (article.json.visualeditor) {
-      return article.renderingOptions.isMainPage ? article.json.visualeditor.content : this.injectHeader(article.json.visualeditor.content, article.details);
+      return article.renderingOptions.isMainPage ? article.json.visualeditor.content : this.injectLeadingSectionTitle(article.json.visualeditor.content, article.details.title);
     } else if (article.json.contentmodel === 'wikitext' || (article.json.html && article.json.html.body)) {
       return article.json.html.body;
     } else if (article.json.parse && article.json.parse.text) {
@@ -40,10 +39,10 @@ export class ArticleDesktopRenderer extends ArticleRenderer {
   }
 
 
-  private static injectHeader(content: string, articleDetail: ArticleDetail): string {
+  private static injectLeadingSectionTitle(content: string, title: string): string {
     const doc = domino.createDocument(content);
     const header = doc.createElement('h1');
-    header.appendChild(doc.createTextNode(articleDetail.title));
+    header.appendChild(doc.createTextNode(title));
     header.classList.add('article-header');
     const target = doc.querySelector('body.mw-body-content');
     target.insertAdjacentElement('afterbegin', header);
