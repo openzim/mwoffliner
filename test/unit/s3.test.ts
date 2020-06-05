@@ -6,7 +6,7 @@ import 'dotenv/config';
 
 const _test = tapePromise(test);
 
-_test('S3 checks', async(t) => {
+_test('S3 checks', async (t) => {
     if (!process.env.BUCKET_NAME_TEST) {
         logger.log('Skip S3 tests');
         return;
@@ -30,8 +30,6 @@ _test('S3 checks', async(t) => {
     const imageExist = await s3.downloadIfPossible('bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png', 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png');
     t.assert(!!imageExist, 'Image exists in S3');
     // Checking the data related to image matches
-    t.equals(imageExist.headers.Metadata.etag, '"aeff-54a391a807034"', 'Etag matches');
-    t.equals(imageExist.headers.ContentLength, 19655, 'Content Length matches');
     t.equals(imageExist.headers.ContentType, 'application/octet-stream', 'Content Type matches');
 
     const imageNotExist = await s3.downloadIfPossible('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png', 'https://bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');

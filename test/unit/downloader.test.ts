@@ -162,7 +162,7 @@ _test('Downloader class with optimisation', async (t) => {
 
     await s3.initialise();
 
-    const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
+    const testImage = getImageFile();
     // Test for image where etag is not present
     const etagNotPresent = await downloader.downloadContent(`https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c`);
     t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
@@ -182,3 +182,14 @@ _test('Downloader class with optimisation', async (t) => {
     // Uploads the image to S3
     await downloader.downloadContent(testImage);
 });
+
+function getImageFile() {
+    const NODE_MAJOR_VERSION = Number(process.versions.node.split('.')[0]);
+    if (NODE_MAJOR_VERSION <=12) {
+        return 'https://bm.wikipedia.org/wiki/Fichier:Drall.jpg';
+    } else if (NODE_MAJOR_VERSION <= 13) {
+        return 'https://bm.wikipedia.org/wiki/Fichier:Usine_de_coton_CMDT.png';
+    } else {
+        return 'https://bm.wikipedia.org/wiki/Fichier:Kidal.jpg';
+    }
+}
