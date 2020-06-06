@@ -601,25 +601,18 @@ class Downloader {
   }
 
   private async claimRequest(): Promise<null> {
-    // @ts-ignore
-    logger.info(`[queue] RSS=${process.memoryUsage().rss / 1024 / 1024} / AH=${process._getActiveHandles().length} / AR=${process._getActiveRequests().length}`);
-
     if (this.activeRequests < this.maxActiveRequests) {
       this.activeRequests += 1;
-      logger.info(`[queue] +1 [${this.activeRequests}/${this.maxActiveRequests}]`);
       return null;
     } else {
-      logger.info(`[queue] holding on [${this.activeRequests}/${this.maxActiveRequests}]`);
       await new Promise((resolve) => {
         setTimeout(resolve, 200);
       });
-      logger.info(`[queue] reclaiming [${this.activeRequests}/${this.maxActiveRequests}]`);
       return this.claimRequest();
     }
   }
 
   private async releaseRequest(): Promise<null> {
-    logger.info(`[queue] -1 [${this.activeRequests}/${this.maxActiveRequests}]`);
     this.activeRequests -= 1;
     return null;
   }
