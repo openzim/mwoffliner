@@ -436,9 +436,10 @@ export async function treatSubtitles(trackEle: DominoElement, webUrlHost: string
     const subtitleSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
 
-    const vttFormatUrl = subtitleSourceUrl.replace(/(trackformat=)[^\&]+/, `$1vtt`);
+    const vttFormatUrl =  new URL(subtitleSourceUrl);
+    vttFormatUrl.searchParams.set('trackformat', 'vtt');
     trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`);
-    return vttFormatUrl;
+    return vttFormatUrl.href;
 }
 
 function shouldKeepImage(dump: Dump, img: DominoElement) {
