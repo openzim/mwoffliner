@@ -4,6 +4,7 @@ import logger from './Logger';
 import * as util from './util';
 import * as domino from 'domino';
 import type Downloader from './Downloader';
+import { ensureTrailingChar } from './util';
 
 
 class MediaWiki {
@@ -15,6 +16,7 @@ class MediaWiki {
   public readonly spaceDelimiter: string;
   public readonly webUrl: string;
   public readonly apiUrl: string;
+  public readonly restApiUrl: string;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
@@ -39,11 +41,13 @@ class MediaWiki {
     this.apiPath = config.apiPath ?? 'w/api.php';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = `${urlParser.resolve(this.base, this.wikiPath)}`;
+    this.webUrl = urlParser.resolve(this.base, this.wikiPath);
 
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
     this.apiUrl = `${this.apiResolvedUrl}?`;
     this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
+
+    this.restApiUrl = ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/');
 
     this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
     this.webUrlPath = urlParser.parse(this.webUrl).pathname;

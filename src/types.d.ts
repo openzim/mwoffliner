@@ -146,6 +146,7 @@ interface MWConfig {
   base: string;
   wikiPath?: string;
   apiPath?: string;
+  restApiPath?: string;
   domain?: string;
   username?: string;
   password?: string;
