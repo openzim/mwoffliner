@@ -28,6 +28,7 @@ class S3 {
                 return true;
             }
         } catch (err) {
+            logger.log(err);
             throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
                             Bucket used: ${this.bucketName}
                             End point used: ${s3UrlBase.href}
@@ -66,17 +67,7 @@ class S3 {
         return new Promise((resolve, reject) => {
             this.s3Handler.getObject({Bucket: this.bucketName, Key: upstreamUrl}, async (err: any, val: any) => {
                 if (val) {
-                    const valHeaders = (({ Body, ...o }) => o)(val);
-                    axios.head(requestUrl).then((urlHeaders) => {
-                         // Check if ETag is in sync
-                        if (urlHeaders.headers.etag === val.Metadata.etag) {
-                            resolve({ headers: valHeaders, imgData: val.Body });
-                        } else {
-                            resolve();
-                        }
-                    }).catch((err) => {
-                        reject(err);
-                    });
+                    resolve(val);
                 } else if (err && err.statusCode === 404) {
                     resolve();
                 } else {

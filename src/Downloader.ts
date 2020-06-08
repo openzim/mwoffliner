@@ -650,14 +650,7 @@ class Downloader {
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
         this.s3.downloadIfPossible(this.stripHttpFromUrl(requestOptions.url), requestOptions.url).then(async (s3ImageResp) => {
-          if (s3ImageResp) {
-            handler(null, {
-              responseHeaders: s3ImageResp.headers,
-              content: s3ImageResp.imgData,
-            });
-          } else {
-            await this.imageDownloadCompressAndUploadToS3(requestOptions, handler);
-          }
+          this.checkStatusAndUploadtoS3(requestOptions, handler, s3ImageResp);
         }).catch((err) => {
           this.errHandler(err, requestOptions, handler);
         });
@@ -677,19 +670,20 @@ class Downloader {
     }
   }
 
-  private errHandler(err: any, requestOptions: any, handler: any): void {
-    if (err.response && err.response.status === 429) {
-      logger.log(`Received a [status=429], slowing down`);
-      const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
-      logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
-      this.maxActiveRequests = newMaxActiveRequests;
+  private async checkStatusAndUploadtoS3(requestOptions: any, handler: any, imageResp: any){
+    if (imageResp) {
+      requestOptions.headers['If-None-Match'] = imageResp.Metadata.etag;
     }
-    logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
-    handler(err);
-  }
-
-  private async imageDownloadCompressAndUploadToS3<T>(requestOptions: any, handler: any): Promise<void> {
+    
     const resp = await axios(requestOptions);
+    if (resp.status === 304) {
+        handler(null, {
+          responseHeaders: (({ Body, ...o }) => o)(imageResp),
+          content: imageResp.Body,
+        });
+        return;
+    }
+
     const etag = resp.headers.etag;
     const content = await this.getCompressedBody(resp);
     const compressionWorked = content.length < resp.data.length;
@@ -705,6 +699,17 @@ class Downloader {
       responseHeaders: resp.headers,
       content: compressionWorked ? content : resp.data,
     });
+  }
+
+  private errHandler(err: any, requestOptions: any, handler: any): void {
+    if (err.response && err.response.status === 429) {
+      logger.log(`Received a [status=429], slowing down`);
+      const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+      logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
+      this.maxActiveRequests = newMaxActiveRequests;
+    }
+    logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
+    handler(err);
   }
 
   private async getSubCategories(articleId: string, continueStr: string = ''): Promise<Array<{ pageid: number, ns: number, title: string }>> {
