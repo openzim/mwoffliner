@@ -423,19 +423,17 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     sourceEl.setAttribute('src', newUrl);
 
     /* Scrape subtitle */
-    const trackEle = videoEl.querySelectorAll('track');
-    if (trackEle) {
-        for (const track of Array.from(trackEle)) {
-            subtitles.push(await treatSubtitles(track, webUrlHost, mw, articleId));
-        }
+    for (const track of Array.from(videoEl.querySelectorAll('track'))) {
+        subtitles.push(await treatSubtitle(track, webUrlHost, mw, articleId));
     }
+
     return { mediaDependencies, subtitles };
 }
 
-export async function treatSubtitles(trackEle: DominoElement, webUrlHost: string, mw: MediaWiki, articleId: string): Promise<string> {
+export async function treatSubtitle(trackEle: DominoElement, webUrlHost: string, mw: MediaWiki, articleId: string): Promise<string> {
     const subtitleSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
-
+    // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl =  new URL(subtitleSourceUrl);
     vttFormatUrl.searchParams.set('trackformat', 'vtt');
     trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`);

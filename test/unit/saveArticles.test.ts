@@ -4,7 +4,7 @@ import domino from 'domino';
 
 import { setupScrapeClasses, convertWikicodeToHtml } from 'test/util';
 import { articleDetailXId } from 'src/stores';
-import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitles, treatVideo } from 'src/util/saveArticles';
+import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from 'src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail } from 'src/util';
@@ -245,7 +245,7 @@ test('treat one subtitle', async(t) => {
     // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
     const wikicode = `[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]`;
     const htmlDoc = domino.createDocument((await convertWikicodeToHtml(wikicode, dump.mwMetaData.base)).data);
-    const contentRes = await treatSubtitles(htmlDoc.querySelector('track'), 'en.wikipedia.org', mw, 'Mechanical energy');
+    const contentRes = await treatSubtitle(htmlDoc.querySelector('track'), 'en.wikipedia.org', mw, 'Mechanical energy');
 
     t.ok(contentRes, 'Video with subtitle rewriting');
 });
