@@ -48,7 +48,7 @@ interface DownloaderOpts {
   useDownloadCache: boolean;
   downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
-  forceLocalParsoid: boolean;
+  forceLocalParser: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
   backoffOptions?: BackoffOptions;
@@ -81,7 +81,7 @@ class Downloader {
   private maxActiveRequests = 1;
   private readonly requestTimeout: number;
   private readonly noLocalParserFallback: boolean = false;
-  private readonly forceLocalParsoid: boolean = false;
+  private readonly forceLocalParser: boolean = false;
   private forceParsoidFallback: boolean = false;
   private readonly urlPartCache: KVS<string> = {};
   private readonly backoffOptions: BackoffOptions;
@@ -91,7 +91,7 @@ class Downloader {
   private mwCapabilities: MWCapabilities; // todo move to MW
 
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParsoid, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -101,7 +101,7 @@ class Downloader {
     this.useDownloadCache = useDownloadCache;
     this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
-    this.forceLocalParsoid = forceLocalParsoid;
+    this.forceLocalParser = forceLocalParser;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
     this.mwCapabilities = {
@@ -156,7 +156,7 @@ class Downloader {
       logger.warn(`Failed to get remote Rest API`);
     }
 
-    if (!this.forceLocalParsoid) {
+    if (!this.forceLocalParser) {
       try {
         const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.parsoidAvailable = !!parsoidMainPageQuery.visualeditor.content;
