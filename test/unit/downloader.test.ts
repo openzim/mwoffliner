@@ -84,7 +84,7 @@ test('Downloader class', async (t) => {
         t.ok(true, 'downloadContent throws when empty string is passed');
     }
 
-    const { data: LondonDetail } = await Axios.get(`${downloader.mcsUrl}London`);
+    const { data: LondonDetail } = await Axios.get(`${downloader.restApiUrl}London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
     const LondonImage = await downloader.downloadContent(imgToGet as string);

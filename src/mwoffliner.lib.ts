@@ -88,6 +88,7 @@ async function execute(argv: any) {
     mwUrl,
     mwWikiPath,
     mwApiPath,
+    mwRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -166,6 +167,7 @@ async function execute(argv: any) {
   const mw = new MediaWiki({
     getCategories: !!argv.getCategories,
     apiPath: mwApiPath,
+    restApiPath: mwRestApiPath,
     modulePath: mwModulePath,
     base: mwUrl,
     domain: mwDomain,

@@ -63,7 +63,7 @@ interface BackoffOptions {
 
 interface MWCapabilities {
   parsoidAvailable: boolean;
-  mcsAvailable: boolean;
+  restApiAvailable: boolean;
   coordinatesAvailable: boolean;
 }
 
@@ -74,7 +74,7 @@ class Downloader {
   public readonly speed: number;
   public readonly useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
-  public mcsUrl: string;
+  public restApiUrl: string;
 
   private readonly uaString: string;
   private activeRequests = 0;
@@ -106,7 +106,7 @@ class Downloader {
     this.s3 = s3;
     this.mwCapabilities = {
       parsoidAvailable: true,
-      mcsAvailable: true,
+      restApiAvailable: true,
       coordinatesAvailable: true,
     };
 
@@ -120,7 +120,7 @@ class Downloader {
       ...backoffOptions,
     };
 
-    this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
+    this.restApiUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
     this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
   }
 
@@ -149,11 +149,11 @@ class Downloader {
 
   public async checkCapabilities(): Promise<void> {
     try {
-      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-      this.mwCapabilities.mcsAvailable = !!mcsMainPageQuery.lead;
+      const restApiMainPageQuery = await this.getJSON<any>(`${this.restApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+      this.mwCapabilities.restApiAvailable = !!restApiMainPageQuery.lead;
     } catch (err) {
-      this.mwCapabilities.mcsAvailable = false;
-      logger.warn(`Failed to get remote MCS`);
+      this.mwCapabilities.restApiAvailable = false;
+      logger.warn(`Failed to get remote Rest API`);
     }
 
     if (!this.forceLocalParsoid) {
@@ -167,11 +167,11 @@ class Downloader {
     }
 
     if (!this.noLocalParserFallback) {
-      if (!this.mwCapabilities.mcsAvailable || !this.mwCapabilities.parsoidAvailable) {
+      if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.parsoidAvailable) {
         logger.log(`Using local MCS and ${this.mwCapabilities.parsoidAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
         const domain = (urlParser.parse(this.mw.base)).host;
-        this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+        this.restApiUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
 
         if (!this.mwCapabilities.parsoidAvailable) {
           const webUrlHost = urlParser.parse(this.mw.webUrl).host;
@@ -499,9 +499,9 @@ class Downloader {
 
   private getArticleUrl(articleId: string, isMainPage: boolean, forceParsoidFallback: boolean): string {
     const useParsoidFallback = forceParsoidFallback || this.forceParsoidFallback || isMainPage;
-    return useParsoidFallback || !this.mwCapabilities.mcsAvailable
+    return useParsoidFallback || !this.mwCapabilities.restApiAvailable
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
-      : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
+      : `${this.restApiUrl}${encodeURIComponent(articleId)}`;
   }
 
   private async readFromDownloadCache(url: string) {

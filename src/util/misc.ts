@@ -361,3 +361,9 @@ export function sanitizeString(str: string) {
 export function encodeArticleIdForZimHtmlUrl(articleId: string) {
   return articleId && encodeURIComponent(articleId).replace(/%2F/g, '/');
 }
+
+export function ensureTrailingChar(input: string, trailingChar: string) {
+  const pattern = `([^\${trailingChar}])$`;
+  const rx = new RegExp(pattern);
+  return input.replace(rx, '$1' + trailingChar);
+}
