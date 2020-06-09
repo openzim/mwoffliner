@@ -4,8 +4,7 @@ const config = {
 
   defaults: {
     publisher: 'Kiwix',
-    // redisConfig: '/dev/shm/redis.sock',
-    redisConfig: 'redis://localhost:6379',
+    redisConfig: '/dev/shm/redis.sock',
     requestTimeout: 60 * 1000,
   },
 
