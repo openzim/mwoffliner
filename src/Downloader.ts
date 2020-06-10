@@ -675,35 +675,38 @@ class Downloader {
     }
   }
 
-  private async checkStatusAndUploadtoS3(requestOptions: any, handler: any, imageResp: any){
+  private async checkStatusAndUploadtoS3(requestOptions: any, handler: any, imageResp: any) {
     if (imageResp) {
       requestOptions.headers['If-None-Match'] = imageResp.Metadata.etag;
     }
-    
-    const resp = await axios(requestOptions);
-    if (resp.status === 304) {
-        handler(null, {
-          responseHeaders: (({ Body, ...o }) => o)(imageResp),
-          content: imageResp.Body,
-        });
-        return;
-    }
 
-    const etag = resp.headers.etag;
-    const content = await this.getCompressedBody(resp);
-    const compressionWorked = content.length < resp.data.length;
-    if (compressionWorked) {
-      resp.data = content;
-    }
+    try {
+      const resp = await axios(requestOptions);
+      const etag = resp.headers.etag;
+      const content = await this.getCompressedBody(resp);
+      const compressionWorked = content.length < resp.data.length;
+      if (compressionWorked) {
+        resp.data = content;
+      }
 
-    if (etag) {
-      this.s3.uploadBlob(this.stripHttpFromUrl(requestOptions.url), resp.data, etag);
-    }
+      if (etag) {
+        this.s3.uploadBlob(this.stripHttpFromUrl(requestOptions.url), resp.data, etag);
+      }
 
-    handler(null, {
-      responseHeaders: resp.headers,
-      content: compressionWorked ? content : resp.data,
-    });
+      handler(null, {
+        responseHeaders: resp.headers,
+        content: compressionWorked ? content : resp.data,
+      });
+    } catch (err) {
+      if (err.response?.status !== 304) {
+        this.errHandler(err, requestOptions, handler);
+      }
+      // Response code is 304 (not modified), so just pass the response to handler.
+      handler(null, {
+        responseHeaders: (({ Body, ...o }) => o)(imageResp),
+        content: imageResp.Body,
+      });
+    }
   }
 
   private errHandler(err: any, requestOptions: any, handler: any): void {
