@@ -363,7 +363,7 @@ export function encodeArticleIdForZimHtmlUrl(articleId: string) {
 }
 
 export function ensureTrailingChar(input: string, trailingChar: string) {
-  const pattern = `([^\${trailingChar}])$`;
+  const pattern = `([^\\${trailingChar}])$`;
   const rx = new RegExp(pattern);
   return input.replace(rx, '$1' + trailingChar);
 }
