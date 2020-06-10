@@ -649,7 +649,7 @@ class Downloader {
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-        this.s3.downloadIfPossible(this.stripHttpFromUrl(requestOptions.url), requestOptions.url).then(async (s3ImageResp) => {
+        this.s3.downloadIfPossible(this.stripHttpFromUrl(requestOptions.url)).then(async (s3ImageResp) => {
           this.checkStatusAndUploadtoS3(requestOptions, handler, s3ImageResp);
         }).catch((err) => {
           this.errHandler(err, requestOptions, handler);

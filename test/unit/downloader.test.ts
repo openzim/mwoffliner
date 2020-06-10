@@ -171,14 +171,41 @@ _test('Downloader class with optimisation', async (t) => {
     const httpOrHttpsRemoved = downloader.stripHttpFromUrl(testImage);
     t.assert(httpOrHttpsRemoved, 'http removed from url');
 
-    // Flow of Image Caching
     // Delete the image already present in S3
     await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: httpOrHttpsRemoved });
     t.ok(true, 'Image deleted from S3');
 
     // Check if image exists after deleting from S3
-    const imageNotExists = await s3.downloadIfPossible(httpOrHttpsRemoved, testImage);
+    const imageNotExists = await s3.downloadIfPossible(httpOrHttpsRemoved);
     t.equals(imageNotExists, undefined, 'Image not exists in S3 after deleting');
-    // Uploads the image to S3
-    await downloader.downloadContent(testImage);
+
+    // Check Etag Flow
+    const randomImage = await getRandomImageUrl();
+    const imagePath = downloader.stripHttpFromUrl(randomImage);
+    await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: imagePath });
+
+    // Upload the image in S3 step 1
+    await downloader.downloadContent(randomImage);
+
+    // downloadContent() is async so there is no way figure outs when the download completes, thats why setTimeout() is used
+    setTimeout(async function(){
+        // Get the online data of Image from Mediawiki 
+        const resp = await Axios(randomImage);
+
+        // Download the uploaded image from S3 and check the Etags step 2
+        const imageContent =  await s3.downloadIfPossible(imagePath);
+        t.equal(resp.headers.etag, imageContent.Metadata.etag, 'Etag Matched from online Mediawiki and S3');
+
+        // Upload Image with wrong Etag
+        await s3.uploadBlob(imagePath, resp.data, "random-string");
+
+        // Download again to check the Etag has been refreshed properly
+        const updatedImage = await s3.downloadIfPossible(imagePath);
+        t.equal(updatedImage.Metadata.etag,  resp.headers.etag, 'Image refreshed with proper Etag');
+    }, 5000)
 });
+
+async function getRandomImageUrl(): Promise<string>{
+    const resp = await Axios('https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&format=json');
+    return resp.data.query.pages[0].imageinfo[0].url;
+}

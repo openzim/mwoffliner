@@ -63,7 +63,7 @@ class S3 {
         }
     }
 
-    public async downloadIfPossible(upstreamUrl: string, requestUrl: string): Promise<any> {
+    public async downloadIfPossible(upstreamUrl: string): Promise<any> {
         return new Promise((resolve, reject) => {
             this.s3Handler.getObject({Bucket: this.bucketName, Key: upstreamUrl}, async (err: any, val: any) => {
                 if (val) {
@@ -71,7 +71,6 @@ class S3 {
                 } else if (err && err.statusCode === 404) {
                     resolve();
                 } else {
-                    logger.log(err);
                     reject(err);
                 }
             });
