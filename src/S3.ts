@@ -71,6 +71,7 @@ class S3 {
                 } else if (err && err.statusCode === 404) {
                     resolve();
                 } else {
+                    logger.log(err);
                     reject(err);
                 }
             });
