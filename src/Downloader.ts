@@ -62,7 +62,7 @@ interface BackoffOptions {
 }
 
 interface MWCapabilities {
-  parsoidAvailable: boolean;
+  veApiAvailable: boolean;  // visualeditor API
   restApiAvailable: boolean;
   coordinatesAvailable: boolean;
 }
@@ -105,7 +105,7 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
     this.mwCapabilities = {
-      parsoidAvailable: true,
+      veApiAvailable: true,
       restApiAvailable: true,
       coordinatesAvailable: true,
     };
@@ -121,7 +121,7 @@ class Downloader {
     };
 
     this.restApiUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
+    this.parsoidFallbackUrl = `${this.mw.veApiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
   }
 
   public serializeUrl(url: string): string {
@@ -159,21 +159,21 @@ class Downloader {
     if (!this.forceLocalParser) {
       try {
         const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-        this.mwCapabilities.parsoidAvailable = !!parsoidMainPageQuery.visualeditor.content;
+        this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
-        this.mwCapabilities.parsoidAvailable = false;
+        this.mwCapabilities.veApiAvailable = false;
         logger.warn(`Failed to get remote Parsoid`);
       }
     }
 
     if (!this.noLocalParserFallback) {
-      if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.parsoidAvailable) {
-        logger.log(`Using local MCS and ${this.mwCapabilities.parsoidAvailable ? 'remote' : 'local'} Parsoid`);
+      if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
+        logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
         const domain = (urlParser.parse(this.mw.base)).host;
         this.restApiUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
 
-        if (!this.mwCapabilities.parsoidAvailable) {
+        if (!this.mwCapabilities.veApiAvailable) {
           const webUrlHost = urlParser.parse(this.mw.webUrl).host;
           this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
         }
@@ -188,7 +188,7 @@ class Downloader {
     const reqOpts = objToQueryString({
       ...this.getArticleQueryOpts(),
     });
-    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl}${reqOpts}`);
+    const resp = await this.getJSON<MwApiResponse>(`${this.mw.veApiUrl}${reqOpts}`);
     const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
     if (isCoordinateWarning) {
       logger.info(`Coordinates not available on this wiki`);
@@ -273,7 +273,7 @@ class Downloader {
   }
 
   public query(query: string): KVS<any> {
-    return this.getJSON(`${this.mw.apiUrl}${query}`);
+    return this.getJSON(`${this.mw.veApiUrl}${query}`);
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
@@ -291,7 +291,7 @@ class Downloader {
         ...(continuation || {}),
       };
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      const reqUrl = `${this.mw.veApiUrl}${queryString}`;
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
 
@@ -350,7 +350,7 @@ class Downloader {
       }
 
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      const reqUrl = `${this.mw.veApiUrl}${queryString}`;
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
