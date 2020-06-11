@@ -15,6 +15,7 @@ class MediaWiki {
   public readonly modulePath: string;
   public readonly spaceDelimiter: string;
   public readonly webUrl: string;
+  public readonly apiUrl: string;
   public readonly veApiUrl: string;
   public readonly restApiUrl: string;
   public readonly getCategories: boolean;
@@ -44,19 +45,20 @@ class MediaWiki {
     this.webUrl = urlParser.resolve(this.base, this.wikiPath);
 
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
-    this.veApiUrl = `${this.apiResolvedUrl}?`;
-    this.apiResolvedPath = urlParser.parse(this.veApiUrl).pathname;
+    this.apiUrl = `${this.apiResolvedUrl}?`;
+    this.veApiUrl = urlParser.resolve(this.apiUrl, 'action=visualeditor&mobileformat=html&format=json&paction=parse&page=');
+    this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
 
     this.restApiUrl = ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/');
 
     this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
     this.webUrlPath = urlParser.parse(this.webUrl).pathname;
-    this.articleApiUrlBase = `${this.veApiUrl}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
+    this.articleApiUrlBase = `${this.apiUrl}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
   }
 
   public async login(downloader: Downloader) {
     if (this.username && this.password) {
-      let url = `${this.veApiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
+      let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
       if (this.domain) {
         url = `${url}&lgdomain=${this.domain}`;
       }
@@ -81,7 +83,7 @@ class MediaWiki {
   // * encodeURIComponent is mandatory for languages with illegal letters for uri (fa.wikipedia.org)
   // * encodeURI is mandatory to encode the pipes '|' but the '&' and '=' must not be encoded
   public siteInfoUrl() {
-    return `${this.veApiUrl}action=query&meta=siteinfo&format=json`;
+    return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
   }
 
   public articleApiUrl(articleId: string): string {
@@ -89,12 +91,12 @@ class MediaWiki {
   }
 
   public subCategoriesApiUrl(articleId: string, continueStr: string = '') {
-    return `${this.veApiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
+    return `${this.apiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
-    const url = `${this.veApiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
+    const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     const json: any = await downloader.getJSON(url);
     ['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type];
@@ -267,7 +269,7 @@ class MediaWiki {
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl,
-      apiUrl: this.veApiUrl,
+      apiUrl: this.apiUrl,
       modulePath: this.modulePath,
       webUrlPath: this.webUrlPath,
       wikiPath: this.wikiPath,

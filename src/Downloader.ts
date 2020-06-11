@@ -121,7 +121,8 @@ class Downloader {
     };
 
     this.restApiUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.veApiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
+    // todo will be removed in #1154
+    this.parsoidFallbackUrl = `${this.mw.veApiUrl}`;
   }
 
   public serializeUrl(url: string): string {
@@ -158,7 +159,7 @@ class Downloader {
 
     if (!this.forceLocalParser) {
       try {
-        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+        const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
         this.mwCapabilities.veApiAvailable = false;
@@ -188,7 +189,7 @@ class Downloader {
     const reqOpts = objToQueryString({
       ...this.getArticleQueryOpts(),
     });
-    const resp = await this.getJSON<MwApiResponse>(`${this.mw.veApiUrl}${reqOpts}`);
+    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl}${reqOpts}`);
     const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
     if (isCoordinateWarning) {
       logger.info(`Coordinates not available on this wiki`);
@@ -273,7 +274,7 @@ class Downloader {
   }
 
   public query(query: string): KVS<any> {
-    return this.getJSON(`${this.mw.veApiUrl}${query}`);
+    return this.getJSON(`${this.mw.apiUrl}${query}`);
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
@@ -291,7 +292,7 @@ class Downloader {
         ...(continuation || {}),
       };
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = `${this.mw.veApiUrl}${queryString}`;
+      const reqUrl = `${this.mw.apiUrl}${queryString}`;
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
 
@@ -350,7 +351,7 @@ class Downloader {
       }
 
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = `${this.mw.veApiUrl}${queryString}`;
+      const reqUrl = `${this.mw.apiUrl}${queryString}`;
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
