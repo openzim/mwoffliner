@@ -695,6 +695,7 @@ class Downloader {
     } catch (err) {
       if (err.response?.status !== 304) {
         this.errHandler(err, requestOptions, handler);
+        return;
       }
       // Response code is 304 (not modified), so just pass the response to handler.
       handler(null, {
