@@ -670,9 +670,17 @@ class Downloader {
     }
   }
 
+  public async checkAndReplaceWeakEtag(etag: string) {
+    if (etag.substr(0, 2) !== 'W/') {
+        return etag;
+    }
+    const strongEtag =  etag.replace('W/', '').replace(/"/g, '');
+    return strongEtag;
+  }
+
   private async checkStatusAndUploadtoS3(requestOptions: any, handler: any, imageResp: any) {
     if (imageResp) {
-      requestOptions.headers['If-None-Match'] = imageResp.Metadata.etag;
+      requestOptions.headers['If-None-Match'] = await this.checkAndReplaceWeakEtag(imageResp.Metadata.etag);
     }
 
     try {
@@ -693,15 +701,15 @@ class Downloader {
         content: compressionWorked ? content : resp.data,
       });
     } catch (err) {
-      if (err.response?.status !== 304) {
-        this.errHandler(err, requestOptions, handler);
-        return;
-      }
       // Response code is 304 (not modified), so just pass the response to handler.
-      handler(null, {
-        responseHeaders: (({ Body, ...o }) => o)(imageResp),
-        content: imageResp.Body,
-      });
+      if (err?.response?.status === 304) {
+          handler(null, {
+            responseHeaders: (({ Body, ...o }) => o)(imageResp),
+            content: imageResp.Body,
+          });
+          return;
+      }
+      this.errHandler(err, requestOptions, handler);
     }
   }
 
