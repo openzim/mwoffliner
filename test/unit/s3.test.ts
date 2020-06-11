@@ -30,9 +30,6 @@ _test('S3 checks', async(t) => {
     const imageExist = await s3.downloadIfPossible('bm.wikipedia.org/static/images/project-logos/bmwiki.png');
     t.assert(!!imageExist, 'Image exists in S3');
 
-    // Checking the data related to image matches
-    t.equals(imageExist.headers.ContentType, 'application/octet-stream', 'Content Type matches');
-
     const imageNotExist = await s3.downloadIfPossible('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
     t.equals(imageNotExist, undefined, 'Image doesnt exist in S3');
 });
