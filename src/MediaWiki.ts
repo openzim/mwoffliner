@@ -46,7 +46,7 @@ class MediaWiki {
 
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
     this.apiUrl = `${this.apiResolvedUrl}?`;
-    this.veApiUrl = urlParser.resolve(this.apiUrl, 'action=visualeditor&mobileformat=html&format=json&paction=parse&page=');
+    this.veApiUrl = `${this.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
     this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
 
     this.restApiUrl = ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/');
