@@ -94,26 +94,26 @@ test('applyOtherTreatments', async (t) => {
         }
     }
 
-    [{ html }] = await downloader.getArticle('Western_Greenland', dump, true);
-
-    {
-        const doc = domino.createDocument(html);
-        await applyOtherTreatments(doc, dump);
-
-        const sections = Array.from(doc.querySelectorAll('section'));
-
-        let fewestChildren = null;
-        for (const d of sections) {
-            if (fewestChildren === null || d.children.length < fewestChildren) {
-                fewestChildren = d.children.length;
-            }
-        }
-        if (fewestChildren < 1) {
-            t.fail(`Found empty sections when they should be stripped in desktop view`);
-        } else {
-            t.ok(`Found no empty sections when they should be stripped in desktop view`);
-        }
-    }
+    // [{ html }] = await downloader.getArticle('Western_Greenland', dump, true);
+    //
+    // {
+    //     const doc = domino.createDocument(html);
+    //     await applyOtherTreatments(doc, dump);
+    //
+    //     const sections = Array.from(doc.querySelectorAll('section'));
+    //
+    //     let fewestChildren = null;
+    //     for (const d of sections) {
+    //         if (fewestChildren === null || d.children.length < fewestChildren) {
+    //             fewestChildren = d.children.length;
+    //         }
+    //     }
+    //     if (fewestChildren < 1) {
+    //         t.fail(`Found empty sections when they should be stripped in desktop view`);
+    //     } else {
+    //         t.ok(`Found no empty sections when they should be stripped in desktop view`);
+    //     }
+    // }
 
     {
         const doc = domino.createDocument(html);

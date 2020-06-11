@@ -402,25 +402,8 @@ class Downloader {
 
     logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
 
-    try {
-      const json = await this.getJSON<any>(articleApiUrl);
-      if (json.type === 'api_error') {
-        this.forceParsoidFallback = true;
-        forceParsoidFallback = true;
-        logger.error(`Received an "api_error", forcing all article requests to use Parsoid fallback`);
-        throw new Error(`API Error when scraping [${articleApiUrl}]`);
-      }
-      return await renderArticle(json, articleId, dump, forceParsoidFallback);
-
-    } catch (err) {
-      if (forceParsoidFallback) throw err;
-      if (err?.response?.status === 404) throw err;
-
-      // falling back to local Parsoid
-      const errMsg = err.response ? JSON.stringify(err.response.data, null, '\t') : err;
-      logger.warn(`Failed to get article [${articleId}] using remote Parsoid, trying with local one`, errMsg);
-      return await this.getArticle(articleId, dump, true);
-    }
+    const json = await this.getJSON<any>(articleApiUrl);
+    return await renderArticle(json, articleId, dump, forceParsoidFallback);
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
