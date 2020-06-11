@@ -176,6 +176,7 @@ class Downloader {
 
         if (!this.mwCapabilities.veApiAvailable) {
           const webUrlHost = urlParser.parse(this.mw.webUrl).host;
+          // todo will be changed in #1154
           this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
         }
       } else {
