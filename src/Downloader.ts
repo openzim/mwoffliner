@@ -168,7 +168,7 @@ class Downloader {
     }
 
     if (!this.noLocalParserFallback) {
-      if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
+      if (!this.mwCapabilities.restApiAvailable) {
         logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
         const domain = (urlParser.parse(this.mw.base)).host;
