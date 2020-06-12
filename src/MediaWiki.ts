@@ -16,6 +16,7 @@ class MediaWiki {
   public readonly spaceDelimiter: string;
   public readonly webUrl: string;
   public readonly apiUrl: string;
+  public readonly veApiUrl: string;
   public readonly restApiUrl: string;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
@@ -36,7 +37,7 @@ class MediaWiki {
     this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
 
-    this.base = `${config.base.replace(/\/$/, '')}/`;
+    this.base = ensureTrailingChar(config.base, '/');
 
     this.apiPath = config.apiPath ?? 'w/api.php';
     this.wikiPath = config.wikiPath ?? 'wiki/';
@@ -45,6 +46,7 @@ class MediaWiki {
 
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
     this.apiUrl = `${this.apiResolvedUrl}?`;
+    this.veApiUrl = `${this.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
     this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
 
     this.restApiUrl = ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/');
