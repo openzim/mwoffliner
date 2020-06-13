@@ -62,7 +62,7 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void;
 }
 
-interface MWCapabilities {
+export interface MWCapabilities {
   veApiAvailable: boolean;  // visualeditor API
   restApiAvailable: boolean;
   coordinatesAvailable: boolean;
@@ -75,6 +75,7 @@ class Downloader {
   public readonly speed: number;
   public readonly useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
+  public veApiUrl: string;
   public restApiUrl: string;
 
   private readonly uaString: string;
@@ -83,11 +84,9 @@ class Downloader {
   private readonly requestTimeout: number;
   private readonly noLocalParserFallback: boolean = false;
   private readonly forceLocalParser: boolean = false;
-  private forceParsoidFallback: boolean = false;
   private readonly urlPartCache: KVS<string> = {};
   private readonly backoffOptions: BackoffOptions;
   private readonly optimisationCacheUrl: string;
-  private parsoidFallbackUrl: string;
   private s3: S3;
   private mwCapabilities: MWCapabilities; // todo move to MW
 
@@ -121,9 +120,8 @@ class Downloader {
       ...backoffOptions,
     };
 
+    this.veApiUrl = this.mw.veApiUrl;
     this.restApiUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
-    // todo will be removed in #1154
-    this.parsoidFallbackUrl = `${this.mw.veApiUrl}`;
   }
 
   public serializeUrl(url: string): string {
@@ -172,13 +170,11 @@ class Downloader {
       if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
         logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
-        const domain = (urlParser.parse(this.mw.base)).host;
+        const domain = urlParser.parse(this.mw.base).host;
         this.restApiUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
 
         if (!this.mwCapabilities.veApiAvailable) {
-          const webUrlHost = urlParser.parse(this.mw.webUrl).host;
-          // todo will be changed in #1154
-          this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
+          this.veApiUrl = `http://localhost:8000/${domain}/v3/page/pagebundle/`;
         }
       } else {
         logger.log(`Using REST API`);
@@ -394,16 +390,16 @@ class Downloader {
     };
   }
 
-  public async getArticle(articleId: string, dump: Dump, forceParsoidFallback: boolean = false): Promise<RenderedArticle[]> {
+  public async getArticle(articleId: string, dump: Dump): Promise<RenderedArticle[]> {
     articleId = articleId.replace(/ /g, '_');
 
     const isMainPage = articleId === dump.mwMetaData.mainPage;
-    const articleApiUrl = this.getArticleUrl(articleId, isMainPage, forceParsoidFallback);
+    const articleApiUrl = this.getArticleUrl(articleId, isMainPage);
 
     logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     const json = await this.getJSON<any>(articleApiUrl);
-    return await renderArticle(json, articleId, dump, forceParsoidFallback);
+    return await renderArticle(json, articleId, dump, this.mwCapabilities);
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
@@ -483,11 +479,10 @@ class Downloader {
     await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
   }
 
-  private getArticleUrl(articleId: string, isMainPage: boolean, forceParsoidFallback: boolean): string {
-    const useParsoidFallback = forceParsoidFallback || this.forceParsoidFallback || isMainPage;
-    return useParsoidFallback || !this.mwCapabilities.restApiAvailable
-      ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
-      : `${this.restApiUrl}${encodeURIComponent(articleId)}`;
+  private getArticleUrl(articleId: string, isMainPage: boolean): string {
+    return this.mwCapabilities.restApiAvailable || isMainPage
+      ? `${this.restApiUrl}${encodeURIComponent(articleId)}`
+      : `${this.mw.veApiUrl}${encodeURIComponent(articleId)}`;  // todo
   }
 
   private async readFromDownloadCache(url: string) {
@@ -496,7 +491,7 @@ class Downloader {
     }
     const fileName = md5(url);
     const filePath = path.join(this.downloadCacheDirectory, fileName);
-    logger.info(`Finding cached donwload for [${url}] ([${filePath}])`);
+    logger.info(`Finding cached download for [${url}] ([${filePath}])`);
     const [content, responseHeaders] = await Promise.all([
       readFilePromise(filePath, null),
       readFilePromise(`${filePath}.headers`, 'utf8').catch(() => null),
