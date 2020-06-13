@@ -10,7 +10,7 @@ import {
 import logger from '../Logger';
 import type {Dump} from '../Dump';
 import {articleDetailXId} from '../stores';
-import { MWCapabilities } from '../Downloader';
+import {MWCapabilities} from '../Downloader';
 import {getStrippedTitleFromHtml} from './misc';
 
 

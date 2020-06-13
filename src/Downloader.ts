@@ -480,9 +480,9 @@ class Downloader {
   }
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return this.mwCapabilities.restApiAvailable || isMainPage
+    return this.mwCapabilities.restApiAvailable && !isMainPage
       ? `${this.restApiUrl}${encodeURIComponent(articleId)}`
-      : `${this.mw.veApiUrl}${encodeURIComponent(articleId)}`;  // todo
+      : `${this.mw.veApiUrl}${encodeURIComponent(articleId)}`;
   }
 
   private async readFromDownloadCache(url: string) {
