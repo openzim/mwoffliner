@@ -9,7 +9,7 @@ import urlParser, { UrlWithStringQuery } from 'url';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { MEDIA_REGEX } from './const';
+import { MEDIA_REGEX, FIND_HTTP_REGEX } from './const';
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -366,4 +366,8 @@ export function ensureTrailingChar(input: string, trailingChar: string) {
   const pattern = `([^\\${trailingChar}])$`;
   const rx = new RegExp(pattern);
   return input.replace(rx, '$1' + trailingChar);
+}
+
+export function stripHttpFromUrl (url: string): string {
+  return url.replace(FIND_HTTP_REGEX, '');
 }
