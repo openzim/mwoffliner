@@ -48,7 +48,7 @@ interface DownloaderOpts {
   useDownloadCache: boolean;
   downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
-  forceLocalParsoid: boolean;
+  forceLocalParser: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
   backoffOptions?: BackoffOptions;
@@ -62,8 +62,8 @@ interface BackoffOptions {
 }
 
 interface MWCapabilities {
-  parsoidAvailable: boolean;
-  mcsAvailable: boolean;
+  veApiAvailable: boolean;  // visualeditor API
+  restApiAvailable: boolean;
   coordinatesAvailable: boolean;
 }
 
@@ -74,14 +74,14 @@ class Downloader {
   public readonly speed: number;
   public readonly useDownloadCache: boolean;
   public downloadCacheDirectory?: string;
-  public mcsUrl: string;
+  public restApiUrl: string;
 
   private readonly uaString: string;
   private activeRequests = 0;
   private maxActiveRequests = 1;
   private readonly requestTimeout: number;
   private readonly noLocalParserFallback: boolean = false;
-  private readonly forceLocalParsoid: boolean = false;
+  private readonly forceLocalParser: boolean = false;
   private forceParsoidFallback: boolean = false;
   private readonly urlPartCache: KVS<string> = {};
   private readonly backoffOptions: BackoffOptions;
@@ -91,7 +91,7 @@ class Downloader {
   private mwCapabilities: MWCapabilities; // todo move to MW
 
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParsoid, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -101,12 +101,12 @@ class Downloader {
     this.useDownloadCache = useDownloadCache;
     this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
-    this.forceLocalParsoid = forceLocalParsoid;
+    this.forceLocalParser = forceLocalParser;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.s3 = s3;
     this.mwCapabilities = {
-      parsoidAvailable: true,
-      mcsAvailable: true,
+      veApiAvailable: true,
+      restApiAvailable: true,
       coordinatesAvailable: true,
     };
 
@@ -120,8 +120,9 @@ class Downloader {
       ...backoffOptions,
     };
 
-    this.mcsUrl = `${this.mw.base}api/rest_v1/page/mobile-sections/`;
-    this.parsoidFallbackUrl = `${this.mw.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
+    this.restApiUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
+    // todo will be removed in #1154
+    this.parsoidFallbackUrl = `${this.mw.veApiUrl}`;
   }
 
   public serializeUrl(url: string): string {
@@ -149,32 +150,33 @@ class Downloader {
 
   public async checkCapabilities(): Promise<void> {
     try {
-      const mcsMainPageQuery = await this.getJSON<any>(`${this.mcsUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-      this.mwCapabilities.mcsAvailable = !!mcsMainPageQuery.lead;
+      const restApiMainPageQuery = await this.getJSON<any>(`${this.restApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+      this.mwCapabilities.restApiAvailable = !!restApiMainPageQuery.lead;
     } catch (err) {
-      this.mwCapabilities.mcsAvailable = false;
-      logger.warn(`Failed to get remote MCS`);
+      this.mwCapabilities.restApiAvailable = false;
+      logger.warn(`Failed to get remote Rest API`);
     }
 
-    if (!this.forceLocalParsoid) {
+    if (!this.forceLocalParser) {
       try {
-        const parsoidMainPageQuery = await this.getJSON<any>(`${this.parsoidFallbackUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-        this.mwCapabilities.parsoidAvailable = !!parsoidMainPageQuery.visualeditor.content;
+        const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+        this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
-        this.mwCapabilities.parsoidAvailable = false;
+        this.mwCapabilities.veApiAvailable = false;
         logger.warn(`Failed to get remote Parsoid`);
       }
     }
 
     if (!this.noLocalParserFallback) {
-      if (!this.mwCapabilities.mcsAvailable || !this.mwCapabilities.parsoidAvailable) {
-        logger.log(`Using local MCS and ${this.mwCapabilities.parsoidAvailable ? 'remote' : 'local'} Parsoid`);
+      if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
+        logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
         const domain = (urlParser.parse(this.mw.base)).host;
-        this.mcsUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+        this.restApiUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
 
-        if (!this.mwCapabilities.parsoidAvailable) {
+        if (!this.mwCapabilities.veApiAvailable) {
           const webUrlHost = urlParser.parse(this.mw.webUrl).host;
+          // todo will be changed in #1154
           this.parsoidFallbackUrl = `http://localhost:8000/${webUrlHost}/v3/page/pagebundle/`;
         }
       } else {
@@ -499,9 +501,9 @@ class Downloader {
 
   private getArticleUrl(articleId: string, isMainPage: boolean, forceParsoidFallback: boolean): string {
     const useParsoidFallback = forceParsoidFallback || this.forceParsoidFallback || isMainPage;
-    return useParsoidFallback || !this.mwCapabilities.mcsAvailable
+    return useParsoidFallback || !this.mwCapabilities.restApiAvailable
       ? `${this.parsoidFallbackUrl}${encodeURIComponent(articleId)}`
-      : `${this.mcsUrl}${encodeURIComponent(articleId)}`;
+      : `${this.restApiUrl}${encodeURIComponent(articleId)}`;
   }
 
   private async readFromDownloadCache(url: string) {
@@ -601,25 +603,18 @@ class Downloader {
   }
 
   private async claimRequest(): Promise<null> {
-    // @ts-ignore
-    logger.info(`[queue] RSS=${process.memoryUsage().rss / 1024 / 1024} / AH=${process._getActiveHandles().length} / AR=${process._getActiveRequests().length}`);
-
     if (this.activeRequests < this.maxActiveRequests) {
       this.activeRequests += 1;
-      logger.info(`[queue] +1 [${this.activeRequests}/${this.maxActiveRequests}]`);
       return null;
     } else {
-      logger.info(`[queue] holding on [${this.activeRequests}/${this.maxActiveRequests}]`);
       await new Promise((resolve) => {
         setTimeout(resolve, 200);
       });
-      logger.info(`[queue] reclaiming [${this.activeRequests}/${this.maxActiveRequests}]`);
       return this.claimRequest();
     }
   }
 
   private async releaseRequest(): Promise<null> {
-    logger.info(`[queue] -1 [${this.activeRequests}/${this.maxActiveRequests}]`);
     this.activeRequests -= 1;
     return null;
   }

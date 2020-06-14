@@ -20,7 +20,7 @@ test('Downloader class', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, forceLocalParser: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
@@ -84,7 +84,7 @@ test('Downloader class', async (t) => {
         t.ok(true, 'downloadContent throws when empty string is passed');
     }
 
-    const { data: LondonDetail } = await Axios.get(`${downloader.mcsUrl}London`);
+    const { data: LondonDetail } = await Axios.get(`${downloader.restApiUrl}London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
     const LondonImage = await downloader.downloadContent(imgToGet as string);
@@ -158,7 +158,7 @@ _test('Downloader class with optimisation', async (t) => {
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
     });
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, forceLocalParsoid: false, optimisationCacheUrl: 'random-string' , s3});
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, useDownloadCache: true, downloadCacheDirectory: cacheDir, noLocalParserFallback: false, forceLocalParser: false, optimisationCacheUrl: 'random-string' , s3});
 
     await s3.initialise();
 

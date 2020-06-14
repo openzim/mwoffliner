@@ -4,6 +4,7 @@ import logger from './Logger';
 import * as util from './util';
 import * as domino from 'domino';
 import type Downloader from './Downloader';
+import { ensureTrailingChar } from './util';
 
 
 class MediaWiki {
@@ -15,6 +16,8 @@ class MediaWiki {
   public readonly spaceDelimiter: string;
   public readonly webUrl: string;
   public readonly apiUrl: string;
+  public readonly veApiUrl: string;
+  public readonly restApiUrl: string;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
@@ -34,16 +37,19 @@ class MediaWiki {
     this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
 
-    this.base = `${config.base.replace(/\/$/, '')}/`;
+    this.base = ensureTrailingChar(config.base, '/');
 
     this.apiPath = config.apiPath ?? 'w/api.php';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = `${urlParser.resolve(this.base, this.wikiPath)}`;
+    this.webUrl = urlParser.resolve(this.base, this.wikiPath);
 
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
     this.apiUrl = `${this.apiResolvedUrl}?`;
+    this.veApiUrl = `${this.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
     this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
+
+    this.restApiUrl = ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/');
 
     this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
     this.webUrlPath = urlParser.parse(this.webUrl).pathname;

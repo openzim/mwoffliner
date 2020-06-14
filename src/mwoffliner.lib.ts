@@ -88,6 +88,7 @@ async function execute(argv: any) {
     mwUrl,
     mwWikiPath,
     mwApiPath,
+    mwRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -110,7 +111,7 @@ async function execute(argv: any) {
     useDownloadCache,
     optimisationCacheUrl,
     noLocalParserFallback,
-    forceLocalParsoid,
+    forceLocalParser,
     customFlavour: customProcessorPath,
   } = argv;
 
@@ -166,6 +167,7 @@ async function execute(argv: any) {
   const mw = new MediaWiki({
     getCategories: !!argv.getCategories,
     apiPath: mwApiPath,
+    restApiPath: mwRestApiPath,
     modulePath: mwModulePath,
     base: mwUrl,
     domain: mwDomain,
@@ -184,7 +186,7 @@ async function execute(argv: any) {
     useDownloadCache,
     downloadCacheDirectory: null,
     noLocalParserFallback,
-    forceLocalParsoid,
+    forceLocalParser,
     optimisationCacheUrl,
     s3,
   });
