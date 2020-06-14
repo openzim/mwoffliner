@@ -13,15 +13,16 @@ import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
 
 import {
-  FIND_HTTP_REGEX,
   MIME_IMAGE_REGEX,
   normalizeMwResponse,
   objToQueryString,
   readFilePromise,
   URL_IMAGE_REGEX,
   DB_ERROR,
+  WEAK_ETAG_REGEX,
   writeFilePromise,
-  renderArticle
+  renderArticle,
+  stripHttpFromUrl
 } from './util';
 import S3 from './S3';
 import {Dump} from './Dump';
@@ -206,8 +207,8 @@ class Downloader {
     return !!MIME_IMAGE_REGEX.exec(mimetype);
   }
 
-  public stripHttpFromUrl (url: string): string {
-    return url.replace(FIND_HTTP_REGEX, '');
+  public checkAndReplaceWeakEtag(etag: string): string {
+    return WEAK_ETAG_REGEX.test(etag) ? etag.replace('W/', '').replace(/"/g, '') : etag;
   }
 
   public async initLocalServices(): Promise<void> {
@@ -599,6 +600,7 @@ class Downloader {
       responseType: 'arraybuffer',
       timeout: this.requestTimeout,
       method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+      validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
     };
   }
 
@@ -649,11 +651,7 @@ class Downloader {
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-        this.s3.downloadIfPossible(this.stripHttpFromUrl(requestOptions.url)).then(async (s3ImageResp) => {
-          this.checkStatusAndUploadtoS3(requestOptions, handler, s3ImageResp);
-        }).catch((err) => {
-          this.errHandler(err, requestOptions, handler);
-        });
+          this.downloadImage(requestOptions, handler);
       } else {
         const resp = await axios(requestOptions);
         handler(null, {
@@ -670,45 +668,35 @@ class Downloader {
     }
   }
 
-  public async checkAndReplaceWeakEtag(etag: string) {
-    if (etag.substr(0, 2) !== 'W/') {
-        return etag;
-    }
-    const strongEtag =  etag.replace('W/', '').replace(/"/g, '');
-    return strongEtag;
-  }
-
-  private async checkStatusAndUploadtoS3(requestOptions: any, handler: any, imageResp: any) {
-    if (imageResp) {
-      requestOptions.headers['If-None-Match'] = await this.checkAndReplaceWeakEtag(imageResp.Metadata.etag);
-    }
-
+  private async downloadImage(requestOptions: any, handler: any) {
     try {
-      const resp = await axios(requestOptions);
-      const etag = resp.headers.etag;
-      const content = await this.getCompressedBody(resp);
-      const compressionWorked = content.length < resp.data.length;
-      if (compressionWorked) {
-        resp.data = content;
-      }
+      this.s3.downloadBlob(stripHttpFromUrl(requestOptions.url)).then(async (imageResp) => {
+        if (imageResp?.Metadata?.etag) {
+          requestOptions.headers['If-None-Match'] = this.checkAndReplaceWeakEtag(imageResp.Metadata.etag);
+        }
 
-      if (etag) {
-        this.s3.uploadBlob(this.stripHttpFromUrl(requestOptions.url), resp.data, etag);
-      }
+        const resp = await axios(requestOptions);
+        // Most of the images after uploading once will always have 304 status, until modified.
+        if (resp.status === 304) {
+            handler(null, {
+              responseHeaders: (({ Body, ...o }) => o)(imageResp),
+              content: imageResp.Body,
+            });
+            return;
+        }
 
-      handler(null, {
-        responseHeaders: resp.headers,
-        content: compressionWorked ? content : resp.data,
+        // Check for the etag and upload
+        const etag = this.checkAndReplaceWeakEtag(resp.headers.etag);
+        if (etag) {
+          this.s3.uploadBlob(stripHttpFromUrl(requestOptions.url), resp.data, etag);
+        }
+
+        handler(null, {
+          responseHeaders: resp.headers,
+          content: await this.getCompressedBody(resp),
+        });
       });
     } catch (err) {
-      // Response code is 304 (not modified), so just pass the response to handler.
-      if (err?.response?.status === 304) {
-          handler(null, {
-            responseHeaders: (({ Body, ...o }) => o)(imageResp),
-            content: imageResp.Body,
-          });
-          return;
-      }
       this.errHandler(err, requestOptions, handler);
     }
   }

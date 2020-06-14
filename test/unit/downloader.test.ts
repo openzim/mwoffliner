@@ -4,7 +4,7 @@ import tapePromise from 'tape-promise';
 import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
-import { mkdirPromise, mwRetToArticleDetail } from 'src/util';
+import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl } from 'src/util';
 import S3 from 'src/S3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
@@ -168,7 +168,7 @@ _test('Downloader class with optimisation', async (t) => {
     t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
 
     // Strip http(s) from url
-    const httpOrHttpsRemoved = downloader.stripHttpFromUrl(testImage);
+    const httpOrHttpsRemoved = stripHttpFromUrl(testImage);
     t.assert(httpOrHttpsRemoved, 'http removed from url');
 
     // Delete the image already present in S3
@@ -176,12 +176,12 @@ _test('Downloader class with optimisation', async (t) => {
     t.ok(true, 'Image deleted from S3');
 
     // Check if image exists after deleting from S3
-    const imageNotExists = await s3.downloadIfPossible(httpOrHttpsRemoved);
+    const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved);
     t.equals(imageNotExists, undefined, 'Image not exists in S3 after deleting');
 
     // Check Etag Flow
     const randomImage = await getRandomImageUrl();
-    const imagePath = downloader.stripHttpFromUrl(randomImage);
+    const imagePath = stripHttpFromUrl(randomImage);
     await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: imagePath });
 
     // Upload the image in S3
@@ -193,14 +193,14 @@ _test('Downloader class with optimisation', async (t) => {
         const resp = await Axios(randomImage);
 
         // Download the uploaded image from S3 and check the Etags
-        const imageContent =  await s3.downloadIfPossible(imagePath);
+        const imageContent =  await s3.downloadBlob(imagePath);
         t.equal(resp.headers.etag, imageContent.Metadata.etag, 'Etag Matched from online Mediawiki and S3');
 
         // Upload Image with wrong Etag
         await s3.uploadBlob(imagePath, resp.data, 'random-string');
 
         // Download again to check the Etag has been refreshed properly
-        const updatedImage = await s3.downloadIfPossible(imagePath);
+        const updatedImage = await s3.downloadBlob(imagePath);
         t.equal(updatedImage.Metadata.etag,  resp.headers.etag, 'Image refreshed with proper Etag');
     }, 5000)
 });

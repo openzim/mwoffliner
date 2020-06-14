@@ -63,9 +63,9 @@ class S3 {
         }
     }
 
-    public async downloadIfPossible(upstreamUrl: string): Promise<any> {
+    public async downloadBlob(key: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.s3Handler.getObject({Bucket: this.bucketName, Key: upstreamUrl}, async (err: any, val: any) => {
+            this.s3Handler.getObject({Bucket: this.bucketName, Key: key}, async (err: any, val: any) => {
                 if (val) {
                     resolve(val);
                 } else if (err && err.statusCode === 404) {
@@ -80,9 +80,9 @@ class S3 {
     }
 
     // Only for testing purpose
-    public async deleteBlob(params: any): Promise<any> {
+    public async deleteBlob(key: any): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.s3Handler.deleteObject(params,  (err: any, val: any) => {
+            this.s3Handler.deleteObject(key,  (err: any, val: any) => {
                 err ? reject(err) : resolve(val);
             });
         });
