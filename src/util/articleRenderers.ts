@@ -150,7 +150,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
         const subCategories = articleDetail.subCategories.map((category) => {
             return {
                 name: category.title.split(':').slice(1).join(':'),
-                url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}`,
+                url: `${upStr}${categoryResourceNamespace}/${category.title}`,
             };
         });
 
@@ -159,8 +159,8 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
         html += subCategoriesTemplate({
             strings: dump.strings,
             groups,
-            prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.prevArticleId.replace(/ /g, '_')}` : null,
-            nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.nextArticleId.replace(/ /g, '_')}` : null,
+            prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.prevArticleId}` : null,
+            nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.nextArticleId}` : null,
         });
     }
 
@@ -168,7 +168,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
         const pages = articleDetail.pages.map((page) => {
             return {
                 name: page.title,
-                url: `${upStr}${articleResourceNamespace}/${page.title.replace(/ /g, '_')}`,
+                url: `${upStr}${articleResourceNamespace}/${page.title}`,
             };
         });
 
@@ -184,7 +184,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
         const categories = articleDetail.categories.map((category) => {
             return {
                 name: category.title.split(':').slice(1).join(':'),
-                url: `${upStr}${categoryResourceNamespace}/${category.title.replace(/ /g, '_')}`,
+                url: `${upStr}${categoryResourceNamespace}/${category.title}`,
             };
         });
         html += categoriesTemplate({

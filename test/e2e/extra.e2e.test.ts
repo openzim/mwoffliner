@@ -5,9 +5,8 @@ import rimraf from 'rimraf';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { join } from 'path';
 import execa = require('execa');
+import 'dotenv/config';
 // import { ZimReader } from '@openzim/libzim';
-// tslint:disable-next-line: no-var-requires
-require('dotenv').config();
 
 const now = new Date();
 const testId = join(process.cwd(), `mwo-test-${+now}`);

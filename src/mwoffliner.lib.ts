@@ -314,7 +314,7 @@ async function execute(argv: any) {
 
   let articleListLines: string[];
   try {
-    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').filter((a) => a).map((a) => a.replace(/ /g, '_')) : [];
+    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').filter((a) => a) : [];
     logger.info(`ArticleList has [${articleListLines.length}] items`);
   } catch (err) {
     logger.error(`Failed to read articleList from [${articleList}]`, err);
@@ -548,11 +548,9 @@ async function execute(argv: any) {
             '\n</head>'),
       );
       doc.querySelector('title').innerHTML =  sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle);
-      const articleIds = articleListLines.map((title) => title.replace(/ /g, '_'));
-
       const articlesWithImages: ArticleDetail[] = [];
       const allArticles: ArticleDetail[] = [];
-      for (const articleId of articleIds) {
+      for (const articleId of articleListLines) {
         const articleDetail = await articleDetailXId.get(articleId);
         if (articleDetail) {
           allArticles.push(articleDetail);
@@ -602,7 +600,7 @@ async function execute(argv: any) {
     let articlesWithImages = 0;
 
     while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
-      const articleId = articleListLines[articleIndex].replace(/ /g, '_');
+      const articleId = articleListLines[articleIndex];
       articleIndex++;
       try {
         const articleDetail = await articleDetailXId.get(articleId);

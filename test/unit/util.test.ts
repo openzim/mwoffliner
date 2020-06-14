@@ -3,7 +3,6 @@ import test from 'blue-tape';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
 
-
 test('util -> interpolateTranslationString', async (t) => {
     t.equals(interpolateTranslationString('Hello world', {}), 'Hello world');
     t.equals(interpolateTranslationString('Hello ${name}', { name: 'John' }), 'Hello John');

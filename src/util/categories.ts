@@ -20,7 +20,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
                 const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs)
                     .reduce((acc: any, [aId, detail]) => {
                         for (const cat of detail.categories || []) {
-                            const catId = cat.title.replace(/ /g, '_');
+                            const catId = cat.title;
                             acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo);
                         }
                         return acc;
@@ -43,7 +43,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
 
                         const parentCategories = (detail.categories || [])
                             .reduce((acc, info) => {
-                                const articleId = info.title.replace(/ /g, '_');
+                                const articleId = info.title;
                                 return {
                                     ...acc,
                                     [articleId]: info,
@@ -95,17 +95,17 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                     }
 
                     const categoriesXId: any = (articleDetail.categories || []).reduce((acc: any, c) => {
-                        acc[c.title.replace(/ /g, '_')] = c;
+                        acc[c.title] = c;
                         return acc;
                     }, {});
                     const categoryIds = Object.keys(categoriesXId);
                     const subCategoriesXId: any = (articleDetail.subCategories || []).reduce((acc: any, c) => {
-                        acc[c.title.replace(/ /g, '_')] = c;
+                        acc[c.title] = c;
                         return acc;
                     }, {});
                     const subCategoryIds = Object.keys(subCategoriesXId);
                     const pagesXId: any = (articleDetail.pages || []).reduce((acc: any, c) => {
-                        acc[c.title.replace(/ /g, '_')] = c;
+                        acc[c.title] = c;
                         return acc;
                     }, {});
                     const pageIds = Object.keys(pagesXId);
@@ -190,7 +190,7 @@ export async function simplifyGraph(downloader: Downloader) {
                         // Update sub pages
                         // Add parent categories to child pages
                         const hasPages = articleDetail.pages && articleDetail.pages.length;
-                        const scrapedPages = hasPages ? await articleDetailXId.getMany(articleDetail.pages.map((p) => p.title.replace(/ /g, '_'))) : {};
+                        const scrapedPages = hasPages ? await articleDetailXId.getMany(articleDetail.pages.map((p) => p.title)) : {};
                         for (const [pageId, pageDetail] of Object.entries(scrapedPages)) {
                             if (pageDetail) {
                                 pageDetail.categories = (pageDetail.categories || [])
@@ -206,7 +206,7 @@ export async function simplifyGraph(downloader: Downloader) {
                         // Update parent categories
                         // Add children to parent categories
                         const hasCategories = articleDetail.categories && articleDetail.categories.length;
-                        const scrapedCategories = hasCategories ? await articleDetailXId.getMany(articleDetail.categories.map((p) => p.title.replace(/ /g, '_'))) : {};
+                        const scrapedCategories = hasCategories ? await articleDetailXId.getMany(articleDetail.categories.map((p) => p.title)) : {};
                         for (const [catId, catDetail] of Object.entries(scrapedCategories)) {
                             if (catDetail) {
                                 const categoryDetail = Object.assign({ pages: [], subCategories: [] }, catDetail || {}) as ArticleDetail;
