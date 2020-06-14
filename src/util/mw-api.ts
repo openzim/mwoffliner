@@ -4,12 +4,11 @@ import logger from '../Logger';
 import { articleDetailXId, redirectsXId } from '../stores';
 import deepmerge = require('deepmerge');
 
-let batchSize = 50;
-
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
     let numArticleIds = _articleIds.length;
     let numThumbnails = 0;
+    let batchSize = 50;
 
     // using mapLimit to spawn workers
     await mapLimit(
@@ -59,7 +58,8 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                     }
                 } catch (err) {
                     if (batchSize < 10) {
-                        logger.warn(`Failed to get article ids and batch size is less than 10. Skipping batch...`, err);
+                        logger.error(`Failed to get article ids and batch size is less than 10. Skipping batch...`, err);
+                        process.exit(1);
                     } else {
                         _articleIds = _articleIds.concat(articleIds);
                         numArticleIds = _articleIds.length;
