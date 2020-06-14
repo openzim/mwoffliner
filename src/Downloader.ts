@@ -695,6 +695,8 @@ class Downloader {
           responseHeaders: resp.headers,
           content: await this.getCompressedBody(resp),
         });
+      }).catch((err) => {
+        this.errHandler(err, requestOptions, handler);
       });
     } catch (err) {
       this.errHandler(err, requestOptions, handler);
