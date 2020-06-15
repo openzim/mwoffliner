@@ -37,8 +37,8 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
 
 test('wikitext comparison', async(t) => {
     testHtmlRewritingE2e(
-        t, 
-        `An [[isolated system]] remains the system is free.`, 
-        `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`, 
+        t,
+        `An [[isolated system]] remains the system is free.`,
+        `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`,
         'HTML and Wikitext match')
 })
