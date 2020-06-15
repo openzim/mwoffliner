@@ -1,22 +1,23 @@
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
-import {ZimArticle, ZimCreator} from '@openzim/libzim';
+import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
+import * as QueryStringParser from 'querystring';
 
 import DU from '../DOMUtils';
 import * as domino from 'domino';
-import {Dump} from '../Dump';
-import {mapLimit} from 'promiso';
-import {contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath} from '.';
-import {config} from '../config';
-import {footerTemplate, htmlTemplateCode} from '../Templates';
-import {articleDetailXId, filesToDownloadXPath, filesToRetryXPath} from '../stores';
-import {getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString} from './misc';
-import {RedisKvs} from './RedisKvs';
-import {rewriteUrl} from './rewriteUrls';
-import {CONCURRENCY_LIMIT} from './const';
+import { Dump } from '../Dump';
+import { mapLimit } from 'promiso';
+import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from '.';
+import { config } from '../config';
+import { footerTemplate, htmlTemplateCode } from '../Templates';
+import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores';
+import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from './misc';
+import { RedisKvs } from './RedisKvs';
+import { rewriteUrl } from './rewriteUrls';
+import { CONCURRENCY_LIMIT } from './const';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -111,6 +112,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                 resp.namespace = arg.val.namespace;
                 resp.mult = arg.val.mult;
                 resp.width = arg.val.width;
+
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
                     return resp;
@@ -148,7 +150,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             continue;
                         }
 
-                        const { articleDoc: _articleDoc, mediaDependencies } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                        const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                         let articleDoc = _articleDoc;
 
                         if (dump.customProcessor?.shouldKeepArticle) {
@@ -170,6 +172,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             if (currentDepIsHigherRes) {
                                 await filesToDownloadXPath.set(dep.path, { url: downloader.serializeUrl(dep.url), mult, width });
                             }
+                        }
+
+                        for (const subtitle of subtitles) {
+                            await filesToDownloadXPath.set(subtitle.path, { url: subtitle.url, namespace: '-' });
                         }
 
                         const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader);
@@ -293,9 +299,11 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
 
 async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
     let mediaDependencies: Array<{ url: string, path: string }> = [];
+    let subtitles: Array<{ url: string, path: string }> = [];
     let doc = domino.createDocument(html);
     const tmRet = await treatMedias(doc, mw, dump, articleId);
     doc = tmRet.doc;
+
     mediaDependencies = mediaDependencies.concat(
         tmRet.mediaDependencies
             .filter((a) => a)
@@ -305,6 +313,15 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
             }),
     );
 
+    subtitles = subtitles.concat(
+        tmRet.subtitles
+            .filter((a) => a)
+            .map((url) => {
+                const { title, lang } = QueryStringParser.parse(url) as { title: string, lang: string };
+                const path = `${title}-${lang}.vtt`;
+                return { url, path };
+            }),
+    );
     const ruRet = await rewriteUrls(doc, articleId, downloader, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
@@ -319,6 +336,7 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
     return {
         articleDoc: doc,
         mediaDependencies,
+        subtitles
     };
 }
 
@@ -336,10 +354,11 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
     return aVal > bVal ? 1 : -1;
 }
 
-async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[] }> {
+export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
     // This function handles audio tags as well as video tags
     const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
+    const subtitles: string[] = [];
     // Worth noting:
     // Video tags are used for audio files too (as opposed to the audio tag)
     // When it's only audio, there will be a single OGG file
@@ -358,7 +377,7 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
     if (dump.nopic || dump.novid || dump.nodet) {
         DU.deleteNode(videoEl);
-        return { mediaDependencies };
+        return { mediaDependencies, subtitles };
     }
 
     videoSources = videoSources.sort(widthXHeightSorter);
@@ -402,7 +421,23 @@ async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     }
 
     sourceEl.setAttribute('src', newUrl);
-    return { mediaDependencies };
+
+    /* Scrape subtitle */
+    for (const track of Array.from(videoEl.querySelectorAll('track'))) {
+        subtitles.push(await treatSubtitle(track, webUrlHost, mw, articleId));
+    }
+
+    return { mediaDependencies, subtitles };
+}
+
+export async function treatSubtitle(trackEle: DominoElement, webUrlHost: string, mw: MediaWiki, articleId: string): Promise<string> {
+    const subtitleSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
+    const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
+    // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
+    const vttFormatUrl =  new URL(subtitleSourceUrl);
+    vttFormatUrl.searchParams.set('trackformat', 'vtt');
+    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`);
+    return vttFormatUrl.href;
 }
 
 function shouldKeepImage(dump: Dump, img: DominoElement) {
@@ -538,6 +573,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
 
 export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
     let mediaDependencies: string[] = [];
+    let subtitles: string[] = [];
     /* Clean/rewrite image tags */
     const imgs = Array.from(parsoidDoc.getElementsByTagName('img'));
     const videos: DominoElement = Array.from(parsoidDoc.querySelectorAll('video, audio'));
@@ -546,6 +582,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     for (const videoEl of videos) { // <video /> and <audio />
         const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
+        subtitles = subtitles.concat(ret.subtitles);
     }
 
     for (const imgEl of imgs) {
@@ -561,7 +598,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
         treatImageFrames(mw, dump, parsoidDoc, imageNode);
     }
 
-    return { doc: parsoidDoc, mediaDependencies };
+    return { doc: parsoidDoc, mediaDependencies, subtitles };
 }
 
 async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloader: Downloader, mw: MediaWiki, dump: Dump) {

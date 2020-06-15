@@ -1,6 +1,7 @@
 import './bootstrap.test';
 import test from 'blue-tape';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
+import { testHtmlRewritingE2e } from 'test/util';
 
 
 test('util -> interpolateTranslationString', async (t) => {
@@ -33,3 +34,11 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
         t.equal(encoded, encodeArticleIdForZimHtmlUrl(unencoded), `encodeArticleIdForZimHtmlUrl() encoding`);
     }
 });
+
+test('wikitext comparison', async(t) => {
+    testHtmlRewritingE2e(
+        t,
+        `An [[isolated system]] remains the system is free.`,
+        `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`,
+        'HTML and Wikitext match')
+})

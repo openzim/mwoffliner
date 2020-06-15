@@ -311,7 +311,7 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   });
 }
 
-export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M') {
+export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M'| '-') {
   const slashesInUrl = parentArticleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const newUrl = `${upStr}${resourceNamespace}/` + fileBase;

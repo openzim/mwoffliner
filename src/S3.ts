@@ -28,7 +28,6 @@ class S3 {
                 return true;
             }
         } catch (err) {
-            logger.log(err);
             throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
                             Bucket used: ${this.bucketName}
                             End point used: ${s3UrlBase.href}

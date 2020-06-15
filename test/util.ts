@@ -1,7 +1,9 @@
 import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
+import axios from 'axios';
 import execa = require('execa');
+import logger from '../src/Logger';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -63,4 +65,21 @@ export async function zimcheckAvailable() {
 
 export async function zimcheck(filePath: string) {
     return execa.command(`${zimcheckPath} ${filePath}`);
+}
+
+export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<any> {
+    try {
+        return await axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`,  {
+            wikitext: wikicode,
+            body_only: true,
+        })
+    } catch (err){
+        logger.log(`Got error during conversion of wikicode to HTML due to ${err}`);
+        return err;
+    }
+}
+
+export async function testHtmlRewritingE2e(t: any, wikicode: string, html: string, comment: string) {
+    const resultHtml = await convertWikicodeToHtml(wikicode, 'https://en.wikipedia.org/');
+    t.equal(html, resultHtml.data, comment);
 }
