@@ -2,7 +2,7 @@ import './bootstrap.test';
 import test from 'blue-tape';
 import domino from 'domino';
 
-import { setupScrapeClasses, convertWikicodeToHtml } from 'test/util';
+import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from 'test/util';
 import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from 'src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
@@ -244,10 +244,12 @@ test('treat one subtitle', async(t) => {
 
     // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
     const wikicode = `[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]`;
-    const htmlDoc = domino.createDocument((await convertWikicodeToHtml(wikicode, dump.mwMetaData.base)).data);
-    const contentRes = await treatSubtitle(htmlDoc.querySelector('track'), 'en.wikipedia.org', mw, 'Mechanical energy');
+    const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.base);
 
-    t.ok(contentRes, 'Video with subtitle rewriting');
+    const htmlDoc = domino.createDocument(htmlStr.data);
+    const contentRes = await treatSubtitle(htmlDoc.querySelector('track'), 'en.wikipedia.org', mw, 'Mechanical energy');
+    testHtmlRewritingE2e(t, wikicode, htmlStr.data, 'Converted wikicode to HTML for one subtitle');
+    t.equals(contentRes, 'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3APhysicsworks.ogv&lang=en&trackformat=vtt&origin=*', 'Video subtitle rewriting matches');
 });
 
 test('treat multiple subtitles in one video', async(t) => {
@@ -255,9 +257,17 @@ test('treat multiple subtitles in one video', async(t) => {
 
     // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
     const wikicode = `[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]`;
-    const htmlDoc = domino.createDocument((await convertWikicodeToHtml(wikicode, dump.mwMetaData.base)).data);
-    const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'));
+    const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.base);
 
-    t.ok(contentRes, 'Video with multiple subtitles rewriting');
+    const htmlDoc = domino.createDocument(htmlStr.data);
+    const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'));
+    testHtmlRewritingE2e(t, wikicode, htmlStr.data, 'Converted wikicode to HTML for multiple subtitle');
+    t.deepEqual(
+        contentRes.subtitles,
+        [ 'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=en&trackformat=vtt&origin=*',
+        'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=eu&trackformat=vtt&origin=*',
+        'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=fr&trackformat=vtt&origin=*',
+        'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=sv&trackformat=vtt&origin=*' ], 
+        'Video multiple subtitles rewriting matches');
     t.equals(contentRes.subtitles.length, 4, 'All subtitles are found for this video');
 });

@@ -1,11 +1,7 @@
 import './bootstrap.test';
 import test from 'blue-tape';
-<<<<<<< HEAD
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
-=======
-import { throttle, sanitizeString, encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
-import { sleep, convertWikicodeToHtml } from 'test/util';
->>>>>>> test cases modified
+import { testHtmlRewritingE2e } from 'test/util';
 
 
 test('util -> interpolateTranslationString', async (t) => {
@@ -39,11 +35,10 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
     }
 });
 
-async function testHtmlRewritingE2e(t: any, wikicode: string, html: string, comment: string){
-    const resultHtml = await convertWikicodeToHtml(wikicode, 'https://en.wikipedia.org/');
-    t.equal(html, resultHtml.data, comment);
-}
-
 test('wikitext comparison', async(t) => {
-    testHtmlRewritingE2e(t, `An [[isolated system]] remains the system is free.`, `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`, 'HTML and Wikitext match')
+    testHtmlRewritingE2e(
+        t, 
+        `An [[isolated system]] remains the system is free.`, 
+        `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`, 
+        'HTML and Wikitext match')
 })

@@ -78,3 +78,8 @@ export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): 
         return err;
     }
 }
+
+export async function testHtmlRewritingE2e(t: any, wikicode: string, html: string, comment: string) {
+    const resultHtml = await convertWikicodeToHtml(wikicode, 'https://en.wikipedia.org/');
+    t.equal(html, resultHtml.data, comment);
+}
