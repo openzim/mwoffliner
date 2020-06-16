@@ -1,8 +1,8 @@
-import Downloader from '../Downloader';
-import { mapLimit } from 'promiso';
-import logger from '../Logger';
-import { articleDetailXId, redirectsXId } from '../stores';
+import pmap from 'p-map';
 import deepmerge = require('deepmerge');
+import logger from '../Logger';
+import Downloader from '../Downloader';
+import { articleDetailXId, redirectsXId } from '../stores';
 
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
@@ -10,10 +10,9 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     let numThumbnails = 0;
     let batchSize = 50;
 
-    // using mapLimit to spawn workers
-    await mapLimit(
+    // using async iterator to spawn workers
+    await pmap(
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
-        downloader.speed,
         async (workerId) => {
             while (from < numArticleIds) {
                 const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
@@ -69,6 +68,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 }
             }
         },
+        {concurrency: downloader.speed}
     );
 }
 

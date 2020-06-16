@@ -1,8 +1,9 @@
-import Downloader from '../Downloader';
-import { mapLimit } from 'promiso';
+import pmap from 'p-map';
 import MediaWiki from '../MediaWiki';
-import { getArticlesByIds, getArticlesByNS } from './mw-api';
+import Downloader from '../Downloader';
 import { redirectsXId, articleDetailXId } from '../stores';
+import { getArticlesByIds, getArticlesByNS } from './mw-api';
+
 
 export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
     if (mainPage) {
@@ -14,12 +15,12 @@ export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainP
         // Sometimes the articleList will contain redirects, we need to de-dup them here
         await trimRedirectedArticles(downloader);
     } else {
-        await mapLimit(
+        await pmap(
             mw.namespacesToMirror,
-            downloader.speed,
             (namespace: string) => {
                 return getArticlesByNS(mw.namespaces[namespace].num, downloader);
             },
+            {concurrency: downloader.speed}
         );
     }
 }

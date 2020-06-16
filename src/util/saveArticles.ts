@@ -6,10 +6,10 @@ import htmlMinifier from 'html-minifier';
 import * as urlParser from 'url';
 import * as QueryStringParser from 'querystring';
 
+import pmap from 'p-map';
 import DU from '../DOMUtils';
 import * as domino from 'domino';
 import { Dump } from '../Dump';
-import { mapLimit } from 'promiso';
 import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from '.';
 import { config } from '../config';
 import { footerTemplate, htmlTemplateCode } from '../Templates';
@@ -102,9 +102,8 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
             const arg = argsCopy.shift();
             argList.push(arg);
         }
-        return mapLimit(
+        return pmap(
             argList,
-            CONCURRENCY_LIMIT,
             async (arg) => {
                 const resp: any = {};
                 resp.path = arg.val.path;
@@ -120,6 +119,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                     return resp;
                 });
             },
+            {concurrency: CONCURRENCY_LIMIT}
         );
     } catch (err) {
         logger.log(`Not able download in bulk due to ${err}`);
@@ -608,13 +608,13 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
     const areas = parsoidDoc.getElementsByTagName('area');
     const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas));
 
-    await mapLimit(
+    await pmap(
         linkNodes,
-        downloader.speed,
         async (linkNode) => {
             const { mediaDependencies: mediaDeps } = await rewriteUrl(articleId, mw, dump, linkNode);
             mediaDependencies = mediaDependencies.concat(mediaDeps);
         },
+        {concurrency: downloader.speed}
     );
     return { doc: parsoidDoc, mediaDependencies };
 }
