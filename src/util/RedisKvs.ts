@@ -1,7 +1,7 @@
 import {cpus} from 'os';
-import {mapLimit} from 'promiso';
+import pmap from 'p-map';
 import type {RedisClient} from 'redis';
-import logger from '../Logger';
+
 
 interface ScanResult {
   cursor: string;
@@ -60,9 +60,8 @@ export class RedisKvs<T> {
   }
 
   public exists(prop: string[]): Promise<{ [key: string]: number }> {
-    return mapLimit(
+    return pmap(
       prop,
-      cpus().length * 4,
       (key: string) => {
         return new Promise((resolve, reject) => {
           this.redisClient.hexists(this.dbName, key, (err, val) => {
@@ -74,6 +73,7 @@ export class RedisKvs<T> {
           });
         });
       },
+      {concurrency: cpus().length * 4}
     ).then((vals: any[]) => vals.reduce((acc, val) => Object.assign(acc, val), {}));
   }
 
@@ -169,9 +169,8 @@ export class RedisKvs<T> {
     let depleted = false;
     let pendingScan: Promise<ScanResult> = Promise.resolve(null);
 
-    await mapLimit(
+    await pmap(
       workers,
-      numWorkers,
       async (workerId) => {
 
         while (true) {
@@ -200,6 +199,7 @@ export class RedisKvs<T> {
           await func(parsedItems, workerId);
         }
       },
+      {concurrency: numWorkers}
     );
   }
 

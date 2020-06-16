@@ -7,7 +7,9 @@
 
 import fs, { readFileSync } from 'fs';
 import os from 'os';
+import pmap from 'p-map';
 import axios from 'axios';
+import sharp from 'sharp';
 import domino from 'domino';
 import rimraf from 'rimraf';
 import urlParser from 'url';
@@ -57,8 +59,6 @@ import { getArticleIds } from './util/redirects';
 import { articleListHomeTemplate } from './Templates';
 import { downloadFiles, saveArticles } from './util/saveArticles';
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
-import { mapLimit } from 'promiso';
-import sharp from 'sharp';
 
 
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
@@ -457,9 +457,9 @@ async function execute(argv: any) {
 
     logger.log(`Downloading module dependencies`);
     await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {
-      return await mapLimit(moduleList, downloader.speed, (oneModule) => {
+      return await pmap(moduleList, (oneModule) => {
         return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any);
-      });
+      }, {concurrency: downloader.speed});
     }));
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
