@@ -10,16 +10,18 @@ import {
 import logger from '../Logger';
 import type {Dump} from '../Dump';
 import {articleDetailXId} from '../stores';
+import {MWCapabilities} from '../Downloader';
 import {getStrippedTitleFromHtml} from './misc';
 
 
-export const renderArticle = async (json: any, articleId: string, dump: Dump, forceParsoidFallback: boolean): Promise<RenderedArticle[]> => {
+export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
 
     const articleDetail = await articleDetailXId.get(articleId);
-    const useParsoidFallback = forceParsoidFallback || json.visualeditor?.result;
 
-    if (useParsoidFallback) {
-        const isMainPage = articleId === dump.mwMetaData.mainPage;
+    const isMainPage = articleId === dump.mwMetaData.mainPage;
+    const isRendered = isMainPage || !capabilities.restApiAvailable;
+
+    if (isRendered) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
@@ -27,51 +29,49 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, fo
             displayTitle: strippedTitle || articleId.replace('_', ' '),
             html,
         }];
+    }
 
-    } else {
+    const result = [];
 
-        const result = [];
+    // Paginate when there are more than 200 subCategories
+    const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
+    for (let i = 0; i < numberOfPagesToSplitInto; i++) {
+        const pageId = i === 0 ? '' : `__${i}`;
+        const _articleId = articleId + pageId;
+        const _articleDetail = Object.assign(
+          {},
+          articleDetail,
+          {
+              subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
+              nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
+              prevArticleId: (i - 1) > 0 ?
+                `${articleId}__${i - 1}`
+                : (i - 1) === 0
+                  ? articleId
+                  : null,
+          },
+        );
 
-        // Paginate when there are more than 200 subCategories
-        const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
-        for (let i = 0; i < numberOfPagesToSplitInto; i++) {
-            const pageId = i === 0 ? '' : `__${i}`;
-            const _articleId = articleId + pageId;
-            const _articleDetail = Object.assign(
-              {},
-              articleDetail,
-              {
-                  subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
-                  nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
-                  prevArticleId: (i - 1) > 0 ?
-                    `${articleId}__${i - 1}`
-                    : (i - 1) === 0
-                      ? articleId
-                      : null,
-              },
-            );
-
-            if ((articleDetail.subCategories || []).length > 200) {
-                await articleDetailXId.set(_articleId, _articleDetail);
-            }
-
-            const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
-            let strippedTitle = getStrippedTitleFromHtml(html);
-            if (!strippedTitle) {
-                const title = (json.lead || { displaytitle: articleId }).displaytitle;
-                const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
-                strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
-            }
-
-            result.push({
-                articleId: _articleId,
-                displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
-                html,
-            });
+        if ((articleDetail.subCategories || []).length > 200) {
+            await articleDetailXId.set(_articleId, _articleDetail);
         }
 
-        return result;
+        const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
+        let strippedTitle = getStrippedTitleFromHtml(html);
+        if (!strippedTitle) {
+            const title = (json.lead || { displaytitle: articleId }).displaytitle;
+            const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`);
+            strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent;
+        }
+
+        result.push({
+            articleId: _articleId,
+            displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
+            html,
+        });
     }
+
+    return result;
 };
 
 
