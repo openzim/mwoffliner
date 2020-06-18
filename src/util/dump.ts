@@ -13,10 +13,8 @@ import { filesToDownloadXPath } from '../stores';
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
     const urlCache: KVS<boolean> = {};
-    const webUrlHost = urlParser.parse(downloader.mw.webUrl).host;
-
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
-        const cssUrl = typeof link === 'object' ? getFullUrl(webUrlHost, link.getAttribute('href'), downloader.mw.base) : link;
+        const cssUrl = typeof link === 'object' ? getFullUrl(downloader.mw.webUrlHost, link.getAttribute('href'), downloader.mw.base) : link;
         const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
         try {
             /* link might be a 'link' DOM node or an URL */
@@ -50,7 +48,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             rewrittenCss = rewrittenCss.replace(url, filename);
 
                             /* Need a rewrite if url doesn't include protocol */
-                            url = getFullUrl(webUrlHost, url, cssUrl);
+                            url = getFullUrl(downloader.mw.webUrlHost, url, cssUrl);
                             url = url.indexOf('%') < 0 ? encodeURI(url) : url;
 
                             /* Download CSS dependency, but avoid duplicate calls */

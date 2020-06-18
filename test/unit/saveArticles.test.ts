@@ -226,7 +226,7 @@ test('treat one subtitle', async(t) => {
     const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.base);
 
     const htmlDoc = domino.createDocument(htmlStr.data);
-    const contentRes = await treatSubtitle(htmlDoc.querySelector('track'), 'en.wikipedia.org', mw, 'Mechanical energy');
+    const contentRes = await treatSubtitle(htmlDoc.querySelector('track'), mw, 'Mechanical energy');
     testHtmlRewritingE2e(t, wikicode, htmlStr.data, 'Converted wikicode to HTML for one subtitle');
     t.equals(contentRes, 'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3APhysicsworks.ogv&lang=en&trackformat=vtt&origin=*', 'Video subtitle rewriting matches');
 });
