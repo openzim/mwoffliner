@@ -26,4 +26,9 @@ RUN npm i -g .
 WORKDIR /
 RUN mv /root/.bashrc /root/.old-bashrc
 COPY docker/.custom-bashrc /root/.bashrc
+
+ENV REDIS /dev/shm/redis.sock
+RUN printf '#!/bin/bash\n/usr/local/bin/mwoffliner --redis=$REDIS "$@"' > /usr/local/sbin/mwoffliner
+RUN chmod +x /usr/local/sbin/mwoffliner
+
 CMD mwoffliner
