@@ -4,7 +4,10 @@ const config = {
 
   defaults: {
     publisher: 'Kiwix',
-    redisConfig: '/dev/shm/redis.sock',
+    redisConfig: {
+      host: '127.0.0.1',
+      port: 6379
+    },
     requestTimeout: 60 * 1000,
   },
 
@@ -50,7 +53,7 @@ const config = {
     mainPageCssResources: ['mobile_main_page'],
 
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min',
-    '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+      '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
