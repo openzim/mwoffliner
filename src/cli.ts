@@ -14,7 +14,7 @@ import { parameterDescriptions, requiredParams } from './parameterList';
 const argv = yargs
   .help('help')
   .usage(
-    `Create a fancy HTML dump of a Mediawiki instance in a directory or as a ZIM file
+    `Create a fancy HTML dump of a Mediawiki instance in a ZIM file
   Usage: $0
   Example, as a system tool:
   mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
