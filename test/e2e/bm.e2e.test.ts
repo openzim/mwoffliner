@@ -3,9 +3,8 @@ import { execute } from '../../src/mwoffliner.lib';
 import execa from 'execa';
 import rimraf from 'rimraf';
 import { zimcheckAvailable, zimcheck } from 'test/util';
+import 'dotenv/config';
 // import { ZimReader } from '@openzim/libzim';
-// tslint:disable-next-line: no-var-requires
-require('dotenv').config();
 
 const now = new Date();
 const testId = `mwo-test-${+now}`;

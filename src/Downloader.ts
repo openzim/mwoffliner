@@ -391,8 +391,6 @@ class Downloader {
   }
 
   public async getArticle(articleId: string, dump: Dump): Promise<RenderedArticle[]> {
-    articleId = articleId.replace(/ /g, '_');
-
     const isMainPage = articleId === dump.mwMetaData.mainPage;
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage);
 

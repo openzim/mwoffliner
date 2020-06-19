@@ -19,7 +19,7 @@ export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump,
         linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title) + localAnchor);
         return;
     } else {
-        const res = await redirectsXId.get(title.replace(/ /g, '_'));
+        const res = await redirectsXId.get(title);
         if (res) {
             linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title));
         } else {
@@ -175,7 +175,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
         }
 
         if (articleId.includes('/')) {
-            const href = linkNode.getAttribute('href').replace(/ /g, '_'); // href is modified above, so this is necessary
+            const href = linkNode.getAttribute('href'); // href is modified above, so this is necessary
             const resourceNamespace = 'A';
             const slashesInUrl = articleId.split('/').length - 1;
             const upStr = '../'.repeat(slashesInUrl + 1);

@@ -4,6 +4,7 @@ import { Dump } from '../src/Dump';
 import axios from 'axios';
 import execa = require('execa');
 import logger from '../src/Logger';
+import 'dotenv/config';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;

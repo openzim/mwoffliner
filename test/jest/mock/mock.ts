@@ -1,7 +1,6 @@
 import data from './sg.json';
 import type {RedisKvs} from '../../../src/util/RedisKvs';
 
-
 export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<void> => {
   const len = Object.keys(data).length;
   const multiplier = (size ?? len) / len;

@@ -144,7 +144,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     const rets = await downloader.getArticle(articleId, dump);
 
                     for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
-                        const nonPaginatedArticleId = articleDetail.title.replace(/ /g, '_');
+                        const nonPaginatedArticleId = articleDetail.title;
                         if (!articleHtml) {
                             logger.warn(`No HTML returned for article [${articleId}], skipping`);
                             continue;
@@ -896,5 +896,5 @@ function isSubpage(id: string, mw: MediaWiki) {
 }
 
 export function isMirrored(id: string) {
-    return articleDetailXId.get(id.replace(/ /g, '_'));
+    return articleDetailXId.get(id);
 }

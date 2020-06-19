@@ -15,7 +15,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
         async (workerId) => {
             while (from < numArticleIds) {
-                const articleIds = _articleIds.slice(from, from + batchSize).map((id) => id.replace(/ /g, '_'));
+                const articleIds = _articleIds.slice(from, from + batchSize);
                 const to = from + articleIds.length;
                 if (log) {
                     const progressPercent = Math.floor(to / numArticleIds * 100);
@@ -35,7 +35,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                             if (articleDetail.redirects && articleDetail.redirects.length) {
                                 await redirectsXId.setMany(
                                     articleDetail.redirects.reduce((acc, redirect) => {
-                                        const rId = redirect.title.replace(/ /g, '_');
+                                        const rId = redirect.title;
                                         return {
                                             ...acc,
                                             [rId]: { targetId: articleId, title: redirect.title },
@@ -84,7 +84,7 @@ export async function getArticlesByNS(ns: number, downloader: Downloader, contin
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
             await redirectsXId.setMany(
                 (articleDetail.redirects || []).reduce((acc, redirect) => {
-                    const rId = redirect.title.replace(/ /g, '_');
+                    const rId = redirect.title;
                     return {
                         ...acc,
                         [rId]: { targetId: articleId, title: redirect.title },
