@@ -5,7 +5,7 @@ import 'dotenv/config';
 import Redis from '../../src/Redis';
 import test from 'blue-tape';
 import { config } from '../../src/config';
-import { articleDetailXId, redirectsXId, filesToDownloadXPath, populateArticleDetail, populateRedirects, populateFilesToDownload } from '../../src/stores';
+import { articleDetailXId, redirectsXId, filesToDownloadXPath, populateArticleDetail, populateRedirects, populateFilesToDownload } from 'src/stores';
 
 export const redis = new Redis({ redis: process.env.REDIS }, config);
 populateArticleDetail(redis.client);
