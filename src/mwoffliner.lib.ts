@@ -339,7 +339,7 @@ async function execute(argv: any) {
   }
 
   // Getting total number of articles from Redis
-  logger.log(`Total articles found in Redis  ${await articleDetailXId.len()}`);
+  logger.log(`Total articles found in Redis: ${await articleDetailXId.len()}`);
 
 
   const dumps: Dump[] = [];

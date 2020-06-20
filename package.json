@@ -99,7 +99,7 @@
     "sharp": "^0.25.3",
     "swig-templates": "^2.0.2",
     "tslint": "^5.20.1",
-    "typescript": "^3.8.3",
+    "typescript": "^3.9.3",
     "utf8-binary-cutter": "^0.9.1",
     "yargs": "^13.2.0"
   },
