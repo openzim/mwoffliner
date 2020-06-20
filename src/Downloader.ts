@@ -334,18 +334,10 @@ class Downloader {
       };
 
       if (queryContinuation) {
-        if (queryContinuation.coordinates && queryContinuation.coordinates.cocontinue) {
-          queryOpts.cocontinue = queryContinuation.coordinates.cocontinue;
-        }
-        if (queryContinuation.categories && queryContinuation.categories.clcontinue) {
-          queryOpts.clcontinue = queryContinuation.categories.clcontinue;
-        }
-        if (queryContinuation.pageimages && queryContinuation.pageimages.picontinue) {
-          queryOpts.picontinue = queryContinuation.pageimages.picontinue;
-        }
-        if (queryContinuation.redirects && queryContinuation.redirects.rdcontinue) {
-          queryOpts.rdcontinue = queryContinuation.redirects.rdcontinue;
-        }
+        queryOpts.cocontinue = queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue;
+        queryOpts.clcontinue = queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue;
+        queryOpts.picontinue = queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue;
+        queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue;
       }
 
       const queryString = objToQueryString(queryOpts);
@@ -354,17 +346,13 @@ class Downloader {
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
 
-      let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {};
+      let processedResponse = normalizeMwResponse(resp.query);
 
-      try {
-        gCont = resp['query-continue'].allpages.gapcontinue;
-      } catch (err) { /* NOOP */ }
+      gCont = resp['query-continue']?.allpages?.gapcontinue;
 
-      const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => {
-        return !(
-          key === 'allpages'
-        );
-      }).length === 0;
+      const queryComplete = Object.keys(resp['query-continue'] || {})
+        .filter((key) => key !== 'allpages')
+        .length === 0;
 
       if (!queryComplete) {
         queryContinuation = resp['query-continue'];
