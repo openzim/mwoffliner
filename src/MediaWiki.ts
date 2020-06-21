@@ -15,6 +15,8 @@ class MediaWiki {
   public readonly modulePath: string;
   public readonly spaceDelimiter: string;
   public readonly webUrl: string;
+  public readonly webUrlHost: string;
+  public readonly webUrlProtocol: string;
   public readonly apiUrl: string;
   public readonly veApiUrl: string;
   public readonly restApiUrl: string;
@@ -43,6 +45,8 @@ class MediaWiki {
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
     this.webUrl = urlParser.resolve(this.base, this.wikiPath);
+    this.webUrlHost = urlParser.parse(this.webUrl).host;
+    this.webUrlProtocol = urlParser.parse(this.webUrl).protocol;
 
     this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
     this.apiUrl = `${this.apiResolvedUrl}?`;

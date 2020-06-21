@@ -356,7 +356,6 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
 
 export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
     // This function handles audio tags as well as video tags
-    const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
     const subtitles: string[] = [];
     // Worth noting:
@@ -388,7 +387,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     const sourceEl = videoSources[0]; // Use first source (smallest resolution)
 
-    const sourceUrl = getFullUrl(webUrlHost, sourceEl.getAttribute('src'), mw.base);
+    const sourceUrl = getFullUrl(mw.webUrlHost, sourceEl.getAttribute('src'), mw.base);
     const fileBase = getMediaBase(sourceUrl, true);
 
     if (!fileBase) {
@@ -401,7 +400,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     const posterUrl = videoEl.getAttribute('poster');
     if (posterUrl) {
-        const videoPosterUrl = getFullUrl(webUrlHost, posterUrl, mw.base);
+        const videoPosterUrl = getFullUrl(mw.webUrlHost, posterUrl, mw.base);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
         if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
         videoEl.removeAttribute('resource');
@@ -424,14 +423,14 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     /* Scrape subtitle */
     for (const track of Array.from(videoEl.querySelectorAll('track'))) {
-        subtitles.push(await treatSubtitle(track, webUrlHost, mw, articleId));
+        subtitles.push(await treatSubtitle(track, mw, articleId));
     }
 
     return { mediaDependencies, subtitles };
 }
 
-export async function treatSubtitle(trackEle: DominoElement, webUrlHost: string, mw: MediaWiki, articleId: string): Promise<string> {
-    const subtitleSourceUrl = getFullUrl(webUrlHost, trackEle.getAttribute('src'), mw.base);
+export async function treatSubtitle(trackEle: DominoElement, mw: MediaWiki, articleId: string): Promise<string> {
+    const subtitleSourceUrl = getFullUrl(mw.webUrlHost, trackEle.getAttribute('src'), mw.base);
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl =  new URL(subtitleSourceUrl);
@@ -451,7 +450,6 @@ function shouldKeepImage(dump: Dump, img: DominoElement) {
 }
 
 async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ mediaDependencies: string[] }> {
-    const webUrlHost = urlParser.parse(mw.webUrl).host;
     const mediaDependencies: string[] = [];
 
     if (!shouldKeepImage(dump, img)) {
@@ -483,7 +481,7 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     }
 
     /* Rewrite image src attribute */
-    const src = getFullUrl(webUrlHost, img.getAttribute('src'), mw.base);
+    const src = getFullUrl(mw.webUrlHost, img.getAttribute('src'), mw.base);
     let newSrc: string;
     try {
         const resourceNamespace = 'I';

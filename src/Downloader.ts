@@ -170,11 +170,10 @@ class Downloader {
       if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
         logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
-        const domain = urlParser.parse(this.mw.base).host;
-        this.restApiUrl = `http://localhost:6927/${domain}/v1/page/mobile-sections/`;
+        this.restApiUrl = `http://localhost:6927/${this.mw.webUrlHost}/v1/page/mobile-sections/`;
 
         if (!this.mwCapabilities.veApiAvailable) {
-          this.veApiUrl = `http://localhost:8000/${domain}/v3/page/pagebundle/`;
+          this.veApiUrl = `http://localhost:8000/${this.mw.webUrlHost}/v3/page/pagebundle/`;
         }
       } else {
         logger.log(`Using REST API`);

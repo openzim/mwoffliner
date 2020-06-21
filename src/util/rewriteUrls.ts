@@ -31,7 +31,6 @@ export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump,
 }
 
 export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
-    const webUrlHost = urlParser.parse(mw.webUrl).host;
     let rel = linkNode.getAttribute('rel');
     let href = linkNode.getAttribute('href') || '';
     let hrefProtocol = urlParser.parse(href).protocol;
@@ -46,10 +45,9 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
     }
 
     if (!hrefProtocol && href.slice(0, 2) === '//') {
-        const wikiProtocol = urlParser.parse(mw.webUrl).protocol;
-        href = `${wikiProtocol}${href}`;
+        href = `${mw.webUrlProtocol}${href}`;
         linkNode.setAttribute('href', href);
-        hrefProtocol = urlParser.parse(href).protocol;
+        hrefProtocol = mw.webUrlProtocol;
     }
 
     if (!rel && linkNode.getAttribute('resource')) {
@@ -159,7 +157,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
             /* Rewrite external links starting with // */
             if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
                 if (href.substring(0, 1) === '/') {
-                    linkNode.setAttribute('href', getFullUrl(webUrlHost, href, mw.base));
+                    linkNode.setAttribute('href', getFullUrl(mw.webUrlHost, href, mw.base));
                 } else if (href.substring(0, 2) === './') {
                     migrateChildren(linkNode, linkNode.parentNode, linkNode);
                     linkNode.parentNode.removeChild(linkNode);
