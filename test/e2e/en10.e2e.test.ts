@@ -17,7 +17,6 @@ const parameters = {
     articleList: articleListUrl,
     outputDirectory: testId,
     redis: process.env.REDIS,
-    useDownloadCache: true,
     // format: ['nopic', 'novid', 'nopdf', 'nodet'],
     format: ['nopic', 'nopdf'],
 };

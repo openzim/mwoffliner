@@ -104,11 +104,9 @@ async function execute(argv: any) {
     resume,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
-    downloadCacheDirectory: _downloadCacheDirectory,
     addNamespaces: _addNamespaces,
     articleList: _articleList,
     customZimFavicon: _customZimFavicon,
-    useDownloadCache,
     optimisationCacheUrl,
     noLocalParserFallback,
     forceLocalParser,
@@ -151,7 +149,7 @@ async function execute(argv: any) {
   // Check for S3 creds
   if (optimisationCacheUrl) {
     // Decompose the url with path and other S3 creds
-    const s3UrlObj =  urlParser.parse(optimisationCacheUrl);
+    const s3UrlObj = urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3UrlObj.query);
     const s3Url = (s3UrlObj.host || '') + (s3UrlObj.pathname || '');
     this.s3Obj = new S3(s3Url, queryReader);
@@ -183,8 +181,6 @@ async function execute(argv: any) {
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout || config.defaults.requestTimeout,
-    useDownloadCache,
-    downloadCacheDirectory: null,
     noLocalParserFallback,
     forceLocalParser,
     optimisationCacheUrl,
@@ -213,15 +209,6 @@ async function execute(argv: any) {
     _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out');
   await mkdirPromise(outputDirectory);
   logger.log(`Using output directory ${outputDirectory}`);
-
-  // Download Cache directory
-  const downloadCacheDirectory = path.isAbsolute(_downloadCacheDirectory || '') ?
-    _downloadCacheDirectory : path.join(process.cwd(), _downloadCacheDirectory || `cac/${mwMetaData.langIso2}_${mwMetaData.creator}`.toLowerCase());
-  if (useDownloadCache) {
-    await mkdirPromise(downloadCacheDirectory);
-    downloader.downloadCacheDirectory = downloadCacheDirectory;
-    logger.log(`Using download cache directory ${downloadCacheDirectory}`);
-  }
 
   // Temporary directory
   const tmpDirectory = path.resolve(os.tmpdir(), `mwoffliner-${Date.now()}`);
@@ -406,15 +393,15 @@ async function execute(argv: any) {
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
       welcome: (dump.opts.mainPage ? dump.opts.mainPage : 'index'),
     }, {
-        Tags: dump.computeZimTags(),
-        Language: dump.mwMetaData.langIso3,
-        Title: dump.opts.customZimTitle || dump.mwMetaData.title,
-        Name: dump.computeFilenameRadical(false, true, true),
-        Flavour: dump.computeFlavour(),
-        Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
-        Creator: dump.mwMetaData.creator,
-        Publisher: dump.opts.publisher,
-      });
+      Tags: dump.computeZimTags(),
+      Language: dump.mwMetaData.langIso3,
+      Title: dump.opts.customZimTitle || dump.mwMetaData.title,
+      Name: dump.computeFilenameRadical(false, true, true),
+      Flavour: dump.computeFlavour(),
+      Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
+      Creator: dump.mwMetaData.creator,
+      Publisher: dump.opts.publisher,
+    });
     const scraperArticle = new ZimArticle({
       ns: 'M',
       data: `mwoffliner ${packageJSON.version}`,
@@ -459,7 +446,7 @@ async function execute(argv: any) {
     await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {
       return await pmap(moduleList, (oneModule) => {
         return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any);
-      }, {concurrency: downloader.speed});
+      }, { concurrency: downloader.speed });
     }));
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
@@ -547,7 +534,7 @@ async function execute(argv: any) {
             genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) + '\n' +
             '\n</head>'),
       );
-      doc.querySelector('title').innerHTML =  sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle);
+      doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle);
       const articlesWithImages: ArticleDetail[] = [];
       const allArticles: ArticleDetail[] = [];
       for (const articleId of articleListLines) {
