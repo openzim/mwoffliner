@@ -6,8 +6,8 @@ import * as backoff from 'backoff';
 import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
-import type {BackoffStrategy} from 'backoff';
-import axios, {AxiosRequestConfig} from 'axios';
+import type { BackoffStrategy } from 'backoff';
+import axios, { AxiosRequestConfig } from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
@@ -25,7 +25,7 @@ import {
   stripHttpFromUrl
 } from './util';
 import S3 from './S3';
-import {Dump} from './Dump';
+import { Dump } from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
 
@@ -46,8 +46,6 @@ interface DownloaderOpts {
   uaString: string;
   speed: number;
   reqTimeout: number;
-  useDownloadCache: boolean;
-  downloadCacheDirectory?: string;
   noLocalParserFallback: boolean;
   forceLocalParser: boolean;
   optimisationCacheUrl: string;
@@ -73,8 +71,6 @@ class Downloader {
   public readonly mw: MediaWiki;
   public loginCookie: string = '';
   public readonly speed: number;
-  public readonly useDownloadCache: boolean;
-  public downloadCacheDirectory?: string;
   public veApiUrl: string;
   public restApiUrl: string;
 
@@ -91,15 +87,13 @@ class Downloader {
   private mwCapabilities: MWCapabilities; // todo move to MW
 
 
-  constructor({ mw, uaString, speed, reqTimeout, useDownloadCache, downloadCacheDirectory, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
     this.maxActiveRequests = speed * 10;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
-    this.useDownloadCache = useDownloadCache;
-    this.downloadCacheDirectory = downloadCacheDirectory;
     this.noLocalParserFallback = noLocalParserFallback;
     this.forceLocalParser = forceLocalParser;
     this.optimisationCacheUrl = optimisationCacheUrl;
@@ -110,7 +104,7 @@ class Downloader {
       coordinatesAvailable: true,
     };
 
-    this.backoffOptions =  {
+    this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
       retryIf: (err: any) => err.code === 'ECONNABORTED' || err.response?.status !== 404,
@@ -194,11 +188,11 @@ class Downloader {
     }
   }
 
-  public isImageUrl (url: string): boolean {
+  public isImageUrl(url: string): boolean {
     return !!URL_IMAGE_REGEX.exec(url);
   }
 
-  public isMimeTypeImage (mimetype: string): boolean {
+  public isMimeTypeImage(mimetype: string): boolean {
     return !!MIME_IMAGE_REGEX.exec(mimetype);
   }
 
@@ -392,7 +386,7 @@ class Downloader {
     const url = this.deserializeUrl(_url);
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, {url, timeout: this.requestTimeout}, (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, { url, timeout: this.requestTimeout }, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
@@ -410,17 +404,6 @@ class Downloader {
       throw new Error(`Parameter [${_url}] is not a valid url`);
     }
     const url = this.deserializeUrl(_url);
-    if (this.useDownloadCache) {
-      try {
-        const downloadCacheVal = await this.readFromDownloadCache(url);
-        if (downloadCacheVal) {
-          logger.info(`Download cache hit for [${url}]`);
-          return downloadCacheVal;
-        }
-      } catch (err) {
-        // NOOP (download cache miss)
-      }
-    }
 
     const self = this;
     await self.claimRequest();
@@ -432,14 +415,6 @@ class Downloader {
           const httpStatus = err.response && err.response.status;
           logger.warn(`Failed to get [${url}] [status=${httpStatus}]`);
           reject(err);
-        } else if (self.useDownloadCache && self.downloadCacheDirectory) {
-          try {
-            await self.writeToDownloadCache(url, val);
-            resolve(val);
-          } catch (err) {
-            logger.warn(`Failed to cache download for [${url}]`, err);
-            reject({ message: `Failed to cache download`, err });
-          }
         } else {
           resolve(val);
         }
@@ -456,34 +431,11 @@ class Downloader {
     }
   }
 
-  private async writeToDownloadCache(url: string, val: { content: Buffer, responseHeaders: any }): Promise<void> {
-    const fileName = md5(url);
-    const filePath = path.join(this.downloadCacheDirectory, fileName);
-    logger.info(`Caching response for [${url}] to [${filePath}]`);
-    await writeFilePromise(filePath, val.content, null);
-    await writeFilePromise(`${filePath}.headers`, JSON.stringify(val.responseHeaders), 'utf8');
-  }
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
     return this.mwCapabilities.restApiAvailable && !isMainPage
       ? `${this.restApiUrl}${encodeURIComponent(articleId)}`
       : `${this.mw.veApiUrl}${encodeURIComponent(articleId)}`;
-  }
-
-  private async readFromDownloadCache(url: string) {
-    if (!this.downloadCacheDirectory) {
-      throw new Error('No Download Cache Directory Defined');
-    }
-    const fileName = md5(url);
-    const filePath = path.join(this.downloadCacheDirectory, fileName);
-    logger.info(`Finding cached download for [${url}] ([${filePath}])`);
-    const [content, responseHeaders] = await Promise.all([
-      readFilePromise(filePath, null),
-      readFilePromise(`${filePath}.headers`, 'utf8').catch(() => null),
-    ]);
-    return {
-      content, responseHeaders,
-    };
   }
 
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
@@ -584,7 +536,7 @@ class Downloader {
     return null;
   }
 
-  private getJSONCb<T>({url, timeout}: AxiosRequestConfig, handler: (...args: any[]) => any): void {
+  private getJSONCb<T>({ url, timeout }: AxiosRequestConfig, handler: (...args: any[]) => any): void {
     logger.info(`Getting JSON from [${url}]`);
     axios.get<T>(url, { responseType: 'json', timeout })
       .then((a) => handler(null, a.data), handler)
@@ -595,7 +547,7 @@ class Downloader {
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
-            return this.getJSONCb({url, timeout}, handler);
+            return this.getJSONCb({ url, timeout }, handler);
           } else if (err.response && err.response.status === 404) {
             handler(err);
           }
@@ -614,7 +566,7 @@ class Downloader {
 
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-          this.downloadImage(requestOptions, handler);
+        this.downloadImage(requestOptions, handler);
       } else {
         const resp = await axios(requestOptions);
         handler(null, {
@@ -641,11 +593,11 @@ class Downloader {
         const resp = await axios(requestOptions);
         // Most of the images after uploading once will always have 304 status, until modified.
         if (resp.status === 304) {
-            handler(null, {
-              responseHeaders: (({ Body, ...o }) => o)(imageResp),
-              content: imageResp.Body,
-            });
-            return;
+          handler(null, {
+            responseHeaders: (({ Body, ...o }) => o)(imageResp),
+            content: imageResp.Body,
+          });
+          return;
         }
 
         // Check for the etag and upload
