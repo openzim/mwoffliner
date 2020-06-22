@@ -4,7 +4,7 @@ import tapePromise from 'tape-promise';
 import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
-import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl } from 'src/util';
+import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, getZimCreationDate } from 'src/util';
 import S3 from 'src/S3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
@@ -91,7 +91,8 @@ test('Downloader class', async (t) => {
     t.ok(!!LondonImage.responseHeaders['content-type'].includes('image/'), 'downloadContent successfully downloaded an image');
 
     const mwMetadata = await mw.getMwMetaData(downloader);
-    const dump = new Dump('', {} as any, mwMetadata);
+
+    const dump = new Dump('', {} as any, mwMetadata, getZimCreationDate());
 
     const LondonArticle = await downloader.getArticle('London', dump);
     t.equal(LondonArticle.length, 1, 'getArticle of "London" returns one article');

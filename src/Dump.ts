@@ -55,7 +55,7 @@ export class Dump {
 
     private formatFlavour: string;
 
-    constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor?: CustomProcessor) {
+    constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData, contentDate: string, customProcessor?: CustomProcessor) {
         this.mwMetaData = mwMetaData;
         this.opts = opts;
         this.customProcessor = customProcessor;
@@ -66,10 +66,7 @@ export class Dump {
         this.nopdf = formatStr.includes('nopdf');
         this.nodet = formatStr.includes('nodet');
         this.formatFlavour = formatFlavour;
-
-        const date = new Date();
-        this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
-
+        this.contentDate = contentDate;
         /* Get language specific strings */
         this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
     }

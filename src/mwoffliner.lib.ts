@@ -46,7 +46,8 @@ import {
   readFilePromise,
   sanitizeString,
   saveStaticFiles,
-  writeFilePromise
+  writeFilePromise,
+  getZimCreationDate
 } from './util';
 import S3 from './S3';
 import Redis from './Redis';
@@ -352,6 +353,7 @@ async function execute(argv: any) {
       tags: customZimTags,
     },
       { ...mwMetaData, mainPage },
+      getZimCreationDate(),
       customProcessor,
     );
     dumps.push(dump);

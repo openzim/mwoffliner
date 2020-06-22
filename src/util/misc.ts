@@ -213,7 +213,7 @@ export function genHeaderScript(config: Config, js: string, articleId: string, c
   return `<script src="${upStr}${resourceNamespace}/${jsPath(config, path)}" class="${classList}"></script>`;
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
-  return `<link rel="canonical" href="${ webUrl }${ encodeURIComponent(articleId) }" />`;
+  return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`;
 }
 
 export function getDumps(format: boolean | boolean[]) {
@@ -311,7 +311,7 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   });
 }
 
-export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M'| '-') {
+export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M' | '-') {
   const slashesInUrl = parentArticleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const newUrl = `${upStr}${resourceNamespace}/` + fileBase;
@@ -352,6 +352,11 @@ export function ensureTrailingChar(input: string, trailingChar: string) {
   return input.replace(rx, '$1' + trailingChar);
 }
 
-export function stripHttpFromUrl (url: string): string {
+export function stripHttpFromUrl(url: string): string {
   return url.replace(FIND_HTTP_REGEX, '');
+}
+
+export function getZimCreationDate(): string {
+  const date = new Date();
+  return `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
 }

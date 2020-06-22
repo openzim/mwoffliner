@@ -7,7 +7,7 @@ import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from 'src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
-import { mwRetToArticleDetail } from 'src/util';
+import { mwRetToArticleDetail, getZimCreationDate } from 'src/util';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -74,7 +74,7 @@ test('applyOtherTreatments', async (t) => {
         }
     }
 
-    const dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData);
+    const dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData, getZimCreationDate());
     {
         const doc = domino.createDocument(html);
         await applyOtherTreatments(doc, dump2);
