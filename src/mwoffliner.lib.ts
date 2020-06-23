@@ -47,7 +47,6 @@ import {
   sanitizeString,
   saveStaticFiles,
   writeFilePromise,
-  getZimFilenameDate
 } from './util';
 import S3 from './S3';
 import Redis from './Redis';
