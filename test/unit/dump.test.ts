@@ -1,7 +1,6 @@
 import './bootstrap.test';
 import test from 'blue-tape';
 import { Dump } from '../../src/Dump';
-import { getZimCreationDate } from '../../src/util';
 
 test('Dump formats', async (t) => {
     const formatTests = {
@@ -18,7 +17,7 @@ test('Dump formats', async (t) => {
     };
 
     for (const [format, expectedFormatTags] of Object.entries(formatTests)) {
-        const dump = new Dump(format, {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any, getZimCreationDate());
+        const dump = new Dump(format, {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any);
 
         const outFormat = dump.computeFilenameRadical(true, false, true);
         t.equal(outFormat, '_' + expectedFormatTags, `tag [${expectedFormatTags}] is correct`);

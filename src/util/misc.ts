@@ -356,7 +356,3 @@ export function stripHttpFromUrl(url: string): string {
   return url.replace(FIND_HTTP_REGEX, '');
 }
 
-export function getZimCreationDate(): string {
-  const date = new Date();
-  return `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
-}

@@ -5,7 +5,6 @@ import axios from 'axios';
 import execa = require('execa');
 import logger from '../src/Logger';
 import 'dotenv/config';
-import { getZimCreationDate } from '../src/util';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -40,7 +39,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
 
-    const dump = new Dump(format, {} as any, mw.metaData, getZimCreationDate());
+    const dump = new Dump(format, {} as any, mw.metaData);
 
     return {
         mw,

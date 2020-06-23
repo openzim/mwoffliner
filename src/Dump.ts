@@ -25,6 +25,7 @@ interface DumpOpts {
     minifyHtml: boolean;
     keepEmptyParagraphs: boolean;
     tags?: string;
+    contentDate: string;
 }
 
 export class Dump {
@@ -33,7 +34,6 @@ export class Dump {
     public novid: boolean;
     public nopdf: boolean;
     public nodet: boolean;
-    public contentDate: string;
     public opts: DumpOpts;
     public strings: KVS<string>;
     public mwMetaData: MWMetaData;
@@ -55,7 +55,7 @@ export class Dump {
 
     private formatFlavour: string;
 
-    constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData, contentDate: string, customProcessor?: CustomProcessor) {
+    constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor?: CustomProcessor) {
         this.mwMetaData = mwMetaData;
         this.opts = opts;
         this.customProcessor = customProcessor;
@@ -66,7 +66,6 @@ export class Dump {
         this.nopdf = formatStr.includes('nopdf');
         this.nodet = formatStr.includes('nodet');
         this.formatFlavour = formatFlavour;
-        this.contentDate = contentDate;
         /* Get language specific strings */
         this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
     }
@@ -115,7 +114,7 @@ export class Dump {
             radical += this.computeFlavour();
         }
         if (!withoutDate) {
-            radical += `_${this.contentDate}`;
+            radical += `_${this.opts.contentDate}`;
         }
         return radical;
     }
