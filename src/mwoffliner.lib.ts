@@ -325,8 +325,7 @@ async function execute(argv: any) {
     // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
   }
 
-  const date = new Date();
-  const contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
+  const filenameDate = (new Date()).toISOString().slice(0, 7);
 
   // Getting total number of articles from Redis
   logger.log(`Total articles found in Redis: ${await articleDetailXId.len()}`);
@@ -353,7 +352,7 @@ async function execute(argv: any) {
       minifyHtml,
       keepEmptyParagraphs,
       tags: customZimTags,
-      contentDate
+      filenameDate
     },
       { ...mwMetaData, mainPage },
       customProcessor,

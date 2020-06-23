@@ -25,7 +25,7 @@ interface DumpOpts {
     minifyHtml: boolean;
     keepEmptyParagraphs: boolean;
     tags?: string;
-    contentDate: string;
+    filenameDate: string;
 }
 
 export class Dump {
@@ -114,7 +114,7 @@ export class Dump {
             radical += this.computeFlavour();
         }
         if (!withoutDate) {
-            radical += `_${this.opts.contentDate}`;
+            radical += `_${this.opts.filenameDate}`;
         }
         return radical;
     }
