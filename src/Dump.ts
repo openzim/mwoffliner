@@ -25,6 +25,7 @@ interface DumpOpts {
     minifyHtml: boolean;
     keepEmptyParagraphs: boolean;
     tags?: string;
+    filenameDate: string;
 }
 
 export class Dump {
@@ -33,7 +34,6 @@ export class Dump {
     public novid: boolean;
     public nopdf: boolean;
     public nodet: boolean;
-    public contentDate: string;
     public opts: DumpOpts;
     public strings: KVS<string>;
     public mwMetaData: MWMetaData;
@@ -66,10 +66,6 @@ export class Dump {
         this.nopdf = formatStr.includes('nopdf');
         this.nodet = formatStr.includes('nodet');
         this.formatFlavour = formatFlavour;
-
-        const date = new Date();
-        this.contentDate = `${date.getFullYear()}-${(`0${date.getMonth() + 1}`).slice(-2)}`;
-
         /* Get language specific strings */
         this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en');
     }
@@ -118,7 +114,7 @@ export class Dump {
             radical += this.computeFlavour();
         }
         if (!withoutDate) {
-            radical += `_${this.contentDate}`;
+            radical += `_${this.opts.filenameDate}`;
         }
         return radical;
     }

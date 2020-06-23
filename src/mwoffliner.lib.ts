@@ -46,7 +46,7 @@ import {
   readFilePromise,
   sanitizeString,
   saveStaticFiles,
-  writeFilePromise
+  writeFilePromise,
 } from './util';
 import S3 from './S3';
 import Redis from './Redis';
@@ -325,6 +325,8 @@ async function execute(argv: any) {
     // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
   }
 
+  const filenameDate = (new Date()).toISOString().slice(0, 7);
+
   // Getting total number of articles from Redis
   logger.log(`Total articles found in Redis: ${await articleDetailXId.len()}`);
 
@@ -350,6 +352,7 @@ async function execute(argv: any) {
       minifyHtml,
       keepEmptyParagraphs,
       tags: customZimTags,
+      filenameDate
     },
       { ...mwMetaData, mainPage },
       customProcessor,

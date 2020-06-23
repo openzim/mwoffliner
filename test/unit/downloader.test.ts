@@ -91,6 +91,7 @@ test('Downloader class', async (t) => {
     t.ok(!!LondonImage.responseHeaders['content-type'].includes('image/'), 'downloadContent successfully downloaded an image');
 
     const mwMetadata = await mw.getMwMetaData(downloader);
+
     const dump = new Dump('', {} as any, mwMetadata);
 
     const LondonArticle = await downloader.getArticle('London', dump);
