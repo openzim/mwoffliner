@@ -195,14 +195,14 @@ _test('Downloader class with optimisation', async (t) => {
 
         // Download the uploaded image from S3 and check the Etags
         const imageContent =  await s3.downloadBlob(imagePath);
-        t.equal(downloader.checkAndReplaceWeakEtag(resp.headers.etag), imageContent.Metadata.etag, 'Etag Matched from online Mediawiki and S3');
+        t.equal(downloader.removeEtagWeakPrefix(resp.headers.etag), imageContent.Metadata.etag, 'Etag Matched from online Mediawiki and S3');
 
         // Upload Image with wrong Etag
         await s3.uploadBlob(imagePath, resp.data, 'random-string');
 
         // Download again to check the Etag has been refreshed properly
         const updatedImage = await s3.downloadBlob(imagePath);
-        t.equal(updatedImage.Metadata.etag,  downloader.checkAndReplaceWeakEtag(resp.headers.etag), 'Image refreshed with proper Etag');
+        t.equal(updatedImage.Metadata.etag,  downloader.removeEtagWeakPrefix(resp.headers.etag), 'Image refreshed with proper Etag');
     }, 5000)
 });
 

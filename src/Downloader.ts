@@ -196,8 +196,8 @@ class Downloader {
     return !!MIME_IMAGE_REGEX.exec(mimetype);
   }
 
-  public checkAndReplaceWeakEtag(etag: string): string {
-    return WEAK_ETAG_REGEX.test(etag) ? etag.replace('W/', '').replace(/"/g, '') : etag;
+  public removeEtagWeakPrefix(etag: string): string {
+    return etag && etag.replace(WEAK_ETAG_REGEX, '');
   }
 
   public async initLocalServices(): Promise<void> {
@@ -585,9 +585,13 @@ class Downloader {
 
   private async downloadImage(requestOptions: any, handler: any) {
     try {
+      // TODO: remove when Axios can handle HTTP 304 properly
+      // See: https://github.com/openzim/mwoffliner/issues/1184
+      delete requestOptions.headers['accept-encoding'];
+
       this.s3.downloadBlob(stripHttpFromUrl(requestOptions.url)).then(async (imageResp) => {
         if (imageResp?.Metadata?.etag) {
-          requestOptions.headers['If-None-Match'] = this.checkAndReplaceWeakEtag(imageResp.Metadata.etag);
+          requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
         }
 
         const resp = await axios(requestOptions);
@@ -601,7 +605,7 @@ class Downloader {
         }
 
         // Check for the etag and upload
-        const etag = this.checkAndReplaceWeakEtag(resp.headers.etag);
+        const etag = this.removeEtagWeakPrefix(resp.headers.etag);
         if (etag) {
           this.s3.uploadBlob(stripHttpFromUrl(requestOptions.url), resp.data, etag);
         }

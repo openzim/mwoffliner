@@ -6,4 +6,4 @@ export const CONCURRENCY_LIMIT = 10;
 export const MIME_IMAGE_REGEX = /^image+[/-\w.]+$/;
 export const FIND_HTTP_REGEX = /^(?:https?:\/\/)?/i;
 export const DB_ERROR = 'internal_api_error_DBQueryError';
-export const WEAK_ETAG_REGEX = /^W\//;
+export const WEAK_ETAG_REGEX = /^(W\/)/;
