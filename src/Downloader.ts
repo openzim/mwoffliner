@@ -71,8 +71,8 @@ class Downloader {
   public readonly mw: MediaWiki;
   public loginCookie: string = '';
   public readonly speed: number;
-  public veApiUrl: string;
-  public restApiUrl: string;
+  private baseUrl: string;
+  private baseUrlForMainPage: string;
 
   private readonly uaString: string;
   private activeRequests = 0;
@@ -114,8 +114,10 @@ class Downloader {
       ...backoffOptions,
     };
 
-    this.veApiUrl = this.mw.veApiUrl;
-    this.restApiUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
+    // first of all, assume optimistically that both rest and VE are available
+    // that will be checked on the next phase in checkCapabilities()
+    this.baseUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
+    this.baseUrlForMainPage = this.mw.veApiUrl;
   }
 
   public serializeUrl(url: string): string {
@@ -142,8 +144,9 @@ class Downloader {
   }
 
   public async checkCapabilities(): Promise<void> {
+    // check if RESTBase-powered API available
     try {
-      const restApiMainPageQuery = await this.getJSON<any>(`${this.restApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+      const restApiMainPageQuery = await this.getJSON<any>(`${this.baseUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
       this.mwCapabilities.restApiAvailable = !!restApiMainPageQuery.lead;
     } catch (err) {
       this.mwCapabilities.restApiAvailable = false;
@@ -151,6 +154,7 @@ class Downloader {
     }
 
     if (!this.forceLocalParser) {
+      // check if VisualEditor available
       try {
         const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
@@ -164,10 +168,12 @@ class Downloader {
       if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
         logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
         await this.initLocalServices();
-        this.restApiUrl = `http://localhost:6927/${this.mw.webUrlHost}/v1/page/mobile-sections/`;
 
+        if (!this.mwCapabilities.restApiAvailable) {
+          this.baseUrl = `http://localhost:6927/${this.mw.webUrlHost}/v1/page/mobile-sections/`;
+        }
         if (!this.mwCapabilities.veApiAvailable) {
-          this.veApiUrl = `http://localhost:8000/${this.mw.webUrlHost}/v3/page/pagebundle/`;
+          this.baseUrlForMainPage = `http://localhost:8000/${this.mw.webUrlHost}/v3/page/pagebundle/`;
         }
       } else {
         logger.log(`Using REST API`);
@@ -433,9 +439,7 @@ class Downloader {
 
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return this.mwCapabilities.restApiAvailable && !isMainPage
-      ? `${this.restApiUrl}${encodeURIComponent(articleId)}`
-      : `${this.mw.veApiUrl}${encodeURIComponent(articleId)}`;
+    return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`;
   }
 
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
