@@ -197,7 +197,7 @@ class Downloader {
   }
 
   public checkAndReplaceWeakEtag(etag: string): string {
-    return WEAK_ETAG_REGEX.test(etag) ? etag.replace('W/', '').replace(/"/g, '') : etag;
+    return etag && etag.replace(WEAK_ETAG_REGEX, '');
   }
 
   public async initLocalServices(): Promise<void> {
