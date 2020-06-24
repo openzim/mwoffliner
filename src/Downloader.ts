@@ -196,7 +196,7 @@ class Downloader {
     return !!MIME_IMAGE_REGEX.exec(mimetype);
   }
 
-  public checkAndReplaceWeakEtag(etag: string): string {
+  public removeEtagWeakPrefix(etag: string): string {
     return etag && etag.replace(WEAK_ETAG_REGEX, '');
   }
 
@@ -591,7 +591,7 @@ class Downloader {
 
       this.s3.downloadBlob(stripHttpFromUrl(requestOptions.url)).then(async (imageResp) => {
         if (imageResp?.Metadata?.etag) {
-          requestOptions.headers['If-None-Match'] = this.checkAndReplaceWeakEtag(imageResp.Metadata.etag);
+          requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
         }
 
         const resp = await axios(requestOptions);
@@ -605,7 +605,7 @@ class Downloader {
         }
 
         // Check for the etag and upload
-        const etag = this.checkAndReplaceWeakEtag(resp.headers.etag);
+        const etag = this.removeEtagWeakPrefix(resp.headers.etag);
         if (etag) {
           this.s3.uploadBlob(stripHttpFromUrl(requestOptions.url), resp.data, etag);
         }
