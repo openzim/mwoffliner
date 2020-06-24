@@ -12,7 +12,7 @@ import { articleDetailXId } from 'src/stores';
 import logger from 'src/Logger';
 import 'dotenv/config';
 
-test('Downloader class', async (t) => {
+test.only('Downloader class', async (t) => {
     const mw = new MediaWiki({
         base: 'https://en.wikipedia.org',
         getCategories: true,
@@ -84,7 +84,7 @@ test('Downloader class', async (t) => {
         t.ok(true, 'downloadContent throws when empty string is passed');
     }
 
-    const { data: LondonDetail } = await Axios.get(`${downloader.restApiUrl}London`);
+    const { data: LondonDetail } = await Axios.get(`${downloader.baseUrl}London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
     const LondonImage = await downloader.downloadContent(imgToGet as string);

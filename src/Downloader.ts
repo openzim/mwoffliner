@@ -71,8 +71,8 @@ class Downloader {
   public readonly mw: MediaWiki;
   public loginCookie: string = '';
   public readonly speed: number;
-  private baseUrl: string;
-  private baseUrlForMainPage: string;
+  public baseUrl: string;
+  public baseUrlForMainPage: string;
 
   private readonly uaString: string;
   private activeRequests = 0;
