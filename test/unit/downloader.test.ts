@@ -12,7 +12,7 @@ import { articleDetailXId } from 'src/stores';
 import logger from 'src/Logger';
 import 'dotenv/config';
 
-test.only('Downloader class', async (t) => {
+test('Downloader class', async (t) => {
     const mw = new MediaWiki({
         base: 'https://en.wikipedia.org',
         getCategories: true,
