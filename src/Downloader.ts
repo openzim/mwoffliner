@@ -587,7 +587,7 @@ class Downloader {
     try {
       // TODO: remove when Axios can handle HTTP 304 properly
       // See: https://github.com/openzim/mwoffliner/issues/1184
-      delete requestOptions['headers']['accept-encoding'];
+      delete requestOptions.headers['accept-encoding'];
 
       this.s3.downloadBlob(stripHttpFromUrl(requestOptions.url)).then(async (imageResp) => {
         if (imageResp?.Metadata?.etag) {
