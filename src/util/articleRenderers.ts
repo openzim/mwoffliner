@@ -17,11 +17,9 @@ import {getStrippedTitleFromHtml} from './misc';
 export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
 
     const articleDetail = await articleDetailXId.get(articleId);
-
     const isMainPage = articleId === dump.mwMetaData.mainPage;
-    const isRendered = isMainPage || !capabilities.restApiAvailable;
 
-    if (isRendered) {
+    if (isMainPage) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
@@ -92,8 +90,6 @@ const renderDesktopArticle = (json: any, articleId: string, articleDetail: Artic
         return isMainPage ? json.visualeditor.content : injectHeader(json.visualeditor.content, articleId, articleDetail);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;
-    } else if (json.parse && json.parse.text) {
-        return json.parse.text['*'];
     } else if (json.error) {
         logger.error(`Error in retrieved article [${articleId}]:`, json.error);
         return '';
