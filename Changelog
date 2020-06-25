@@ -1,3 +1,12 @@
+1.10.9:
+* FIX: Support of video subtitles
+* FIX: Run generating ZIM files with different dates in filename
+* UPDATE: Better default standard Redis client conf
+* UPDATE: Use node-libzim version 2.2.4
+* UPDATE: Optimisation of the S3 workflow
+* UPDATE: Various revamping to simplify code base
+* DEL: Custom download cache
+
 1.10.8:
 * UPDATE: Use node-libzim version 2.2.3
 
