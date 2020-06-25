@@ -72,8 +72,8 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
 
     stylesheetQueue.push(links);
 
-    return new Promise((resolve, reject) => {
-        stylesheetQueue.drain = resolve;
+    return new Promise((resolve: any, reject) => {
+        stylesheetQueue.drain(resolve);
     }).then(() => {
         return {
             finalCss,

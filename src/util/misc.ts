@@ -93,20 +93,16 @@ export function randomString(len: number) {
 }
 
 export function mkdirPromise(path: string) {
-  return new Promise((resolve, reject) => {
-    mkdirp(path, (err: any) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+  try {
+    return mkdirp(path, { recursive: true })
+  } catch(err){
+    return err;
+  }
 }
 
 export function writeFilePromise(path: string, content: string | Buffer, encoding = 'utf8') {
   return new Promise((resolve, reject) => {
-    fs.writeFile(path, content, { encoding }, (err) => {
+    fs.writeFile(path, content, encoding, (err) => {
       if (err) {
         reject(err);
       } else {
