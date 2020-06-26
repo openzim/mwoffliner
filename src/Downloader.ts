@@ -347,7 +347,9 @@ class Downloader {
 
       let processedResponse = normalizeMwResponse(resp.query);
 
-      gCont = resp['query-continue']?.allpages?.gapcontinue;
+      try {
+          gCont = resp['query-continue'].allpages.gapcontinue;
+      } catch (err) { /* NOOP */ }
 
       const queryComplete = Object.keys(resp['query-continue'] || {})
         .filter((key) => key !== 'allpages')
