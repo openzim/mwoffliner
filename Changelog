@@ -1,3 +1,7 @@
+1.10.10:
+* UPDATE: Small memory usage improvement
+* FIX: Regression by article retrieval (from namespace)
+
 1.10.9:
 * FIX: Support of video subtitles
 * FIX: Run generating ZIM files with different dates in filename
