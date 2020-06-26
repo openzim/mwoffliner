@@ -66,7 +66,6 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                     } else {
                         logger.warn(`Error downloading file [${downloader.deserializeUrl(resp.url)}], skipping`);
                         dump.status.files.fail += 1;
-                        await filesToDownloadXPath.delete(resp.path);
                     }
                 }
             }

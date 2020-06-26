@@ -388,9 +388,6 @@ async function execute(argv: any) {
     logger.log(`Writing zim to [${outZim}]`);
     dump.outFile = outZim;
 
-    logger.log(`Flushing Redis file store`);
-    await filesToDownloadXPath.flush();
-    await filesToRetryXPath.flush();
     const zimCreator = new ZimCreator({
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
@@ -453,6 +450,10 @@ async function execute(argv: any) {
     }));
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
+
+    logger.log(`Flushing Redis file store`);
+    await filesToDownloadXPath.flush();
+    await filesToRetryXPath.flush();
 
     logger.log(`Writing Article Redirects`);
     await writeArticleRedirects(downloader, dump, zimCreator);
