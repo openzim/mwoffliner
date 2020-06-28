@@ -116,8 +116,8 @@ class Downloader {
 
     // first of all, assume optimistically that both rest and VE are available
     // that will be checked on the next phase in checkCapabilities()
-    this.baseUrl = `${this.mw.restApiUrl}page/mobile-sections/`;
-    this.baseUrlForMainPage = this.mw.veApiUrl;
+    this.baseUrl = `${this.mw.restApiUrl.href}page/mobile-sections/`;
+    this.baseUrlForMainPage = this.mw.veApiUrl.href;
   }
 
   public serializeUrl(url: string): string {
@@ -156,7 +156,7 @@ class Downloader {
     if (!this.forceLocalParser) {
       // check if VisualEditor available
       try {
-        const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+        const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl.href}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
       } catch (err) {
         this.mwCapabilities.veApiAvailable = false;
@@ -170,10 +170,10 @@ class Downloader {
         await this.initLocalServices();
 
         if (!this.mwCapabilities.restApiAvailable) {
-          this.baseUrl = `http://localhost:6927/${this.mw.webUrlHost}/v1/page/mobile-sections/`;
+          this.baseUrl = `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/`;
         }
         if (!this.mwCapabilities.veApiAvailable) {
-          this.baseUrlForMainPage = `http://localhost:8000/${this.mw.webUrlHost}/v3/page/pagebundle/`;
+          this.baseUrlForMainPage = `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/`;
         }
       } else {
         logger.log(`Using REST API`);
@@ -186,7 +186,7 @@ class Downloader {
     const reqOpts = objToQueryString({
       ...this.getArticleQueryOpts(),
     });
-    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl}${reqOpts}`);
+    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl.href}${reqOpts}`);
     const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
     if (isCoordinateWarning) {
       logger.info(`Coordinates not available on this wiki`);
@@ -239,7 +239,7 @@ class Downloader {
             },
           },
           mwApis: [{
-            uri: this.mw.apiResolvedUrl,
+            uri: this.mw.apiUrl.href,
           }],
         },
       }, {
@@ -249,7 +249,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `https://{{domain}}${this.mw.apiResolvedPath}`,
+            uri: `https://{{domain}}${this.mw.apiUrl.pathname}`,
             headers: {
               'user-agent': '{{user-agent}}',
             },
@@ -271,7 +271,7 @@ class Downloader {
   }
 
   public query(query: string): KVS<any> {
-    return this.getJSON(`${this.mw.apiUrl}${query}`);
+    return this.getJSON(`${this.mw.apiUrl.href}${query}`);
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
@@ -289,7 +289,7 @@ class Downloader {
         ...(continuation || {}),
       };
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      const reqUrl = `${this.mw.apiUrl.href}${queryString}`;
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
 
@@ -340,7 +340,7 @@ class Downloader {
       }
 
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = `${this.mw.apiUrl}${queryString}`;
+      const reqUrl = `${this.mw.apiUrl.href}${queryString}`;
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);

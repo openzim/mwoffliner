@@ -1,4 +1,4 @@
-import urlParser from 'url';
+import urlParser, { Url } from 'url';
 import * as pathParser from 'path';
 import logger from './Logger';
 import * as util from './util';
@@ -10,16 +10,12 @@ import { ensureTrailingChar } from './util';
 class MediaWiki {
   public metaData: MWMetaData;
   public readonly base: string;
-  public readonly apiResolvedPath: string;
-  public readonly apiResolvedUrl: string;
   public readonly modulePath: string;
   public readonly spaceDelimiter: string;
-  public readonly webUrl: string;
-  public readonly webUrlHost: string;
-  public readonly webUrlProtocol: string;
-  public readonly apiUrl: string;
-  public readonly veApiUrl: string;
-  public readonly restApiUrl: string;
+  public readonly webUrl: Url;
+  public readonly apiUrl: Url;
+  public readonly veApiUrl: Url;
+  public readonly restApiUrl: Url;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
@@ -29,7 +25,6 @@ class MediaWiki {
   private readonly password: string;
   private readonly apiPath: string;
   private readonly domain: string;
-  private readonly webUrlPath: string;
   private readonly articleApiUrlBase: string;
 
   constructor(config: MWConfig) {
@@ -44,25 +39,20 @@ class MediaWiki {
     this.apiPath = config.apiPath ?? 'w/api.php';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = urlParser.resolve(this.base, this.wikiPath);
-    this.webUrlHost = urlParser.parse(this.webUrl).host;
-    this.webUrlProtocol = urlParser.parse(this.webUrl).protocol;
+    this.webUrl = urlParser.parse(urlParser.resolve(this.base, this.wikiPath));
+    this.apiUrl = urlParser.parse(`${urlParser.resolve(this.base, this.apiPath)}?`);
 
-    this.apiResolvedUrl = urlParser.resolve(this.base, this.apiPath);
-    this.apiUrl = `${this.apiResolvedUrl}?`;
-    this.veApiUrl = `${this.apiUrl}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`;
-    this.apiResolvedPath = urlParser.parse(this.apiUrl).pathname;
+    this.veApiUrl = urlParser.parse(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
-    this.restApiUrl = ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/');
+    this.restApiUrl = urlParser.parse(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/'));
 
     this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
-    this.webUrlPath = urlParser.parse(this.webUrl).pathname;
-    this.articleApiUrlBase = `${this.apiUrl}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
+    this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
   }
 
   public async login(downloader: Downloader) {
     if (this.username && this.password) {
-      let url = `${this.apiUrl}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
+      let url = `${this.apiUrl.href}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
       if (this.domain) {
         url = `${url}&lgdomain=${this.domain}`;
       }
@@ -87,7 +77,7 @@ class MediaWiki {
   // * encodeURIComponent is mandatory for languages with illegal letters for uri (fa.wikipedia.org)
   // * encodeURI is mandatory to encode the pipes '|' but the '&' and '=' must not be encoded
   public siteInfoUrl() {
-    return `${this.apiUrl}action=query&meta=siteinfo&format=json`;
+    return `${this.apiUrl.href}action=query&meta=siteinfo&format=json`;
   }
 
   public articleApiUrl(articleId: string): string {
@@ -95,12 +85,12 @@ class MediaWiki {
   }
 
   public subCategoriesApiUrl(articleId: string, continueStr: string = '') {
-    return `${this.apiUrl}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
+    return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
-    const url = `${this.apiUrl}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
+    const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     const json: any = await downloader.getJSON(url);
     ['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type];
@@ -134,8 +124,8 @@ class MediaWiki {
       if (pathname.indexOf('./') === 0) {
         return util.decodeURIComponent(pathname.substr(2));
       }
-      if (pathname.indexOf(this.webUrlPath) === 0) {
-        return util.decodeURIComponent(pathname.substr(this.webUrlPath.length));
+      if (pathname.indexOf(this.webUrl.pathname) === 0) {
+        return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length));
       }
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
@@ -186,7 +176,7 @@ class MediaWiki {
 
   public async getTextDirection(downloader: Downloader): Promise<TextDirection> {
     logger.log('Getting text direction...');
-    const { content } = await downloader.downloadContent(this.webUrl);
+    const { content } = await downloader.downloadContent(this.webUrl.href);
     const body = content.toString();
     const doc = domino.createDocument(body);
     const contentNode = doc.getElementById('mw-content-text');
@@ -248,7 +238,7 @@ class MediaWiki {
 
   public async getSubTitle(downloader: Downloader) {
     logger.log('Getting sub-title...');
-    const { content } = await downloader.downloadContent(this.webUrl);
+    const { content } = await downloader.downloadContent(this.webUrl.href);
     const html = content.toString();
     const doc = domino.createDocument(html);
     const subTitleNode = doc.getElementById('siteSub');
@@ -272,10 +262,10 @@ class MediaWiki {
     ]);
 
     const mwMetaData: MWMetaData = {
-      webUrl: this.webUrl,
-      apiUrl: this.apiUrl,
+      webUrl: this.webUrl.href,
+      apiUrl: this.apiUrl.href,
       modulePath: this.modulePath,
-      webUrlPath: this.webUrlPath,
+      webUrlPath: this.webUrl.pathname,
       wikiPath: this.wikiPath,
       base: this.base,
       apiPath: this.apiPath,
