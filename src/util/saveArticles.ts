@@ -386,7 +386,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     const sourceEl = videoSources[0]; // Use first source (smallest resolution)
 
-    const sourceUrl = getFullUrl(mw.webUrlHost, sourceEl.getAttribute('src'), mw.base);
+    const sourceUrl = getFullUrl(mw.webUrl.hostname, sourceEl.getAttribute('src'), mw.base);
     const fileBase = getMediaBase(sourceUrl, true);
 
     if (!fileBase) {
@@ -399,7 +399,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     const posterUrl = videoEl.getAttribute('poster');
     if (posterUrl) {
-        const videoPosterUrl = getFullUrl(mw.webUrlHost, posterUrl, mw.base);
+        const videoPosterUrl = getFullUrl(mw.webUrl.hostname, posterUrl, mw.base);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
         if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
         videoEl.removeAttribute('resource');
@@ -429,7 +429,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 }
 
 export async function treatSubtitle(trackEle: DominoElement, mw: MediaWiki, articleId: string): Promise<string> {
-    const subtitleSourceUrl = getFullUrl(mw.webUrlHost, trackEle.getAttribute('src'), mw.base);
+    const subtitleSourceUrl = getFullUrl(mw.webUrl.hostname, trackEle.getAttribute('src'), mw.base);
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl =  new URL(subtitleSourceUrl);
@@ -480,7 +480,7 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     }
 
     /* Rewrite image src attribute */
-    const src = getFullUrl(mw.webUrlHost, img.getAttribute('src'), mw.base);
+    const src = getFullUrl(mw.webUrl.hostname, img.getAttribute('src'), mw.base);
     let newSrc: string;
     try {
         const resourceNamespace = 'I';
@@ -775,7 +775,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode(articleId)
-            .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl, articleId))
+            .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
             .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId) : '')
             .replace(
                 '__ARTICLE_JS_LIST__',
@@ -844,7 +844,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             const creatorLink =
                 `<a class="external text" ` +
                 `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-                `href="${mw.webUrl}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+                `href="${mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
                 `${dump.mwMetaData.creator}</a>`;
 
             const licenseLink =
