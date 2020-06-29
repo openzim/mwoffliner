@@ -139,6 +139,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
 
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+                logger.log(articleId);
                 try {
                     const rets = await downloader.getArticle(articleId, dump);
 
@@ -883,7 +884,7 @@ function addNoIndexCommentToElement(element: DominoElement) {
 
 function isSubpage(id: string, mw: MediaWiki) {
     if (id && id.indexOf('/') >= 0) {
-        const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, mw.spaceDelimiter) : '';
+        const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, '_') : '';
         const ns = mw.namespaces[namespace]; // namespace already defined
         if (ns !== undefined) {
             return ns.allowedSubpages;

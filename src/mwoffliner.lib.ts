@@ -170,7 +170,6 @@ async function execute(argv: any) {
     base: mwUrl,
     domain: mwDomain,
     password: mwPassword,
-    spaceDelimiter: '_',
     username: mwUsername,
     wikiPath: mwWikiPath,
   });
@@ -338,7 +337,6 @@ async function execute(argv: any) {
       tmpDir: tmpDirectory,
       username: mwUsername,
       password: mwPassword,
-      spaceDelimiter: '_',
       outputDirectory,
       mainPage,
       filenamePrefix,
