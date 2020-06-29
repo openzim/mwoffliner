@@ -94,7 +94,7 @@ class MediaWiki {
       const entries = json.query[type];
       Object.keys(entries).forEach((key) => {
         const entry = entries[key];
-        const name = entry['*'].replace(/ /g);
+        const name = entry['*'];
         const num = entry.id;
         const allowedSubpages = ('subpages' in entry);
         const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num));

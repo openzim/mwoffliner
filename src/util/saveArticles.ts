@@ -883,7 +883,7 @@ function addNoIndexCommentToElement(element: DominoElement) {
 
 function isSubpage(id: string, mw: MediaWiki) {
     if (id && id.indexOf('/') >= 0) {
-        const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')).replace(/ /g, '_') : '';
+        const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : '';
         const ns = mw.namespaces[namespace]; // namespace already defined
         if (ns !== undefined) {
             return ns.allowedSubpages;
