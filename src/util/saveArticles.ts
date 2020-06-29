@@ -139,7 +139,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
 
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-                logger.log(articleId);
                 try {
                     const rets = await downloader.getArticle(articleId, dump);
 

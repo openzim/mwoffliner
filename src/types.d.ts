@@ -150,7 +150,6 @@ interface MWConfig {
   domain?: string;
   username?: string;
   password?: string;
-  spaceDelimiter?: string;
   modulePath?: string;
   getCategories?: boolean;
 }

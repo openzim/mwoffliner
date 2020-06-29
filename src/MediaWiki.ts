@@ -11,7 +11,6 @@ class MediaWiki {
   public metaData: MWMetaData;
   public readonly base: string;
   public readonly modulePath: string;
-  // public readonly spaceDelimiter: string;
   public readonly webUrl: Url;
   public readonly apiUrl: Url;
   public readonly veApiUrl: Url;
@@ -31,7 +30,6 @@ class MediaWiki {
     this.domain = config.domain || '';
     this.username = config.username;
     this.password = config.password;
-    // this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
 
     this.base = ensureTrailingChar(config.base, '/');
