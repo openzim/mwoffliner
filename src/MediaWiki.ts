@@ -201,7 +201,8 @@ class MediaWiki {
     const body = await downloader.query(query);
     const entries = body.query.general;
 
-    const mainPage = entries.mainpage.replace(/ /g, '_');
+    // Base will contain the default encoded article id for the wiki.
+    const mainPage = decodeURIComponent(entries.base.split('/').pop());
     const siteName = entries.sitename;
 
     const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code));
