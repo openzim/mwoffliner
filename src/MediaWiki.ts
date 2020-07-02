@@ -11,7 +11,6 @@ class MediaWiki {
   public metaData: MWMetaData;
   public readonly base: string;
   public readonly modulePath: string;
-  public readonly spaceDelimiter: string;
   public readonly webUrl: Url;
   public readonly apiUrl: Url;
   public readonly veApiUrl: Url;
@@ -31,7 +30,6 @@ class MediaWiki {
     this.domain = config.domain || '';
     this.username = config.username;
     this.password = config.password;
-    this.spaceDelimiter = config.spaceDelimiter || '_';
     this.getCategories = config.getCategories;
 
     this.base = ensureTrailingChar(config.base, '/');
@@ -96,11 +94,11 @@ class MediaWiki {
       const entries = json.query[type];
       Object.keys(entries).forEach((key) => {
         const entry = entries[key];
-        const name = entry['*'].replace(/ /g, self.spaceDelimiter);
+        const name = entry['*'];
         const num = entry.id;
         const allowedSubpages = ('subpages' in entry);
         const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num));
-        const canonical = entry.canonical ? entry.canonical.replace(/ /g, self.spaceDelimiter) : '';
+        const canonical = entry.canonical ? entry.canonical : '';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
         self.namespaces[util.lcFirst(name)] = details;
@@ -203,7 +201,8 @@ class MediaWiki {
     const body = await downloader.query(query);
     const entries = body.query.general;
 
-    const mainPage = entries.mainpage.replace(/ /g, self.spaceDelimiter);
+    // Base will contain the default encoded article id for the wiki.
+    const mainPage = decodeURIComponent(entries.base.split('/').pop());
     const siteName = entries.sitename;
 
     const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code));
