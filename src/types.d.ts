@@ -108,7 +108,7 @@ interface QueryMwRet {
 
 interface CustomProcessor {
   shouldKeepArticle?: (articleId: string, doc: Document) => Promise<boolean>;
-  preProcessArticle?: (articleId: string, doc: Document) => Promise<Document>;
+  preProcessArticle?: (articleId: string, doc: Document, articleList: string[]) => Promise<Document>;
   postProcessArticle?: (articleId: string, doc: Document) => Promise<Document>;
 }
 

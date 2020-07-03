@@ -3,10 +3,23 @@ module.exports = class WiktionaryFR { // implements CustomProcessor
         const frenchTitle = doc.querySelector(`#fr.sectionlangue`);
         return !!frenchTitle;
     }
-    async preProcessArticle(articleId, doc) {
+    async preProcessArticle(articleId, doc, articleList) {
         const nonFrenchTitles = Array.from(doc.querySelectorAll(`.sectionlangue:not(#fr)`));
         for (const title of nonFrenchTitles) {
             title.closest('details').remove();
+        }
+
+        const section = doc.querySelector(`.bandeau-voir`);
+        const sectionLinks = Array.from(section.querySelectorAll('a'));
+
+        for (const link of sectionLinks) {
+            if (!articleList.includes(link.innerHTML)) {
+                var span = doc.createElement("span");
+                span.class = "new";
+                var content = doc.createTextNode(link.innerHTML);
+                span.appendChild(content)
+                link.replaceWith(span)
+            }
         }
 
         const h4titles = Array.from(doc.querySelectorAll(`h4`));
