@@ -126,7 +126,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 }
 
 async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump): Promise<string[]> {
-    let articleList: string[] = [];
+    const articleList: string[] = [];
 
     if (!dump.customProcessor) {
         return articleList;
@@ -144,7 +144,7 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
                         }
 
                         const { articleDoc: _articleDoc } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
-                        let articleDoc = _articleDoc;
+                        const articleDoc = _articleDoc;
 
                         if (dump.customProcessor?.shouldKeepArticle) {
                             const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
