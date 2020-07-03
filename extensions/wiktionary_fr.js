@@ -14,9 +14,9 @@ module.exports = class WiktionaryFR { // implements CustomProcessor
 
         for (const link of sectionLinks) {
             if (!articleList.includes(link.innerHTML)) {
-                var span = doc.createElement("span");
+                const span = doc.createElement("span");
                 span.class = "new";
-                var content = doc.createTextNode(link.innerHTML);
+                const content = doc.createTextNode(link.innerHTML);
                 span.appendChild(content)
                 link.replaceWith(span)
             }
