@@ -1,6 +1,6 @@
 import * as urlParser from 'url';
 import { isMirrored } from './saveArticles';
-import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc';
+import { migrateChildren, getMediaBase, mutateToFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc';
 import { redirectsXId } from '../stores';
 import { Dump } from '../Dump';
 import MediaWiki from '../MediaWiki';
@@ -157,7 +157,7 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
             /* Rewrite external links starting with // */
             if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
                 if (href.substring(0, 1) === '/') {
-                    linkNode.setAttribute('href', getFullUrl(href, mw.base));
+                    linkNode.setAttribute('href', mutateToFullUrl(href, mw.base));
                 } else if (href.substring(0, 2) === './') {
                     migrateChildren(linkNode, linkNode.parentNode, linkNode);
                     linkNode.parentNode.removeChild(linkNode);

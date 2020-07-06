@@ -46,32 +46,19 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function 
-getFullUrl(url: string, baseUrl: string) {
-  // if (typeof url !== 'string' || !url) {
-  //   throw new Error(`Expected url to be a string, got [${url}] instead`);
-  // }
+export function mutateToFullUrl(url: string, baseUrl: string) {
   const urlObject = urlParser.parse(url, false, true);
   if (!urlObject.protocol) {
     const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
     urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
     urlObject.host = urlObject.host || baseUrlObject.host;
-    
-    urlObject.pathname = "../-/j/js_modules/jsConfigVars.js"
-    // logger.log('BASE---', baseUrlObject.pathname);
-    // logger.log('URL0---', urlObject.pathname);
-    /* Relative path */
-    if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
-      // urlObject.pathname = `${pathParser.dirname(baseUrlObject.pathname)}/${urlObject.pathname}`;
-      logger.log('BASE---', baseUrlObject.pathname);
-      urlObject.pathname = pathParser.relative(baseUrlObject.pathname, urlObject.pathname)
-      logger.log('RELATICE', urlObject.pathname)
-    }
-    
-    url = urlParser.format(urlObject);
-    logger.log(url)
-  }
 
+  /* Relative path */
+    if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
+      urlObject.pathname = pathParser.relative(baseUrlObject.pathname, urlObject.pathname)
+    }
+    url = urlParser.format(urlObject);
+  }
   return url;
 }
 

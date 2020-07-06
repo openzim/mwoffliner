@@ -3,7 +3,7 @@ import * as pathParser from 'path';
 import async from 'async';
 import logger from '../Logger';
 import Downloader from '../Downloader';
-import { getFullUrl, jsPath, cssPath } from '.';
+import { mutateToFullUrl, jsPath, cssPath } from '.';
 import { config } from '../config';
 import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
@@ -14,7 +14,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     let finalCss = '';
     const urlCache: KVS<boolean> = {};
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
-        const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.base) : link;
+        const cssUrl = typeof link === 'object' ? mutateToFullUrl(link.getAttribute('href'), downloader.mw.base) : link;
         const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
         try {
             /* link might be a 'link' DOM node or an URL */
@@ -48,7 +48,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             rewrittenCss = rewrittenCss.replace(url, filename);
 
                             /* Need a rewrite if url doesn't include protocol */
-                            url = getFullUrl(url, cssUrl);
+                            url = mutateToFullUrl(url, cssUrl);
                             url = url.indexOf('%') < 0 ? encodeURI(url) : url;
 
                             /* Download CSS dependency, but avoid duplicate calls */
