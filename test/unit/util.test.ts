@@ -55,7 +55,7 @@ test('mutate to full URL', async(t) => {
 
     const relativeUrlWithFolder = mutateToFullUrl('../-/j/js_modules/jsConfigVars.js', 'https://bm.wikipedia.org');
     const folderSplit = currentFolder.split('/');
-    t.equal(relativeUrlWithFolder, `https://bm.wikipedia.org${folderSplit.slice(0, folderSplit.length-1).join("/")}/-/j/js_modules/jsConfigVars.js`, 'Full Url for relative path with skipping one folder');
+    t.equal(relativeUrlWithFolder, `https://bm.wikipedia.org${folderSplit.slice(0, folderSplit.length-1).join('/')}/-/j/js_modules/jsConfigVars.js`, 'Full Url for relative path with skipping one folder');
 
     const httpUrl = mutateToFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/');
     t.equal(httpUrl, 'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'Full Url when base and url both strtas with http/s');
