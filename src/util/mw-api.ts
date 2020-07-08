@@ -8,7 +8,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     let from = 0;
     let numArticleIds = _articleIds.length;
     let numThumbnails = 0;
-    let batchSize = 50;
+    let batchSize = 40;
 
     // using async iterator to spawn workers
     await pmap(
