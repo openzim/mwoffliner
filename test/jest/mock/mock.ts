@@ -1,15 +1,25 @@
+import pall from 'p-all';
 import data from './sg.json';
-import type {RedisKvs} from '../../../src/util/RedisKvs';
+import type { RedisKvs } from '../../../src/util/RedisKvs';
 
-export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<void> => {
+
+export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<number[]> => {
   const len = Object.keys(data).length;
   const multiplier = (size ?? len) / len;
+  const result = [];
+  const ids: number[] = [];
 
   for (let i = 0; i < multiplier; i++) {
-    const d: Array<{ n: string; r: number; t: string; }> = [];
-    Object.values(data).forEach((item, x) => {
-      d.push({...item, n: `${data[x].n}_${i}`});
-    });
-    await kvs.setMany(d);
+    for (const item of Object.values(data)) {
+      const x = Object.values(data).indexOf(item);
+      const n = `${data[x].n}_${i}`;
+      ids.push(item.r);
+      result.push(() => kvs.set(n, {...item, n }));
+    }
   }
+  // workaround
+  console.time('pall');
+  await pall(result, {concurrency: 10});
+  console.timeEnd('pall');
+  return ids;
 };
