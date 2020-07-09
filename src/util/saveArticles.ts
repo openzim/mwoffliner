@@ -125,11 +125,9 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
     }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump): Promise<string[]> {
-    const articleList: string[] = [];
-
+async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump) {
     if (!dump.customProcessor) {
-        return articleList;
+        return;
     }
     await articleDetailXId.iterateItems(
         downloader.speed,
@@ -148,17 +146,17 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
 
                         if (dump.customProcessor?.shouldKeepArticle) {
                             const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
-                            if (shouldContinue) {
-                                articleList.push(articleId);
+                            if (!shouldContinue) {
+                                await articleDetailXId.delete(articleId);
                             }
                         }
                     }
                 } catch (err) {
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                    await articleDetailXId.delete(articleId);
                 }
             }
         })
-    return articleList;
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
@@ -170,13 +168,12 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     const articlesTotal = await articleDetailXId.len();
 
-    const articlesToKeep: string[] = await getAllArticlesToKeep(downloader, mw, dump);
+    await getAllArticlesToKeep(downloader, mw, dump);
 
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
             logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
-
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const rets = await downloader.getArticle(articleId, dump);
@@ -191,13 +188,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                         let articleDoc = _articleDoc;
 
-                        if (dump.customProcessor?.shouldKeepArticle) {
-                            if (!articlesToKeep.includes(articleId)) {
-                                continue;
-                            }
-                        }
                         if (dump.customProcessor?.preProcessArticle) {
-                            articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc, articlesToKeep);
+                            articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
                         }
 
                         for (const dep of mediaDependencies) {
