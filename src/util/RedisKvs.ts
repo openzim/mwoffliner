@@ -162,42 +162,58 @@ export class RedisKvs<T> {
     });
   }
 
-  public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<void>) {
+  public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<any>) {
+
     const workers = Array.from(Array(numWorkers).keys());
 
-    let scanCursor = '0';
-    let depleted = false;
-    let pendingScan: Promise<ScanResult> = Promise.resolve(null);
+    const total = await this.len();
+    const chunkSize = 10;
 
-    await pmap(
+    // ---- time ----------->
+    // x         x   x   x
+    // 1 ........... 4 ...........
+    // 2 ....... 5 ..................
+    // 3 ............... 6 ........
+
+    //  0  30  60
+    // 10  40  70
+    // 20  50  80
+
+    // await this.scan(cursor);
+
+    return await pmap(
       workers,
       async (workerId) => {
 
-        while (true) {
-          pendingScan = pendingScan.then(() =>
-            this.scan(scanCursor)
-              .then((result) => {
-                scanCursor = result.cursor;
-                return result;
-              })
-          );
+        // for testing purposes
+        const ids: any[] = [];
+        const chunkStat: any = {};
 
-          const { cursor, items } = await pendingScan;
+        for (let i = workerId * chunkSize; i <= total; i = i + numWorkers * chunkSize) {
+          const {items} = await this.scan(i.toString());
+          console.log(`[${workerId}]\t${i}  ->\t${i + chunkSize - 1}\t= ${items.length}`);
 
-          if (depleted) break;
+          const count = items.length;
+          if (!chunkStat[count]) {
+            chunkStat[count] = 1;
+          } else {
+            chunkStat[count]++;
+          }
 
-          const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => {
-            return {
-              ...acc,
-              [key]: this.mapKeysGet(JSON.parse(strVal)),
-            };
-          }, {} as KVS<T>);
+          const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
+            ...acc,
+            [key]: this.mapKeysGet(JSON.parse(strVal)),
+          }), {} as KVS<T>);
 
-          if (cursor === '0') depleted = true;
-          scanCursor = cursor;
+          for (const item of Object.values(parsedItems)) {
+            // @ts-ignore
+            ids.push(item.n);
+          }
 
-          await func(parsedItems, workerId);
+          if (Object.keys(parsedItems).length !== 0) await func(parsedItems, workerId);
         }
+
+        return { ids, chunkStat };
       },
       {concurrency: numWorkers}
     );
@@ -207,6 +223,7 @@ export class RedisKvs<T> {
     return new Promise<ScanResult>((resolve, reject) => {
       this.redisClient.hscan(this.dbName, scanCursor, (err, [cursor, data]) => {
         if (err) return reject(err);
+        // extract the items from Redis response
         const items = Array.from(data, (x, k) => k % 2 ? undefined : [x, data[k + 1]]).filter((x) => x);
         resolve({cursor, items});
       });
