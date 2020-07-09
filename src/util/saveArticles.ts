@@ -126,9 +126,6 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 }
 
 async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump) {
-    if (!dump.customProcessor) {
-        return;
-    }
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs) => {
@@ -142,21 +139,17 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
                         }
 
                         const { articleDoc: _articleDoc } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
-                        const articleDoc = _articleDoc;
-
-                        if (dump.customProcessor?.shouldKeepArticle) {
-                            const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
-                            if (!shouldContinue) {
-                                await articleDetailXId.delete(articleId);
-                            }
+                        if (!await dump.customProcessor.shouldKeepArticle(articleId, _articleDoc)) {
+                            articleDetailXId.delete(articleId);
                         }
                     }
                 } catch (err) {
                     logger.warn(`Error downloading article [${articleId}], skipping`, err);
-                    await articleDetailXId.delete(articleId);
+                    articleDetailXId.delete(articleId);
                 }
             }
-        })
+        }
+    );
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
@@ -168,7 +161,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     const articlesTotal = await articleDetailXId.len();
 
-    await getAllArticlesToKeep(downloader, mw, dump);
+    if (dump.customProcessor?.shouldKeepArticle) {
+        await getAllArticlesToKeep(downloader, mw, dump);
+    }
 
     await articleDetailXId.iterateItems(
         downloader.speed,

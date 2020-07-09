@@ -8,7 +8,7 @@ module.exports = class WiktionaryFR { // implements CustomProcessor
         for (const title of nonFrenchTitles) {
             title.closest('details').remove();
         }
-        
+
         const h4titles = Array.from(doc.querySelectorAll(`h4`));
         for (const h4title of h4titles) {
             h4title.closest('details').remove();
