@@ -76,6 +76,7 @@
     "details-element-polyfill": "^2.4.0",
     "domino": "^2.1.5",
     "execa": "^4.0.2",
+    "fastq": "^1.8.0",
     "follow-redirects": "^1.12.1",
     "html-minifier": "^4.0.0",
     "imagemin": "^7.0.1",

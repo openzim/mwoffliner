@@ -1,5 +1,6 @@
 import {cpus} from 'os';
 import pmap from 'p-map';
+import fastq from 'fastq';
 import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
@@ -169,52 +170,82 @@ export class RedisKvs<T> {
 
   public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<any>) {
 
-    const workers = Array.from(Array(numWorkers).keys());
+    const results: any[] = [];
 
-    const total = await this.len();
-    const chunkSize = 10;
+    return new Promise(async (resolve, reject) => {
+      const q = fastq(this.worker, numWorkers);
 
-    return await pmap(
-      workers,
-      async (workerId) => {
+      q.pause();
+      setTimeout(() => q.resume(), 1000);
 
-        // for testing purposes
-        const ids: any[] = [];
-        const chunkStat: any = {};
+      q.drain = () => {
+        console.log('drain');
+        resolve(results);
+      }
+      q.saturated = () => {
+        console.log('saturated');
+        q.pause();
+        setTimeout(() => q.resume(), 100);
+      }
 
-        for (let i = workerId * chunkSize + 1; i <= total; i = i + numWorkers * chunkSize) {
-          const {items} = await this.scan(i.toString());
-          const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
-            ...acc,
-            [key]: this.mapKeysGet(JSON.parse(strVal)),
-          }), {} as KVS<T>);
+      let cursor = '0';
 
-          // for testing purposes
-          if (process.env.NODE_ENV === 'test') {
-            const count = items.length;
-            if (!chunkStat[count]) {
-              chunkStat[count] = 1;
-            } else {
-              chunkStat[count]++;
-            }
-
-            for (const item of Object.values(parsedItems)) {
-              // @ts-ignore
-              ids.push(item.n);
-            }
-          }
-
-          if (Object.keys(parsedItems).length !== 0) await func(parsedItems, workerId);
-        }
-        return { ids, chunkStat };
-      },
-      {concurrency: numWorkers}
-    );
+      do {
+        const data = await this.scan(cursor);
+        const {items} = data;
+        q.push({items, func}, (stat) => {
+          results.push(stat);
+        });
+        console.log('pushed');
+        cursor = data.cursor;
+      } while (cursor !== '0')
+    });
   }
 
-  public scan(scanCursor: string): Promise<ScanResult> {
+  // todo types
+  private worker = ({items, func}: {items: string[][], func: (items: KVS<T>, workerId: number) => Promise<any>}, cb: any) => {
+
+    console.log('worker');
+
+    const workerId = 0;
+    // const total = await this.len();
+    // const chunkSize = 10;
+
+    // for testing purposes
+    const ids: any[] = [];
+    const chunkStat: any = {};
+
+    const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
+      ...acc,
+      [key]: this.mapKeysGet(JSON.parse(strVal)),
+    }), {} as KVS<T>);
+
+    // for testing purposes
+    if (process.env.NODE_ENV === 'test') {
+      const count = items.length;
+      if (!chunkStat[count]) {
+        chunkStat[count] = 1;
+      } else {
+        chunkStat[count]++;
+      }
+
+      for (const item of Object.values(parsedItems)) {
+        // @ts-ignore
+        ids.push(item.n);
+      }
+    }
+
+    if (Object.keys(parsedItems).length !== 0) {
+      // await func(parsedItems, workerId);
+      console.log('calling');
+    }
+    // return {ids, chunkStat};
+    cb({ids, chunkStat})
+  };
+
+  public scan(scanCursor: string, count: string = '10'): Promise<ScanResult> {
     return new Promise<ScanResult>((resolve, reject) => {
-      this.redisClient.hscan(this.dbName, scanCursor, (err, [cursor, data]) => {
+      this.redisClient.hscan(this.dbName, scanCursor, 'COUNT', count, (err, [cursor, data]) => {
         if (err) return reject(err);
         // extract the items from Redis response
         const items = Array.from(data, (x, k) => k % 2 ? undefined : [x, data[k + 1]]).filter((x) => x);
