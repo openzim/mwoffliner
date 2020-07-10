@@ -1,5 +1,6 @@
 import {cpus} from 'os';
 import pmap from 'p-map';
+import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
 
@@ -80,8 +81,7 @@ export class RedisKvs<T> {
   public set(prop: string, val: T) {
     return new Promise((resolve, reject) => {
       const valToSet = this.mapKeysSet(val);
-      const normalisedVal = typeof valToSet !== 'string' ? JSON.stringify(valToSet) : valToSet;
-      this.redisClient.hset(this.dbName, prop, normalisedVal as string, (err, val) => {
+      this.redisClient.hset(this.dbName, prop, RedisKvs.normalize(valToSet), (err, val) => {
         if (err) {
           reject(err);
         } else {
@@ -98,13 +98,7 @@ export class RedisKvs<T> {
         resolve();
         return;
       }
-      const normalisedVal = Object.entries(val)
-        .reduce((acc: KVS<string>, [key, val]) => {
-          const newVal = this.mapKeysSet(val);
-          acc[key] = typeof newVal !== 'string' ? JSON.stringify(newVal) : newVal;
-          return acc;
-        }, {});
-      this.redisClient.hmset(this.dbName, normalisedVal, (err, val) => {
+      this.redisClient.hmset(this.dbName, this.normalizeMany(val), (err, val) => {
         if (err) {
           reject(err);
         } else {
@@ -112,6 +106,17 @@ export class RedisKvs<T> {
         }
       });
     });
+  }
+
+  public async addMany(items: KVS<T>, idsToKeep: string[] = []) {
+    if (idsToKeep.length === 0) idsToKeep = Object.keys(items);
+    const itemsToKeep = await this.getMany(idsToKeep);
+    await this.setMany(
+      deepmerge(
+        itemsToKeep,
+        items
+      ),
+    );
   }
 
   public delete(prop: string) {
@@ -189,9 +194,9 @@ export class RedisKvs<T> {
         const ids: any[] = [];
         const chunkStat: any = {};
 
-        for (let i = workerId * chunkSize; i <= total; i = i + numWorkers * chunkSize) {
+        for (let i = workerId * chunkSize + 1; i <= total; i = i + numWorkers * chunkSize) {
           const {items} = await this.scan(i.toString());
-          console.log(`[${workerId}]\t${i}  ->\t${i + chunkSize - 1}\t= ${items.length}`);
+          // console.log(`[${workerId}]\t${i}  ->\t${i + chunkSize - 1}\t= ${items.length}`);
 
           const count = items.length;
           if (!chunkStat[count]) {
@@ -272,5 +277,18 @@ export class RedisKvs<T> {
         }, {});
     }
     return mappedVal;
+  }
+
+  private normalizeMany(val: KVS<any>): KVS<string> {
+    return Object.entries(val)
+      .reduce((acc: KVS<string>, [key, val]) => {
+        const newVal = this.mapKeysSet(val);
+        acc[key] = RedisKvs.normalize(newVal);
+        return acc;
+      }, {});
+  }
+
+  private static normalize(val: any): string {
+    return typeof val !== 'string' ? JSON.stringify(val) : val as string;
   }
 }

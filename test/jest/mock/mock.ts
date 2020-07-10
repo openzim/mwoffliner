@@ -8,6 +8,7 @@ export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<s
   const multiplier = (size ?? len) / len;
   const result = [];
   const ids: string[] = [];
+  let cnt: number = 0;
 
   for (let i = 0; i < multiplier; i++) {
     for (const [key, item] of Object.entries(data)) {
@@ -16,11 +17,13 @@ export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<s
       const r = (i + 1) * parseInt(key, 10) * 10000 + item.r;
       ids.push(n);
       result.push(() => kvs.set(n, {...item, n, r}));
+      cnt++;
+      if (cnt >= size) break;
     }
+    if (cnt >= size) break;
   }
+
   // workaround
-  // console.time('pall');
   await pall(result, {concurrency: 10});
-  // console.timeEnd('pall');
   return ids;
 };

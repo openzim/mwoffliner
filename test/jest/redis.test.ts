@@ -8,15 +8,13 @@ import {RedisKvs} from '../../src/util/RedisKvs';
 let client: RedisClient;
 let kvs: RedisKvs<any>;
 
-// will be rounded to a largest multiple of 250 (because of mock size)
-const numberOfItems = [7250];
-const timeouts = [0];
-// const numberOfItems = [100, 1000];
-// const timeouts = [0, 10, 20];
+const timeout = 0;
+const numberOfItems = [718, 3169, 17563];
+const numberOfWorkers = [4, 8, 16, 40];
 
 let expectedIds: string[];
 
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 
 const getHandler = (delay: number) => async (items: any, workerId: number): Promise<any> => {
@@ -46,8 +44,8 @@ const getTestHandler = (handler: (items: any, workerId: number) => any | Promise
     });
 
   // todo
-  // ...iterated over all items
-  // expect(count).toEqual(len);
+  // fn has been called expected times
+  expect(count).toEqual(len);
 
 
   const workersUsed = Array.from(workers) as number[];
@@ -99,11 +97,9 @@ describe('RedisKvs.iterateItems()', () => {
         expectedIds = await initMockData(kvs, numItems);
       });
 
-      describe(`Workers: 1`, () => {
-        for (const timeout of timeouts) {
-          test(`${timeout} ms`, getTestHandler(getHandler(timeout), 3));
-        }
-      });
+      for (const n of numberOfWorkers) {
+        test(`Workers: ${n}`, getTestHandler(getHandler(timeout), n));
+      }
     });
   }
 });
