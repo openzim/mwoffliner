@@ -174,18 +174,6 @@ export class RedisKvs<T> {
     const total = await this.len();
     const chunkSize = 10;
 
-    // ---- time ----------->
-    // x         x   x   x
-    // 1 ........... 4 ...........
-    // 2 ....... 5 ..................
-    // 3 ............... 6 ........
-
-    //  0  30  60
-    // 10  40  70
-    // 20  50  80
-
-    // await this.scan(cursor);
-
     return await pmap(
       workers,
       async (workerId) => {
@@ -196,28 +184,28 @@ export class RedisKvs<T> {
 
         for (let i = workerId * chunkSize + 1; i <= total; i = i + numWorkers * chunkSize) {
           const {items} = await this.scan(i.toString());
-          // console.log(`[${workerId}]\t${i}  ->\t${i + chunkSize - 1}\t= ${items.length}`);
-
-          const count = items.length;
-          if (!chunkStat[count]) {
-            chunkStat[count] = 1;
-          } else {
-            chunkStat[count]++;
-          }
-
           const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
             ...acc,
             [key]: this.mapKeysGet(JSON.parse(strVal)),
           }), {} as KVS<T>);
 
-          for (const item of Object.values(parsedItems)) {
-            // @ts-ignore
-            ids.push(item.n);
+          // for testing purposes
+          if (process.env.NODE_ENV === 'test') {
+            const count = items.length;
+            if (!chunkStat[count]) {
+              chunkStat[count] = 1;
+            } else {
+              chunkStat[count]++;
+            }
+
+            for (const item of Object.values(parsedItems)) {
+              // @ts-ignore
+              ids.push(item.n);
+            }
           }
 
           if (Object.keys(parsedItems).length !== 0) await func(parsedItems, workerId);
         }
-
         return { ids, chunkStat };
       },
       {concurrency: numWorkers}
