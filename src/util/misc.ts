@@ -46,20 +46,24 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function mutateToFullUrl(url: string, baseUrl: string) {
+export function getFullUrl(url: string, baseUrl: string) {
   const urlObject = urlParser.parse(url, false, true);
   if (!urlObject.protocol) {
-    const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
-    urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
-    urlObject.host = urlObject.host || baseUrlObject.host;
-
-  /* Relative path */
-    if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
-      urlObject.pathname = pathParser.relative(baseUrlObject.pathname, urlObject.pathname)
-    }
+    mutateToFullUrl(urlObject, baseUrl);
     url = urlParser.format(urlObject);
   }
   return url;
+}
+
+export function mutateToFullUrl(urlObject: any, baseUrl: string){
+  const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
+  urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
+  urlObject.host = urlObject.host || baseUrlObject.host;
+
+  /* Relative path */
+  if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
+    urlObject.pathname = pathParser.relative(baseUrlObject.pathname, urlObject.pathname)
+  }
 }
 
 export function getSizeFromUrl(url: string) {
