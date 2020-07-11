@@ -138,8 +138,8 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
                             continue;
                         }
 
-                        const { articleDoc: _articleDoc } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
-                        if (!await dump.customProcessor.shouldKeepArticle(articleId, _articleDoc)) {
+                        const doc = domino.createDocument(articleHtml);
+                        if (!await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
                             articleDetailXId.delete(articleId);
                         }
                     }
