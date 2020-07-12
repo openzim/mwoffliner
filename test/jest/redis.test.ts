@@ -7,10 +7,10 @@ import {RedisKvs} from '../../src/util/RedisKvs';
 
 const now = new Date();
 const timeout = 0;
-const numberOfItems = [27];
-const numberOfWorkers = [1];
-// const numberOfItems = [718, 3169, 17563];
+// const numberOfItems = [718];
+const numberOfItems = [718, 3169, 17563];
 // const numberOfWorkers = [4, 8, 16, 40];
+const numberOfWorkers = [1];
 
 
 let expectedIds: string[];
