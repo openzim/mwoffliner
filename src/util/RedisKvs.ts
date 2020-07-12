@@ -179,13 +179,13 @@ export class RedisKvs<T> {
       setTimeout(() => q.resume(), 1000);
 
       q.drain = () => {
-        console.log('drain');
+        console.debug('drain');
         resolve(results);
       }
       q.saturated = () => {
-        console.log('saturated');
+        console.debug('saturated');
         q.pause();
-        setTimeout(() => q.resume(), 100);
+        setTimeout(() => q.resume(), 1000);
       }
 
       let cursor = '0';
@@ -196,7 +196,7 @@ export class RedisKvs<T> {
         q.push({items, func}, (stat) => {
           results.push(stat);
         });
-        console.log('pushed');
+        console.debug('pushed');
         cursor = data.cursor;
       } while (cursor !== '0')
     });
@@ -204,12 +204,8 @@ export class RedisKvs<T> {
 
   // todo types
   private worker = ({items, func}: {items: string[][], func: (items: KVS<T>, workerId: number) => Promise<any>}, cb: any) => {
-
-    console.log('worker');
-
+    console.debug('worker');
     const workerId = 0;
-    // const total = await this.len();
-    // const chunkSize = 10;
 
     // for testing purposes
     const ids: any[] = [];
@@ -236,11 +232,9 @@ export class RedisKvs<T> {
     }
 
     if (Object.keys(parsedItems).length !== 0) {
-      // await func(parsedItems, workerId);
-      console.log('calling');
+      func(parsedItems, workerId)
+        .then(() => cb({ids, chunkStat}))
     }
-    // return {ids, chunkStat};
-    cb({ids, chunkStat})
   };
 
   public scan(scanCursor: string, count: string = '10'): Promise<ScanResult> {
