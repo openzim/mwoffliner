@@ -85,6 +85,7 @@ class Downloader {
   private readonly optimisationCacheUrl: string;
   private s3: S3;
   private mwCapabilities: MWCapabilities; // todo move to MW
+  private requestOptions: AxiosRequestConfig;
 
 
   constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
@@ -118,6 +119,20 @@ class Downloader {
     // that will be checked on the next phase in checkCapabilities()
     this.baseUrl = `${this.mw.restApiUrl.href}page/mobile-sections/`;
     this.baseUrlForMainPage = this.mw.veApiUrl.href;
+
+    this.requestOptions = {
+      headers: {
+        'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
+        'cache-control': 'public, max-stale=86400',
+        'accept-encoding': 'gzip, deflate',
+        'user-agent': this.uaString,
+        'cookie': this.loginCookie,
+      },
+      responseType: 'arraybuffer',
+      timeout: this.requestTimeout,
+      method: 'GET',
+      validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
+    };
   }
 
   public serializeUrl(url: string): string {
@@ -392,7 +407,7 @@ class Downloader {
     const url = this.deserializeUrl(_url);
     await self.claimRequest();
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, { url, timeout: this.requestTimeout }, (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
@@ -414,8 +429,7 @@ class Downloader {
     const self = this;
     await self.claimRequest();
     return new Promise((resolve, reject) => {
-      const requestOptions = this.getRequestOptionsFromUrl(url);
-      this.backoffCall(this.getContentCb, requestOptions, async (err: any, val: any) => {
+      this.backoffCall(this.getContentCb, url, async (err: any, val: any) => {
         self.releaseRequest();
         if (err) {
           const httpStatus = err.response && err.response.status;
@@ -506,9 +520,8 @@ class Downloader {
     return articleDetails;
   }
 
-  private getRequestOptionsFromUrl(url: string): AxiosRequestConfig {
+  private getRequestOptionsFromUrl(): AxiosRequestConfig {
     return {
-      url,
       headers: {
         'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
         'cache-control': 'public, max-stale=86400',
@@ -518,7 +531,7 @@ class Downloader {
       },
       responseType: 'arraybuffer',
       timeout: this.requestTimeout,
-      method: url.indexOf('action=login') > -1 ? 'POST' : 'GET',
+      method: 'GET',
       validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
     };
   }
@@ -565,14 +578,13 @@ class Downloader {
     return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
   }
 
-  private getContentCb = async (requestOptions: AxiosRequestConfig, handler: any): Promise<void> => {
-    logger.info(`Downloading [${requestOptions.url}]`);
-
+  private getContentCb = async (url: string, handler: any): Promise<void> => {
+    logger.info(`Downloading [${url}]`);
     try {
-      if (this.optimisationCacheUrl && this.isImageUrl(requestOptions.url)) {
-        this.downloadImage(requestOptions, handler);
+      if (this.optimisationCacheUrl && this.isImageUrl(url)) {
+        this.downloadImage(this.requestOptions, handler);
       } else {
-        const resp = await axios(requestOptions);
+        const resp = await axios(url, this.requestOptions);
         handler(null, {
           responseHeaders: resp.headers,
           content: await this.getCompressedBody(resp),
@@ -580,7 +592,7 @@ class Downloader {
       }
     } catch (err) {
       try {
-        this.errHandler(err, requestOptions, handler);
+        this.errHandler(err, this.requestOptions, handler);
       } catch (a) {
         handler(err);
       }
@@ -648,8 +660,10 @@ class Downloader {
     }
   }
 
-  private backoffCall(handler: (...args: any[]) => void, config: AxiosRequestConfig, callback: (...args: any[]) => void | Promise<void>): void {
-    const call = backoff.call(handler, config, callback);
+  private backoffCall(handler: (...args: any[]) => void, url: string, callback: (...args: any[]) => void | Promise<void>): void {
+    const request = this.requestOptions
+    request['url'] = url;
+    const call = backoff.call(handler, request , callback);
     call.setStrategy(this.backoffOptions.strategy);
     call.retryIf(this.backoffOptions.retryIf);
     call.failAfter(this.backoffOptions.failAfter);
