@@ -118,11 +118,38 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                     return resp;
                 });
             },
-            {concurrency: CONCURRENCY_LIMIT}
+            { concurrency: CONCURRENCY_LIMIT }
         );
     } catch (err) {
         logger.log(`Not able download in bulk due to ${err}`);
     }
+}
+
+async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump) {
+    await articleDetailXId.iterateItems(
+        downloader.speed,
+        async (articleKeyValuePairs) => {
+            for (const [articleId] of Object.entries(articleKeyValuePairs)) {
+                try {
+                    const rets = await downloader.getArticle(articleId, dump);
+
+                    for (const { articleId, html: articleHtml } of rets) {
+                        if (!articleHtml) {
+                            continue;
+                        }
+
+                        const doc = domino.createDocument(articleHtml);
+                        if (!await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
+                            articleDetailXId.delete(articleId);
+                        }
+                    }
+                } catch (err) {
+                    logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                    articleDetailXId.delete(articleId);
+                }
+            }
+        }
+    );
 }
 
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
@@ -131,13 +158,17 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     let jsConfigVars = '';
     let prevPercentProgress: string;
 
+
     const articlesTotal = await articleDetailXId.len();
+
+    if (dump.customProcessor?.shouldKeepArticle) {
+        await getAllArticlesToKeep(downloader, mw, dump);
+    }
 
     await articleDetailXId.iterateItems(
         downloader.speed,
         async (articleKeyValuePairs, workerId) => {
             logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
-
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const rets = await downloader.getArticle(articleId, dump);
@@ -152,12 +183,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                         let articleDoc = _articleDoc;
 
-                        if (dump.customProcessor?.shouldKeepArticle) {
-                            const shouldContinue = await dump.customProcessor.shouldKeepArticle(articleId, articleDoc);
-                            if (!shouldContinue) {
-                                continue;
-                            }
-                        }
                         if (dump.customProcessor?.preProcessArticle) {
                             articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
                         }
@@ -432,7 +457,7 @@ export async function treatSubtitle(trackEle: DominoElement, mw: MediaWiki, arti
     const subtitleSourceUrl = getFullUrl(mw.webUrl.hostname, trackEle.getAttribute('src'), mw.base);
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
-    const vttFormatUrl =  new URL(subtitleSourceUrl);
+    const vttFormatUrl = new URL(subtitleSourceUrl);
     vttFormatUrl.searchParams.set('trackformat', 'vtt');
     trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`);
     return vttFormatUrl.href;
@@ -611,7 +636,7 @@ async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloa
             const { mediaDependencies: mediaDeps } = await rewriteUrl(articleId, mw, dump, linkNode);
             mediaDependencies = mediaDependencies.concat(mediaDeps);
         },
-        {concurrency: downloader.speed}
+        { concurrency: downloader.speed }
     );
     return { doc: parsoidDoc, mediaDependencies };
 }
