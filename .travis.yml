@@ -1,28 +1,31 @@
 language: node_js
 dist: xenial
 
+os:
+  - linux
+
 node_js:
   - "12"
   - "13"
   - "14"
-  # - "10"
-  # - "8"
-  # - "stable"
-  # - "latest"
 
 before_install:
+
 install:
   - npm ci
   - npm i -g codecov
   - dev/install-zimtools.sh
+
 script:
   - npm run lint
   - npm run build
   - REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=`find .. -name zimcheck` npm run codecov
   - npm run jest
+
 after_success:
   - codecov
   - ./dev/publish.sh
+
 addons:
   apt:
     sources:
@@ -35,10 +38,6 @@ addons:
       - ccache
       - zlib1g-dev
       - uuid-dev
+
 services:
   - redis-server
-# TODO: depends on node-libzim
-# matrix:
-#   include:
-#     - env: PLATFORM="native_dyn"
-#       os: osx
