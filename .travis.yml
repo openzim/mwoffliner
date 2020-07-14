@@ -3,7 +3,6 @@ dist: xenial
 
 os:
   - linux
-  - osx
 
 node_js:
   - "12"
