@@ -46,8 +46,9 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function getFullUrl(url: string, baseUrl: string) {
+export function getFullUrl(url: string, baseUrl: any) {
   const urlObject = urlParser.parse(url, false, true);
+  // only if we do not have full URL 
   if (!urlObject.protocol) {
     mutateToFullUrl(urlObject, baseUrl);
     url = urlParser.format(urlObject);
@@ -55,14 +56,17 @@ export function getFullUrl(url: string, baseUrl: string) {
   return url;
 }
 
-export function mutateToFullUrl(urlObject: any, baseUrl: string){
-  const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
-  urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
-  urlObject.host = urlObject.host || baseUrlObject.host;
-
+export function mutateToFullUrl(url: any, baseUrl: any){
+  const baseUrlObject = baseUrl ? urlParser.parse(baseUrl.href, false, true) : {} as UrlWithStringQuery;
+  //const baseUrlObject = baseUrl ? baseUrl.href : {} as UrlWithStringQuery;
+  logger.log(baseUrlObject.href);
+  logger.log(baseUrl.href)
+  url.protocol = url.protocol || baseUrlObject.protocol || 'http:';
+  url.host = url.host || baseUrlObject.host;
+  
   /* Relative path */
-  if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
-    urlObject.pathname = pathParser.relative(baseUrlObject.pathname, urlObject.pathname)
+  if (url.pathname && url.pathname.indexOf('/') !== 0 && baseUrl.pathname) {
+    url.pathname = pathParser.relative(baseUrl.pathname, url.pathname)
   }
 }
 

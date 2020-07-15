@@ -14,7 +14,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     let finalCss = '';
     const urlCache: KVS<boolean> = {};
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
-        const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.base) : link;
+        const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.baseUrl) : link;
         const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
         try {
             /* link might be a 'link' DOM node or an URL */

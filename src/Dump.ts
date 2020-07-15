@@ -142,7 +142,7 @@ export class Dump {
         let tags = (this.opts.tags || '').split(';');
 
         /* Add Mediawiki hostname radical as a tag */
-        const mwUrlHostParts = urlParser.parse(this.mwMetaData.base).host.split('.');
+        const mwUrlHostParts = urlParser.parse(this.mwMetaData.baseUrl.href).host.split('.');
         const mwUrlHostPartsRadical = mwUrlHostParts.length > 1
             ? mwUrlHostParts[mwUrlHostParts.length - 2]
             : mwUrlHostParts[mwUrlHostParts.length - 1];
@@ -202,7 +202,7 @@ export class Dump {
         }
 
         /* Push Mediawiki:Offline.css (at the end) */
-        const offlineCssUrl = `${downloader.mw.base}w/index.php?title=Mediawiki:offline.css&action=raw`;
+        const offlineCssUrl = `${downloader.mw.baseUrl.href}w/index.php?title=Mediawiki:offline.css&action=raw`;
         if (await downloader.canGetUrl(offlineCssUrl)) {
             sheetUrls.push(offlineCssUrl);
         }

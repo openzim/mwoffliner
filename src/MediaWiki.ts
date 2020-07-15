@@ -9,7 +9,7 @@ import { ensureTrailingChar } from './util';
 
 class MediaWiki {
   public metaData: MWMetaData;
-  public readonly base: string;
+  public readonly baseUrl: Url;
   public readonly modulePath: string;
   public readonly webUrl: Url;
   public readonly apiUrl: Url;
@@ -32,19 +32,19 @@ class MediaWiki {
     this.password = config.password;
     this.getCategories = config.getCategories;
 
-    this.base = ensureTrailingChar(config.base, '/');
+    this.baseUrl = urlParser.parse(ensureTrailingChar(config.base, '/'));
 
     this.apiPath = config.apiPath ?? 'w/api.php';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = urlParser.parse(urlParser.resolve(this.base, this.wikiPath));
-    this.apiUrl = urlParser.parse(`${urlParser.resolve(this.base, this.apiPath)}?`);
+    this.webUrl = urlParser.parse(urlParser.resolve(this.baseUrl.href, this.wikiPath));
+    this.apiUrl = urlParser.parse(`${urlParser.resolve(this.baseUrl.href, this.apiPath)}?`);
 
     this.veApiUrl = urlParser.parse(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
-    this.restApiUrl = urlParser.parse(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/'));
+    this.restApiUrl = urlParser.parse(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'));
 
-    this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
+    this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`;
     this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
   }
 
@@ -150,7 +150,7 @@ class MediaWiki {
      * - it happens to be a wikimedia project OR
      * - some domain where the second part of the hostname is longer than the first part
      */
-    const hostParts = urlParser.parse(this.base).hostname.split('.');
+    const hostParts = urlParser.parse(this.baseUrl.href).hostname.split('.');
     let creator = hostParts[0];
     if (hostParts.length > 1) {
       const wmProjects = new Set([
@@ -266,7 +266,7 @@ class MediaWiki {
       modulePath: this.modulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.wikiPath,
-      base: this.base,
+      baseUrl: this.baseUrl,
       apiPath: this.apiPath,
       domain: this.domain,
 
