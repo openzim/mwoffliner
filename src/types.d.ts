@@ -122,10 +122,10 @@ interface MWMetaData {
   mainPage: string;
   textDir: TextDirection;
 
-  baseUrl: any;
-  wikiPath: any;
-  apiPath: any;
-  domain: any;
+  baseUrl: string;
+  wikiPath: string;
+  apiPath: string;
+  domain: string;
   webUrl: string;
   apiUrl: string;
   webUrlPath: string;
