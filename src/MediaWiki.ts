@@ -266,7 +266,7 @@ class MediaWiki {
       modulePath: this.modulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.wikiPath,
-      baseUrl: this.baseUrl,
+      baseUrl: this.baseUrl.href,
       apiPath: this.apiPath,
       domain: this.domain,
 

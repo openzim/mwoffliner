@@ -3,7 +3,6 @@ import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
 import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
-import * as urlParser from 'url';
 import * as QueryStringParser from 'querystring';
 
 import pmap from 'p-map';

@@ -223,7 +223,7 @@ test('treat one subtitle', async(t) => {
 
     // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
     const wikicode = `[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]`;
-    const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.base);
+    const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
 
     const htmlDoc = domino.createDocument(htmlStr.data);
     const contentRes = await treatSubtitle(htmlDoc.querySelector('track'), mw, 'Mechanical energy');
@@ -236,7 +236,7 @@ test('treat multiple subtitles in one video', async(t) => {
 
     // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
     const wikicode = `[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]`;
-    const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.base);
+    const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
 
     const htmlDoc = domino.createDocument(htmlStr.data);
     const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'));

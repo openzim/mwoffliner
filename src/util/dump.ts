@@ -48,7 +48,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             rewrittenCss = rewrittenCss.replace(url, filename);
 
                             /* Need a rewrite if url doesn't include protocol */
-                            url = getFullUrl(url, cssUrl);
+                            url = getFullUrl(url, urlParser.parse(cssUrl, false, true));
                             url = url.indexOf('%') < 0 ? encodeURI(url) : url;
 
                             /* Download CSS dependency, but avoid duplicate calls */

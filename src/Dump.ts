@@ -142,7 +142,7 @@ export class Dump {
         let tags = (this.opts.tags || '').split(';');
 
         /* Add Mediawiki hostname radical as a tag */
-        const mwUrlHostParts = urlParser.parse(this.mwMetaData.baseUrl.href).host.split('.');
+        const mwUrlHostParts = urlParser.parse(this.mwMetaData.baseUrl).host.split('.');
         const mwUrlHostPartsRadical = mwUrlHostParts.length > 1
             ? mwUrlHostParts[mwUrlHostParts.length - 2]
             : mwUrlHostParts[mwUrlHostParts.length - 1];

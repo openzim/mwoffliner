@@ -5,7 +5,7 @@ import countryLanguage from 'country-language';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
-import urlParser, { UrlWithStringQuery } from 'url';
+import urlParser, { UrlWithStringQuery, Url } from 'url';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
@@ -46,9 +46,9 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function getFullUrl(url: string, baseUrl: any) {
+export function getFullUrl(url: string, baseUrl: Url) {
   const urlObject = urlParser.parse(url, false, true);
-  // only if we do not have full URL 
+  // only if we do not have full URL
   if (!urlObject.protocol) {
     mutateToFullUrl(urlObject, baseUrl);
     url = urlParser.format(urlObject);
@@ -56,14 +56,13 @@ export function getFullUrl(url: string, baseUrl: any) {
   return url;
 }
 
-export function mutateToFullUrl(url: any, baseUrl: any){
-  const baseUrlObject = baseUrl ? urlParser.parse(baseUrl.href, false, true) : {} as UrlWithStringQuery;
-  //const baseUrlObject = baseUrl ? baseUrl.href : {} as UrlWithStringQuery;
-  logger.log(baseUrlObject.href);
-  logger.log(baseUrl.href)
-  url.protocol = url.protocol || baseUrlObject.protocol || 'http:';
-  url.host = url.host || baseUrlObject.host;
-  
+export function mutateToFullUrl(url: UrlWithStringQuery, baseUrl: Url){
+  if (url.protocol) {
+    return;
+  }
+  url.protocol = url.protocol || baseUrl.protocol || 'http:';
+  url.host = url.host || baseUrl.host;
+
   /* Relative path */
   if (url.pathname && url.pathname.indexOf('/') !== 0 && baseUrl.pathname) {
     url.pathname = pathParser.relative(baseUrl.pathname, url.pathname)
