@@ -172,39 +172,45 @@ export class RedisKvs<T> {
 
     const results: any[] = [];
 
+    console.debug('[q] START');
+
     return new Promise(async (resolve, reject) => {
       const q = fastq(this.worker, numWorkers);
 
       q.pause();
-      setTimeout(() => q.resume(), 1000);
+      setTimeout(() => q.resume(), 100);
 
-      q.drain = () => {
-        console.debug('drain');
-        resolve(results);
-      }
       q.saturated = () => {
-        console.debug('saturated');
+        console.debug(`[q] saturated on ${q.length()} - pause`);
         q.pause();
-        setTimeout(() => q.resume(), 1000);
+        setTimeout(() => {
+          console.debug('[q] saturated - resume');
+          q.resume();
+        }, 100);
       }
 
       let cursor = '0';
 
+      let i = 0;
+
       do {
-        const data = await this.scan(cursor);
+        const data = await this.scan(cursor, '10');
         const {items} = data;
         q.push({items, func}, (stat) => {
           results.push(stat);
         });
-        console.debug('pushed');
+        i += items.length;
+        console.debug(`[q] pushed (${items.length} -> ${i})`);
         cursor = data.cursor;
       } while (cursor !== '0')
+
+      resolve(results);
     });
   }
 
   // todo types
   private worker = ({items, func}: {items: string[][], func: (items: KVS<T>, workerId: number) => Promise<any>}, cb: any) => {
-    console.debug('worker');
+    console.debug('[q] worker start');
     const workerId = 0;
 
     // for testing purposes
@@ -233,7 +239,10 @@ export class RedisKvs<T> {
 
     if (Object.keys(parsedItems).length !== 0) {
       func(parsedItems, workerId)
-        .then(() => cb({ids, chunkStat}))
+        .then(() => {
+          console.debug('[q] worker end');
+          cb({ids, chunkStat});
+        })
     }
   };
 

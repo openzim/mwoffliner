@@ -7,8 +7,8 @@ import {RedisKvs} from '../../src/util/RedisKvs';
 
 const now = new Date();
 const timeout = 0;
-// const numberOfItems = [718];
-const numberOfItems = [718, 3169, 17563];
+const numberOfItems = [13973];
+// const numberOfItems = [718, 3169, 17563];
 // const numberOfWorkers = [4, 8, 16, 40];
 const numberOfWorkers = [1];
 
