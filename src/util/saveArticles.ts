@@ -35,8 +35,8 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     logger.log(`${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files...`);
     let prevPercentProgress: string;
 
-    await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
-        logger.info(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+    await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs) => {
+        logger.info(`Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
 
         // todo align fileDownloadPairs and listOfArguments
         const listOfArguments = [];
@@ -157,7 +157,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     let jsConfigVars = '';
     let prevPercentProgress: string;
 
-
     const articlesTotal = await articleDetailXId.len();
 
     if (dump.customProcessor?.shouldKeepArticle) {
@@ -166,8 +165,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     await articleDetailXId.iterateItems(
         downloader.speed,
-        async (articleKeyValuePairs, workerId) => {
-            logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
+        async (articleKeyValuePairs) => {
+            logger.info(`Processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
+
             for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                 try {
                     const rets = await downloader.getArticle(articleId, dump);

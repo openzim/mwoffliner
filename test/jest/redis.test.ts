@@ -6,11 +6,9 @@ import {initMockData} from './mock/mock';
 import {RedisKvs} from '../../src/util/RedisKvs';
 
 const now = new Date();
-const timeout = 0;
-const numberOfItems = [13973];
-// const numberOfItems = [718, 3169, 17563];
-// const numberOfWorkers = [4, 8, 16, 40];
-const numberOfWorkers = [1];
+const timeout = 100;
+const numberOfItems = [7, 523, 3649];
+const numberOfWorkers = [4, 32, 128];
 
 
 let expectedIds: string[];
@@ -18,7 +16,7 @@ let expectedIds: string[];
 jest.setTimeout(60000);
 
 
-const getHandler = (delay: number) => async (items: any, workerId: number): Promise<any> => {
+const getHandler = (delay: number) => async (items: any): Promise<any> => {
   const t = Math.random() * delay;
   return new Promise(((resolve, reject) => {
     setTimeout(() => {
@@ -27,38 +25,35 @@ const getHandler = (delay: number) => async (items: any, workerId: number): Prom
   }));
 };
 
-const getTestHandler = async (kvs: RedisKvs<any>, handler: (items: any, workerId: number) => any | Promise<any>, numWorkers: number) => {
-  const mockHandler = jest.fn(handler);
-
-  const testingDataByWorkers = await kvs.iterateItems(numWorkers, mockHandler);
+const getTestHandler = async (kvs: RedisKvs<any>, handler: (items: any) => any | Promise<any>, numWorkers: number) => {
+  const testingDataByWorkers = await kvs.iterateItems(numWorkers, handler);
 
   // ...have been called at all
   // todo get this back
   // expect(mockHandler).toHaveBeenCalled();
 
-  let count = 0;
-  const workers = new Set();
-  mockHandler.mock.calls
-    .forEach(([items, workerId]) => {
-      count += Object.keys(items).length;
-      workers.add(workerId);
-    });
+  // let count = 0;
+  // const workers = new Set();
+  // mockHandler.mock.calls
+  //   .forEach(([items, workerId]) => {
+  //     count += Object.keys(items).length;
+  //     workers.add(workerId);
+  //   });
 
   // todo
   // fn has been called expected times
   // expect(count).toEqual(len);
 
-
-  const workersUsed = Array.from(workers) as number[];
-  const workerIdsExpected = Array.from(Array(numWorkers).keys());
-  const workerIdsUnexpected = workersUsed.filter((x) => !workerIdsExpected.includes(x));
-  const workerIdsUnused = workerIdsExpected.filter((x) => !workersUsed.includes(x));
-
-  // all workers got the load
-  expect(workerIdsUnused).toEqual([]);
-
-  // there's no unexpected workers
-  expect(workerIdsUnexpected).toEqual([]);
+  // const workersUsed = Array.from(workers) as number[];
+  // const workerIdsExpected = Array.from(Array(numWorkers).keys());
+  // const workerIdsUnexpected = workersUsed.filter((x) => !workerIdsExpected.includes(x));
+  // const workerIdsUnused = workerIdsExpected.filter((x) => !workersUsed.includes(x));
+  //
+  // // all workers got the load
+  // expect(workerIdsUnused).toEqual([]);
+  //
+  // // there's no unexpected workers
+  // expect(workerIdsUnexpected).toEqual([]);
 
 
   let idsProcessed: string[] = [];
@@ -66,6 +61,9 @@ const getTestHandler = async (kvs: RedisKvs<any>, handler: (items: any, workerId
   for (const testingData of testingDataByWorkers) {
     idsProcessed = idsProcessed.concat(testingData.ids);
   }
+
+  // items have been there at all
+  expect(idsProcessed.length).toBeGreaterThan(0);
 
   // every single item had been processed
   const idsUnprocessed = expectedIds.filter((x) => !idsProcessed.includes(x));
@@ -79,12 +77,6 @@ const getTestHandler = async (kvs: RedisKvs<any>, handler: (items: any, workerId
   const idsUnique = [...new Set(idsProcessed)];
   expect(idsUnique).toEqual(idsProcessed);
 };
-
-
-// beforeAll(() => {
-//   client = createClient();
-//   kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
-// });
 
 
 describe('RedisKvs.iterateItems()', () => {
