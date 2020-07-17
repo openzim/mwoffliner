@@ -13,9 +13,9 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
     await articleStore
         .iterateItems(
             downloader.speed,
-            async (articleKeyValuePairs, workerId) => {
+            async (articleKeyValuePairs) => {
                 const articleKeys = Object.keys(articleKeyValuePairs);
-                logger.log(`Worker [${workerId}] getting categories for articles ${logger.logifyArray(articleKeys)}`);
+                logger.log(`Getting categories for articles ${logger.logifyArray(articleKeys)}`);
 
                 const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs)
                     .reduce((acc: any, [aId, detail]) => {
@@ -82,7 +82,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
     await articleDetailXId
         .iterateItems(
             downloader.speed,
-            async (articleKeyValuePairs, workerId) => {
+            async (articleKeyValuePairs) => {
 
                 for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                     processedArticles += 1;
@@ -176,7 +176,7 @@ export async function simplifyGraph(downloader: Downloader) {
     await articleDetailXId
         .iterateItems(
             downloader.speed,
-            async (articleKeyValuePairs, workerId) => {
+            async (articleKeyValuePairs) => {
                 for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                     processedArticles += 1;
 

@@ -4,6 +4,8 @@ import fastq from 'fastq';
 import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
+const chunkSize = 10;
+
 
 interface ScanResult {
   cursor: string;
@@ -168,51 +170,40 @@ export class RedisKvs<T> {
     });
   }
 
-  public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<any>) {
+  public async iterateItems(numWorkers: number, func: (items: KVS<T>) => Promise<any>) {
 
     const results: any[] = [];
-
-    console.debug('[q] START');
+    let completed = false;
 
     return new Promise(async (resolve, reject) => {
-      const q = fastq(this.worker, numWorkers);
+      const q = fastq(this.worker, Math.ceil(numWorkers / chunkSize));
 
       q.pause();
       setTimeout(() => q.resume(), 100);
 
       q.saturated = () => {
-        console.debug(`[q] saturated on ${q.length()} - pause`);
         q.pause();
-        setTimeout(() => {
-          console.debug('[q] saturated - resume');
-          q.resume();
-        }, 100);
+        setTimeout(() => q.resume(), 100);
+      }
+
+      q.drain = () => {
+        if (completed) resolve(results);
       }
 
       let cursor = '0';
-
-      let i = 0;
-
       do {
-        const data = await this.scan(cursor, '10');
+        const data = await this.scan(cursor, chunkSize.toString());
         const {items} = data;
-        q.push({items, func}, (stat) => {
+        q.push({items, func}, (e, stat) => {
           results.push(stat);
         });
-        i += items.length;
-        console.debug(`[q] pushed (${items.length} -> ${i})`);
         cursor = data.cursor;
-      } while (cursor !== '0')
-
-      resolve(results);
+        if (cursor === '0') completed = true;
+      } while (!completed);
     });
   }
 
-  // todo types
-  private worker = ({items, func}: {items: string[][], func: (items: KVS<T>, workerId: number) => Promise<any>}, cb: any) => {
-    console.debug('[q] worker start');
-    const workerId = 0;
-
+  private worker = ({items, func}: { items: string[][], func: (items: KVS<T>) => Promise<any> }, cb: any) => {
     // for testing purposes
     const ids: any[] = [];
     const chunkStat: any = {};
@@ -238,11 +229,13 @@ export class RedisKvs<T> {
     }
 
     if (Object.keys(parsedItems).length !== 0) {
-      func(parsedItems, workerId)
-        .then(() => {
-          console.debug('[q] worker end');
-          cb({ids, chunkStat});
-        })
+      try {
+        func(parsedItems).then(() => cb(null, {ids, chunkStat}))
+      } catch (e) {
+        throw e;
+        console.error(e);
+        cb(e)
+      }
     }
   };
 
