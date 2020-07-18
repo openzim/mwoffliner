@@ -139,7 +139,7 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
                         }
 
                         const doc = domino.createDocument(articleHtml);
-                        if (!await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
+                        if (dump.mwMetaData.mainPage !== articleId && !await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
                             articleDetailXId.delete(articleId);
                         }
                     }
@@ -183,7 +183,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                         let articleDoc = _articleDoc;
 
-                        if (dump.customProcessor?.preProcessArticle) {
+                        if (dump.mwMetaData.mainPage !== articleId && dump.customProcessor?.preProcessArticle) {
                             articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
                         }
 
