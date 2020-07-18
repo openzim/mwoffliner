@@ -1,4 +1,4 @@
-import urlParser, { Url } from 'url';
+import urlParser, { URL } from 'url';
 import * as pathParser from 'path';
 import logger from './Logger';
 import * as util from './util';
@@ -9,12 +9,12 @@ import { ensureTrailingChar } from './util';
 
 class MediaWiki {
   public metaData: MWMetaData;
-  public readonly baseUrl: Url;
+  public readonly baseUrl: URL;
   public readonly modulePath: string;
-  public readonly webUrl: Url;
-  public readonly apiUrl: Url;
-  public readonly veApiUrl: Url;
-  public readonly restApiUrl: Url;
+  public readonly webUrl: URL;
+  public readonly apiUrl: URL;
+  public readonly veApiUrl: URL;
+  public readonly restApiUrl: URL;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
@@ -32,17 +32,17 @@ class MediaWiki {
     this.password = config.password;
     this.getCategories = config.getCategories;
 
-    this.baseUrl = urlParser.parse(ensureTrailingChar(config.base, '/'));
+    this.baseUrl = new URL(ensureTrailingChar(config.base, '/'));
 
-    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.apiPath = config.apiPath ?? 'w/api.php?';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = urlParser.parse(urlParser.resolve(this.baseUrl.href, this.wikiPath));
-    this.apiUrl = urlParser.parse(`${urlParser.resolve(this.baseUrl.href, this.apiPath)}?`);
+    this.webUrl = new URL(this.wikiPath, this.baseUrl.href);
+    this.apiUrl = new URL(this.apiPath, this.baseUrl.href);
 
-    this.veApiUrl = urlParser.parse(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
+    this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
-    this.restApiUrl = urlParser.parse(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'));
+    this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'));
 
     this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`;
     this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;

@@ -1,4 +1,4 @@
-import * as urlParser from 'url';
+import urlParser, { URL } from 'url';
 import * as pathParser from 'path';
 import async from 'async';
 import logger from '../Logger';
@@ -48,7 +48,8 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             rewrittenCss = rewrittenCss.replace(url, filename);
 
                             /* Need a rewrite if url doesn't include protocol */
-                            url = getFullUrl(url, urlParser.parse(cssUrl, false, true));
+                            const urlObj = new URL(cssUrl);
+                            url = getFullUrl(url, urlObj);
                             url = url.indexOf('%') < 0 ? encodeURI(url) : url;
 
                             /* Download CSS dependency, but avoid duplicate calls */

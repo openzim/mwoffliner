@@ -1,6 +1,6 @@
 import './bootstrap.test';
 import test from 'blue-tape';
-import * as urlParser from 'url';
+import { URL } from 'url';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
 
@@ -45,19 +45,19 @@ test('wikitext comparison', async(t) => {
 
 test('mutate to full URL', async(t) => {
     const currentFolder = process.cwd();
-    const styleUrl = getFullUrl('/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', urlParser.parse('https://bm.wikipedia.org/', false, true));
+    const styleUrl = getFullUrl('/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', new URL('https://bm.wikipedia.org/'));
     t.equal(styleUrl, 'https://bm.wikipedia.org/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', 'Full URL for styles');
 
-    const imageUrl = getFullUrl('/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', urlParser.parse('https://bm.wikipedia.org/w/load.php?lang=bm&modules=ext.uls.interlanguage%7Cext.visualEditor.desktopArticleTarget.noscript%7Cext.wikimediaBadges%7Cskins.vector.styles.legacy%7Cwikibase.client.init&only=styles&skin=vector', false, true));
+    const imageUrl = getFullUrl('/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', new URL('https://bm.wikipedia.org/w/load.php?lang=bm&modules=ext.uls.interlanguage%7Cext.visualEditor.desktopArticleTarget.noscript%7Cext.wikimediaBadges%7Cskins.vector.styles.legacy%7Cwikibase.client.init&only=styles&skin=vector'));
     t.equal(imageUrl, 'https://bm.wikipedia.org/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', 'Full URL for image');
 
-    const relativeUrl = getFullUrl('./-/j/js_modules/jsConfigVars.js', urlParser.parse('https://bm.wikipedia.org/', false, true));
+    const relativeUrl = getFullUrl('./-/j/js_modules/jsConfigVars.js', new URL('https://bm.wikipedia.org/'));
     t.equal(relativeUrl, `https://bm.wikipedia.org${currentFolder}/-/j/js_modules/jsConfigVars.js`, 'Full Url for relative path with skipping one file');
 
-    const relativeUrlWithFolder = getFullUrl('../-/j/js_modules/jsConfigVars.js', urlParser.parse('https://bm.wikipedia.org/', false, true));
+    const relativeUrlWithFolder = getFullUrl('../-/j/js_modules/jsConfigVars.js', new URL('https://bm.wikipedia.org/'));
     const folderSplit = currentFolder.split('/');
     t.equal(relativeUrlWithFolder, `https://bm.wikipedia.org${folderSplit.slice(0, folderSplit.length-1).join('/')}/-/j/js_modules/jsConfigVars.js`, 'Full Url for relative path with skipping one folder');
 
-    const httpUrl = getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', urlParser.parse('https://en.wikipedia.org/', false, true));
+    const httpUrl = getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', new URL('https://en.wikipedia.org/'));
     t.equal(httpUrl, 'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'Full Url when base and url both strtas with http/s');
 })

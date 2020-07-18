@@ -5,11 +5,12 @@ import countryLanguage from 'country-language';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
-import urlParser, { UrlWithStringQuery, Url } from 'url';
+import urlParser, { UrlWithStringQuery, URL } from 'url';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
 import { MEDIA_REGEX, FIND_HTTP_REGEX } from './const';
+import { Url } from 'aws-sdk/clients/cloudformation';
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -46,7 +47,7 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function getFullUrl(url: string, baseUrl: Url) {
+export function getFullUrl(url: string, baseUrl: URL) {
   const urlObject = urlParser.parse(url, false, true);
   // only if we do not have full URL
   if (!urlObject.protocol) {
@@ -56,7 +57,7 @@ export function getFullUrl(url: string, baseUrl: Url) {
   return url;
 }
 
-export function mutateToFullUrl(url: UrlWithStringQuery, baseUrl: Url){
+export function mutateToFullUrl(url: UrlWithStringQuery, baseUrl: URL) {
   if (url.protocol) {
     return;
   }
