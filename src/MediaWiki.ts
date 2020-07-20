@@ -1,4 +1,4 @@
-import urlParser, { URL } from 'url';
+import urlParser from 'url';
 import * as pathParser from 'path';
 import logger from './Logger';
 import * as util from './util';
@@ -150,7 +150,7 @@ class MediaWiki {
      * - it happens to be a wikimedia project OR
      * - some domain where the second part of the hostname is longer than the first part
      */
-    const hostParts = urlParser.parse(this.baseUrl.href).hostname.split('.');
+    const hostParts = this.baseUrl.hostname.split('.');
     let creator = hostParts[0];
     if (hostParts.length > 1) {
       const wmProjects = new Set([
