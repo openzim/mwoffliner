@@ -37,8 +37,8 @@ class MediaWiki {
     this.apiPath = config.apiPath ?? 'w/api.php?';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = new URL(this.wikiPath, this.baseUrl.href);
-    this.apiUrl = new URL(this.apiPath, this.baseUrl.href);
+    this.webUrl = new URL(this.wikiPath, this.baseUrl);
+    this.apiUrl = new URL(this.apiPath, this.baseUrl);
 
     this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
