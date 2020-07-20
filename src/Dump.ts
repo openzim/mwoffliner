@@ -38,6 +38,7 @@ export class Dump {
     public mwMetaData: MWMetaData;
     public outFile: string;
     public mediaQueue: AsyncQueue<string>;
+    public isMainPage = (articleId: string): boolean => { return this.mwMetaData.mainPage === articleId ? true : false }
     public status = {
         files: {
             success: 0,

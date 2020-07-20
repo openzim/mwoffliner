@@ -139,7 +139,7 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
                         }
 
                         const doc = domino.createDocument(articleHtml);
-                        if (!await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
+                        if (!dump.isMainPage(articleId) && !await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
                             articleDetailXId.delete(articleId);
                         }
                     }
@@ -183,7 +183,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
                         let articleDoc = _articleDoc;
 
-                        if (dump.customProcessor?.preProcessArticle) {
+                        if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
                             articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
                         }
 
@@ -829,7 +829,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'));
 
     /* Subpage */
-    if (isSubpage(articleId, mw) && dump.mwMetaData.mainPage !== articleId) {
+    if (isSubpage(articleId, mw) && !dump.isMainPage(articleId)) {
         const headingNode = htmlTemplateDoc.getElementById('mw-content-text');
         const subpagesNode = htmlTemplateDoc.createElement('span');
         const parents = articleId.split('/');
