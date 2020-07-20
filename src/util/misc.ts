@@ -5,7 +5,6 @@ import countryLanguage from 'country-language';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
-import urlParser, { UrlWithStringQuery } from 'url';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
@@ -46,25 +45,8 @@ export function touch(paths: string[] | string) {
   });
 }
 
-export function getFullUrl(webUrlHost: string, url: string, baseUrl: string) {
-  if (typeof url !== 'string' || !url) {
-    throw new Error(`Expected url to be a string, got [${url}] instead`);
-  }
-  const urlObject = urlParser.parse(url, false, true);
-  if (!urlObject.protocol) {
-    const baseUrlObject = baseUrl ? urlParser.parse(baseUrl, false, true) : {} as UrlWithStringQuery;
-    urlObject.protocol = urlObject.protocol || baseUrlObject.protocol || 'http:';
-    urlObject.host = urlObject.host || baseUrlObject.host || webUrlHost;
-
-    /* Relative path */
-    if (urlObject.pathname && urlObject.pathname.indexOf('/') !== 0 && baseUrlObject.pathname) {
-      urlObject.pathname = `${pathParser.dirname(baseUrlObject.pathname)}/${urlObject.pathname}`;
-    }
-
-    url = urlParser.format(urlObject);
-  }
-
-  return url;
+export function getFullUrl(url: string, baseUrl: URL | string) {
+  return new URL(url, baseUrl).toString();
 }
 
 export function getSizeFromUrl(url: string) {

@@ -1,6 +1,7 @@
 import './bootstrap.test';
 import test from 'blue-tape';
-import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from 'src/util';
+import { URL } from 'url';
+import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
 
 test('util -> interpolateTranslationString', async (t) => {
@@ -40,4 +41,27 @@ test('wikitext comparison', async(t) => {
         `An [[isolated system]] remains the system is free.`,
         `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`,
         'HTML and Wikitext match')
+})
+
+test('Get full URL', async(t) => {
+
+    t.equal(getFullUrl('/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', new URL('https://bm.wikipedia.org/')),
+            'https://bm.wikipedia.org/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector',
+            'Full URL for styles');
+
+    t.equal(getFullUrl('/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', new URL('https://bm.wikipedia.org/w/load.php?lang=bm&modules=ext.uls.interlanguage%7Cext.visualEditor.desktopArticleTarget.noscript%7Cext.wikimediaBadges%7Cskins.vector.styles.legacy%7Cwikibase.client.init&only=styles&skin=vector')),
+            'https://bm.wikipedia.org/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b',
+            'Full URL for image');
+
+    t.equal(getFullUrl('./-/j/js_modules/jsConfigVars.js', new URL('https://bm.wikipedia.org/')),
+            'https://bm.wikipedia.org/-/j/js_modules/jsConfigVars.js',
+            'Full Url for relative path with skipping one file');
+
+    t.equal(getFullUrl('../-/j/js_modules/jsConfigVars.js', 'https://bm.wikipedia.org/'),
+            'https://bm.wikipedia.org/-/j/js_modules/jsConfigVars.js',
+            'Full Url for relative path with skipping one folder');
+
+    t.equal(getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/'),
+            'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1',
+            'Full Url when base and url both strtas with http/s');
 })

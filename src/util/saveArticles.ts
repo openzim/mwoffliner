@@ -3,7 +3,6 @@ import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
 import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
-import * as urlParser from 'url';
 import * as QueryStringParser from 'querystring';
 
 import pmap from 'p-map';
@@ -411,7 +410,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     const sourceEl = videoSources[0]; // Use first source (smallest resolution)
 
-    const sourceUrl = getFullUrl(mw.webUrl.hostname, sourceEl.getAttribute('src'), mw.base);
+    const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
     const fileBase = getMediaBase(sourceUrl, true);
 
     if (!fileBase) {
@@ -424,7 +423,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     const posterUrl = videoEl.getAttribute('poster');
     if (posterUrl) {
-        const videoPosterUrl = getFullUrl(mw.webUrl.hostname, posterUrl, mw.base);
+        const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
         if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
         videoEl.removeAttribute('resource');
@@ -454,7 +453,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 }
 
 export async function treatSubtitle(trackEle: DominoElement, mw: MediaWiki, articleId: string): Promise<string> {
-    const subtitleSourceUrl = getFullUrl(mw.webUrl.hostname, trackEle.getAttribute('src'), mw.base);
+    const subtitleSourceUrl = getFullUrl(trackEle.getAttribute('src'), mw.baseUrl);
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string, lang: string };
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl = new URL(subtitleSourceUrl);
@@ -505,7 +504,7 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     }
 
     /* Rewrite image src attribute */
-    const src = getFullUrl(mw.webUrl.hostname, img.getAttribute('src'), mw.base);
+    const src = getFullUrl(img.getAttribute('src'), mw.baseUrl);
     let newSrc: string;
     try {
         const resourceNamespace = 'I';

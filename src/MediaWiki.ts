@@ -1,4 +1,4 @@
-import urlParser, { Url } from 'url';
+import urlParser from 'url';
 import * as pathParser from 'path';
 import logger from './Logger';
 import * as util from './util';
@@ -9,12 +9,12 @@ import { ensureTrailingChar } from './util';
 
 class MediaWiki {
   public metaData: MWMetaData;
-  public readonly base: string;
+  public readonly baseUrl: URL;
   public readonly modulePath: string;
-  public readonly webUrl: Url;
-  public readonly apiUrl: Url;
-  public readonly veApiUrl: Url;
-  public readonly restApiUrl: Url;
+  public readonly webUrl: URL;
+  public readonly apiUrl: URL;
+  public readonly veApiUrl: URL;
+  public readonly restApiUrl: URL;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
@@ -32,19 +32,19 @@ class MediaWiki {
     this.password = config.password;
     this.getCategories = config.getCategories;
 
-    this.base = ensureTrailingChar(config.base, '/');
+    this.baseUrl = new URL(ensureTrailingChar(config.base, '/'));
 
-    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.apiPath = config.apiPath ?? 'w/api.php?';
     this.wikiPath = config.wikiPath ?? 'wiki/';
 
-    this.webUrl = urlParser.parse(urlParser.resolve(this.base, this.wikiPath));
-    this.apiUrl = urlParser.parse(`${urlParser.resolve(this.base, this.apiPath)}?`);
+    this.webUrl = new URL(this.wikiPath, this.baseUrl);
+    this.apiUrl = new URL(this.apiPath, this.baseUrl);
 
-    this.veApiUrl = urlParser.parse(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
+    this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
-    this.restApiUrl = urlParser.parse(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.base).toString(), '/'));
+    this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'));
 
-    this.modulePath = `${urlParser.resolve(this.base, config.modulePath ?? 'w/load.php')}?`;
+    this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`;
     this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;
   }
 
@@ -150,7 +150,7 @@ class MediaWiki {
      * - it happens to be a wikimedia project OR
      * - some domain where the second part of the hostname is longer than the first part
      */
-    const hostParts = urlParser.parse(this.base).hostname.split('.');
+    const hostParts = this.baseUrl.hostname.split('.');
     let creator = hostParts[0];
     if (hostParts.length > 1) {
       const wmProjects = new Set([
@@ -266,7 +266,7 @@ class MediaWiki {
       modulePath: this.modulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.wikiPath,
-      base: this.base,
+      baseUrl: this.baseUrl.href,
       apiPath: this.apiPath,
       domain: this.domain,
 
