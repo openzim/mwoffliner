@@ -17,7 +17,7 @@ import {getStrippedTitleFromHtml} from './misc';
 export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
 
     const articleDetail = await articleDetailXId.get(articleId);
-    const isMainPage = articleId === dump.mwMetaData.mainPage;
+    const isMainPage = dump.isMainPage(articleId);
 
     if (isMainPage) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
