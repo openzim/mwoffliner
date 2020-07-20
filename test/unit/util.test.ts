@@ -43,21 +43,25 @@ test('wikitext comparison', async(t) => {
         'HTML and Wikitext match')
 })
 
-test('mutate to full URL', async(t) => {
-    const currentFolder = process.cwd();
-    const styleUrl = getFullUrl('/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', new URL('https://bm.wikipedia.org/'));
-    t.equal(styleUrl, 'https://bm.wikipedia.org/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', 'Full URL for styles');
+test('Get full URL', async(t) => {
 
-    const imageUrl = getFullUrl('/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', new URL('https://bm.wikipedia.org/w/load.php?lang=bm&modules=ext.uls.interlanguage%7Cext.visualEditor.desktopArticleTarget.noscript%7Cext.wikimediaBadges%7Cskins.vector.styles.legacy%7Cwikibase.client.init&only=styles&skin=vector'));
-    t.equal(imageUrl, 'https://bm.wikipedia.org/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', 'Full URL for image');
+    t.equal(getFullUrl('/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector', new URL('https://bm.wikipedia.org/')),
+            'https://bm.wikipedia.org/w/load.php?lang=bm&modules=site.styles&only=styles&skin=vector',
+            'Full URL for styles');
 
-    const relativeUrl = getFullUrl('./-/j/js_modules/jsConfigVars.js', new URL('https://bm.wikipedia.org/'));
-    t.equal(relativeUrl, `https://bm.wikipedia.org${currentFolder}/-/j/js_modules/jsConfigVars.js`, 'Full Url for relative path with skipping one file');
+    t.equal(getFullUrl('/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b', new URL('https://bm.wikipedia.org/w/load.php?lang=bm&modules=ext.uls.interlanguage%7Cext.visualEditor.desktopArticleTarget.noscript%7Cext.wikimediaBadges%7Cskins.vector.styles.legacy%7Cwikibase.client.init&only=styles&skin=vector')),
+            'https://bm.wikipedia.org/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b',
+            'Full URL for image');
 
-    const relativeUrlWithFolder = getFullUrl('../-/j/js_modules/jsConfigVars.js', new URL('https://bm.wikipedia.org/'));
-    const folderSplit = currentFolder.split('/');
-    t.equal(relativeUrlWithFolder, `https://bm.wikipedia.org${folderSplit.slice(0, folderSplit.length-1).join('/')}/-/j/js_modules/jsConfigVars.js`, 'Full Url for relative path with skipping one folder');
+    t.equal(getFullUrl('./-/j/js_modules/jsConfigVars.js', new URL('https://bm.wikipedia.org/')),
+            'https://bm.wikipedia.org/-/j/js_modules/jsConfigVars.js',
+            'Full Url for relative path with skipping one file');
 
-    const httpUrl = getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', new URL('https://en.wikipedia.org/'));
-    t.equal(httpUrl, 'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'Full Url when base and url both strtas with http/s');
+    t.equal(getFullUrl('../-/j/js_modules/jsConfigVars.js', 'https://bm.wikipedia.org/'),
+            'https://bm.wikipedia.org/-/j/js_modules/jsConfigVars.js',
+            'Full Url for relative path with skipping one folder');
+
+    t.equal(getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/'),
+            'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1',
+            'Full Url when base and url both strtas with http/s');
 })
