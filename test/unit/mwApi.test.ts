@@ -70,4 +70,24 @@ test('MWApi NS', async (t) => {
         if (!Object.keys(item).includes('num') || !Object.keys(item).includes('allowedSubpages') || !Object.keys(item).includes('isContent')) keysAreValid = false;
     });
     t.true(keysAreValid, 'Namespaces have valid keys');
+
+    test('extracting title from href', async(t) => {
+        const titleWithWiki = mw.extractPageTitleFromHref('/wiki/Hades');
+        t.equal(titleWithWiki, 'Hades', 'Title with hrefs contaning /wiki')
+    
+        const titleWithRelativePath = mw.extractPageTitleFromHref('./Damage_Formula');
+        t.equal(titleWithRelativePath, 'Damage_Formula', 'Title with relative path')
+    
+        const titleWithDir= mw.extractPageTitleFromHref('../Agni');
+        t.equal(titleWithDir, 'Agni', 'Title with dir path');
+
+        const titleWithTwoDir= mw.extractPageTitleFromHref('../../Mali_Dung');
+        t.equal(titleWithTwoDir, 'Mali_Dung', 'Title with two dir path');
+    
+        const titleWithAnchorJump = mw.extractPageTitleFromHref('./Subarns#Mali');
+        t.equal(titleWithAnchorJump, 'Subarns', 'Title with Anchor Jump');
+
+        const interWikiTitle = mw.extractPageTitleFromHref('Maldives');
+        t.equal(interWikiTitle, null, 'Interwiki title')
+    })
 });

@@ -118,12 +118,10 @@ class MediaWiki {
 
   public extractPageTitleFromHref(href: any) {
     try {
-      const pathname = urlParser.parse(href, false, true).pathname || '';
-      if (pathname.indexOf('./') === 0) {
-        return util.decodeURIComponent(pathname.substr(2));
-      }
-      if (pathname.indexOf(this.webUrl.pathname) === 0) {
-        return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length));
+
+      if (href.indexOf('./') === 0 || href.indexOf('/wiki') === 0 || href.indexOf(this.webUrl.pathname) === 0 || href.indexOf('../') === 0) {
+        const pathname = new URL(href, this.base).pathname;
+        return pathParser.basename(pathname);
       }
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
@@ -131,9 +129,6 @@ class MediaWiki {
         const withoutDotHtml = href.split('.').slice(0, -1).join('.');
         const lastTwoSlashes = withoutDotHtml.split('/').slice(-2).join('/');
         return lastTwoSlashes;
-      }
-      if (pathParser.parse(href).dir.includes('../')) {
-        return pathParser.parse(href).name;
       }
 
       return null; /* Interwiki link? -- return null */
