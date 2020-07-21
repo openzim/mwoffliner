@@ -118,11 +118,11 @@ class MediaWiki {
 
   public extractPageTitleFromHref(href: any) {
     try {
-
-      if (href.indexOf('./') === 0 || href.indexOf('/wiki') === 0 || href.indexOf(this.webUrl.pathname) === 0 || href.indexOf('../') === 0) {
-        const pathname = new URL(href, this.base).pathname;
+      const pathname = urlParser.parse(href, false, true).pathname;
+      if (pathname.indexOf('./') === 0 || pathname.indexOf('/wiki') === 0 || pathname.indexOf('../') === 0) {
         return pathParser.basename(pathname);
       }
+
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
       if (isPaginated) {
