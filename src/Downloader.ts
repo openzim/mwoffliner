@@ -553,8 +553,9 @@ class Downloader {
     return null;
   }
 
-  private getJSONCb<T>({ url, timeout }: AxiosRequestConfig, handler: (...args: any[]) => any): void {
+  private getJSONCb = <T>( url: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`);
+    const timeout = this.requestTimeout;
     axios.get<T>(url, { responseType: 'json', timeout })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
@@ -564,11 +565,12 @@ class Downloader {
             const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
-            return this.getJSONCb({ url, timeout }, handler);
+            return this.getJSONCb(url , handler);
           } else if (err.response && err.response.status === 404) {
             handler(err);
           }
         } catch (a) {
+          logger.log('ERR', err)
           handler(err);
         }
       });
@@ -582,7 +584,7 @@ class Downloader {
     logger.info(`Downloading [${url}]`);
     try {
       if (this.optimisationCacheUrl && this.isImageUrl(url)) {
-        this.downloadImage(this.requestOptions, handler);
+        this.downloadImage(url, handler);
       } else {
         const resp = await axios(url, this.requestOptions);
         handler(null, {
@@ -592,25 +594,25 @@ class Downloader {
       }
     } catch (err) {
       try {
-        this.errHandler(err, this.requestOptions, handler);
+        this.errHandler(err, url, handler);
       } catch (a) {
         handler(err);
       }
     }
   }
 
-  private async downloadImage(requestOptions: any, handler: any) {
+  private async downloadImage(url: string, handler: any) {
     try {
       // TODO: remove when Axios can handle HTTP 304 properly
       // See: https://github.com/openzim/mwoffliner/issues/1184
-      delete requestOptions.headers['accept-encoding'];
+      delete this.requestOptions.headers['accept-encoding'];
 
-      this.s3.downloadBlob(stripHttpFromUrl(requestOptions.url)).then(async (imageResp) => {
+      this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (imageResp) => {
         if (imageResp?.Metadata?.etag) {
-          requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
+          this.requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
         }
 
-        const resp = await axios(requestOptions);
+        const resp = await axios(url, this.requestOptions);
         // Most of the images after uploading once will always have 304 status, until modified.
         if (resp.status === 304) {
           handler(null, {
@@ -623,7 +625,7 @@ class Downloader {
         // Check for the etag and upload
         const etag = this.removeEtagWeakPrefix(resp.headers.etag);
         if (etag) {
-          this.s3.uploadBlob(stripHttpFromUrl(requestOptions.url), resp.data, etag);
+          this.s3.uploadBlob(stripHttpFromUrl(url), resp.data, etag);
         }
 
         handler(null, {
@@ -631,21 +633,21 @@ class Downloader {
           content: await this.getCompressedBody(resp),
         });
       }).catch((err) => {
-        this.errHandler(err, requestOptions, handler);
+        this.errHandler(err, url, handler);
       });
     } catch (err) {
-      this.errHandler(err, requestOptions, handler);
+      this.errHandler(err, url, handler);
     }
   }
 
-  private errHandler(err: any, requestOptions: any, handler: any): void {
+  private errHandler(err: any, url: string, handler: any): void {
     if (err.response && err.response.status === 429) {
       logger.log(`Received a [status=429], slowing down`);
       const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
       logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
       this.maxActiveRequests = newMaxActiveRequests;
     }
-    logger.log(`Not able to download content for ${requestOptions.url} due to ${err}`);
+    logger.log(`Not able to download content for ${url} due to ${err}`);
     handler(err);
   }
 
@@ -661,9 +663,7 @@ class Downloader {
   }
 
   private backoffCall(handler: (...args: any[]) => void, url: string, callback: (...args: any[]) => void | Promise<void>): void {
-    const request = this.requestOptions
-    request['url'] = url;
-    const call = backoff.call(handler, request , callback);
+    const call = backoff.call(handler, url, callback);
     call.setStrategy(this.backoffOptions.strategy);
     call.retryIf(this.backoffOptions.retryIf);
     call.failAfter(this.backoffOptions.failAfter);
