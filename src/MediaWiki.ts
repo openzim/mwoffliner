@@ -34,11 +34,12 @@ class MediaWiki {
 
     this.baseUrl = new URL(ensureTrailingChar(config.base, '/'));
     this.defaultWikiPath = new URL('wiki/', this.baseUrl);
-    this.apiPath = config.apiPath ?? 'w/api.php?';
-    this.wikiPath = config.wikiPath ?? this.defaultWikiPath.pathname;
+
+    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.wikiPath = config.wikiPath ?? 'wiki/';
 
     this.webUrl = new URL(this.wikiPath, this.baseUrl);
-    this.apiUrl = new URL(this.apiPath, this.baseUrl);
+    this.apiUrl = new URL(`${this.apiPath}?`, this.baseUrl);
 
     this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
@@ -118,9 +119,13 @@ class MediaWiki {
 
   public extractPageTitleFromHref(href: any) {
     try {
-      const pathname = urlParser.parse(href, false, true).pathname;
-      if (pathname.indexOf('./') === 0 || pathname.indexOf(this.defaultWikiPath.pathname) === 0 || pathname.indexOf('../') === 0) {
-        return pathParser.basename(pathname);
+      const pathname = new URL(href, this.baseUrl).pathname;
+      if (href.indexOf('./') === 0) {
+        return util.decodeURIComponent(pathname.substr(1));
+      }
+
+      if (href.indexOf(this.defaultWikiPath.pathname) === 0){
+        return util.decodeURIComponent(pathname.substr(this.defaultWikiPath.pathname.length));
       }
 
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
@@ -129,6 +134,10 @@ class MediaWiki {
         const withoutDotHtml = href.split('.').slice(0, -1).join('.');
         const lastTwoSlashes = withoutDotHtml.split('/').slice(-2).join('/');
         return lastTwoSlashes;
+      }
+
+      if (pathParser.parse(href).dir.includes('../') || pathParser.parse(href).dir.includes('..')) {
+        return pathParser.parse(href).name;
       }
 
       return null; /* Interwiki link? -- return null */
