@@ -6,7 +6,6 @@ import * as domino from 'domino';
 import type Downloader from './Downloader';
 import { ensureTrailingChar } from './util';
 
-
 class MediaWiki {
   public metaData: MWMetaData;
   public readonly baseUrl: URL;
@@ -25,6 +24,7 @@ class MediaWiki {
   private readonly apiPath: string;
   private readonly domain: string;
   private readonly articleApiUrlBase: string;
+  private readonly defaultWikiPath: URL;
 
   constructor(config: MWConfig) {
     this.domain = config.domain || '';
@@ -33,9 +33,9 @@ class MediaWiki {
     this.getCategories = config.getCategories;
 
     this.baseUrl = new URL(ensureTrailingChar(config.base, '/'));
-
-    this.apiPath = config.apiPath ?? 'w/api.php?';
-    this.wikiPath = config.wikiPath ?? 'wiki/';
+    this.defaultWikiPath = new URL('wiki/', this.baseUrl);
+    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.wikiPath = config.wikiPath ?? this.defaultWikiPath.pathname;
 
     this.webUrl = new URL(this.wikiPath, this.baseUrl);
     this.apiUrl = new URL(this.apiPath, this.baseUrl);
@@ -119,7 +119,7 @@ class MediaWiki {
   public extractPageTitleFromHref(href: any) {
     try {
       const pathname = urlParser.parse(href, false, true).pathname;
-      if (pathname.indexOf('./') === 0 || pathname.indexOf('/wiki') === 0 || pathname.indexOf('../') === 0) {
+      if (pathname.indexOf('./') === 0 || pathname.indexOf(this.defaultWikiPath.pathname) === 0 || pathname.indexOf('../') === 0) {
         return pathParser.basename(pathname);
       }
 
