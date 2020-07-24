@@ -34,7 +34,7 @@ class MediaWiki {
 
     this.baseUrl = new URL(ensureTrailingChar(config.base, '/'));
     this.defaultWikiPath = new URL('wiki/', this.baseUrl);
-    this.apiPath = config.apiPath ?? 'w/api.php';
+    this.apiPath = config.apiPath ?? 'w/api.php?';
     this.wikiPath = config.wikiPath ?? this.defaultWikiPath.pathname;
 
     this.webUrl = new URL(this.wikiPath, this.baseUrl);
