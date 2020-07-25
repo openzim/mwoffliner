@@ -843,7 +843,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
                 subpages
                     += `&lt; ${
                     isParentMirrored
-                        ? `<a href="${encodeArticleIdForZimHtmlUrl(parentPath + parent)}" title="${label}">`
+                        ? `<a href="../${encodeArticleIdForZimHtmlUrl(parentPath + parent)}" title="${label}">`
                         : ''
                     }${label
                     }${isParentMirrored ? '</a> ' : ' '}`;
