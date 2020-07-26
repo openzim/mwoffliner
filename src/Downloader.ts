@@ -616,9 +616,8 @@ class Downloader {
         if (imageResp?.Metadata?.etag) {
           this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
         }
-        // TODO: remove when Axios can handle HTTP 304 properly
-        // See: https://github.com/openzim/mwoffliner/issues/1184
         const resp = await axios(url, this.arrayBufferRequestOptions);
+
         // Most of the images after uploading once will always have 304 status, until modified.
         if (resp.status === 304) {
           handler(null, {
