@@ -1,6 +1,5 @@
 import S3File from 'aws-sdk';
 import logger from './Logger';
-import axios from 'axios';
 import { Readable } from 'stream';
 import publicIp from 'public-ip';
 

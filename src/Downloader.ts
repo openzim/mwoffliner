@@ -85,7 +85,9 @@ class Downloader {
   private readonly optimisationCacheUrl: string;
   private s3: S3;
   private mwCapabilities: MWCapabilities; // todo move to MW
-  private requestOptions: AxiosRequestConfig;
+  public arrayBufferRequestOptions: AxiosRequestConfig;
+  private jsonRequestOptions: AxiosRequestConfig;
+  public streamRequestOptions: AxiosRequestConfig;
 
 
   constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
@@ -119,12 +121,10 @@ class Downloader {
     // that will be checked on the next phase in checkCapabilities()
     this.baseUrl = `${this.mw.restApiUrl.href}page/mobile-sections/`;
     this.baseUrlForMainPage = this.mw.veApiUrl.href;
-
-    this.requestOptions = {
+    this.arrayBufferRequestOptions = {
       headers: {
         'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
         'cache-control': 'public, max-stale=86400',
-        'accept-encoding': 'gzip, deflate',
         'user-agent': this.uaString,
         'cookie': this.loginCookie,
       },
@@ -132,6 +132,32 @@ class Downloader {
       timeout: this.requestTimeout,
       method: 'GET',
       validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
+    };
+
+    this.jsonRequestOptions = {
+      headers: {
+        'accept': 'application/json',
+        'cache-control': 'public, max-stale=86400',
+        'accept-encoding': 'gzip, deflate',
+        'user-agent': this.uaString,
+        'cookie': this.loginCookie,
+      },
+      responseType: 'json',
+      timeout: this.requestTimeout,
+      method: 'GET'
+    };
+
+    this.streamRequestOptions = {
+      headers: {
+        'accept': 'application/octet-stream',
+        'cache-control': 'public, max-stale=86400',
+        'accept-encoding': 'gzip, deflate',
+        'user-agent': this.uaString,
+        'cookie': this.loginCookie,
+      },
+      responseType: 'stream',
+      timeout: this.requestTimeout,
+      method: 'GET'
     };
   }
 
@@ -520,22 +546,6 @@ class Downloader {
     return articleDetails;
   }
 
-  private getRequestOptionsFromUrl(): AxiosRequestConfig {
-    return {
-      headers: {
-        'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
-        'cache-control': 'public, max-stale=86400',
-        'accept-encoding': 'gzip, deflate',
-        'user-agent': this.uaString,
-        'cookie': this.loginCookie,
-      },
-      responseType: 'arraybuffer',
-      timeout: this.requestTimeout,
-      method: 'GET',
-      validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
-    };
-  }
-
   private async claimRequest(): Promise<null> {
     if (this.activeRequests < this.maxActiveRequests) {
       this.activeRequests += 1;
@@ -555,8 +565,7 @@ class Downloader {
 
   private getJSONCb = <T>( url: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`);
-    const timeout = this.requestTimeout;
-    axios.get<T>(url, { responseType: 'json', timeout })
+    axios.get<T>(url, this.jsonRequestOptions)
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
@@ -586,7 +595,7 @@ class Downloader {
       if (this.optimisationCacheUrl && this.isImageUrl(url)) {
         this.downloadImage(url, handler);
       } else {
-        const resp = await axios(url, this.requestOptions);
+        const resp = await axios(url, this.arrayBufferRequestOptions);
         handler(null, {
           responseHeaders: resp.headers,
           content: await this.getCompressedBody(resp),
@@ -603,16 +612,13 @@ class Downloader {
 
   private async downloadImage(url: string, handler: any) {
     try {
-      // TODO: remove when Axios can handle HTTP 304 properly
-      // See: https://github.com/openzim/mwoffliner/issues/1184
-      delete this.requestOptions.headers['accept-encoding'];
-
       this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (imageResp) => {
         if (imageResp?.Metadata?.etag) {
-          this.requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
+          this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
         }
-
-        const resp = await axios(url, this.requestOptions);
+        // TODO: remove when Axios can handle HTTP 304 properly
+        // See: https://github.com/openzim/mwoffliner/issues/1184
+        const resp = await axios(url, this.arrayBufferRequestOptions);
         // Most of the images after uploading once will always have 304 status, until modified.
         if (resp.status === 304) {
           handler(null, {

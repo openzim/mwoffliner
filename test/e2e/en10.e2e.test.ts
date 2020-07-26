@@ -24,7 +24,6 @@ const parameters = {
 test('Simple articleList', async (t) => {
     await execa.command(`redis-cli flushall`);
 
-    // const { data: articleIds } = await axios.get(articleListUrl);
     const outFiles = await execute(parameters);
 
     t.equal(outFiles.length, 2, `Created 2 outputs`);
