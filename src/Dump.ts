@@ -203,7 +203,7 @@ export class Dump {
 
         /* Push Mediawiki:Offline.css (at the end) */
         // TODO: Weak URL (might fail in a number of cases where the wiki path is not like on Wikipedia)
-        const offlineCssUrl = `${downloader.mw.baseUrl.href}w/index.php?title=Mediawiki:offline.css&action=raw`;
+        const offlineCssUrl = `${downloader.mw.webUrl.href}?title=Mediawiki:offline.css&action=raw`;
         if (await downloader.canGetUrl(offlineCssUrl)) {
             sheetUrls.push(offlineCssUrl);
         }
