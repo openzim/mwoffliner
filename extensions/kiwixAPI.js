@@ -1,15 +1,18 @@
-module.exports = class TableOfContent { 
+import "core-js/stable";
+import "regenerator-runtime/runtime";
+
+class TableOfContent { 
     constructor(){
         this.respArrOfSections = [];
         this.sectionList = [];
     }
 
-    async hasTableOfContent() {
+    hasTableOfContent() {
         this.sectionList = document.querySelectorAll('details[data-level]');
         return this.sectionList.length > 0 ? true : false;
     }
 
-    async getSections() {
+    getSections() {
         if (this.hasTableOfContent()) {
             this.sectionList.forEach(section => {
                 const h2Elem = section.getElementsByTagName('summary')[0].firstElementChild;
@@ -23,7 +26,7 @@ module.exports = class TableOfContent {
         return this.respArrOfSections;
     }
 
-    async scrollToSection(index){
+    scrollToSection(index){
         let sectionId = this.respArrOfSections[index].section_id;
         const sectionIdElem = document.getElementById(sectionId);
         sectionIdElem.closest('details').setAttribute('open', '');
@@ -34,3 +37,5 @@ module.exports = class TableOfContent {
     }
 }
 
+// Making it available to window Object of the browser(for now)
+window.toc = TableOfContent;

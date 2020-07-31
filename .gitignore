@@ -14,3 +14,4 @@ npm-debug.log
 .nyc_output
 coverage
 mwo-test-*
+dist/*
