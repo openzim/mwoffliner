@@ -10,54 +10,53 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
     const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.client, `${Date.now()}-request`);
     logger.log(`Fetching categories for [${await articleStore.len()}] articles`);
 
-    await articleStore
-        .iterateItems(
-            downloader.speed,
-            async (articleId, articleDetail) => {
+    await articleStore.iterateItems(
+        downloader.speed,
+        async (articleId, articleDetail) => {
 
-                // todo simplify this
-                const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries({[articleId]: articleDetail})
-                    .reduce((acc: any, [aId, detail]) => {
-                        for (const cat of detail.categories || []) {
-                            const catId = cat.title;
-                            acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo);
-                        }
-                        return acc;
-                    }, {});
-
-                const foundCategoryIds = Object.keys(pagesXCategoryId);
-                if (foundCategoryIds.length) {
-                    const existingArticles = await articleDetailXId.getMany(foundCategoryIds);
-                    const categoriesToGet = Object.entries(existingArticles).filter(([id, detail]) => !detail).map(([id]) => id);
-                    if (categoriesToGet.length) {
-                        await getArticlesByIds(categoriesToGet, downloader, false);
+            // todo simplify this
+            const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries({[articleId]: articleDetail})
+                .reduce((acc: any, [aId, detail]) => {
+                    for (const cat of detail.categories || []) {
+                        const catId = cat.title;
+                        acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo);
                     }
+                    return acc;
+                }, {});
 
-                    const catDetails = await articleDetailXId.getMany(foundCategoryIds);
-
-                    for (const [id, detail] of Object.entries(catDetails)) {
-                        if (!detail) {
-                            continue;
-                        }
-
-                        const parentCategories = (detail.categories || [])
-                            .reduce((acc, info) => {
-                                const articleId = info.title;
-                                return {
-                                    ...acc,
-                                    [articleId]: info,
-                                };
-                            }, {});
-
-                        await nextCategoriesBatch.setMany(parentCategories);
-
-                        detail.pages = (detail.pages || []).concat(pagesXCategoryId[id]);
-
-                        await articleDetailXId.set(id, detail);
-                    }
+            const foundCategoryIds = Object.keys(pagesXCategoryId);
+            if (foundCategoryIds.length) {
+                const existingArticles = await articleDetailXId.getMany(foundCategoryIds);
+                const categoriesToGet = Object.entries(existingArticles).filter(([id, detail]) => !detail).map(([id]) => id);
+                if (categoriesToGet.length) {
+                    await getArticlesByIds(categoriesToGet, downloader, false);
                 }
-            },
-        );
+
+                const catDetails = await articleDetailXId.getMany(foundCategoryIds);
+
+                for (const [id, detail] of Object.entries(catDetails)) {
+                    if (!detail) {
+                        continue;
+                    }
+
+                    const parentCategories = (detail.categories || [])
+                        .reduce((acc, info) => {
+                            const articleId = info.title;
+                            return {
+                                ...acc,
+                                [articleId]: info,
+                            };
+                        }, {});
+
+                    await nextCategoriesBatch.setMany(parentCategories);
+
+                    detail.pages = (detail.pages || []).concat(pagesXCategoryId[id]);
+
+                    await articleDetailXId.set(id, detail);
+                }
+            }
+        },
+    );
 
     if (deleteArticleStore) {
         await articleStore.flush();

@@ -12,9 +12,9 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
 
     // using async iterator to spawn workers
     await pmap(
-        ','.repeat(downloader.speed).split(',').map((_, i) => i),
+        Array.from(Array(downloader.speed).keys()),
         async (workerId: number) => {
-            while (from < numArticleIds) {
+            do {
                 const articleIds = _articleIds.slice(from, from + batchSize);
                 const to = from + articleIds.length;
                 if (log) {
@@ -66,7 +66,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                         logger.warn(`Failed to get article ids, reducing batch size to [${batchSize}]`, err);
                     }
                 }
-            }
+            } while (from < numArticleIds);
         },
         {concurrency: downloader.speed}
     );

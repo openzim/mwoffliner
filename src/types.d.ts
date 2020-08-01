@@ -16,7 +16,9 @@ declare module 'imagemin-jpegoptim';
 type DominoElement = any;
 
 type Callback = (err?: any, data?: any, extra?: any) => void;
+
 interface KVS<T> { [key: string]: T; }
+type KeyValue<T> = [string, T];
 
 
 type ArticleDetail = PageInfo & {

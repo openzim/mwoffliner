@@ -17,7 +17,7 @@ interface ScanResult {
 
 export class RedisKvs<T> {
   private readonly redisClient: RedisClient;
-  public readonly hscanAsync: { (arg0: string, arg1: string, arg2: string, arg3: string): any; (): Promise<[string, string[]]>; };  // todo type
+  private readonly hscanAsync: (arg0: string, arg1: string, arg2: string, arg3: string) => Promise<[string, string[]]>;
   private readonly dbName: string;
   private readonly keyMapping?: { [key: string]: string };
   private readonly invertedKeyMapping?: { [key: string]: string };
@@ -193,7 +193,6 @@ export class RedisKvs<T> {
         // todo types
         // @ts-ignore
         for (const item of source.value) {
-          // @ts-ignore
           q.push({item, func}, (e, id) => {
             processed++;
             // console.debug(`in queue: ${q.length()} - done: ${processed}`);
@@ -206,28 +205,20 @@ export class RedisKvs<T> {
         }
       };
 
-      const workers = Math.ceil(numWorkers / chunkSize);
-      const q = fastq(this.worker, workers);
+      // const workers = Math.ceil(numWorkers / chunkSize);
+      const q = fastq(this.worker, numWorkers);
 
       q.empty = fetch;
       q.drain = fetch;
 
-      // q.empty = async () => {
-      //   console.log('fetching');
-      //   await fetch();
-      // }
-      // q.drain = async () => {
-      //   console.log('fetching');
-      //   await fetch();
-      // }
       await fetch();
     });
   }
 
 
-  private worker = async ({item, func}: { item: unknown[], func: (key: string, value: T) => Promise<any> }, cb: any): Promise<void> => {
-    const id = item[0] as string;
-    const entity: T = this.mapKeysGet(JSON.parse(item[1] as string));
+  private worker = async ({item, func}: { item: KeyValue<T>, func: (key: string, value: T) => Promise<any> }, cb: any): Promise<void> => {
+    const id = item[0];
+    const entity = item[1];
     try {
       await func(id, entity);
       cb(null, process.env.NODE_ENV === 'test' ? id : undefined);
@@ -237,13 +228,17 @@ export class RedisKvs<T> {
     }
   };
 
-  // todo types
-  public async * scanAsync(): AsyncGenerator<unknown[][], void, T> {
+  public async * scanAsync(): AsyncGenerator<KeyValue<T>[], void, unknown> {
     let cursor = '0';
     do {
       const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', queueLength);
       cursor = data[0];
-      const items = Array.from(data[1], (x, k) => k % 2 ? undefined : [x, data[1][k + 1]]).filter((x) => x);
+      const items = Array
+        .from(data[1], (x, k) => k % 2 ? undefined : [x, this.mapKeysGet(JSON.parse(data[1][k + 1]))])
+        .filter((x: T[]) => x);
+
+      // todo
+      // @ts-ignore
       yield items;
     } while (cursor !== '0')
   }
