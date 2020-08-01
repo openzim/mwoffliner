@@ -468,23 +468,21 @@ async function execute(argv: any) {
   async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
     await redirectsXId.iterateItems(
       downloader.speed,
-      async (redirects) => {
-        for (const [redirectId, { targetId, title }] of Object.entries(redirects)) {
-          if (redirectId !== targetId) {
-            const redirectArticle = new ZimArticle({
-              url: redirectId,
-              shouldIndex: true,
-              data: '',
-              ns: 'A',
-              mimeType: 'text/html',
-              title,
-              redirectUrl: targetId,
-            });
-            zimCreator.addArticle(redirectArticle);
-            dump.status.redirects.written += 1;
-          }
+      async (redirectId, { targetId, title }) => {
+        if (redirectId !== targetId) {
+          const redirectArticle = new ZimArticle({
+            url: redirectId,
+            shouldIndex: true,
+            data: '',
+            ns: 'A',
+            mimeType: 'text/html',
+            title,
+            redirectUrl: targetId,
+          });
+          zimCreator.addArticle(redirectArticle);
+          dump.status.redirects.written += 1;
         }
-      },
+      }
     );
   }
 

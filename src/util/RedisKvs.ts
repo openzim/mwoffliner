@@ -174,7 +174,7 @@ export class RedisKvs<T> {
     });
   }
 
-  public async iterateItems(numWorkers: number, func: (item: KVS<T>) => Promise<any>): Promise<string[]> {
+  public async iterateItems(numWorkers: number, func: (key: string, value: T) => Promise<any>): Promise<string[]> {
     const len = await this.len();
     const ids: any[] = [];  // for testing purposes
     const iterator = this.scanAsync();

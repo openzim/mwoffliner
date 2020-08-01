@@ -35,14 +35,14 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     logger.log(`${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files...`);
     let prevPercentProgress: string;
 
-    await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs) => {
-        logger.info(`Processing batch of [${Object.keys(fileDownloadPairs).length}] files`);
+    await fileStore.iterateItems(
+      downloader.speed,
+      async (path, { url, namespace, mult, width }) => {
+        logger.info(`Downloading file ${path}`);
 
         // todo align fileDownloadPairs and listOfArguments
-        const listOfArguments = [];
-        for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
-            listOfArguments.push({ path, url, namespace, mult, width });
-        }
+        // todo simplify this
+        const listOfArguments = [{ path, url, namespace, mult, width }];
 
         const responses = await downloadBulk(listOfArguments, downloader);
         for (const resp of responses) {
@@ -129,25 +129,23 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump) {
     await articleDetailXId.iterateItems(
         downloader.speed,
-        async (articleKeyValuePairs) => {
-            for (const [articleId] of Object.entries(articleKeyValuePairs)) {
-                try {
-                    const rets = await downloader.getArticle(articleId, dump);
+        async (articleId) => {
+            try {
+                const rets = await downloader.getArticle(articleId, dump);
 
-                    for (const { articleId, html: articleHtml } of rets) {
-                        if (!articleHtml) {
-                            continue;
-                        }
-
-                        const doc = domino.createDocument(articleHtml);
-                        if (!dump.isMainPage(articleId) && !await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
-                            articleDetailXId.delete(articleId);
-                        }
+                for (const { articleId, html: articleHtml } of rets) {
+                    if (!articleHtml) {
+                        continue;
                     }
-                } catch (err) {
-                    logger.warn(`Error downloading article [${articleId}], skipping`, err);
-                    articleDetailXId.delete(articleId);
+
+                    const doc = domino.createDocument(articleHtml);
+                    if (!dump.isMainPage(articleId) && !await dump.customProcessor.shouldKeepArticle(articleId, doc)) {
+                        articleDetailXId.delete(articleId);
+                    }
                 }
+            } catch (err) {
+                logger.warn(`Error downloading article [${articleId}], skipping`, err);
+                articleDetailXId.delete(articleId);
             }
         }
     );
