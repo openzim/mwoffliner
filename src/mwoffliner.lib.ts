@@ -43,7 +43,6 @@ import {
   makeArticleListItem,
   MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
   mkdirPromise,
-  readFilePromise,
   sanitizeString,
   saveStaticFiles,
   writeFilePromise,
@@ -257,7 +256,7 @@ async function execute(argv: any) {
       logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
       content = await axios.get(customZimFavicon, downloader.arrayBufferRequestOptions)
         .then((a) => a.data)
-        .catch((err) => {
+        .catch(()=> {
           throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`);
         });
     } else {

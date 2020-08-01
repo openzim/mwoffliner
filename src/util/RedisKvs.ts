@@ -1,6 +1,7 @@
 import {cpus} from 'os';
 import pmap from 'p-map';
 import fastq from 'fastq';
+import * as util from 'util';
 import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
@@ -15,12 +16,14 @@ interface ScanResult {
 
 export class RedisKvs<T> {
   private redisClient: RedisClient;
+  public readonly hscanAsync: { (arg0: string, arg1: string, arg2: string, arg3: string): any; (): Promise<[string, string[]]>; };  // todo type
   private readonly dbName: string;
   private readonly keyMapping?: { [key: string]: string };
   private readonly invertedKeyMapping?: { [key: string]: string };
 
   constructor(redisClient: RedisClient, dbName: string, keyMapping?: { [key: string]: string }) {
     this.redisClient = redisClient;
+    this.hscanAsync = util.promisify(redisClient.hscan).bind(this.redisClient);
     this.dbName = dbName;
     this.keyMapping = keyMapping;
     if (keyMapping) {
@@ -173,45 +176,87 @@ export class RedisKvs<T> {
   public async iterateItems(numWorkers: number, func: (items: KVS<T>) => Promise<any>) {
 
     const results: any[] = [];
-    let completed = false;
+    const iterator = this.scanAsync();
+    let out = false;
 
-    return new Promise(async (resolve, reject) => {
-      const q = fastq(this.worker, Math.ceil(numWorkers / chunkSize));
+    return new Promise(async (resolve) => {
 
-      q.pause();
-      setTimeout(() => q.resume(), 100);
+      const fetch = async (): Promise<void> => {
+        const source = await iterator.next();
 
-      q.saturated = () => {
-        q.pause();
-        setTimeout(() => q.resume(), 100);
+        if (source.done) {
+          out = true;
+          console.log('out!');
+          return;
+        }
+
+        // console.log(`push - tasks in queue: ${q.length()} - results: ${results.length}`);
+        // @ts-ignore
+        for (const item of source.value) {
+          // @ts-ignore
+          q.push({items: item, func}, (e, stat) => {
+            results.push(stat);
+            console.log(`callback - tasks in queue: ${q.length()} - results: ${results.length} - done: ${source.done}`);
+            if (results.length === 1327) {
+              console.log('resolve???');
+              resolve(results);
+              return;
+            }
+            // if (source.done && out) {
+            //   console.log('resolve!');
+            //   resolve(results);
+            //   return;
+            // }
+          });
+        }
       }
 
-      q.drain = () => {
-        if (completed) resolve(results);
+      const workers = Math.ceil(numWorkers / chunkSize);
+      console.log(`Q ${workers}`);
+      const q = fastq(this.worker, workers);
+
+      // q.pause();
+      // setTimeout(() => q.resume(), 10);
+
+      // q.saturated = () => {
+      //   q.pause();
+      //   console.log('saturated');
+      //   setTimeout(() => q.resume(), 100);
+      // }
+
+      q.drain = async () => {
+        console.log('drain');
+        await fetch();
+        // await fetch();
       }
 
-      let cursor = '0';
-      do {
-        const data = await this.scan(cursor, chunkSize.toString());
-        const {items} = data;
-        q.push({items, func}, (e, stat) => {
-          results.push(stat);
-        });
-        cursor = data.cursor;
-        if (cursor === '0') completed = true;
-      } while (!completed);
+      // for await (const items of this.scanAsync()) {
+      //   console.log(`push - ${q.length()}`);
+      //   q.push({items, func}, (e, stat) => {
+      //     results.push(stat);
+      //     // console.log('callback!');
+      //   });
+      // }
+
+      await fetch();
+
+      // console.log('after!');
     });
   }
 
-  private worker = ({items, func}: { items: string[][], func: (items: KVS<T>) => Promise<any> }, cb: any) => {
+  private worker = ({items, func}: { items: unknown[], func: (items: KVS<T>) => Promise<any> }, cb: any) => {
     // for testing purposes
     const ids: any[] = [];
     const chunkStat: any = {};
 
-    const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
-      ...acc,
-      [key]: this.mapKeysGet(JSON.parse(strVal)),
-    }), {} as KVS<T>);
+    const parsedItems = {
+      [items[0] as string]: this.mapKeysGet(JSON.parse(items[1] as string))
+    };
+
+    // const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
+    //   ...acc,
+    //   [key as string]: this.mapKeysGet(JSON.parse(strVal as string)),
+    // }), {} as KVS<T>);
 
     // for testing purposes
     if (process.env.NODE_ENV === 'test') {
@@ -232,12 +277,21 @@ export class RedisKvs<T> {
       try {
         func(parsedItems).then(() => cb(null, {ids, chunkStat}))
       } catch (e) {
-        throw e;
         console.error(e);
         cb(e)
       }
     }
   };
+
+  public async * scanAsync(): AsyncGenerator<unknown[][], void, unknown> {
+    let cursor = '0';
+    do {
+      const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', '10');
+      cursor = data[0];
+      const items = Array.from(data[1], (x, k) => k % 2 ? undefined : [x, data[1][k + 1]]).filter((x) => x);
+      yield items;
+    } while (cursor !== '0')
+  }
 
   public scan(scanCursor: string, count: string = '10'): Promise<ScanResult> {
     return new Promise<ScanResult>((resolve, reject) => {

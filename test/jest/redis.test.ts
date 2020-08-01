@@ -6,20 +6,28 @@ import {initMockData} from './mock/mock';
 import {RedisKvs} from '../../src/util/RedisKvs';
 
 const now = new Date();
-const timeout = 100;
-const numberOfItems = [7, 523, 3649];
-const numberOfWorkers = [4, 32, 128];
+const timeout = 10;
+// const numberOfItems = [7, 523, 3649];
+// const numberOfWorkers = [4, 32, 128];
+const numberOfItems = [1327];
+const numberOfWorkers = [2];
 
 
 let expectedIds: string[];
 
-jest.setTimeout(60000);
+jest.setTimeout(600000);
+
+let called = 0;
+let returned = 0;
 
 
 const getHandler = (delay: number) => async (items: any): Promise<any> => {
+  called += Object.keys(items).length;
   const t = Math.random() * delay;
   return new Promise(((resolve, reject) => {
     setTimeout(() => {
+      returned += Object.keys(items).length;
+      // console.log(`${called}/${returned}`);
       resolve();
     }, t);
   }));
