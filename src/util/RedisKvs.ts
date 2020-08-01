@@ -6,6 +6,7 @@ import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
 const chunkSize = 10;
+const queueLength: string = '100';
 
 
 interface ScanResult {
@@ -15,7 +16,7 @@ interface ScanResult {
 
 
 export class RedisKvs<T> {
-  private redisClient: RedisClient;
+  private readonly redisClient: RedisClient;
   public readonly hscanAsync: { (arg0: string, arg1: string, arg2: string, arg3: string): any; (): Promise<[string, string[]]>; };  // todo type
   private readonly dbName: string;
   private readonly keyMapping?: { [key: string]: string };
@@ -173,120 +174,74 @@ export class RedisKvs<T> {
     });
   }
 
-  public async iterateItems(numWorkers: number, func: (items: KVS<T>) => Promise<any>) {
-
-    const results: any[] = [];
+  public async iterateItems(numWorkers: number, func: (item: KVS<T>) => Promise<any>): Promise<string[]> {
+    const len = await this.len();
+    const ids: any[] = [];  // for testing purposes
     const iterator = this.scanAsync();
     let out = false;
+    let processed = 0;
 
     return new Promise(async (resolve) => {
-
       const fetch = async (): Promise<void> => {
         const source = await iterator.next();
 
         if (source.done) {
           out = true;
-          console.log('out!');
           return;
         }
 
-        // console.log(`push - tasks in queue: ${q.length()} - results: ${results.length}`);
+        // todo types
         // @ts-ignore
         for (const item of source.value) {
           // @ts-ignore
-          q.push({items: item, func}, (e, stat) => {
-            results.push(stat);
-            console.log(`callback - tasks in queue: ${q.length()} - results: ${results.length} - done: ${source.done}`);
-            if (results.length === 1327) {
-              console.log('resolve???');
-              resolve(results);
+          q.push({item, func}, (e, id) => {
+            processed++;
+            // console.debug(`in queue: ${q.length()} - done: ${processed}`);
+            if (process.env.NODE_ENV === 'test') ids.push(id);
+            if (processed === len) {
+              resolve(ids);
               return;
             }
-            // if (source.done && out) {
-            //   console.log('resolve!');
-            //   resolve(results);
-            //   return;
-            // }
           });
         }
-      }
+      };
 
       const workers = Math.ceil(numWorkers / chunkSize);
-      console.log(`Q ${workers}`);
       const q = fastq(this.worker, workers);
 
-      // q.pause();
-      // setTimeout(() => q.resume(), 10);
+      q.empty = fetch;
+      q.drain = fetch;
 
-      // q.saturated = () => {
-      //   q.pause();
-      //   console.log('saturated');
-      //   setTimeout(() => q.resume(), 100);
+      // q.empty = async () => {
+      //   console.log('fetching');
+      //   await fetch();
       // }
-
-      q.drain = async () => {
-        console.log('drain');
-        await fetch();
-        // await fetch();
-      }
-
-      // for await (const items of this.scanAsync()) {
-      //   console.log(`push - ${q.length()}`);
-      //   q.push({items, func}, (e, stat) => {
-      //     results.push(stat);
-      //     // console.log('callback!');
-      //   });
+      // q.drain = async () => {
+      //   console.log('fetching');
+      //   await fetch();
       // }
-
       await fetch();
-
-      // console.log('after!');
     });
   }
 
-  private worker = ({items, func}: { items: unknown[], func: (items: KVS<T>) => Promise<any> }, cb: any) => {
-    // for testing purposes
-    const ids: any[] = [];
-    const chunkStat: any = {};
 
-    const parsedItems = {
-      [items[0] as string]: this.mapKeysGet(JSON.parse(items[1] as string))
-    };
-
-    // const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => ({
-    //   ...acc,
-    //   [key as string]: this.mapKeysGet(JSON.parse(strVal as string)),
-    // }), {} as KVS<T>);
-
-    // for testing purposes
-    if (process.env.NODE_ENV === 'test') {
-      const count = items.length;
-      if (!chunkStat[count]) {
-        chunkStat[count] = 1;
-      } else {
-        chunkStat[count]++;
-      }
-
-      for (const item of Object.values(parsedItems)) {
-        // @ts-ignore
-        ids.push(item.n);
-      }
-    }
-
-    if (Object.keys(parsedItems).length !== 0) {
-      try {
-        func(parsedItems).then(() => cb(null, {ids, chunkStat}))
-      } catch (e) {
-        console.error(e);
-        cb(e)
-      }
+  private worker = async ({item, func}: { item: unknown[], func: (key: string, value: T) => Promise<any> }, cb: any): Promise<void> => {
+    const id = item[0] as string;
+    const entity: T = this.mapKeysGet(JSON.parse(item[1] as string));
+    try {
+      await func(id, entity);
+      cb(null, process.env.NODE_ENV === 'test' ? id : undefined);
+    } catch (e) {
+      console.error(e);
+      cb(e)
     }
   };
 
-  public async * scanAsync(): AsyncGenerator<unknown[][], void, unknown> {
+  // todo types
+  public async * scanAsync(): AsyncGenerator<unknown[][], void, T> {
     let cursor = '0';
     do {
-      const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', '10');
+      const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', queueLength);
       cursor = data[0];
       const items = Array.from(data[1], (x, k) => k % 2 ? undefined : [x, data[1][k + 1]]).filter((x) => x);
       yield items;

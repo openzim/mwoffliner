@@ -168,7 +168,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     await articleDetailXId.iterateItems(
         downloader.speed,
         // @ts-ignore
-        async ([articleId, articleDetail]: QueryMwRet) => {
+        async (articleId, articleDetail) => {
             logger.info(`Processing article [${articleId}]`);
             try {
                 const rets = await downloader.getArticle(articleId, dump);

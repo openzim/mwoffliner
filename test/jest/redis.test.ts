@@ -6,11 +6,9 @@ import {initMockData} from './mock/mock';
 import {RedisKvs} from '../../src/util/RedisKvs';
 
 const now = new Date();
-const timeout = 10;
-// const numberOfItems = [7, 523, 3649];
-// const numberOfWorkers = [4, 32, 128];
-const numberOfItems = [1327];
-const numberOfWorkers = [2];
+const timeout = 0;
+const numberOfItems = [27, 3649, 47903];
+const numberOfWorkers = [32, 1024];
 
 
 let expectedIds: string[];
@@ -24,17 +22,16 @@ let returned = 0;
 const getHandler = (delay: number) => async (items: any): Promise<any> => {
   called += Object.keys(items).length;
   const t = Math.random() * delay;
-  return new Promise(((resolve, reject) => {
+  return new Promise(((resolve) => {
     setTimeout(() => {
       returned += Object.keys(items).length;
-      // console.log(`${called}/${returned}`);
       resolve();
     }, t);
   }));
 };
 
 const getTestHandler = async (kvs: RedisKvs<any>, handler: (items: any) => any | Promise<any>, numWorkers: number) => {
-  const testingDataByWorkers = await kvs.iterateItems(numWorkers, handler);
+  const idsProcessed = await kvs.iterateItems(numWorkers, handler);
 
   // ...have been called at all
   // todo get this back
@@ -62,13 +59,6 @@ const getTestHandler = async (kvs: RedisKvs<any>, handler: (items: any) => any |
   //
   // // there's no unexpected workers
   // expect(workerIdsUnexpected).toEqual([]);
-
-
-  let idsProcessed: string[] = [];
-  // @ts-ignore
-  for (const testingData of testingDataByWorkers) {
-    idsProcessed = idsProcessed.concat(testingData.ids);
-  }
 
   // items have been there at all
   expect(idsProcessed.length).toBeGreaterThan(0);
