@@ -27,7 +27,6 @@ export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainP
 
 async function trimRedirectedArticles(downloader: Downloader) {
     return redirectsXId.iterateItems(downloader.speed, async (redirectId) => {
-        // todo skip await?
-        await articleDetailXId.delete(redirectId);
+        await articleDetailXId.delete(redirectId);  // skip await?
     });
 }

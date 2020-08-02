@@ -6,7 +6,7 @@ import { getArticleIds } from 'src/util/redirects';
 import { articleDetailXId } from 'src/stores';
 import { getArticlesByNS } from 'src/util';
 
-test.only('MWApi Article Ids', async (t) => {
+test('MWApi Article Ids', async (t) => {
     await articleDetailXId.flush();
     const mw = new MediaWiki({
         base: 'https://en.wikipedia.org',

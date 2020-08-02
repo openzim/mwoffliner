@@ -176,23 +176,20 @@ export class RedisKvs<T> {
 
   public async iterateItems(numWorkers: number, func: (key: string, value: T) => Promise<any>): Promise<string[]> {
     const len = await this.len();
+    if (len === 0) return [];
+
     const ids: any[] = [];  // for testing purposes
     const iterator = this.scanAsync();
-    let out = false;
     let processed = 0;
 
     return new Promise(async (resolve) => {
       const fetch = async (): Promise<void> => {
-        const source = await iterator.next();
-
-        if (source.done) {
-          out = true;
-          return;
-        }
+        const data = await iterator.next();
+        if (data.done) return;
 
         // todo types
         // @ts-ignore
-        for (const item of source.value) {
+        for (const item of data.value) {
           q.push({item, func}, (e, id) => {
             processed++;
             // console.debug(`in queue: ${q.length()} - done: ${processed}`);
@@ -239,7 +236,7 @@ export class RedisKvs<T> {
 
       // todo
       // @ts-ignore
-      yield items;
+      if (cursor !== '0') yield items;
     } while (cursor !== '0')
   }
 
