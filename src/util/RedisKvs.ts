@@ -187,9 +187,7 @@ export class RedisKvs<T> {
         const data = await iterator.next();
         if (data.done) return;
 
-        // todo types
-        // @ts-ignore
-        for (const item of data.value) {
+        for (const item of data.value as KeyValue<T>[]) {
           q.push({item, func}, (e, id) => {
             processed++;
             if (process.env.NODE_ENV === 'test') ids.push(id);
@@ -205,7 +203,6 @@ export class RedisKvs<T> {
       await fetch();
     });
   }
-
 
   private worker = async ({item, func}: { item: KeyValue<T>, func: (key: string, value: T) => Promise<any> }, cb: any): Promise<void> => {
     const id = item[0];
@@ -224,25 +221,15 @@ export class RedisKvs<T> {
     do {
       const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', queueLength);
       cursor = data[0];
-      const items = Array
-        .from(data[1], (x, k) => k % 2 ? undefined : [x, this.mapKeysGet(JSON.parse(data[1][k + 1]))])
-        .filter((x: T[]) => x);
 
-      // todo
-      // @ts-ignore
+      // deserialize the data to KeyValue<T>
+      const items: KeyValue<T>[] = [];
+      for (let i = 0; i < data[1].length; i += 2) {
+        items.push([data[1][i], this.mapKeysGet(JSON.parse(data[1][i + 1]))])
+      }
       if (items.length > 0) yield items;
-    } while (cursor !== '0')
-  }
 
-  public scan(scanCursor: string, count: string = '10'): Promise<ScanResult> {
-    return new Promise<ScanResult>((resolve, reject) => {
-      this.redisClient.hscan(this.dbName, scanCursor, 'COUNT', count, (err, [cursor, data]) => {
-        if (err) return reject(err);
-        // extract the items from Redis response
-        const items = Array.from(data, (x, k) => k % 2 ? undefined : [x, data[k + 1]]).filter((x) => x);
-        resolve({cursor, items});
-      });
-    });
+    } while (cursor !== '0')
   }
 
   public flush() {
