@@ -19,7 +19,7 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, ca
     const articleDetail = await articleDetailXId.get(articleId);
     const isMainPage = dump.isMainPage(articleId);
 
-    if (isMainPage) {
+    if (isMainPage || !capabilities.restApiAvailable) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{

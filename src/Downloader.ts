@@ -479,7 +479,9 @@ class Downloader {
 
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`;
+    // logger.log('INSIDE ARTICLE URL, REST', this.mwCapabilities.restApiAvailable)
+    // logger.log(this.baseUrlForMainPage);
+    return `${this.mwCapabilities.restApiAvailable && !isMainPage ? this.baseUrl : this.baseUrlForMainPage}${encodeURIComponent(articleId)}`;
   }
 
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
