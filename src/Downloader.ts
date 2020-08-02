@@ -479,8 +479,6 @@ class Downloader {
 
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    // logger.log('INSIDE ARTICLE URL, REST', this.mwCapabilities.restApiAvailable)
-    // logger.log(this.baseUrlForMainPage);
     return `${this.mwCapabilities.restApiAvailable && !isMainPage ? this.baseUrl : this.baseUrlForMainPage}${encodeURIComponent(articleId)}`;
   }
 
