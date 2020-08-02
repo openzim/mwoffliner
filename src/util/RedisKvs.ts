@@ -236,7 +236,7 @@ export class RedisKvs<T> {
 
       // todo
       // @ts-ignore
-      if (cursor !== '0') yield items;
+      if (items.length > 0) y)ield items;
     } while (cursor !== '0')
   }
 
