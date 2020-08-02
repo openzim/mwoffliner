@@ -192,19 +192,13 @@ export class RedisKvs<T> {
         for (const item of data.value) {
           q.push({item, func}, (e, id) => {
             processed++;
-            // console.debug(`in queue: ${q.length()} - done: ${processed}`);
             if (process.env.NODE_ENV === 'test') ids.push(id);
-            if (processed === len) {
-              resolve(ids);
-              return;
-            }
+            if (processed === len) return resolve(ids);
           });
         }
       };
 
-      // const workers = Math.ceil(numWorkers / chunkSize);
       const q = fastq(this.worker, numWorkers);
-
       q.empty = fetch;
       q.drain = fetch;
 

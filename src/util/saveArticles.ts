@@ -28,6 +28,7 @@ type FileStore = RedisKvs<{
     width?: number;
 }>;
 
+
 export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
     const filesForAttempt = await fileStore.len();
     const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail;
@@ -36,41 +37,40 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     let prevPercentProgress: string;
 
     await fileStore.iterateItems(
-      downloader.speed,
-      async (path, { url, namespace, mult, width }) => {
-        logger.info(`Downloading file ${path}`);
+        downloader.speed,
+        async (path, { url, namespace, mult, width }) => {
+            // logger.log(`Downloading file ${path}`);
+            // todo align fileDownloadPairs and listOfArguments
+            // todo simplify this
+            const listOfArguments = [{ path, url, namespace, mult, width }];
 
-        // todo align fileDownloadPairs and listOfArguments
-        // todo simplify this
-        const listOfArguments = [{ path, url, namespace, mult, width }];
-
-        const responses = await downloadBulk(listOfArguments, downloader);
-        for (const resp of responses) {
-            let isFailed = false;
-            try {
-                if (resp.result && resp.result.content) {
-                    const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
-                    zimCreator.addArticle(article);
-                    dump.status.files.success += 1;
-                } else {
-                    isFailed = true;
-                }
-            } catch (err) {
-                isFailed = true;
-            } finally {
-                if (isFailed) {
-                    // todo don't queue 404 for retry
-                    if (retryLater) {
-                        await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
+            const responses = await downloadBulk(listOfArguments, downloader);
+            for (const resp of responses) {
+                let isFailed = false;
+                try {
+                    if (resp.result && resp.result.content) {
+                        const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
+                        zimCreator.addArticle(article);
+                        dump.status.files.success += 1;
                     } else {
-                        logger.warn(`Error downloading file [${downloader.deserializeUrl(resp.url)}], skipping`);
-                        dump.status.files.fail += 1;
+                        isFailed = true;
+                    }
+                } catch (err) {
+                    isFailed = true;
+                } finally {
+                    if (isFailed) {
+                        // todo don't queue 404 for retry
+                        if (retryLater) {
+                            await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width });
+                        } else {
+                            logger.warn(`Error downloading file [${downloader.deserializeUrl(resp.url)}], skipping`);
+                            dump.status.files.fail += 1;
+                        }
                     }
                 }
             }
 
-            // todo get back 10
-            if ((dump.status.files.success + dump.status.files.fail) % 1 === 0) {
+            if ((dump.status.files.success + dump.status.files.fail) % 10 === 0) {
                 const percentProgress = ((dump.status.files.success + dump.status.files.fail) / filesTotal * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
@@ -78,7 +78,7 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 }
             }
         }
-    });
+    );
 
     if (retryLater) {
         const isThereAnythingToRetry = (await filesToRetryXPath.len()) > 0;
@@ -167,7 +167,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         downloader.speed,
         // @ts-ignore
         async (articleId, articleDetail) => {
-            logger.info(`Processing article [${articleId}]`);
+            // logger.log(`Processing article [${articleId}]`);
             try {
                 const rets = await downloader.getArticle(articleId, dump);
 
@@ -251,8 +251,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 await articleDetailXId.delete(articleId);
             }
 
-            // todo get back 10
-            if ((dump.status.articles.success + dump.status.articles.fail) % 1 === 0) {
+            if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
                 const percentProgress = ((dump.status.articles.success + dump.status.articles.fail) / articlesTotal * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
