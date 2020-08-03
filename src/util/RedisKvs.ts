@@ -5,8 +5,9 @@ import * as util from 'util';
 import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
-const chunkSize = 10;
-const queueLength: string = '100';
+import logger from '../Logger';
+
+const chunkSize: string = '100';
 
 
 interface ScanResult {
@@ -196,6 +197,7 @@ export class RedisKvs<T> {
         }
       };
 
+      logger.log(`Using ${numWorkers} workers`);
       const q = fastq(this.worker, numWorkers);
       q.empty = fetch;
       q.drain = fetch;
@@ -219,7 +221,7 @@ export class RedisKvs<T> {
   public async * scanAsync(): AsyncGenerator<KeyValue<T>[], void, unknown> {
     let cursor = '0';
     do {
-      const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', queueLength);
+      const data = await this.hscanAsync(this.dbName, cursor, 'COUNT', chunkSize);
       cursor = data[0];
 
       // deserialize the data to KeyValue<T>
