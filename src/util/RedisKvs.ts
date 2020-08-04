@@ -7,13 +7,7 @@ import type {RedisClient} from 'redis';
 
 import logger from '../Logger';
 
-const chunkSize: string = '100';
-
-
-interface ScanResult {
-  cursor: string;
-  items: string[][];
-}
+let chunkSize: string = '100';
 
 
 export class RedisKvs<T> {
@@ -182,6 +176,7 @@ export class RedisKvs<T> {
     const ids: any[] = [];  // for testing purposes
     const iterator = this.scanAsync();
     let processed = 0;
+    let warmupFactor = 8;
 
     return new Promise(async (resolve) => {
       const fetch = async (): Promise<void> => {
@@ -197,10 +192,23 @@ export class RedisKvs<T> {
         }
       };
 
-      logger.log(`Using ${numWorkers} workers`);
-      const q = fastq(this.worker, numWorkers);
+      chunkSize = (numWorkers * 4).toString();
+      const q = fastq(this.worker, Math.ceil(numWorkers / warmupFactor));
+      // logger.log(`[workers] reset to x 1/${warmupFactor} = ${q.concurrency}`);
       q.empty = fetch;
       q.drain = fetch;
+
+      const warmup = setInterval(() => {
+        if (warmupFactor > 1) {
+          warmupFactor--;
+          q.concurrency = Math.ceil(numWorkers / warmupFactor);
+          // logger.log(`[workers] x 1/${warmupFactor} = ${q.concurrency}`);
+        }
+      }, 2000);
+      if (warmupFactor === 1) {
+        // logger.log(`[workers] full throttle (${numWorkers})`);
+        clearInterval(warmup);
+      }
 
       await fetch();
     });

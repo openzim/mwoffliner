@@ -7,7 +7,8 @@ import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
 import type { BackoffStrategy } from 'backoff';
-import axios, { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig } from 'axios';
+import ax from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
@@ -29,6 +30,30 @@ import { Dump } from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
 
+let requests = 0;
+let requestsPrev = 0;
+let average = 0;
+let ticks = 0;
+const averages = [];
+
+setInterval(() => {
+  ticks++;
+  const n = requests - requestsPrev;
+  average = requests / ticks;
+  requestsPrev = requests;
+  console.log(`[rps]\t${n}\t${average.toFixed(2)}`);
+  averages.push(n)
+}, 1000)
+
+
+const axios = {
+  ...ax,
+  get: (args: string, options?: any) => {
+    requests++;
+    // @ts-ignore
+    return ax.get(args, options);
+  }
+};
 
 const imageminOptions = {
   plugins: [
@@ -565,7 +590,7 @@ class Downloader {
 
   private getJSONCb = <T>( url: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`);
-    axios.get<T>(url, this.jsonRequestOptions)
+    axios.get(url, this.jsonRequestOptions)
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
@@ -595,7 +620,7 @@ class Downloader {
       if (this.optimisationCacheUrl && this.isImageUrl(url)) {
         this.downloadImage(url, handler);
       } else {
-        const resp = await axios(url, this.arrayBufferRequestOptions);
+        const resp = await axios.get(url, this.arrayBufferRequestOptions);
         handler(null, {
           responseHeaders: resp.headers,
           content: await this.getCompressedBody(resp),
@@ -616,7 +641,7 @@ class Downloader {
         if (imageResp?.Metadata?.etag) {
           this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
         }
-        const resp = await axios(url, this.arrayBufferRequestOptions);
+        const resp = await axios.get(url, this.arrayBufferRequestOptions);
 
         // Most of the images after uploading once will always have 304 status, until modified.
         if (resp.status === 304) {

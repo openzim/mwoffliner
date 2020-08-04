@@ -127,7 +127,7 @@ async function execute(argv: any) {
   /* Number of parallel requests */
   if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
   const cpuCount = os.cpus().length;
-  const speed = Math.max(1, Math.round(cpuCount * (_speed || 1) * 3));
+  const speed = Math.max(1, Math.round(cpuCount * (_speed || 1) * 30));
 
   /* Necessary to avoid problems with https */
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
