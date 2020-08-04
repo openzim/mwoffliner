@@ -5,8 +5,6 @@ import * as util from 'util';
 import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
-// import logger from '../Logger';
-
 let chunkSize: string = '100';
 
 
@@ -176,7 +174,7 @@ export class RedisKvs<T> {
     const ids: any[] = [];  // for testing purposes
     const iterator = this.scanAsync();
     let processed = 0;
-    let warmupFactor = 8;
+    let warmupFactor = process.env.NODE_ENV === 'test' ? 1 : 8;
 
     return new Promise(async (resolve) => {
       const fetch = async (): Promise<void> => {
@@ -194,7 +192,6 @@ export class RedisKvs<T> {
 
       chunkSize = (numWorkers * 4).toString();
       const q = fastq(this.worker, Math.ceil(numWorkers / warmupFactor));
-      // logger.log(`[workers] reset to x 1/${warmupFactor} = ${q.concurrency}`);
       q.empty = fetch;
       q.drain = fetch;
 
@@ -202,9 +199,7 @@ export class RedisKvs<T> {
         if (warmupFactor > 1) {
           warmupFactor--;
           q.concurrency = Math.ceil(numWorkers / warmupFactor);
-          // logger.log(`[workers] x 1/${warmupFactor} = ${q.concurrency}`);
         } else {
-          // logger.log(`[workers] full throttle (${numWorkers})`);
           clearInterval(warmup);
         }
       }, 2000);
@@ -214,8 +209,7 @@ export class RedisKvs<T> {
   }
 
   private worker = async ({item, func}: { item: KeyValue<T>, func: (key: string, value: T) => Promise<any> }, cb: any): Promise<void> => {
-    const id = item[0];
-    const entity = item[1];
+    const [id, entity] = item;
     try {
       await func(id, entity);
       cb(null, process.env.NODE_ENV === 'test' ? id : undefined);

@@ -14,11 +14,9 @@ import {
   MIME_IMAGE_REGEX,
   normalizeMwResponse,
   objToQueryString,
-  readFilePromise,
   URL_IMAGE_REGEX,
   DB_ERROR,
   WEAK_ETAG_REGEX,
-  writeFilePromise,
   renderArticle,
   stripHttpFromUrl
 } from './util';
