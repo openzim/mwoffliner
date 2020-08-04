@@ -1,5 +1,3 @@
-import md5 from 'md5';
-import * as path from 'path';
 import * as urlParser from 'url';
 import deepmerge from 'deepmerge';
 import * as backoff from 'backoff';
@@ -7,11 +5,10 @@ import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
 import type { BackoffStrategy } from 'backoff';
-import { AxiosRequestConfig } from 'axios';
-import ax from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
+import axios, { AxiosRequestConfig } from 'axios';
 
 import {
   MIME_IMAGE_REGEX,
@@ -30,30 +27,29 @@ import { Dump } from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
 
-let requests = 0;
-let requestsPrev = 0;
-let average = 0;
-let ticks = 0;
-const averages = [];
+// let requests = 0;
+// let requestsPrev = 0;
+// let average = 0;
+// let ticks = 0;
+// const averages = [];
+//
+// setInterval(() => {
+//   ticks++;
+//   const n = requests - requestsPrev;
+//   average = requests / ticks;
+//   requestsPrev = requests;
+//   console.log(`[rps]\t${n}\t${average.toFixed(2)}`);
+//   averages.push(n)
+// }, 1000)
 
-setInterval(() => {
-  ticks++;
-  const n = requests - requestsPrev;
-  average = requests / ticks;
-  requestsPrev = requests;
-  console.log(`[rps]\t${n}\t${average.toFixed(2)}`);
-  averages.push(n)
-}, 1000)
-
-
-const axios = {
-  ...ax,
-  get: (args: string, options?: any) => {
-    requests++;
-    // @ts-ignore
-    return ax.get(args, options);
-  }
-};
+// const axios = {
+//   ...ax,
+//   get: (args: string, options?: any) => {
+//     requests++;
+//     // @ts-ignore
+//     return ax.get(args, options);
+//   }
+// };
 
 const imageminOptions = {
   plugins: [

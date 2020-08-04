@@ -5,7 +5,7 @@ import * as util from 'util';
 import deepmerge from 'deepmerge';
 import type {RedisClient} from 'redis';
 
-import logger from '../Logger';
+// import logger from '../Logger';
 
 let chunkSize: string = '100';
 
