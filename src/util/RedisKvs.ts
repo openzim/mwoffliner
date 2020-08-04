@@ -203,12 +203,11 @@ export class RedisKvs<T> {
           warmupFactor--;
           q.concurrency = Math.ceil(numWorkers / warmupFactor);
           // logger.log(`[workers] x 1/${warmupFactor} = ${q.concurrency}`);
+        } else {
+          // logger.log(`[workers] full throttle (${numWorkers})`);
+          clearInterval(warmup);
         }
       }, 2000);
-      if (warmupFactor === 1) {
-        // logger.log(`[workers] full throttle (${numWorkers})`);
-        clearInterval(warmup);
-      }
 
       await fetch();
     });
