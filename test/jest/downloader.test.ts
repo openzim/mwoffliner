@@ -14,7 +14,7 @@ const handler = jest.fn((err, value) => {
 const get = jest.spyOn(axios, 'get');
 
 
-describe('getJSONCb', () => {
+describe.skip('getJSONCb', () => {
   test(`Should call back the handler`, () => {
     const axiosSpy = get.mockClear().mockResolvedValue({data: 'foo'});
     downloader.getJSONCb('http://mock', handler);
