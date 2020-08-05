@@ -92,10 +92,10 @@ class Downloader {
   public readonly speed: number;
   public baseUrl: string;
   public baseUrlForMainPage: string;
+  public maxActiveRequests = 1;
 
   private readonly uaString: string;
   private activeRequests = 0;
-  private maxActiveRequests = 1;
   private readonly requestTimeout: number;
   private readonly noLocalParserFallback: boolean = false;
   private readonly forceLocalParser: boolean = false;
@@ -582,7 +582,7 @@ class Downloader {
     return null;
   }
 
-  private getJSONCb = <T>( url: string, handler: (...args: any[]) => any): void => {
+  public getJSONCb = <T>( url: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`);
     axios.get(url, this.jsonRequestOptions)
       .then((a) => handler(null, a.data), handler)
