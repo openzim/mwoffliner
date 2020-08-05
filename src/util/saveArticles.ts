@@ -39,7 +39,6 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     await fileStore.iterateItems(
         downloader.speed,
         async (path, { url, namespace, mult, width }) => {
-            // logger.log(`Downloading file ${path}`);
             // todo align fileDownloadPairs and listOfArguments
             // todo simplify this
             const listOfArguments = [{ path, url, namespace, mult, width }];
@@ -70,11 +69,11 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
                 }
             }
 
-            if ((dump.status.files.success + dump.status.files.fail) % 10 === 0) {
+            if ((dump.status.files.success + dump.status.files.fail) % 100 === 0) {
                 const percentProgress = ((dump.status.files.success + dump.status.files.fail) / filesTotal * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`);
+                    logger.log(`Files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`);
                 }
             }
         }
@@ -165,9 +164,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     await articleDetailXId.iterateItems(
         downloader.speed,
-        // @ts-ignore
         async (articleId, articleDetail) => {
-            logger.log(`Processing article [${articleId}]`);
             try {
                 const rets = await downloader.getArticle(articleId, dump);
 
@@ -251,11 +248,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 await articleDetailXId.delete(articleId);
             }
 
-            if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
+            if ((dump.status.articles.success + dump.status.articles.fail) % 25 === 0) {
                 const percentProgress = ((dump.status.articles.success + dump.status.articles.fail) / articlesTotal * 100).toFixed(1);
                 if (percentProgress !== prevPercentProgress) {
                     prevPercentProgress = percentProgress;
-                    logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
+                    logger.log(`Articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
                 }
             }
         }

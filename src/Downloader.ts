@@ -25,29 +25,6 @@ import { Dump } from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
 
-// let requests = 0;
-// let requestsPrev = 0;
-// let average = 0;
-// let ticks = 0;
-// const averages = [];
-//
-// setInterval(() => {
-//   ticks++;
-//   const n = requests - requestsPrev;
-//   average = requests / ticks;
-//   requestsPrev = requests;
-//   console.log(`[rps]\t${n}\t${average.toFixed(2)}`);
-//   averages.push(n)
-// }, 1000)
-
-// const axios = {
-//   ...ax,
-//   get: (args: string, options?: any) => {
-//     requests++;
-//     // @ts-ignore
-//     return ax.get(args, options);
-//   }
-// };
 
 const imageminOptions = {
   plugins: [
