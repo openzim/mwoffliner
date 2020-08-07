@@ -4,6 +4,7 @@ import execa from 'execa';
 import rimraf from 'rimraf';
 import { zimcheckAvailable, zimcheck } from 'test/util';
 import 'dotenv/config';
+import logger from '../../src/Logger';
 // import { ZimReader } from '@openzim/libzim';
 
 const now = new Date();
