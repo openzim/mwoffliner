@@ -213,7 +213,10 @@ class Downloader {
       try {
         const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl.href}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
-        //this.setBaseUrls(defaultUrlForMainPage);
+
+        if(!this.mwCapabilities.desktopRestApiAvailable && !this.mwCapabilities.mobileRestApiAvailable){
+          this.setBaseUrls(defaultUrlForMainPage);
+        }
       } catch (err) {
         this.mwCapabilities.veApiAvailable = false;
         logger.warn(`Failed to get remote Parsoid`);
@@ -438,7 +441,7 @@ class Downloader {
     const isMainPage = dump.isMainPage(articleId);
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage);
 
-    logger.log(`Getting article [${articleId}] from ${articleApiUrl}`);
+    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     const json = await this.getJSON<any>(articleApiUrl);
     return await renderArticle(json, articleId, dump, this.mwCapabilities);
