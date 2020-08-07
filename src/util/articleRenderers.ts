@@ -15,11 +15,9 @@ import {getStrippedTitleFromHtml} from './misc';
 
 
 export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
-
     const articleDetail = await articleDetailXId.get(articleId);
     const isMainPage = dump.isMainPage(articleId);
-
-    if (isMainPage || !capabilities.restApiAvailable) {
+    if (isMainPage || capabilities.veApiAvailable) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
@@ -30,7 +28,7 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, ca
     }
 
     const result = [];
-
+    let html = json;
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1);
     for (let i = 0; i < numberOfPagesToSplitInto; i++) {
@@ -54,7 +52,10 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, ca
             await articleDetailXId.set(_articleId, _articleDetail);
         }
 
-        const html = renderMCSArticle(json, dump, _articleId, _articleDetail);
+        if(!capabilities.desktopRestApiAvailable){
+            html = renderMCSArticle(json, dump, _articleId, _articleDetail);
+        }
+        
         let strippedTitle = getStrippedTitleFromHtml(html);
         if (!strippedTitle) {
             const title = (json.lead || { displaytitle: articleId }).displaytitle;

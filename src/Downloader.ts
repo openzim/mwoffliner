@@ -64,6 +64,8 @@ export interface MWCapabilities {
   veApiAvailable: boolean;  // visualeditor API
   restApiAvailable: boolean;
   coordinatesAvailable: boolean;
+  desktopRestApiAvailable: boolean;
+  mobileRestApiAvailable: boolean;
 }
 
 
@@ -105,6 +107,8 @@ class Downloader {
       veApiAvailable: true,
       restApiAvailable: true,
       coordinatesAvailable: true,
+      desktopRestApiAvailable: true,
+      mobileRestApiAvailable: true
     };
 
     this.backoffOptions = {
@@ -117,10 +121,6 @@ class Downloader {
       ...backoffOptions,
     };
 
-    // first of all, assume optimistically that both rest and VE are available
-    // that will be checked on the next phase in checkCapabilities()
-    this.baseUrl = `${this.mw.restApiUrl.href}page/mobile-sections/`;
-    this.baseUrlForMainPage = this.mw.veApiUrl.href;
     this.arrayBufferRequestOptions = {
       headers: {
         'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
@@ -184,21 +184,36 @@ class Downloader {
     return `${cachedPart}${path}`;
   }
 
+  public setBaseUrls(baseUrl: string, baseUrlForMainPage: string = this.mw.veApiUrl.href){
+    this.baseUrl = baseUrl;
+    this.baseUrlForMainPage = baseUrlForMainPage;
+  }
+
+  public async checkRestApiAvailabilty(type: string, restApiBase: string, defaultUrlForMainPage: string){
+    try {
+      const restBaseApiQuery = await this.getJSON<any>(`${restApiBase}${type}${encodeURIComponent(this.mw.metaData.mainPage)}`);
+      this.setBaseUrls(`${restApiBase}${type}`);
+      (type === 'mobile-sections/') ?  this.mwCapabilities.mobileRestApiAvailable = !!restBaseApiQuery.lead : this.mwCapabilities.desktopRestApiAvailable = !!restBaseApiQuery;
+    } catch (err) {
+      (type === 'mobile-sections/') ?  this.mwCapabilities.mobileRestApiAvailable = false : this.mwCapabilities.desktopRestApiAvailable = false;
+      logger.warn(`Failed to get remote ${type} API`);
+    }
+  }
+
   public async checkCapabilities(): Promise<void> {
     // check if RESTBase-powered API available
-    try {
-      const restApiMainPageQuery = await this.getJSON<any>(`${this.baseUrl}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-      this.mwCapabilities.restApiAvailable = !!restApiMainPageQuery.lead;
-    } catch (err) {
-      this.mwCapabilities.restApiAvailable = false;
-      logger.warn(`Failed to get remote Rest API`);
-    }
+    const restApiBase = `${this.mw.restApiUrl.href}page/`;
+    const defaultUrlForMainPage = this.mw.veApiUrl.href;
+
+    await this.checkRestApiAvailabilty('html/', restApiBase, defaultUrlForMainPage);
+    await this.checkRestApiAvailabilty('mobile-sections/', restApiBase, defaultUrlForMainPage);
 
     if (!this.forceLocalParser) {
       // check if VisualEditor available
       try {
         const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl.href}${encodeURIComponent(this.mw.metaData.mainPage)}`);
         this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
+        //this.setBaseUrls(defaultUrlForMainPage);
       } catch (err) {
         this.mwCapabilities.veApiAvailable = false;
         logger.warn(`Failed to get remote Parsoid`);
@@ -206,15 +221,16 @@ class Downloader {
     }
 
     if (!this.noLocalParserFallback) {
-      if (!this.mwCapabilities.restApiAvailable || !this.mwCapabilities.veApiAvailable) {
-        logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable ? 'remote' : 'local'} Parsoid`);
+      if (!this.mwCapabilities.veApiAvailable) {
+        logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable} local Parsoid`);
         await this.initLocalServices();
 
-        if (!this.mwCapabilities.restApiAvailable) {
-          this.baseUrl = `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/`;
+        if (!this.mwCapabilities.mobileRestApiAvailable) {
+          this.setBaseUrls(`http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/`)
         }
+
         if (!this.mwCapabilities.veApiAvailable) {
-          this.baseUrlForMainPage = `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/`;
+          this.setBaseUrls(`${restApiBase}mobile-sections`, `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/`)
         }
       } else {
         logger.log(`Using REST API`);
@@ -422,7 +438,7 @@ class Downloader {
     const isMainPage = dump.isMainPage(articleId);
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage);
 
-    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
+    logger.log(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     const json = await this.getJSON<any>(articleApiUrl);
     return await renderArticle(json, articleId, dump, this.mwCapabilities);
@@ -479,7 +495,7 @@ class Downloader {
 
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return `${this.mwCapabilities.restApiAvailable && !isMainPage ? this.baseUrl : this.baseUrlForMainPage}${encodeURIComponent(articleId)}`;
+    return `${ isMainPage ? this.baseUrlForMainPage: this.baseUrl }${encodeURIComponent(articleId)}`;
   }
 
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
