@@ -562,7 +562,7 @@ class Downloader {
   public getJSONCb = <T>( url: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`);
     axios.get(url, this.jsonRequestOptions)
-      .then((a) => handler(null, a.data), handler)
+      .then((a) => handler(null, a.data))
       .catch((err) => {
         try {
           if (err.response && err.response.status === 429) {
