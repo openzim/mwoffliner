@@ -16,7 +16,7 @@
     "test:unit": "tape -r tsconfig-paths/register -r ts-node/register test/unit/*.test.ts | tap-spec",
     "test": "npm run test:unit && npm run test:e2e",
     "jest": "jest --detectOpenHandles --forceExit",
-    "codecov": "nyc --reporter=lcov npm t",
+    "codecov": "nyc --reporter=lcov npm t && npm run jest",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./dev/build.sh",
     "watch": "./dev/watch.sh",
