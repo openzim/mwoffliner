@@ -1,41 +1,43 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 
-class TableOfContent { 
-    constructor(){
-        this.respArrOfSections = [];
-        this.sectionList = [];
-    }
+let zim = {toc: {}};
 
-    hasTableOfContent() {
-        this.sectionList = document.querySelectorAll('details[data-level]');
-        return this.sectionList.length > 0 ? true : false;
-    }
-
-    getSections() {
-        if (this.hasTableOfContent()) {
-            this.sectionList.forEach(section => {
-                const h2Elem = section.getElementsByTagName('summary')[0].firstElementChild;
-                this.respArrOfSections.push({
-                    "toc_level": section.getAttribute('data-level'),
-                    "section_id": h2Elem.getAttribute('id'),
-                    "section_name": h2Elem.innerHTML,
-                })
-            });
+function getSectionList(){
+    let sectionList = [];
+    for (i = 0; i < document.querySelectorAll('h1, h2, h3, h4, h5, h6').length; i++) {
+        let headerObject = document.querySelectorAll('h1, h2, h3, h4, h5, h6')[i];
+        if (headerObject.id === "") {
+            headerObject.id = "documentparserid" + i;
         }
-        return this.respArrOfSections;
+        sectionList.push(headerObject);
     }
+    return sectionList;
+}
 
-    scrollToSection(index){
-        let sectionId = this.respArrOfSections[index].section_id;
-        const sectionIdElem = document.getElementById(sectionId);
-        sectionIdElem.closest('details').setAttribute('open', '');
+zim.toc.hasTableOfContent = function() {
+    return getSectionList().length > 0 ? true : false;
+}
 
-        // This is the case where parent section might be closed.
-        sectionIdElem.closest('details[data-level="2"]').setAttribute('open', '')
-        location.href = `#${sectionId}`;
-    }
+zim.toc.getSections = function() {
+    let respArrOfSections = [];
+    const sectionList = getSectionList()
+    sectionList.forEach(section => {
+        respArrOfSections.push({
+            "toc_level": section.tagName,
+            "section_id": section.id,
+            "section_name": section.innerText,
+        })
+    });
+    return respArrOfSections;
+}
+
+zim.toc.scrollToSection = function(index){
+    const sectionList = getSectionList();
+    const sectionIdElem = document.getElementById(sectionList[index].id);
+    sectionIdElem.closest('details').setAttribute('open', '');
+    location.href = `#${sectionList[index].id}`;
 }
 
 // Making it available to window Object of the browser(for now)
-window.toc = TableOfContent;
+window.zim = zim;
