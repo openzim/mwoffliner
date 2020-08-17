@@ -111,7 +111,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
         json.remaining.sections
             .forEach((oneSection: any, i: number) => {
                 // if below is to test if we need to nest a subsections into a section
-                if (oneSection.toclevel === 1) {
+                if (oneSection.toclevel === 1 || oneSection.toclevel === 0) {
                     html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
                     html += sectionTemplate({
                         section_index: i + 1,
