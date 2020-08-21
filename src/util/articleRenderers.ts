@@ -99,6 +99,8 @@ const renderDesktopArticle = (json: any, articleId: string, articleDetail: Artic
 
 const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
     let html = '';
+    const firstTocLevel = json.remaining.sections[0].toclevel;
+
     // set the first section (open by default)
     html += leadSectionTemplate({
         lead_display_title: json.lead.displaytitle,
@@ -110,8 +112,8 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
     if (!dump.nodet) {
         json.remaining.sections
             .forEach((oneSection: any, i: number) => {
-                // if below is to test if we need to nest a subsections into a section
-                if (oneSection.toclevel === 1 || oneSection.toclevel === 0) {
+                // Because we can get different first toc level based on wiki configuration
+                if (oneSection.toclevel === firstTocLevel) { // This means it is the first level
                     html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
                     html += sectionTemplate({
                         section_index: i + 1,
