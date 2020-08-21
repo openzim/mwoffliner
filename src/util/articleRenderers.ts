@@ -99,7 +99,6 @@ const renderDesktopArticle = (json: any, articleId: string, articleDetail: Artic
 
 const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
     let html = '';
-    const firstTocLevel = json.remaining.sections[0].toclevel;
 
     // set the first section (open by default)
     html += leadSectionTemplate({
@@ -109,11 +108,11 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
     });
 
     // set all other section (closed by default)
-    if (!dump.nodet) {
+    if (!dump.nodet && json.remaining.sections.length > 0) {
+        const firstTocLevel = json.remaining.sections[0].toclevel;
         json.remaining.sections
             .forEach((oneSection: any, i: number) => {
-                // Because we can get different first toc level based on wiki configuration
-                if (oneSection.toclevel === firstTocLevel) { // This means it is the first level
+                if (oneSection.toclevel === firstTocLevel) {
                     html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
                     html += sectionTemplate({
                         section_index: i + 1,
