@@ -26,7 +26,7 @@ MWoffliner development.
 - *NIX Operating System (GNU/Linux, macOS, ...)
 - [NodeJS](https://nodejs.org/en/)
 - [Redis](https://redis.io/)
-- [Libzim](https://github.com/openzim/libzim) (On linux we automatically download binaries)
+- [Libzim](https://github.com/openzim/libzim) (On GNU/Linux we automatically download it)
 - Various build tools that are probably already installed on your machine (libjpeg, gcc)
 
 See [Environment setup hints](#environment-setup-hints) to
