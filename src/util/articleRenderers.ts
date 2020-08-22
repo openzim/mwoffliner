@@ -99,6 +99,7 @@ const renderDesktopArticle = (json: any, articleId: string, articleDetail: Artic
 
 const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
     let html = '';
+
     // set the first section (open by default)
     html += leadSectionTemplate({
         lead_display_title: json.lead.displaytitle,
@@ -107,11 +108,11 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
     });
 
     // set all other section (closed by default)
-    if (!dump.nodet) {
+    if (!dump.nodet && json.remaining.sections.length > 0) {
+        const firstTocLevel = json.remaining.sections[0].toclevel;
         json.remaining.sections
             .forEach((oneSection: any, i: number) => {
-                // if below is to test if we need to nest a subsections into a section
-                if (oneSection.toclevel === 1) {
+                if (oneSection.toclevel === firstTocLevel) {
                     html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
                     html += sectionTemplate({
                         section_index: i + 1,
