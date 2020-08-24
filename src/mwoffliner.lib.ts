@@ -196,6 +196,7 @@ async function execute(argv: any) {
   }
 
   await downloader.checkCapabilities();
+  await downloader.setBaseUrls();
 
   const redis = new Redis(argv, config);
   populateArticleDetail(redis.client);
