@@ -24,6 +24,7 @@ test('Downloader class', async (t) => {
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
+    await downloader.setBaseUrls();
 
     // const remoteMcsUrl = downloader.mcsUrl;
     // const remoteParsoidUrl = downloader.parsoidFallbackUrl;
@@ -84,7 +85,7 @@ test('Downloader class', async (t) => {
         t.ok(true, 'downloadContent throws when empty string is passed');
     }
 
-    const { data: LondonDetail } = await Axios.get(`${downloader.baseUrl}London`);
+    const { data: LondonDetail } = await Axios.get(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
     const LondonImage = await downloader.downloadContent(imgToGet as string);
