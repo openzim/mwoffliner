@@ -182,7 +182,7 @@ class Downloader {
     return `${cachedPart}${path}`;
   }
 
-  public async setBaseUrls(){
+  public async setBaseUrls() {
     const isVeApiAvailable = this.mwCapabilities.veApiAvailable;
     const isMobileApiAvailable = this.mwCapabilities.mobileRestApiAvailable;
     const isDesktopApiAvailable = this.mwCapabilities.desktopRestApiAvailable;
@@ -192,12 +192,12 @@ class Downloader {
     this.baseUrl = this.mw.veApiUrl.href;
 
     // Check for desktop API
-    if(isDesktopApiAvailable){
+    if(isDesktopApiAvailable) {
       this.baseUrl = this.mw.desktopRestApiUrl.href;
     }
 
     // Check for Mobile API
-    if(isMobileApiAvailable){
+    if(isMobileApiAvailable) {
       this.baseUrl = this.mw.mobileRestApiUrl.href;
     }
 
