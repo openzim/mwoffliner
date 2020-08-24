@@ -189,22 +189,18 @@ class Downloader {
 
     // Setting the default values
     this.baseUrlForMainPage = this.mw.veApiUrl.href;
-    this.baseUrl = this.mw.desktopRestApiUrl.href;
+    this.baseUrl = this.mw.veApiUrl.href;
 
+    // Check for desktop API
+    if(isDesktopApiAvailable){
+      this.baseUrl = this.mw.desktopRestApiUrl.href;
+    }
+
+    // Check for Mobile API
     if(isMobileApiAvailable){
       this.baseUrl = this.mw.mobileRestApiUrl.href;
-    } else if(isVeApiAvailable){
-      logger.log('COMING HERE-------')
-      this.baseUrl = this.mw.veApiUrl.href;
     }
 
-    // Setting Values for custom flag: forceLocalParser
-    if (!this.forceLocalParser) {
-      if(!isDesktopApiAvailable && !isMobileApiAvailable){
-        this.baseUrl = this.mw.veApiUrl.href;
-      }
-    }
-    
     // Setting Values for custom flag: noLocalParserFallback
     if (!this.noLocalParserFallback) {
       if (!isVeApiAvailable) {
@@ -233,51 +229,13 @@ class Downloader {
     } catch (err) {
       logger.warn(err);
     }
-  } 
+  }
 
   public async checkCapabilities(): Promise<void> {
-    // check if RESTBase-powered API available
-    // const restApiBase = `${this.mw.restApiUrl.href}page/`;
-    // const defaultUrlForMainPage = this.mw.veApiUrl.href;
-   
-    //By default check the all API's response and set the capabilities accordingly
+    // By default check the all API's response and set the capabilities accordingly
     this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href);
     this.mwCapabilities.desktopRestApiAvailable  = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href);
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href);
-
-    // if (!this.forceLocalParser) {
-    //   // check if VisualEditor available
-    //   try {
-    //     const parsoidMainPageQuery = await this.getJSON<any>(`${this.mw.veApiUrl.href}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-    //     this.mwCapabilities.veApiAvailable = !!parsoidMainPageQuery.visualeditor.content;
-
-    //     if(!this.mwCapabilities.desktopRestApiAvailable && !this.mwCapabilities.mobileRestApiAvailable){
-    //       this.setBaseUrls(defaultUrlForMainPage);
-    //     }
-    //   } catch (err) {
-    //     this.mwCapabilities.veApiAvailable = false;
-    //     logger.warn(`Failed to get remote Parsoid`);
-    //   }
-    // }
-
-    // if (!this.noLocalParserFallback) {
-    //   if (!this.mwCapabilities.veApiAvailable) {
-    //     logger.log(`Using local MCS and ${this.mwCapabilities.veApiAvailable} local Parsoid`);
-    //     await this.initLocalServices();
-
-    //     if (!this.mwCapabilities.mobileRestApiAvailable) {
-    //       this.setBaseUrls(`http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/`)
-    //     }
-
-    //     if (!this.mwCapabilities.veApiAvailable) {
-    //       this.setBaseUrls(`${restApiBase}mobile-sections`, `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/`)
-    //     }
-    //   } else {
-    //     logger.log(`Using REST API`);
-    //   }
-    // } else {
-    //   logger.log(`Using remote MCS/Parsoid`);
-    // }
 
     // Coordinate fetching
     const reqOpts = objToQueryString({

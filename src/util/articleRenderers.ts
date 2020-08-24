@@ -17,7 +17,8 @@ import {getStrippedTitleFromHtml} from './misc';
 export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
     const articleDetail = await articleDetailXId.get(articleId);
     const isMainPage = dump.isMainPage(articleId);
-    if (isMainPage || (!capabilities.desktopRestApiAvailable && !capabilities.mobileRestApiAvailable)) {
+
+    if (isMainPage || (capabilities.veApiAvailable && !capabilities.desktopRestApiAvailable)) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{
@@ -52,7 +53,7 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, ca
             await articleDetailXId.set(_articleId, _articleDetail);
         }
 
-        if(capabilities.mobileRestApiAvailable || !capabilities.desktopRestApiAvailable){
+        if(capabilities.mobileRestApiAvailable){
             html = renderMCSArticle(json, dump, _articleId, _articleDetail);
         }
 
