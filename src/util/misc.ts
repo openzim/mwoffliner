@@ -166,9 +166,20 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
       logger.warn(`Could not create ${js} file : ${error}`);
     }
   });
+
+  const apiPromises = config.output.apiResources.map(async (api) => {
+    try {
+      const apiConst = await readFilePromise(pathParser.resolve(__dirname, `../../res/${api}.js`));
+      const article = new ZimArticle({ url: apiPath(config, api), data: apiConst, ns: '-' });
+      zimCreator.addArticle(article);
+    } catch (error) {
+      logger.warn(`Could not create ${api} file : ${error}`);
+    }
+  });
   return Promise.all([
     ...cssPromises,
     ...jsPromises,
+    ...apiPromises
   ]);
 }
 
@@ -178,6 +189,10 @@ export function cssPath({ output: { dirs } }: Config, css: string) {
 export function jsPath({ output: { dirs } }: Config, js: string) {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
   return [dirs.javascript, `${dirs.jsModules}/${path.replace(/(\.js)?$/, '')}.js`].join('/');
+}
+export function apiPath({ output: { dirs } }: Config, api: string) {
+  const path = (isNodeModule(api)) ? normalizeModule(api) : api;
+  return [dirs.api, `/${path.replace(/(\.js)?$/, '')}.js`].join('/');
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, classList = '') {
   const resourceNamespace = '-';

@@ -55,6 +55,8 @@ const config = {
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min',
       '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 
+    apiResources:['kiwixAPI'],
+
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: [
@@ -73,6 +75,7 @@ const config = {
       javascript: 'j',
       styleModules: 'css_modules',
       jsModules: 'js_modules',
+      api: '_api'
     },
 
     // Output templates (TODO: Needs more docs)
