@@ -4,8 +4,8 @@ const webpack = require('webpack')
 module.exports = {
   entry: './extensions/kiwixAPI.js',
   output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist')
+    filename: 'toc.js',
+    path: path.resolve(__dirname, './res/')
   },
   module: {
 		rules: [{

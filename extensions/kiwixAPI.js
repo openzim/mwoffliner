@@ -17,6 +17,10 @@ function getSectionList(){
     return sectionList;
 }
 
+zim.toc.getSectionList = function(){
+    return document.querySelectorAll('h1, h2, h3, h4, h5, h6')
+}
+
 zim.toc.hasTableOfContent = function() {
     return document.querySelectorAll('h1, h2').length > 0 ? true : false;
 }
@@ -36,8 +40,7 @@ zim.toc.getSections = function() {
 }
 
 zim.toc.scrollToSection = function(index){
-    const sectionList = getSectionList();
-    const sectionIdElem = sectionList[index];
+    const sectionIdElem = getSectionList()[index];
     sectionIdElem.closest('details').setAttribute('open', '');
     location.href = `#${sectionList[index].id}`;
 }
