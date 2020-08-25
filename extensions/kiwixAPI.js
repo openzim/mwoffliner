@@ -44,3 +44,7 @@ zim.toc.scrollToSection = function(index){
     sectionIdElem.closest('details').setAttribute('open', '');
     location.href = `#${sectionList[index].id}`;
 }
+
+module.exports = {
+    zim
+}
