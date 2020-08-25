@@ -15,3 +15,4 @@ npm-debug.log
 coverage
 mwo-test-*
 dist/*
+res/toc.js
