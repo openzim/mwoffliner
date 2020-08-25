@@ -192,7 +192,7 @@ export function jsPath({ output: { dirs } }: Config, js: string) {
 }
 export function apiPath({ output: { dirs } }: Config, api: string) {
   const path = (isNodeModule(api)) ? normalizeModule(api) : api;
-  return [dirs.api, `/${path.replace(/(\.js)?$/, '')}.js`].join('/');
+  return [dirs.api, `${path.replace(/(\.js)?$/, '')}.js`].join('/');
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, classList = '') {
   const resourceNamespace = '-';
