@@ -3,8 +3,6 @@ import "regenerator-runtime/runtime";
 
 let zim = {toc: {}};
 
-zim.toc.allSectionsRes = [];
-
 function getSectionList(){
     let sectionList = [];
     for (i = 0; i < document.querySelectorAll('h1, h2, h3, h4, h5, h6').length; i++) {
@@ -31,15 +29,13 @@ zim.toc.getSections = function() {
             "section_name": section.innerText,
         })
     });
-    zim.toc.allSectionsRes = respArrOfSections;
     return respArrOfSections;
 }
 
 zim.toc.scrollToSection = function(index){
-    const sectionList = getSectionList()
-    const sectionIdElem = sectionList[index];
+    const sectionIdElem = getSectionList()[index];
     sectionIdElem.closest('details').setAttribute('open', '');
-    location.href = `#${sectionList[index].id}`;
+    location.href = `#${sectionIdElem.id}`;
 }
 
 export default {

@@ -2,7 +2,7 @@ const path = require('path')
 const webpack = require('webpack')
 
 module.exports = {
-  entry: './extensions/kiwixAPI.js',
+  entry: './zim/api/toc.js',
   output: {
     filename: 'toc.js',
     path: path.resolve(__dirname, './res/')
