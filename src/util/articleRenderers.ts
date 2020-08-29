@@ -112,7 +112,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
         const firstTocLevel = json.remaining.sections[0].toclevel;
         json.remaining.sections
             .forEach((oneSection: any, i: number) => {
-                if (oneSection.toclevel === firstTocLevel) {
+                if (oneSection.toclevel === firstTocLevel || oneSection.text.indexOf('class="NavFrame"')) {
                     html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
                     html += sectionTemplate({
                         section_index: i + 1,
