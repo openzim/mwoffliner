@@ -50,6 +50,16 @@ if (argv.osTmpDir) {
   }
 }
 
+/* ***********************/
+/* TESTING ALL ARGUMENTS */
+/* ***********************/
+
+import { sanitize_all } from './sanitize-argument';
+sanitize_all(argv).catch((err) => {
+  console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
+  process.exit(2);
+});
+
 /* ***********************************/
 /* GO THROUGH ENTRY POINT            */
 /* ***********************************/
