@@ -183,33 +183,26 @@ class Downloader {
   }
 
   public async setBaseUrls() {
-    const isVeApiAvailable = this.mwCapabilities.veApiAvailable;
-    const isMobileRestApiAvailable = this.mwCapabilities.mobileRestApiAvailable;
-    const isDesktopRestApiAvailable = this.mwCapabilities.desktopRestApiAvailable;
+    this.baseUrl = this.mwCapabilities.mobileRestApiAvailable ? this.mw.mobileRestApiUrl.href :
+                   this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
+                   this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
+                   !this.noLocalParserFallback ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
+                   undefined;
 
-    // Setting BaseUrl
-    this.baseUrl = this.mw.veApiUrl.href; // default value
+    this.baseUrlForMainPage = // TODO: allow this. this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
+                              this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
+                              !this.noLocalParserFallback ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
+                              undefined;
 
-    if(isDesktopRestApiAvailable) this.baseUrl = this.mw.desktopRestApiUrl.href;
+    logger.log('Base Url: ', this.baseUrl);
+    logger.log('Base Url for Main Page: ', this.baseUrlForMainPage);
 
-    if(isMobileRestApiAvailable) this.baseUrl = this.mw.mobileRestApiUrl.href;
+    if (!this.baseUrl || !this.baseUrlForMainPage)
+      throw new Error(`Unable to find appropriate API end-point to retrieve article HTML`);
 
-    if (!this.noLocalParserFallback && !isVeApiAvailable) {
-        await this.initLocalServices();
-
-        if (!isMobileRestApiAvailable) this.baseUrl = `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/`;
-
-        if (!isVeApiAvailable) this.baseUrl = this.mw.mobileRestApiUrl.href;
-    }
-
-    // Setting baseUrlForMainPage
-    this.baseUrlForMainPage = this.mw.veApiUrl.href; // default value
-
-    if (!this.noLocalParserFallback && !isVeApiAvailable) {
-        this.baseUrlForMainPage = 'http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/';
-    }
-
-    logger.log('Base Url: ', this.baseUrl, '\n', 'Base Url for Main Page: ', this.baseUrlForMainPage)
+    // TODO: This should not really be there, and not like this
+    if (RegExp(".*http\:\/\/localhost.*").test(this.baseUrl + this.baseUrlForMainPage))
+      await this.initLocalServices();
   }
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
