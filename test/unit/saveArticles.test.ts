@@ -53,7 +53,7 @@ test('applyOtherTreatments', async (t) => {
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland']);
     const articlesDetail = mwRetToArticleDetail(_articleDetailsRet);
     articleDetailXId.setMany(articlesDetail);
-    let [{ html }] = await downloader.getArticle('Western_Greenland', dump);
+    const [{ html }] = await downloader.getArticle('Western_Greenland', dump);
 
     {
         const doc = domino.createDocument(html);
