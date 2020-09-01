@@ -15,6 +15,8 @@ class MediaWiki {
   public readonly apiUrl: URL;
   public readonly veApiUrl: URL;
   public readonly restApiUrl: URL;
+  public readonly mobileRestApiUrl: URL;
+  public readonly desktopRestApiUrl: URL;
   public readonly getCategories: boolean;
   public readonly namespaces: MWNamespaces = {};
   public readonly namespacesToMirror: string[] = [];
@@ -43,6 +45,8 @@ class MediaWiki {
     this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
 
     this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'));
+    this.mobileRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/mobile-sections', this.baseUrl.href).toString(), '/'));
+    this.desktopRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/html', this.baseUrl.href).toString(), '/'));
 
     this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`;
     this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`;

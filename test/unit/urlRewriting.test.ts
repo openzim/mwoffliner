@@ -94,6 +94,8 @@ test('e2e url rewriting', async (t) => {
     await articleDetailXId.flush();
     await redirectsXId.flush();
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
+    await downloader.checkCapabilities();
+    await downloader.setBaseUrls();
 
     await getArticleIds(downloader, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_Built-up_Area']);
 

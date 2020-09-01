@@ -243,7 +243,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         });
 
                         zimCreator.addArticle(zimArticle);
-
                         dump.status.articles.success += 1;
                     }
                 } catch (err) {
