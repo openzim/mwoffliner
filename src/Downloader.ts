@@ -201,7 +201,7 @@ class Downloader {
       throw new Error(`Unable to find appropriate API end-point to retrieve article HTML`);
 
     // TODO: This should not really be there, and not like this
-    if (RegExp(".*http\:\/\/localhost.*").test(this.baseUrl + this.baseUrlForMainPage))
+    if (RegExp('.*http\:\/\/localhost.*').test(this.baseUrl + this.baseUrlForMainPage))
       await this.initLocalServices();
   }
 
