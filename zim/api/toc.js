@@ -38,6 +38,8 @@ zim.toc.scrollToSection = function(index){
     location.href = `#${sectionIdElem.id}`;
 }
 
+window.zim = zim;
+
 export default {
     zim: zim
 }
