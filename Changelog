@@ -1,3 +1,10 @@
+1.10.11:
+* UPDATE: Use node-libzim 2.4.2
+* FIX: first section scraping
+* FIX: custom plugin for Wiktionary
+* FIX: ZIM filename date
+* FIX: broken scraping with local Parsoid
+
 1.10.10:
 * UPDATE: Small memory usage improvement
 * FIX: Regression by article retrieval (from namespace)
