@@ -1,3 +1,6 @@
+1.10.12:
+* NEW: Add ability to make ZIM files using Zstandard compression
+
 1.10.11:
 * UPDATE: Use node-libzim 2.4.2
 * FIX: first section scraping
