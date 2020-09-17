@@ -7,7 +7,7 @@ import logger from './Logger';
 import { config } from './config';
 import fs, { readFileSync } from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail, ensureTrailingChar } from './util';
+import { isValidEmail } from './util';
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
@@ -17,6 +17,8 @@ export async function sanitize_all(argv: any) {
     mwUrl,
     customZimFavicon,
     optimisationCacheUrl,
+    customMainPage,
+    mwWikiPath,
   } = argv;
 
   const cpuCount = os.cpus().length;
@@ -40,6 +42,14 @@ export async function sanitize_all(argv: any) {
     throw err;
   }
 
+  // sanitize custom main page
+  if (customMainPage) {
+    const mainPageUrl = new URL(`${mwUrl}/${mwWikiPath?mwWikiPath:'wiki/'}${customMainPage}`)
+    await sanitize_customMainPage(mainPageUrl).catch((err)=>{
+      throw err;
+    })
+  }
+
   // sanitizing mwUrl
   await sanitize_mwUrl(mwUrl).catch((err)=>{
     throw err;
@@ -55,7 +65,7 @@ export async function sanitize_all(argv: any) {
   // sanitizing custom zim favicon
   if (customZimFavicon) {
     await sanitize_customZimFavicon(customZimFavicon)
-    .catch(err=>{
+    .catch((err) => {
       throw err;
     });
   }
@@ -73,9 +83,30 @@ export async function sanitize_mwUrl(mwUrl:string)
 {
     await axios
     .get(mwUrl)
-    .catch((err)=>{
+    .catch((err) => {
       throw new Error(`mwUrl [${mwUrl}] is not valid.`)
     })
+}
+
+export async function sanitize_customMainPage(mainPageUrl:URL)
+{
+  if (mainPageUrl.href.slice(0,5) === 'https') {
+    mainPageUrl.href = mainPageUrl.href.slice(0,4)+mainPageUrl.href.slice(5)
+  }
+  await axios(
+    {
+      maxRedirects : 0,
+      method : 'get',
+      url : mainPageUrl.href,
+    }
+  )
+  .catch((err) => {
+    if (err.message === 'Request failed with status code 301' || err.message === 'Request failed with status code 302') {
+      throw new Error('custom main page article has redirects');
+    } else {
+      throw err;
+    }
+  })
 }
 
 export function sanitize_adminEmail(adminEmail:any)
