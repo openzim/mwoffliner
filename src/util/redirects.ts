@@ -4,7 +4,6 @@ import Downloader from '../Downloader';
 import { redirectsXId, articleDetailXId } from '../stores';
 import { getArticlesByIds, getArticlesByNS } from './mw-api';
 
-
 export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
     if (mainPage) {
         await getArticlesByIds([mainPage], downloader);
@@ -12,8 +11,6 @@ export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainP
 
     if (articleIds) {
         await getArticlesByIds(articleIds, downloader);
-        // Sometimes the articleList will contain redirects, we need to de-dup them here
-        await trimRedirectedArticles(downloader);
     } else {
         await pmap(
             mw.namespacesToMirror,
@@ -23,11 +20,4 @@ export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainP
             {concurrency: downloader.speed}
         );
     }
-}
-
-async function trimRedirectedArticles(downloader: Downloader) {
-    return redirectsXId.iterateItems(downloader.speed, async (redirects) => {
-        const redirectIds = Object.keys(redirects);
-        await articleDetailXId.deleteMany(redirectIds);
-    });
 }

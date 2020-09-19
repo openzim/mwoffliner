@@ -315,6 +315,7 @@ class Downloader {
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
     let continuation: ContinueOpts;
     let finalProcessedResp: QueryMwRet;
+
     while (true) {
       const queryOpts = {
         ...this.getArticleQueryOpts(shouldGetThumbnail),
@@ -347,6 +348,7 @@ class Downloader {
         break;
       }
     }
+
     return finalProcessedResp;
   }
 
@@ -528,6 +530,7 @@ class Downloader {
       prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
+      redirects: true,
     };
   }
 

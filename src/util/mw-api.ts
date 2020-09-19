@@ -45,8 +45,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                             }
                         }
 
-                        const existingArticleDetails = await articleDetailXId.getMany(articleIds);
-
+                        const existingArticleDetails = await articleDetailXId.getMany(Object.keys(articleDetails));
                         await articleDetailXId.setMany(
                             deepmerge(
                                 existingArticleDetails,
