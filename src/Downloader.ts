@@ -318,7 +318,7 @@ class Downloader {
 
     while (true) {
       const queryOpts = {
-        ...this.getArticleQueryOpts(shouldGetThumbnail),
+        ...this.getArticleQueryOpts(shouldGetThumbnail, true),
         titles: articleIds.join('|'),
         ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories ? {
@@ -522,7 +522,7 @@ class Downloader {
     if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`);
   }
 
-  private getArticleQueryOpts(includePageimages = false) {
+  private getArticleQueryOpts(includePageimages = false, redirects = false) {
     const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num);
     return {
       action: 'query',
@@ -530,7 +530,7 @@ class Downloader {
       prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
-      redirects: true,
+      redirects: (redirects? true : undefined),
     };
   }
 
