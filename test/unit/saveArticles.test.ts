@@ -122,7 +122,7 @@ test('treatMedias format=""', async (t) => {
 
     const doc = domino.createDocument(html);
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell');
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
 
     const videoEl = ret.doc.querySelector('video');
     const videoPosterUrl = videoEl.getAttribute('poster');
@@ -143,7 +143,7 @@ test('treatMedias format="nopic"', async (t) => {
 
     const doc = domino.createDocument(html);
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell');
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
 
     const videoEl = ret.doc.querySelector('video');
     const imgEl = ret.doc.querySelector('img');
@@ -157,7 +157,7 @@ test('treatMedias format="novid"', async (t) => {
 
     const doc = domino.createDocument(html);
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell');
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
 
     const videoEl = ret.doc.querySelector('video');
     const imgEl = ret.doc.querySelector('img');
