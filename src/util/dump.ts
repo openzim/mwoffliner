@@ -9,10 +9,10 @@ import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
+import { shouldConvertImageFilenameToWebp } from './misc'
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
-    const urlCache: KVS<boolean> = {};
     const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
         const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.baseUrl) : link;
         const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null;
@@ -52,8 +52,8 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             url = url.indexOf('%') < 0 ? encodeURI(url) : url;
 
                             /* Download CSS dependency, but avoid duplicate calls */
-                            if (!urlCache.hasOwnProperty(url) && filename) {
-                                urlCache[url] = true;
+                            if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
+                                downloader.cssDependenceUrls[url] = true;
                                 filesToDownloadXPath.set(config.output.dirs.style + '/' + filename, { url: downloader.serializeUrl(url), namespace: '-' });
                             }
                         } else {

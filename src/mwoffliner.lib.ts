@@ -99,6 +99,7 @@ async function execute(argv: any) {
     customZimDescription,
     customZimTags,
     withoutZimFullTextIndex,
+    webp,
     format,
     filenamePrefix,
     resume,
@@ -185,6 +186,7 @@ async function execute(argv: any) {
     forceLocalParser,
     optimisationCacheUrl,
     s3,
+    webp,
   });
 
   /* Get MediaWiki Info */

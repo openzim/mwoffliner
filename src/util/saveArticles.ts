@@ -13,7 +13,7 @@ import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullU
 import { config } from '../config';
 import { footerTemplate, htmlTemplateCode } from '../Templates';
 import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores';
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from './misc';
+import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, shouldConvertImageFilenameToWebp } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT } from './const';
@@ -27,6 +27,7 @@ type FileStore = RedisKvs<{
     mult?: number;
     width?: number;
 }>;
+
 
 export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
     const filesForAttempt = await fileStore.len();
@@ -112,6 +113,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
+                    resp.path += resp.result.responseHeaders.path_postfix || '';
                     return resp;
                 }).catch((err) => {
                     return resp;
@@ -323,7 +325,7 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
     let mediaDependencies: Array<{ url: string, path: string }> = [];
     let subtitles: Array<{ url: string, path: string }> = [];
     let doc = domino.createDocument(html);
-    const tmRet = await treatMedias(doc, mw, dump, articleId);
+    const tmRet = await treatMedias(doc, mw, dump, articleId, downloader);
     doc = tmRet.doc;
 
     mediaDependencies = mediaDependencies.concat(
@@ -471,7 +473,7 @@ function shouldKeepImage(dump: Dump, img: DominoElement) {
         && !src.includes('./Special:FilePath/');
 }
 
-async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ mediaDependencies: string[] }> {
+async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, downloader: Downloader): Promise<{ mediaDependencies: string[] }> {
     const mediaDependencies: string[] = [];
 
     if (!shouldKeepImage(dump, img)) {
@@ -517,8 +519,10 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
         }
 
         /* Change image source attribute to point to the local image */
-        img.setAttribute('src', newSrc);
-
+        img.setAttribute('src', shouldConvertImageFilenameToWebp(newSrc, downloader.webp)
+         ? newSrc + '.webp'
+         : newSrc
+        )
         /* Remove useless 'resource' attribute */
         img.removeAttribute('resource');
 
@@ -591,7 +595,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
     imageNode.parentNode.replaceChild(thumbDiv, imageNode);
 }
 
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, downloader: Downloader) {
     let mediaDependencies: string[] = [];
     let subtitles: string[] = [];
     /* Clean/rewrite image tags */
@@ -606,7 +610,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     }
 
     for (const imgEl of imgs) {
-        const ret = await treatImage(mw, dump, srcCache, articleId, imgEl);
+        const ret = await treatImage(mw, dump, srcCache, articleId, imgEl, downloader);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
 

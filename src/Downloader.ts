@@ -11,18 +11,20 @@ import axios, { AxiosRequestConfig } from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
+import imageminWebp from 'imagemin-webp';
 
 import {
-  MIME_IMAGE_REGEX,
   normalizeMwResponse,
   objToQueryString,
   readFilePromise,
-  URL_IMAGE_REGEX,
   DB_ERROR,
   WEAK_ETAG_REGEX,
   writeFilePromise,
   renderArticle,
-  stripHttpFromUrl
+  stripHttpFromUrl,
+  isBitmapImageMimeType,
+  isImageUrl,
+  isWebpCandidateImage,
 } from './util';
 import S3 from './S3';
 import { Dump } from './Dump';
@@ -30,16 +32,23 @@ import logger from './Logger';
 import MediaWiki from './MediaWiki';
 
 
-const imageminOptions = {
+const imageminOptions = new Map();
+imageminOptions.set('image/jpeg', {
   plugins: [
-    // imageminOptiPng(),
+    imageminJpegoptim({ max: 60, stripAll: true }),
+  ]
+})
+imageminOptions.set('image/png', {
+  plugins: [
     imageminPngquant({ speed: 3, strip: true, dithering: 0 }),
     imageminAdvPng({ optimizationLevel: 4, iterations: 5 }),
-    imageminJpegoptim({ max: 60, stripAll: true }),
-    // imageminJpegtran(),
+  ]
+})
+imageminOptions.set('image/gif', {
+  plugins: [
     imageminGifsicle({ optimizationLevel: 3, colors: 64 }),
-  ],
-};
+  ]
+})
 
 interface DownloaderOpts {
   mw: MediaWiki;
@@ -50,6 +59,7 @@ interface DownloaderOpts {
   forceLocalParser: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
+  webp: boolean;
   backoffOptions?: BackoffOptions;
 }
 
@@ -74,6 +84,8 @@ class Downloader {
   public readonly speed: number;
   public baseUrl: string;
   public baseUrlForMainPage: string;
+  public cssDependenceUrls: KVS<boolean> = {};
+  public readonly webp: boolean = false;
 
   private readonly uaString: string;
   private activeRequests = 0;
@@ -91,7 +103,7 @@ class Downloader {
   public streamRequestOptions: AxiosRequestConfig;
 
 
-  constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -101,6 +113,7 @@ class Downloader {
     this.noLocalParserFallback = noLocalParserFallback;
     this.forceLocalParser = forceLocalParser;
     this.optimisationCacheUrl = optimisationCacheUrl;
+    this.webp = webp;
     this.s3 = s3;
     this.mwCapabilities = {
       veApiAvailable: false,
@@ -230,14 +243,6 @@ class Downloader {
       logger.info(`Coordinates not available on this wiki`);
       this.mwCapabilities.coordinatesAvailable = false;
     }
-  }
-
-  public isImageUrl(url: string): boolean {
-    return !!URL_IMAGE_REGEX.exec(url);
-  }
-
-  public isMimeTypeImage(mimetype: string): boolean {
-    return !!MIME_IMAGE_REGEX.exec(mimetype);
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -586,19 +591,34 @@ class Downloader {
   }
 
   private async getCompressedBody(resp: any): Promise<any> {
-    return this.isMimeTypeImage(resp.headers['content-type']) ? await imagemin.buffer(resp.data, imageminOptions) : resp.data;
+    if (isBitmapImageMimeType(resp.headers['content-type'])) {
+      if (isWebpCandidateImage(this.webp, this.cssDependenceUrls.hasOwnProperty(resp.config.url), resp.headers['content-type'])) {
+        resp.data = await imagemin.buffer(resp.data, {
+          plugins: [
+            imageminWebp({ quality: 75 })
+          ]
+        });
+        resp.headers.path_postfix = '.webp';
+        resp.headers['content-type'] = 'image/webp';
+      } else {
+        resp.data = await imagemin.buffer(resp.data, imageminOptions.get(resp.headers['content-type']));
+      }
+      return true
+    }
+    return false;
   }
 
   private getContentCb = async (url: string, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`);
     try {
-      if (this.optimisationCacheUrl && this.isImageUrl(url)) {
+      if (this.optimisationCacheUrl && isImageUrl(url)) {
         this.downloadImage(url, handler);
       } else {
         const resp = await axios(url, this.arrayBufferRequestOptions);
+        await this.getCompressedBody(resp);
         handler(null, {
           responseHeaders: resp.headers,
-          content: await this.getCompressedBody(resp),
+          content: resp.data,
         });
       }
     } catch (err) {
@@ -613,7 +633,7 @@ class Downloader {
   private async downloadImage(url: string, handler: any) {
     try {
       this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (s3Resp) => {
-        if (s3Resp?.Metadata?.etag) {
+        if (s3Resp?.Metadata?.etag && s3Resp.Metadata.webp === (!this.cssDependenceUrls.hasOwnProperty(url) && this.webp)) {
           this.arrayBufferRequestOptions.headers['If-None-Match']
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
@@ -635,7 +655,9 @@ class Downloader {
         // Check for the etag and upload
         const etag = this.removeEtagWeakPrefix(mwResp.headers.etag);
         if (etag) {
-          this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag);
+          this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag,
+            !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url) && this.webp
+          );
         }
 
         handler(null, {
