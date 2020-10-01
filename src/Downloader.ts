@@ -612,30 +612,35 @@ class Downloader {
 
   private async downloadImage(url: string, handler: any) {
     try {
-      this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (imageResp) => {
-        if (imageResp?.Metadata?.etag) {
-          this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(imageResp.Metadata.etag);
+      this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (s3Resp) => {
+        if (s3Resp?.Metadata?.etag) {
+          this.arrayBufferRequestOptions.headers['If-None-Match']
+            = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
-        const resp = await axios(url, this.arrayBufferRequestOptions);
+        const mwResp = await axios(url, this.arrayBufferRequestOptions);
 
-        // Most of the images after uploading once will always have 304 status, until modified.
-        if (resp.status === 304) {
+        // Most of the images after uploading once will always have
+        // 304 status, until modified.
+        if (mwResp.status === 304) {
           handler(null, {
-            responseHeaders: (({ Body, ...o }) => o)(imageResp),
-            content: imageResp.Body,
+            responseHeaders: (({ Body, ...o }) => o)(s3Resp),
+            content: s3Resp.Body,
           });
           return;
         }
 
+        // Compress content
+        await this.getCompressedBody(mwResp);
+
         // Check for the etag and upload
-        const etag = this.removeEtagWeakPrefix(resp.headers.etag);
+        const etag = this.removeEtagWeakPrefix(mwResp.headers.etag);
         if (etag) {
-          this.s3.uploadBlob(stripHttpFromUrl(url), resp.data, etag);
+          this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag);
         }
 
         handler(null, {
-          responseHeaders: resp.headers,
-          content: await this.getCompressedBody(resp),
+          responseHeaders: mwResp.headers,
+          content: mwResp.data,
         });
       }).catch((err) => {
         this.errHandler(err, url, handler);
