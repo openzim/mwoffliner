@@ -207,17 +207,22 @@ class Downloader {
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
-      const apiResponse = await this.getJSON<any>(`${url}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-      return !!apiResponse || !!apiResponse.lead || !!apiResponse.visualeditor.content;
+      const resp = await axios.get(url);
+      return resp.status == 200 && !resp.headers['mediawiki-api-error'];
     } catch (err) {
       logger.warn(err);
+      return false;
     }
   }
 
   public async checkCapabilities(): Promise<void> {
-    // By default check the all API's response and set the capabilities accordingly
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href);
-    this.mwCapabilities.desktopRestApiAvailable  = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href);
+
+    // By default check the all API's response and set the capabilities
+    // accordingly. We need to set a default page (always there because
+    // installed per default) to request the REST API, otherwise it would
+    // failed the check.
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + 'MediaWiki:Common.css');
+    this.mwCapabilities.desktopRestApiAvailable  = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + 'MediaWiki:Common.css');
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href);
 
     // Coordinate fetching
