@@ -214,7 +214,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
                         jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
-                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
+                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp);
 
                         if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
                             templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc);
@@ -789,7 +789,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<Document> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail, webp: boolean): Promise<Document> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -800,6 +800,11 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         styleDependenciesList: string[],
     };
 
+    if (webp) {
+        jsDependenciesList.push('webpHeroPolyfill');
+        jsDependenciesList.push('webpHeroBundle');
+    }
+
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode(articleId)
             .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
@@ -807,7 +812,8 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             .replace(
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
-                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')
+                    ? `${jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')} \n
+                        ${addWebpScript(webp)}`
                     : '',
             )
             .replace(
@@ -917,6 +923,15 @@ function isSubpage(id: string, mw: MediaWiki) {
         }
     }
     return false;
+}
+
+function addWebpScript(webp: boolean) {
+    return webp
+    ? `<script>
+	        var webpMachine = new webpHero.WebpMachine()
+	        webpMachine.polyfillDocument()
+        </script>`
+    : ``;
 }
 
 export function isMirrored(id: string) {

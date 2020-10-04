@@ -13,7 +13,6 @@ declare module 'country-language';
 declare module 'imagemin-advpng';
 declare module 'imagemin-jpegoptim';
 declare module 'imagemin-webp';
-declare module 'file-type';
 
 type DominoElement = any;
 

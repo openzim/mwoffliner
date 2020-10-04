@@ -8,7 +8,8 @@ import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { MEDIA_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX, WEBP_CANDIDATE_IMAGE_FILENAME_REGEX } from './const';
+import { MEDIA_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+   WEBP_CANDIDATE_IMAGE_FILENAME_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
 export function isValidEmail(email: string) {
@@ -356,6 +357,6 @@ export function shouldConvertImageFilenameToWebp(url: string, webp: boolean) {
   return webp && WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
 }
 
-export function isWebpCandidateImage(webp: boolean, cssDependency: boolean, content_type: string){
-  return (webp && !cssDependency && content_type !== 'image/gif')
+export function isWebpCandidateImageMimeType(webp: boolean, content_type: string){
+  return (webp && !WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type))
 }

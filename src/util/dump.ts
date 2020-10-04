@@ -142,3 +142,17 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
         throw e;
     }
 }
+
+export async function downloadPolyfillModules(zimCreator: ZimCreator, downloader: Downloader) {
+    const { content } = await downloader.downloadContent(encodeURI('https://unpkg.com/webp-hero@0.0.0-dev.26/dist-cjs/polyfills.js'));
+    let text = content.toString();
+    let articleId = jsPath(config, 'webpHeroPolyfill');
+    let article = new ZimArticle({ url: articleId, data: text, ns: '-' });
+    zimCreator.addArticle(article);
+
+    const { content: _content }  = await downloader.downloadContent(encodeURI('https://unpkg.com/webp-hero@0.0.0-dev.26/dist-cjs/webp-hero.bundle.js'));
+    text = _content.toString();
+    articleId = jsPath(config, 'webpHeroBundle');
+    article = new ZimArticle({ url: articleId, data: text, ns: '-' });
+    zimCreator.addArticle(article);
+}

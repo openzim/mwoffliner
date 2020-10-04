@@ -42,11 +42,11 @@ class S3 {
         });
     }
 
-    public async uploadBlob(key: string, data: any, eTag: string, Webp: boolean) {
+    public async uploadBlob(key: string, data: any, eTag: string, version: string) {
         const params = {
             Bucket: this.bucketName,
             Key: key,
-            Metadata: {etag: eTag ,webp: Webp},
+            Metadata: {etag: eTag , version},
             Body: this.bufferToStream(data),
         };
 

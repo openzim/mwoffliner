@@ -9,3 +9,4 @@ export const DB_ERROR = 'internal_api_error_DBQueryError';
 export const WEAK_ETAG_REGEX = /^(W\/)/;
 export const WEBP_CANDIDATE_IMAGE_FILENAME_REGEX = /(jpeg|png|jpg)$/i;
 export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|gif)$/;
+export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+gif/;

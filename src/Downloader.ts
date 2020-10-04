@@ -24,7 +24,7 @@ import {
   stripHttpFromUrl,
   isBitmapImageMimeType,
   isImageUrl,
-  isWebpCandidateImage,
+  isWebpCandidateImageMimeType,
 } from './util';
 import S3 from './S3';
 import { Dump } from './Dump';
@@ -33,21 +33,34 @@ import MediaWiki from './MediaWiki';
 
 
 const imageminOptions = new Map();
-imageminOptions.set('image/jpeg', {
-  plugins: [
-    imageminJpegoptim({ max: 60, stripAll: true }),
-  ]
-})
-imageminOptions.set('image/png', {
+imageminOptions.set('default', new Map());
+imageminOptions.set('webp', new Map());
+
+imageminOptions.get('default').set('image/png', {
   plugins: [
     imageminPngquant({ speed: 3, strip: true, dithering: 0 }),
     imageminAdvPng({ optimizationLevel: 4, iterations: 5 }),
-  ]
+  ],
 })
-imageminOptions.set('image/gif', {
+imageminOptions.get('default').set('image/jpeg', {
+  plugins: [
+    imageminJpegoptim({ max: 60, stripAll: true }),
+  ],
+})
+imageminOptions.get('default').set('image/gif', {
   plugins: [
     imageminGifsicle({ optimizationLevel: 3, colors: 64 }),
-  ]
+  ],
+})
+imageminOptions.get('webp').set('image/png', {
+  plugins: [
+    imageminWebp({ quality: 75 })
+  ],
+})
+imageminOptions.get('webp').set('image/jpeg', {
+  plugins: [
+    imageminWebp({ quality: 75 })
+  ],
 })
 
 interface DownloaderOpts {
@@ -592,18 +605,15 @@ class Downloader {
 
   private async getCompressedBody(resp: any): Promise<any> {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
-      if (isWebpCandidateImage(this.webp, this.cssDependenceUrls.hasOwnProperty(resp.config.url), resp.headers['content-type'])) {
-        resp.data = await imagemin.buffer(resp.data, {
-          plugins: [
-            imageminWebp({ quality: 75 })
-          ]
-        });
+      if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
+      !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
+        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']));
         resp.headers.path_postfix = '.webp';
         resp.headers['content-type'] = 'image/webp';
       } else {
-        resp.data = await imagemin.buffer(resp.data, imageminOptions.get(resp.headers['content-type']));
+        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type']));
       }
-      return true
+      return true;
     }
     return false;
   }
@@ -633,7 +643,7 @@ class Downloader {
   private async downloadImage(url: string, handler: any) {
     try {
       this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (s3Resp) => {
-        if (s3Resp?.Metadata?.etag && s3Resp.Metadata.webp === (!this.cssDependenceUrls.hasOwnProperty(url) && this.webp)) {
+        if (s3Resp?.Metadata?.etag && s3Resp.Metadata.webp === (!this.cssDependenceUrls.hasOwnProperty(url) && this.webp ? 'webp' : '1')) {
           this.arrayBufferRequestOptions.headers['If-None-Match']
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
@@ -656,7 +666,7 @@ class Downloader {
         const etag = this.removeEtagWeakPrefix(mwResp.headers.etag);
         if (etag) {
           this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag,
-            !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url) && this.webp
+            !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url) && this.webp ? 'webp' : '1'
           );
         }
 
