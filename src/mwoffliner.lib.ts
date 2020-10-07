@@ -446,9 +446,8 @@ async function execute(argv: any) {
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ];
 
-    if(downloader.webp)
-    {
-      logger.log(`Downloading polyfill module`)
+    if (downloader.webp) {
+      logger.log(`Downloading polyfill module`);
       downloadPolyfillModules(zimCreator, downloader);
     }
 

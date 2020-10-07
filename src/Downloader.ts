@@ -606,7 +606,7 @@ class Downloader {
   private async getCompressedBody(resp: any): Promise<any> {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
-      !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
+        !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
         resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']));
         resp.headers.path_postfix = '.webp';
         resp.headers['content-type'] = 'image/webp';
@@ -643,7 +643,7 @@ class Downloader {
   private async downloadImage(url: string, handler: any) {
     try {
       this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (s3Resp) => {
-        if (s3Resp?.Metadata?.etag && s3Resp.Metadata.webp === (!this.cssDependenceUrls.hasOwnProperty(url) && this.webp ? 'webp' : '1')) {
+        if (s3Resp?.Metadata?.etag) {
           this.arrayBufferRequestOptions.headers['If-None-Match']
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
@@ -665,9 +665,7 @@ class Downloader {
         // Check for the etag and upload
         const etag = this.removeEtagWeakPrefix(mwResp.headers.etag);
         if (etag) {
-          this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag,
-            !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url) && this.webp ? 'webp' : '1'
-          );
+          this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, this.webp ? 'webp' : '1');
         }
 
         handler(null, {
