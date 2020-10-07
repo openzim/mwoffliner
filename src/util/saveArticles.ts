@@ -378,7 +378,7 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
     return aVal > bVal ? 1 : -1;
 }
 
-export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
+export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
     // This function handles audio tags as well as video tags
     const mediaDependencies: string[] = [];
     const subtitles: string[] = [];
@@ -426,7 +426,9 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     if (posterUrl) {
         const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
-        if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
+        if (posterUrl) { videoEl.setAttribute('poster', shouldConvertImageFilenameToWebp(newVideoPosterUrl, webp)
+        ? newVideoPosterUrl + '.webp'
+        : newVideoPosterUrl); }
         videoEl.removeAttribute('resource');
 
         if (!srcCache.hasOwnProperty(videoPosterUrl)) {
@@ -604,7 +606,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     const srcCache: KVS<boolean> = {};
 
     for (const videoEl of videos) { // <video /> and <audio />
-        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
+        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, downloader.webp);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
         subtitles = subtitles.concat(ret.subtitles);
     }

@@ -104,6 +104,7 @@
     "tslint": "^6.1.2",
     "typescript": "^3.9.5",
     "utf8-binary-cutter": "^0.9.2",
+    "webp-hero": "0.0.0-dev.26",
     "yargs": "^15.3.1"
   },
   "keywords": [

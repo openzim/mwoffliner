@@ -47,7 +47,7 @@ import {
   sanitizeString,
   saveStaticFiles,
   writeFilePromise,
-  downloadPolyfillModules,
+  importPolyfillModules,
 } from './util';
 import S3 from './S3';
 import Redis from './Redis';
@@ -448,7 +448,7 @@ async function execute(argv: any) {
 
     if (downloader.webp) {
       logger.log(`Downloading polyfill module`);
-      downloadPolyfillModules(zimCreator, downloader);
+      importPolyfillModules(zimCreator, downloader);
     }
 
     logger.log(`Downloading module dependencies`);

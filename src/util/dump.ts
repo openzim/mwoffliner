@@ -9,7 +9,7 @@ import MediaWiki from '../MediaWiki';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
-import { shouldConvertImageFilenameToWebp } from './misc'
+import fs from 'fs'
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -143,15 +143,15 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     }
 }
 
-export async function downloadPolyfillModules(zimCreator: ZimCreator, downloader: Downloader) {
-    const { content } = await downloader.downloadContent(encodeURI('https://unpkg.com/webp-hero@0.0.0-dev.26/dist-cjs/polyfills.js'));
+export async function importPolyfillModules(zimCreator: ZimCreator, downloader: Downloader) {
+    let content  = fs.readFileSync(process.cwd()+'/node_modules/webp-hero/dist-cjs/polyfills.js','utf8');
     let text = content.toString();
     let articleId = jsPath(config, 'webpHeroPolyfill');
     let article = new ZimArticle({ url: articleId, data: text, ns: '-' });
     zimCreator.addArticle(article);
 
-    const { content: _content }  = await downloader.downloadContent(encodeURI('https://unpkg.com/webp-hero@0.0.0-dev.26/dist-cjs/webp-hero.bundle.js'));
-    text = _content.toString();
+    content  = fs.readFileSync(process.cwd()+'/node_modules/webp-hero/dist-cjs/webp-hero.bundle.js','utf8')
+    text = content.toString();
     articleId = jsPath(config, 'webpHeroBundle');
     article = new ZimArticle({ url: articleId, data: text, ns: '-' });
     zimCreator.addArticle(article);
