@@ -647,7 +647,7 @@ class Downloader {
 
   private async downloadImage(url: string, handler: any) {
     try {
-      this.s3.downloadBlob(stripHttpFromUrl(url)).then(async (s3Resp) => {
+      this.s3.downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1').then(async (s3Resp) => {
         if (s3Resp?.Metadata?.etag) {
           this.arrayBufferRequestOptions.headers['If-None-Match']
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);

@@ -929,7 +929,7 @@ function isSubpage(id: string, mw: MediaWiki) {
 }
 
 function addWebpScript() {
-    return `<script>var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument();</script>`
+    return '<script>var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument();</script>'
 }
 
 export function isMirrored(id: string) {

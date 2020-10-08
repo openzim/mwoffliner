@@ -61,10 +61,13 @@ class S3 {
         }
     }
 
-    public async downloadBlob(key: string): Promise<any> {
+    public async downloadBlob(key: string, version = '1'): Promise<any> {
         return new Promise((resolve, reject) => {
             this.s3Handler.getObject({Bucket: this.bucketName, Key: key}, async (err: any, val: any) => {
                 if (val) {
+                    if (val.Metadata.version !== version) {
+                        val.Metadata.etag = undefined;
+                    }
                     resolve(val);
                 } else if (err && err.statusCode === 404) {
                     resolve();
