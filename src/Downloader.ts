@@ -655,10 +655,12 @@ class Downloader {
         const mwResp = await axios(url, this.arrayBufferRequestOptions);
 
         // Most of the images after uploading once will always have
-        // 304 status, until modified.
+        // 304 status, until modified. We need to have
+        // shouldConvertImageFilenameToWebp() as fallback check because
+        // of https://phabricator.wikimedia.org/T265006
         if (mwResp.status === 304) {
           const headers = (({ Body, ...o }) => o)(s3Resp);
-          if (mwResp.headers['content-type'] === undefined ?
+          if (mwResp.headers['content-type'] ?
           isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) :
           shouldConvertImageFilenameToWebp(mwResp.config.url, this.webp) &&
           !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
