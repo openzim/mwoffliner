@@ -53,7 +53,7 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, ca
             await articleDetailXId.set(_articleId, _articleDetail);
         }
 
-        if(capabilities.mobileRestApiAvailable){
+        if (capabilities.mobileRestApiAvailable) {
             html = renderMCSArticle(json, dump, _articleId, _articleDetail);
         }
 
@@ -96,6 +96,7 @@ const renderDesktopArticle = (json: any, articleId: string, articleDetail: Artic
         logger.error(`Error in retrieved article [${articleId}]:`, json.error);
         return '';
     }
+    return json // This is HTML probably (the problem is that this is hard to know at this stage, buggy architecture)
 };
 
 

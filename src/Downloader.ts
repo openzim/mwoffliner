@@ -189,7 +189,7 @@ class Downloader {
                    !this.noLocalParserFallback ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
                    undefined;
 
-    this.baseUrlForMainPage = // TODO: allow this. this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
+    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
                               this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
                               !this.noLocalParserFallback ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
                               undefined;
@@ -207,17 +207,22 @@ class Downloader {
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
-      const apiResponse = await this.getJSON<any>(`${url}${encodeURIComponent(this.mw.metaData.mainPage)}`);
-      return !!apiResponse || !!apiResponse.lead || !!apiResponse.visualeditor.content;
+      const resp = await axios.get(url);
+      return resp.status === 200 && !resp.headers['mediawiki-api-error'];
     } catch (err) {
       logger.warn(err);
+      return false;
     }
   }
 
   public async checkCapabilities(): Promise<void> {
-    // By default check the all API's response and set the capabilities accordingly
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href);
-    this.mwCapabilities.desktopRestApiAvailable  = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href);
+
+    // By default check all API's responses and set the capabilities
+    // accordingly. We need to set a default page (always there because
+    // installed per default) to request the REST API, otherwise it would
+    // fail the check.
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + 'MediaWiki:Common.css');
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + 'MediaWiki:Common.css');
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href);
 
     // Coordinate fetching
@@ -475,7 +480,6 @@ class Downloader {
       return false;
     }
   }
-
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
     return `${ isMainPage ? this.baseUrlForMainPage: this.baseUrl }${encodeURIComponent(articleId)}`;
