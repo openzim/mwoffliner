@@ -248,8 +248,8 @@ class Downloader {
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + 'MediaWiki:Common.css');
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + 'MediaWiki:Common.css');
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + 'MediaWiki:Sidebar');
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + 'MediaWiki:Sidebar');
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href);
 
     // Coordinate fetching

@@ -11,7 +11,7 @@ const now = new Date();
 const testId = `mwo-test-${+now}`;
 
 const parameters = {
-    mwUrl: `https://el.wikibooks.org`,
+    mwUrl: `https://fo.wikisource.org`,
     adminEmail: `test@kiwix.org`,
     outputDirectory: testId,
     redis: process.env.REDIS,
@@ -28,9 +28,9 @@ test('Wikisource List', async (t) => {
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.ok(dump.status.files.success > 730, 'nopic has enough files');
-            t.ok(dump.status.redirects.written > 95, 'nopic has enough redirects');
-            t.ok(dump.status.articles.success > 700, 'nopic has enough articles');
+            t.ok(dump.status.files.success >= 29, 'nopic has enough files');
+            t.ok(dump.status.redirects.written >= 16 , 'nopic has enough redirects');
+            t.ok(dump.status.articles.success >= 61, 'nopic has enough articles');
         }
     }
 
