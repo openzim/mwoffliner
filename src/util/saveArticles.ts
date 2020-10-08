@@ -13,7 +13,7 @@ import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullU
 import { config } from '../config';
 import { footerTemplate, htmlTemplateCode } from '../Templates';
 import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores';
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString } from './misc';
+import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, shouldConvertImageFilenameToWebp } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT } from './const';
@@ -27,6 +27,7 @@ type FileStore = RedisKvs<{
     mult?: number;
     width?: number;
 }>;
+
 
 export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
     const filesForAttempt = await fileStore.len();
@@ -112,6 +113,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
+                    resp.path += resp.result.responseHeaders.path_postfix || '';
                     return resp;
                 }).catch((err) => {
                     return resp;
@@ -212,7 +214,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
                         jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
 
-                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
+                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp);
 
                         if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
                             templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc);
@@ -323,7 +325,7 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
     let mediaDependencies: Array<{ url: string, path: string }> = [];
     let subtitles: Array<{ url: string, path: string }> = [];
     let doc = domino.createDocument(html);
-    const tmRet = await treatMedias(doc, mw, dump, articleId);
+    const tmRet = await treatMedias(doc, mw, dump, articleId, downloader);
     doc = tmRet.doc;
 
     mediaDependencies = mediaDependencies.concat(
@@ -376,7 +378,7 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
     return aVal > bVal ? 1 : -1;
 }
 
-export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
+export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
     // This function handles audio tags as well as video tags
     const mediaDependencies: string[] = [];
     const subtitles: string[] = [];
@@ -424,7 +426,10 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     if (posterUrl) {
         const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
-        if (posterUrl) { videoEl.setAttribute('poster', newVideoPosterUrl); }
+
+        if (posterUrl) { videoEl.setAttribute('poster', shouldConvertImageFilenameToWebp(newVideoPosterUrl, webp)
+        ? newVideoPosterUrl + '.webp'
+        : newVideoPosterUrl); }
         videoEl.removeAttribute('resource');
 
         if (!srcCache.hasOwnProperty(videoPosterUrl)) {
@@ -471,7 +476,7 @@ function shouldKeepImage(dump: Dump, img: DominoElement) {
         && !src.includes('./Special:FilePath/');
 }
 
-async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ mediaDependencies: string[] }> {
+async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, downloader: Downloader): Promise<{ mediaDependencies: string[] }> {
     const mediaDependencies: string[] = [];
 
     if (!shouldKeepImage(dump, img)) {
@@ -517,8 +522,10 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
         }
 
         /* Change image source attribute to point to the local image */
-        img.setAttribute('src', newSrc);
-
+        img.setAttribute('src', shouldConvertImageFilenameToWebp(newSrc, downloader.webp)
+         ? newSrc + '.webp'
+         : newSrc
+        )
         /* Remove useless 'resource' attribute */
         img.removeAttribute('resource');
 
@@ -591,7 +598,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
     imageNode.parentNode.replaceChild(thumbDiv, imageNode);
 }
 
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string) {
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, downloader: Downloader) {
     let mediaDependencies: string[] = [];
     let subtitles: string[] = [];
     /* Clean/rewrite image tags */
@@ -600,13 +607,13 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     const srcCache: KVS<boolean> = {};
 
     for (const videoEl of videos) { // <video /> and <audio />
-        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl);
+        const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, downloader.webp);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
         subtitles = subtitles.concat(ret.subtitles);
     }
 
     for (const imgEl of imgs) {
-        const ret = await treatImage(mw, dump, srcCache, articleId, imgEl);
+        const ret = await treatImage(mw, dump, srcCache, articleId, imgEl, downloader);
         mediaDependencies = mediaDependencies.concat(ret.mediaDependencies);
     }
 
@@ -785,7 +792,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<Document> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail, webp: boolean): Promise<Document> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -796,6 +803,11 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         styleDependenciesList: string[],
     };
 
+    if (webp) {
+        jsDependenciesList.push('webpHeroPolyfill');
+        jsDependenciesList.push('webpHeroBundle');
+    }
+
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode(articleId)
             .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
@@ -803,7 +815,8 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             .replace(
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
-                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')
+                    ? `${jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')} \n
+                    ${webp && addWebpScript()}`
                     : '',
             )
             .replace(
@@ -913,6 +926,10 @@ function isSubpage(id: string, mw: MediaWiki) {
         }
     }
     return false;
+}
+
+function addWebpScript() {
+    return '<script>var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument();</script>'
 }
 
 export function isMirrored(id: string) {

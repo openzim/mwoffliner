@@ -12,10 +12,11 @@ populateArticleDetail(redis.client);
 populateRedirects(redis.client);
 populateFilesToDownload(redis.client);
 
+articleDetailXId.flush();
+redirectsXId.flush();
+filesToDownloadXPath.flush();
+
 test.onFinish(() => {
     console.info('Closing all redis connections');
-    articleDetailXId.flush();
-    redirectsXId.flush();
-    filesToDownloadXPath.flush();
     redis.client.quit();
 });

@@ -27,7 +27,10 @@ _test('S3 checks', async(t) => {
     const bucketNotExists = s3.bucketExists('random-string');
     t.rejects(bucketNotExists, 'Given bucket does not exists in S3');
 
-    const imageExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/bmwiki.png');
+    await s3.uploadBlob('bm.wikipedia.org/static/images/project-logos/bmwiki-test.png', '42', '42', '1');
+    t.assert(true, 'Image uploaded to S3');
+
+    const imageExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/bmwiki-test.png');
     t.assert(!!imageExist, 'Image exists in S3');
 
     const imageNotExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');

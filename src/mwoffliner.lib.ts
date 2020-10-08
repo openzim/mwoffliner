@@ -47,6 +47,7 @@ import {
   sanitizeString,
   saveStaticFiles,
   writeFilePromise,
+  importPolyfillModules,
 } from './util';
 import S3 from './S3';
 import Redis from './Redis';
@@ -99,6 +100,7 @@ async function execute(argv: any) {
     customZimDescription,
     customZimTags,
     withoutZimFullTextIndex,
+    webp,
     format,
     filenamePrefix,
     resume,
@@ -185,6 +187,7 @@ async function execute(argv: any) {
     forceLocalParser,
     optimisationCacheUrl,
     s3,
+    webp,
   });
 
   /* Get MediaWiki Info */
@@ -442,6 +445,11 @@ async function execute(argv: any) {
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ];
+
+    if (downloader.webp) {
+      logger.log('Downloading polyfill module');
+      importPolyfillModules(zimCreator);
+    }
 
     logger.log(`Downloading module dependencies`);
     await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {

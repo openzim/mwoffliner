@@ -8,7 +8,9 @@ import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { MEDIA_REGEX, FIND_HTTP_REGEX } from './const';
+import { MEDIA_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+   WEBP_CANDIDATE_IMAGE_FILENAME_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
+import { boolean } from 'yargs';
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -334,3 +336,27 @@ export function stripHttpFromUrl(url: string): string {
   return url.replace(FIND_HTTP_REGEX, '');
 }
 
+
+export function isImageUrl(url: string): boolean {
+  return IMAGE_URL_REGEX.test(url);
+}
+
+export function isWebpCandidateImageUrl(url: string): boolean {
+  return WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
+}
+
+export function isImageMimeType(mimeType: string): boolean {
+  return IMAGE_MIME_REGEX.test(mimeType);
+}
+
+export function isBitmapImageMimeType(mimeType: string): boolean {
+  return BITMAP_IMAGE_MIME_REGEX.test(mimeType);
+}
+
+export function shouldConvertImageFilenameToWebp(url: string, webp: boolean) {
+  return webp && WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
+}
+
+export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
+  return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type);
+}

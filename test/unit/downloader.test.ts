@@ -4,7 +4,7 @@ import tapePromise from 'tape-promise';
 import Downloader from 'src/Downloader';
 import MediaWiki from 'src/MediaWiki';
 import Axios from 'axios';
-import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl } from 'src/util';
+import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from 'src/util';
 import S3 from 'src/S3';
 import rimraf from 'rimraf';
 import { Dump } from 'src/Dump';
@@ -20,7 +20,7 @@ test('Downloader class', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
@@ -110,31 +110,31 @@ test('Downloader class', async (t) => {
 
     rimraf.sync(cacheDir);
 
-    const isPngFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
+    const isPngFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
     t.assert(isPngFile, 'Checked Image type: png');
 
-    const isJpgFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
+    const isJpgFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
     t.assert(isJpgFile, 'Checked Image type: jpg');
 
-    const isSvgFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
+    const isSvgFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
     t.assert(isSvgFile, 'Checked Image type: svg');
 
-    const isJpegFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
+    const isJpegFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
     t.assert(isJpegFile, 'Checked Image type: jpeg');
 
-    const isgifFile =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
+    const isgifFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
     t.assert(isgifFile, 'Checked Image type: gif');
 
-    const isnotImage =  downloader.isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
+    const isnotImage =  isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
     t.assert(!isnotImage, 'Url is not image type');
 
-    const isEmptyString =  downloader.isImageUrl('');
+    const isEmptyString =  isImageUrl('');
     t.assert(!isEmptyString, 'Url is empty string');
 
-    const imageHasNoExtension =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
+    const imageHasNoExtension =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
     t.assert(!imageHasNoExtension, 'Image Url has no extension');
 
-    const extensionIsUndefined =  downloader.isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined');
+    const extensionIsUndefined =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined');
     t.assert(!extensionIsUndefined, 'Image Url extension is undefined');
     // TODO: find a way to get service-runner to stop properly
     // await mcsHandle.stop();
@@ -160,7 +160,7 @@ _test('Downloader class with optimisation', async (t) => {
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
     });
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, optimisationCacheUrl: 'random-string' , s3});
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: 'random-string' , s3});
 
     await s3.initialise();
 
@@ -199,7 +199,7 @@ _test('Downloader class with optimisation', async (t) => {
         t.equal(downloader.removeEtagWeakPrefix(resp.headers.etag), imageContent.Metadata.etag, 'Etag Matched from online Mediawiki and S3');
 
         // Upload Image with wrong Etag
-        await s3.uploadBlob(imagePath, resp.data, 'random-string');
+        await s3.uploadBlob(imagePath, resp.data, 'random-string', '1');
 
         // Download again to check the Etag has been refreshed properly
         const updatedImage = await s3.downloadBlob(imagePath);

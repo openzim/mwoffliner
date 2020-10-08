@@ -122,7 +122,7 @@ test('treatMedias format=""', async (t) => {
 
     const doc = domino.createDocument(html);
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell');
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
 
     const videoEl = ret.doc.querySelector('video');
     const videoPosterUrl = videoEl.getAttribute('poster');
@@ -143,7 +143,7 @@ test('treatMedias format="nopic"', async (t) => {
 
     const doc = domino.createDocument(html);
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell');
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
 
     const videoEl = ret.doc.querySelector('video');
     const imgEl = ret.doc.querySelector('img');
@@ -157,7 +157,7 @@ test('treatMedias format="novid"', async (t) => {
 
     const doc = domino.createDocument(html);
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell');
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
 
     const videoEl = ret.doc.querySelector('video');
     const imgEl = ret.doc.querySelector('img');
@@ -244,7 +244,7 @@ test('treat multiple subtitles in one video', async(t) => {
     const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
 
     const htmlDoc = domino.createDocument(htmlStr.data);
-    const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'));
+    const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'), false);
     testHtmlRewritingE2e(t, wikicode, htmlStr.data, 'Converted wikicode to HTML for multiple subtitle');
     t.deepEqual(
         contentRes.subtitles,
