@@ -25,6 +25,7 @@ import {
   isBitmapImageMimeType,
   isImageUrl,
   isWebpCandidateImageMimeType,
+  shouldConvertImageFilenameToWebp,
 } from './util';
 import S3 from './S3';
 import { Dump } from './Dump';
@@ -657,7 +658,9 @@ class Downloader {
         // 304 status, until modified.
         if (mwResp.status === 304) {
           const headers = (({ Body, ...o }) => o)(s3Resp);
-          if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) &&
+          if (mwResp.headers['content-type'] === undefined ?
+          isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) :
+          shouldConvertImageFilenameToWebp(mwResp.config.url, this.webp) &&
           !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
             headers.path_postfix = '.webp';
             headers['content-type'] = 'image/webp';
