@@ -189,7 +189,7 @@ class Downloader {
                    !this.noLocalParserFallback ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
                    undefined;
 
-    this.baseUrlForMainPage = // TODO: allow this. this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
+    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
                               this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
                               !this.noLocalParserFallback ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
                               undefined;
