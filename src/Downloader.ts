@@ -656,8 +656,14 @@ class Downloader {
         // Most of the images after uploading once will always have
         // 304 status, until modified.
         if (mwResp.status === 304) {
+          const headers = (({ Body, ...o }) => o)(s3Resp);
+          if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) &&
+          !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
+            headers.path_postfix = '.webp';
+            headers['content-type'] = 'image/webp';
+          }
           handler(null, {
-            responseHeaders: (({ Body, ...o }) => o)(s3Resp),
+            responseHeaders: headers,
             content: s3Resp.Body,
           });
           return;
