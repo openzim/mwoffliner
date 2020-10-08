@@ -54,12 +54,12 @@ imageminOptions.get('default').set('image/gif', {
 })
 imageminOptions.get('webp').set('image/png', {
   plugins: [
-    imageminWebp({ quality: 75 })
+    imageminWebp({ quality: 50, method: 6 })
   ],
 })
 imageminOptions.get('webp').set('image/jpeg', {
   plugins: [
-    imageminWebp({ quality: 75 })
+    imageminWebp({ quality: 50, method: 6 })
   ],
 })
 
