@@ -50,6 +50,10 @@ test('Local Parsoid', async (t) => {
         } else {
             console.log(`Zimcheck not installed, skipping test`);
         }
+
+        t.ok(dump.status.files.success >= 45, 'has enough files');
+        t.ok(dump.status.redirects.written >= 0, 'has enough redirects');
+        t.ok(dump.status.articles.success >= 3, 'has enough articles');
     }
 
     t.ok(true, 'Scraped gbf wiki articles');
