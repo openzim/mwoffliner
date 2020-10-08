@@ -244,7 +244,7 @@ test('treat multiple subtitles in one video', async(t) => {
     const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
 
     const htmlDoc = domino.createDocument(htmlStr.data);
-    const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'));
+    const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'), false);
     testHtmlRewritingE2e(t, wikicode, htmlStr.data, 'Converted wikicode to HTML for multiple subtitle');
     t.deepEqual(
         contentRes.subtitles,
