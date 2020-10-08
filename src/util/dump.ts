@@ -143,16 +143,17 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     }
 }
 
+// URLs should be kept the same as Kiwix JS relies on it.
 export async function importPolyfillModules(zimCreator: ZimCreator) {
-    [   // URL should be kept same as KiwixJS relies on it.
-        {path: 'webpHeroPolyfill', url: '/node_modules/webp-hero/dist-cjs/polyfills.js'},
-        {path: 'webpHeroBundle', url: '/node_modules/webp-hero/dist-cjs/webp-hero.bundle.js'}
-    ].forEach( ({path, url}) =>{
+    [
+        { path: 'webpHeroPolyfill', url: '/node_modules/webp-hero/dist-cjs/polyfills.js' },
+        { path: 'webpHeroBundle',   url: '/node_modules/webp-hero/dist-cjs/webp-hero.bundle.js' }
+    ].forEach( ({path, url}) => {
         const article = new ZimArticle({
             url: jsPath(config, path),
             data: fs.readFileSync(process.cwd() + url, 'utf8').toString(),
             ns: '-'
         });
         zimCreator.addArticle(article);
-    })
+    });
 }

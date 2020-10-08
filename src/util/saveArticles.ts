@@ -426,7 +426,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     if (posterUrl) {
         const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
-        // adding webp extension to filename here if needed
+
         if (posterUrl) { videoEl.setAttribute('poster', shouldConvertImageFilenameToWebp(newVideoPosterUrl, webp)
         ? newVideoPosterUrl + '.webp'
         : newVideoPosterUrl); }
@@ -522,7 +522,6 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
         }
 
         /* Change image source attribute to point to the local image */
-        // adding webp extension to filename here if needed
         img.setAttribute('src', shouldConvertImageFilenameToWebp(newSrc, downloader.webp)
          ? newSrc + '.webp'
          : newSrc
@@ -805,7 +804,6 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     };
 
     if (webp) {
-        // URL should be kept same as kiwix js relies on it
         jsDependenciesList.push('webpHeroPolyfill');
         jsDependenciesList.push('webpHeroBundle');
     }
@@ -931,7 +929,6 @@ function isSubpage(id: string, mw: MediaWiki) {
 }
 
 function addWebpScript() {
-    // URL should be kept same as kiwixJS relies on it
     return `<script>var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument();</script>`
 }
 

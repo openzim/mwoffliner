@@ -611,7 +611,7 @@ class Downloader {
   private async getCompressedBody(resp: any): Promise<any> {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
-        !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
+          !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
         resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']));
         resp.headers.path_postfix = '.webp';
         resp.headers['content-type'] = 'image/webp';
@@ -661,9 +661,9 @@ class Downloader {
         if (mwResp.status === 304) {
           const headers = (({ Body, ...o }) => o)(s3Resp);
           if (mwResp.headers['content-type'] ?
-          isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) :
-          shouldConvertImageFilenameToWebp(mwResp.config.url, this.webp) &&
-          !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
+              isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) :
+              shouldConvertImageFilenameToWebp(mwResp.config.url, this.webp) &&
+              !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
             headers.path_postfix = '.webp';
             headers['content-type'] = 'image/webp';
           }
