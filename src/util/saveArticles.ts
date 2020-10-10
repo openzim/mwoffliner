@@ -816,7 +816,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
                     ? `${jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')} \n
-                    ${webp && addWebpScript()}`
+                    ${webp && addWebpScript() || ''}`
                     : '',
             )
             .replace(
