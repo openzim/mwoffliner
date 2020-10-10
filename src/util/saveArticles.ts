@@ -534,6 +534,10 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     } catch (err) {
         DU.deleteNode(img);
     }
+
+    /* Add lazy loading */
+    img.setAttribute('loading', 'lazy');
+
     return { mediaDependencies };
 }
 
