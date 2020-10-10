@@ -146,12 +146,12 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 // URLs should be kept the same as Kiwix JS relies on it.
 export async function importPolyfillModules(zimCreator: ZimCreator) {
     [
-        { path: 'webpHeroPolyfill', url: 'webp-hero/dist-cjs/polyfills.js' },
-        { path: 'webpHeroBundle',   url: 'webp-hero/dist-cjs/webp-hero.bundle.js' }
-    ].forEach( ({path, url}) => {
+        { name: 'webpHeroPolyfill', path: 'webp-hero/dist-cjs/polyfills.js' },
+        { name: 'webpHeroBundle',   path: 'webp-hero/dist-cjs/webp-hero.bundle.js' }
+    ].forEach( ({name, path}) => {
         const article = new ZimArticle({
-            url: jsPath(config, path),
-            data: fs.readFileSync(require.resolve(url), 'utf8').toString(),
+            url: jsPath(config, name),
+            data: fs.readFileSync(require.resolve(path), 'utf8').toString(),
             ns: '-'
         });
         zimCreator.addArticle(article);
