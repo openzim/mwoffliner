@@ -42,7 +42,7 @@ plugin.
 
 To run the automated tests (both unit and e2e):
 ```bash
-npm test
+npm test # or "npm run test"
 ```
 
 To run the unit tests:
@@ -53,6 +53,11 @@ npm run test:unit
 To run end-2-end tests:
 ```bash
 npm run test:e2e
+```
+
+To run a specfic test:
+```bash
+npm run tape -- test/e2e/localParsoid.test.ts
 ```
 
 For S3 tests to pass, create a '.env' file (at the root of your
