@@ -538,6 +538,15 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
     /* Add lazy loading */
     img.setAttribute('loading', 'lazy');
 
+    /* adding white border stroke for transparent png (for dark mode)*/
+    img.setAttribute(
+        'style',
+        (img.getAttribute('style') || ' ') +
+        `-webkit-filter: drop-shadow(1px 1px 0 white)
+        drop-shadow(-1px -1px 0 white);
+        filter: drop-shadow(1px 1px 0 white)
+        drop-shadow(-1px -1px 0 white);`
+    )
     return { mediaDependencies };
 }
 
