@@ -44,6 +44,6 @@ sup,sub{line-height:0.75em}dfn{font-style:normal;font-weight:bold}i > dfn{font-s
 .client-js .toc-mobile{background-color:#f8f9fa;border:solid 1px #eaecf0}.client-js .toc-mobile .toc-button{float:left;display:block;font-size:0.8em}.client-js .toc-mobile .collapsible-heading{visibility:visible;background-position:right center}.client-js .toc-mobile .collapsible-heading .indicator{margin:0.2em 0.4em 0 0;float:right;font-size:0.6em}.client-js .toc-mobile .collapsible-block{border-bottom:0;margin-left:52px;margin-right:24px;font-size:0.7em;width:auto}.client-js .toc-mobile .collapsible-block > ul{padding-bottom:1.3em}.client-js .toc-mobile .collapsible-block ul{list-style:none;margin-bottom:1px}.client-js .toc-mobile .collapsible-block ul li{padding-top:0.8em;line-height:1.2}.client-js .toc-mobile .collapsible-block ul li a{white-space:pre-wrap;word-break:break-word}
 
 img{
-  filter: drop-shadow(1px 1px 0 white)
-    drop-shadow(-1px -1px 0 white);
+  filter: drop-shadow(0.5px 0.5px 0 rgba(255, 255, 255, 1))
+    drop-shadow(-0.5px -0.5px 0 rgba(255, 255, 255, 1)) invert(100%);
 }
