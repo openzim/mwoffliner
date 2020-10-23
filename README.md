@@ -3,7 +3,7 @@
 MWoffliner is a tool for making a local offline HTML snapshot of any
 online [Mediawiki](https://mediawiki.org) instance. It goes through
 all articles (or a selection if specified) and create the
-corresponding [ZIM](https://openzim.org) file to a local directory. It
+corresponding [ZIM](https://openzim.org) file. It
 has mainly been tested against Wikimedia projects like
 [Wikipedia](https://wikipedia.org),
 [Wiktionary](https://wiktionary.org), ... But it should also work for
@@ -21,6 +21,17 @@ MWoffliner development.
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
 ![License](https://img.shields.io/npm/l/mwoffliner.svg)
 
+## Features
+
+- Scrape with or without image thumbnail
+- Scrape with or without audio/video multimedia content
+- S3 cache (optional)
+- Image size optimiser
+- Scrape all articles in namespaces or title list based
+- Specify additional/non-main namespaces to scrape
+
+Run `mwoffliner --help` to get all the possible options.
+
 ## Prerequisites
 
 - *NIX Operating System (GNU/Linux, macOS, ...)
@@ -28,6 +39,8 @@ MWoffliner development.
 - [Redis](https://redis.io/)
 - [Libzim](https://github.com/openzim/libzim) (On GNU/Linux & macOS we automatically download it)
 - Various build tools that are probably already installed on your machine (libjpeg, gcc)
+
+... and an online Mediawiki with its API available.
 
 See [Environment setup hints](#environment-setup-hints) to
 know more about how to install them.
