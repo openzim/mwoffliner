@@ -819,8 +819,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             .replace(
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
-                    ? `${jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')} \n
-                    ${webp && !dump.nopic && addWebpScript() || ''}`
+                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')
                     : '',
             )
             .replace(
@@ -930,10 +929,6 @@ function isSubpage(id: string, mw: MediaWiki) {
         }
     }
     return false;
-}
-
-function addWebpScript() {
-    return '<script>var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument();</script>'
 }
 
 export function isMirrored(id: string) {

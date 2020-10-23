@@ -447,7 +447,7 @@ async function execute(argv: any) {
     ];
 
     if (downloader.webp) {
-      logger.log('Downloading polyfill module');
+      logger.log('Importing polyfill module');
       importPolyfillModules(zimCreator);
     }
 
