@@ -5,9 +5,9 @@ import Redis from './Redis';
 import urlParser from 'url';
 import logger from './Logger';
 import { config } from './config';
-import fs, { readFileSync } from 'fs';
+import fs from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail, ensureTrailingChar } from './util';
+import { isValidEmail, getCustomFlavorPath } from './util';
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
@@ -23,6 +23,14 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing speed
   sanitize_speed(_speed);
+
+  // sanitizing custom flavour
+  if (argv.customFlavour) {
+    argv.customFlavour = getCustomFlavorPath(argv.customFlavour);
+    if (!argv.customFlavour) {
+      throw new Error('Custom Flavour not found');
+    }
+  }
 
   // sanitizing s3
   try {

@@ -48,7 +48,6 @@ import {
   saveStaticFiles,
   writeFilePromise,
   importPolyfillModules,
-  getCustomFlavorPath,
 } from './util';
 import S3 from './S3';
 import Redis from './Redis';
@@ -113,7 +112,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     noLocalParserFallback,
     forceLocalParser,
-    customFlavour,
+    customFlavour: customFlavourPath,
     zstd,
   } = argv;
 
@@ -143,15 +142,9 @@ async function execute(argv: any) {
   }
 
   let customProcessor = null;
-  if (customFlavour) {
-    const customFlavorPath = getCustomFlavorPath(customFlavour);
-    if(!customFlavorPath) {
-      throw new Error('Custom Flavour not found');
-    }
-    logger.info(`Using custom Flavour from - ${customFlavorPath}`);
-    const CustomProcessor = require(
-      path.join(process.cwd(), customFlavorPath),
-    );
+  if (customFlavourPath) {
+    logger.info(`Using custom Flavour from - ${customFlavourPath}`);
+    const CustomProcessor = require(customFlavourPath);
     customProcessor = new CustomProcessor();
   }
 
