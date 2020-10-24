@@ -17,7 +17,7 @@ import logger from '../Logger';
 export function getCustomFlavorPath(customFlavour: string): string {
     customFlavour += customFlavour.substr(customFlavour.length - 3) !== '.js' ? '.js' : '';
     const possiblePaths = [
-        pathParser.resolve(process.cwd(), customFlavour),
+        pathParser.resolve(customFlavour),
         pathParser.resolve(__dirname, `../../extensions/${customFlavour}`),
         customFlavour,
     ];

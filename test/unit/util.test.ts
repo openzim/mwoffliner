@@ -1,7 +1,9 @@
 import './bootstrap.test';
 import test from 'blue-tape';
 import { URL } from 'url';
-import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
+import fs from 'fs';
+import pathParser from 'path';
+import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl, getCustomFlavorPath } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
 
 test('util -> interpolateTranslationString', async (t) => {
@@ -64,4 +66,46 @@ test('Get full URL', async(t) => {
     t.equal(getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/'),
             'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1',
             'Full Url when base and url both strtas with http/s');
+})
+
+test('Custom flavour path', async(t) => {
+
+    // checks in current working directory.
+    let createStream = fs.createWriteStream(pathParser.resolve(process.cwd(), 'testCustomFlavour.js'));
+
+    t.equal(getCustomFlavorPath('testCustomFlavour.js'), pathParser.resolve(process.cwd(), 'testCustomFlavour.js'),
+        'Custom flavour in working directory.');
+
+    // checks when current and working directory have file with same name(preference to working directory).
+    createStream = fs.createWriteStream(pathParser.resolve(process.cwd(), 'extensions/testCustomFlavour.js'));
+
+    t.equal(getCustomFlavorPath('testCustomFlavour'), pathParser.resolve(process.cwd(), 'testCustomFlavour.js'),
+        'When file with same name exist in extensions directory.');
+
+    createStream.end();
+    fs.unlinkSync(pathParser.resolve(process.cwd(), 'testCustomFlavour.js'));
+    fs.unlinkSync(pathParser.resolve(process.cwd(), 'extensions/testCustomFlavour.js'));
+
+    // checks in extension directory.
+    t.equal(getCustomFlavorPath('wiktionary_fr.js'), pathParser.resolve(process.cwd(), 'extensions/wiktionary_fr.js'),
+        'Custom flavour in extensions directory.');
+
+    t.equal(getCustomFlavorPath('wiktionary_fr'), pathParser.resolve(process.cwd(), 'extensions/wiktionary_fr.js'),
+        'Custom flavour in extension directory without js extension.');
+
+    // checks in absolute path.
+    createStream = fs.createWriteStream(pathParser.resolve(process.cwd(), 'extensions/testCustomFlavour.js'));
+
+    t.equal(getCustomFlavorPath(pathParser.resolve(process.cwd(), 'extensions/testCustomFlavour.js')),
+        pathParser.resolve(process.cwd(), 'extensions/testCustomFlavour.js'),
+        'Positive check with absolute path.');
+
+    t.equal(getCustomFlavorPath(pathParser.resolve(process.cwd(), 'extensions/negativeTest.js')),
+        null, 'Negative test for absolute path.');
+
+    createStream.end();
+    fs.unlinkSync(pathParser.resolve(process.cwd(), 'extensions/testCustomFlavour.js'));
+
+    // negative scenario
+    t.equal(getCustomFlavorPath('wrongCustomFlavour.js'), null, 'Returning null when file doesnt exist.')
 })
