@@ -10,6 +10,7 @@ import * as QueryStringParser from 'querystring';
 import { isValidEmail, getCustomFlavorPath } from './util';
 
 export async function sanitize_all(argv: any) {
+
   // extracting all arguments
   const {
     speed: _speed,
@@ -32,7 +33,7 @@ export async function sanitize_all(argv: any) {
     }
   }
 
-  // sanitizing s3
+  // sanitizing S3
   try {
     if (optimisationCacheUrl) {
       // Decompose the url with path and other S3 creds
@@ -56,7 +57,7 @@ export async function sanitize_all(argv: any) {
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail);
 
-  // redis client sanitization
+  // Redis client sanitization
   // created a redis client and then closed it.
   sanitize_redis(argv);
 
@@ -68,6 +69,7 @@ export async function sanitize_all(argv: any) {
     });
   }
 }
+
 export function sanitize_speed(_speed:any)
 {
   if (_speed && isNaN(_speed)) {
