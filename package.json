@@ -120,6 +120,7 @@
     "@types/redis": "^2.8.28",
     "@types/redis-mock": "^0.17.0",
     "@types/tape-promise": "^4.0.1",
+    "@types/tmp": "^0.2.0",
     "blue-tape": "^1.0.0",
     "dotenv": "^8.2.0",
     "eslint": "^7.11.0",
@@ -130,6 +131,7 @@
     "replace": "^1.2.0",
     "tap-spec": "^5.0.0",
     "tape-promise": "^4.0.0",
+    "tmp": "^0.2.1",
     "ts-jest": "^26.4.1",
     "ts-node": "^9.0.0",
     "tsconfig-paths": "^3.9.0"

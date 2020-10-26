@@ -3,13 +3,15 @@ import S3 from './S3';
 import axios from 'axios';
 import Redis from './Redis';
 import urlParser from 'url';
+import pathParser from 'path';
 import logger from './Logger';
 import { config } from './config';
-import fs, { readFileSync } from 'fs';
+import fs from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail, ensureTrailingChar } from './util';
+import { isValidEmail } from './util';
 
 export async function sanitize_all(argv: any) {
+
   // extracting all arguments
   const {
     speed: _speed,
@@ -24,7 +26,15 @@ export async function sanitize_all(argv: any) {
   // sanitizing speed
   sanitize_speed(_speed);
 
-  // sanitizing s3
+  // sanitizing custom flavour
+  if (argv.customFlavour) {
+    argv.customFlavour = sanitize_customFlavour(argv.customFlavour);
+    if (!argv.customFlavour) {
+      throw new Error('Custom Flavour not found');
+    }
+  }
+
+  // sanitizing S3
   try {
     if (optimisationCacheUrl) {
       // Decompose the url with path and other S3 creds
@@ -48,7 +58,7 @@ export async function sanitize_all(argv: any) {
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail);
 
-  // redis client sanitization
+  // Redis client sanitization
   // created a redis client and then closed it.
   sanitize_redis(argv);
 
@@ -60,6 +70,7 @@ export async function sanitize_all(argv: any) {
     });
   }
 }
+
 export function sanitize_speed(_speed:any)
 {
   if (_speed && isNaN(_speed)) {
@@ -115,4 +126,27 @@ export async function sanitize_customZimFavicon(customZimFavicon:any)
         throw err;
       }
     }
+}
+
+/**
+ * Search for the customFlavour in the following order
+ *
+ * 1. Current directory in which command has been run
+ * 2. mwoffliner's extensions directory
+ * 3. absolute path(for root folder)
+ *
+ * Note: CustomFlavour doesn't necessarily need be given with extension(.js)
+ * like --customFlavour=wiktionary_fr. Hence, .js is explicitly added for
+ * path resolution.
+ */
+
+export function sanitize_customFlavour(customFlavour: string): string {
+  customFlavour += pathParser.extname(customFlavour) !== '.js' ? '.js' : '';
+  return [
+      pathParser.resolve(customFlavour),
+      pathParser.resolve(__dirname, `../extensions/${customFlavour}`),
+      customFlavour,
+  ].find(function(possiblePath) {
+    return fs.existsSync(possiblePath)
+  }) || null;
 }

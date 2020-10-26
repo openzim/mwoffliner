@@ -1,8 +1,13 @@
 import './bootstrap.test';
 import test from 'blue-tape';
 import { URL } from 'url';
+import tmp from 'tmp';
+import pathParser from 'path';
+import { sanitize_customFlavour } from 'src/sanitize-argument';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
+import logger from '../../src/Logger';
+import { waitForDebugger } from 'inspector';
 
 test('util -> interpolateTranslationString', async (t) => {
     t.equals(interpolateTranslationString('Hello world', {}), 'Hello world');
@@ -64,4 +69,32 @@ test('Get full URL', async(t) => {
     t.equal(getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/'),
             'https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1',
             'Full Url when base and url both strtas with http/s');
+})
+
+test('Custom flavour path', async(t) => {
+
+    // checks in current working directory.
+    const tmpObj = tmp.fileSync({ postfix: '.js' });
+    process.chdir(pathParser.resolve(tmpObj.name,'../'));
+
+    t.equal(sanitize_customFlavour(tmpObj.name), pathParser.resolve(process.cwd(), tmpObj.name),
+        'Custom flavour in working directory.');
+
+    // checks in extension directory.
+    t.equal(sanitize_customFlavour('wiktionary_fr.js'), pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js'),
+        'Custom flavour in extensions directory.');
+
+    t.equal(sanitize_customFlavour('wiktionary_fr'), pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js'),
+        'Custom flavour in extension directory without js extension.');
+
+    // checks in absolute path.
+    t.equal(sanitize_customFlavour(pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js')),
+        pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js'),
+        'Positive check with absolute path.');
+
+    t.equal(sanitize_customFlavour(pathParser.resolve(__dirname, '../../extensions/negativeTest.js')),
+        null, 'Negative test for absolute path.');
+
+    // negative scenario
+    t.equal(sanitize_customFlavour('wrongCustomFlavour.js'), null, 'Returning null when file doesnt exist.')
 })

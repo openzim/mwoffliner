@@ -112,7 +112,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     noLocalParserFallback,
     forceLocalParser,
-    customFlavour: customProcessorPath,
+    customFlavour,
     zstd,
   } = argv;
 
@@ -141,13 +141,10 @@ async function execute(argv: any) {
     logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
   }
 
-  let customProcessor = null;
-  if (customProcessorPath) {
-    const CustomProcessor = require(
-      path.join(process.cwd(), customProcessorPath),
-    );
-    customProcessor = new CustomProcessor();
-  }
+  /* Instanciate custom flavour module */
+  logger.info(`Using custom flavour: ${customFlavour || 'no'}`);
+  const customProcessor = customFlavour ?
+    new(require(customFlavour)) : null;
 
   // Check for S3 creds
   if (optimisationCacheUrl) {
