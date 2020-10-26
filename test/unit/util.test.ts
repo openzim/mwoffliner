@@ -2,10 +2,13 @@ import './bootstrap.test';
 import test from 'blue-tape';
 import { URL } from 'url';
 import fs from 'fs';
+import tmp from 'tmp';
 import pathParser from 'path';
 import { sanitize_customFlavour } from 'src/sanitize-argument';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
+import logger from '../../src/Logger';
+import { waitForDebugger } from 'inspector';
 
 test('util -> interpolateTranslationString', async (t) => {
     t.equals(interpolateTranslationString('Hello world', {}), 'Hello world');
@@ -72,19 +75,11 @@ test('Get full URL', async(t) => {
 test('Custom flavour path', async(t) => {
 
     // checks in current working directory.
-    let createStream = fs.createWriteStream(pathParser.resolve(process.cwd(), 'testCustomFlavour.js'));
+    const tmpObj = tmp.fileSync({ postfix: '.js' });
+    process.chdir('/tmp');
 
-    t.equal(sanitize_customFlavour('testCustomFlavour.js'), pathParser.resolve(process.cwd(), 'testCustomFlavour.js'),
+    t.equal(sanitize_customFlavour(tmpObj.name), pathParser.resolve(process.cwd(), tmpObj.name),
         'Custom flavour in working directory.');
-
-    // checks when current and working directory have file with same name(preference to working directory).
-    createStream = fs.createWriteStream(pathParser.resolve(__dirname, '../../extensions/testCustomFlavour.js'));
-
-    t.equal(sanitize_customFlavour('testCustomFlavour'), pathParser.resolve(process.cwd(), 'testCustomFlavour.js'),
-        'When file with same name exist in extensions directory.');
-
-    createStream.end();
-    fs.unlinkSync(pathParser.resolve(process.cwd(), 'testCustomFlavour.js'));
 
     // checks in extension directory.
     t.equal(sanitize_customFlavour('wiktionary_fr.js'), pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js'),
@@ -95,15 +90,12 @@ test('Custom flavour path', async(t) => {
 
     // checks in absolute path.
 
-    t.equal(sanitize_customFlavour(pathParser.resolve(__dirname, '../../extensions/testCustomFlavour.js')),
-        pathParser.resolve(__dirname, '../../extensions/testCustomFlavour.js'),
+    t.equal(sanitize_customFlavour(pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js')),
+        pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js'),
         'Positive check with absolute path.');
 
     t.equal(sanitize_customFlavour(pathParser.resolve(__dirname, '../../extensions/negativeTest.js')),
         null, 'Negative test for absolute path.');
-
-    createStream.end();
-    fs.unlinkSync(pathParser.resolve(__dirname, '../../extensions/testCustomFlavour.js'));
 
     // negative scenario
     t.equal(sanitize_customFlavour('wrongCustomFlavour.js'), null, 'Returning null when file doesnt exist.')
