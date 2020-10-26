@@ -1,7 +1,6 @@
 import './bootstrap.test';
 import test from 'blue-tape';
 import { URL } from 'url';
-import fs from 'fs';
 import tmp from 'tmp';
 import pathParser from 'path';
 import { sanitize_customFlavour } from 'src/sanitize-argument';
@@ -76,7 +75,7 @@ test('Custom flavour path', async(t) => {
 
     // checks in current working directory.
     const tmpObj = tmp.fileSync({ postfix: '.js' });
-    process.chdir('/tmp');
+    process.chdir(pathParser.resolve(tmpObj.name,'../'));
 
     t.equal(sanitize_customFlavour(tmpObj.name), pathParser.resolve(process.cwd(), tmpObj.name),
         'Custom flavour in working directory.');
@@ -89,7 +88,6 @@ test('Custom flavour path', async(t) => {
         'Custom flavour in extension directory without js extension.');
 
     // checks in absolute path.
-
     t.equal(sanitize_customFlavour(pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js')),
         pathParser.resolve(__dirname, '../../extensions/wiktionary_fr.js'),
         'Positive check with absolute path.');

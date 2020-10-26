@@ -141,16 +141,12 @@ export async function sanitize_customZimFavicon(customZimFavicon:any)
  */
 
 export function sanitize_customFlavour(customFlavour: string): string {
-  customFlavour += customFlavour.substr(customFlavour.length - 3) !== '.js' ? '.js' : '';
-  const possiblePaths = [
+  customFlavour += pathParser.extname(customFlavour) !== '.js' ? '.js' : '';
+  return [
       pathParser.resolve(customFlavour),
       pathParser.resolve(__dirname, `../extensions/${customFlavour}`),
       customFlavour,
-  ];
-  for (const possiblePath of possiblePaths) {
-      if (fs.existsSync(possiblePath)) {
-          return possiblePath;
-      }
-  }
-  return null;
+  ].find(function(possiblePath) {
+    return fs.existsSync(possiblePath)
+  }) || null;
 }
