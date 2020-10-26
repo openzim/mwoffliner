@@ -3,11 +3,12 @@ import S3 from './S3';
 import axios from 'axios';
 import Redis from './Redis';
 import urlParser from 'url';
+import pathParser from 'path';
 import logger from './Logger';
 import { config } from './config';
 import fs from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail, getCustomFlavorPath } from './util';
+import { isValidEmail } from './util';
 
 export async function sanitize_all(argv: any) {
 
@@ -27,7 +28,7 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing custom flavour
   if (argv.customFlavour) {
-    argv.customFlavour = getCustomFlavorPath(argv.customFlavour);
+    argv.customFlavour = sanitize_customFlavour(argv.customFlavour);
     if (!argv.customFlavour) {
       throw new Error('Custom Flavour not found');
     }
@@ -125,4 +126,31 @@ export async function sanitize_customZimFavicon(customZimFavicon:any)
         throw err;
       }
     }
+}
+
+/**
+ * Search for the customFlavour in the following order
+ *
+ * 1. Current directory in which command has been run
+ * 2. mwoffliner's extensions directory
+ * 3. absolute path(for root folder)
+ *
+ * Note: CustomFlavour doesn't necessarily need be given with extension(.js)
+ * like --customFlavour=wiktionary_fr. Hence, .js is explicitly added for
+ * path resolution.
+ */
+
+export function sanitize_customFlavour(customFlavour: string): string {
+  customFlavour += customFlavour.substr(customFlavour.length - 3) !== '.js' ? '.js' : '';
+  const possiblePaths = [
+      pathParser.resolve(customFlavour),
+      pathParser.resolve(__dirname, `../extensions/${customFlavour}`),
+      customFlavour,
+  ];
+  for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+          return possiblePath;
+      }
+  }
+  return null;
 }
