@@ -7,7 +7,7 @@ import * as imagemin from 'imagemin';
 import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
 import type { BackoffStrategy } from 'backoff';
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
@@ -32,6 +32,16 @@ import { Dump } from './Dump';
 import logger from './Logger';
 import MediaWiki from './MediaWiki';
 
+axios.interceptors.request.use((config: AxiosRequestConfig) => {
+  config.headers['started-at'] = new Date().getTime();
+  return config
+});
+
+axios.interceptors.response.use((response: AxiosResponse) => {
+  console.log(`Execution time for: ${response.config.url} - ${new Date().getTime() - response.config.headers['started-at']} ms`)
+//  console.log(response.config.headers['started-at']);
+  return response;
+});
 
 const imageminOptions = new Map();
 imageminOptions.set('default', new Map());
