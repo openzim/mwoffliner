@@ -822,7 +822,8 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
                 styleDependenciesList.length !== 0
                     ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId)).join('\n')
                     : '',
-            ),
+            )
+            .replace('__ARTICLE_ID__', `<script>let articleId = '${articleId}'</script>`),
     );
 
     /* Create final document by merging template and parsoid documents */
