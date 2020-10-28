@@ -807,11 +807,6 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         styleDependenciesList: string[],
     };
 
-    if (webp && !dump.nopic) {
-        jsDependenciesList.push('webpHeroPolyfill');
-        jsDependenciesList.push('webpHeroBundle');
-    }
-
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode(articleId)
             .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
@@ -819,8 +814,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
             .replace(
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
-                    ? `${jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')} \n
-                    ${webp && !dump.nopic && addWebpScript() || ''}`
+                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId)).join('\n')
                     : '',
             )
             .replace(
@@ -828,7 +822,8 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
                 styleDependenciesList.length !== 0
                     ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId)).join('\n')
                     : '',
-            ),
+            )
+            .replace('__ARTICLE_ID__', `<script>let articleId = '${articleId}'</script>`),
     );
 
     /* Create final document by merging template and parsoid documents */
@@ -930,10 +925,6 @@ function isSubpage(id: string, mw: MediaWiki) {
         }
     }
     return false;
-}
-
-function addWebpScript() {
-    return '<script>var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument();</script>'
 }
 
 export function isMirrored(id: string) {
