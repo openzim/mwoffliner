@@ -430,7 +430,7 @@ async function execute(argv: any) {
     await getThumbnailsData();
 
     logger.log(`Getting Main Page`);
-    await getMainPage(dump, zimCreator);
+    await getMainPage(dump, zimCreator, downloader);
 
     logger.log(`Getting articles`);
     const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, mw, dump);
@@ -530,7 +530,7 @@ async function execute(argv: any) {
     return await saveFavicon(zimCreator, faviconPath);
   }
 
-  function getMainPage(dump: Dump, zimCreator: ZimCreator) {
+  function getMainPage(dump: Dump, zimCreator: ZimCreator, downloader: Downloader) {
     async function createMainPage() {
       logger.log('Creating main page...');
       const doc = domino.createDocument(
@@ -561,7 +561,7 @@ async function execute(argv: any) {
       }
 
       if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n');
+        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article, downloader.webp)).join('\n');
         doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`;
       } else {
         const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n');
