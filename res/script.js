@@ -42,7 +42,7 @@ testWebP(function(support) {
         webHeroScripts.forEach(function(scriptUrl) {
             var script = document.createElement('script');
             script.type = 'text/javascript';
-            script.src = articleId ? '../'.repeat(articleId.split('/').length - 1) + scriptUrl : scriptUrl;
+            script.src = typeof(articleId) ? '../'.repeat(articleId.split('/').length - 1) + scriptUrl : scriptUrl;
             if (webHeroScripts[webHeroScripts.length-1] === scriptUrl) {
                 // Start webpMachine if we have loaded the last script
                 script.onload = startWebpMachine;
