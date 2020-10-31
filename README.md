@@ -115,9 +115,6 @@ Install Redis:
 brew install redis
 ```
 
-Install libzim:
-Read [these instructions](https://github.com/openzim/libzim)
-
 ### GNU/Linux - Debian based distributions
 
 Install NodeJS:
