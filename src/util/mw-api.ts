@@ -121,6 +121,12 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
                 logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`);
             }
             const articleId = String(id).replace(/ /g, '_');
+            if (page.redirects) {
+                page.redirects = page.redirects.map((redirect) => {
+                    redirect.title = String(redirect.title).replace(/ /g, '_');
+                    return redirect;
+                })
+            }
             if (articleId) {
                 return {
                     ...acc,
