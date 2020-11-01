@@ -53,7 +53,9 @@ export const renderArticle = async (json: any, articleId: string, dump: Dump, ca
             await articleDetailXId.set(_articleId, _articleDetail);
         }
 
-        if (capabilities.mobileRestApiAvailable) {
+        // We don't really know the nature of 'json' variable because
+        // of weak software architecture. Got there is correct json.
+        if (json.lead) {
             html = renderMCSArticle(json, dump, _articleId, _articleDetail);
         }
 

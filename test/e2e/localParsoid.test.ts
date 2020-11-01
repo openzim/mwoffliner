@@ -6,7 +6,7 @@ import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { join } from 'path';
 import execa = require('execa');
 import 'dotenv/config';
-// import { ZimReader } from '@openzim/libzim';
+import fs from 'fs';
 
 const now = new Date();
 const testId = join(process.cwd(), `mwo-test-${+now}`);
@@ -55,6 +55,9 @@ test('Local Parsoid', async (t) => {
         t.ok(dump.status.redirects.written >= 0, 'has enough redirects');
         t.ok(dump.status.articles.success >= 3, 'has enough articles');
     }
+
+    // Check ZIM file size
+    t.ok(fs.statSync(outFiles[0].outFile).size > 2125000, 'ZIM file size');
 
     t.ok(true, 'Scraped gbf wiki articles');
     // TODO: clear test dir

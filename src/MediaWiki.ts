@@ -122,13 +122,25 @@ class MediaWiki {
 
   public extractPageTitleFromHref(href: any) {
     try {
-      const pathname = urlParser.parse(href, false, true).pathname || '';
-      if (pathname.indexOf('./') === 0) {
-        return util.decodeURIComponent(pathname.substr(2));
+      const pathname = new URL(href, this.baseUrl).pathname;
+
+      // Local relative URL
+      if (href.indexOf('./') === 0) {
+        return util.decodeURIComponent(pathname.substr(1));
       }
+
+      // Absolute path
       if (pathname.indexOf(this.webUrl.pathname) === 0) {
         return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length));
       }
+
+      // If local Parsoid, links start with './wiki/' (and no easy way
+      // to identify we are using a local parsoid so far because of bad
+      // architecture).
+      if (pathname.indexOf('/wiki/') === 0) {
+        return util.decodeURIComponent(pathname.substr(6));
+      }
+
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
       if (isPaginated) {
