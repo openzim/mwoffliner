@@ -1,3 +1,9 @@
+1.11
+* FIX: multiple bugs around redirects
+* FIX: multiple regression if local Parsoid is used
+* NEW: image lazy loading
+* NEW: option to convert png/jpg images to WebP
+
 1.10.12:
 * NEW: Add ability to make ZIM files using Zstandard compression
 
