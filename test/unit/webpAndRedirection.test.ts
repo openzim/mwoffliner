@@ -44,7 +44,7 @@ Real-time computer graphics`;
 
     t.assert(await isWebpPresent('I/m/Animexample3edit.png.webp', zimFile), 'passed test for png')
     t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')
-    t.assert(await isRedirectionPresent(`<a href="Real-time_rendering" title="Real-time rendering" class="mw-redirect">real-time renderings</a>`,
+    t.assert(await isRedirectionPresent(`href="Real-time_rendering"`,
         zimFile), 'redirection check successful')
     fs.rmdirSync(testId, {recursive: true});
 })
