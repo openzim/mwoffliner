@@ -8,6 +8,7 @@ import fs from 'fs';
 import Downloader from '../../src/Downloader';
 import MediaWiki from '../../src/MediaWiki';
 import FileType from 'file-type'
+import logger from '../../src/Logger';
 
 const now = new Date();
 const testId = join(process.cwd(), `mwo-test-${+now}`);
@@ -19,7 +20,8 @@ test('Webp Option check', async (t) => {
     await mkdirPromise(testId);
 
     const articleList = `
-Animation`;
+Animation
+Real-time computer graphics`;
 
     await writeFilePromise(articleListUrl, articleList, 'utf8');
 
@@ -42,7 +44,8 @@ Animation`;
 
     t.assert(await isWebpPresent('I/m/Animexample3edit.png.webp', zimFile), 'passed test for png')
     t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')
-
+    t.assert(await isRedirectionPresent(`<a href="Real-time_rendering" title="Real-time rendering" class="mw-redirect">real-time renderings</a>`,
+        zimFile), 'redirection check successful')
     fs.rmdirSync(testId, {recursive: true});
 })
 
@@ -53,5 +56,12 @@ async function isWebpPresent(path: string, zimFile: ZimReader) {
     })
     .catch(err => {
         return false;
+    })
+}
+
+async function isRedirectionPresent(path: string, zimFile: ZimReader) {
+    return await zimFile.getArticleByUrl('A/Animation')
+    .then((result) => {
+        return result.data.toString().includes(path);
     })
 }
