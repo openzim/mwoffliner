@@ -486,7 +486,7 @@ async function execute(argv: any) {
               data: '',
               ns: 'A',
               mimeType: 'text/html',
-              title,
+              title: String(redirectId).replace(/_/g, ' '),
               redirectUrl: targetId,
             });
             zimCreator.addArticle(redirectArticle);
