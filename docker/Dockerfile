@@ -3,7 +3,7 @@ FROM openzim/node-redis:12-6
 # Install dependences
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    make g++ curl git imagemagick && \
+    make g++ curl git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
