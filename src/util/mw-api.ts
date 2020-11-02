@@ -123,7 +123,12 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
             const articleId = String(id).replace(/ /g, '_');
             if (page.redirects) {
                 page.redirects = page.redirects.map((redirect) => {
+
+                    // The API returns the redirect title (!?), we fake the
+                    // redirectId by putting the underscore. That way we
+                    // secure the URL rewritting works fine.
                     redirect.title = String(redirect.title).replace(/ /g, '_');
+
                     return redirect;
                 })
             }
