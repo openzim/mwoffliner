@@ -50,7 +50,12 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
             let isFailed = false;
             try {
                 if (resp.result && resp.result.content) {
-                    const article = new ZimArticle({ url: resp.path, data: resp.result.content, ns: resp.namespace || 'I' });
+                    const article = new ZimArticle({
+                        url: resp.path,
+                        data: resp.result.content,
+                        ns: resp.namespace || 'I',
+                        mimeType: resp.result.responseHeaders['content-type'],
+                    });
                     zimCreator.addArticle(article);
                     dump.status.files.success += 1;
                 } else {
