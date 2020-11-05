@@ -43,6 +43,18 @@ Real-time computer graphics`;
 
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
+    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png%3Flang.svg', true),
+        'adding webp to fileName having png before arguments');
+    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg%3Flang.svg', true),
+        'adding webp to fileName having jpg before arguments');
+    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg', true),
+        'adding webp to fileName having jpeg before arguments');
+    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png', true),
+        'adding webp to fileName having png at last');
+    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg', true),
+        'adding webp to fileName having jpg at last');
+    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg', true),
+        'adding webp to fileName having jpeg at last');
     t.assert(await isWebpPresent('I/m/Animexample3edit.png.webp', zimFile), 'passed test for png')
     t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')
     t.assert(await isRedirectionPresent(`href="Real-time_rendering"`,
