@@ -8,6 +8,7 @@ import fs from 'fs';
 import Downloader from '../../src/Downloader';
 import MediaWiki from '../../src/MediaWiki';
 import FileType from 'file-type'
+import { shouldConvertImageFilenameToWebp } from '../../src/util/misc';
 import logger from '../../src/Logger';
 
 const now = new Date();
