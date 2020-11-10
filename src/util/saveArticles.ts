@@ -867,48 +867,45 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
 
     /* Set footer */
     const div = htmlTemplateDoc.createElement('div');
-    try {
-        if (articleDetail.revisionId) {
-            /* Revision date */
-            const date = new Date(articleDetail.timestamp);
-            const lastEditedOnString = date ?
-                interpolateTranslationString(dump.strings.LAST_EDITED_ON, {
-                    date: date.toISOString().substring(0, 10),
-                }) : null;
 
-            const creatorLink =
-                `<a class="external text" ` +
-                `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-                `href="${mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
-                `${dump.mwMetaData.creator}</a>`;
+    if (articleDetail.revisionId) {
+        /* Revision date */
+        const date = new Date(articleDetail.timestamp);
+        const lastEditedOnString = date ?
+            interpolateTranslationString(dump.strings.LAST_EDITED_ON, {
+                date: date.toISOString().substring(0, 10),
+            }) : null;
 
-            const licenseLink =
-                `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`;
+        const creatorLink =
+            `<a class="external text" ` +
+            `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
+            `href="${mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+            `${dump.mwMetaData.creator}</a>`;
 
-            div.innerHTML = footerTemplate({
-                disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {
-                    creator: creatorLink,
-                    license: licenseLink,
-                }),
-                strings: dump.strings,
-            });
-            htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
-            addNoIndexCommentToElement(div);
-        }
+        const licenseLink =
+            `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`;
 
-        /* Geo-coordinates */
-        if (articleDetail.coordinates) {
-            const geoCoordinates = articleDetail.coordinates;
-            const metaNode = htmlTemplateDoc.createElement('meta');
-            metaNode.name = 'geo.position';
-            metaNode.content = geoCoordinates;
-            htmlTemplateDoc.getElementsByTagName('head')[0].appendChild(metaNode);
-        }
-
-        return htmlTemplateDoc;
-    } catch (err) {
-        throw new Error(`Unable to get the details from Redis for article ${articleId}: \n${err}`);
+        div.innerHTML = footerTemplate({
+            disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {
+                creator: creatorLink,
+                license: licenseLink,
+            }),
+            strings: dump.strings,
+        });
+        htmlTemplateDoc.getElementById('mw-content-text').appendChild(div);
+        addNoIndexCommentToElement(div);
     }
+
+    /* Geo-coordinates */
+    if (articleDetail.coordinates) {
+        const geoCoordinates = articleDetail.coordinates;
+        const metaNode = htmlTemplateDoc.createElement('meta');
+        metaNode.name = 'geo.position';
+        metaNode.content = geoCoordinates;
+        htmlTemplateDoc.getElementsByTagName('head')[0].appendChild(metaNode);
+    }
+
+    return htmlTemplateDoc;
 }
 
 function addNoIndexCommentToElement(element: DominoElement) {
