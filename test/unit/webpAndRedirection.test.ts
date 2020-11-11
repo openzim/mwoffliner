@@ -44,17 +44,19 @@ Real-time computer graphics`;
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png?lang.svg'),
-        'adding webp to fileName having png before arguments');
+        'detecting webp URL having png before arguments');
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg?lang.svg'),
-        'adding webp to fileName having jpg before arguments');
+        'detecting webp URL having jpg before arguments');
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg?lang.svg'),
-        'adding webp to fileName having jpeg before arguments');
+        'detecting webp URL having jpeg before arguments');
+    t.assert(!isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg'),
+        'avoiding detecting webp URL having an escaped question marked');
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png'),
-        'adding webp to fileName having png at last');
+        'detecting webp URL having png at last');
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg'),
-        'adding webp to fileName having jpg at last');
+        'detecting webp URL having jpg at last');
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg'),
-        'adding webp to fileName having jpeg at last');
+        'detecting webp URL having jpeg at last');
     t.assert(await isWebpPresent('I/m/Animexample3edit.png.webp', zimFile), 'passed test for png')
     t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')
     t.assert(await isRedirectionPresent(`href="Real-time_rendering"`,
