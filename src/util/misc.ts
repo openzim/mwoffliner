@@ -252,13 +252,6 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
   let filename = decodeURIComponent(
     filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant,
   );
-  /* Need to shorten the file due to filesystem limitations */
-  if (unicodeCutter.getBinarySize(filename) > 249) {
-    const ext = pathParser.extname(filename).split('.')[1] || '';
-    const basename = filename.substring(0, filename.length - ext.length - 1) || '';
-    filename = `${unicodeCutter.truncateToBinarySize(basename, 239 - ext.length)
-      + crypto.createHash('md5').update(basename).digest('hex').substring(0, 2)}.${ext}`;
-  }
 
   return `${dir}/${e(filename)}`;
 }
