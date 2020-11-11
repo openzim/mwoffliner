@@ -8,7 +8,7 @@ import fs from 'fs';
 import Downloader from '../../src/Downloader';
 import MediaWiki from '../../src/MediaWiki';
 import FileType from 'file-type'
-import { shouldConvertImageFilenameToWebp } from '../../src/util/misc';
+import { isWebpCandidateImageUrl } from '../../src/util/misc';
 import logger from '../../src/Logger';
 
 const now = new Date();
@@ -43,17 +43,17 @@ Real-time computer graphics`;
 
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
-    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png%3Flang.svg', true),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png%3Flang.svg'),
         'adding webp to fileName having png before arguments');
-    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg%3Flang.svg', true),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg%3Flang.svg'),
         'adding webp to fileName having jpg before arguments');
-    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg', true),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg'),
         'adding webp to fileName having jpeg before arguments');
-    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png', true),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png'),
         'adding webp to fileName having png at last');
-    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg', true),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg'),
         'adding webp to fileName having jpg at last');
-    t.assert(shouldConvertImageFilenameToWebp('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg', true),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg'),
         'adding webp to fileName having jpeg at last');
     t.assert(await isWebpPresent('I/m/Animexample3edit.png.webp', zimFile), 'passed test for png')
     t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')

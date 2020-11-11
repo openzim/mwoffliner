@@ -353,10 +353,6 @@ export function isBitmapImageMimeType(mimeType: string): boolean {
   return BITMAP_IMAGE_MIME_REGEX.test(mimeType);
 }
 
-export function shouldConvertImageFilenameToWebp(url: string, webp: boolean) {
-  return webp && WEBP_CANDIDATE_IMAGE_URL_REGEX.test(url);
-}
-
 export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
   return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type);
 }

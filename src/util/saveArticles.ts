@@ -13,7 +13,8 @@ import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullU
 import { config } from '../config';
 import { footerTemplate, htmlTemplateCode } from '../Templates';
 import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores';
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, shouldConvertImageFilenameToWebp } from './misc';
+import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl,
+         interpolateTranslationString, isWebpCandidateImageUrl } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT } from './const';
@@ -432,9 +433,12 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
         const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
 
-        if (posterUrl) { videoEl.setAttribute('poster', shouldConvertImageFilenameToWebp(newVideoPosterUrl, webp)
-        ? newVideoPosterUrl + '.webp'
-        : newVideoPosterUrl); }
+        if (posterUrl) {
+           videoEl.setAttribute('poster',
+               webp && isWebpCandidateImageUrl(newVideoPosterUrl) ?
+                   newVideoPosterUrl + '.webp' : newVideoPosterUrl
+           );
+        }
         videoEl.removeAttribute('resource');
 
         if (!srcCache.hasOwnProperty(videoPosterUrl)) {
@@ -527,10 +531,11 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
         }
 
         /* Change image source attribute to point to the local image */
-        img.setAttribute('src', shouldConvertImageFilenameToWebp(newSrc, downloader.webp)
-         ? newSrc + '.webp'
-         : newSrc
-        )
+        img.setAttribute('src',
+            downloader.webp && isWebpCandidateImageUrl(newSrc) ?
+                newSrc + '.webp': newSrc
+        );
+
         /* Remove useless 'resource' attribute */
         img.removeAttribute('resource');
 
