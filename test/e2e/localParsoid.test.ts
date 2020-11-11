@@ -57,7 +57,7 @@ test('Local Parsoid', async (t) => {
     }
 
     // Check ZIM file size
-    t.ok(fs.statSync(outFiles[0].outFile).size > 2125000, 'ZIM file size');
+    t.ok(fs.statSync(outFiles[0].outFile).size > 2120000, 'ZIM file size');
 
     t.ok(true, 'Scraped gbf wiki articles');
     // TODO: clear test dir
