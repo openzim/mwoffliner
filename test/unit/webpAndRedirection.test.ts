@@ -43,11 +43,11 @@ Real-time computer graphics`;
 
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png%3Flang.svg'),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png?lang.svg'),
         'adding webp to fileName having png before arguments');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg%3Flang.svg'),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg?lang.svg'),
         'adding webp to fileName having jpg before arguments');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg'),
+    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg?lang.svg'),
         'adding webp to fileName having jpeg before arguments');
     t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png'),
         'adding webp to fileName having png at last');
