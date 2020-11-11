@@ -511,7 +511,7 @@ class Downloader {
       coordinates: ['coordinates'],
       categories: ['categories'],
     };
-    const keysToKeep: string[] = ['subCategories']
+    const keysToKeep: string[] = ['subCategories', 'revisions']
       .concat(
         Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []),
       );
