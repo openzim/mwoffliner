@@ -6,6 +6,7 @@ import pathParser from 'path';
 import { sanitize_customFlavour } from 'src/sanitize-argument';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
+import { getMediaBase } from '../../src/util/'
 import logger from '../../src/Logger';
 import { waitForDebugger } from 'inspector';
 
@@ -97,4 +98,15 @@ test('Custom flavour path', async(t) => {
 
     // negative scenario
     t.equal(sanitize_customFlavour('wrongCustomFlavour.js'), null, 'Returning null when file doesnt exist.')
+})
+
+test('getMediaBase tests', async(t) => {
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/'
+            + '220px-Westminstpalace.jpg', true),
+        getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/'
+            + '110px-Westminstpalace.jpg', true),
+        'Image size removal.');
+
+    t.equal(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606',true),
+        'm/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg', 'Equation filename check.');
 })
