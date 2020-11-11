@@ -9,7 +9,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
 import { MEDIA_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
-   WEBP_CANDIDATE_IMAGE_FILENAME_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
+   WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
 export function isValidEmail(email: string) {
@@ -342,7 +342,7 @@ export function isImageUrl(url: string): boolean {
 }
 
 export function isWebpCandidateImageUrl(url: string): boolean {
-  return WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
+  return WEBP_CANDIDATE_IMAGE_URL_REGEX.test(url);
 }
 
 export function isImageMimeType(mimeType: string): boolean {
@@ -354,7 +354,7 @@ export function isBitmapImageMimeType(mimeType: string): boolean {
 }
 
 export function shouldConvertImageFilenameToWebp(url: string, webp: boolean) {
-  return webp && WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
+  return webp && WEBP_CANDIDATE_IMAGE_URL_REGEX.test(url);
 }
 
 export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
