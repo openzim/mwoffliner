@@ -8,7 +8,7 @@ import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { MEDIA_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+import { THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
    WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
@@ -228,32 +228,19 @@ export function getIso3(langIso2: string): Promise<string> {
 
 /* Internal path/url functions */
 export function getMediaBase(url: string, escape: boolean, dir: string = config.output.dirs.media) {
-  let root;
+  let decoded_url = decodeURI(url);
+  let parts;
+  let filename;
 
-  const parts = MEDIA_REGEX.exec(decodeURI(url));
-  if (parts) {
-    root = parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
+  if ((parts = THUMB_URL_REGEX.exec(decoded_url)) !== null) {
+      const filenameFirstVariant = parts[2];
+      const filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');
+      filename = filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant;
+  } else {
+      throw new Error(`URL "${url}" not recognized as Media URL.`);
   }
 
-  if (!root) {
-    logger.warn(`Unable to parse media url "${url}"`);
-    return '';
-  }
-
-  function e(str: string) {
-    if (typeof str === 'undefined') {
-      return undefined;
-    }
-    return escape ? encodeURIComponent(str) : str;
-  }
-
-  const filenameFirstVariant = parts[2];
-  const filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-  let filename = decodeURIComponent(
-    filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant,
-  );
-
-  return `${dir}/${e(filename)}`;
+  return `${dir}/${ escape ? encodeURIComponent(filename) : filename }`;
 }
 
 export function getStrippedTitleFromHtml(html: string) {
