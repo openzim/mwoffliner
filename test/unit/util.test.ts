@@ -107,7 +107,9 @@ test('getMediaBase tests', async(t) => {
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/110px-Westminstpalace.jpg', true), 'm/Westminstpalace.jpg', 'Thumb 2');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true), 'm/Westminstpalace.jpg', 'No thumb');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true), 'm/VFPt_Solenoid_correct2.svg', 'SVG');
-    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true), 'm/VFPt_Solenoid_correct2.svg.png', 'SVG');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true), 'm/VFPt_Solenoid_correct2.svg.png', 'SVG PNG thumb');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', true), 'm/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', false), 'm/De-Zürich.ogg', 'Escaped URL');
 
     // Latex (equations)
     t.equal(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true), 'm/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg', 'Latex');

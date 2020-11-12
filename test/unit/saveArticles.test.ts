@@ -129,7 +129,7 @@ test('treatMedias format=""', async (t) => {
     const sources: any[] = Array.from(videoEl.querySelectorAll('source'));
     const sourceUrl = sources[0].getAttribute('src');
 
-    t.equal(videoPosterUrl, '../I/m/-S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster correctly re-written');
+    t.equal(videoPosterUrl, '../I/m/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster correctly re-written');
     t.equal(sourceUrl, '../I/m/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm', 'Source src correctly re-written');
 
     const imgEl = ret.doc.querySelector('img');

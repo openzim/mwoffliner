@@ -8,7 +8,7 @@ import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+import { LATEX_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
    WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
@@ -232,11 +232,18 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
   let parts;
   let filename;
 
-  if ((parts = THUMB_URL_REGEX.exec(decoded_url)) !== null) {
-      const filenameFirstVariant = parts[2];
-      const filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-      filename = filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant;
-  } else {
+  // Image thumbs
+  if ((parts = IMAGE_THUMB_URL_REGEX.exec(decoded_url)) !== null) {
+      filename = parts[1].length > parts[3].length ? parts[1] : parts[3];
+  }
+
+  // Latex (eqations)
+  else if ((parts = LATEX_IMAGE_URL_REGEX.exec(decoded_url)) !== null) {
+      filename = parts[1] + '.svg';
+  }
+
+  // Unmanaged
+  else {
       throw new Error(`URL "${url}" not recognized as Media URL.`);
   }
 
