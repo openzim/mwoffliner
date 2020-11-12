@@ -110,28 +110,31 @@ test('Downloader class', async (t) => {
 
     rimraf.sync(cacheDir);
 
-    const isPngFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
+    const isPngFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
     t.assert(isPngFile, 'Checked Image type: png');
 
-    const isJpgFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
+    const isJpgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
     t.assert(isJpgFile, 'Checked Image type: jpg');
 
-    const isSvgFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
+    const isSvgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
     t.assert(isSvgFile, 'Checked Image type: svg');
 
-    const isJpegFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
+    const isJpegFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
     t.assert(isJpegFile, 'Checked Image type: jpeg');
 
-    const isgifFile =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
+    const isgifFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
     t.assert(isgifFile, 'Checked Image type: gif');
 
-    const isnotImage =  isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
+    const isgifFileWithArgs = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif?foo=bar');
+    t.assert(isgifFileWithArgs, 'Checked Image URL with arguments');
+
+    const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
     t.assert(!isnotImage, 'Url is not image type');
 
-    const isEmptyString =  isImageUrl('');
+    const isEmptyString = isImageUrl('');
     t.assert(!isEmptyString, 'Url is empty string');
 
-    const imageHasNoExtension =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
+    const imageHasNoExtension = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
     t.assert(!imageHasNoExtension, 'Image Url has no extension');
 
     const extensionIsUndefined =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined');
