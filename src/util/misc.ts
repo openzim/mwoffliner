@@ -3,12 +3,13 @@ import domino from 'domino';
 import unicodeCutter from 'utf8-binary-cutter';
 import countryLanguage from 'country-language';
 import fs from 'fs';
+import path from 'path';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { LATEX_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+import { LATEX_GRAPHOID_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
    WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
@@ -228,23 +229,23 @@ export function getIso3(langIso2: string): Promise<string> {
 
 /* Internal path/url functions */
 export function getMediaBase(url: string, escape: boolean, dir: string = config.output.dirs.media) {
-  let decoded_url = decodeURI(url);
+  const decodedUrl = decodeURI(url);
   let parts;
   let filename;
 
   // Image thumbs
-  if ((parts = IMAGE_THUMB_URL_REGEX.exec(decoded_url)) !== null) {
+  if ((parts = IMAGE_THUMB_URL_REGEX.exec(decodedUrl)) !== null) {
       filename = parts[1].length > parts[3].length ? parts[1] : parts[3];
   }
 
-  // Latex (eqations)
-  else if ((parts = LATEX_IMAGE_URL_REGEX.exec(decoded_url)) !== null) {
+  // Latex (equations) & Graphoid
+  else if ((parts = LATEX_GRAPHOID_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
       filename = parts[1] + '.svg';
   }
 
-  // Unmanaged
+  // Default behaviour (make a hash of the URL)
   else {
-      throw new Error(`URL "${url}" not recognized as Media URL.`);
+      filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname((new URL(url)).pathname);
   }
 
   return `${dir}/${ escape ? encodeURIComponent(filename) : filename }`;

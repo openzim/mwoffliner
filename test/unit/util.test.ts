@@ -113,4 +113,7 @@ test('getMediaBase tests', async(t) => {
 
     // Latex (equations)
     t.equal(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true), 'm/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg', 'Latex');
+
+    // Default behaviour
+    t.equal(getMediaBase('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe', true), 'm/589fd4e3821c15d4fcebcedf2effd5b0.png', 'Default handling');
 })
