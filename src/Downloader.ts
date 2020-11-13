@@ -241,14 +241,14 @@ class Downloader {
     }
   }
 
-  public async checkCapabilities(): Promise<void> {
+  public async checkCapabilities(testArticleId: string='MediaWiki:Sidebar'): Promise<void> {
 
     // By default check all API's responses and set the capabilities
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + 'MediaWiki:Sidebar');
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + 'MediaWiki:Sidebar');
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + encodeURIComponent(testArticleId));
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + encodeURIComponent(testArticleId));
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href);
 
     // Coordinate fetching
