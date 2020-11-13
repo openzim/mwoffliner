@@ -3,13 +3,14 @@ import domino from 'domino';
 import unicodeCutter from 'utf8-binary-cutter';
 import countryLanguage from 'country-language';
 import fs from 'fs';
+import path from 'path';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { MEDIA_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
-   WEBP_CANDIDATE_IMAGE_FILENAME_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
+import { LATEX_GRAPHOID_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+   WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
 export function isValidEmail(email: string) {
@@ -228,39 +229,26 @@ export function getIso3(langIso2: string): Promise<string> {
 
 /* Internal path/url functions */
 export function getMediaBase(url: string, escape: boolean, dir: string = config.output.dirs.media) {
-  let root;
+  const decodedUrl = decodeURI(url);
+  let parts;
+  let filename;
 
-  const parts = MEDIA_REGEX.exec(decodeURI(url));
-  if (parts) {
-    root = parts[2].length > parts[5].length ? parts[2] : parts[5] + (parts[6] || '.svg') + (parts[7] || '');
+  // Image thumbs
+  if ((parts = IMAGE_THUMB_URL_REGEX.exec(decodedUrl)) !== null) {
+      filename = parts[1].length > parts[3].length ? parts[1] : parts[3];
   }
 
-  if (!root) {
-    logger.warn(`Unable to parse media url "${url}"`);
-    return '';
+  // Latex (equations) & Graphoid
+  else if ((parts = LATEX_GRAPHOID_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
+      filename = parts[1] + '.svg';
   }
 
-  function e(str: string) {
-    if (typeof str === 'undefined') {
-      return undefined;
-    }
-    return escape ? encodeURIComponent(str) : str;
+  // Default behaviour (make a hash of the URL)
+  else {
+      filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname((new URL(url)).pathname);
   }
 
-  const filenameFirstVariant = parts[2];
-  const filenameSecondVariant = parts[5] + (parts[6] || '.svg') + (parts[7] || '');
-  let filename = decodeURIComponent(
-    filenameFirstVariant.length > filenameSecondVariant.length ? filenameFirstVariant : filenameSecondVariant,
-  );
-  /* Need to shorten the file due to filesystem limitations */
-  if (unicodeCutter.getBinarySize(filename) > 249) {
-    const ext = pathParser.extname(filename).split('.')[1] || '';
-    const basename = filename.substring(0, filename.length - ext.length - 1) || '';
-    filename = `${unicodeCutter.truncateToBinarySize(basename, 239 - ext.length)
-      + crypto.createHash('md5').update(basename).digest('hex').substring(0, 2)}.${ext}`;
-  }
-
-  return `${dir}/${e(filename)}`;
+  return `${dir}/${ escape ? encodeURIComponent(filename) : filename }`;
 }
 
 export function getStrippedTitleFromHtml(html: string) {
@@ -342,7 +330,7 @@ export function isImageUrl(url: string): boolean {
 }
 
 export function isWebpCandidateImageUrl(url: string): boolean {
-  return WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
+  return WEBP_CANDIDATE_IMAGE_URL_REGEX.test(url);
 }
 
 export function isImageMimeType(mimeType: string): boolean {
@@ -351,10 +339,6 @@ export function isImageMimeType(mimeType: string): boolean {
 
 export function isBitmapImageMimeType(mimeType: string): boolean {
   return BITMAP_IMAGE_MIME_REGEX.test(mimeType);
-}
-
-export function shouldConvertImageFilenameToWebp(url: string, webp: boolean) {
-  return webp && WEBP_CANDIDATE_IMAGE_FILENAME_REGEX.test(url);
 }
 
 export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {

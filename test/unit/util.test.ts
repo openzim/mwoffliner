@@ -6,6 +6,7 @@ import pathParser from 'path';
 import { sanitize_customFlavour } from 'src/sanitize-argument';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
+import { getMediaBase } from '../../src/util/'
 import logger from '../../src/Logger';
 import { waitForDebugger } from 'inspector';
 
@@ -97,4 +98,25 @@ test('Custom flavour path', async(t) => {
 
     // negative scenario
     t.equal(sanitize_customFlavour('wrongCustomFlavour.js'), null, 'Returning null when file doesnt exist.')
+})
+
+test('getMediaBase tests', async(t) => {
+
+    // Thumbs
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true), 'm/Westminstpalace.jpg', 'Thumb 1');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/110px-Westminstpalace.jpg', true), 'm/Westminstpalace.jpg', 'Thumb 2');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true), 'm/Westminstpalace.jpg', 'No thumb');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true), 'm/VFPt_Solenoid_correct2.svg', 'SVG');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true), 'm/VFPt_Solenoid_correct2.svg.png', 'SVG PNG thumb');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', true), 'm/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster');
+    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', false), 'm/De-Zürich.ogg', 'Escaped URL');
+
+    // Latex (equations)
+    t.equal(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true), 'm/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg', 'Latex');
+
+    // Graphoid (charts)
+    t.equal(getMediaBase('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', true), 'm/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', 'Graphoid');
+
+    // Default behaviour
+    t.equal(getMediaBase('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe', true), 'm/589fd4e3821c15d4fcebcedf2effd5b0.png', 'Default handling');
 })

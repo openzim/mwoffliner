@@ -25,7 +25,7 @@ import {
   isBitmapImageMimeType,
   isImageUrl,
   isWebpCandidateImageMimeType,
-  shouldConvertImageFilenameToWebp,
+  isWebpCandidateImageUrl,
 } from './util';
 import S3 from './S3';
 import { Dump } from './Dump';
@@ -656,13 +656,13 @@ class Downloader {
 
         // Most of the images after uploading once will always have
         // 304 status, until modified. We need to have
-        // shouldConvertImageFilenameToWebp() as fallback check because
+        // isWebpCandidateImageUrl() as fallback check because
         // of https://phabricator.wikimedia.org/T265006
         if (mwResp.status === 304) {
           const headers = (({ Body, ...o }) => o)(s3Resp);
           if (mwResp.headers['content-type'] ?
               isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) :
-              shouldConvertImageFilenameToWebp(mwResp.config.url, this.webp) &&
+              this.webp && isWebpCandidateImageUrl(mwResp.config.url) &&
               !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
             headers.path_postfix = '.webp';
             headers['content-type'] = 'image/webp';
