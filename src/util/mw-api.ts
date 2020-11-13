@@ -6,16 +6,21 @@ import { articleDetailXId, redirectsXId } from '../stores';
 
 export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
-    let numArticleIds = _articleIds.length;
+    const numArticleIds = _articleIds.length;
     let numThumbnails = 0;
-    let batchSize = 30;
+    const maxBatchSize = 50;
 
     // using async iterator to spawn workers
     await pmap(
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
         async (workerId: number) => {
             while (from < numArticleIds) {
-                const articleIds = _articleIds.slice(from, from + batchSize);
+                const articleIds = _articleIds.slice(from, from + maxBatchSize);
+                let articlesStringLength = articleIds.join('|').length;
+                while (articlesStringLength > 7900) {
+                    articlesStringLength -= encodeURI(articleIds.slice(-1)[0]).length;
+                    articleIds.pop();
+                }
                 const to = from + articleIds.length;
                 if (log) {
                     const progressPercent = Math.floor(to / numArticleIds * 100);
@@ -23,47 +28,33 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
                 }
                 from = to;
 
-                try {
-                    if (articleIds.length) {
-                        const _articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
-                        const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
-                        numThumbnails += articlesWithThumbnail.length;
+                if (articleIds.length) {
+                    const _articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
+                    const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
+                    numThumbnails += articlesWithThumbnail.length;
 
-                        const articleDetails = mwRetToArticleDetail(_articleDetails);
+                    const articleDetails = mwRetToArticleDetail(_articleDetails);
 
-                        for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
-                            if (articleDetail.redirects && articleDetail.redirects.length) {
-                                await redirectsXId.setMany(
-                                    articleDetail.redirects.reduce((acc, redirect) => {
-                                        const rId = redirect.title;
-                                        return {
-                                            ...acc,
-                                            [rId]: { targetId: articleId, title: redirect.title },
-                                        };
-                                    }, {}),
-                                );
-                            }
+                    for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+                        if (articleDetail.redirects && articleDetail.redirects.length) {
+                            await redirectsXId.setMany(
+                                articleDetail.redirects.reduce((acc, redirect) => {
+                                    const rId = redirect.title;
+                                    return {
+                                        ...acc,
+                                        [rId]: { targetId: articleId, title: redirect.title },
+                                    };
+                                }, {}),
+                            );
                         }
-
-                        const existingArticleDetails = await articleDetailXId.getMany(Object.keys(articleDetails));
-                        await articleDetailXId.setMany(
-                            deepmerge(
-                                existingArticleDetails,
-                                articleDetails,
-                            ),
-                        );
-
                     }
-                } catch (err) {
-                    if (batchSize < 10) {
-                        logger.error(`Failed to get article ids and batch size is less than 10. Skipping batch...`, err);
-                        process.exit(1);
-                    } else {
-                        _articleIds = _articleIds.concat(articleIds);
-                        numArticleIds = _articleIds.length;
-                        batchSize = Math.floor(batchSize * 0.8);
-                        logger.warn(`Failed to get article ids, reducing batch size to [${batchSize}]`, err);
-                    }
+                    const existingArticleDetails = await articleDetailXId.getMany(Object.keys(articleDetails));
+                    await articleDetailXId.setMany(
+                        deepmerge(
+                            existingArticleDetails,
+                            articleDetails,
+                        ),
+                    );
                 }
             }
         },
