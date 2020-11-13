@@ -195,8 +195,9 @@ async function execute(argv: any) {
     logger.error(`FATAL - Failed to get MediaWiki Metadata`);
     throw err;
   }
+  const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
 
-  await downloader.checkCapabilities();
+  await downloader.checkCapabilities(mainPage);
   await downloader.setBaseUrls();
 
   const redis = new Redis(argv, config);
@@ -238,8 +239,6 @@ async function execute(argv: any) {
     closeRedis(redis);
     process.exit(128 + 2);
   });
-
-  const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
 
   /* *********************************** */
   /*       SYSTEM VARIABLE SECTION       */
