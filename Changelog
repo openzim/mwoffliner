@@ -1,4 +1,11 @@
-1.11
+1.11.1
+* FIX: Buggy API end-points detection
+* FIX: Weak image mime-type assignement
+* FIX: Partly missing revision ids
+* UPDATE: Article details retrieval speed-up
+* UPDATE: Use Node.js 14 in Docker
+
+1.11.0
 * FIX: multiple bugs around redirects
 * FIX: multiple regression if local Parsoid is used
 * NEW: image lazy loading
