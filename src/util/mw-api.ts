@@ -4,58 +4,65 @@ import logger from '../Logger';
 import Downloader from '../Downloader';
 import { articleDetailXId, redirectsXId } from '../stores';
 
-export async function getArticlesByIds(_articleIds: string[], downloader: Downloader, log = true): Promise<void> {
+export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
-    const numArticleIds = _articleIds.length;
     let numThumbnails = 0;
-    const maxBatchSize = 50;
-    const byteSizeLimit = 7900;
+    const MAX_BATCH_SIZE = 50;
+    const MAX_URL_SIZE = 7900; // in bytes, approx.
 
     // using async iterator to spawn workers
     await pmap(
         ','.repeat(downloader.speed).split(',').map((_, i) => i),
         async (workerId: number) => {
-            while (from < numArticleIds) {
-                const articleIds = _articleIds.slice(from, from + maxBatchSize);
-                let articlesStringLength = encodeURIComponent(articleIds.join('|')).length;
-                while (articlesStringLength > byteSizeLimit) {
-                    articlesStringLength -= encodeURIComponent(articleIds.pop()).length;
+            while (from < articleIds.length) {
+
+                // Secure the request has the max articleIds as possible (within boudaries)
+                const articleIdsBatch = articleIds.slice(from, from + MAX_BATCH_SIZE);
+                let urlSize = encodeURIComponent(articleIdsBatch.join('|')).length;
+                while (urlSize > MAX_URL_SIZE) {
+                    urlSize -= encodeURIComponent(articleIdsBatch.pop()).length + 1;
                 }
-                const to = from + articleIds.length;
+
+                // Udpate articleIds slicing boundaries
+                const to = from + articleIdsBatch.length;
                 if (log) {
-                    const progressPercent = Math.floor(to / numArticleIds * 100);
-                    logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${numArticleIds}] [${progressPercent}%]`);
+                    const progressPercent = Math.floor(to / articleIds.length * 100);
+                    logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${articleIds.length}] [${progressPercent}%]`);
                 }
                 from = to;
 
-                if (articleIds.length) {
-                    const _articleDetails = await downloader.getArticleDetailsIds(articleIds, numThumbnails < 100);
-                    const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
-                    numThumbnails += articlesWithThumbnail.length;
-
-                    const articleDetails = mwRetToArticleDetail(_articleDetails);
-
-                    for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
-                        if (articleDetail.redirects && articleDetail.redirects.length) {
-                            await redirectsXId.setMany(
-                                articleDetail.redirects.reduce((acc, redirect) => {
-                                    const rId = redirect.title;
-                                    return {
-                                        ...acc,
-                                        [rId]: { targetId: articleId, title: redirect.title },
-                                    };
-                                }, {}),
-                            );
-                        }
-                    }
-                    const existingArticleDetails = await articleDetailXId.getMany(Object.keys(articleDetails));
-                    await articleDetailXId.setMany(
-                        deepmerge(
-                            existingArticleDetails,
-                            articleDetails,
-                        ),
-                    );
+                // Nothing to do
+                if (!articleIdsBatch.length) {
+                    continue;
                 }
+
+                // Retrieve the details and save them in Redis
+                const _articleDetails = await downloader.getArticleDetailsIds(articleIdsBatch, numThumbnails < 100);
+                const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail);
+                numThumbnails += articlesWithThumbnail.length;
+
+                const articleDetails = mwRetToArticleDetail(_articleDetails);
+
+                for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+                    if (articleDetail.redirects && articleDetail.redirects.length) {
+                        await redirectsXId.setMany(
+                            articleDetail.redirects.reduce((acc, redirect) => {
+                                const rId = redirect.title;
+                                return {
+                                    ...acc,
+                                    [rId]: { targetId: articleId, title: redirect.title },
+                                };
+                            }, {}),
+                        );
+                    }
+                }
+                const existingArticleDetails = await articleDetailXId.getMany(Object.keys(articleDetails));
+                await articleDetailXId.setMany(
+                    deepmerge(
+                        existingArticleDetails,
+                        articleDetails,
+                    ),
+                );
             }
         },
         {concurrency: downloader.speed}
