@@ -9,6 +9,7 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
     const numArticleIds = _articleIds.length;
     let numThumbnails = 0;
     const maxBatchSize = 50;
+    const byteSizeLimit = 7900;
 
     // using async iterator to spawn workers
     await pmap(
@@ -16,10 +17,9 @@ export async function getArticlesByIds(_articleIds: string[], downloader: Downlo
         async (workerId: number) => {
             while (from < numArticleIds) {
                 const articleIds = _articleIds.slice(from, from + maxBatchSize);
-                let articlesStringLength = articleIds.join('|').length;
-                while (articlesStringLength > 7900) {
-                    articlesStringLength -= encodeURI(articleIds.slice(-1)[0]).length;
-                    articleIds.pop();
+                let articlesStringLength = encodeURIComponent(articleIds.join('|')).length;
+                while (articlesStringLength > byteSizeLimit) {
+                    articlesStringLength -= encodeURIComponent(articleIds.pop()).length;
                 }
                 const to = from + articleIds.length;
                 if (log) {
