@@ -10,7 +10,7 @@ window.onload = function () {
         }
     });
 
-    if (window.innerWidth < 720) {
+    if (window.innerWidth < 720 && $('details[data-level=2]').length !== 1) {
         $('details[data-level=2]').attr('open', false);
     }
 
