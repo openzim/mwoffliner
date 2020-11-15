@@ -10,8 +10,15 @@ window.onload = function () {
         }
     });
 
-    if (window.innerWidth < 720 && $('details[data-level=2]').length !== 1) {
+    if (window.innerWidth < 720) {
         $('details[data-level=2]').attr('open', false);
+    }
+
+    if (window.innerWidth < 720 && $('details')) {
+        var HighestLevel = Math.min(...$('details').map( function() {return $(this).attr('data-level');}).get());
+        if($(`details[data-level=${HighestLevel}]`).length == 1){
+            $(`details[data-level=${HighestLevel}]`).attr('open', true);
+        }
     }
 
     /* Add the user-agent to allow dedicated CSS rules (like for KaiOS) */
