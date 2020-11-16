@@ -855,19 +855,17 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         const parents = articleId.split('/');
         parents.pop();
         let subpages = '';
-        let parentPath = '';
         await Promise.all(
             parents.map(async (parent) => {
                 const label = parent.replace(/_/g, ' ');
-                const isParentMirrored = await isMirrored(parentPath + parent);
+                const isParentMirrored = await isMirrored(`${articleId.split(parent)[0]}${parent}`);
                 subpages
                     += `&lt; ${
                     isParentMirrored
-                        ? `<a href="../${encodeArticleIdForZimHtmlUrl(parentPath + parent)}" title="${label}">`
+                        ? `<a href="${'../'.repeat(parents.length)}${encodeArticleIdForZimHtmlUrl(`${articleId.split(parent)[0]}${parent}`)}" title="${label}">`
                         : ''
                     }${label
                     }${isParentMirrored ? '</a> ' : ' '}`;
-                parentPath += `${parent}/`;
             }),
         );
         subpagesNode.innerHTML = subpages;
