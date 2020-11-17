@@ -10,14 +10,13 @@ window.onload = function () {
         }
     });
 
-    if (window.innerWidth < 720) {
-        $('details[data-level=2]').attr('open', false);
-    }
-
+    /* If small screen size and contains section */
     if (window.innerWidth < 720 && $('details')) {
-        var HighestLevel = Math.min(...$('details').map( function() {return $(this).attr('data-level');}).get());
-        if($(`details[data-level=${HighestLevel}]`).length == 1){
-            $(`details[data-level=${HighestLevel}]`).attr('open', true);
+        /* Find the highest level section in window */
+        const HighestLevel = Math.min(...$('details').map( function() {return $(this).attr('data-level');}).get());
+        /* Collapse all highest level section if more than one */
+        if($(`details[data-level=${HighestLevel}]`).length !== 1){
+            $(`details[data-level=${HighestLevel}]`).attr('open', false);
         }
     }
 
