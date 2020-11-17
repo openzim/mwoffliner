@@ -771,7 +771,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
         // Desktop view === section
         const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'));
         for (const section of sections) {
-            if (section.children.length < 1) {
+            if (section.children.length === section.querySelectorAll('summary').length) {
                 DU.deleteNode(section);
             }
         }
