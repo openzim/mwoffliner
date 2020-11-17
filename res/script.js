@@ -10,13 +10,16 @@ window.onload = function () {
         }
     });
 
-    /* If small screen size and contains section */
+    /* If small screen size and contains section(s) */
     if (window.innerWidth < 720 && $('details')) {
+
         /* Find the highest level section in window */
-        const HighestLevel = Math.min(...$('details').map( function() {return $(this).attr('data-level');}).get());
+        const sectionTopLevel = Math.min(...$('details').
+            map( function() { return $(this).attr('data-level'); }).get());
+
         /* Collapse all highest level section if more than one */
-        if($(`details[data-level=${HighestLevel}]`).length !== 1){
-            $(`details[data-level=${HighestLevel}]`).attr('open', false);
+        if ($(`details[data-level=${sectionTopLevel}]`).length !== 1) {
+            $(`details[data-level=${sectionTopLevel}]`).attr('open', false);
         }
     }
 
