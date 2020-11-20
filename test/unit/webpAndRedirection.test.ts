@@ -4,12 +4,11 @@ import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { ZimReader } from '@openzim/libzim'
-import fs from 'fs';
 import Downloader from '../../src/Downloader';
 import MediaWiki from '../../src/MediaWiki';
 import FileType from 'file-type'
 import { isWebpCandidateImageUrl } from '../../src/util/misc';
-import logger from '../../src/Logger';
+import rimraf from 'rimraf';
 
 const now = new Date();
 const testId = join(process.cwd(), `mwo-test-${+now}`);
@@ -61,7 +60,7 @@ Real-time computer graphics`;
     t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')
     t.assert(await isRedirectionPresent(`href="Real-time_rendering"`,
         zimFile), 'redirection check successful')
-    fs.rmdirSync(testId, {recursive: true});
+    rimraf.sync(testId);
 })
 
 async function isWebpPresent(path: string, zimFile: ZimReader) {
