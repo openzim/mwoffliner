@@ -23,7 +23,7 @@ jobs:
     - uses: shogo82148/actions-setup-redis@v1
       with:
            redis-version: '6.x'
-    
+
     - name: installing add on packages
       run: sudo apt install gcc-4.8 g++-4.8 python3-pip libbz2-dev ccache zlib1g-dev uuid-dev
 
@@ -47,7 +47,7 @@ jobs:
 
     - name: publishing script
       run: ./dev/publish.sh
-  
+
     - name: codecov action
       uses: codecov/codecov-action@v1
       with:
