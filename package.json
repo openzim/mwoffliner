@@ -53,7 +53,7 @@
     "node": ">=8.12.0"
   },
   "dependencies": {
-    "@openzim/libzim": "2.4.2",
+    "@openzim/libzim": "2.4.3",
     "@types/async": "^3.2.3",
     "@types/backoff": "^2.5.1",
     "@types/bluebird": "^3.5.32",
