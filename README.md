@@ -35,10 +35,12 @@ Run `mwoffliner --help` to get all the possible options.
 ## Prerequisites
 
 - *NIX Operating System (GNU/Linux, macOS, ...)
-- [NodeJS](https://nodejs.org/en/)
 - [Redis](https://redis.io/)
+- [NodeJS](https://nodejs.org/en/) version 10 or greater
 - [Libzim](https://github.com/openzim/libzim) (On GNU/Linux & macOS we automatically download it)
-- Various build tools that are probably already installed on your machine (libjpeg, gcc)
+- Various build tools that are probably already installed on your
+  machine (packages `libjpeg-dev`, `autoconf`, `automake`, `gcc` on
+  Debian/Ubuntu)
 
 ... and an online Mediawiki with its API available.
 
@@ -129,6 +131,23 @@ Install Redis:
 ```bash
 sudo apt-get install redis-server
 ```
+
+## Troubleshooting
+
+Older GNU/Linux distributions and/or versions of Node.js might be
+shipped with a deprecated version of `npm`. Older versions of `npm`
+have incompatbilities with certain versions of Node.js and might
+simply fail to install `mwoffliner` package.
+
+We recommend to use a recent version of `npm`. Recent versions can
+perfectly deal with older Node.js 10. Do install the packaged
+version of `npm` and then use it to install a newer version like:
+
+```bash
+sudo npm install --unsafe-perm -g npm
+```
+
+Don't forget to remove the packaged version of `npm` afterward.
 
 License
 -------
