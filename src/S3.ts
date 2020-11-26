@@ -70,7 +70,7 @@ class S3 {
                     }
                     resolve(val);
                 } else if (err && err.statusCode === 404) {
-                    resolve(undefined);
+                    resolve();
                 } else {
                     reject(err);
                 }

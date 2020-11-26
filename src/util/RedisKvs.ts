@@ -95,7 +95,7 @@ export class RedisKvs<T> {
     return new Promise((resolve, reject) => {
       const numKeys = Object.keys(val).length;
       if (!numKeys) {
-        resolve(undefined);
+        resolve();
         return;
       }
       const normalisedVal = Object.entries(val)
