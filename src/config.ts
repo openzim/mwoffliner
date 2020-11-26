@@ -66,14 +66,6 @@ const config = {
       js: ['startup', 'jquery', 'mediawiki', 'site'],
     },
 
-    // Output directories for storing js and css resources
-    dirs: {
-      style: 's',
-      javascript: 'j',
-      styleModules: 'css_modules',
-      jsModules: 'js_modules',
-    },
-
     // Output templates (TODO: Needs more docs)
     templates: {
 

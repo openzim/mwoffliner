@@ -272,7 +272,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     logger.log(`Done with downloading a total of [${articlesTotal}] articles`);
 
-    const jsConfigVarArticle = new ZimArticle({ url: jsPath(config, 'jsConfigVars'), data: jsConfigVars, ns: '-' });
+    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars'), data: jsConfigVars, ns: '-' });
     zimCreator.addArticle(jsConfigVarArticle);
 
     return {

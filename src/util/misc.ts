@@ -151,7 +151,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
     .map(async (css) => {
       try {
         const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
-        const article = new ZimArticle({ url: cssPath(config, css), data: cssCont, ns: '-' });
+        const article = new ZimArticle({ url: cssPath(css), data: cssCont, ns: '-' });
         zimCreator.addArticle(article);
       } catch (error) {
         logger.warn(`Could not create ${css} file : ${error}`);
@@ -161,7 +161,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
       const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
-      const article = new ZimArticle({ url: jsPath(config, js), data: jsCont, ns: '-' });
+      const article = new ZimArticle({ url: jsPath(js), data: jsCont, ns: '-' });
       zimCreator.addArticle(article);
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`);
@@ -173,25 +173,25 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   ]);
 }
 
-export function cssPath({ output: { dirs } }: Config, css: string) {
-  return [dirs.style, `${dirs.styleModules}/${css.replace(/(\.css)?$/, '')}.css`].join('/');
+export function cssPath(css: string) {
+  return `sources/${css.replace(/(\.css)?$/, '')}.css`;
 }
-export function jsPath({ output: { dirs } }: Config, js: string) {
+export function jsPath(js: string) {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return [dirs.javascript, `${dirs.jsModules}/${path.replace(/(\.js)?$/, '')}.js`].join('/');
+  return `sources/${path.replace(/(\.js)?$/, '')}.js`;
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, classList = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
-  return `<link href="${upStr}${resourceNamespace}/${cssPath(config, css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+  return `<link href="${upStr}${resourceNamespace}/${cssPath(css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
 }
 export function genHeaderScript(config: Config, js: string, articleId: string, classList = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `<script src="${upStr}${resourceNamespace}/${jsPath(config, path)}" class="${classList}"></script>`;
+  return `<script src="${upStr}${resourceNamespace}/${jsPath(path)}" class="${classList}"></script>`;
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`;
@@ -248,7 +248,6 @@ export function getMediaBase(url: string, escape: boolean) {
       filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname((new URL(url)).pathname);
   }
 
-  // change here
   return escape ? encodeURIComponent(filename) : filename;
 }
 
