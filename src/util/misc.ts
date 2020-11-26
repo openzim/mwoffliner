@@ -91,7 +91,7 @@ export function writeFilePromise(path: string, content: string | Buffer, encodin
       if (err) {
         reject(err);
       } else {
-        resolve();
+        resolve(undefined);
       }
     });
   });
