@@ -20,7 +20,7 @@ const getHandler = (delay: number) => async (items: any, workerId: number): Prom
   const t = Math.random() * delay;
   return new Promise(((resolve, reject) => {
     setTimeout(() => {
-      resolve();
+      resolve(undefined);
     }, t);
   }));
 };
