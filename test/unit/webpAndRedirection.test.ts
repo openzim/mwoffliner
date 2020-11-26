@@ -42,22 +42,22 @@ Real-time computer graphics`;
 
     const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png?lang.svg'),
+    t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png?lang.svg'),
         'detecting webp URL having png before arguments');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg?lang.svg'),
+    t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg?lang.svg'),
         'detecting webp URL having jpg before arguments');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg?lang.svg'),
+    t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg?lang.svg'),
         'detecting webp URL having jpeg before arguments');
-    t.assert(!isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg'),
+    t.assert(!isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg%3Flang.svg'),
         'avoiding detecting webp URL having an escaped question marked');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png'),
+    t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png'),
         'detecting webp URL having png at last');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg'),
+    t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg'),
         'detecting webp URL having jpg at last');
-    t.assert(isWebpCandidateImageUrl('../I/m/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg'),
+    t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg'),
         'detecting webp URL having jpeg at last');
-    t.assert(await isWebpPresent('I/m/Animexample3edit.png.webp', zimFile), 'passed test for png')
-    t.assert(await isWebpPresent('I/m/Claychick.jpg.webp', zimFile), 'passed test for jpg')
+    t.assert(await isWebpPresent('I/Animexample3edit.png.webp', zimFile), 'passed test for png')
+    t.assert(await isWebpPresent('I/Claychick.jpg.webp', zimFile), 'passed test for jpg')
     t.assert(await isRedirectionPresent(`href="Real-time_rendering"`,
         zimFile), 'redirection check successful')
     rimraf.sync(testId);

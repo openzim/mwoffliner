@@ -69,7 +69,6 @@ const config = {
     // Output directories for storing js and css resources
     dirs: {
       style: 's',
-      media: 'm',
       javascript: 'j',
       styleModules: 'css_modules',
       jsModules: 'js_modules',

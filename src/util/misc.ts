@@ -228,7 +228,7 @@ export function getIso3(langIso2: string): Promise<string> {
 }
 
 /* Internal path/url functions */
-export function getMediaBase(url: string, escape: boolean, dir: string = config.output.dirs.media) {
+export function getMediaBase(url: string, escape: boolean) {
   const decodedUrl = decodeURI(url);
   let parts;
   let filename;
@@ -248,7 +248,8 @@ export function getMediaBase(url: string, escape: boolean, dir: string = config.
       filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname((new URL(url)).pathname);
   }
 
-  return `${dir}/${ escape ? encodeURIComponent(filename) : filename }`;
+  // change here
+  return escape ? encodeURIComponent(filename) : filename;
 }
 
 export function getStrippedTitleFromHtml(html: string) {
