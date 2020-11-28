@@ -151,7 +151,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
     .map(async (css) => {
       try {
         const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
-        const article = new ZimArticle({ url: cssPath(css), data: cssCont, ns: '-' });
+        const article = new ZimArticle({ url: cssPath(css, false), data: cssCont, ns: '-' });
         zimCreator.addArticle(article);
       } catch (error) {
         logger.warn(`Could not create ${css} file : ${error}`);
@@ -161,7 +161,7 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
       const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
-      const article = new ZimArticle({ url: jsPath(js), data: jsCont, ns: '-' });
+      const article = new ZimArticle({ url: jsPath(js, false), data: jsCont, ns: '-' });
       zimCreator.addArticle(article);
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`);
@@ -173,25 +173,25 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   ]);
 }
 
-export function cssPath(css: string) {
-  return `sources/${css.replace(/(\.css)?$/, '')}.css`;
+export function cssPath(css: string, addSubDirectory: boolean) {
+  return `${addSubDirectory ? `${config.output.dirs.MwSubDir}/` : ''}${css.replace(/(\.css)?$/, '')}.css`;
 }
-export function jsPath(js: string) {
+export function jsPath(js: string, addSubDirectory: boolean) {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `sources/${path.replace(/(\.js)?$/, '')}.js`;
+  return `${addSubDirectory ? `${config.output.dirs.MwSubDir}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
 }
-export function genHeaderCSSLink(config: Config, css: string, articleId: string, classList = '') {
+export function genHeaderCSSLink(config: Config, css: string, articleId: string, addSubDirectory: boolean, classList = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
-  return `<link href="${upStr}${resourceNamespace}/${cssPath(css)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+  return `<link href="${upStr}${resourceNamespace}/${cssPath(css, addSubDirectory)}" rel="stylesheet" type="text/css" class="${classList}" />`;
 }
-export function genHeaderScript(config: Config, js: string, articleId: string, classList = '') {
+export function genHeaderScript(config: Config, js: string, articleId: string, addSubDirectory: boolean, classList = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `<script src="${upStr}${resourceNamespace}/${jsPath(path)}" class="${classList}"></script>`;
+  return `<script src="${upStr}${resourceNamespace}/${jsPath(path, addSubDirectory)}" class="${classList}"></script>`;
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`;

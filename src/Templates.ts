@@ -19,11 +19,11 @@ const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPa
 
 const htmlTemplateCode = (articleId: string) => {
     const cssLinks = config.output.cssResources.reduce((buf, css) => {
-        return buf + genHeaderCSSLink(config, css, articleId);
+        return buf + genHeaderCSSLink(config, css, articleId, false);
     }, '');
 
     const jsScripts = config.output.jsResources.reduce((buf, js) => {
-        return buf + genHeaderScript(config, js, articleId);
+        return buf + genHeaderScript(config, js, articleId, false);
     }, '');
 
     return readTemplate(config.output.templates.page)
