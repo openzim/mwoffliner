@@ -132,8 +132,8 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 
     try {
         const articleId = type === 'js'
-            ? jsPath(module, true)
-            : cssPath(module, true);
+            ? jsPath(module, config.output.dirs.mediawiki)
+            : cssPath(module, config.output.dirs.mediawiki);
         const article = new ZimArticle({ url: articleId, data: text, ns: '-' });
         zimCreator.addArticle(article);
         logger.info(`Saved module [${module}]`);
@@ -150,7 +150,7 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
         { name: 'webpHeroBundle',   path: 'webp-hero/dist-cjs/webp-hero.bundle.js' }
     ].forEach( ({name, path}) => {
         const article = new ZimArticle({
-            url: jsPath(name, false),
+            url: jsPath(name),
             data: fs.readFileSync(require.resolve(path), 'utf8').toString(),
             ns: '-'
         });

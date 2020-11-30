@@ -272,7 +272,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     logger.log(`Done with downloading a total of [${articlesTotal}] articles`);
 
-    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', true), data: jsConfigVars, ns: '-' });
+    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' });
     zimCreator.addArticle(jsConfigVarArticle);
 
     return {
@@ -820,17 +820,17 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     const htmlTemplateDoc = domino.createDocument(
         htmlTemplateCode(articleId)
             .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
-            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, true) : '')
+            .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
             .replace(
                 '__ARTICLE_JS_LIST__',
                 jsDependenciesList.length !== 0
-                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, true)).join('\n')
+                    ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
                     : '',
             )
             .replace(
                 '__ARTICLE_CSS_LIST__',
                 styleDependenciesList.length !== 0
-                    ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, true)).join('\n')
+                    ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
                     : '',
             )
             .replace('__ARTICLE_ID__', `<script>let articleId = '${articleId}'</script>`),

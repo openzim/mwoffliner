@@ -538,11 +538,11 @@ async function execute(argv: any) {
       const doc = domino.createDocument(
         articleListHomeTemplate
           .replace('</head>',
-            genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage, false) + '\n' +
-            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage, false) + '\n' +
-            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage, false) + '\n' +
-            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage,false) + '\n' +
-            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage, false) + '\n' +
+            genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) + '\n' +
+            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) + '\n' +
             genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) + '\n' +
             '\n</head>'),
       );
