@@ -68,7 +68,7 @@ const config = {
 
     // Output directories for storing mw related js and css resources
     dirs: {
-      MwSubDir: 'mw',
+      mediawiki: 'mw',
     },
 
     // Output templates (TODO: Needs more docs)

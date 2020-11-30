@@ -54,7 +54,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
                             /* Download CSS dependency, but avoid duplicate calls */
                             if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
                                 downloader.cssDependenceUrls[url] = true;
-                                filesToDownloadXPath.set(config.output.dirs.MwSubDir + '/' + filename, { url: downloader.serializeUrl(url), namespace: '-' });
+                                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: downloader.serializeUrl(url), namespace: '-' });
                             }
                         } else {
                             logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`);

@@ -174,11 +174,11 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 }
 
 export function cssPath(css: string, addSubDirectory: boolean) {
-  return `${addSubDirectory ? `${config.output.dirs.MwSubDir}/` : ''}${css.replace(/(\.css)?$/, '')}.css`;
+  return `${addSubDirectory ? `${config.output.dirs.mediawiki}/` : ''}${css.replace(/(\.css)?$/, '')}.css`;
 }
 export function jsPath(js: string, addSubDirectory: boolean) {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `${addSubDirectory ? `${config.output.dirs.MwSubDir}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
+  return `${addSubDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, addSubDirectory: boolean, classList = '') {
   const resourceNamespace = '-';

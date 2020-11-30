@@ -422,7 +422,7 @@ async function execute(argv: any) {
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
     logger.log(`Downloaded stylesheets`);
 
-    const article = new ZimArticle({ url: `${config.output.dirs.MwSubDir}/style.css`, data: finalCss, ns: '-' });
+    const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' });
     zimCreator.addArticle(article);
     await saveFavicon(dump, zimCreator);
 
