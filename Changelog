@@ -1,3 +1,11 @@
+1.11.2
+* FIX: Buggy sub-page URL rewritting
+* FIX: Buggy empty paragraph removal
+* FIX: Private Mediawiki login
+* NEW: Simplify CSS/JS/Media paths a bit
+* NEW: Always show first single section
+* NEW: Use latest libzim
+
 1.11.1
 * FIX: Buggy API end-points detection
 * FIX: Weak image mime-type assignement
