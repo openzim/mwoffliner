@@ -86,7 +86,7 @@ test('Url re-writing', async (t) => {
 
     await rewriteUrl(complexParentArticleId, mw, dump, $resourceLink);
     t.assert($resourceLink.nodeName === 'A', 'resourceLink is still a link');
-    t.equal($resourceLink.getAttribute('href'), '../../I/m/De-Z%C3%BCrich.ogg', 'resourceLink has been re-written');
+    t.equal($resourceLink.getAttribute('href'), '../../I/De-Z%C3%BCrich.ogg', 'resourceLink has been re-written');
 
 });
 

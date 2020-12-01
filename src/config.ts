@@ -66,13 +66,9 @@ const config = {
       js: ['startup', 'jquery', 'mediawiki', 'site'],
     },
 
-    // Output directories for storing js and css resources
+    // Output directories for storing mw related js and css resources
     dirs: {
-      style: 's',
-      media: 'm',
-      javascript: 'j',
-      styleModules: 'css_modules',
-      jsModules: 'js_modules',
+      mediawiki: 'mw',
     },
 
     // Output templates (TODO: Needs more docs)

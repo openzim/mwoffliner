@@ -129,13 +129,13 @@ test('treatMedias format=""', async (t) => {
     const sources: any[] = Array.from(videoEl.querySelectorAll('source'));
     const sourceUrl = sources[0].getAttribute('src');
 
-    t.equal(videoPosterUrl, '../I/m/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster correctly re-written');
-    t.equal(sourceUrl, '../I/m/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm', 'Source src correctly re-written');
+    t.equal(videoPosterUrl, '../I/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster correctly re-written');
+    t.equal(sourceUrl, '../I/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm', 'Source src correctly re-written');
 
     const imgEl = ret.doc.querySelector('img');
     const imgSrc = imgEl.getAttribute('src');
 
-    t.equal(imgSrc, '../I/m/Dendritic_cell_revealed.jpg', 'Img src correctly re-written');
+    t.equal(imgSrc, '../I/Dendritic_cell_revealed.jpg', 'Img src correctly re-written');
 });
 
 test('treatMedias format="nopic"', async (t) => {

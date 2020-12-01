@@ -28,8 +28,8 @@ window.onload = function () {
 }
 
 /* WebP Polyfill */
-var webHeroScripts = ['../-/j/js_modules/webpHeroPolyfill.js',
-                      '../-/j/js_modules/webpHeroBundle.js'];
+var webHeroScripts = ['../-/webpHeroPolyfill.js',
+                      '../-/webpHeroBundle.js'];
 
 var testWebP = function(callback) {
     var webP = new Image();
