@@ -1,4 +1,5 @@
 1.11.2
+* FIX: Local Parsoid for HTTP only instances
 * FIX: Buggy sub-page URL rewritting
 * FIX: Buggy empty paragraph removal
 * FIX: Private Mediawiki login
