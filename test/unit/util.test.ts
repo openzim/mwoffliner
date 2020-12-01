@@ -59,12 +59,12 @@ test('Get full URL', async(t) => {
             'https://bm.wikipedia.org/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b',
             'Full URL for image');
 
-    t.equal(getFullUrl('./-/sources/jsConfigVars.js', new URL('https://bm.wikipedia.org/')),
-            'https://bm.wikipedia.org/-/sources/jsConfigVars.js',
+    t.equal(getFullUrl('./-/mw/jsConfigVars.js', new URL('https://bm.wikipedia.org/')),
+            'https://bm.wikipedia.org/-/mw/jsConfigVars.js',
             'Full Url for relative path with skipping one file');
 
-    t.equal(getFullUrl('../-/sources/jsConfigVars.js', 'https://bm.wikipedia.org/'),
-            'https://bm.wikipedia.org/-/sources/jsConfigVars.js',
+    t.equal(getFullUrl('../-/mw/jsConfigVars.js', 'https://bm.wikipedia.org/'),
+            'https://bm.wikipedia.org/-/mw/jsConfigVars.js',
             'Full Url for relative path with skipping one folder');
 
     t.equal(getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/'),

@@ -176,9 +176,9 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 export function cssPath(css: string, subDirectory = '') {
   return `${subDirectory ? `${subDirectory}/` : ''}${css.replace(/(\.css)?$/, '')}.css`;
 }
-export function jsPath(js: string, addSubDirectory = '') {
+export function jsPath(js: string, subDirectory = '') {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `${addSubDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
+  return `${subDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '', classList = '') {
   const resourceNamespace = '-';
@@ -186,12 +186,12 @@ export function genHeaderCSSLink(config: Config, css: string, articleId: string,
   const upStr = '../'.repeat(slashesInUrl + 1);
   return `<link href="${upStr}${resourceNamespace}/${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css" class="${classList}" />`;
 }
-export function genHeaderScript(config: Config, js: string, articleId: string, addSubDirectory = '', classList = '') {
+export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory = '', classList = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `<script src="${upStr}${resourceNamespace}/${jsPath(path, addSubDirectory)}" class="${classList}"></script>`;
+  return `<script src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}" class="${classList}"></script>`;
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`;
