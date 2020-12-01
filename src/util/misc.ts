@@ -173,25 +173,25 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   ]);
 }
 
-export function cssPath(css: string, subDirectory = '') {
+export function cssPath(css: string, subDirectory: string = '') {
   return `${subDirectory ? `${subDirectory}/` : ''}${css.replace(/(\.css)?$/, '')}.css`;
 }
-export function jsPath(js: string, subDirectory = '') {
+export function jsPath(js: string, subDirectory: string = '') {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
   return `${subDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
 }
-export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '', classList = '') {
+export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory: string = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
-  return `<link href="${upStr}${resourceNamespace}/${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css" class="${classList}" />`;
+  return `<link href="${upStr}${resourceNamespace}/${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`;
 }
-export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory = '', classList = '') {
+export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory: string = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
-  return `<script src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}" class="${classList}"></script>`;
+  return `<script src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}"></script>`;
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`;
