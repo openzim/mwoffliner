@@ -8,7 +8,7 @@ import logger from './Logger';
 import { config } from './config';
 import fs from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail } from './util';
+import { isValidEmail, ensureTrailingChar } from './util';
 
 export async function sanitize_all(argv: any) {
 
@@ -19,6 +19,10 @@ export async function sanitize_all(argv: any) {
     mwUrl,
     customZimFavicon,
     optimisationCacheUrl,
+    customMainPage,
+    mwRestApiPath,
+    mwApiPath,
+    noLocalParserFallback,
   } = argv;
 
   const cpuCount = os.cpus().length;
@@ -54,6 +58,13 @@ export async function sanitize_all(argv: any) {
   await sanitize_mwUrl(mwUrl).catch((err)=>{
     throw err;
   });
+
+  // sanitize Custom Main Page
+  if (customMainPage) {
+    await sanitize_customMainPage(customMainPage, mwRestApiPath, mwUrl, mwApiPath, noLocalParserFallback).catch((err) => {
+      throw err;
+    })
+  }
 
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail);
@@ -104,6 +115,29 @@ export function sanitize_redis(argv:any)
     sanitize_redis.client.quit();
   } catch (err) {
     throw err;
+  }
+}
+
+async function checkApiAvailabilty(url: string): Promise<boolean>{
+  try {
+    const resp = await axios.get(url, { maxRedirects: 0 });
+    return resp.status === 200 && !resp.headers['mediawiki-api-error'];
+  } catch (err) {
+    return false;
+  }
+}
+
+export async function sanitize_customMainPage(customMainPage: any, restApiPath: any, base: any, mwApiPath: any, noLocalParserFallback: any) {
+  const baseUrl = new URL(ensureTrailingChar(base, '/'));
+  const apiPath = mwApiPath ?? 'w/api.php';
+  const apiUrl = new URL(`${apiPath}?`, baseUrl);
+  const veApiUrl = new URL(`${apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`);
+  const desktopRestApiUrl = new URL(ensureTrailingChar(new URL(restApiPath ?? 'api/rest_v1/page/html', baseUrl.href).toString(), '/'));
+  const baseUrlForMainPage = checkApiAvailabilty(desktopRestApiUrl.href + encodeURIComponent(customMainPage)) ? desktopRestApiUrl.href :
+                            checkApiAvailabilty(veApiUrl.href) ? veApiUrl.href :
+                            undefined;
+  if (!checkApiAvailabilty(baseUrlForMainPage + encodeURIComponent(customMainPage)) && noLocalParserFallback) {
+    throw new Error(`Failed to verify status code 200 on custom main page`)
   }
 }
 
