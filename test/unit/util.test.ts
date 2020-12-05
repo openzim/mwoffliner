@@ -117,7 +117,10 @@ test('getMediaBase tests', async(t) => {
     // Graphoid (charts)
     t.equal(getMediaBase('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', true), '28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', 'Graphoid');
 
+    // WikiHiero (hieroglyphs)
+    t.equal(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', false), 'hiero_G1.png', 'WikiHiero png with URL args');
+    t.equal(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png', false), 'hiero_G1.png', 'WikiHiero png without URL args');
+
     // Default behaviour
     t.equal(getMediaBase('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe', true), '589fd4e3821c15d4fcebcedf2effd5b0.png', 'Default handling');
-    t.equal(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', true), 'ee63548191e53f8ac46dfb10e026ee33.png', 'Default behaviour working on png with ?');
 })

@@ -1,7 +1,8 @@
 export const IMAGE_THUMB_URL_REGEX = /^.*\/([^/]+)\/(\d+px[-]+)?(.+?\.[A-Za-z0-9]{2,6}(\.[A-Za-z0-9]{2,6})?)$/;
 export const LATEX_GRAPHOID_IMAGE_URL_REGEX = /^.*\/svg\/([A-Za-z0-9]+)$/;
-export const MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE = 10;
+export const WIKIHIERO_IMAGE_URL_REGEX = /^.*\/wikihiero\/img\/(.*\.png)(\?.*)?$/;
 export const IMAGE_URL_REGEX = /(https?:\/\/.*\.(?:jpg|gif|png|svg|jpeg)(\?.*)?)/i;
+export const MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE = 10;
 export const CONCURRENCY_LIMIT = 10;
 export const IMAGE_MIME_REGEX = /^image+[/-\w.]+$/;
 export const FIND_HTTP_REGEX = /^(?:https?:\/\/)?/i;

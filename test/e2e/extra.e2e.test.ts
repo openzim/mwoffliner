@@ -18,6 +18,7 @@ test('Simple customMainPage', async (t) => {
     await mkdirPromise(testId);
 
     const articleListLines = `
+Egyptian_hieroglyphs
 Book:Cancer
 Book:Ears_nose_throat
 Book:Eye_diseases`;
