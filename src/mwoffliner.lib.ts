@@ -187,6 +187,9 @@ async function execute(argv: any) {
     webp,
   });
 
+  /* perform login */
+  await mw.login(downloader);
+
   /* Get MediaWiki Info */
   let mwMetaData;
   try {
@@ -277,8 +280,6 @@ async function execute(argv: any) {
   /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
-
-  await mw.login(downloader);
 
   if (articleList && articleList.includes('http')) {
     try {

@@ -113,7 +113,7 @@ class Downloader {
   private s3: S3;
   private mwCapabilities: MWCapabilities; // todo move to MW
   public arrayBufferRequestOptions: AxiosRequestConfig;
-  private jsonRequestOptions: AxiosRequestConfig;
+  public jsonRequestOptions: AxiosRequestConfig;
   public streamRequestOptions: AxiosRequestConfig;
 
 
@@ -234,7 +234,7 @@ class Downloader {
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
-      const resp = await axios.get(url, { maxRedirects: 0 });
+      const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie:this.loginCookie }});
       return resp.status === 200 && !resp.headers['mediawiki-api-error'];
     } catch (err) {
       return false;

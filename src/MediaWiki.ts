@@ -82,7 +82,10 @@ class MediaWiki {
         if (resp.data.login.result !== 'Success') {
           throw new Error('Login Failed');
         }
-        downloader.arrayBufferRequestOptions.headers.Cookie = resp.headers['set-cookie'].join(';');
+        downloader.arrayBufferRequestOptions.headers.cookie = resp.headers['set-cookie'].join(';');
+        downloader.jsonRequestOptions.headers.cookie = resp.headers['set-cookie'].join(';');
+        downloader.streamRequestOptions.headers.cookie = resp.headers['set-cookie'].join(';');
+        downloader.loginCookie = resp.headers['set-cookie'].join(';');
       })
       .catch((err) => {
         throw err;
