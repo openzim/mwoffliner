@@ -4,7 +4,7 @@ import logger from './Logger';
 import * as util from './util';
 import * as domino from 'domino';
 import type Downloader from './Downloader';
-import { ensureTrailingChar } from './util';
+import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util';
 
 
 class MediaWiki {
@@ -37,7 +37,7 @@ class MediaWiki {
     this.baseUrl = new URL(ensureTrailingChar(config.base, '/'));
 
     this.apiPath = config.apiPath ?? 'w/api.php';
-    this.wikiPath = config.wikiPath ?? 'wiki/';
+    this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH;
 
     this.webUrl = new URL(this.wikiPath, this.baseUrl);
     this.apiUrl = new URL(`${this.apiPath}?`, this.baseUrl);

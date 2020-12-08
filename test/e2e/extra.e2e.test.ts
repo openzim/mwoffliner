@@ -39,7 +39,7 @@ Book:Eye_diseases`;
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.equal(dump.status.articles.success, 4, 'nopic has 4 articles');
+            t.equal(dump.status.articles.success, 5, 'nopic has 5 articles');
         }
 
         if (await zimcheckAvailable()) {
