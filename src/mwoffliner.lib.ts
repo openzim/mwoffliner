@@ -197,7 +197,7 @@ async function execute(argv: any) {
   }
   const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
 
-  await downloader.checkCapabilities(mainPage);
+  await downloader.checkCapabilities(mwMetaData.mainPage);
   await downloader.setBaseUrls();
 
   const redis = new Redis(argv, config);

@@ -7,6 +7,8 @@
 import yargs from 'yargs';
 import { parameterDescriptions, requiredParams } from './parameterList';
 
+import * as  mwofflinerLib from './mwoffliner.lib';
+
 /************************************/
 /* Command Parsing ******************/
 /************************************/
@@ -55,47 +57,42 @@ if (argv.osTmpDir) {
 /* ***********************/
 
 import { sanitize_all } from './sanitize-argument';
-sanitize_all(argv).catch((err) => {
-  console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
+const execStartTime = Date.now();
+sanitize_all(argv)
+.then(() => {
+  /* ***********************************/
+  /* GO THROUGH ENTRY POINT            */
+  /* ***********************************/
+
+  mwofflinerLib
+  .execute(argv)
+    .then(() => {
+      console.info(
+        `Finished running mwoffliner after [${Math.round(
+          (Date.now() - execStartTime) / 1000,
+        )}s]`,
+      );
+      process.exit(0);
+    });
+})
+.catch((err) => {
+  let loggableErr = err;
+  try {
+    loggableErr = JSON.stringify(err, null, '\t');
+  } catch (err) {
+    /* NOOP */
+  }
+  console.error(
+    `Failed to run mwoffliner after [${Math.round(
+      (Date.now() - execStartTime) / 1000,
+    )}s]:`,
+    loggableErr,
+  );
+  if (err && err.message) {
+    console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
+  }
   process.exit(2);
 });
-
-/* ***********************************/
-/* GO THROUGH ENTRY POINT            */
-/* ***********************************/
-
-const execStartTime = Date.now();
-
-import * as  mwofflinerLib from './mwoffliner.lib';
-
-mwofflinerLib
-  .execute(argv)
-  .then(() => {
-    console.info(
-      `Finished running mwoffliner after [${Math.round(
-        (Date.now() - execStartTime) / 1000,
-      )}s]`,
-    );
-    process.exit(0);
-  })
-  .catch((err) => {
-    let loggableErr = err;
-    try {
-      loggableErr = JSON.stringify(err, null, '\t');
-    } catch (err) {
-      /* NOOP */
-    }
-    console.error(
-      `Failed to run mwoffliner after [${Math.round(
-        (Date.now() - execStartTime) / 1000,
-      )}s]:`,
-      loggableErr,
-    );
-    if (err && err.message) {
-      console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
-    }
-    process.exit(2);
-  });
 
 // Hack to allow serializing of Errors
 // https://stackoverflow.com/questions/18391212/is-it-not-possible-to-stringify-an-error-using-json-stringify
