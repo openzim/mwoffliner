@@ -199,12 +199,14 @@ async function execute(argv: any) {
     throw err;
   }
   // Sanitizing main page
-  const mainPage = customMainPage ? customMainPage.replace(/ /g, '_') : (articleList ? '' : mwMetaData.mainPage);
-  const mainPageUrl = mw.webUrl + mainPage;
-  if (mainPage && !(await downloader.checkApiAvailabilty(mainPageUrl))) {
-    throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`);
+  let mainPage = articleList ? '' : mwMetaData.mainPage;
+  if (customMainPage) {
+    mainPage = customMainPage.replace(/ /g, '_');
+    const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage);
+    if (!(await downloader.checkApiAvailabilty(mainPageUrl))) {
+      throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`);
+    }
   }
-
 
   await downloader.checkCapabilities(mwMetaData.mainPage);
   await downloader.setBaseUrls();
