@@ -56,6 +56,11 @@ export async function sanitize_all(argv: any) {
     throw err;
   });
 
+  // sanitize Custom Main Page
+  if (argv.customMainPage) {
+    argv.customMainPage = argv.customMainPage.replace(/ /g,'_');
+  }
+
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail);
 

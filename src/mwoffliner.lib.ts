@@ -201,7 +201,7 @@ async function execute(argv: any) {
   // Sanitizing main page
   let mainPage = articleList ? '' : mwMetaData.mainPage;
   if (customMainPage) {
-    mainPage = customMainPage.replace(/ /g, '_');
+    mainPage = customMainPage;
     const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage);
     if (!(await downloader.checkApiAvailabilty(mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`);
