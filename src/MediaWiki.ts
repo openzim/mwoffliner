@@ -5,6 +5,8 @@ import * as util from './util';
 import * as domino from 'domino';
 import type Downloader from './Downloader';
 import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util';
+import axios from 'axios';
+import qs from 'querystring'
 
 
 class MediaWiki {
@@ -54,24 +56,41 @@ class MediaWiki {
 
   public async login(downloader: Downloader) {
     if (this.username && this.password) {
-      let url = `${this.apiUrl.href}action=login&format=json&lgname=${this.username}&lgpassword=${this.password}`;
+      let url = this.apiUrl.href;
       if (this.domain) {
         url = `${url}&lgdomain=${this.domain}`;
       }
-      const { content } = await downloader.downloadContent(url);
-      let body = content.toString();
-      let jsonResponse = JSON.parse(body).login;
-      downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-      if (jsonResponse.result !== 'SUCCESS') {
-        url = `${url}&lgtoken=${jsonResponse.token}`;
-        const { content: subContent } = await downloader.downloadContent(url);
-        body = subContent.toString();
-        jsonResponse = JSON.parse(body).login;
-        if (jsonResponse.result !== 'Success') {
+      // Getting token to login.
+      const {content, responseHeaders}  = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json');
+
+      // Logging in
+      await axios(this.apiUrl.href, {
+        data: qs.stringify({
+          action: 'login',
+          format: 'json',
+          lgname: this.username,
+          lgpassword: this.password,
+          lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
+        }),
+        headers: {
+          Cookie: responseHeaders['set-cookie'].join(';'),
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        method: 'POST',
+      })
+      .then((resp) => {
+        if (resp.data.login.result !== 'Success') {
           throw new Error('Login Failed');
         }
-        downloader.loginCookie = `${jsonResponse.cookieprefix}_session=${jsonResponse.sessionid}`;
-      }
+
+        downloader.loginCookie = resp.headers['set-cookie'].join(';');
+        downloader.arrayBufferRequestOptions.headers.cookie = downloader.loginCookie;
+        downloader.jsonRequestOptions.headers.cookie = downloader.loginCookie;
+        downloader.streamRequestOptions.headers.cookie = downloader.loginCookie;
+      })
+      .catch((err) => {
+        throw err;
+      })
     }
   }
 

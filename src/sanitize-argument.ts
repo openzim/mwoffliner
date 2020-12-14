@@ -59,13 +59,6 @@ export async function sanitize_all(argv: any) {
   // sanitize Custom Main Page
   if (argv.customMainPage) {
     argv.customMainPage = argv.customMainPage.replace(/ /g,'_');
-    const customMainPageUrl = `${mwUrl}/${mwWikiPath || DEFAULT_WIKI_PATH}${argv.customMainPage}`;
-    await axios.get(`${customMainPageUrl}`, { maxRedirects: 0 })
-    .then((res) => {
-      if (res.status !== 200) {
-        throw new Error(`customMainPage doesn't return 200 status code for url ${customMainPageUrl}`);
-      }
-    });
   }
 
   // sanitizing adminEmail

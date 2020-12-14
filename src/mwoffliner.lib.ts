@@ -187,6 +187,9 @@ async function execute(argv: any) {
     webp,
   });
 
+  /* perform login */
+  await mw.login(downloader);
+
   /* Get MediaWiki Info */
   let mwMetaData;
   try {
@@ -195,7 +198,15 @@ async function execute(argv: any) {
     logger.error(`FATAL - Failed to get MediaWiki Metadata`);
     throw err;
   }
-  const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
+  // Sanitizing main page
+  let mainPage = articleList ? '' : mwMetaData.mainPage;
+  if (customMainPage) {
+    mainPage = customMainPage;
+    const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage);
+    if (!(await downloader.checkApiAvailabilty(mainPageUrl))) {
+      throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`);
+    }
+  }
 
   await downloader.checkCapabilities(mwMetaData.mainPage);
   await downloader.setBaseUrls();
@@ -277,8 +288,6 @@ async function execute(argv: any) {
   /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
-
-  await mw.login(downloader);
 
   if (articleList && articleList.includes('http')) {
     try {
