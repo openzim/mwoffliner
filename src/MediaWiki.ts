@@ -67,7 +67,7 @@ class MediaWiki {
       await axios(this.apiUrl.href, {
         data: qs.stringify({
           action: 'login',
-		      format: 'json',
+          format: 'json',
           lgname: this.username,
           lgpassword: this.password,
           lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
@@ -82,10 +82,11 @@ class MediaWiki {
         if (resp.data.login.result !== 'Success') {
           throw new Error('Login Failed');
         }
-        downloader.arrayBufferRequestOptions.headers.cookie = resp.headers['set-cookie'].join(';');
-        downloader.jsonRequestOptions.headers.cookie = resp.headers['set-cookie'].join(';');
-        downloader.streamRequestOptions.headers.cookie = resp.headers['set-cookie'].join(';');
+
         downloader.loginCookie = resp.headers['set-cookie'].join(';');
+        downloader.arrayBufferRequestOptions.headers.cookie = downloader.loginCookie;
+        downloader.jsonRequestOptions.headers.cookie = downloader.loginCookie;
+        downloader.streamRequestOptions.headers.cookie = downloader.loginCookie;
       })
       .catch((err) => {
         throw err;

@@ -198,7 +198,13 @@ async function execute(argv: any) {
     logger.error(`FATAL - Failed to get MediaWiki Metadata`);
     throw err;
   }
-  const mainPage = customMainPage || (articleList ? '' : mwMetaData.mainPage);
+  // Sanitizing main page
+  const mainPage = customMainPage ? customMainPage.replace(/ /g, '_') : (articleList ? '' : mwMetaData.mainPage);
+  const mainPageUrl = mw.webUrl + mainPage;
+  if (mainPage && !(await downloader.checkApiAvailabilty(mainPageUrl))) {
+    throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`);
+  }
+
 
   await downloader.checkCapabilities(mwMetaData.mainPage);
   await downloader.setBaseUrls();

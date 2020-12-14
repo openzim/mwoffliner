@@ -234,7 +234,7 @@ class Downloader {
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
-      const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie:this.loginCookie }});
+      const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie: this.loginCookie }});
       return resp.status === 200 && !resp.headers['mediawiki-api-error'];
     } catch (err) {
       return false;
@@ -249,7 +249,7 @@ class Downloader {
     // fail the check.
     this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.mobileRestApiUrl.href + encodeURIComponent(testArticleId));
     this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.desktopRestApiUrl.href + encodeURIComponent(testArticleId));
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href);
+    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.veApiUrl.href + encodeURIComponent(testArticleId));
 
     // Coordinate fetching
     const reqOpts = objToQueryString({
