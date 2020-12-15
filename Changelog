@@ -2,7 +2,10 @@
 * FIX: Local Parsoid for HTTP only instances
 * FIX: Buggy sub-page URL rewritting
 * FIX: Buggy empty paragraph removal
-* FIX: Private Mediawiki login
+* FIX: Private Mediawiki login/scraping
+* FIX: VisualEditor buggy detection
+* FIX: WikiHiero pictures scraping
+* NEW: Better --customMainPage mgmt
 * NEW: Simplify CSS/JS/Media paths a bit
 * NEW: Always show first single section
 * NEW: Use latest libzim
