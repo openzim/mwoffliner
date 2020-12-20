@@ -232,14 +232,6 @@ class Downloader {
       await this.initLocalServices();
   }
 
-  public getBaseUrl(articleId: string): string{
-    return `${this.baseUrl}${encodeURIComponent(articleId)}`
-  }
-
-  public getBaseUrlForMainPage(articleId: string): string{
-    return `${this.baseUrlForMainPage}${encodeURIComponent(articleId)}`
-  }
-
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
       const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie: this.loginCookie }});
@@ -255,9 +247,9 @@ class Downloader {
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiUrl(testArticleId));
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiUrl(testArticleId));
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiUrl(testArticleId));
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId));
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId));
+    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId));
 
     // Coordinate fetching
     const reqOpts = objToQueryString({
@@ -340,7 +332,7 @@ class Downloader {
   }
 
   public query(query: string): KVS<any> {
-    return this.getJSON(this.mw.getApiUrl(query));
+    return this.getJSON(this.mw.getApiQueryUrl(query));
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
@@ -359,7 +351,7 @@ class Downloader {
         ...(continuation || {}),
       };
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = this.mw.getApiUrl(queryString);
+      const reqUrl = this.mw.getApiQueryUrl(queryString);
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
 
@@ -411,7 +403,7 @@ class Downloader {
       }
 
       const queryString = objToQueryString(queryOpts);
-      const reqUrl = this.mw.getApiUrl(queryString);
+      const reqUrl = this.mw.getApiQueryUrl(queryString);
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl);
       Downloader.handleMWWarningsAndErrors(resp);
@@ -508,7 +500,7 @@ class Downloader {
   }
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return isMainPage ? this.getBaseUrlForMainPage(articleId) : this.getBaseUrl(articleId);
+    return `${ isMainPage ? this.baseUrlForMainPage: this.baseUrl }${encodeURIComponent(articleId)}`;
   }
 
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {

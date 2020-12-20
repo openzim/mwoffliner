@@ -109,24 +109,24 @@ class MediaWiki {
     return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
   }
 
-  public getVeApiUrl(articleId: string): string {
+  public getVeApiArticleUrl(articleId: string): string {
     return `${this.veApiUrl.href}${encodeURIComponent(articleId)}`;
   }
 
-  public getDesktopRestApiUrl(articleId: string): string {
+  public getDesktopRestApiArticleUrl(articleId: string): string {
     return `${this.desktopRestApiUrl.href}${encodeURIComponent(articleId)}`;
   }
 
-  public getMobileRestApiUrl(articleId: string): string {
+  public getMobileRestApiArticleUrl(articleId: string): string {
     return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`;
   }
 
-  public getApiUrl(query: string): string {
+  public getApiQueryUrl(query: string): string {
     return `${this.apiUrl.href}${query}`
   }
 
-  public getWebUrl(articleId: string): string {
-    return `${this.webUrl.href}${encodeURIComponent(articleId)}`
+  public getWebArticleUrlRaw(query: string): string {
+    return `${this.webUrl.href}${encodeURIComponent(query)}`
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
