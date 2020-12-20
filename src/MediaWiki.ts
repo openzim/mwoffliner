@@ -109,6 +109,26 @@ class MediaWiki {
     return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
   }
 
+  public getVeApiArticleUrl(articleId: string): string {
+    return `${this.veApiUrl.href}${encodeURIComponent(articleId)}`;
+  }
+
+  public getDesktopRestApiArticleUrl(articleId: string): string {
+    return `${this.desktopRestApiUrl.href}${encodeURIComponent(articleId)}`;
+  }
+
+  public getMobileRestApiArticleUrl(articleId: string): string {
+    return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`;
+  }
+
+  public getApiQueryUrl(query: string): string {
+    return `${this.apiUrl.href}${query}`;
+  }
+
+  public getWebArticleUrlRaw(articleId: string): string {
+    return `${this.webUrl.href}?title=${encodeURIComponent(articleId)}&action=raw`;
+  }
+
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
