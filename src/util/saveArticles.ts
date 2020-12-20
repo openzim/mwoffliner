@@ -789,12 +789,20 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
             node.removeAttribute('rel');
         }
 
+        /* Remove a few images Parsoid attributes */
+        else if (node.getAttribute('img') {
+            node.removeAttribute('data-file-width');
+            node.removeAttribute('data-file-height');
+            node.removeAttribute('data-file-type');
+        }
+
         /* Remove a few css calls */
         filtersConfig.cssClassCallsBlackList.map((classname: string) => {
             if (node.getAttribute('class')) {
                 node.setAttribute('class', node.getAttribute('class').replace(classname, ''));
             }
         });
+
     }
 
     const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink'))
