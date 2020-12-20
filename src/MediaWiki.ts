@@ -122,11 +122,11 @@ class MediaWiki {
   }
 
   public getApiQueryUrl(query: string): string {
-    return `${this.apiUrl.href}${query}`
+    return `${this.apiUrl.href}${query}`;
   }
 
   public getWebArticleUrlRaw(articleId: string): string {
-    return `${this.webUrl.href}${encodeURIComponent(articleId)}`
+    return `${this.webUrl.href}?title=${encodeURIComponent(articleId)}&action=raw`;
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
