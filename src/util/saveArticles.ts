@@ -790,7 +790,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
         }
 
         /* Remove a few images Parsoid attributes */
-        else if (node.getAttribute('img') {
+        else if (node.getAttribute('img')) {
             node.removeAttribute('data-file-width');
             node.removeAttribute('data-file-height');
             node.removeAttribute('data-file-type');
