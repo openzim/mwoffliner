@@ -17,7 +17,7 @@ const config = {
     cssClassBlackList: [
       'noprint', 'metadata', 'ambox', 'stub',
       'topicon', 'magnify', 'navbar', 'mw-kartographer-container',
-      'mw-dismissable-notice', 'navigation-only',
+      'mw-dismissable-notice', 'navigation-only', 'listing-sister-icons',
     ],
 
     /* Additional black list if only intro is dumped */
