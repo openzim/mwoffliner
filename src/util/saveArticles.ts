@@ -777,6 +777,11 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
         }
     }
 
+    /* Delete empty span nodes */
+    for (const span of spans) {
+        deleteEmptyNodeRecursively(span);
+    }
+
     /* Clean the DOM of all uncessary code */
     const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'));
     for (const node of allNodes) {
@@ -920,6 +925,17 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     }
 
     return htmlTemplateDoc;
+}
+
+function deleteEmptyNodeRecursively(node: DominoElement) {
+    if (node.children.length > 0) {
+        for (const childNode of node.children) {
+            deleteEmptyNodeRecursively(childNode);
+        }
+    }
+    if (node.children.length === 0 && node.textContent.replace(/\s/g, '') === '') {
+        DU.deleteNode(node);
+    }
 }
 
 function addNoIndexCommentToElement(element: DominoElement) {
