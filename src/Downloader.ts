@@ -12,6 +12,7 @@ import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminWebp from 'imagemin-webp';
+import sharp from 'sharp';
 
 import {
   normalizeMwResponse,
@@ -611,7 +612,12 @@ class Downloader {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
-        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']));
+        const tempData = resp.data;
+        resp.data = await imagemin.buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
+        .catch((err) => {
+          logger.warn(err.message);
+          resp.data = tempData;
+        })
         resp.headers.path_postfix = '.webp';
         resp.headers['content-type'] = 'image/webp';
       } else {
