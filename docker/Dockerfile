@@ -1,4 +1,5 @@
 FROM openzim/node-redis:14-6
+LABEL org.opencontainers.image.source https://github.com/openzim/mwoffliner
 
 # Install dependences
 RUN apt-get update && \
