@@ -613,10 +613,13 @@ class Downloader {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
         const tempData = resp.data;
-        resp.data = await imagemin.buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
-        .catch((err) => {
-          logger.warn(err.message);
-          resp.data = tempData;
+        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
+        .catch( async (err) => {
+          resp.data = await imagemin.buffer(await sharp(tempData).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
+          .catch(err => {
+            logger.warn(err.message);
+            resp.data = tempData;
+          })
         })
         resp.headers.path_postfix = '.webp';
         resp.headers['content-type'] = 'image/webp';
