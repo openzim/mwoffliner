@@ -12,6 +12,7 @@ import imageminPngquant from 'imagemin-pngquant';
 import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminWebp from 'imagemin-webp';
+import sharp from 'sharp';
 
 import {
   normalizeMwResponse,
@@ -611,11 +612,28 @@ class Downloader {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
-        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']));
+        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
+        .catch( async (err) => {
+          if (/Unsupported color conversion request/.test(err.stderr)) {
+            return await imagemin.buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
+            .catch(() => {return resp.data})
+            .then((data) => {
+              resp.headers['content-type'] = 'image/webp';
+              return data;
+            });
+          } else {
+            return await imagemin.buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type']))
+            .catch(() => {return resp.data});
+          }
+        })
+        .then((data) => {
+          resp.headers['content-type'] = 'image/webp';
+          return data;
+        });
         resp.headers.path_postfix = '.webp';
-        resp.headers['content-type'] = 'image/webp';
       } else {
-        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type']));
+        resp.data = await imagemin.buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type']))
+        .catch(() => {return resp.data});
       }
       return true;
     }
