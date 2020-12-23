@@ -615,11 +615,12 @@ class Downloader {
         const tempData = resp.data;
         resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
         .catch( async (err) => {
-          resp.data = await imagemin.buffer(await sharp(tempData).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
-          .catch(err => {
-            logger.warn(err.message);
-            resp.data = tempData;
-          })
+          if (err.code === 255) {
+            return await imagemin.buffer(await sharp(tempData).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']));
+          } else {
+            logger.warn(err.stderr);
+            return await imagemin.buffer(tempData, imageminOptions.get('default').get(resp.headers['content-type']));
+          }
         })
         resp.headers.path_postfix = '.webp';
         resp.headers['content-type'] = 'image/webp';
