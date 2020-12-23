@@ -11,6 +11,7 @@ import { Dump } from 'src/Dump';
 import { articleDetailXId } from 'src/stores';
 import logger from 'src/Logger';
 import 'dotenv/config';
+import FileType from 'file-type'
 
 test('Downloader class', async (t) => {
     const mw = new MediaWiki({
@@ -20,7 +21,7 @@ test('Downloader class', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: true, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
@@ -55,6 +56,9 @@ test('Downloader class', async (t) => {
 
     const contentRes = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg`);
     t.ok(!!contentRes.responseHeaders, 'downloader.downloadContent returns');
+
+    const {content} = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg`);
+     t.equal((await FileType.fromBuffer(Buffer.from(content))).mime, 'image/webp', 'Webp compression wroking for cmyk color-space images')
 
     try {
         await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg`);

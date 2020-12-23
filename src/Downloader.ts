@@ -612,14 +612,12 @@ class Downloader {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
-        const tempData = resp.data;
         resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
         .catch( async (err) => {
-          if (err.code === 255) {
-            return await imagemin.buffer(await sharp(tempData).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']));
+          if (/Unsupported color conversion request/.test(err.stderr)) {
+            return await imagemin.buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']));
           } else {
-            logger.warn(err.stderr);
-            return await imagemin.buffer(tempData, imageminOptions.get('default').get(resp.headers['content-type']));
+            return await imagemin.buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type']));
           }
         })
         resp.headers.path_postfix = '.webp';
