@@ -149,7 +149,6 @@ class Downloader {
 
     this.arrayBufferRequestOptions = {
       headers: {
-        'accept': 'text/html; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/HTML/1.8.0"',
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
         'cookie': this.loginCookie,
