@@ -116,6 +116,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                 resp.namespace = arg.val.namespace;
                 resp.mult = arg.val.mult;
                 resp.width = arg.val.width;
+
                 return downloader.downloadContent(arg.val.url).then((r) => {
                     resp.result = r;
                     resp.path += resp.result.responseHeaders.path_postfix || '';
