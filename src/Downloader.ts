@@ -13,6 +13,8 @@ import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminWebp from 'imagemin-webp';
 import sharp from 'sharp';
+import fs from 'fs';
+import crypto from 'crypto';
 
 import {
   normalizeMwResponse,
@@ -75,6 +77,7 @@ interface DownloaderOpts {
   optimisationCacheUrl: string;
   s3?: S3;
   webp: boolean;
+  webpCache: string;
   backoffOptions?: BackoffOptions;
 }
 
@@ -101,6 +104,7 @@ class Downloader {
   public baseUrlForMainPage: string;
   public cssDependenceUrls: KVS<boolean> = {};
   public readonly webp: boolean = false;
+  public readonly webpCache: string = '';
 
   private readonly uaString: string;
   private activeRequests = 0;
@@ -118,7 +122,7 @@ class Downloader {
   public streamRequestOptions: AxiosRequestConfig;
 
 
-  constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, webp, webpCache, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
@@ -129,6 +133,7 @@ class Downloader {
     this.forceLocalParser = forceLocalParser;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.webp = webp;
+    this.webpCache = webpCache;
     this.s3 = s3;
     this.mwCapabilities = {
       veApiAvailable: false,
@@ -611,6 +616,32 @@ class Downloader {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
+        let webpFilename = ''; // init as empty. Only filled out if webpCache is used. needs to be in this scope.
+        let webpFullPath = '';
+        
+        if (this.webpCache) {
+          /* a hash is generated based on the url. This ensures queries with queryParams recieve
+          their own file, solves the issue of unsafe chars and collisions after cleaning said chars.
+          Speed improvements of exist()/existSync() **should** be seen, as long-similar-names increase
+          tree traversal time. Crypto is a built-in node lib and is incredibly fast. Will not be a 
+          bottleneck */
+          webpFilename = crypto.createHash("sha1").update(resp.config.url).digest("hex");
+          webpFullPath = path.join(this.webpCache, webpFilename);
+
+          if (fs.existsSync(webpFullPath)) {
+            console.log('   -- webp exists!');
+            try {
+              resp.data = fs.readFileSync(webpFullPath);
+              resp.headers['content-type'] = 'image/webp';
+              resp.headers.path_postfix = '.webp';
+
+              return true;
+            } catch (err) {
+              logger.info(`Error loading webp from cache: ${err}`);
+            }
+          }
+        }
+
         resp.data = await imagemin.buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
         .catch( async (err) => {
           if (/Unsupported color conversion request/.test(err.stderr)) {
@@ -627,6 +658,7 @@ class Downloader {
         })
         .then((data) => {
           resp.headers['content-type'] = 'image/webp';
+          fs.writeFileSync(webpFullPath, data);
           return data;
         });
         resp.headers.path_postfix = '.webp';

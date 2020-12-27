@@ -29,6 +29,7 @@ export const parameterDescriptions = {
   verbose: 'Print debug information to the stdout',
   withoutZimFullTextIndex: 'Don\'t include a fulltext search index to the ZIM',
   webp: 'Convert all jpeg, png and gif images to webp format',
+  webpCache: 'Save webp to directory upon conversion; load webp from directory instead of converting (if available)',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
   getCategories: '[WIP] Download category pages',
   noLocalParserFallback: 'Don\'t fall back to a local MCS or Parsoid, only use remote APIs',

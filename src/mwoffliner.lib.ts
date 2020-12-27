@@ -101,6 +101,7 @@ async function execute(argv: any) {
     customZimTags,
     withoutZimFullTextIndex,
     webp,
+    webpCache,
     format,
     filenamePrefix,
     resume,
@@ -185,6 +186,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     s3,
     webp,
+    webpCache,
   });
 
   /* perform login */

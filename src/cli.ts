@@ -53,6 +53,24 @@ if (argv.osTmpDir) {
 }
 
 /* ***********************/
+/* ENSURE VALID WEBPCACHE*/
+/* ***********************/
+if (argv.webpCache) {
+  const webpCache = argv.webpCache as string;
+  console.log('webpcache string', webpCache)
+
+  try {
+    if (!fs.statSync(webpCache)) {
+      console.log('returned no')
+      throw new Error();
+    }
+  } catch {
+    console.error(`--webpCache value [${webpCache}] is not valid\n  tip: ensure the directory already exists. It will not be made automatically.`);
+    process.exit(2);
+  }
+}
+
+/* ***********************/
 /* TESTING ALL ARGUMENTS */
 /* ***********************/
 
