@@ -616,17 +616,18 @@ class Downloader {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
+        const webpCache = this.webpCache;
         let webpFilename = ''; // init as empty. Only filled out if webpCache is used. needs to be in this scope.
         let webpFullPath = '';
 
-        if (this.webpCache) {
+        if (webpCache) {
           /* a hash is generated based on the url. This ensures queries with queryParams recieve
           their own file, solves the issue of unsafe chars and collisions after cleaning said chars.
           Speed improvements of exist()/existSync() **should** be seen, as long-similar-names increase
           tree traversal time. Crypto is a built-in node lib and is incredibly fast. Will not be a
           bottleneck */
           webpFilename = crypto.createHash('sha1').update(resp.config.url).digest('hex');
-          webpFullPath = path.join(this.webpCache, webpFilename);
+          webpFullPath = path.join(webpCache, webpFilename);
 
           if (fs.existsSync(webpFullPath)) {
             try {
@@ -657,7 +658,15 @@ class Downloader {
         })
         .then((data) => {
           resp.headers['content-type'] = 'image/webp';
-          fs.writeFileSync(webpFullPath, data);
+          
+          if (webpCache) {
+            try {
+              fs.writeFileSync(webpFullPath, data);
+            } catch(err) {
+              logger.log(`Unable to save webp to cache: ${webpFullPath}`);
+            }
+          }
+
           return data;
         });
         resp.headers.path_postfix = '.webp';
