@@ -21,6 +21,7 @@ class S3 {
             endpoint: s3UrlBase,
             accessKeyId: this.params.keyId,
             secretAccessKey: this.params.secretAccessKey,
+            s3ForcePathStyle: s3UrlBase.protocol === 'http:',
         });
         try {
             if (await this.bucketExists(this.bucketName) === true) {
