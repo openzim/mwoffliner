@@ -629,7 +629,6 @@ class Downloader {
           webpFullPath = path.join(this.webpCache, webpFilename);
 
           if (fs.existsSync(webpFullPath)) {
-            console.log('   -- webp exists!');
             try {
               resp.data = fs.readFileSync(webpFullPath);
               resp.headers['content-type'] = 'image/webp';
