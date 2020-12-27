@@ -20,8 +20,10 @@ test('Downloader class', async (t) => {
     } as any);
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
+    const webpCacheDir = 'tmp/webpCache-test/';
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: true, webpCache: '', optimisationCacheUrl: '' });
+    await mkdirPromise(webpCacheDir);
+    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: true, webpCache: webpCacheDir, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
@@ -55,7 +57,14 @@ test('Downloader class', async (t) => {
     }
 
     const contentRes = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg`);
+    const contentResServer = contentRes && contentRes.responseHeaders && contentRes.responseHeaders.server;
     t.ok(!!contentRes.responseHeaders, 'downloader.downloadContent returns');
+    t.doesNotEqual(contentResServer, 'webpCache', 'downloader.downloadContent returns from web source as it is not in cache');
+
+    // Load the above image again. Expect loading from webpCache
+    const contentResCache = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg`);
+    const contentResCacheServer = contentResCache && contentResCache.responseHeaders && contentResCache.responseHeaders.server
+    t.equal(contentResCacheServer, 'webpCache', 'downloader.downloadContent returns from webpCache as it is an image that already exists in cache');
 
     const {content} = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg`);
      t.equal((await FileType.fromBuffer(Buffer.from(content))).mime, 'image/webp', 'Webp compression working for cmyk color-space images');
@@ -113,6 +122,7 @@ test('Downloader class', async (t) => {
     }
 
     rimraf.sync(cacheDir);
+    rimraf.sync(webpCacheDir);
 
     const isPngFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
     t.assert(isPngFile, 'Checked Image type: png');

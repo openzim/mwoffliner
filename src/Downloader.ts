@@ -634,6 +634,7 @@ class Downloader {
               resp.data = fs.readFileSync(webpFullPath);
               resp.headers['content-type'] = 'image/webp';
               resp.headers.path_postfix = '.webp';
+              resp.headers.server = 'webpCache';
 
               return true;
             } catch (err) {
@@ -658,7 +659,7 @@ class Downloader {
         })
         .then((data) => {
           resp.headers['content-type'] = 'image/webp';
-          
+
           if (webpCache) {
             try {
               fs.writeFileSync(webpFullPath, data);

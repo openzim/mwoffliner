@@ -57,7 +57,6 @@ if (argv.osTmpDir) {
 /* ***********************/
 if (argv.webpCache) {
   const webpCache = argv.webpCache as string;
-  console.log('webpcache string', webpCache)
 
   try {
     if (!fs.statSync(webpCache)) {
