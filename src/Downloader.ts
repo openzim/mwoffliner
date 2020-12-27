@@ -77,7 +77,7 @@ interface DownloaderOpts {
   optimisationCacheUrl: string;
   s3?: S3;
   webp: boolean;
-  webpCache: string;
+  webpCache?: string;
   backoffOptions?: BackoffOptions;
 }
 
@@ -618,14 +618,14 @@ class Downloader {
           !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
         let webpFilename = ''; // init as empty. Only filled out if webpCache is used. needs to be in this scope.
         let webpFullPath = '';
-        
+
         if (this.webpCache) {
           /* a hash is generated based on the url. This ensures queries with queryParams recieve
           their own file, solves the issue of unsafe chars and collisions after cleaning said chars.
           Speed improvements of exist()/existSync() **should** be seen, as long-similar-names increase
-          tree traversal time. Crypto is a built-in node lib and is incredibly fast. Will not be a 
+          tree traversal time. Crypto is a built-in node lib and is incredibly fast. Will not be a
           bottleneck */
-          webpFilename = crypto.createHash("sha1").update(resp.config.url).digest("hex");
+          webpFilename = crypto.createHash('sha1').update(resp.config.url).digest('hex');
           webpFullPath = path.join(this.webpCache, webpFilename);
 
           if (fs.existsSync(webpFullPath)) {
