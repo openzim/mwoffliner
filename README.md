@@ -15,7 +15,7 @@ MWoffliner development.
 [![NPM](https://nodei.co/npm/mwoffliner.png)](https://www.npmjs.com/package/mwoffliner)
 
 [![npm](https://img.shields.io/npm/v/mwoffliner.svg)](https://www.npmjs.com/package/mwoffliner)
-[![Docker Image](https://img.shields.io/docker/v/openzim/mwoffliner?arch=amd64&label=Docker&sort=date)](https://hub.docker.com/r/openzim/mwoffliner)
+[![Docker Image](https://img.shields.io/docker/v/openzim/mwoffliner?arch=amd64&label=docker&sort=date)](https://hub.docker.com/r/openzim/mwoffliner)
 [![Build Status](https://github.com/openzim/mwoffliner/workflows/CI/badge.svg?query=branch%3Amaster)](https://github.com/openzim/mwoffliner/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
