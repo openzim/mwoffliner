@@ -1,3 +1,10 @@
+1.11.3
+* FIX: Partly broken Webp image conversion
+* FIX: HTTP error status code because wrong 'accept' HTTP request header
+* FIX: Bad exit code in some error cases
+* UPDATE: Remove a few additional Parsoid images attributes
+* NEW: Allow S3 unencrypted connections
+
 1.11.2
 * FIX: Local Parsoid for HTTP only instances
 * FIX: Buggy sub-page URL rewritting
