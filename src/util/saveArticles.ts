@@ -254,7 +254,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         dump.status.articles.success += 1;
                     }
                 } catch (err) {
-                    logger.warn(`Error downloading article ${articleId}`);
+                    logger.error(`Error downloading article ${articleId}`);
                     throw err;
                 }
 
