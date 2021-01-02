@@ -447,6 +447,9 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleApiUrl}`);
 
     const json = await this.getJSON<any>(articleApiUrl);
+    if (json.error) {
+      throw json.error;
+    }
     return await renderArticle(json, articleId, dump, this.mwCapabilities);
   }
 

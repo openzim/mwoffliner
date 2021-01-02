@@ -255,8 +255,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                     }
                 } catch (err) {
                     dump.status.articles.fail += 1;
-                    logger.warn(`Error downloading article [${articleId}], skipping`, err);
-                    await articleDetailXId.delete(articleId);
+                    logger.error(`Error downloading article ${articleId}`);
+                    throw err;
                 }
 
                 if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {

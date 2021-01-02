@@ -8,6 +8,7 @@ import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVi
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail } from 'src/util';
+import logger from '../../src/Logger';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -19,7 +20,7 @@ test('Article html processing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
     await downloader.checkCapabilities();
     await downloader.setBaseUrls();
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Non-existent-town']);
+    const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
     const articlesDetail = mwRetToArticleDetail(_articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
@@ -41,7 +42,12 @@ test('Article html processing', async (t) => {
         dump,
     );
 
-    t.assert(addedArticles.length === 1 && addedArticles[0].aid === 'A/London' && dump.status.articles.fail === 1, 'Skip non-existent articles');
+    t.assert(addedArticles.length === 1 && addedArticles[0].aid === 'A/London', 'Successfully scrapped existent articles');
+    try {
+        await downloader.getArticle('non-existent-article', dump);
+    } catch (err) {
+        t.equal(err.response.status, 404, 'Throwing error for scrapping non-existent articles')
+    }
 
     const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString());
 
