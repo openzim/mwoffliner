@@ -4,7 +4,7 @@ import logger from './Logger';
 import * as util from './util';
 import * as domino from 'domino';
 import type Downloader from './Downloader';
-import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util';
+import { ensureTrailingChar, DEFAULT_WIKI_PATH, checkApiAvailabilty } from './util';
 import axios from 'axios';
 import qs from 'querystring'
 
@@ -129,6 +129,37 @@ class MediaWiki {
     return `${this.webUrl.href}?title=${encodeURIComponent(articleId)}&action=raw`;
   }
 
+  public hasDesktopRestApi = async function(testArticleId?: string, loginCookie?: string): Promise<any> {
+    const desktopRestApiAvailable = await checkApiAvailabilty(this.getDesktopRestApiArticleUrl(testArticleId), loginCookie);
+    this.hasDesktopRestApi = async function (): Promise<boolean> {
+      return desktopRestApiAvailable;
+    }
+  }
+
+  public hasMobileRestApi = async function(testArticleId?: string, loginCookie?: string): Promise<any> {
+    const mobileRestApiAvailable = await checkApiAvailabilty(this.getMobileRestApiArticleUrl(testArticleId), loginCookie);
+    this.hasMobileRestApi = async function (): Promise<boolean> {
+      return mobileRestApiAvailable;
+    }
+  }
+
+  public hasVeApi = async function(testArticleId?: string, loginCookie?: string): Promise<any> {
+    const veRestApiAvailable = await checkApiAvailabilty(this.getVeApiArticleUrl(testArticleId), loginCookie);
+    this.hasVeApi = async function (): Promise<boolean> {
+      return veRestApiAvailable;
+    }
+  }
+
+  public hasCoordinatesApi = async function(downloader?: Downloader) {
+    let coordinateAvailable = true;
+    if(downloader){
+      coordinateAvailable = await downloader.checkCoordinateAvailablity();
+    }
+    this.hasCoordinatesApi = async function () {
+      return coordinateAvailable;
+    }
+  }
+
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const self = this;
     const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
@@ -249,6 +280,14 @@ class MediaWiki {
     return textDir;
   }
 
+  public getMainPage = function(url?: string): string {
+    const encodedUri = decodeURIComponent(url);
+    this.getMainPage = function (): string {
+      return encodedUri;
+    }
+    return encodedUri;
+  }
+
   public async getSiteInfo(downloader: Downloader) {
     const self = this;
     logger.log('Getting site info...');
@@ -257,7 +296,7 @@ class MediaWiki {
     const entries = body.query.general;
 
     // Base will contain the default encoded article id for the wiki.
-    const mainPage = decodeURIComponent(entries.base.split('/').pop());
+    const mainPage = this.getMainPage(entries.base.split('/').pop());
     const siteName = entries.sitename;
 
     const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code));

@@ -10,15 +10,15 @@ import {
 import logger from '../Logger';
 import type {Dump} from '../Dump';
 import {articleDetailXId} from '../stores';
-import {MWCapabilities} from '../Downloader';
 import {getStrippedTitleFromHtml} from './misc';
+import MediaWiki from 'src/MediaWiki';
 
 
-export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
+export const renderArticle = async (json: any, articleId: string, dump: Dump, mw: MediaWiki): Promise<RenderedArticle[]> => {
     const articleDetail = await articleDetailXId.get(articleId);
     const isMainPage = dump.isMainPage(articleId);
 
-    if (isMainPage || (capabilities.veApiAvailable && !capabilities.desktopRestApiAvailable)) {
+    if (isMainPage || (mw.hasVeApi() && !mw.hasDesktopRestApi())) {
         const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage);
         const strippedTitle = getStrippedTitleFromHtml(html);
         return [{

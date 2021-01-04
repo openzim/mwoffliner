@@ -3,6 +3,7 @@ import deepmerge = require('deepmerge');
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import { articleDetailXId, redirectsXId } from '../stores';
+import axios from 'axios';
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;
@@ -168,3 +169,12 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
     }
     return ret;
 }
+
+export async function checkApiAvailabilty(url: string, loginCookie: string = ''): Promise<boolean>{
+    try {
+      const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie: loginCookie}});
+      return resp.status === 200 && !resp.headers['mediawiki-api-error'];
+    } catch (err) {
+      return false;
+    }
+  }

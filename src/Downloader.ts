@@ -85,13 +85,6 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void;
 }
 
-export interface MWCapabilities {
-  veApiAvailable: boolean;  // visualeditor API
-  coordinatesAvailable: boolean;
-  desktopRestApiAvailable: boolean;
-  mobileRestApiAvailable: boolean;
-}
-
 
 class Downloader {
   public readonly mw: MediaWiki;
@@ -112,7 +105,6 @@ class Downloader {
   private readonly backoffOptions: BackoffOptions;
   private readonly optimisationCacheUrl: string;
   private s3: S3;
-  private mwCapabilities: MWCapabilities; // todo move to MW
   public arrayBufferRequestOptions: AxiosRequestConfig;
   public jsonRequestOptions: AxiosRequestConfig;
   public streamRequestOptions: AxiosRequestConfig;
@@ -130,12 +122,6 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.webp = webp;
     this.s3 = s3;
-    this.mwCapabilities = {
-      veApiAvailable: false,
-      coordinatesAvailable: true,
-      desktopRestApiAvailable: false,
-      mobileRestApiAvailable: false
-    };
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -210,14 +196,14 @@ class Downloader {
   }
 
   public async setBaseUrls() {
-    this.baseUrl = this.mwCapabilities.mobileRestApiAvailable ? this.mw.mobileRestApiUrl.href :
-                   this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
-                   this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
+    this.baseUrl = (await this.mw.hasMobileRestApi()) ? this.mw.mobileRestApiUrl.href :
+                   (await this.mw.hasDesktopRestApi()) ? this.mw.desktopRestApiUrl.href :
+                   (await this.mw.hasVeApi()) ? this.mw.veApiUrl.href :
                    !this.noLocalParserFallback ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
                    undefined;
 
-    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
-                              this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
+    this.baseUrlForMainPage = (await this.mw.hasDesktopRestApi()) ? this.mw.desktopRestApiUrl.href :
+                              (await this.mw.hasVeApi()) ? this.mw.veApiUrl.href :
                               !this.noLocalParserFallback ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
                               undefined;
 
@@ -241,17 +227,7 @@ class Downloader {
     }
   }
 
-  public async checkCapabilities(testArticleId: string='MediaWiki:Sidebar'): Promise<void> {
-
-    // By default check all API's responses and set the capabilities
-    // accordingly. We need to set a default page (always there because
-    // installed per default) to request the REST API, otherwise it would
-    // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId));
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId));
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId));
-
-    // Coordinate fetching
+  public async checkCoordinateAvailablity(): Promise<boolean> {
     const reqOpts = objToQueryString({
       ...this.getArticleQueryOpts(),
     });
@@ -259,8 +235,21 @@ class Downloader {
     const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates');
     if (isCoordinateWarning) {
       logger.info(`Coordinates not available on this wiki`);
-      this.mwCapabilities.coordinatesAvailable = false;
+      return false;
     }
+    return true;
+  }
+
+  public async checkCapabilities(testArticleId: string='MediaWiki:Sidebar'): Promise<void> {
+
+    // By default check all API's responses and set the capabilities
+    // accordingly. We need to set a default page (always there because
+    // installed per default) to request the REST API, otherwise it would
+    // fail the check.
+    await this.mw.hasDesktopRestApi(testArticleId, this.loginCookie);
+    await this.mw.hasMobileRestApi(testArticleId, this.loginCookie);
+    await this.mw.hasVeApi(testArticleId, this.loginCookie);
+    await this.mw.hasCoordinatesApi(this);
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -343,7 +332,7 @@ class Downloader {
       const queryOpts = {
         ...this.getArticleQueryOpts(shouldGetThumbnail, true),
         titles: articleIds.join('|'),
-        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
+        ...(this.mw.hasCoordinatesApi() ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories ? {
           cllimit: 'max',
           clshow: '!hidden',
@@ -382,7 +371,7 @@ class Downloader {
     while (true) {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(),
-        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
+        ...(this.mw.hasCoordinatesApi() ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories ? {
           cllimit: 'max',
           clshow: '!hidden',
@@ -450,7 +439,7 @@ class Downloader {
     if (json.error) {
       throw json.error;
     }
-    return await renderArticle(json, articleId, dump, this.mwCapabilities);
+    return await renderArticle(json, articleId, dump, this.mw);
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
@@ -552,7 +541,7 @@ class Downloader {
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mw.hasCoordinatesApi() ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
       redirects: (redirects? true : undefined),
