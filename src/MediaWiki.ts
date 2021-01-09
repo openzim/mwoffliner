@@ -260,7 +260,7 @@ class MediaWiki {
     // Checking mediawiki version
     const mwVersion = semver.coerce(entries.generator).raw;
     if (!semver.satisfies(mwVersion, '>=1.27')) {
-      throw new Error(`Mediawiki version ${mwVersion} not supported`);
+      throw new Error(`Mediawiki version ${mwVersion} not supported should be >=1.27`);
     }
 
     // Base will contain the default encoded article id for the wiki.
