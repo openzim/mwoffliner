@@ -7,6 +7,7 @@ import type Downloader from './Downloader';
 import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util';
 import axios from 'axios';
 import qs from 'querystring'
+import semver from 'semver';
 
 
 class MediaWiki {
@@ -255,6 +256,12 @@ class MediaWiki {
     const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
     const body = await downloader.query(query);
     const entries = body.query.general;
+
+    // Checking mediawiki version
+    const mwVersion = semver.coerce(entries.generator).raw;
+    if (!semver.satisfies(mwVersion, '>=1.27')) {
+      throw new Error(`Mediawiki version ${mwVersion} not supported`);
+    }
 
     // Base will contain the default encoded article id for the wiki.
     const mainPage = decodeURIComponent(entries.base.split('/').pop());
