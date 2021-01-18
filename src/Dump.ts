@@ -71,20 +71,23 @@ export class Dump {
     }
 
     public computeFlavour() {
-        let flavour = '';
+        const flavour = [];
         if (typeof this.formatFlavour === 'string') {
-            flavour += this.formatFlavour ? `_${this.formatFlavour}` : '';
+            flavour.push(this.formatFlavour);
         } else {
             if (this.nopic) {
-                flavour += '_nopic';
+                flavour.push('nopic');
             } else if (this.nopdf) {
-                flavour += '_nopdf';
+                flavour.push('nopdf');
             } else if (this.novid && !this.nodet) {
-                flavour += '_novid';
+                flavour.push('novid');
             }
-            flavour += this.nodet ? '_nodet' : '';
+
+            if (this.nodet) {
+               flavour.push('nodet');
+               }
         }
-        return flavour;
+        return flavour.join('_');
     }
 
     public computeFilenameRadical(withoutSelection?: boolean, withoutFlavour?: boolean, withoutDate?: boolean) {
@@ -110,8 +113,8 @@ export class Dump {
                 radical += '_all';
             }
         }
-        if (!withoutFlavour) {
-            radical += this.computeFlavour();
+        if (!withoutFlavour && this.computeFlavour()) {
+            radical += `_${this.computeFlavour()}`;
         }
         if (!withoutDate) {
             radical += `_${this.opts.filenameDate}`;
