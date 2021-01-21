@@ -118,7 +118,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     }
 
     const moduleApiUrl = encodeURI(
-        `${mw.modulePath}debug=false&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
+        `${mw.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`,
     );
     logger.info(`Getting [${type}] module [${moduleApiUrl}]`);
 
@@ -126,7 +126,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     let text = content.toString();
     if (module === 'startup' && type === 'js') {
         text = hackStartUpModule(text);
-    } else if (module === 'mediawiki' && type === 'js') {
+    } else if (module === 'mediawiki.base' && type === 'js') {
         text = hackMediaWikiModule(text);
     }
 
