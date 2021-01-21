@@ -36,8 +36,8 @@ $docker run --link=redis:redis --name=mwoffliner -ti openzim/mwoffliner
 example, the second line is the mwoffliner command itself):
 
 ```
-docker run --link=redis:redis --name=mwoffliner openzim/mwoffliner \
-       mwoffliner --redis="redis://redis" --verbose --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
+docker run --link=redis:redis --name=mwoffliner -e REDIS="redis://redis" openzim/mwoffliner \
+       mwoffliner --verbose --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
 ```
 
 ## With Docker compose
