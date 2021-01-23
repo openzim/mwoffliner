@@ -100,14 +100,13 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
                     document.body.addEventListener('fireStartUp', function () { startUp() }, false);
                     return;
                     script=document.createElement('script');`,
-        );
+        ).replace('function allReady( modules ) {', 'function allReady( modules ) { return true;');
     }
     function hackMediaWikiModule(jsCode: string) {
-        jsCode += `(function () {
-            const startUpEvent = new CustomEvent('fireStartUp');
-            document.body.dispatchEvent(startUpEvent);
-        })()`;
-        return jsCode;
+        return `mwObj = { ${jsCode.split('\n').slice(1, -4).join('\n')} } mwObj["files"]["mediawiki.base.js"]( (fileName) => { return mwObj["files"][fileName.split('/')[1]]; } , false);`;
+    }
+    function hackSiteModule(jsCode: string){
+        return `${jsCode.replace('$Tables.each', '$Tables.forEach').replace('$( this )', '$( table )').replace('i, table', 'table, i')} collapsibleTables($);`;
     }
 
     let apiParameterOnly;
@@ -128,6 +127,8 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
         text = hackStartUpModule(text);
     } else if (module === 'mediawiki.base' && type === 'js') {
         text = hackMediaWikiModule(text);
+    } else if (module === 'site' && type === 'js') {
+        text = hackSiteModule(text);
     }
 
     try {
