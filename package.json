@@ -114,7 +114,6 @@
     "zim"
   ],
   "devDependencies": {
-    "@percy/puppeteer": "^1.1.0",
     "@types/blue-tape": "^0.1.33",
     "@types/jest": "^26.0.15",
     "@types/redis": "^2.8.28",
@@ -126,7 +125,6 @@
     "eslint": "^7.11.0",
     "jest": "^26.6.1",
     "nyc": "^15.1.0",
-    "puppeteer": "^5.4.0",
     "redis-mock": "^0.52.0",
     "replace": "^1.2.0",
     "tap-spec": "^5.0.0",
