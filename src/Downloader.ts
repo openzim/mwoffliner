@@ -86,7 +86,8 @@ interface BackoffOptions {
 }
 
 export interface MWCapabilities {
-  veApiAvailable: boolean;  // visualeditor API
+  apiAvailable: boolean,
+  veApiAvailable: boolean;
   coordinatesAvailable: boolean;
   desktopRestApiAvailable: boolean;
   mobileRestApiAvailable: boolean;
@@ -131,6 +132,7 @@ class Downloader {
     this.webp = webp;
     this.s3 = s3;
     this.mwCapabilities = {
+      apiAvailable: false,
       veApiAvailable: false,
       coordinatesAvailable: true,
       desktopRestApiAvailable: false,
@@ -213,12 +215,12 @@ class Downloader {
     this.baseUrl = this.mwCapabilities.mobileRestApiAvailable ? this.mw.mobileRestApiUrl.href :
                    this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
                    this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
-                   !this.noLocalParserFallback ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
+                   !this.noLocalParserFallback && this.mwCapabilities.apiAvailable ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
                    undefined;
 
     this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
                               this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
-                              !this.noLocalParserFallback ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
+                              !this.noLocalParserFallback && this.mwCapabilities.apiAvailable ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
                               undefined;
 
     logger.log('Base Url: ', this.baseUrl);
@@ -250,6 +252,7 @@ class Downloader {
     this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId));
     this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId));
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId));
+    this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href);
 
     // Coordinate fetching
     const reqOpts = objToQueryString({
