@@ -10,7 +10,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
-import { MEDIAWIKIBASE_MODULE_REGEX, SITE_MODULE_REGEX, STARTUP_MODULE_REGEX } from './const';
+import { SITE_MODULE_REGEX, STARTUP_MODULE_REGEX } from './const';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -99,20 +99,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
             throw new Error('unable to hack startup module');
         }
         // return true is added to allReady() to stop execution of loading other php modules.
-        return jsCode.replace(
-            'script=document.createElement(\'script\');',
-            `
-                    document.body.addEventListener('fireStartUp', function () { startUp() }, false);
-                    return;
-                    script=document.createElement('script');`,
-        ).replace('function allReady( modules ) {', 'function allReady( modules ) { return true;');
-    }
-    function hackMediaWikiBaseModule(jsCode: string) {
-        if (!MEDIAWIKIBASE_MODULE_REGEX.test(jsCode)) {
-            throw new Error('unable to hack mediawiki.base module');
-        }
-        // removed mw.loader.implement and execute mediawiki.base from mwObj by adding a require() function.
-        return `mwObj = { ${jsCode.split('\n').slice(1, -4).join('\n')} } mwObj["files"]["mediawiki.base.js"]( (fileName) => { return mwObj["files"][fileName.split('/')[1]]; } , false);`;
+        return jsCode.replace('mw.requestIdleCallback( doPropagation, { timeout: 1 } );', 'doPropagation();');
     }
     function hackSiteModule(jsCode: string){
         if (!SITE_MODULE_REGEX.test(jsCode)) {
@@ -138,8 +125,6 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     let text = content.toString();
     if (module === 'startup' && type === 'js') {
         text = hackStartUpModule(text);
-    } else if (module === 'mediawiki.base' && type === 'js') {
-        text = hackMediaWikiBaseModule(text);
     } else if (module === 'site' && type === 'js') {
         text = hackSiteModule(text);
     }
