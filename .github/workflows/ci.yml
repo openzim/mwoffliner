@@ -31,7 +31,7 @@ jobs:
     - name: installing dependencies
       run: npm ci
       env:
-         PHANTOMJS_CDNURL: https://bitbucket.org/ariya/phantomjs/downloads
+        PHANTOMJS_CDNURL: http://cnpmjs.org/downloads
 
     - name: installing codecov
       run: npm i -g codecov
