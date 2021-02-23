@@ -2,9 +2,9 @@
 
 MWoffliner is a tool for making a local offline HTML snapshot of any
 online [Mediawiki](https://mediawiki.org) instance. It goes through
-all articles (or a selection if specified) and create the
-corresponding [ZIM](https://openzim.org) file. It
-has mainly been tested against Wikimedia projects like
+all online articles (or a selection if specified) and create the
+corresponding [ZIM](https://openzim.org) file. It has mainly been
+tested against Wikimedia projects like
 [Wikipedia](https://wikipedia.org),
 [Wiktionary](https://wiktionary.org), ... But it should also work for
 any recent Mediawiki.
@@ -26,7 +26,7 @@ MWoffliner development.
 - Scrape with or without image thumbnail
 - Scrape with or without audio/video multimedia content
 - S3 cache (optional)
-- Image size optimiser
+- Image size optimiser / Webp converter
 - Scrape all articles in namespaces or title list based
 - Specify additional/non-main namespaces to scrape
 
@@ -38,7 +38,7 @@ Run `mwoffliner --help` to get all the possible options.
 - [Redis](https://redis.io/)
 - [NodeJS](https://nodejs.org/en/) version 10 or greater
 - [Libzim](https://github.com/openzim/libzim) (On GNU/Linux & macOS we automatically download it)
-- Various build tools that are probably already installed on your
+- Various build tools which are probably already installed on your
   machine (packages `libjpeg-dev`, `autoconf`, `automake`, `gcc` on
   Debian/Ubuntu)
 
@@ -62,7 +62,8 @@ Then to run it:
 mwoffliner --help
 ```
 
-To use MWoffliner with a S3 cache, you should provide a S3 URL like this:
+To use MWoffliner with a S3 cache, you should provide a S3 URL like
+this:
 ```bash
 --optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket&keyId=my-key-id&secretAccessKey=my-sac"
 ```
@@ -87,7 +88,7 @@ mwoffliner.execute(parameters); // returns a Promise
 
 Complementary information about MWoffliner:
 
-* MediaWiki software is used by dozen of thousands of wikis, the most
+* MediaWiki software is used by thousands of wikis, the most
   famous ones being the Wikimedia ones, including [Wikipedia](https://wikipedia.org).
 * MediaWiki is a PHP wiki runtime engine.
 * Wikitext is the name of the markup language that MediaWiki uses.
