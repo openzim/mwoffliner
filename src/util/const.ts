@@ -12,5 +12,4 @@ export const WEBP_CANDIDATE_IMAGE_URL_REGEX = /(\.jpeg|\.png|\.jpg)(\?.*)?$/i;
 export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|gif)$/;
 export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png)/;
 export const DEFAULT_WIKI_PATH = 'wiki/';
-export const STARTUP_MODULE_REGEX = /(mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);)/;
-export const SITE_MODULE_REGEX = /((function collapsibleTables){0})|((\$Tables\.each).+(i, table).+(\$\( this \)))/s;
+export const STARTUP_MODULE_REGEX = /(function allReady\( modules \) {).*(mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);)/s;

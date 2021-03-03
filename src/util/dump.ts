@@ -10,7 +10,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
-import { SITE_MODULE_REGEX, STARTUP_MODULE_REGEX } from './const';
+import { STARTUP_MODULE_REGEX } from './const';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -91,22 +91,16 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     // return :
     //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in Redis
 
-    // the 2 variable functions below are a hack to call startUp() (from module startup) when the 3 generic dependencies (startup, jquery, mediawiki) are loaded.
-    // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
-    // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
+    // the function hackStartupModule changes startup script by returning true for all modules so that load.php is not called.
+    // it also removes requestIdleCallback as in our case window is idle after all script tags are called but those script tags
+    // will require the functions which would have been loaded by doPropagation.
     function hackStartUpModule(jsCode: string) {
         if (!STARTUP_MODULE_REGEX.test(jsCode)) {
             throw new Error('unable to hack startup module');
         }
-        // return true is added to allReady() to stop execution of loading other php modules.
-        return jsCode.replace('mw.requestIdleCallback( doPropagation, { timeout: 1 } );', 'doPropagation();');
-    }
-    function hackSiteModule(jsCode: string){
-        if (!SITE_MODULE_REGEX.test(jsCode)) {
-            throw new Error('unable to hack site module');
-        }
-        // executing colllapsibleTable function with minor jquery changes to avoid errors.
-        return `${jsCode.replace('$Tables.each', '$Tables.forEach').replace('$( this )', '$( table )').replace('i, table', 'table, i')} collapsibleTables($);`;
+
+        return jsCode.replace('mw.requestIdleCallback( doPropagation, { timeout: 1 } );', 'doPropagation();')
+            .replace('function allReady( modules ) {', 'function allReady( modules ) { return true;');
     }
 
     let apiParameterOnly;
@@ -125,8 +119,6 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     let text = content.toString();
     if (module === 'startup' && type === 'js') {
         text = hackStartUpModule(text);
-    } else if (module === 'site' && type === 'js') {
-        text = hackSiteModule(text);
     }
 
     try {
