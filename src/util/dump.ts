@@ -10,6 +10,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
+import { DO_PROPAGATION, ALL_READY_FUNCTION } from './const';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -90,24 +91,16 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     // return :
     //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in Redis
 
-    // the 2 variable functions below are a hack to call startUp() (from module startup) when the 3 generic dependencies (startup, jquery, mediawiki) are loaded.
-    // on wikipedia, startUp() is called in the callback of the call to load.php to dl jquery and mediawiki but since load.php cannot be called in offline,
-    // this hack calls startUp() when custom event fireStartUp is received. Which is dispatched when module mediawiki has finished loading
+    // the function hackStartupModule changes startup script by returning true for all modules so that load.php is not called.
+    // it also removes requestIdleCallback as in our case window is idle after all script tags are called but those script tags
+    // will require the functions which would have been loaded by doPropagation.
     function hackStartUpModule(jsCode: string) {
-        return jsCode.replace(
-            'script=document.createElement(\'script\');',
-            `
-                    document.body.addEventListener('fireStartUp', function () { startUp() }, false);
-                    return;
-                    script=document.createElement('script');`,
-        );
-    }
-    function hackMediaWikiModule(jsCode: string) {
-        jsCode += `(function () {
-            const startUpEvent = new CustomEvent('fireStartUp');
-            document.body.dispatchEvent(startUpEvent);
-        })()`;
-        return jsCode;
+        if (!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) {
+            throw new Error('unable to hack startup module');
+        }
+
+        return jsCode.replace(DO_PROPAGATION, 'doPropagation();')
+            .replace(ALL_READY_FUNCTION, 'function allReady( modules ) { console.log(modules); return true;');
     }
 
     let apiParameterOnly;
@@ -126,8 +119,6 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     let text = content.toString();
     if (module === 'startup' && type === 'js') {
         text = hackStartUpModule(text);
-    } else if (module === 'mediawiki.base' && type === 'js') {
-        text = hackMediaWikiModule(text);
     }
 
     try {
