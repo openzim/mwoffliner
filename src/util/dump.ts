@@ -10,7 +10,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
-import { STARTUP_MODULE_REGEX } from './const';
+import { DO_PROPAGATION, ALL_READY_FUNCTION } from './const';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -95,12 +95,12 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     // it also removes requestIdleCallback as in our case window is idle after all script tags are called but those script tags
     // will require the functions which would have been loaded by doPropagation.
     function hackStartUpModule(jsCode: string) {
-        if (!STARTUP_MODULE_REGEX.test(jsCode)) {
+        if (!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) {
             throw new Error('unable to hack startup module');
         }
 
-        return jsCode.replace('mw.requestIdleCallback( doPropagation, { timeout: 1 } );', 'doPropagation();')
-            .replace('function allReady( modules ) {', 'function allReady( modules ) { return true;');
+        return jsCode.replace(DO_PROPAGATION, 'doPropagation();')
+            .replace(ALL_READY_FUNCTION, 'function allReady( modules ) { console.log(modules); return true;');
     }
 
     let apiParameterOnly;

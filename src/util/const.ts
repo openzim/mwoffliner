@@ -12,4 +12,5 @@ export const WEBP_CANDIDATE_IMAGE_URL_REGEX = /(\.jpeg|\.png|\.jpg)(\?.*)?$/i;
 export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|gif)$/;
 export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png)/;
 export const DEFAULT_WIKI_PATH = 'wiki/';
-export const STARTUP_MODULE_REGEX = /(function allReady\( modules \) {).*(mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);)/s;
+export const ALL_READY_FUNCTION = /function allReady\( modules \) {/;
+export const DO_PROPAGATION = /mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);/;
