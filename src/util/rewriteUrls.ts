@@ -16,12 +16,12 @@ export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump,
     if (await isMirrored(title)) {
         /* Deal with local anchor */
         const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
-        linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title) + localAnchor);
+        linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title[0] === '/'? `./${title}` : title) + localAnchor);
         return;
     } else {
         const res = await redirectsXId.get(title);
         if (res) {
-            linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title));
+            linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title[0] === '/'? `./${title}` : title));
         } else {
             migrateChildren(linkNode, linkNode.parentNode, linkNode);
             linkNode.parentNode.removeChild(linkNode);
