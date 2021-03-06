@@ -7,7 +7,7 @@ import MediaWiki from '../MediaWiki';
 import DU from '../DOMUtils';
 import logger from '../Logger';
 
-export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump, linkNode: DominoElement, href: string) {
+export async function removeOrEncodeLink(mw: MediaWiki, dump: Dump, linkNode: DominoElement, href: string) {
     const title = mw.extractPageTitleFromHref(href);
     if (!title) {
         return;
@@ -16,12 +16,12 @@ export async function removeLinksToUnmirroredArticles(mw: MediaWiki, dump: Dump,
     if (await isMirrored(title)) {
         /* Deal with local anchor */
         const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'));
-        linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title[0] === '/'? `./${title}` : title) + localAnchor);
+        linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title) + localAnchor);
         return;
     } else {
         const res = await redirectsXId.get(title);
         if (res) {
-            linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title[0] === '/'? `./${title}` : title));
+            linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title));
         } else {
             migrateChildren(linkNode, linkNode.parentNode, linkNode);
             linkNode.parentNode.removeChild(linkNode);
@@ -164,12 +164,12 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
                 }
                 return { mediaDependencies };
             } else if (rel === 'mw:WikiLink' || rel === 'mw:referencedBy') {
-                await removeLinksToUnmirroredArticles(mw, dump, linkNode, href);
+                await removeOrEncodeLink(mw, dump, linkNode, href);
             } else {
                 return { mediaDependencies };
             }
         } else { // This is MediaWiki HTML
-            await removeLinksToUnmirroredArticles(mw, dump, linkNode, href);
+            await removeOrEncodeLink(mw, dump, linkNode, href);
         }
 
         if (articleId.includes('/')) {
