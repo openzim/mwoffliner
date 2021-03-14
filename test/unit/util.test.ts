@@ -32,6 +32,7 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
         'something/random/todo',              'something/random/todo',
         'Michael_Jackson',                    'Michael_Jackson',
         '/dev/null',                          './/dev/null',
+        `0`,                                  `0`,
         undefined,                            undefined,
         null,                                 null,
     ];
