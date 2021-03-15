@@ -31,7 +31,10 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
         `Guidelines:Règles d'édition`,        `Guidelines%3AR%C3%A8gles%20d'%C3%A9dition`,
         'something/random/todo',              'something/random/todo',
         'Michael_Jackson',                    'Michael_Jackson',
-        undefined,                            undefined
+        '/dev/null',                          './/dev/null',
+        `0`,                                  `0`,
+        undefined,                            undefined,
+        null,                                 null,
     ];
 
     while (articles.length) {
