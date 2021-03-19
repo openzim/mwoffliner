@@ -58,11 +58,14 @@ class MediaWiki {
   public async login(downloader: Downloader) {
     if (this.username && this.password) {
       let url = this.apiUrl.href;
+
+      // Add domain if configured
       if (this.domain) {
-        url = `${url}&lgdomain=${this.domain}`;
+        url = `${url}lgdomain=${this.domain}&`;
       }
+
       // Getting token to login.
-      const {content, responseHeaders}  = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json');
+      const {content, responseHeaders} = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json');
 
       // Logging in
       await axios(this.apiUrl.href, {
