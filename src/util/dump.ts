@@ -100,7 +100,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
         }
 
         return jsCode.replace(DO_PROPAGATION, 'doPropagation();')
-            .replace(ALL_READY_FUNCTION, 'function allReady( modules ) { console.log(modules); return true;');
+            .replace(ALL_READY_FUNCTION, 'function allReady( modules ) { return true;');
     }
 
     let apiParameterOnly;
