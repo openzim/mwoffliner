@@ -51,7 +51,16 @@ know more about how to install them.
 
 To install MWoffliner globally:
 ```bash
-npm i -g mwoffliner
+# npm install --global mwoffliner
+```
+
+When you get errors like:
+```bash
+gyp WARN EACCES current user ("nobody") does not have permission to access the dev dir
+```
+Run the installer
+```bash
+# npm install --global mwoffliner --unsafe
 ```
 
 You might need to run this command with the `sudo` command, depending
@@ -131,6 +140,29 @@ node --version
 Install Redis:
 ```bash
 sudo apt-get install redis-server
+```
+
+### GNU/Linux - RHEL (8) based distributions
+
+Install Redis:
+```bash
+# dnf -y install redis gcc-c++
+# systemctl start redis
+# systemctl enable redis
+# systemctl status redis
+```
+
+Before installing mwoffliner you will need to compile/install libjpeg.so.8
+```bash
+# wget http://www.ijg.org/files/jpegsrc.v8d.tar.gz
+# tar xvzf jpegsrc.v8d.tar.gz
+# cd jpeg-8d/
+# ./configure
+# make
+# make install
+
+# ln -s /usr/local/lib/libjpeg.so.8 /usr/lib64/libjpeg.so.8
+# ln -s /usr/local/lib/libjpeg.so.8.4.0 /usr/lib64/libjpeg.so.8.4.0
 ```
 
 ## Troubleshooting
