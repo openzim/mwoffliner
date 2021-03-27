@@ -44,9 +44,6 @@ Run `mwoffliner --help` to get all the possible options.
 
 ... and an online Mediawiki with its API available.
 
-See [Environment setup hints](#environment-setup-hints) to
-know more about how to install them.
-
 ## Usage
 
 To install MWoffliner globally:
@@ -100,23 +97,6 @@ Complementary information about MWoffliner:
   MediaWiki.
 * MWoffliner calls Parsoid and then post-processes the results for
   offline format.
-
-## Environment setup hints
-
-### macOS
-
-Install NodeJS:
-```bash
-curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash && \
-source ~/.bashrc && \
-nvm install stable && \
-node --version
-```
-
-Install Redis:
-```bash
-brew install redis
-```
 
 ### GNU/Linux - Debian based distributions
 
