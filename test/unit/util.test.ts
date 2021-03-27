@@ -107,7 +107,6 @@ test('getMediaBase tests', async(t) => {
 
     // Thumbs
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true), 'Westminstpalace.jpg', 'Thumb 1');
-    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/110px-Westminstpalace.jpg', true), 'Westminstpalace.jpg', 'Thumb 2');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true), 'Westminstpalace.jpg', 'No thumb');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true), 'VFPt_Solenoid_correct2.svg', 'SVG');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true), 'VFPt_Solenoid_correct2.svg.png', 'SVG PNG thumb');
@@ -117,12 +116,15 @@ test('getMediaBase tests', async(t) => {
     // Latex (equations)
     t.equal(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true), 'da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg', 'Latex');
 
-    // Graphoid (charts)
-    t.equal(getMediaBase('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', true), '28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', 'Graphoid');
-
     // WikiHiero (hieroglyphs)
     t.equal(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', false), 'hiero_G1.png', 'WikiHiero png with URL args');
     t.equal(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png', false), 'hiero_G1.png', 'WikiHiero png without URL args');
+
+    // Score - is default behaviour
+    t.equal(getMediaBase('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png', false), '012a83318ce8d3a438dbed3127b9e339.png', 'Score 1');
+
+    // Graphoid (charts) - is default behaviour
+    t.equal(getMediaBase('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', true), '43ffd82a8ffc4755312c22950fde7ac5.png', 'Graphoid');
 
     // Default behaviour
     t.equal(getMediaBase('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe', true), '589fd4e3821c15d4fcebcedf2effd5b0.png', 'Default handling');
