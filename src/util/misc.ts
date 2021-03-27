@@ -235,22 +235,22 @@ export function getMediaBase(url: string, escape: boolean) {
 
   // Image thumbs
   if ((parts = IMAGE_THUMB_URL_REGEX.exec(decodedUrl)) !== null) {
-      filename = parts[3];
+    filename = parts[3];
   }
 
   // Latex (equations) & Graphoid
   else if ((parts = LATEX_GRAPHOID_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
-      filename = parts[1] + '.svg';
+    filename = parts[1] + '.svg';
   }
 
   // WikiHiero hieroglyphs (betting there won't be a name conflict with main namespace pictures)
   else if ((parts = WIKIHIERO_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
-      filename = parts[1];
+    filename = parts[1];
   }
 
   // Default behaviour (make a hash of the URL)
   else {
-      filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname((new URL(url)).pathname);
+    filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname((new URL(url)).pathname);
   }
 
   return escape ? encodeURIComponent(filename) : filename;
