@@ -54,6 +54,10 @@ npm i -g mwoffliner
 You might need to run this command with the `sudo` command, depending
 how your `npm` is configured.
 
+`npm` permission checking can be a bit annoying for a
+newcommer. Please read the documentation carefully if you hit
+problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
+
 Then to run it:
 ```bash
 mwoffliner --help
