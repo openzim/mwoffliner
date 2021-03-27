@@ -1,4 +1,4 @@
-export const IMAGE_THUMB_URL_REGEX = /^.*\/([^/]+)\/(\d+px[-]+)?(.+?\.[A-Za-z0-9]{2,6}(\.[A-Za-z0-9]{2,6})?)$/;
+export const IMAGE_THUMB_URL_REGEX = /^.*\/[0-9a-fA-F]{1}\/[0-9a-fA-F]{2}\/([^/]+\/)?(\d+px[-]+)?(.+?\.[A-Za-z0-9]{2,6}(\.[A-Za-z0-9]{2,6})?)$/;
 export const LATEX_IMAGE_URL_REGEX = /^.*\/math\/render\/svg\/([A-Za-z0-9]+)$/;
 export const WIKIHIERO_IMAGE_URL_REGEX = /^.*\/wikihiero\/img\/(.*\.png)(\?.*)?$/;
 export const IMAGE_URL_REGEX = /(https?:\/\/.*\.(?:jpg|gif|png|svg|jpeg)(\?.*)?)/i;
