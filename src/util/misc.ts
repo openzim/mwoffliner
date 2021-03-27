@@ -235,7 +235,7 @@ export function getMediaBase(url: string, escape: boolean) {
 
   // Image thumbs
   if ((parts = IMAGE_THUMB_URL_REGEX.exec(decodedUrl)) !== null) {
-      filename = parts[1].length > parts[3].length ? parts[1] : parts[3];
+      filename = parts[3];
   }
 
   // Latex (equations) & Graphoid
