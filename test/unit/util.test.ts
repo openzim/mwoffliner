@@ -107,7 +107,6 @@ test('getMediaBase tests', async(t) => {
 
     // Thumbs
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true), 'Westminstpalace.jpg', 'Thumb 1');
-    t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/110px-Westminstpalace.jpg', true), 'Westminstpalace.jpg', 'Thumb 2');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true), 'Westminstpalace.jpg', 'No thumb');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true), 'VFPt_Solenoid_correct2.svg', 'SVG');
     t.equal(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true), 'VFPt_Solenoid_correct2.svg.png', 'SVG PNG thumb');
