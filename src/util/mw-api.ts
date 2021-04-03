@@ -114,7 +114,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
 
     return Object.values(pages)
         .reduce((acc, page) => {
-            const id = (normalized[page.title] || page.title || '');
+            const id = ((normalized.hasOwnProperty(page.title) && normalized[page.title]) || page.title || '');
             if (typeof id !== 'string' || !id) {
                 logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`);
             }
