@@ -12,7 +12,7 @@ import type {Dump} from '../Dump';
 import {articleDetailXId} from '../stores';
 import {MWCapabilities} from '../Downloader';
 import {getStrippedTitleFromHtml} from './misc';
-import { RENDERING_ERROR } from './const';
+import { DELETED_ARTICLE_ERROR } from './const';
 
 
 export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
@@ -89,10 +89,13 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
 };
 
 
-const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail, isMainPage: boolean = false): string => {
+export const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail, isMainPage: boolean = false): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
-        if (!json.visualeditor.content) { throw new Error(RENDERING_ERROR); }
+        if (json.visualeditor.oldid === 0) {
+            logger.error(DELETED_ARTICLE_ERROR);
+            throw new Error(DELETED_ARTICLE_ERROR);
+        }
         return isMainPage ? json.visualeditor.content : injectHeader(json.visualeditor.content, articleId, articleDetail);
     } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
         return json.html.body;

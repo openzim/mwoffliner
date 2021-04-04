@@ -7,8 +7,7 @@ import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from 'src/util/saveArticles';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
-import { mwRetToArticleDetail } from 'src/util';
-import logger from '../../src/Logger';
+import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from 'src/util';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -260,4 +259,17 @@ test('treat multiple subtitles in one video', async(t) => {
         'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=sv&trackformat=vtt&origin=*' ],
         'Video multiple subtitles rewriting matches');
     t.equals(contentRes.subtitles.length, 4, 'All subtitles are found for this video');
+});
+
+test('Desktop article Rendering Test' , async(t) => {
+    const DELETED_ARTICLE_FAIL_MESSAGE = 'Throwing error if article is deleted';
+    try{
+        const articleJsonObject = {
+            'visualeditor': { 'oldid': 0 }
+        };
+        renderDesktopArticle(articleJsonObject, 'deletedArticle', {title: 'deletedArticle'});
+        t.fail(DELETED_ARTICLE_FAIL_MESSAGE)
+    } catch (err) {
+        t.equal(err.message, DELETED_ARTICLE_ERROR, DELETED_ARTICLE_FAIL_MESSAGE);
+    }
 });

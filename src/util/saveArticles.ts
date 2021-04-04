@@ -17,7 +17,7 @@ import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl,
          interpolateTranslationString, isWebpCandidateImageUrl } from './misc';
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
-import { CONCURRENCY_LIMIT, RENDERING_ERROR } from './const';
+import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -256,7 +256,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 } catch (err) {
                     dump.status.articles.fail += 1;
                     logger.error(`Error downloading article ${articleId}`);
-                    if (err.message !== RENDERING_ERROR && (!err.response || err.response.status !== 404)) {
+                    if (err.message !== DELETED_ARTICLE_ERROR && (!err.response || err.response.status !== 404)) {
                         throw err;
                     }
                 }
