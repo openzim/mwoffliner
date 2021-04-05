@@ -261,14 +261,14 @@ test('treat multiple subtitles in one video', async(t) => {
     t.equals(contentRes.subtitles.length, 4, 'All subtitles are found for this video');
 });
 
-test('Desktop article Rendering Test' , async(t) => {
+test('Test deleted article rendering' , async(t) => {
     const DELETED_ARTICLE_FAIL_MESSAGE = 'Throwing error if article is deleted';
     try{
         const articleJsonObject = {
             'visualeditor': { 'oldid': 0 }
         };
         renderDesktopArticle(articleJsonObject, 'deletedArticle', {title: 'deletedArticle'});
-        t.fail(DELETED_ARTICLE_FAIL_MESSAGE)
+        t.fail(DELETED_ARTICLE_FAIL_MESSAGE);
     } catch (err) {
         t.equal(err.message, DELETED_ARTICLE_ERROR, DELETED_ARTICLE_FAIL_MESSAGE);
     }

@@ -256,7 +256,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 } catch (err) {
                     dump.status.articles.fail += 1;
                     logger.error(`Error downloading article ${articleId}`);
-                    if (err.message !== DELETED_ARTICLE_ERROR && (!err.response || err.response.status !== 404)) {
+                    if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
                         throw err;
                     }
                 }

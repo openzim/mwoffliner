@@ -92,6 +92,7 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
 export const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail, isMainPage: boolean = false): string => {
     if (!json) { throw new Error(`Cannot render [${json}] into an article`); }
     if (json.visualeditor) {
+        // Testing if article has been deleted between fetching list and downloading content.
         if (json.visualeditor.oldid === 0) {
             logger.error(DELETED_ARTICLE_ERROR);
             throw new Error(DELETED_ARTICLE_ERROR);
