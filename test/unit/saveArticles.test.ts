@@ -265,5 +265,8 @@ test('Test deleted article rendering' , async(t) => {
     const articleJsonObject = {
         'visualeditor': { 'oldid': 0 }
     };
-    t.throws(() => {renderDesktopArticle(articleJsonObject, 'deletedArticle', {title: 'deletedArticle'})}, RegExp(DELETED_ARTICLE_ERROR), 'Throwing error if article is deleted');     
+    t.throws(() => {renderDesktopArticle(articleJsonObject, 'deletedArticle', {title: 'deletedArticle'})},
+        RegExp(DELETED_ARTICLE_ERROR),
+        'Throwing error if article is deleted'
+    );
 });
