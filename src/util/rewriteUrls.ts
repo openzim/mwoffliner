@@ -175,8 +175,11 @@ export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, l
 
         if (articleId.includes('/')) {
             const href = linkNode.getAttribute('href'); // href is modified above, so this is necessary
-            const resourceNamespace = 'A';
-            linkNode.setAttribute('href', path.relative(`${resourceNamespace}/${articleId}`, `${resourceNamespace}/${href}`));
+
+            /* In case articleId starts with / then browser considers
+            everything afterward as one path element and '../' will
+            come back at the root of the articleId */
+            linkNode.setAttribute('href', articleId.startsWith('/') ? '../../' + href : path.relative(articleId, href));
         }
     }
     return { mediaDependencies };
