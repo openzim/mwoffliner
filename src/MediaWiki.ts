@@ -125,7 +125,7 @@ class MediaWiki {
     return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`;
   }
 
-  public getApiQueryUrl(query: string): string {
+  public getApiQueryUrl(query: string = ''): string {
     return `${this.apiUrl.href}${query}`;
   }
 

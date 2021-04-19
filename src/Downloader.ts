@@ -313,7 +313,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: `${this.mw.apiUrl.protocol}//{{domain}}:${this.mw.apiUrl.port}${this.mw.apiUrl.pathname}`,
+            uri: this.mw.getApiQueryUrl(),
             headers: {
               'user-agent': '{{user-agent}}',
             },
