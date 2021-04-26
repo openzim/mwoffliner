@@ -263,7 +263,7 @@ class MediaWiki {
     // Checking mediawiki version
     const mwVersion = semver.coerce(entries.generator).raw;
     const mwMinimalVersion = 1.27;
-    if (!semver.satisfies(mwVersion, `>=${mwMinimalVersion}`)) {
+    if (mwVersion && !semver.satisfies(mwVersion, `>=${mwMinimalVersion}`)) {
       throw new Error(`Mediawiki version ${mwVersion} not supported should be >=${mwMinimalVersion}`);
     }
 
