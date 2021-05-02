@@ -129,7 +129,7 @@ test('getMediaBase tests', async(t) => {
     t.equal(getMediaBase('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe', true), '589fd4e3821c15d4fcebcedf2effd5b0.png', 'Default handling');
 })
 
-test('normalizeMwResponse edge case test', async(t) => {
+test('No title normalisation', async(t) => {
    const resp = await axios.get<MwApiResponse>('https://en.wiktionary.org/w/api.php?action=query&format=json&prop=redirects|revisions|pageimages&rdlimit=max&rdnamespace=0&redirects=true&titles=constructor', { responseType: 'json', });
    const normalizedObject = normalizeMwResponse(resp.data.query);
    t.equal(Object.keys(normalizedObject)[0], 'constructor', 'normalizeMwResponse returns title constructor');
