@@ -236,8 +236,10 @@ class Downloader {
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
-      const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie: this.loginCookie }});
-      return resp.status === 200 && !resp.headers['mediawiki-api-error'];
+      const resp = await axios.get(url, { headers: { cookie: this.loginCookie }});
+      return resp.status === 200
+        && !resp.headers['mediawiki-api-error']
+        && (new URL(url)).hostname === (new URL(resp.request.res.responseUrl).hostname);
     } catch (err) {
       return false;
     }
