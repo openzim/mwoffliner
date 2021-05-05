@@ -237,9 +237,10 @@ class Downloader {
   public async checkApiAvailabilty(url: string): Promise<boolean>{
     try {
       const resp = await axios.get(url, { headers: { cookie: this.loginCookie }});
+      // Check for hostname is for domain name in cases of redirects.
       return resp.status === 200
         && !resp.headers['mediawiki-api-error']
-        && (new URL(url)).hostname === (new URL(resp.request.res.responseUrl).hostname);
+        && path.dirname(url) === path.dirname(resp.request.res.responseUrl);
     } catch (err) {
       return false;
     }
