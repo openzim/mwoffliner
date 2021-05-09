@@ -1,3 +1,10 @@
+1.11.5
+* FIX: Better handle of score pictures
+* FIX: Desktop API detection (broken in case of redirected welcome page)
+* FIX: Handling of articles deleted during the scrape
+* FIX: Mediawiki detection crashing if very old Mediawiki
+* FIX: Crash if article name is 'constructor'
+
 1.11.4
 * NEW: Check properly for unsupported Mediawiki versions
 * FIX: Remove surnumerous underscores in M/Flavour
