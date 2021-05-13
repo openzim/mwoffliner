@@ -316,7 +316,7 @@ class Downloader {
           port: 6927,
           mwapi_req: {
             method: 'post',
-            uri: this.mw.getApiQueryUrl(),
+            uri: this.mw.getApiQueryUrl().split('?')[0],
             headers: {
               'user-agent': '{{user-agent}}',
             },
