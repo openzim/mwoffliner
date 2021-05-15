@@ -99,7 +99,7 @@
     "redis": "^3.0.2",
     "rimraf": "^3.0.2",
     "semver": "^7.3.2",
-    "service-mobileapp-node": "git+https://github.com/wikimedia/mediawiki-services-mobileapps.git#d244439",
+    "service-mobileapp-node": "git+https://github.com/wikimedia/mobileapps.git",
     "service-runner": "^2.7.8",
     "sharp": "^0.26.2",
     "swig-templates": "^2.0.3",
