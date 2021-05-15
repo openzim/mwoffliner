@@ -5,6 +5,7 @@ import MediaWiki from 'src/MediaWiki';
 import { getArticleIds } from 'src/util/redirects';
 import { articleDetailXId } from 'src/stores';
 import { getArticlesByNS } from 'src/util';
+import logger from '../../src/Logger';
 
 test('MWApi Article Ids', async (t) => {
     await articleDetailXId.flush();
@@ -23,7 +24,7 @@ test('MWApi Article Ids', async (t) => {
     const articlesById = await articleDetailXId.getMany(aIds);
     const { United_Kingdom, London } = articlesById;
     t.assert(!!United_Kingdom, 'Article "United_Kingdom" was scraped');
-    t.assert(United_Kingdom.categories.length > 15, 'Article "United_Kingdom" has categories');
+    t.assert(United_Kingdom.categories.length >= 15, 'Article "United_Kingdom" has categories');
     // t.assert((United_Kingdom as any).pageimage, 'Article "United_Kingdom" has pageimage');
     t.assert(United_Kingdom.thumbnail, 'Article "United_Kingdom" has thumbnail');
     t.assert(!!United_Kingdom.revisionId, 'Article "United_Kingdom" has revision');
