@@ -90,6 +90,7 @@
     "imagemin-pngquant": "^9.0.1",
     "imagemin-webp": "^6.0.0",
     "md5": "^2.3.0",
+    "merge": "^2.1.1",
     "mkdirp": "^1.0.4",
     "mocha": "^8.2.0",
     "p-map": "^4.0.0",
