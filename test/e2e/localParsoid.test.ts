@@ -7,6 +7,7 @@ import { join } from 'path';
 import execa = require('execa');
 import 'dotenv/config';
 import fs from 'fs';
+import logger from '../../src/Logger';
 
 const now = new Date();
 const testId = join(process.cwd(), `mwo-test-${+now}`);
@@ -18,21 +19,22 @@ test('Local Parsoid', async (t) => {
     await mkdirPromise(testId);
 
     const articleListLines = `
-    Damage_Formula
-    Agni
-    Hades`;
+    Arch Linux
+    Acer Aspire One
+    D-Bus`;
 
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
 
     const outFiles = await execute({
-        mwUrl: `https://gbf.wiki`,
+        mwUrl: `https://wiki.archlinux.org`,
         adminEmail: `test@kiwix.org`,
         outputDirectory: testId,
         redis: process.env.REDIS,
         mwApiPath: 'api.php',
         mwModulePath: 'load.php',
         mwWikiPath: 'index.php',
-        articleList: articleListUrl
+        articleList: articleListUrl,
+        customZimFavicon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Archlinux-icon-crystal-64.svg/65px-Archlinux-icon-crystal-64.svg.png'
     });
 
     t.equal(outFiles.length, 1, `Created 1 output`);
@@ -51,15 +53,15 @@ test('Local Parsoid', async (t) => {
             console.log(`Zimcheck not installed, skipping test`);
         }
 
-        t.ok(dump.status.files.success >= 45, 'has enough files');
-        t.ok(dump.status.redirects.written >= 0, 'has enough redirects');
+        t.ok(dump.status.files.success >= 31, 'has enough files');
+        t.ok(dump.status.redirects.written >= 14, 'has enough redirects');
         t.ok(dump.status.articles.success >= 3, 'has enough articles');
     }
 
     // Check ZIM file size
-    t.ok(fs.statSync(outFiles[0].outFile).size > 2120000, 'ZIM file size');
+    t.ok(fs.statSync(outFiles[0].outFile).size > 285839, 'ZIM file size');
 
-    t.ok(true, 'Scraped gbf wiki articles');
+    t.ok(true, 'Scraped  archlinux_wiki articles');
     // TODO: clear test dir
     rimraf.sync(testId);
 
