@@ -1,3 +1,6 @@
+1.11.6
+* FIX: Fix local Parsoid upstream URL config (regression)
+
 1.11.5
 * FIX: Better handle of score pictures
 * FIX: Desktop API detection (broken in case of redirected welcome page)
