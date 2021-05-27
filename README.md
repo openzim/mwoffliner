@@ -19,7 +19,7 @@ MWoffliner development.
 [![Build Status](https://github.com/openzim/mwoffliner/workflows/CI/badge.svg?query=branch%3Amaster)](https://github.com/openzim/mwoffliner/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
-![License](https://img.shields.io/npm/l/mwoffliner.svg)
+[![License](https://img.shields.io/npm/l/mwoffliner.svg)](LICENSE)
 
 ## Features
 
