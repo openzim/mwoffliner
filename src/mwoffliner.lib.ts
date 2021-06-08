@@ -310,7 +310,8 @@ async function execute(argv: any) {
 
   let articleListLines: string[];
   try {
-    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').filter((a) => a) : [];
+    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').
+                                   map(a => a.replace(/\r/gm, '')).filter((a) => a) : [];
     logger.info(`ArticleList has [${articleListLines.length}] items`);
   } catch (err) {
     logger.error(`Failed to read articleList from [${articleList}]`, err);
