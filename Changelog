@@ -1,3 +1,7 @@
+1.11.7
+* NEWS: Better ingest Windows encoded article lists
+* UPDATE: Use libzim 2.4.4
+
 1.11.6
 * FIX: Fix local Parsoid upstream URL config (regression)
 
