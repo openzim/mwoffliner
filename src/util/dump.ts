@@ -11,7 +11,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
-import { DO_PROPAGATION, ALL_READY_FUNCTION } from './const';
+import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL } from './const';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -149,8 +149,7 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
         zimCreator.addArticle(article);
     });
 
-    const webpHandlerUrl = 'https://gist.githubusercontent.com/rgaudin/60bb9cc6f187add506584258028b8ee1/raw/9d575b8e25d67eed2a9c9a91d3e053a0062d2fc7/web-handler.js';
-    const content = await axios.get(webpHandlerUrl, {headers: {}, responseType: 'arraybuffer', timeout: 60000, method: 'GET', validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }})
+    const content = await axios.get(WEBP_HANDLER_URL, {responseType: 'arraybuffer', timeout: 60000, validateStatus(status) { return ([200, 302, 304].indexOf(status) > -1); }})
         .then((a) => a.data)
         .catch((err) => {
           throw new Error(`Failed to download webpHandler from [${webpHandlerUrl}]: ${err}`);

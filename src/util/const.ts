@@ -15,3 +15,4 @@ export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png)/;
 export const DEFAULT_WIKI_PATH = 'wiki/';
 export const ALL_READY_FUNCTION = /function allReady\( modules \) {/;
 export const DO_PROPAGATION = /mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);/;
+export const WEBP_HANDLER_URL = 'https://gist.githubusercontent.com/rgaudin/60bb9cc6f187add506584258028b8ee1/raw/9d575b8e25d67eed2a9c9a91d3e053a0062d2fc7/web-handler.js';
