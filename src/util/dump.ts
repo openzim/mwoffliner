@@ -2,6 +2,7 @@ import urlParser from 'url';
 import * as pathParser from 'path';
 import async from 'async';
 import logger from '../Logger';
+import axios from 'axios';
 import Downloader from '../Downloader';
 import { getFullUrl, jsPath, cssPath } from '.';
 import { config } from '../config';
@@ -147,4 +148,18 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
         });
         zimCreator.addArticle(article);
     });
+
+    const webpHandlerUrl = 'https://gist.githubusercontent.com/rgaudin/60bb9cc6f187add506584258028b8ee1/raw/9d575b8e25d67eed2a9c9a91d3e053a0062d2fc7/web-handler.js';
+    const content = await axios.get(webpHandlerUrl, {headers: {}, responseType: 'arraybuffer', timeout: 60000, method: 'GET', validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }})
+        .then((a) => a.data)
+        .catch((err) => {
+          throw new Error(`Failed to download webpHandler from [${webpHandlerUrl}]: ${err}`);
+        });
+
+    const article = new ZimArticle({
+        url: jsPath('webpHandler'),
+        data: content,
+        ns: '-'
+    });
+    zimCreator.addArticle(article);
 }
