@@ -2,6 +2,7 @@ import urlParser from 'url';
 import * as pathParser from 'path';
 import async from 'async';
 import logger from '../Logger';
+import axios from 'axios';
 import Downloader from '../Downloader';
 import { getFullUrl, jsPath, cssPath } from '.';
 import { config } from '../config';
@@ -10,7 +11,7 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
-import { DO_PROPAGATION, ALL_READY_FUNCTION } from './const';
+import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL } from './const';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';
@@ -147,4 +148,17 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
         });
         zimCreator.addArticle(article);
     });
+
+    const content = await axios.get(WEBP_HANDLER_URL, {responseType: 'arraybuffer', timeout: 60000, validateStatus(status) { return ([200, 302, 304].indexOf(status) > -1); }})
+        .then((a) => a.data)
+        .catch((err) => {
+          throw new Error(`Failed to download webpHandler from [${webpHandlerUrl}]: ${err}`);
+        });
+
+    const article = new ZimArticle({
+        url: jsPath('webpHandler'),
+        data: content,
+        ns: '-'
+    });
+    zimCreator.addArticle(article);
 }

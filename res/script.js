@@ -28,35 +28,19 @@ window.onload = function () {
 }
 
 /* WebP Polyfill */
-var webHeroScripts = ['../-/webpHeroPolyfill.js',
-                      '../-/webpHeroBundle.js'];
-
-var testWebP = function(callback) {
-    var webP = new Image();
-    webP.onload = webP.onerror = function () {
-        callback(webP.height === 2);
-    };
-    webP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
-};
-
-var startWebpMachine = function() {
-    var newScript = document.createElement('script');
-    var inlineScript = document.createTextNode('var webpMachine = new webpHero.WebpMachine(); webpMachine.polyfillDocument()');
-    newScript.appendChild(inlineScript);
-    document.getElementsByTagName('body')[0].appendChild(newScript);
-};
-
-testWebP(function(support) {
-    if (!support) {
-        webHeroScripts.forEach(function(scriptUrl) {
-            var script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = typeof(articleId) ? '../'.repeat(articleId.split('/').length - 1) + scriptUrl : scriptUrl;
-            if (webHeroScripts[webHeroScripts.length-1] === scriptUrl) {
-                // Start webpMachine if we have loaded the last script
-                script.onload = startWebpMachine;
-            }
-            document.getElementsByTagName('body')[0].appendChild(script);
-        });
-    }
+var webpScripts = ['../-/webpHeroPolyfill.js',
+                   '../-/webpHeroBundle.js',
+                   '../-/webpHandler.js'];
+webpScripts = webpScripts.map(function(scriptUrl) {
+    return (typeof(articleId)) ? '../'.repeat(articleId.split('/').length - 1) + scriptUrl : scriptUrl;
 });
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = webpScripts.pop();;
+script.onload = function () {
+    new WebPHandler({
+        scripts_urls: webpScripts,
+        on_ready: function (handler) { handler.polyfillDocument(); },
+    });
+}
+document.getElementsByTagName('head')[0].appendChild(script);
