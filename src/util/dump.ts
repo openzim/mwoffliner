@@ -152,7 +152,7 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
     const content = await axios.get(WEBP_HANDLER_URL, {responseType: 'arraybuffer', timeout: 60000, validateStatus(status) { return ([200, 302, 304].indexOf(status) > -1); }})
         .then((a) => a.data)
         .catch((err) => {
-          throw new Error(`Failed to download webpHandler from [${webpHandlerUrl}]: ${err}`);
+          throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`);
         });
 
     const article = new ZimArticle({
