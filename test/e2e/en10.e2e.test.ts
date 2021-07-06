@@ -31,19 +31,19 @@ test('Simple articleList', async (t) => {
     for (const dump of outFiles) {
         if (dump.nopic) {
             t.ok(dump.status.files.success > 35, 'nopic has enough files');
-            t.ok(dump.status.redirects.written > 300, 'nopic has enough redirects');
+            t.ok(dump.status.redirects.written > 520, 'nopic has enough redirects');
             t.ok(dump.status.articles.success === 10, 'nopic has 10 articles');
         } else if (dump.novid) {
             t.ok(dump.status.files.success > 420, 'novid has enough files');
-            t.ok(dump.status.redirects.written > 300, 'novid has enough redirects');
+            t.ok(dump.status.redirects.written > 520, 'novid has enough redirects');
             t.ok(dump.status.articles.success === 10, 'novid has 10 articles');
         } else if (dump.nopdf) {
             t.ok(dump.status.files.success > 450, 'nopdf has enough files');
-            t.ok(dump.status.redirects.written > 300, 'nopdf has enough redirects');
+            t.ok(dump.status.redirects.written > 520, 'nopdf has enough redirects');
             t.ok(dump.status.articles.success === 10, 'nopdf has 10 articles');
         } else if (dump.nodet) {
             t.ok(dump.status.files.success > 50, 'nodet has enough files');
-            t.ok(dump.status.redirects.written > 300, 'nodet has enough redirects');
+            t.ok(dump.status.redirects.written > 520, 'nodet has enough redirects');
             t.ok(dump.status.articles.success === 10, 'nodet has 10 articles');
         }
 
