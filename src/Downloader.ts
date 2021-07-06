@@ -515,11 +515,10 @@ class Downloader {
   private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
     const propsMap: KVS<string[]> = {
       pageimages: ['thumbnail', 'pageimage'],
-      redirects: ['redirects'],
       coordinates: ['coordinates'],
       categories: ['categories'],
     };
-    const keysToKeep: string[] = ['subCategories', 'revisions']
+    const keysToKeep: string[] = ['subCategories', 'revisions', 'redirects']
       .concat(
         Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []),
       );
