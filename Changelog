@@ -1,3 +1,7 @@
+1.11.8
+* FIX: Redirect retrieval if lots of them
+* FIX: Webp polyfill concurency problems
+
 1.11.7
 * NEWS: Better ingest Windows encoded article lists
 * UPDATE: Use libzim 2.4.4
