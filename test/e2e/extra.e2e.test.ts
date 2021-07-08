@@ -19,9 +19,9 @@ test('Simple customMainPage', async (t) => {
 
     const articleListLines = `
 Egyptian_hieroglyphs
-Book:Cancer
-Book:Ears_nose_throat
-Book:Eye_diseases`;
+Wikipedia:Books/archive/Cancer care
+Wikipedia:Books/archive/Ears nose throat
+Wikipedia:Books/archive/Eye diseases`;
 
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
 
