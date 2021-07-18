@@ -235,7 +235,19 @@ export function getMediaBase(url: string, escape: boolean) {
 
   // Image thumbs
   if ((parts = IMAGE_THUMB_URL_REGEX.exec(decodedUrl)) !== null) {
-    filename = parts[3];
+
+    // Remove trailing / in parts[1] if possible
+    parts[1] = parts[1] ? parts[1].substring(0, parts[1].length - 1) : '';
+
+    // Most common case
+    if (!parts[1] || parts[1].length <= parts[3].length) {
+      filename = parts[3];
+    }
+
+    // To handle /...px-thumbnail.jpg use case
+    else {
+      filename = parts[1] + (parts[4] || '');
+    }
   }
 
   // Latex (equations)
