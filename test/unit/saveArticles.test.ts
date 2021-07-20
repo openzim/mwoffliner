@@ -247,7 +247,7 @@ test('treat multiple subtitles in one video', async(t) => {
     // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
     const wikicode = `[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]`;
     const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
-
+    console.log(htmlStr.data);
     const htmlDoc = domino.createDocument(htmlStr.data);
     const contentRes = await treatVideo(mw, dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'), false);
     testHtmlRewritingE2e(t, wikicode, htmlStr.data, 'Converted wikicode to HTML for multiple subtitle');
@@ -255,10 +255,12 @@ test('treat multiple subtitles in one video', async(t) => {
         contentRes.subtitles,
         [ 'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=en&trackformat=vtt&origin=*',
         'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=eu&trackformat=vtt&origin=*',
+        'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=fa&trackformat=vtt&origin=*',
         'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=fr&trackformat=vtt&origin=*',
-        'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=sv&trackformat=vtt&origin=*' ],
+        'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=sv&trackformat=vtt&origin=*',
+     ],
         'Video multiple subtitles rewriting matches');
-    t.equals(contentRes.subtitles.length, 4, 'All subtitles are found for this video');
+    t.equals(contentRes.subtitles.length, 5, 'All subtitles are found for this video');
 });
 
 test('Test deleted article rendering' , async(t) => {
