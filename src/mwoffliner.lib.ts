@@ -179,7 +179,7 @@ async function execute(argv: any) {
     mw,
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
-    reqTimeout: requestTimeout || config.defaults.requestTimeout,
+    reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
     noLocalParserFallback,
     forceLocalParser,
     optimisationCacheUrl,
