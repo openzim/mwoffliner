@@ -18,6 +18,7 @@ test('Simple customMainPage', async (t) => {
     await mkdirPromise(testId);
 
     const articleListLines = `
+İznik
 Egyptian_hieroglyphs
 Wikipedia:Books/archive/Cancer care
 Wikipedia:Books/archive/Ears nose throat
@@ -39,7 +40,7 @@ Wikipedia:Books/archive/Eye diseases`;
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.equal(dump.status.articles.success, 5, 'nopic has 5 articles');
+            t.equal(dump.status.articles.success, 6, 'nopic has 6 articles');
         }
 
         if (await zimcheckAvailable()) {
