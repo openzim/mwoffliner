@@ -8,7 +8,7 @@ const config = {
       host: '127.0.0.1',
       port: 6379
     },
-    requestTimeout: 60 * 1000,
+    requestTimeout: 120 * 1000,
   },
 
   filters: {
