@@ -118,7 +118,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
             if (typeof id !== 'string' || !id) {
                 logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`);
             }
-            const articleId = String(id).replace(/ /g, '_');
+            const articleId = decodeURIComponent(String(id).replace(/ /g, '_'));
             if (page.redirects) {
                 page.redirects = page.redirects.map((redirect) => {
 
