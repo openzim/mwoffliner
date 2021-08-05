@@ -412,12 +412,25 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     }
 
     videoSources = videoSources.sort(widthXHeightSorter);
+    const videoElArea = (videoEl.getAttribute('height') || 0) * (videoEl.getAttribute('width') || 0);
+    let sourceEl: DominoElement;
 
-    const sourcesToRemove = videoSources.slice(1); // All but first
+    let sourcesToRemove = videoSources.filter((videoSource: DominoElement) => {
+        const sourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
+        const sourceHeight = Number(videoSource.getAttribute('data-file-height') || videoSource.getAttribute('data-height') || 0);
+        if (sourceWidth * sourceHeight >= videoElArea && !sourceEl) {
+            sourceEl = videoSource;
+            return false;
+        }
+        return true;
+    });
+
+    if(!sourceEl) {
+        sourceEl = sourcesToRemove[0];
+        sourcesToRemove = sourcesToRemove.slice(1);
+    }
 
     sourcesToRemove.forEach(DU.deleteNode);
-
-    const sourceEl = videoSources[0]; // Use first source (smallest resolution)
 
     const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
     const fileBase = getMediaBase(sourceUrl, true);
