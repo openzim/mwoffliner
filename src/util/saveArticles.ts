@@ -383,7 +383,27 @@ function widthXHeightSorter(a: DominoElement, b: DominoElement) {
 
     const aVal = aWidth * aHeight;
     const bVal = bWidth * bHeight;
-    return aVal > bVal ? 1 : -1;
+    return aVal > bVal ? 1 :
+        ((aVal === bVal && (b.getAttribute('src').endsWith('.vp9.webm') ||
+        (b.getAttribute('src').endsWith('webm') && !a.getAttribute('src').endsWith('.vp9.webm')))) ? 1 : -1);
+}
+
+function videoSourceElement(videoSources: DominoElement, videoElWidth: Number) {
+    let sourceEl: DominoElement;
+    let sourcesToRemove = videoSources.filter((videoSource: DominoElement) => {
+        const sourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
+        if (sourceWidth >= videoElWidth && !sourceEl) {
+            sourceEl = videoSource;
+            return false;
+        }
+        return true;
+    });
+
+    if(!sourceEl) {
+        sourceEl = sourcesToRemove[0];
+        sourcesToRemove = sourcesToRemove.slice(1);
+    }
+    return {sourceEl, sourcesToRemove};
 }
 
 export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
@@ -412,23 +432,10 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     }
 
     videoSources = videoSources.sort(widthXHeightSorter);
-    const videoElArea = (videoEl.getAttribute('height') || 0) * (videoEl.getAttribute('width') || 0);
-    let sourceEl: DominoElement;
 
-    let sourcesToRemove = videoSources.filter((videoSource: DominoElement) => {
-        const sourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
-        const sourceHeight = Number(videoSource.getAttribute('data-file-height') || videoSource.getAttribute('data-height') || 0);
-        if (sourceWidth * sourceHeight >= videoElArea && !sourceEl) {
-            sourceEl = videoSource;
-            return false;
-        }
-        return true;
-    });
-
-    if(!sourceEl) {
-        sourceEl = sourcesToRemove[0];
-        sourcesToRemove = sourcesToRemove.slice(1);
-    }
+    // using video element width to find source node with best fiting resolution
+    const videoElWidth = (videoEl.getAttribute('width') || 0);
+    const {sourceEl, sourcesToRemove} = videoSourceElement(videoSources, videoElWidth);
 
     sourcesToRemove.forEach(DU.deleteNode);
 

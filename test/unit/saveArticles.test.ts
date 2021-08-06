@@ -242,7 +242,7 @@ test('treat one subtitle', async(t) => {
 });
 
 test('treat multiple subtitles in one video', async(t) => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: '' });
+    const { mw, dump } = await setupScrapeClasses({ format: '' });
 
     // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
     const wikicode = `[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]`;
@@ -262,6 +262,31 @@ test('treat multiple subtitles in one video', async(t) => {
         'Video multiple subtitles rewriting matches');
     t.equals(contentRes.subtitles.length, 5, 'All subtitles are found for this video');
 });
+
+test('correct resolution retrieval', async(t) => {
+    const { mw, dump } = await setupScrapeClasses({ format: '' });
+
+    const htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="300" resource="./File:Gout.webm">
+        <source src="//upload.wikimedia.org/wikipedia/commons/3/3d/Gout.webm" type="video/webm; codecs=&quot;vp9, vorbis&quot;" data-file-width="1920" data-file-height="1080" data-title="Original WebM file, 1,920 × 1,080 (735 kbps)" data-shorttitle="WebM source">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.120p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="214" data-height="120" data-title="Lowest bandwidth VP9 (120P)" data-shorttitle="VP9 120P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.160p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="284" data-height="160" data-title="Low bandwidth WebM (160P)" data-shorttitle="WebM 160P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="320" data-height="180" data-title="Low bandwidth VP9 (180P)" data-shorttitle="VP9 180P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.240p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="426" data-height="240" data-title="Small VP9 (240P)" data-shorttitle="VP9 240P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.240p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="426" data-height="240" data-title="Small WebM (240P)" data-shorttitle="WebM 240P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.360p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="640" data-height="360" data-title="VP9 (360P)" data-shorttitle="VP9 360P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.360p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="640" data-height="360" data-title="WebM (360P)" data-shorttitle="WebM 360P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.480p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="854" data-height="480" data-title="SD VP9 (480P)" data-shorttitle="VP9 480P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.480p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="854" data-height="480" data-title="SD WebM (480P)" data-shorttitle="WebM 480P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.720p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="1280" data-height="720" data-title="HD VP9 (720P)" data-shorttitle="VP9 720P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.720p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="1280" data-height="720" data-title="HD WebM (720P)" data-shorttitle="WebM 720P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.1080p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="1920" data-height="1080" data-title="Full HD VP9 (1080P)" data-shorttitle="VP9 1080P">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.1080p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="1920" data-height="1080" data-title="Full HD WebM (1080P)" data-shorttitle="WebM 1080P">
+        <track kind="subtitles" type="text/x-srt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=srt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl">
+        <track kind="subtitles" type="text/vtt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=vtt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl"></video>`;
+    const htmlDoc = domino.createDocument(htmlStr);
+    const ret = await treatVideo(mw, dump, {}, 'Gout', htmlDoc.querySelector('video'), false);
+    t.equal(ret.mediaDependencies[1], 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm', 'Correct video resolution');
+})
 
 test('Test deleted article rendering' , async(t) => {
     const articleJsonObject = {
