@@ -417,9 +417,6 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         }
     });
 
-    const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
-    const fileBase = getMediaBase(sourceUrl, true);
-
     /* Remove useless 'resource' attribute */
     videoEl.removeAttribute('resource');
 
@@ -443,12 +440,14 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     }
 
     /* Download content, but avoid duplicate calls */
+    const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
     if (!srcCache.hasOwnProperty(sourceUrl)) {
         srcCache[sourceUrl] = true;
         mediaDependencies.push(sourceUrl);
     }
 
     /* Set new URL for the video element */
+    const fileBase = getMediaBase(sourceUrl, true);
     sourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'));
 
     /* Scrape subtitle */
