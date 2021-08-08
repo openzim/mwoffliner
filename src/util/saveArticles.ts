@@ -405,7 +405,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     videoSources.forEach((videoSource: DominoElement) => {
         const videoSourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
         if (!sourceEl || (sourceWidth > videoSourceWidth && videoSourceWidth >= videoElWidth) ||
-            (sourceWidth === videoSourceWidth && (videoSource.getAttribute('src').endsWith('.vp9.webm') || 
+            (sourceWidth === videoSourceWidth && (videoSource.getAttribute('src').endsWith('.vp9.webm') ||
                 (videoSource.getAttribute('src').endsWith('.webm') && !sourceEl.getAttribute('src').endsWith('.webm'))))) {
             if (sourceEl) {
                 DU.deleteNode(sourceEl);
@@ -447,15 +447,14 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         }
     }
 
-    const newUrl = getRelativeFilePath(articleId, fileBase, 'I');
-
     /* Download content, but avoid duplicate calls */
     if (!srcCache.hasOwnProperty(sourceUrl)) {
         srcCache[sourceUrl] = true;
         mediaDependencies.push(sourceUrl);
     }
 
-    sourceEl.setAttribute('src', newUrl);
+    /* Set new URL for the video element */
+    sourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'));
 
     /* Scrape subtitle */
     for (const track of Array.from(videoEl.querySelectorAll('track'))) {
