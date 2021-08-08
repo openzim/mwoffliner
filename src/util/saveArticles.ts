@@ -18,7 +18,6 @@ import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl,
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const';
-import { NumericalVersion } from 'aws-sdk/clients/lexmodelbuildingservice';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
