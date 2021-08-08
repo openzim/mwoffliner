@@ -18,6 +18,7 @@ import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl,
 import { RedisKvs } from './RedisKvs';
 import { rewriteUrl } from './rewriteUrls';
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const';
+import { NumericalVersion } from 'aws-sdk/clients/lexmodelbuildingservice';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;
@@ -372,40 +373,6 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
     };
 }
 
-function widthXHeightSorter(a: DominoElement, b: DominoElement) {
-    // If there is no width/height, it counts as zero, probably best?
-    // Sometimes (pure audio) there will only be one item
-    // Sometimes (pure audio) there won't be width/height
-    const aWidth = Number(a.getAttribute('data-file-width') || a.getAttribute('data-width') || 0);
-    const aHeight = Number(a.getAttribute('data-file-height') || a.getAttribute('data-height') || 0);
-    const bWidth = Number(b.getAttribute('data-file-width') || b.getAttribute('data-width') || 0);
-    const bHeight = Number(b.getAttribute('data-file-height') || b.getAttribute('data-height') || 0);
-
-    const aVal = aWidth * aHeight;
-    const bVal = bWidth * bHeight;
-    return aVal > bVal ? 1 :
-        ((aVal === bVal && (b.getAttribute('src').endsWith('.vp9.webm') ||
-        (b.getAttribute('src').endsWith('webm') && !a.getAttribute('src').endsWith('.vp9.webm')))) ? 1 : -1);
-}
-
-function videoSourceElement(videoSources: DominoElement, videoElWidth: Number) {
-    let sourceEl: DominoElement;
-    let sourcesToRemove = videoSources.filter((videoSource: DominoElement) => {
-        const sourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
-        if (sourceWidth >= videoElWidth && !sourceEl) {
-            sourceEl = videoSource;
-            return false;
-        }
-        return true;
-    });
-
-    if(!sourceEl) {
-        sourceEl = sourcesToRemove[0];
-        sourcesToRemove = sourcesToRemove.slice(1);
-    }
-    return {sourceEl, sourcesToRemove};
-}
-
 export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
     // This function handles audio tags as well as video tags
     const mediaDependencies: string[] = [];
@@ -431,13 +398,25 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         return { mediaDependencies, subtitles };
     }
 
-    videoSources = videoSources.sort(widthXHeightSorter);
-
     // using video element width to find source node with best fiting resolution
     const videoElWidth = (videoEl.getAttribute('width') || 0);
-    const {sourceEl, sourcesToRemove} = videoSourceElement(videoSources, videoElWidth);
 
-    sourcesToRemove.forEach(DU.deleteNode);
+    let sourceEl: DominoElement;
+    let sourceWidth: Number;
+    videoSources.forEach((videoSource: DominoElement) => {
+        const videoSourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
+        if (!sourceEl || (sourceWidth > videoSourceWidth && videoSourceWidth >= videoElWidth) ||
+            (sourceWidth === videoSourceWidth && (videoSource.getAttribute('src').endsWith('.vp9.webm') || 
+                (videoSource.getAttribute('src').endsWith('.webm') && !sourceEl.getAttribute('src').endsWith('.webm'))))) {
+            if (sourceEl) {
+                DU.deleteNode(sourceEl);
+            }
+            sourceEl = videoSource;
+            sourceWidth = Number(sourceEl.getAttribute('data-file-width') || sourceEl.getAttribute('data-width') || 0);
+        } else {
+            DU.deleteNode(videoSource);
+        }
+    });
 
     const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
     const fileBase = getMediaBase(sourceUrl, true);
