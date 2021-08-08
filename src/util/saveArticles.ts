@@ -420,11 +420,6 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
     const fileBase = getMediaBase(sourceUrl, true);
 
-    if (!fileBase) {
-        DU.deleteNode(sourceEl);
-        return;
-    }
-
     /* Remove useless 'resource' attribute */
     videoEl.removeAttribute('resource');
 
