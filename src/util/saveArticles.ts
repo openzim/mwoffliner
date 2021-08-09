@@ -373,53 +373,75 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
 }
 
 export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[], subtitles: string[] }> {
-    // This function handles audio tags as well as video tags
+
+    /* Worth noting:
+     - This function handles audio tags as well as video tags
+     - Video tags are used for audio files too (as opposed to the audio tag)
+     - When it's only audio, there will be a single OGG file
+     - For video, we get multiple SOURCE tages with different resolutions */
     const mediaDependencies: string[] = [];
     const subtitles: string[] = [];
-    // Worth noting:
-    // Video tags are used for audio files too (as opposed to the audio tag)
-    // When it's only audio, there will be a single OGG file
-    // For video, we get multiple SOURCE tages with different resolutions
 
-    let videoSources: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
-
-    // Firefox is not able to display correctly <video> nodes with a height < 40.
-    // In that case the controls are not displayed.
-    if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
-        videoEl.setAttribute('height', '40');
-    }
-
-    // Always show controls
-    videoEl.setAttribute('controls', '40');
-
+    /* Just delete video/audio element if the flavour requires it */
     if (dump.nopic || dump.novid || dump.nodet) {
         DU.deleteNode(videoEl);
         return { mediaDependencies, subtitles };
     }
 
-    // using video element width to find source node with best fiting resolution
-    const videoElWidth = (videoEl.getAttribute('width') || 0);
+    /* Firefox is not able to display correctly <video> nodes with a
+     height < 40. In that case the controls are not displayed. */
+    if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
+        videoEl.setAttribute('height', '40');
+    }
 
-    let sourceEl: DominoElement;
-    let sourceWidth: Number;
-    videoSources.forEach((videoSource: DominoElement) => {
-        const videoSourceWidth = Number(videoSource.getAttribute('data-file-width') || videoSource.getAttribute('data-width') || 0);
-        if (!sourceEl || (sourceWidth > videoSourceWidth && videoSourceWidth >= videoElWidth) ||
-            (sourceWidth === videoSourceWidth && (videoSource.getAttribute('src').endsWith('.vp9.webm') ||
-                (videoSource.getAttribute('src').endsWith('.webm') && !sourceEl.getAttribute('src').endsWith('.webm'))))) {
-            if (sourceEl) {
-                DU.deleteNode(sourceEl);
-            }
-            sourceEl = videoSource;
-            sourceWidth = Number(sourceEl.getAttribute('data-file-width') || sourceEl.getAttribute('data-width') || 0);
-        } else {
-            DU.deleteNode(videoSource);
+    /* Always show controls */
+    videoEl.setAttribute('controls', '40');
+
+    /* Choose best fiting resolution <source> video node */
+    let videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
+    const videoDisplayedWidth = videoEl.getAttribute('width');
+    let bestWidthDiff = 424242;
+    let chosenVideoSourceEl: DominoElement;
+    videoSourceEls.forEach((videoSourceEl: DominoElement) => {
+        // Ignore non-webm sources
+        if (!videoSourceEl.getAttribute('src').endsWith('.webm')) {
+            DU.deleteNode(videoSourceEl);
+            return;
         }
+
+        // If undefined displayed width, then take the best <source> resolution
+        const videoSourceElWidth = videoSourceEl.getAttribute('data-file-width') || videoSourceEl.getAttribute('data-width') || 0;
+        if (!videoDisplayedWidth) {
+            const chosenVideoSourceElWidth = chosenVideoSourceEl ?
+                chosenVideoSourceEl.getAttribute('data-file-width') || chosenVideoSourceEl.getAttribute('data-width') || 0 : 0;
+            if (videoSourceElWidth > chosenVideoSourceElWidth ||
+                videoSourceElWidth == chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm')) {
+                chosenVideoSourceEl = videoSourceEl;
+                return;
+            }
+        }
+
+        // Otherwise, choose <source> with better (smaller) width diff
+        else {
+            const widthDiff = videoSourceElWidth - videoDisplayedWidth;
+            if (videoSourceElWidth >= videoDisplayedWidth && widthDiff <= bestWidthDiff) {
+                if (widthDiff < bestWidthDiff ||
+                    widthDiff == bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm')) {
+                    chosenVideoSourceEl = videoSourceEl;
+                    bestWidthDiff = widthDiff;
+                    return;
+                }
+            }
+        }
+
+        // Delete all other nodes
+        DU.deleteNode(videoSourceEl);
     });
 
     /* Remove useless 'resource' attribute */
     videoEl.removeAttribute('resource');
 
+    /* Handle video poster */
     const posterUrl = videoEl.getAttribute('poster');
     if (posterUrl) {
         const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
@@ -440,7 +462,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     }
 
     /* Download content, but avoid duplicate calls */
-    const sourceUrl = getFullUrl(sourceEl.getAttribute('src'), mw.baseUrl);
+    const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), mw.baseUrl);
     if (!srcCache.hasOwnProperty(sourceUrl)) {
         srcCache[sourceUrl] = true;
         mediaDependencies.push(sourceUrl);
@@ -448,7 +470,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     /* Set new URL for the video element */
     const fileBase = getMediaBase(sourceUrl, true);
-    sourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'));
+    chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'));
 
     /* Scrape subtitle */
     for (const track of Array.from(videoEl.querySelectorAll('track'))) {
