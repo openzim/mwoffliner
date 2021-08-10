@@ -31,10 +31,11 @@ export async function removeOrEncodeLink(mw: MediaWiki, dump: Dump, linkNode: Do
 }
 
 export async function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
+    const mediaDependencies: string[] = [];
     let rel = linkNode.getAttribute('rel');
     let href = linkNode.getAttribute('href') || '';
-    let hrefProtocol = urlParser.parse(href).protocol;
-    const mediaDependencies: string[] = [];
+    let hrefProtocol;
+    try { hrefProtocol = urlParser.parse(href).protocol } catch(e) { return { mediaDependencies } }
 
     if (hrefProtocol && !hrefProtocol.includes('http')) {
         return { mediaDependencies }; // e.g. geo:11111,11111
