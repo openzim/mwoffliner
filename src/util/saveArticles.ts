@@ -403,8 +403,20 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     let bestWidthDiff = 424242;
     let chosenVideoSourceEl: DominoElement;
     videoSourceEls.forEach((videoSourceEl: DominoElement) => {
-        // Ignore non-webm sources
-        if (!videoSourceEl.getAttribute('src').endsWith('.webm')) {
+
+        // Ignore non-webm && non-audio sources
+        const videoSourceType = videoSourceEl.getAttribute('type');
+        if (!videoSourceEl.getAttribute('src').endsWith('.webm') &&
+            !videoSourceType.startsWith('audio')) {
+            DU.deleteNode(videoSourceEl);
+            return;
+        }
+
+        // Handle audio content
+        if (videoSourceType.startsWith('audio/ogg')) {
+            chosenVideoSourceEl = videoSourceEl;
+            return;
+        } else if (videoSourceType.startsWith('audio')) {
             DU.deleteNode(videoSourceEl);
             return;
         }
