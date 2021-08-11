@@ -404,6 +404,15 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     let chosenVideoSourceEl: DominoElement;
     videoSourceEls.forEach((videoSourceEl: DominoElement) => {
         // Ignore non-webm sources
+        const videoSourceType = videoSourceEl.getAttribute('type');
+        if (videoSourceType.startsWith('audio/ogg')) {
+            chosenVideoSourceEl = videoSourceEl;
+            return;
+        } else if (videoSourceType.startsWith('audio')) {
+            DU.deleteNode(videoSourceEl);
+            return;
+        }
+
         if (!videoSourceEl.getAttribute('src').endsWith('.webm')) {
             DU.deleteNode(videoSourceEl);
             return;

@@ -288,6 +288,17 @@ test('correct resolution retrieval', async(t) => {
     t.equal(ret.mediaDependencies[1], 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm', 'Correct video resolution');
 })
 
+test('Ogg audio retrival', async(t) => {
+    const { mw, dump } = await setupScrapeClasses({ format: '' });
+    const htmlStr = `<audio controls="" preload="none" height="32" width="200" resource="./File:William_Shakespeare_(Spoken_Article).ogg">
+        <source src="//upload.wikimedia.org/wikipedia/commons/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg" type="audio/ogg; codecs=&quot;vorbis&quot;" data-title="Original Ogg file (54 kbps)" data-shorttitle="Ogg source">
+        <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg/William_Shakespeare_%28Spoken_Article%29.ogg.mp3" type="audio/mpeg" data-title="MP3" data-shorttitle="MP3">
+        </audio>`
+        const htmlDoc = domino.createDocument(htmlStr);
+        const ret = await treatVideo(mw, dump, {}, 'Michael_Jackson', htmlDoc.querySelector('audio'), false);
+        t.equal(ret.mediaDependencies[0], 'https://upload.wikimedia.org/wikipedia/commons/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg', 'Correct audio file');
+})
+
 test('Test deleted article rendering' , async(t) => {
     const articleJsonObject = {
         'visualeditor': { 'oldid': 0 }
