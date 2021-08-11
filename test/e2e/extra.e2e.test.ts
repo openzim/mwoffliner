@@ -18,6 +18,7 @@ test('Simple customMainPage', async (t) => {
     await mkdirPromise(testId);
 
     const articleListLines = `
+1%_(South_Park)
 İznik
 Egyptian_hieroglyphs
 Wikipedia:Books/archive/Cancer care
@@ -40,7 +41,8 @@ Wikipedia:Books/archive/Eye diseases`;
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.equal(dump.status.articles.success, 6, 'nopic has 6 articles');
+            const articleCount = articleListLines.split(/\r\n|\r|\n/).length;
+            t.equal(dump.status.articles.success, articleCount, 'nopic has ' + articleCount + ' articles');
         }
 
         if (await zimcheckAvailable()) {
