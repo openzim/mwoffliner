@@ -399,7 +399,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
     /* Choose best fiting resolution <source> video node */
     let videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
-    const videoDisplayedWidth = videoEl.getAttribute('width');
+    const videoDisplayedWidth = Number(videoEl.getAttribute('width'));
     let bestWidthDiff = 424242;
     let chosenVideoSourceEl: DominoElement;
     videoSourceEls.forEach((videoSourceEl: DominoElement) => {
@@ -422,7 +422,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         }
 
         // If undefined displayed width, then take the best <source> resolution
-        const videoSourceElWidth = videoSourceEl.getAttribute('data-file-width') || videoSourceEl.getAttribute('data-width') || 0;
+        const videoSourceElWidth = Number(videoSourceEl.getAttribute('data-file-width') || videoSourceEl.getAttribute('data-width') || 0);
         if (!videoDisplayedWidth) {
             const chosenVideoSourceElWidth = chosenVideoSourceEl ?
                 chosenVideoSourceEl.getAttribute('data-file-width') || chosenVideoSourceEl.getAttribute('data-width') || 0 : 0;
@@ -435,10 +435,10 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
 
         // Otherwise, choose <source> with better (smaller) width diff
         else {
-            const widthDiff = videoSourceElWidth - videoDisplayedWidth;
+            const widthDiff = Number(videoSourceElWidth - videoDisplayedWidth);
             if (videoSourceElWidth >= videoDisplayedWidth && widthDiff <= bestWidthDiff) {
                 if (widthDiff < bestWidthDiff ||
-                    widthDiff == bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm')) {
+                    (widthDiff == bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
                     chosenVideoSourceEl = videoSourceEl;
                     bestWidthDiff = widthDiff;
                     return;
