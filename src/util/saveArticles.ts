@@ -436,9 +436,16 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         // Otherwise, choose <source> with better (smaller) width diff
         else {
             const widthDiff = Number(videoSourceElWidth - videoDisplayedWidth);
-            if (videoSourceElWidth >= videoDisplayedWidth && widthDiff <= bestWidthDiff) {
-                if (widthDiff < bestWidthDiff ||
-                    (widthDiff == bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
+            if (videoSourceElWidth >= videoDisplayedWidth && (widthDiff <= bestWidthDiff || (bestWidthDiff < 0 && widthDiff > 0))) {
+                if (widthDiff < bestWidthDiff || (bestWidthDiff < 0 && widthDiff > 0) ||
+                    (widthDiff === bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
+                    chosenVideoSourceEl = videoSourceEl;
+                    bestWidthDiff = widthDiff;
+                    return;
+                }
+            } else if (!chosenVideoSourceEl || (bestWidthDiff < 0 && widthDiff < 0 && widthDiff >= bestWidthDiff)) {
+                if(!chosenVideoSourceEl || widthDiff > bestWidthDiff ||
+                    (widthDiff === bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
                     chosenVideoSourceEl = videoSourceEl;
                     bestWidthDiff = widthDiff;
                     return;

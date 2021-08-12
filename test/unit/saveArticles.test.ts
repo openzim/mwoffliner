@@ -8,6 +8,7 @@ import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVi
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from 'src/util';
+import logger from '../../src/Logger';
 
 const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
@@ -266,7 +267,7 @@ test('treat multiple subtitles in one video', async(t) => {
 test('correct resolution retrieval', async(t) => {
     const { mw, dump } = await setupScrapeClasses({ format: '' });
 
-    const htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="300" resource="./File:Gout.webm">
+    let htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="300" resource="./File:Gout.webm">
         <source src="//upload.wikimedia.org/wikipedia/commons/3/3d/Gout.webm" type="video/webm; codecs=&quot;vp9, vorbis&quot;" data-file-width="1920" data-file-height="1080" data-title="Original WebM file, 1,920 × 1,080 (735 kbps)" data-shorttitle="WebM source">
         <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.120p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="214" data-height="120" data-title="Lowest bandwidth VP9 (120P)" data-shorttitle="VP9 120P">
         <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.160p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="284" data-height="160" data-title="Low bandwidth WebM (160P)" data-shorttitle="WebM 160P">
@@ -283,9 +284,20 @@ test('correct resolution retrieval', async(t) => {
         <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.1080p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="1920" data-height="1080" data-title="Full HD WebM (1080P)" data-shorttitle="WebM 1080P">
         <track kind="subtitles" type="text/x-srt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=srt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl">
         <track kind="subtitles" type="text/vtt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=vtt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl"></video>`;
-    const htmlDoc = domino.createDocument(htmlStr);
-    const ret = await treatVideo(mw, dump, {}, 'Gout', htmlDoc.querySelector('video'), false);
-    t.equal(ret.mediaDependencies[1], 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm', 'Correct video resolution');
+    let htmlDoc = domino.createDocument(htmlStr);
+    let ret = await treatVideo(mw, dump, {}, 'Gout', htmlDoc.querySelector('video'), false);
+    t.equal(ret.mediaDependencies[1], 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm', 'Correct video resolution for width greater than videoEl');
+
+    htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="800" resource="./File:Gout.webm">
+    <source src="//upload.wikimedia.org/wikipedia/commons/3/3d/Gout.webm" type="video/webm; codecs=&quot;vp9, vorbis&quot;" data-file-width="700" data-file-height="1080" data-title="Original WebM file, 1,920 × 1,080 (735 kbps)" data-shorttitle="WebM source">
+    <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.700p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="214" data-height="120" data-title="Lowest bandwidth VP9 (120P)" data-shorttitle="VP9 120P">
+    <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.780p.webm" type="video/webm; codecs=&quot;vp8, vorbis&quot;" data-width="780" data-height="160" data-title="Low bandwidth WebM (160P)" data-shorttitle="WebM 160P">
+    <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.320p.vp9.webm" type="video/webm; codecs=&quot;vp9, opus&quot;" data-width="320" data-height="180" data-title="Low bandwidth VP9 (180P)" data-shorttitle="VP9 180P">
+    <track kind="subtitles" type="text/x-srt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=srt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl">
+    <track kind="subtitles" type="text/vtt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=vtt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl"></video>`;
+    htmlDoc = domino.createDocument(htmlStr);
+    ret = await treatVideo(mw, dump, {}, 'Gout', htmlDoc.querySelector('video'), false);
+    t.equal(ret.mediaDependencies[1], 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.780p.webm', 'Correct video resolution for all widths less than videoEl')
 })
 
 test('Ogg audio retrival', async(t) => {
