@@ -1,3 +1,10 @@
+1.11.9:
+* FIX: Thumbnail URL retrieval with new edge cases
+* FIX: Crash in case of badly formated URL in HTML
+* UPDATE: Better video picker - respect the HTML element size
+* UPDATE: Reduce number of parallel requests by 30%
+* UPDATE: HTTP request timeout increased to 120 seconds
+
 1.11.8
 * FIX: Redirect retrieval if lots of them
 * FIX: Webp polyfill concurency problems
