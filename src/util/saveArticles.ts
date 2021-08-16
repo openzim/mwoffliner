@@ -428,6 +428,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
                 chosenVideoSourceEl.getAttribute('data-file-width') || chosenVideoSourceEl.getAttribute('data-width') || 0 : 0;
             if (videoSourceElWidth > chosenVideoSourceElWidth ||
                 videoSourceElWidth == chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm')) {
+                DU.deleteNode(chosenVideoSourceEl);
                 chosenVideoSourceEl = videoSourceEl;
                 return;
             }
@@ -449,6 +450,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
                 if (bestWidthDiff < 0 ||
                     widthDiff < bestWidthDiff ||
                     (widthDiff === bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
+                        DU.deleteNode(chosenVideoSourceEl);
                         chosenVideoSourceEl = videoSourceEl;
                         bestWidthDiff = widthDiff;
                         return;
@@ -459,6 +461,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
             else {
                 if (widthDiff > bestWidthDiff ||
                     (widthDiff === bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
+                        DU.deleteNode(chosenVideoSourceEl);
                         chosenVideoSourceEl = videoSourceEl;
                         bestWidthDiff = widthDiff;
                         return;
