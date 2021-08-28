@@ -19,7 +19,7 @@ test('MWApi Article Ids', async (t) => {
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
 
-    const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_Built-up_Area'];
+    const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area'];
     await getArticleIds(downloader, mw, 'Main_Page', aIds);
     const articlesById = await articleDetailXId.getMany(aIds);
     const { United_Kingdom, London } = articlesById;
@@ -32,7 +32,7 @@ test('MWApi Article Ids', async (t) => {
     t.assert(!!London, 'Article "London" was scraped');
     t.assert(!!London.coordinates, 'Article "London" has geo coords');
 
-    t.assert(!!articlesById['Farnborough/Aldershot_Built-up_Area'], 'Complex article was scraped');
+    t.assert(!!articlesById['Farnborough/Aldershot_built-up_area'], 'Complex article was scraped');
 });
 
 test('MWApi NS', async (t) => {
