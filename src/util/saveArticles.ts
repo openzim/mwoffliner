@@ -473,6 +473,13 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
         DU.deleteNode(videoSourceEl);
     });
 
+    /* If no appropriate source video can be found, delete the video */
+    if (!chosenVideoSourceEl) {
+        logger.warn(`Unable to find an appropriate video/audio source for '${videoEl.resource}'`);
+        DU.deleteNode(videoEl);
+        return { mediaDependencies, subtitles };
+    }
+
     /* Remove useless 'resource' attribute */
     videoEl.removeAttribute('resource');
 
