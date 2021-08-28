@@ -14,7 +14,7 @@ import { mwRetToArticleDetail } from 'src/util';
 test('Url re-writing', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_Built-up_Area']);
+    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area']);
     const articlesDetail = mwRetToArticleDetail(_articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
@@ -31,7 +31,7 @@ test('Url re-writing', async (t) => {
     const $extNoProtocol = makeLink($doc, '//google.com', '', 'Google\'s Homepage (no protocol)');
     const $wikiLink = makeLink($doc, '/wiki/British_Museum', '', 'British Museum');
     const $wikiLink2 = makeLink($doc, '/wiki/British_Museum', '', 'British Museum');
-    const $wikiLinkWithSlash = makeLink($doc, '/wiki/Farnborough/Aldershot_Built-up_Area', '', 'Farnborough/Aldershot Built-up Area');
+    const $wikiLinkWithSlash = makeLink($doc, '/wiki/Farnborough/Aldershot_built-up_area', '', 'Farnborough/Aldershot built-up Area');
     const $nonScrapedWikiLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'fake link');
     const $specialMap = makeLink($doc, '/wiki/Special:Map/9/51.51/-0.08/en', '', 'Interactive map outlining London');
     const $hashLink = makeLink($doc, '#cite_note-LAS-150', '', 'The London Air Ambulance');
@@ -71,7 +71,7 @@ test('Url re-writing', async (t) => {
 
     await rewriteUrl(complexParentArticleId, mw, dump, $wikiLinkWithSlash);
     t.assert($wikiLinkWithSlash.nodeName === 'A', 'wikiLinkWithSlash is still a link');
-    t.equal($wikiLinkWithSlash.getAttribute('href'), '../../A/Farnborough/Aldershot_Built-up_Area', 'wikiLinkWithSlash HREF is correct');
+    t.equal($wikiLinkWithSlash.getAttribute('href'), '../../A/Farnborough/Aldershot_built-up_area', 'wikiLinkWithSlash HREF is correct');
 
     await rewriteUrl(complexParentArticleId, mw, dump, $specialMap);
     t.assert($specialMap.nodeName === 'A', 'specialMap is still a link');
@@ -97,7 +97,7 @@ test('e2e url rewriting', async (t) => {
     await downloader.checkCapabilities();
     await downloader.setBaseUrls();
 
-    await getArticleIds(downloader, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_Built-up_Area']);
+    await getArticleIds(downloader, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area']);
 
     let LondonArticle: typeof ZimArticle;
 

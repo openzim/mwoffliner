@@ -297,6 +297,12 @@ test('correct resolution retrieval', async(t) => {
     htmlDoc = domino.createDocument(htmlStr);
     ret = await treatVideo(mw, dump, {}, 'Gout', htmlDoc.querySelector('video'), false);
     t.equal(ret.mediaDependencies[1], 'https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.780p.webm', 'Correct video resolution for all widths less than videoEl')
+
+    htmlStr = `<video poster="//upload.wikimedia.org/wikipedia/commons/thumb/2/23/Apollo_13_Houston%2C_We%27ve_Got_a_Problem.ogv/220px--Apollo_13_Houston%2C_We%27ve_Got_a_Problem.ogv.jpg" preload="none" height="165" width="220" resource="./File:Apollo_13_Houston,_We've_Got_a_Problem.ogv" controls="40">
+    <source src="//upload.wikimedia.org/wikipedia/commons/2/23/Apollo_13_Houston%2C_We%27ve_Got_a_Problem.ogv" type="video/ogg; codecs=&quot;theora, vorbis&quot;" data-file-width="400" data-file-height="300" data-title="Original Ogg file, 400 × 300 (616 kbps)" data-shorttitle="Ogg source"></video>`;
+    htmlDoc = domino.createDocument(htmlStr);
+    ret = await treatVideo(mw, dump, {}, 'Appolo_13', htmlDoc.querySelector('video'), false);
+    t.equal(ret.mediaDependencies.length, 0, 'Remove video if no appropriate video/audio source')
 })
 
 test('Ogg audio retrival', async(t) => {
