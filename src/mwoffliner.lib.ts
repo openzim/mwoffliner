@@ -133,9 +133,7 @@ async function execute(argv: any) {
   const cpuCount = os.cpus().length;
   const speed = Math.max(1, Math.round(cpuCount * (_speed || 1) * 2));
 
-  /* Necessary to avoid problems with https */
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
+  /* Check Node.js version */
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
   if (!nodeVersionSatisfiesPackage) {
     logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`);
