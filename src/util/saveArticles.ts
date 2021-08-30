@@ -218,7 +218,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             cssModuleDependencies.add(dep);
                         }
 
-                        jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars[0];
+                        jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars;
 
                         let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp);
 
@@ -284,23 +284,32 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 }
 
 async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
-    // these vars will store the list of js and css dependencies for the article we are downloading. they are populated in storeDependencies and used in setFooter
-    let jsConfigVars: string | RegExpExecArray = '';
+
+    /* These vars will store the list of js and css dependencies for
+    the article we are downloading. */
+    let jsConfigVars: string = '';
     let jsDependenciesList: string[] = [];
     let styleDependenciesList: string[] = [];
 
     const articleApiUrl = mw.articleApiUrl(articleId);
-
     const articleData = await downloader.getJSON<any>(articleApiUrl);
-    const {
-        parse: {
-            modules, modulescripts, modulestyles, headhtml,
-        },
-    } = articleData;
 
+    /* Something went wrong in modules retrieval at app level (no HTTP error) */
+    if (articleData.error) {
+        logger.warn(`Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`);
+
+        /* If article is missing (for example because it just has been deleted) */
+        if (articleData.error.code === 'missingtitle') {
+            return { jsConfigVars, jsDependenciesList, styleDependenciesList };
+        }
+
+        /* Other kind of error (unsupported) */
+        process.exit(1);
+    }
+
+    const { parse: { modules, modulescripts, modulestyles, headhtml } } = articleData;
     jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a);
     styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a);
-
     styleDependenciesList = styleDependenciesList.filter(
         (oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep),
     );
@@ -315,18 +324,14 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
     // tslint:disable-next-line:prefer-for-of
     for (let i = 0; i < scriptTags.length; i += 1) {
         if (scriptTags[i].text.includes('mw.config.set')) {
-            jsConfigVars = regex.exec(scriptTags[i].text);
+            jsConfigVars = regex.exec(scriptTags[i].text)[0] || '';
         }
     }
 
     jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`;
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view'); // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
-    return {
-        jsConfigVars,
-        jsDependenciesList,
-        styleDependenciesList,
-    };
+    return { jsConfigVars, jsDependenciesList, styleDependenciesList };
 }
 
 async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
