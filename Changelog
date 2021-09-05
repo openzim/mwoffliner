@@ -1,3 +1,8 @@
+1.11.10:
+* FIX: Videos in with too low resolution
+* UPDATE: Allow to have JSON error 'missingarticle' in module dependence retrieval
+* UPDATE: Stop allow Mediawiki instance with misconfigured SSL
+
 1.11.9:
 * FIX: Thumbnail URL retrieval with new edge cases
 * FIX: Crash in case of badly formated URL in HTML
