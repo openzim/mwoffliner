@@ -120,34 +120,64 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
 
     // set all other section (closed by default)
     if (!dump.nodet && json.remaining.sections.length > 0) {
-        const firstTocLevel = json.remaining.sections[0].toclevel;
+        const stack = new Array(Number);
         json.remaining.sections
             .forEach((oneSection: any, i: number) => {
-                if (oneSection.toclevel === firstTocLevel) {
-                    html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, ''); // remove unused anchor for subsection
+                if (i===0) {
+                    // Always add first section and push it's toclevel on stack.
                     html += sectionTemplate({
-                        section_index: i + 1,
+                        section_index: oneSection.toclevel + 1,
                         section_id: oneSection.id,
                         section_anchor: oneSection.anchor,
                         section_line: oneSection.line,
                         section_text: oneSection.text,
                         strings: dump.strings,
                     });
+                    stack.push(oneSection.toclevel);
                 } else {
-                    html = html.replace(
-                        `__SUB_LEVEL_SECTION_${i}__`,
-                        subSectionTemplate({
-                            section_index: i + 1,
-                            section_toclevel: oneSection.toclevel + 1,
-                            section_id: oneSection.id,
-                            section_anchor: oneSection.anchor,
-                            section_line: oneSection.line,
-                            section_text: oneSection.text,
-                            strings: dump.strings,
-                        }),
-                    );
+                    // If current toclevel is less than previous levels pop them and remove unused anchor.
+                    while(stack.length > 0 && stack.slice(-1)[0] > oneSection.toclevel) {
+                        html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`, '');
+                        html = html.replace(`__SAME_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`, '');
+                        stack.pop();
+                    }
+                    // If both section are on same level remove sub level section anchor and
+                    // replace same level section anchor with template.
+                    if (stack.slice(-1)[0] === oneSection.toclevel) {
+                        html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`, '');
+                        html = html.replace(`__SAME_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`,
+                            sectionTemplate({
+                                section_index: oneSection.toclevel + 1,
+                                section_id: oneSection.id,
+                                section_anchor: oneSection.anchor,
+                                section_line: oneSection.line,
+                                section_text: oneSection.text,
+                                strings: dump.strings,
+                            })
+                        );
+                    }
+                    // Else section is inside previous level so replace sub level section anchor with template.
+                    else {
+                        html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`,
+                            sectionTemplate({
+                                section_index: oneSection.toclevel + 1,
+                                section_id: oneSection.id,
+                                section_anchor: oneSection.anchor,
+                                section_line: oneSection.line,
+                                section_text: oneSection.text,
+                                strings: dump.strings,
+                            })
+                        );
+                        stack.push(oneSection.toclevel);
+                    }
                 }
             });
+        // Remove all unused section anchors.
+        while (stack.length > 0) {
+            html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1) + 1}__`, '');
+            html = html.replace(`__SAME_LEVEL_SECTION_${+stack.slice(-1) + 1}__`, '');
+            stack.pop();
+        }
     }
     const articleResourceNamespace = 'A';
     const categoryResourceNamespace = 'U';
