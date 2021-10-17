@@ -1,3 +1,4 @@
+///<reference path="../../src/types.d.ts" />
 import './bootstrap.test.ts';
 import test from 'blue-tape';
 import tapePromise from 'tape-promise';
@@ -89,7 +90,7 @@ test('Downloader class', async (t) => {
         t.ok(true, 'downloadContent throws when empty string is passed');
     }
 
-    const { data: LondonDetail } = await Axios.get(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London`);
+    const { data: LondonDetail } = await Axios.get<any>(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
     const LondonImage = await downloader.downloadContent(imgToGet as string);
@@ -215,6 +216,6 @@ _test('Downloader class with optimisation', async (t) => {
 });
 
 async function getRandomImageUrl(): Promise<string> {
-    const resp = await Axios('https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json');
+    const resp = await Axios.get<MwApiResponse>('https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json');
     return resp.data.query.pages[0].imageinfo[0].url;
 }

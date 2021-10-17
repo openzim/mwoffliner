@@ -17,8 +17,8 @@ test('Stylesheet downloading', async (t) => {
     const offlineCSSUrl = `https://wiki.kiwix.org/w/index.php?title=Mediawiki:offline.css&action=raw`;
     const siteStylesUrl = `http://en.wikipedia.org/w/load.php?lang=en&modules=site.styles&only=styles&skin=vector`;
 
-    const { data: offlineCSSContent } = await Axios.get(offlineCSSUrl);
-    const { data: siteStylesContent } = await Axios.get(siteStylesUrl);
+    const { data: offlineCSSContent } = await Axios.get<any>(offlineCSSUrl);
+    const { data: siteStylesContent } = await Axios.get<any>(siteStylesUrl);
 
     const { finalCss } = await getAndProcessStylesheets(downloader, [offlineCSSUrl, siteStylesUrl]);
 

@@ -185,6 +185,7 @@ interface QueryContinueOpts {
 interface PageInfo {
   ns?: number;
   title: string;
+  imageinfo?: [{ url: string }];
 }
 
 

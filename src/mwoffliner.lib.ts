@@ -265,7 +265,7 @@ async function execute(argv: any) {
     let content;
     if (faviconIsRemote) {
       logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
-      content = await axios.get(customZimFavicon, downloader.arrayBufferRequestOptions)
+      content = await axios.get<any>(customZimFavicon, downloader.arrayBufferRequestOptions)
         .then((a) => a.data)
         .catch((err) => {
           throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`);
@@ -292,7 +292,7 @@ async function execute(argv: any) {
       const fileName = articleList.split('/').slice(-1)[0];
       const tmpArticleListPath = path.join(tmpDirectory, fileName);
       logger.log(`Downloading article list from [${articleList}] to [${tmpArticleListPath}]`);
-      const { data: articleListContentStream } = await axios.get(articleList, downloader.streamRequestOptions);
+      const { data: articleListContentStream } = await axios.get<any>(articleList, downloader.streamRequestOptions);
       const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
       await new Promise((resolve, reject) => {
         articleListContentStream

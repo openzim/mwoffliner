@@ -82,7 +82,7 @@ class MediaWiki {
         },
         method: 'POST',
       })
-      .then((resp) => {
+      .then((resp: any) => {
         if (resp.data.login.result !== 'Success') {
           throw new Error('Login Failed');
         }
