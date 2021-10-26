@@ -6,8 +6,9 @@ import pathParser from 'path';
 import { sanitize_customFlavour } from 'src/sanitize-argument';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
-import { getMediaBase, normalizeMwResponse } from '../../src/util/';
+import { getMediaBase, normalizeMwResponse, getSectionHtml } from '../../src/util/';
 import axios from 'axios';
+import { Dump } from '../../src/Dump';
 
 test('util -> interpolateTranslationString', async (t) => {
     t.equals(interpolateTranslationString('Hello world', {}), 'Hello world');
@@ -41,6 +42,49 @@ test('Encoding ArticleId for Zim HTML Url', async(t) => {
         const   encoded = articles.shift();
         t.equal(encoded, encodeArticleIdForZimHtmlUrl(unencoded), `encodeArticleIdForZimHtmlUrl() encoding`);
     }
+});
+
+test('Article section rendering', async (t) => {
+    const dump: Dump = new Dump('', {} as any, {} as any);
+    const sections = [
+        {
+          id: 1,
+          text: 'level 1',
+          toclevel: 1,
+          line: 'Approximate Hamiltonians',
+          anchor: 'Approximate_Hamiltonians'
+        },
+        {
+          id: 2,
+          text: 'level 1',
+          toclevel: 1,
+          line: 'Applying perturbation theory',
+          anchor: 'Applying_perturbation_theory'
+        },
+        {
+          id: 3,
+          text: 'level 2',
+          toclevel: 2,
+          line: 'Limitations',
+          anchor: 'Limitations'
+        },
+        {
+          id: 4,
+          text: 'level 3',
+          toclevel: 3,
+          line: 'Large perturbations',
+          anchor: 'Large_perturbations'
+        },
+        {
+          id: 5,
+          text: 'level 3',
+          toclevel: 3,
+          line: 'Non-adiabatic states',
+          anchor: 'Non-adiabatic_states'
+        }
+    ];
+    t.equal(getSectionHtml(sections, 1, dump), `<details data-level="2" open>\n    <summary class=\'section-heading\'><h2 id="Approximate_Hamiltonians">Approximate Hamiltonians</h2></summary>\n    level 1\n    \n</details><details data-level="2" open>\n    <summary class=\'section-heading\'><h2 id="Applying_perturbation_theory">Applying perturbation theory</h2></summary>\n    level 1\n    <details data-level="2" open>\n    <summary class=\'section-heading\'><h2 id="Limitations">Limitations</h2></summary>\n    level 2\n    <details data-level="2" open>\n    <summary class=\'section-heading\'><h2 id="Large_perturbations">Large perturbations</h2></summary>\n    level 3\n    \n</details><details data-level="2" open>\n    <summary class=\'section-heading\'><h2 id="Non-adiabatic_states">Non-adiabatic states</h2></summary>\n    level 3\n    \n</details>\n</details>\n</details>`,
+        'Tree structure in article sections');
 });
 
 test('wikitext comparison', async(t) => {

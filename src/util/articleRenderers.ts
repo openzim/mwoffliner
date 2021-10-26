@@ -107,6 +107,38 @@ export const renderDesktopArticle = (json: any, articleId: string, articleDetail
     return json // This is HTML probably (the problem is that this is hard to know at this stage, buggy architecture)
 };
 
+export const getSectionHtml = (sections: any, sectionTocLevel: number, dump: Dump): string => {
+    let html = '';
+    let counter = 0;
+    // Iterate over all sections
+    while (counter < sections.length) {
+        // Add sections on current level directly to html
+        html += sectionTemplate({
+                section_index: sections[counter].toclevel,
+                section_id: sections[counter].id,
+                section_anchor: sections[counter].anchor,
+                section_line: sections[counter].line,
+                section_text: sections[counter].text,
+                strings: dump.strings,
+            });
+        // get start index for subsection for current section.
+        const startIndex = ++counter;
+        if (startIndex >= sections.length) {
+            break;
+        }
+        // move counter to next section on same or upper level.
+        while(counter < sections.length && sections[counter].toclevel > sectionTocLevel) {
+            counter++;
+        }
+        // slice sub-section array and recursively get html.
+        html = html.replace(
+            `__SUB_LEVEL_SECTION_${+sectionTocLevel}__`,
+            getSectionHtml(sections.slice(startIndex, counter), sections[startIndex].toclevel, dump)
+        );
+    }
+    return html.replace(`__SUB_LEVEL_SECTION_${+sectionTocLevel}__`, '');
+}
+
 
 const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
     let html = '';
@@ -120,64 +152,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
 
     // set all other section (closed by default)
     if (!dump.nodet && json.remaining.sections.length > 0) {
-        const stack = new Array(Number);
-        json.remaining.sections
-            .forEach((oneSection: any, i: number) => {
-                if (i===0) {
-                    // Always add first section and push it's toclevel on stack.
-                    html += sectionTemplate({
-                        section_index: oneSection.toclevel + 1,
-                        section_id: oneSection.id,
-                        section_anchor: oneSection.anchor,
-                        section_line: oneSection.line,
-                        section_text: oneSection.text,
-                        strings: dump.strings,
-                    });
-                    stack.push(oneSection.toclevel);
-                } else {
-                    // If current toclevel is less than previous levels pop them and remove unused anchor.
-                    while(stack.length > 0 && stack.slice(-1)[0] > oneSection.toclevel) {
-                        html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`, '');
-                        html = html.replace(`__SAME_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`, '');
-                        stack.pop();
-                    }
-                    // If both section are on same level remove sub level section anchor and
-                    // replace same level section anchor with template.
-                    if (stack.slice(-1)[0] === oneSection.toclevel) {
-                        html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`, '');
-                        html = html.replace(`__SAME_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`,
-                            sectionTemplate({
-                                section_index: oneSection.toclevel + 1,
-                                section_id: oneSection.id,
-                                section_anchor: oneSection.anchor,
-                                section_line: oneSection.line,
-                                section_text: oneSection.text,
-                                strings: dump.strings,
-                            })
-                        );
-                    }
-                    // Else section is inside previous level so replace sub level section anchor with template.
-                    else {
-                        html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1)[0] + 1}__`,
-                            sectionTemplate({
-                                section_index: oneSection.toclevel + 1,
-                                section_id: oneSection.id,
-                                section_anchor: oneSection.anchor,
-                                section_line: oneSection.line,
-                                section_text: oneSection.text,
-                                strings: dump.strings,
-                            })
-                        );
-                        stack.push(oneSection.toclevel);
-                    }
-                }
-            });
-        // Remove all unused section anchors.
-        while (stack.length > 0) {
-            html = html.replace(`__SUB_LEVEL_SECTION_${+stack.slice(-1) + 1}__`, '');
-            html = html.replace(`__SAME_LEVEL_SECTION_${+stack.slice(-1) + 1}__`, '');
-            stack.pop();
-        }
+        html += getSectionHtml(json.remaining.sections, json.remaining.sections[0].toclevel, dump);
     }
     const articleResourceNamespace = 'A';
     const categoryResourceNamespace = 'U';
