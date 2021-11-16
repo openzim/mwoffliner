@@ -4,8 +4,7 @@ import {
     leadSectionTemplate,
     sectionTemplate,
     subCategoriesTemplate,
-    subPagesTemplate,
-    subSectionTemplate
+    subPagesTemplate
 } from '../Templates';
 import logger from '../Logger';
 import type {Dump} from '../Dump';
@@ -107,36 +106,53 @@ export const renderDesktopArticle = (json: any, articleId: string, articleDetail
     return json // This is HTML probably (the problem is that this is hard to know at this stage, buggy architecture)
 };
 
-export const getSectionHtml = (sections: any, sectionTocLevel: number, dump: Dump): string => {
+export const getSectionsHtml = (sections: any, dump: Dump): string => {
     let html = '';
-    let counter = 0;
-    // Iterate over all sections
-    while (counter < sections.length) {
-        // Add sections on current level directly to html
-        html += sectionTemplate({
-                section_index: sections[counter].toclevel,
-                section_id: sections[counter].id,
-                section_anchor: sections[counter].anchor,
-                section_line: sections[counter].line,
-                section_text: sections[counter].text,
-                strings: dump.strings,
-            });
-        // get start index for subsection for current section.
-        const startIndex = ++counter;
-        if (startIndex >= sections.length) {
-            break;
+    let prev = 0;
+    let tocLevel = sections[0].toclevel;
+    let sectionsToSplit: any[] = [];
+
+    // Store index of sections on current level.
+    sections.map((section: any, index: number) => {
+        if (tocLevel >= section.toclevel) {
+            tocLevel = section.toclevel;
+            sectionsToSplit.push(index);
         }
-        // move counter to next section on same or upper level.
-        while(counter < sections.length && sections[counter].toclevel > sectionTocLevel) {
-            counter++;
-        }
-        // slice sub-section array and recursively get html.
-        html = html.replace(
-            `__SUB_LEVEL_SECTION_${+sectionTocLevel}__`,
-            getSectionHtml(sections.slice(startIndex, counter), sections[startIndex].toclevel, dump)
-        );
-    }
-    return html.replace(`__SUB_LEVEL_SECTION_${+sectionTocLevel}__`, '');
+    });
+
+    // Add first section on current level directly and remove it from list.
+    html += sectionTemplate({
+        section_index: sections[0].toclevel,
+        section_id: sections[0].id,
+        section_anchor: sections[0].anchor,
+        section_line: sections[0].line,
+        section_text: sections[0].text,
+        strings: dump.strings,
+    });
+
+    sectionsToSplit = sectionsToSplit.slice(1);
+
+    // Loop over sections on current level and recursively generate html for it's sub-section.
+    sectionsToSplit.forEach((currentIndex: number) => {
+        html = html.replace(`__SUB_LEVEL_SECTION_${sections[prev].toclevel}__`,
+            prev + 1 === currentIndex ? '' : getSectionsHtml(sections.slice(prev + 1, currentIndex), dump));
+
+        html += html = sectionTemplate({
+            section_index: sections[currentIndex].toclevel,
+            section_id: sections[currentIndex].id,
+            section_anchor: sections[currentIndex].anchor,
+            section_line: sections[currentIndex].line,
+            section_text: sections[currentIndex].text,
+            strings: dump.strings,
+        });
+        prev = currentIndex;
+    });
+
+    // Get html for last sub-section.
+    html = html.replace(`__SUB_LEVEL_SECTION_${sections[prev].toclevel}__`,
+            prev + 1 === sections.length ? '' : getSectionsHtml(sections.slice(prev + 1), dump));
+
+    return html;
 }
 
 
@@ -152,7 +168,7 @@ const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetai
 
     // set all other section (closed by default)
     if (!dump.nodet && json.remaining.sections.length > 0) {
-        html += getSectionHtml(json.remaining.sections, json.remaining.sections[0].toclevel, dump);
+        html += getSectionsHtml(json.remaining.sections, dump);
     }
     const articleResourceNamespace = 'A';
     const categoryResourceNamespace = 'U';

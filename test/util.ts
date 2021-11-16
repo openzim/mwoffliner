@@ -85,3 +85,15 @@ export async function testHtmlRewritingE2e(t: any, wikicode: string, html: strin
     const resultHtml = await convertWikicodeToHtml(wikicode, 'https://en.wikipedia.org/');
     t.equal(html, resultHtml.data, comment);
 }
+
+export function sectionGenerator(sectionList: number[]) {
+    return sectionList.map((tocLevel: number, index: number) => {
+        return {
+            'id': index,
+            'toclevel': tocLevel,
+            'anchor': tocLevel,
+            'line': tocLevel,
+            'text': tocLevel
+        };
+    });
+}

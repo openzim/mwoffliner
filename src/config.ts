@@ -100,10 +100,7 @@ const config = {
       lead_section_wrapper: './templates/lead_section_wrapper.html',
 
       /* Template for wrapping all other toplevel sections */
-      section_wrapper: './templates/section_wrapper.html',
-
-      /* Template for wrapping subsections */
-      subsection_wrapper: './templates/subsection_wrapper.html',
+      section_wrapper: './templates/section_wrapper.html'
     },
   },
 };

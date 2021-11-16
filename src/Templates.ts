@@ -12,7 +12,6 @@ function readTemplate(t: string) {
 const footerTemplate = swig.compile(readTemplate(config.output.templates.footer));
 const leadSectionTemplate = swig.compile(readTemplate(config.output.templates.lead_section_wrapper));
 const sectionTemplate = swig.compile(readTemplate(config.output.templates.section_wrapper));
-const subSectionTemplate = swig.compile(readTemplate(config.output.templates.subsection_wrapper));
 const categoriesTemplate = swig.compile(readTemplate(config.output.templates.categories));
 const subCategoriesTemplate = swig.compile(readTemplate(config.output.templates.subCategories));
 const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPages));
@@ -37,7 +36,6 @@ export {
     footerTemplate,
     leadSectionTemplate,
     sectionTemplate,
-    subSectionTemplate,
     htmlTemplateCode,
     articleListHomeTemplate,
     categoriesTemplate,
