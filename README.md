@@ -36,7 +36,7 @@ Run `mwoffliner --help` to get all the possible options.
 
 - *NIX Operating System (GNU/Linux, macOS, ...)
 - [Redis](https://redis.io/)
-- [NodeJS](https://nodejs.org/en/) version 10 or greater
+- [NodeJS](https://nodejs.org/en/) version 12 or greater
 - [Libzim](https://github.com/openzim/libzim) (On GNU/Linux & macOS we automatically download it)
 - Various build tools which are probably already installed on your
   machine (packages `libjpeg-dev`, `autoconf`, `automake`, `gcc` on
