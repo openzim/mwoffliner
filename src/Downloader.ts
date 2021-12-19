@@ -685,7 +685,11 @@ class Downloader {
         if (mwResp.status === 304) {
           const headers = (({ Body, ...o }) => o)(s3Resp);
           if (mwResp.headers['content-type'] ?
-              isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) :
+              isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) ||
+
+              // Hack because of https://phabricator.wikimedia.org/T298011
+              this.webp && mwResp.headers['content-type'] === 'application/octet-stream' && isWebpCandidateImageUrl(mwResp.config.url) :
+
               this.webp && isWebpCandidateImageUrl(mwResp.config.url) &&
               !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
             headers.path_postfix = '.webp';
