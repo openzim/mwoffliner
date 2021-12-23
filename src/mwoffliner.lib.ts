@@ -29,6 +29,8 @@ import {
   redirectsXId
 } from './stores';
 import {
+  MAX_CPU_CORES,
+  MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
   downloadAndSaveModule,
   genCanonicalLink,
   genHeaderCSSLink,
@@ -41,7 +43,6 @@ import {
   isValidEmail,
   makeArticleImageTile,
   makeArticleListItem,
-  MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
   mkdirPromise,
   readFilePromise,
   sanitizeString,
@@ -128,10 +129,13 @@ async function execute(argv: any) {
   // const adminEmail = argv.adminEmail;
   if (!isValidEmail(adminEmail)) { throw new Error(`Admin email [${adminEmail}] is not valid`); }
 
-  /* Number of parallel requests */
-  if (_speed && isNaN(_speed)) { throw new Error('speed is not a number, please give a number value to --speed'); }
-  const cpuCount = os.cpus().length;
-  const speed = Math.max(1, Math.round(cpuCount * (_speed || 1) * 2));
+  /* Number of parallel requests. To secure stability and avoid HTTP
+  429 errors, no more than MAX_CPU_CORES can be considered */
+  if (_speed && isNaN(_speed)) {
+    throw new Error('speed is not a number, please give a number value to --speed');
+  }
+  const cpuCount = Math.min(os.cpus().length, MAX_CPU_CORES);
+  const speed = Math.max(1, Math.round(cpuCount * (_speed || 1)));
 
   /* Check Node.js version */
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
