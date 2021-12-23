@@ -135,7 +135,7 @@ async function execute(argv: any) {
     throw new Error('speed is not a number, please give a number value to --speed');
   }
   const cpuCount = Math.min(os.cpus().length, MAX_CPU_CORES);
-  const speed = Math.max(1, Math.round(cpuCount * (_speed || 1) * 2));
+  const speed = Math.max(1, Math.round(cpuCount * (_speed || 1)));
 
   /* Check Node.js version */
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node);
