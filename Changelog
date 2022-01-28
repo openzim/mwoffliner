@@ -1,3 +1,7 @@
+1.11.11:
+* FIX: Workaround wrong Wep mime-type returns sporadically by Mediawiki
+* UPDATE: Better speed computation
+
 1.11.10:
 * FIX: Videos in with too low resolution
 * UPDATE: Allow to have JSON error 'missingarticle' in module dependence retrieval
