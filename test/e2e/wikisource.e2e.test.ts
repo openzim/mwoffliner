@@ -28,7 +28,7 @@ test('Wikisource List', async (t) => {
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.ok(dump.status.files.success >= 27, 'nopic has enough files');
+            t.ok(dump.status.files.success >= 25, 'nopic has enough files');
             t.ok(dump.status.redirects.written >= 16 , 'nopic has enough redirects');
             t.ok(dump.status.articles.success >= 61, 'nopic has enough articles');
         }
