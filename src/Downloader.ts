@@ -601,7 +601,7 @@ class Downloader {
         try {
           if (err.response && err.response.status === 429) {
             logger.log(`Received a [status=429], slowing down`);
-            const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+            const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1);
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
             this.maxActiveRequests = newMaxActiveRequests;
             return this.getJSONCb(url , handler);
@@ -726,7 +726,7 @@ class Downloader {
   private errHandler(err: any, url: string, handler: any): void {
     if (err.response && err.response.status === 429) {
       logger.log(`Received a [status=429], slowing down`);
-      const newMaxActiveRequests = Math.max(Math.ceil(this.maxActiveRequests * 0.9), 1);
+      const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1);
       logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`);
       this.maxActiveRequests = newMaxActiveRequests;
     }
