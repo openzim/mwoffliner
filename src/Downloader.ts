@@ -13,6 +13,8 @@ import imageminGifsicle from 'imagemin-gifsicle';
 import imageminJpegoptim from 'imagemin-jpegoptim';
 import imageminWebp from 'imagemin-webp';
 import sharp from 'sharp';
+import http from 'http';
+import https from 'https';
 
 import {
   normalizeMwResponse,
@@ -150,7 +152,12 @@ class Downloader {
     };
 
     this.arrayBufferRequestOptions = {
-      headers: {
+
+     // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
+     httpAgent: new http.Agent({ keepAlive: true }),
+     httpsAgent: new https.Agent({ keepAlive: true }),
+
+     headers: {
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
         'cookie': this.loginCookie,
@@ -162,6 +169,11 @@ class Downloader {
     };
 
     this.jsonRequestOptions = {
+
+     // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
+     httpAgent: new http.Agent({ keepAlive: true }),
+     httpsAgent: new https.Agent({ keepAlive: true }),
+
       headers: {
         'accept': 'application/json',
         'cache-control': 'public, max-stale=86400',
@@ -175,6 +187,11 @@ class Downloader {
     };
 
     this.streamRequestOptions = {
+
+     // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
+     httpAgent: new http.Agent({ keepAlive: true }),
+     httpsAgent: new https.Agent({ keepAlive: true }),
+
       headers: {
         'accept': 'application/octet-stream',
         'cache-control': 'public, max-stale=86400',
