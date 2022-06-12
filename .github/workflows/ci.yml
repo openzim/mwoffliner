@@ -31,7 +31,7 @@ jobs:
     - name: installing dependencies
       run: npm ci
       env:
-        PHANTOMJS_CDNURL: http://cnpmjs.org/downloads
+        PHANTOMJS_CDNURL: https://dev.kiwix.org/mwoffliner/phantomjs
 
     - name: installing codecov
       run: npm i -g codecov
