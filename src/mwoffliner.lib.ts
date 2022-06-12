@@ -517,7 +517,7 @@ async function execute(argv: any) {
     async function saveFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<{}> {
       try {
         const source = await fs.promises.readFile(faviconPath);
-        const data = await sharp(source).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).toBuffer();
+        const data = await sharp(source).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer();
         const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' });
         return zimCreator.addArticle(article);
       } catch (e) {
@@ -535,9 +535,7 @@ async function execute(argv: any) {
     }
 
     const parsedUrl = urlParser.parse(entries.logo);
-    const ext = parsedUrl.pathname.split('.').slice(-1)[0];
-
-    const faviconPath = path.join(tmpDirectory, `favicon.${ext}`);
+    const faviconPath = path.join(tmpDirectory, 'favicon.png');
     const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo;
     const logoContent = await downloader.downloadContent(logoUrl);
     await writeFilePromise(faviconPath, logoContent.content, null);
