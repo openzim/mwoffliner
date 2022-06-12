@@ -1,6 +1,6 @@
 FROM redis:7 as redis
 
-FROM node:16-bullseye-slim
+FROM node:18-bullseye-slim
 
 COPY --from=redis /usr/local/bin/redis-* /usr/local/bin/
 RUN redis-cli --version
