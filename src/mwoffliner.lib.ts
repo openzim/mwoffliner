@@ -263,7 +263,7 @@ async function execute(argv: any) {
 
   /* ZIM custom Favicon */
   if (customZimFavicon) {
-    const faviconPath = path.join(tmpDirectory, 'favicon.png');
+    const faviconPath = path.join(tmpDirectory, 'favicon.png'); // Later the PNG conversion (if necessary)
     const faviconIsRemote = customZimFavicon.includes('http');
     logger.log(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`);
     let content;
@@ -517,7 +517,7 @@ async function execute(argv: any) {
     async function saveFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<{}> {
       try {
         const source = await fs.promises.readFile(faviconPath);
-        const data = await sharp(source).resize(48, 48).toBuffer();
+        const data = await sharp(source).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).toBuffer();
         const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' });
         return zimCreator.addArticle(article);
       } catch (e) {
