@@ -3,7 +3,7 @@ import { join } from 'path';
 import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
-import { ZimReader } from '@openzim/libzim'
+import { Archive } from '@openzim/libzim'
 import Downloader from '../../src/Downloader';
 import MediaWiki from '../../src/MediaWiki';
 import FileType from 'file-type'
@@ -33,7 +33,7 @@ Real-time computer graphics`;
         redis: process.env.REDIS,
         webp: true,
     });
-    const zimFile = new ZimReader(outFiles[0].outFile);
+    const zimFile = new Archive(outFiles[0].outFile);
 
     const mw = new MediaWiki({
         base: 'https://en.wikipedia.org',
@@ -56,25 +56,24 @@ Real-time computer graphics`;
         'detecting webp URL having jpg at last');
     t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg'),
         'detecting webp URL having jpeg at last');
-    t.assert(await isWebpPresent('I/Animexample3edit.png.webp', zimFile), 'passed test for png')
-    t.assert(await isWebpPresent('I/Claychick.jpg.webp', zimFile), 'passed test for jpg')
-    t.assert(await isRedirectionPresent(`href="Real-time_rendering"`,
+    t.assert(await isWebpPresent('Animexample3edit.png.webp', zimFile), 'passed test for png')
+    t.assert(await isWebpPresent('Claychick.jpg.webp', zimFile), 'passed test for jpg')
+    t.assert(await isRedirectionPresent('href="Real-time_rendering"',
         zimFile), 'redirection check successful')
     rimraf.sync(testId);
 })
 
-async function isWebpPresent(path: string, zimFile: ZimReader) {
-    return await zimFile.getArticleByUrl(path)
-    .then(async (result) => {
-        return (await FileType.fromBuffer(result.data)).mime === 'image/webp';
-    })
-    .catch(err => {
-        return false;
-    })
+async function isWebpPresent(path: string, zimFile: Archive) {
+  try {
+    const result = await zimFile.getEntryByPath(path);
+    return (await FileType.fromBuffer(result.data)).mime === 'image/webp';
+  } catch(err) {
+    return false;
+  }
 }
 
 async function isRedirectionPresent(path: string, zimFile: ZimReader) {
-    return await zimFile.getArticleByUrl('A/Animation')
+    return await zimFile.getArticleByUrl('Animation')
     .then((result) => {
         return result.data.toString().includes(path);
     })
