@@ -95,12 +95,6 @@ Complementary information about MWoffliner:
 * Wikitext is the name of the markup language that MediaWiki uses.
 * MediaWiki includes a parser for WikiText into HTML, and this
   parser creates the HTML pages displayed in your browser.
-* There is another WikiText parser, called Parsoid, implemented in
-  Javascript/NodeJS. MWoffliner uses Parsoid.
-* Parsoid is planned to eventually become the main parser for
-  MediaWiki.
-* MWoffliner calls Parsoid and then post-processes the results for
-  offline format.
 
 ### GNU/Linux - Debian based distributions
 
