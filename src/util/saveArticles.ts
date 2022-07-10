@@ -695,7 +695,7 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
 
     /* Improve image frames */
     const figures = parsoidDoc.getElementsByTagName('figure');
-    const spans = parsoidDoc.querySelectorAll('span[typeof=mw:Image/Frameless]');
+    const spans = parsoidDoc.querySelectorAll('span[typeof~=mw:Image/Frameless],span[typeof~=mw:File/Frameless]');
     const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans));
     for (const imageNode of imageNodes) {
         treatImageFrames(mw, dump, parsoidDoc, imageNode);
