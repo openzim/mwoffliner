@@ -1,3 +1,10 @@
+1.11.12:
+* FIX: ZIM illustration now always in PNG format
+* FIX: Somehow cropped ZIM illustration
+* NEW: Add support for mw:File typeof
+* NEW: Use keep-alive TCP flag
+* UPDATE: Redis 8 & Node 18 in Docker image
+
 1.11.11:
 * FIX: Workaround wrong Wep mime-type returns sporadically by Mediawiki
 * UPDATE: Better speed computation
