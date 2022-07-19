@@ -36,4 +36,5 @@ export const parameterDescriptions = {
   osTmpDir: 'Override default operating system temporary directory path environment variable',
   customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
   optimisationCacheUrl: 'S3 url, including credentials and bucket name',
+  zstd: 'Use Zstandard as ZIM compression (Zstd by default, left for backwards compatability)',
 };

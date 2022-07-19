@@ -402,7 +402,7 @@ async function execute(argv: any) {
     const zimCreator = new Creator();
     zimCreator
       .configIndexing(true, language)
-      .configCompression(zstd ? Compression.Zstd : Compression.Lzma)
+      .configCompression(Compression.Zstd)
       .startZimCreation(outZim);
 
     zimCreator.setMainPath(dump.opts.mainPage ?? 'index');
