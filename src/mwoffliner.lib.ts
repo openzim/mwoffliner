@@ -113,8 +113,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     noLocalParserFallback,
     forceLocalParser,
-    customFlavour,
-    zstd,
+    customFlavour
   } = argv;
 
   (process as any).verbose = !!verbose;
@@ -403,7 +402,7 @@ async function execute(argv: any) {
       fileName: outZim,
       fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
       welcome: (dump.opts.mainPage ? dump.opts.mainPage : 'index'),
-      compression: zstd ? 'zstd' : 'lzma',
+      compression: 'zstd',
     }, {
       Tags: dump.computeZimTags(),
       Language: dump.mwMetaData.langIso3,
