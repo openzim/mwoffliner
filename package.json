@@ -78,7 +78,7 @@
     "deepmerge": "^4.2.2",
     "details-element-polyfill": "^2.4.0",
     "domino": "^2.1.6",
-    "execa": "^4.0.3",
+    "execa": "^4.1.0",
     "follow-redirects": "^1.13.0",
     "html-minifier": "^4.0.0",
     "imagemin": "^7.0.1",
