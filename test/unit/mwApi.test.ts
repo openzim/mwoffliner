@@ -24,7 +24,7 @@ test('MWApi Article Ids', async (t) => {
     const articlesById = await articleDetailXId.getMany(aIds);
     const { United_Kingdom, London } = articlesById;
     t.assert(!!United_Kingdom, 'Article "United_Kingdom" was scraped');
-    t.assert(United_Kingdom.categories.length >= 13, 'Article "United_Kingdom" has categories');
+    t.assert(United_Kingdom.categories.length >= 12, 'Article "United_Kingdom" has categories');
     // t.assert((United_Kingdom as any).pageimage, 'Article "United_Kingdom" has pageimage');
     t.assert(United_Kingdom.thumbnail, 'Article "United_Kingdom" has thumbnail');
     t.assert(!!United_Kingdom.revisionId, 'Article "United_Kingdom" has revision');
