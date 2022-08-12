@@ -55,7 +55,7 @@
   "dependencies": {
     "@ladjs/country-language": "^1.0.0",
     "@openzim/libzim": "2.4.4",
-    "@types/async": "^3.2.3",
+    "@types/async": "^3.2.15",
     "@types/backoff": "^2.5.1",
     "@types/bluebird": "^3.5.32",
     "@types/file-type": "^10.9.1",
@@ -71,7 +71,7 @@
     "@types/semver": "^7.3.12",
     "@types/sharp": "^0.26.0",
     "@types/yargs": "^15.0.9",
-    "async": "^3.2.0",
+    "async": "^3.2.4",
     "aws-sdk": "^2.1194.0",
     "axios": "^0.21.1",
     "backoff": "^2.5.0",
