@@ -94,7 +94,6 @@
     "mkdirp": "^1.0.4",
     "mocha": "^8.2.0",
     "p-map": "^4.0.0",
-    "parsoid": "^0.11.0",
     "public-ip": "^4.0.2",
     "redis": "^3.0.2",
     "rimraf": "^3.0.2",
@@ -109,7 +108,6 @@
   },
   "keywords": [
     "mediawiki",
-    "parsoid",
     "zim"
   ],
   "devDependencies": {
