@@ -4,12 +4,10 @@ declare module '*.json' {
   // noinspection JSDuplicatedDeclaration
   export default value;
 }
-declare module 'service-runner';
 declare module 'utf8-binary-cutter';
 declare module 'expand-home-dir';
 declare module 'swig-templates';
 declare module 'mkdirp';
-declare module 'country-language';
 declare module 'imagemin-advpng';
 declare module 'imagemin-jpegoptim';
 declare module 'imagemin-webp';

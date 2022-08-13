@@ -4,7 +4,6 @@ import * as urlParser from 'url';
 import deepmerge from 'deepmerge';
 import * as backoff from 'backoff';
 import * as imagemin from 'imagemin';
-import ServiceRunner from 'service-runner';
 import imageminAdvPng from 'imagemin-advpng';
 import type { BackoffStrategy } from 'backoff';
 import axios, { AxiosRequestConfig } from 'axios';
@@ -245,10 +244,6 @@ class Downloader {
 
     if (!this.baseUrl || !this.baseUrlForMainPage)
       throw new Error(`Unable to find appropriate API end-point to retrieve article HTML`);
-
-    // TODO: This should not really be there, and not like this
-    if (RegExp('.*http\:\/\/localhost.*').test(this.baseUrl + this.baseUrlForMainPage))
-      await this.initLocalServices();
   }
 
   public async checkApiAvailabilty(url: string): Promise<boolean>{
@@ -288,70 +283,6 @@ class Downloader {
 
   public removeEtagWeakPrefix(etag: string): string {
     return etag && etag.replace(WEAK_ETAG_REGEX, '');
-  }
-
-  public async initLocalServices(): Promise<void> {
-    logger.log('Starting Parsoid & MCS');
-
-    const runner = new ServiceRunner();
-
-    await runner.start({
-      num_workers: 0,
-      services: [{
-        name: 'parsoid',
-        module: 'node_modules/parsoid/lib/index.js',
-        entrypoint: 'apiServiceWorker',
-        conf: {
-          timeouts: {
-            // request: 4 * 60 * 1000, // Default
-            request: 8 * 60 * 1000,
-          },
-          limits: {
-            wt2html: {
-              // maxWikitextSize: 1000000, // Default
-              maxWikitextSize: 1000000 * 4,
-              // maxListItems: 30000, // Default
-              maxListItems: 30000 * 4,
-              // maxTableCells: 30000, // Default
-              maxTableCells: 30000 * 4,
-              // maxTransclusions: 10000, // Default
-              maxTransclusions: 10000 * 4,
-              // maxImages: 1000, // Default
-              maxImages: 1000 * 4,
-              // maxTokens: 1000000, // Default
-              maxTokens: 1000000 * 4,
-            },
-          },
-          mwApis: [{
-            uri: this.mw.apiUrl.href,
-          }],
-        },
-      }, {
-        name: 'mcs',
-        module: 'node_modules/service-mobileapp-node/app.js',
-        conf: {
-          port: 6927,
-          mwapi_req: {
-            method: 'post',
-            uri: this.mw.getApiQueryUrl().split('?')[0],
-            headers: {
-              'user-agent': '{{user-agent}}',
-            },
-            body: '{{ default(request.query, {}) }}',
-          },
-          restbase_req: {
-            method: '{{request.method}}',
-            uri: 'http://localhost:8000/{{domain}}/v3/{+path}',
-            query: '{{ default(request.query, {}) }}',
-            headers: '{{request.headers}}',
-            body: '{{request.body}}',
-          },
-        },
-      }],
-      logging: {
-        level: 'info',
-      },
-    });
   }
 
   public query(query: string): KVS<any> {
