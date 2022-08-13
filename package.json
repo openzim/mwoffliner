@@ -73,7 +73,7 @@
     "@types/yargs": "^15.0.9",
     "async": "^3.2.4",
     "aws-sdk": "^2.1194.0",
-    "axios": "^0.21.1",
+    "axios": "^0.27.2",
     "backoff": "^2.5.0",
     "deepmerge": "^4.2.2",
     "details-element-polyfill": "^2.4.0",
