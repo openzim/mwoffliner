@@ -63,7 +63,9 @@ const config = {
           'mediawiki.page.gallery.styles',
           'mediawiki.skinning.content.parsoid'].join('|'),
       ],
-      js: ['startup', 'jquery', 'mediawiki.base', 'site', 'mediawiki.util', 'mediawiki.page.ready'],
+      js: ['startup', 'jquery', 'mediawiki.base', 'site', 'mediawiki.util', 'mediawiki.page.ready',
+        'jquery.cookie', 'mediawiki.cookie', 'mediawiki.storage', 'ext.gadget.VisibilityToggles',
+        'ext.gadget.defaultVisibilityToggles'],
     },
 
     // Output directories for storing mw related js and css resources
