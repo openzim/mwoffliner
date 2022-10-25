@@ -156,11 +156,11 @@ class Downloader {
      httpAgent: new http.Agent({ keepAlive: true }),
      httpsAgent: new https.Agent({ keepAlive: true }),
 
-    //  headers: {
-        // 'cache-control': 'public, max-stale=86400',
-    //     'user-agent': this.uaString,
-    //     'cookie': this.loginCookie,
-      // },
+     headers: {
+        'cache-control': 'public, max-stale=86400',
+        // 'user-agent': this.uaString,
+        'cookie': this.loginCookie,
+      },
       responseType: 'arraybuffer',
       timeout: this.requestTimeout,
       method: 'GET',
