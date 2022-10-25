@@ -143,7 +143,7 @@ class Downloader {
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
-      retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
+      retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 404].includes(err.status),
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`);
       },
