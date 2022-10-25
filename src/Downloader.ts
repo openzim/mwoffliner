@@ -611,11 +611,11 @@ class Downloader {
           console.log("flag 2", resp)
         await this.getCompressedBody(resp);
         if (flag)
-          console.log("flag 3", resp.headers, resp.data)
-        // handler(null, {
-        //   responseHeaders: resp.headers,
-        //   content: resp.data,
-        // });
+          console.log("flag 3", resp.headers)
+        handler(null, {
+          responseHeaders: resp.headers,
+          content: resp.data,
+        });
       // }
     } catch (err) {
       try {
