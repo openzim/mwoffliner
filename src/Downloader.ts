@@ -597,25 +597,12 @@ class Downloader {
 
   private getContentCb = async (url: string, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`);
-    let flag = false;
-    if (url == 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg')
-      flag = true;
     try {
       if (this.optimisationCacheUrl && isImageUrl(url)) {
-        console.log('optimisationCacheUrl: ', this.optimisationCacheUrl);
-        console.log('url: ', url);
-        console.log('isImageUrl: ', isImageUrl(url));
         this.downloadImage(url, handler);
       } else {
-        if (flag)
-          console.log("flag 1", url)
         const resp = await axios(url, this.arrayBufferRequestOptions);
-        // const resp = await axios(url);
-        if (flag)
-          console.log("flag 2", resp)
         await this.getCompressedBody(resp);
-        if (flag)
-          console.log("flag 3", resp.headers)
         handler(null, {
           responseHeaders: resp.headers,
           content: resp.data,
@@ -638,7 +625,6 @@ class Downloader {
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
         const mwResp = await axios(url, this.arrayBufferRequestOptions);
-        // const mwResp = await axios(url);
 
         // Most of the images after uploading once will always have
         // 304 status, until modified. We need to have
