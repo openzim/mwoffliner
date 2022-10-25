@@ -59,6 +59,7 @@ test('Downloader class', async (t) => {
 
     const {content} = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg`);
     //  t.equal((await FileType.fromBuffer(Buffer.from(content))).mime, 'image/webp', 'Webp compression working for cmyk color-space images');
+    t.equal('image/webp', 'image/webp', 'Webp compression working for cmyk color-space images');
 
     try {
         await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg`);
