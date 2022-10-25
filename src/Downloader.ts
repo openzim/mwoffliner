@@ -158,8 +158,8 @@ class Downloader {
 
      headers: {
         'cache-control': 'public, max-stale=86400',
-        // 'user-agent': this.uaString,
-        'cookie': this.loginCookie,
+        'user-agent': this.uaString,
+        // 'cookie': this.loginCookie,
       },
       responseType: 'arraybuffer',
       timeout: this.requestTimeout,
