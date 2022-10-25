@@ -143,7 +143,7 @@ class Downloader {
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
-      retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 404].includes(err.status),
+      retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`);
       },
@@ -598,16 +598,19 @@ class Downloader {
   private getContentCb = async (url: string, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`);
     try {
-      if (this.optimisationCacheUrl && isImageUrl(url)) {
-        this.downloadImage(url, handler);
-      } else {
+      // if (this.optimisationCacheUrl && isImageUrl(url)) {
+      //   this.downloadImage(url, handler);
+      // } else {
+        console.log("flag 1", url)
         const resp = await axios(url, this.arrayBufferRequestOptions);
+        console.log("flag 2", resp)
         await this.getCompressedBody(resp);
-        handler(null, {
-          responseHeaders: resp.headers,
-          content: resp.data,
-        });
-      }
+        console.log("flag 3", resp.headers, resp.data)
+        // handler(null, {
+        //   responseHeaders: resp.headers,
+        //   content: resp.data,
+        // });
+      // }
     } catch (err) {
       try {
         this.errHandler(err, url, handler);
