@@ -156,15 +156,15 @@ class Downloader {
      httpAgent: new http.Agent({ keepAlive: true }),
      httpsAgent: new https.Agent({ keepAlive: true }),
 
-     headers: {
-        'cache-control': 'public, max-stale=86400',
-        'user-agent': this.uaString,
-        // 'cookie': this.loginCookie,
-      },
-      responseType: 'arraybuffer',
-      timeout: this.requestTimeout,
-      method: 'GET',
-      validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
+    //  headers: {
+    //     'cache-control': 'public, max-stale=86400',
+    //     'user-agent': this.uaString,
+    //     'cookie': this.loginCookie,
+    //   },
+      // responseType: 'arraybuffer',
+      // timeout: this.requestTimeout,
+      // method: 'GET',
+      // validateStatus(status) { return (status >= 200 && status < 300) || status === 304; }
     };
 
     this.jsonRequestOptions = {
