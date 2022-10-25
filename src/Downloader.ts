@@ -597,15 +597,21 @@ class Downloader {
 
   private getContentCb = async (url: string, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`);
+    let flag = false;
+    if (url == 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg')
+      flag = true;
     try {
       // if (this.optimisationCacheUrl && isImageUrl(url)) {
       //   this.downloadImage(url, handler);
       // } else {
-        console.log("flag 1", url)
+        if (flag)
+          console.log("flag 1", url)
         const resp = await axios(url, this.arrayBufferRequestOptions);
-        console.log("flag 2", resp)
+        if (flag)
+          console.log("flag 2", resp)
         await this.getCompressedBody(resp);
-        console.log("flag 3", resp.headers, resp.data)
+        if (flag)
+          console.log("flag 3", resp.headers, resp.data)
         // handler(null, {
         //   responseHeaders: resp.headers,
         //   content: resp.data,
