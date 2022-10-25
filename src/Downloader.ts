@@ -609,8 +609,8 @@ class Downloader {
       } else {
         if (flag)
           console.log("flag 1", url)
-        // const resp = await axios(url, this.arrayBufferRequestOptions);
-        const resp = await axios(url);
+        const resp = await axios(url, this.arrayBufferRequestOptions);
+        // const resp = await axios(url);
         if (flag)
           console.log("flag 2", resp)
         await this.getCompressedBody(resp);
@@ -637,8 +637,8 @@ class Downloader {
           this.arrayBufferRequestOptions.headers['If-None-Match']
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
-        // const mwResp = await axios(url, this.arrayBufferRequestOptions);
-        const mwResp = await axios(url);
+        const mwResp = await axios(url, this.arrayBufferRequestOptions);
+        // const mwResp = await axios(url);
 
         // Most of the images after uploading once will always have
         // 304 status, until modified. We need to have
