@@ -606,7 +606,8 @@ class Downloader {
       // } else {
         if (flag)
           console.log("flag 1", url)
-        const resp = await axios(url, this.arrayBufferRequestOptions);
+        // const resp = await axios(url, this.arrayBufferRequestOptions);
+        const resp = await axios.get(url);
         if (flag)
           console.log("flag 2", resp)
         await this.getCompressedBody(resp);
