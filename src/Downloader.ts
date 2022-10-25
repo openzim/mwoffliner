@@ -158,7 +158,8 @@ class Downloader {
 
      headers: {
         'cache-control': 'public, max-stale=86400',
-        'user-agent': this.uaString,
+        // Error 403 when this.uaString is an empty string
+        // 'user-agent': this.uaString,
         'cookie': this.loginCookie,
       },
       responseType: 'arraybuffer',
