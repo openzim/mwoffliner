@@ -601,9 +601,12 @@ class Downloader {
     if (url == 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg')
       flag = true;
     try {
-      // if (this.optimisationCacheUrl && isImageUrl(url)) {
-      //   this.downloadImage(url, handler);
-      // } else {
+      if (this.optimisationCacheUrl && isImageUrl(url)) {
+        console.log('optimisationCacheUrl: ', this.optimisationCacheUrl);
+        console.log('url: ', url);
+        console.log('isImageUrl: ', isImageUrl(url));
+        this.downloadImage(url, handler);
+      } else {
         if (flag)
           console.log("flag 1", url)
         // const resp = await axios(url, this.arrayBufferRequestOptions);
@@ -617,7 +620,7 @@ class Downloader {
           responseHeaders: resp.headers,
           content: resp.data,
         });
-      // }
+      }
     } catch (err) {
       try {
         this.errHandler(err, url, handler);
@@ -634,7 +637,8 @@ class Downloader {
           this.arrayBufferRequestOptions.headers['If-None-Match']
             = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
         }
-        const mwResp = await axios(url, this.arrayBufferRequestOptions);
+        // const mwResp = await axios(url, this.arrayBufferRequestOptions);
+        const mwResp = await axios(url);
 
         // Most of the images after uploading once will always have
         // 304 status, until modified. We need to have
