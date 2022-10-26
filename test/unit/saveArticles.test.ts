@@ -124,34 +124,48 @@ test('applyOtherTreatments', async (t) => {
 
 test('treatMedias format=""', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: '' }); // en wikipedia
+    console.log("flag1");
 
     const doc = domino.createDocument(html);
+    console.log("flag2");
 
     const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
+    console.log("flag3");
 
     const videoEl = ret.doc.querySelector('video');
+    console.log("flag4");
     const videoPosterUrl = videoEl.getAttribute('poster');
+    console.log("flag5");
     const sources: any[] = Array.from(videoEl.querySelectorAll('source'));
+    console.log("flag6");
     const sourceUrl = sources[0].getAttribute('src');
+    console.log("flag7");
 
     t.equal(videoPosterUrl, '../I/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg', 'Video poster correctly re-written');
     t.equal(sourceUrl, '../I/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm', 'Source src correctly re-written');
 
     const imgEl = ret.doc.querySelector('img');
+    console.log("flag8");
     const imgSrc = imgEl.getAttribute('src');
+    console.log("flag9");
 
     t.equal(imgSrc, '../I/Dendritic_cell_revealed.jpg', 'Img src correctly re-written');
 });
 
 test('treatMedias format="nopic"', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }); // en wikipedia
+    console.log("flag1");
 
     const doc = domino.createDocument(html);
+    console.log("flag2");
 
     const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
+    console.log("flag3");
 
     const videoEl = ret.doc.querySelector('video');
+    console.log("flag4");
     const imgEl = ret.doc.querySelector('img');
+    console.log("flag5");
 
     t.equals(videoEl, undefined, 'Video element removed in nopic');
     t.equals(imgEl, undefined, 'Img element removed in nopic');
@@ -159,13 +173,18 @@ test('treatMedias format="nopic"', async (t) => {
 
 test('treatMedias format="novid"', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'novid' }); // en wikipedia
+    console.log("flag1");
 
     const doc = domino.createDocument(html);
+    console.log("flag2");
 
     const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader);
+    console.log("flag3");
 
     const videoEl = ret.doc.querySelector('video');
+    console.log("flag4");
     const imgEl = ret.doc.querySelector('img');
+    console.log("flag5");
 
     t.equals(videoEl, undefined, 'Video element removed in novid');
     t.ok(!!imgEl, 'Img element not removed in novid');
@@ -173,8 +192,11 @@ test('treatMedias format="novid"', async (t) => {
 
 test('--customFlavour', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }); // en wikipedia
+    console.log("flag1");
     await downloader.checkCapabilities();
+    console.log("flag2");
     await downloader.setBaseUrls();
+    console.log("flag3");
     class CustomFlavour implements CustomProcessor {
         public async shouldKeepArticle(articleId: string, doc: Document) {
             return articleId !== 'London';
