@@ -103,20 +103,11 @@ Advices for debugging mwoffliner issues:
     `--articleList` are useful.  Run mwoffliner with `--help` for
     details on those and other flags that may be useful.
 
-### Releasing
+## Releasing and Publishing
 1. Update `package.json`
 2. Commit `:package: Release version vX.X.X`
 3. Run `git tag vX.X.X`
 4. Run `git push origin master --tags`
-
-## Publishing
-To publish, it's best to use a clean clone of the project:
-```bash
-git clone https://github.com/openzim/mwoffliner.git
-npm i
-./dev/build.sh
-npm publish  # you must be logged in already (npm login)
-```
 
 ## Contributing Guidelines
 
