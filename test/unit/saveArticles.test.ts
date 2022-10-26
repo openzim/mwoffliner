@@ -123,6 +123,7 @@ test('applyOtherTreatments', async (t) => {
 });
 
 test('treatMedias format=""', async (t) => {
+    console.log("flag0");
     const { downloader, mw, dump } = await setupScrapeClasses({ format: '' }); // en wikipedia
     console.log("flag1");
 
@@ -153,6 +154,7 @@ test('treatMedias format=""', async (t) => {
 });
 
 test('treatMedias format="nopic"', async (t) => {
+    console.log("flag0");
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }); // en wikipedia
     console.log("flag1");
 
@@ -172,6 +174,7 @@ test('treatMedias format="nopic"', async (t) => {
 });
 
 test('treatMedias format="novid"', async (t) => {
+    console.log("flag0");
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'novid' }); // en wikipedia
     console.log("flag1");
 
@@ -191,6 +194,7 @@ test('treatMedias format="novid"', async (t) => {
 });
 
 test('--customFlavour', async (t) => {
+    console.log("flag0");
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }); // en wikipedia
     console.log("flag1");
     await downloader.checkCapabilities();
