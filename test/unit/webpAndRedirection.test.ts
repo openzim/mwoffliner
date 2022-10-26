@@ -6,6 +6,7 @@ import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { ZimReader } from '@openzim/libzim'
 import Downloader from '../../src/Downloader';
 import MediaWiki from '../../src/MediaWiki';
+import { config } from 'src/config';
 import FileType from 'file-type'
 import { isWebpCandidateImageUrl } from '../../src/util/misc';
 import rimraf from 'rimraf';
@@ -40,7 +41,7 @@ Real-time computer graphics`;
         getCategories: true,
     } as any)
 
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
     t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png?lang.svg'),
         'detecting webp URL having png before arguments');
