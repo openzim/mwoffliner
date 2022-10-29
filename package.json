@@ -122,7 +122,7 @@
     "eslint": "^8.26.0",
     "jest": "^26.6.1",
     "nyc": "^15.1.0",
-    "redis-mock": "^0.52.0",
+    "redis-mock": "^0.56.3",
     "replace": "^1.2.2",
     "tap-spec": "^5.0.0",
     "tape-promise": "^4.0.0",
