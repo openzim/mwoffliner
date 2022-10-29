@@ -65,7 +65,7 @@
     "@types/imagemin-jpegtran": "^5.0.0",
     "@types/imagemin-optipng": "^5.2.0",
     "@types/imagemin-webp": "^5.1.1",
-    "@types/md5": "^2.2.0",
+    "@types/md5": "^2.3.2",
     "@types/node": "^14.14.2",
     "@types/rimraf": "^3.0.0",
     "@types/semver": "^7.3.12",
