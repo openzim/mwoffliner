@@ -97,7 +97,7 @@
     "public-ip": "^4.0.4",
     "redis": "^3.0.2",
     "rimraf": "^3.0.2",
-    "semver": "^7.3.7",
+    "semver": "^7.3.8",
     "sharp": "^0.31.1",
     "swig-templates": "^2.0.3",
     "tslint": "^6.1.3",
