@@ -1,0 +1,6 @@
+{
+    "__direction": "ltr",
+    "DISCLAIMER": "Эта статья взята у (из) ${creator}. Текст лицензируется по ${license}. К медиа файлам могут применятся дополнительные условия.",
+    "LAST_EDITED_ON": "Последний раз редактировалось ${date}",
+    "LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
+}
