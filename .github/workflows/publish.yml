@@ -20,6 +20,10 @@ jobs:
           node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Check if tag is created on master branch
+        if: endsWith(github.event.base_ref, '/master') == false
+        run: echo "Please create the tag on master branch" && exit -1
+
       - run: npm ci
       - run: npm publish
         env:
