@@ -104,10 +104,13 @@ Advices for debugging mwoffliner issues:
     details on those and other flags that may be useful.
 
 ## Releasing and Publishing
-1. Update `package.json`
-2. Commit `:package: Release version vX.X.X`
-3. Run `git tag vX.X.X`
-4. Run `git push origin master --tags`
+To publish/release, it's best to use a clean clone of the project:
+1. Clone `git clone https://github.com/openzim/mwoffliner.git`
+2. Update `package.json`
+3. Commit `:package: Release version vX.X.X`
+4. Run `git tag vX.X.X`
+5. Run `git push origin vX.X.X`
+Whenever a tag is pushed, the CI automatically publishes to npmjs.com
 
 ## Contributing Guidelines
 
