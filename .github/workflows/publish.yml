@@ -1,0 +1,30 @@
+name: Publish to npmjs.com
+
+on:
+  push:
+    tags:
+      - 'v{0,1}[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  call-workflow:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Check if tag is created on master branch
+        if: endsWith(github.event.base_ref, '/master') == false
+        run: echo "Please create the tag on master branch" && exit -1
+
+      - run: npm ci
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
