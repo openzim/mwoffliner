@@ -5,7 +5,7 @@ import domino from 'domino';
 import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from 'test/util';
 import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from 'src/util/saveArticles';
-import { ZimArticle } from '@openzim/libzim';
+import { StringItem } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from 'src/util';
 
@@ -26,11 +26,11 @@ test('Article html processing', async (t) => {
 
     const [{ html }] = await downloader.getArticle('London', dump);
 
-    const addedArticles: typeof ZimArticle[] = [];
+    const addedArticles: typeof StringItem[] = [];
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles({
-        addArticle(article: typeof ZimArticle) {
+        addItem(article: typeof StringItem) {
             if (article.mimeType === 'text/html') {
                 addedArticles.push(article);
             }
@@ -208,7 +208,7 @@ test('--customFlavour', async (t) => {
 
     const writtenArticles: any = {};
     await saveArticles({
-        addArticle(article: typeof ZimArticle) {
+        addItem(article: typeof StringItem) {
             if (article.mimeType === 'text/html') {
                 writtenArticles[article.title] = article;
             }

@@ -7,7 +7,7 @@ import Downloader from '../Downloader';
 import { getFullUrl, jsPath, cssPath } from '.';
 import { config } from '../config';
 import MediaWiki from '../MediaWiki';
-import { ZimCreator, ZimArticle } from '@openzim/libzim';
+import { Creator, StringItem } from '@openzim/libzim';
 import { Dump } from '../Dump';
 import { filesToDownloadXPath } from '../stores';
 import fs from 'fs'
@@ -83,7 +83,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
     });
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: Creator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
     // param :
     //   module : string : the name of the module
     //   moduleUri : string : the path where the module will be saved into the zim
@@ -126,8 +126,9 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
         const articleId = type === 'js'
             ? jsPath(module, config.output.dirs.mediawiki)
             : cssPath(module, config.output.dirs.mediawiki);
-        const article = new ZimArticle({ url: articleId, data: text, ns: '-' });
-        zimCreator.addArticle(article);
+        const mimeType = (type === 'js') ? 'application/javascript' : 'text/css';
+        const item = new StringItem(articleId, mimeType, '', {}, text);
+        await zimCreator.addItem(item);
         logger.info(`Saved module [${module}]`);
     } catch (e) {
         logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e);
@@ -136,17 +137,16 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.
-export async function importPolyfillModules(zimCreator: ZimCreator) {
+export async function importPolyfillModules(zimCreator: Creator) {
     [
         { name: 'webpHeroPolyfill', path: 'webp-hero/dist-cjs/polyfills.js' },
         { name: 'webpHeroBundle',   path: 'webp-hero/dist-cjs/webp-hero.bundle.js' }
     ].forEach( ({name, path}) => {
-        const article = new ZimArticle({
-            url: jsPath(name),
-            data: fs.readFileSync(require.resolve(path), 'utf8').toString(),
-            ns: '-'
-        });
-        zimCreator.addArticle(article);
+        const url = jsPath(name);
+        const mimeType = 'application/javascript';
+        const data = fs.readFileSync(require.resolve(path), 'utf8').toString();
+        const item = new StringItem(url, mimeType, name, {}, data);
+        await zimCreator.addItem(item);
     });
 
     const content = await axios.get(WEBP_HANDLER_URL, {responseType: 'arraybuffer', timeout: 60000, validateStatus(status) { return ([200, 302, 304].indexOf(status) > -1); }})
@@ -155,10 +155,8 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
           throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`);
         });
 
-    const article = new ZimArticle({
-        url: jsPath('webpHandler'),
-        data: content,
-        ns: '-'
-    });
-    zimCreator.addArticle(article);
+    const url = jsPath('webpHandler');
+    const mimeType = 'application/javascript';
+    const item = new StringItem(url, mimeType, '', {}, content);
+    await zimCreator.addItem(item);
 }

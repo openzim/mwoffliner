@@ -92,10 +92,10 @@ export class RedisKvs<T> {
   }
 
   public setMany(val: KVS<T>) {
-    return new Promise((resolve, reject) => {
+    return new Promise<any|void>((resolve, reject) => {
       const numKeys = Object.keys(val).length;
       if (!numKeys) {
-        resolve();
+        resolve(undefined);
         return;
       }
       const normalisedVal = Object.entries(val)
