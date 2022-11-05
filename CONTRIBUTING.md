@@ -103,20 +103,14 @@ Advices for debugging mwoffliner issues:
     `--articleList` are useful.  Run mwoffliner with `--help` for
     details on those and other flags that may be useful.
 
-### Releasing
-1. Update `package.json`
-2. Commit `:package: Release version vX.X.X`
-3. Run `git tag vX.X.X`
-4. Run `git push origin master --tags`
-
-## Publishing
-To publish, it's best to use a clean clone of the project:
-```bash
-git clone https://github.com/openzim/mwoffliner.git
-npm i
-./dev/build.sh
-npm publish  # you must be logged in already (npm login)
-```
+## Releasing and Publishing
+To publish/release, it's best to use a clean clone of the project:
+1. Clone `git clone https://github.com/openzim/mwoffliner.git`
+2. Update `package.json`
+3. Commit `:package: Release version vX.X.X`
+4. Run `git tag vX.X.X`
+5. Run `git push origin vX.X.X`
+Whenever a tag is pushed, the CI automatically publishes to npmjs.com
 
 ## Contributing Guidelines
 

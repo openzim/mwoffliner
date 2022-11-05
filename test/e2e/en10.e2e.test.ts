@@ -30,7 +30,7 @@ test('Simple articleList', async (t) => {
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.ok(dump.status.files.success > 30 && dump.status.files.success < 35, 'nopic has enough files');
+            t.ok(dump.status.files.success > 20 && dump.status.files.success < 25, 'nopic has enough files');
             t.ok(dump.status.redirects.written > 520, 'nopic has enough redirects');
             t.ok(dump.status.articles.success === 10, 'nopic has 10 articles');
         } else if (dump.novid) {

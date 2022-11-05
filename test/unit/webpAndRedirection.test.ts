@@ -4,8 +4,6 @@ import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { Archive } from '@openzim/libzim'
-import Downloader from '../../src/Downloader';
-import MediaWiki from '../../src/MediaWiki';
 import FileType from 'file-type'
 import { isWebpCandidateImageUrl } from '../../src/util/misc';
 import rimraf from 'rimraf';
@@ -34,13 +32,6 @@ Real-time computer graphics`;
         webp: true,
     });
     const zimFile = new Archive(outFiles[0].outFile);
-
-    const mw = new MediaWiki({
-        base: 'https://en.wikipedia.org',
-        getCategories: true,
-    } as any)
-
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
     t.assert(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png?lang.svg'),
         'detecting webp URL having png before arguments');

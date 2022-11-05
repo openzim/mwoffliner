@@ -5,6 +5,7 @@ import MediaWiki from 'src/MediaWiki';
 import { getArticleIds } from 'src/util/redirects';
 import { articleDetailXId } from 'src/stores';
 import { getArticlesByNS } from 'src/util';
+import { config } from 'src/config';
 import logger from '../../src/Logger';
 
 test('MWApi Article Ids', async (t) => {
@@ -14,7 +15,7 @@ test('MWApi Article Ids', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
@@ -42,7 +43,7 @@ test('MWApi NS', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: '', speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
