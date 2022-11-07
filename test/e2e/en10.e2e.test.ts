@@ -2,7 +2,7 @@ import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
-import execa = require('execa');
+import execa from 'execa';
 import 'dotenv/config';
 // import { ZimReader } from '@openzim/libzim';
 

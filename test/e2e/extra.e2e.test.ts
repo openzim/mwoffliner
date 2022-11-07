@@ -4,7 +4,7 @@ import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { join } from 'path';
-import execa = require('execa');
+import execa from 'execa';
 import 'dotenv/config';
 // import { ZimReader } from '@openzim/libzim';
 

@@ -3,7 +3,7 @@ import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
 import { config } from 'src/config';
 import axios from 'axios';
-import execa = require('execa');
+import execa from 'execa';
 import logger from '../src/Logger';
 import 'dotenv/config';
 

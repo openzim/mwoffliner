@@ -1,5 +1,5 @@
 import pmap from 'p-map';
-import deepmerge = require('deepmerge');
+import deepmerge from 'deepmerge';
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import { articleDetailXId, redirectsXId } from '../stores';
