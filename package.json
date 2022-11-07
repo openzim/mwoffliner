@@ -2,7 +2,8 @@
   "name": "mwoffliner",
   "version": "1.11.12",
   "description": "Mediawiki ZIM scraper",
-  "main": "lib/mwoffliner.lib.js",
+  "type": "module",
+  "exports": "./lib/mwoffliner.lib.js",
   "license": "GPL-3.0",
   "author": {
     "name": "Emmanuel Engelhart",
@@ -47,10 +48,10 @@
     "url": "https://github.com/openzim/mwoffliner/issues"
   },
   "engines": {
-    "node": ">=8.12.0"
+    "node": ">=14.16"
   },
   "engine-strict": {
-    "node": ">=8.12.0"
+    "node": ">=14.16"
   },
   "dependencies": {
     "@ladjs/country-language": "^1.0.0",

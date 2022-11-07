@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "es2020",
+    "module": "es2020",
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -10,10 +10,11 @@
     "sourceMap": true,
     "declaration": true,
     "baseUrl": ".",
-    "outDir": "./lib/",
+    // "outDir": "./lib/",
     "rootDir": "./src/",
-    "resolveJsonModule": true,
+    "resolveJsonModule": false,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "types": [
       "node"
     ],
@@ -22,7 +23,7 @@
       "./src/"
     ],
     "lib": [
-      "es2017",
+      "es2020",
       "dom"
     ],
     "plugins": [
