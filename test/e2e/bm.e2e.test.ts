@@ -26,7 +26,7 @@ test('Simple articleList', async (t) => {
 
     for (const dump of outFiles) {
         if (dump.nopic) {
-            t.ok(dump.status.files.success > 20, 'nopic has enough files');
+            t.ok(dump.status.files.success > 16, 'nopic has enough files');
             t.ok(dump.status.redirects.written > 170, 'nopic has enough redirects');
             t.ok(dump.status.articles.success > 700, 'nopic has enough articles');
         }
