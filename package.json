@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@ladjs/country-language": "^1.0.0",
-    "@openzim/libzim": "2.4.4",
+    "@openzim/libzim": "github:openzim/node-libzim",
     "@types/async": "^3.2.15",
     "@types/backoff": "^2.5.1",
     "@types/bluebird": "^3.5.32",

@@ -5,7 +5,7 @@ import domino from 'domino';
 import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from 'test/util';
 import { articleDetailXId } from 'src/stores';
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from 'src/util/saveArticles';
-import { ZimArticle } from '@openzim/libzim';
+import { StringItem } from '@openzim/libzim';
 import { Dump } from 'src/Dump';
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from 'src/util';
 
@@ -26,11 +26,11 @@ test('Article html processing', async (t) => {
 
     const [{ html }] = await downloader.getArticle('London', dump);
 
-    const addedArticles: typeof ZimArticle[] = [];
+    const addedArticles: StringItem[] = [];
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles({
-        addArticle(article: typeof ZimArticle) {
+        addItem(article: StringItem) {
             if (article.mimeType === 'text/html') {
                 addedArticles.push(article);
             }
@@ -41,14 +41,14 @@ test('Article html processing', async (t) => {
         dump,
     );
 
-    t.assert(addedArticles.length === 1 && addedArticles[0].aid === 'A/London', 'Successfully scrapped existent articles');
+    t.assert(addedArticles.length === 1 && addedArticles[0].path === 'London', 'Successfully scrapped existent articles');
     try {
         await downloader.getArticle('non-existent-article', dump);
     } catch (err) {
         t.equal(err.response.status, 404, 'Throwing error for scrapping non-existent articles')
     }
 
-    const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString());
+    const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().data.toString());
 
     t.assert(articleDoc.querySelector('meta[name="geo.position"]'), 'Geo Position meta exists');
     t.equal(articleDoc.querySelector('meta[name="geo.position"]').getAttribute('content'), '51.50722222;-0.1275', 'Geo Position data is correct');
@@ -208,7 +208,7 @@ test('--customFlavour', async (t) => {
 
     const writtenArticles: any = {};
     await saveArticles({
-        addArticle(article: typeof ZimArticle) {
+        addItem(article: StringItem) {
             if (article.mimeType === 'text/html') {
                 writtenArticles[article.title] = article;
             }
