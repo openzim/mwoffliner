@@ -64,6 +64,8 @@ const config = {
           'mediawiki.skinning.content.parsoid'].join('|'),
       ],
       js: ['startup', 'jquery', 'mediawiki.base', 'site', 'mediawiki.util', 'mediawiki.page.ready',
+
+        // Gadget resources are not shared by Parsoid API https://phabricator.wikimedia.org/T161278
         'jquery.cookie', 'mediawiki.cookie', 'mediawiki.storage', 'ext.gadget.VisibilityToggles',
         'ext.gadget.defaultVisibilityToggles'],
     },
