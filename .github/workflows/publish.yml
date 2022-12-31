@@ -1,9 +1,8 @@
 name: Publish to npmjs.com
 
 on:
-  push:
-    tags:
-      - 'v{0,1}[0-9]+.[0-9]+.[0-9]+'
+  release:
+    types: [published]
 
 jobs:
   call-workflow:
@@ -19,10 +18,6 @@ jobs:
         with:
           node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
-
-      - name: Check if tag is created on default branch
-        if: endsWith(github.event.base_ref, '/main') == false
-        run: echo "Please create the tag on default branch" && exit -1
 
       - run: npm ci
       - run: npm publish
