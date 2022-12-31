@@ -206,7 +206,7 @@ test('--customFlavour', async (t) => {
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
-    const writtenArticles: any = {};
+    const writtenArticles: { [key: string]: StringItem; } = {};
     await saveArticles({
         addItem(article: StringItem) {
             if (article.mimeType === 'text/html') {
@@ -220,8 +220,8 @@ test('--customFlavour', async (t) => {
         dump,
     );
 
-    const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData);
-    const PragueDocument = domino.createDocument(writtenArticles.Prague.bufferData);
+    const ParisDocument = domino.createDocument(writtenArticles.Paris.getContentProvider().feed().data.toString());
+    const PragueDocument = domino.createDocument(writtenArticles.Prague.getContentProvider().feed().data.toString());
 
     t.ok(!writtenArticles.London, `London was correctly filtered out by customFlavour`);
     t.ok(ParisDocument.querySelector('#PRE_PROCESSOR'), `Paris was correctly pre-processed`);

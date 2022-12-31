@@ -3,8 +3,8 @@ import { join } from 'path';
 import test from 'blue-tape';
 import { execute } from '../../src/mwoffliner.lib';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
-import { Archive } from '@openzim/libzim'
-import FileType from 'file-type'
+import { Archive } from '@openzim/libzim';
+import FileType from 'file-type';
 import { isWebpCandidateImageUrl } from '../../src/util/misc';
 import rimraf from 'rimraf';
 
@@ -57,8 +57,10 @@ Real-time computer graphics`;
 async function isWebpPresent(path: string, zimFile: Archive) {
   try {
     const result = await zimFile.getEntryByPath(path);
-    return (await FileType.fromBuffer(result.item.data.data)).mime === 'image/webp';
+    const buffer = result.item.data.data;
+    return (await FileType.fromBuffer(buffer)).mime === 'image/webp';
   } catch(err) {
+    console.log(err);
     return false;
   }
 }

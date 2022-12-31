@@ -59,6 +59,7 @@
     "@types/backoff": "^2.5.1",
     "@types/bluebird": "^3.5.32",
     "@types/file-type": "^10.9.1",
+    "file-type": "^16.5.3",
     "@types/html-minifier": "^4.0.0",
     "@types/imagemin": "^7.0.0",
     "@types/imagemin-gifsicle": "^7.0.0",
