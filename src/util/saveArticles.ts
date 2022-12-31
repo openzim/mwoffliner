@@ -159,7 +159,7 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
     );
 }
 
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump, skipBroken: boolean) {
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
     let jsConfigVars = '';
@@ -256,7 +256,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 } catch (err) {
                     dump.status.articles.fail += 1;
                     logger.error(`Error downloading article ${articleId}`);
-                    if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
+                    if (!skipBroken && (!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
                         throw err;
                     }
                 }
