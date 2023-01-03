@@ -3,7 +3,8 @@ export const requiredParams = ['mwUrl', 'adminEmail'];
 export const parameterDescriptions = {
   mwUrl: 'Mediawiki base URL.',
   adminEmail: 'Email of the mwoffliner user which will be put in the HTTP user-agent string',
-  articleList: 'File with one title (in UTF8) per line. This can be a local path or an HTTP(S) url',
+  articleList: 'List of articles to include. Can be a comma seperated list of titles or a local path or http(s) URL to a file with one title (in UTF8) per line',
+  articleListToIgnore: 'List of articles to ignore. Can be a comma seperated list of titles or a local path or http(s) URL to a file with one title (in UTF8) per line',
   customZimFavicon: 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo. This can be a local path or an HTTP(S) url',
   customZimTitle: 'Allow to configure a custom ZIM file title.',
   customZimDescription: 'Allow to configure a custom ZIM file description.',

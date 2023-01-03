@@ -4,7 +4,7 @@ import Downloader from '../Downloader';
 import { redirectsXId, articleDetailXId } from '../stores';
 import { getArticlesByIds, getArticlesByNS } from './mw-api';
 
-export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainPage?: string, articleIds?: string[]) {
+export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
     if (mainPage) {
         await getArticlesByIds([mainPage], downloader);
     }
@@ -15,7 +15,7 @@ export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainP
         await pmap(
             mw.namespacesToMirror,
             (namespace: string) => {
-                return getArticlesByNS(mw.namespaces[namespace].num, downloader);
+                return getArticlesByNS(mw.namespaces[namespace].num, downloader, articleIdsToIgnore);
             },
             {concurrency: downloader.speed}
         );

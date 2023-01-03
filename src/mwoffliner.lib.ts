@@ -108,7 +108,6 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     addNamespaces: _addNamespaces,
-    articleList: _articleList,
     customZimFavicon: _customZimFavicon,
     optimisationCacheUrl,
     noLocalParserFallback,
@@ -116,11 +115,17 @@ async function execute(argv: any) {
     customFlavour
   } = argv;
 
+  let {
+    articleList,
+    articleListToIgnore,
+  } = argv;
+
   (process as any).verbose = !!verbose;
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`);
 
-  let articleList = _articleList ? String(_articleList) : _articleList;
+  if (articleList) articleList = String(articleList);
+  if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore);
   const publisher = _publisher || config.defaults.publisher;
   let customZimFavicon = _customZimFavicon;
 
@@ -290,39 +295,35 @@ async function execute(argv: any) {
   /* GET CONTENT ********************* */
   /* ********************************* */
 
-  if (articleList && articleList.includes('http')) {
+  let articleListToIgnoreLines: string[];
+  if (articleListToIgnore) {
     try {
-      const fileName = articleList.split('/').slice(-1)[0];
-      const tmpArticleListPath = path.join(tmpDirectory, fileName);
-      logger.log(`Downloading article list from [${articleList}] to [${tmpArticleListPath}]`);
-      const { data: articleListContentStream } = await axios.get(articleList, downloader.streamRequestOptions);
-      const articleListWriteStream = fs.createWriteStream(tmpArticleListPath);
-      await new Promise((resolve, reject) => {
-        articleListContentStream
-          .pipe(articleListWriteStream)
-          .on('error', (err: any) => reject(err))
-          .on('close', resolve);
-      });
-      articleList = tmpArticleListPath;
+      articleListToIgnoreLines = await readFileOrUrlByLine(articleListToIgnore);
+      logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`);
     } catch (err) {
-      throw new Error(`Failed to download article list from [${articleList}]`);
+      logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err);
+      throw err;
     }
   }
 
   let articleListLines: string[];
-  try {
-    articleListLines = articleList ? fs.readFileSync(articleList).toString().split('\n').
-                                   map(a => a.replace(/\r/gm, '')).filter((a) => a) : [];
-    logger.info(`ArticleList has [${articleListLines.length}] items`);
-  } catch (err) {
-    logger.error(`Failed to read articleList from [${articleList}]`, err);
-    throw err;
+  if (articleList) {
+    try {
+      articleListLines = await readFileOrUrlByLine(articleList);
+      if (articleListToIgnore) {
+        articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title));
+      }
+      logger.info(`ArticleList has [${articleListLines.length}] items`);
+    } catch (err) {
+      logger.error(`Failed to read articleList from [${articleList}]`, err);
+      throw err;
+    }
   }
 
   await mw.getNamespaces(addNamespaces, downloader);
 
   logger.info(`Getting article ids`);
-  await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null);
+  await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null);
   if (mw.getCategories) {
     await getCategoriesForArticles(articleDetailXId, downloader, redis);
 
@@ -539,6 +540,33 @@ async function execute(argv: any) {
     const logoContent = await downloader.downloadContent(logoUrl);
     await writeFilePromise(faviconPath, logoContent.content, null);
     return await saveFavicon(zimCreator, faviconPath);
+  }
+
+  async function readFileOrUrlByLine(resourcePath: string): Promise<string[]> {
+    if (resourcePath.includes('http')) {
+      const fileName = resourcePath.split('/').slice(-1)[0];
+      const { data: contentStream } = await axios.get(resourcePath, downloader.streamRequestOptions);
+      resourcePath = path.join(tmpDirectory, fileName);
+      const writeStream = fs.createWriteStream(resourcePath);
+      await new Promise((resolve, reject) => {
+        contentStream
+          .pipe(writeStream)
+          .on('error', (err: any) => reject(err))
+          .on('close', resolve);
+      });
+    }
+
+    if (!fs.existsSync(resourcePath)) {
+      return resourcePath.split(',')
+        .filter((part) => part !== '')
+        .map((part) => part.trim());
+    }
+
+    let fileLines: string[];
+    fileLines = resourcePath ? fs.readFileSync(resourcePath).toString().split('\n').
+      map(a => a.replace(/\r/gm, '')).filter((a) => a) : [];
+
+    return fileLines;
   }
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator, downloader: Downloader) {
