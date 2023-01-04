@@ -177,13 +177,6 @@ class MediaWiki {
         return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length));
       }
 
-      // If local Parsoid, links start with './wiki/' (and no easy way
-      // to identify we are using a local parsoid so far because of bad
-      // architecture).
-      if (pathname.indexOf('/wiki/') === 0) {
-        return util.decodeURIComponent(pathname.substr(6));
-      }
-
       const isPaginatedRegExp = /\/[0-9]+(\.|$)/;
       const isPaginated = isPaginatedRegExp.test(href);
       if (isPaginated) {
