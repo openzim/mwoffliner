@@ -1,7 +1,7 @@
 import logger from '../Logger';
 import Downloader from '../Downloader';
 import MediaWiki from '../MediaWiki';
-import { ZimArticle, ZimCreator } from '@openzim/libzim';
+import { Creator, StringItem } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as QueryStringParser from 'querystring';
 
@@ -30,7 +30,7 @@ type FileStore = RedisKvs<{
 }>;
 
 
-export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
+export async function downloadFiles(fileStore: FileStore, zimCreator: Creator, dump: Dump, downloader: Downloader, retryLater = true) {
     const filesForAttempt = await fileStore.len();
     const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail;
 
@@ -51,13 +51,11 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
             let isFailed = false;
             try {
                 if (resp.result && resp.result.content) {
-                    const article = new ZimArticle({
-                        url: resp.path,
-                        data: resp.result.content,
-                        ns: resp.namespace || 'I',
-                        mimeType: resp.result.responseHeaders['content-type'],
-                    });
-                    zimCreator.addArticle(article);
+                    const url = resp.path;
+                    const mimeType = resp.result.responseHeaders['content-type'];
+                    const data = resp.result.content;
+                    const item = new StringItem(url, mimeType, '', {}, data);
+                    await zimCreator.addItem(item);
                     dump.status.files.success += 1;
                 } else {
                     isFailed = true;
@@ -159,7 +157,7 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
     );
 }
 
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+export async function saveArticles(zimCreator: Creator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
     const jsModuleDependencies = new Set<string>();
     const cssModuleDependencies = new Set<string>();
     let jsConfigVars = '';
@@ -241,16 +239,15 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
                         const finalHTML = `<!DOCTYPE html>\n` + outHtml;
 
-                        const zimArticle = new ZimArticle({
-                            url: articleId,
-                            data: finalHTML,
-                            ns: articleDetail.ns === 14 ? 'U' : 'A',
-                            mimeType: 'text/html',
-                            title: articleTitle,
-                            shouldIndex: true,
-                        });
-
-                        zimCreator.addArticle(zimArticle);
+                        const mimeType = 'text/html';
+                        const item = new StringItem(
+                            articleId,
+                            mimeType,
+                            articleTitle,
+                            {FRONT_ARTICLE: 1},
+                            finalHTML
+                        );
+                        await zimCreator.addItem(item);
                         dump.status.articles.success += 1;
                     }
                 } catch (err) {
@@ -274,8 +271,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
     logger.log(`Done with downloading a total of [${articlesTotal}] articles`);
 
-    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' });
-    zimCreator.addArticle(jsConfigVarArticle);
+    const url = jsPath('jsConfigVars', config.output.dirs.mediawiki);
+    const mimeType = 'application/javascript';
+    const item = new StringItem(url, mimeType, '', {}, jsConfigVars);
+    await zimCreator.addItem(item);
 
     return {
         jsModuleDependencies,

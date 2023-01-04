@@ -8,7 +8,7 @@ import { makeLink, setupScrapeClasses } from 'test/util';
 import { articleDetailXId, redirectsXId } from '../../src/stores';
 import { getArticleIds } from 'src/util/redirects';
 import { saveArticles, isMirrored } from 'src/util/saveArticles';
-import { ZimArticle } from '@openzim/libzim';
+import { StringItem } from '@openzim/libzim';
 import { mwRetToArticleDetail } from 'src/util';
 
 test('Url re-writing', async (t) => {
@@ -99,10 +99,10 @@ test('e2e url rewriting', async (t) => {
 
     await getArticleIds(downloader, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area']);
 
-    let LondonArticle: typeof ZimArticle;
+    let LondonArticle: StringItem;
 
     await saveArticles({
-        addArticle(article: typeof ZimArticle) {
+        addItem(article: StringItem) {
             if (article.title === 'London') {
                 LondonArticle = article;
             }
@@ -114,7 +114,7 @@ test('e2e url rewriting', async (t) => {
         dump,
     );
 
-    const html = LondonArticle.bufferData.toString();
+    const html = LondonArticle.getContentProvider().feed().data.toString();
     const doc = domino.createDocument(html);
 
     const relevantAs = Array.from(doc.querySelectorAll('a')).filter((a) => !a.hash && !a.className.includes('external') && !a.host && a.getAttribute('href'));

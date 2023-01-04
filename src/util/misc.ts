@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
-import { ZimCreator, ZimArticle } from '@openzim/libzim';
+import { Creator, StringItem } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
 import { LATEX_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
@@ -145,14 +145,15 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
   return newString;
 }
 
-export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
+export function saveStaticFiles(config: Config, zimCreator: Creator) {
   const cssPromises = config.output.cssResources
     .concat(config.output.mainPageCssResources)
     .map(async (css) => {
       try {
-        const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`));
-        const article = new ZimArticle({ url: cssPath(css), data: cssCont, ns: '-' });
-        zimCreator.addArticle(article);
+        const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`)).toString();
+        const url = cssPath(css);
+        const item = new StringItem(url, 'text/css', '', {}, cssCont);
+        await zimCreator.addItem(item);
       } catch (error) {
         logger.warn(`Could not create ${css} file : ${error}`);
       }
@@ -160,9 +161,11 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
-      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`));
-      const article = new ZimArticle({ url: jsPath(js), data: jsCont, ns: '-' });
-      zimCreator.addArticle(article);
+      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`)).toString();
+      const url = jsPath(js);
+      const mimeType = 'application/javascript';
+      const item = new StringItem(url, mimeType, '', {}, jsCont);
+      await zimCreator.addItem(item);
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`);
     }
