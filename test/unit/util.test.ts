@@ -6,7 +6,7 @@ import pathParser from 'path';
 import { sanitize_customFlavour } from 'src/sanitize-argument';
 import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from 'src/util';
 import { testHtmlRewritingE2e } from 'test/util';
-import { getMediaBase, normalizeMwResponse } from '../../src/util/';
+import { getMediaBase, isWebpCandidateImageUrl, normalizeMwResponse } from '../../src/util/';
 import axios from 'axios';
 
 test('util -> interpolateTranslationString', async (t) => {
@@ -132,6 +132,38 @@ test('getMediaBase tests', async(t) => {
 
     // Default behaviour
     t.equal(getMediaBase('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe', true), '589fd4e3821c15d4fcebcedf2effd5b0.png', 'Default handling');
+})
+
+test('isWebpCandidateImageUrl tests', async(t) => {
+
+    // Thumbs
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg'), true, 'Thumb 1');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg'), true, 'No thumb');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg'), false, 'SVG');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png'), true, 'SVG PNG thumb');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg'), true, 'Video poster');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg'), false, 'OGG file');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_%28CVN_76%29_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.jpg/169px-thumbnail.jpg'), true, 'Long thumb');
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_%28CVN_76%29_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.svg/169px-thumbnail.svg.png'), true, 'Long thumb with SVG PNG');
+
+    // Latex (equations)
+    t.equal(isWebpCandidateImageUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606'), false, 'Latex');
+
+    // WikiHiero (hieroglyphs)
+    t.equal(isWebpCandidateImageUrl('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556'), true, 'WikiHiero png with URL args');
+    t.equal(isWebpCandidateImageUrl('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png'), true, 'WikiHiero png without URL args');
+
+    // Score - is default behaviour
+    t.equal(isWebpCandidateImageUrl('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png'), true, 'Score 1');
+
+    // Graphoid (charts) - is default behaviour
+    t.equal(isWebpCandidateImageUrl('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png'), true, 'Graphoid');
+
+    // Fandom
+    t.equal(isWebpCandidateImageUrl('https://static.wikia.nocookie.net/minecraft_de_gamepedia/images/e/ee/Diamantschwert_%28Dungeons%29.png/revision/latest/scale-to-width-down/60?cb=20200409173531'), true, 'Fandom');
+
+    // Default behaviour
+    t.equal(isWebpCandidateImageUrl('https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe'), true, 'Default handling');
 })
 
 test('No title normalisation', async(t) => {
