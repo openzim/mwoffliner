@@ -9,7 +9,7 @@ import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config';
 import logger from '../Logger';
-import { LATEX_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+import { LATEX_IMAGE_URL_REGEX, FANDOM_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
    WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
 import { boolean } from 'yargs';
 
@@ -257,6 +257,11 @@ export function getMediaBase(url: string, escape: boolean) {
 
   // WikiHiero hieroglyphs (betting there won't be a name conflict with main namespace pictures)
   else if ((parts = WIKIHIERO_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
+    filename = parts[1];
+  }
+
+  // Fandom has even an other URL scheme
+  else if ((parts = FANDOM_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
     filename = parts[1];
   }
 

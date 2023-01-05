@@ -594,7 +594,7 @@ async function treatImage(mw: MediaWiki, dump: Dump, srcCache: KVS<boolean>, art
 
         /* Change image source attribute to point to the local image */
         img.setAttribute('src',
-            downloader.webp && isWebpCandidateImageUrl(newSrc) ?
+            downloader.webp && isWebpCandidateImageUrl(src) ?
                 newSrc + '.webp': newSrc
         );
 
