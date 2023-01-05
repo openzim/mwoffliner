@@ -71,8 +71,6 @@ interface DownloaderOpts {
   uaString: string;
   speed: number;
   reqTimeout: number;
-  noLocalParserFallback: boolean;
-  forceLocalParser: boolean;
   optimisationCacheUrl: string;
   s3?: S3;
   webp: boolean;
@@ -108,8 +106,6 @@ class Downloader {
   private activeRequests = 0;
   private maxActiveRequests = 1;
   private readonly requestTimeout: number;
-  private readonly noLocalParserFallback: boolean = false;
-  private readonly forceLocalParser: boolean = false;
   private readonly urlPartCache: KVS<string> = {};
   private readonly backoffOptions: BackoffOptions;
   private readonly optimisationCacheUrl: string;
@@ -120,15 +116,13 @@ class Downloader {
   public streamRequestOptions: AxiosRequestConfig;
 
 
-  constructor({ mw, uaString, speed, reqTimeout, noLocalParserFallback, forceLocalParser: forceLocalParser, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.mw = mw;
     this.uaString = uaString;
     this.speed = speed;
     this.maxActiveRequests = speed * 10;
     this.requestTimeout = reqTimeout;
     this.loginCookie = '';
-    this.noLocalParserFallback = noLocalParserFallback;
-    this.forceLocalParser = forceLocalParser;
     this.optimisationCacheUrl = optimisationCacheUrl;
     this.webp = webp;
     this.s3 = s3;
@@ -231,12 +225,10 @@ class Downloader {
     this.baseUrl = this.mwCapabilities.mobileRestApiAvailable ? this.mw.mobileRestApiUrl.href :
                    this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
                    this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
-                   !this.noLocalParserFallback && this.mwCapabilities.apiAvailable ? `http://localhost:6927/${this.mw.webUrl.hostname}/v1/page/mobile-sections/` :
                    undefined;
 
     this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href :
                               this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href :
-                              !this.noLocalParserFallback && this.mwCapabilities.apiAvailable ? `http://localhost:8000/${this.mw.webUrl.hostname}/v3/page/pagebundle/` :
                               undefined;
 
     logger.log('Base Url: ', this.baseUrl);

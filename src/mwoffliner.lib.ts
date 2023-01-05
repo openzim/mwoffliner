@@ -110,8 +110,6 @@ async function execute(argv: any) {
     addNamespaces: _addNamespaces,
     customZimFavicon: _customZimFavicon,
     optimisationCacheUrl,
-    noLocalParserFallback,
-    forceLocalParser,
     customFlavour
   } = argv;
 
@@ -186,8 +184,6 @@ async function execute(argv: any) {
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
-    noLocalParserFallback,
-    forceLocalParser,
     optimisationCacheUrl,
     s3,
     webp,

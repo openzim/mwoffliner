@@ -15,7 +15,7 @@ test('MWApi Article Ids', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
@@ -43,7 +43,7 @@ test('MWApi NS', async (t) => {
         getCategories: true,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();

@@ -32,8 +32,6 @@ export const parameterDescriptions = {
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
   getCategories: '[WIP] Download category pages',
-  noLocalParserFallback: 'Don\'t fall back to a local MCS or Parsoid, only use remote APIs',
-  forceLocalParser: 'Use local Parsoid instance even if remote one available',
   osTmpDir: 'Override default operating system temporary directory path environment variable',
   customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
   optimisationCacheUrl: 'S3 url, including credentials and bucket name',

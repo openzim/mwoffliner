@@ -35,7 +35,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
         base: mwUrl,
     } as any);
 
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();

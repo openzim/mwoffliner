@@ -22,19 +22,11 @@ test('Downloader class', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: true, optimisationCacheUrl: '' });
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
     await downloader.setBaseUrls();
-
-    // const remoteMcsUrl = downloader.mcsUrl;
-    // const remoteParsoidUrl = downloader.parsoidFallbackUrl;
-
-    // const mcsHandle = await downloader.initLocalMcs();
-
-    // t.notEqual(remoteMcsUrl, downloader.mcsUrl, 'Initializing local MCS changes mcsUrl');
-    // t.notEqual(remoteParsoidUrl, downloader.parsoidFallbackUrl, 'Initializing local Parsoid changes parsoidFallbackUrl');
 
     const queryRet = await downloader.query(`?action=query&meta=siteinfo&siprop=statistics&format=json`);
     t.ok(!!queryRet, 'downloader.query returns valid JSON');
@@ -168,7 +160,7 @@ _test('Downloader class with optimisation', async (t) => {
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
     });
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, noLocalParserFallback: false, forceLocalParser: false, webp: false, optimisationCacheUrl: 'random-string' , s3});
+    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: 'random-string' , s3});
 
     await s3.initialise();
 
