@@ -69,12 +69,22 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
     );
 }
 
-export async function getArticlesByNS(ns: number, downloader: Downloader, continueLimit?: number): Promise<void> {
+export async function getArticlesByNS(ns: number, downloader: Downloader, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
     let totalArticles = 0;
     let chunk: { articleDetails: QueryMwRet, gapContinue: string };
 
     do {
         chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue);
+
+        if (articleIdsToIgnore) {
+          Object.keys(chunk.articleDetails).forEach((articleId) => {
+            const articleTitle = chunk.articleDetails[articleId].title;
+            if (articleIdsToIgnore.includes(articleTitle)) {
+              delete chunk.articleDetails[articleId];
+              logger.info(`Excluded article ${articleTitle}`);
+            }
+          })
+        }
 
         await articleDetailXId.setMany(mwRetToArticleDetail(chunk.articleDetails));
 

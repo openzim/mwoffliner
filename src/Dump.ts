@@ -108,7 +108,14 @@ export class Dump {
         }
         if (!withoutSelection && !this.opts.filenamePrefix) {
             if (this.opts.articleList) {
-                radical += `_${pathParser.basename(this.opts.articleList).toLowerCase().replace(/\.\w{3}$/, '')}`;
+                let filenamePostfix = pathParser.basename(this.opts.articleList)
+                  .toLowerCase()
+                  .replace(/\.\w{3}$/, '')
+                  .replace(/[\,\s]/g, '_');
+                if (filenamePostfix.length > 50) {
+                  filenamePostfix = filenamePostfix.slice(0, 50);
+                }
+                radical += `_${filenamePostfix}`;
             } else {
                 radical += '_all';
             }
