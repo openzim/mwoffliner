@@ -170,15 +170,16 @@ export class RedisKvs<T> {
       let runningWorkers = 0;
       let isScanning = false;
       let done = false;
-      let failed = false;
+      let isResolved = false;
       let scanCursor = '0';
 
       const scan = async () => {
-        if (runningWorkers >= numWorkers || isScanning) {
+        if (runningWorkers >= numWorkers || isScanning || isResolved) {
           return;
         }
-        if (done || failed) {
+        if (done) {
           if (!runningWorkers) {
+            isResolved = true;
             resolve();
           }
           return;
@@ -200,8 +201,8 @@ export class RedisKvs<T> {
           }, {} as KVS<T>);
           setImmediate(workerFunc, parsedItems);
         } catch(err) {
-          if (!failed) {
-            failed = true;
+          if (!isResolved) {
+            isResolved = true;
             reject(err);
           }
         }
@@ -213,12 +214,10 @@ export class RedisKvs<T> {
         try {
           await func(items, runningWorkers);
           runningWorkers -= 1;
-          if (!isScanning) {
-            setImmediate(scan);
-          }
+          setImmediate(scan);
         } catch(err) {
-          if (!failed) {
-            failed = true;
+          if (!isResolved) {
+            isResolved = true;
             reject(err);
           }
         }
