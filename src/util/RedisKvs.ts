@@ -162,45 +162,69 @@ export class RedisKvs<T> {
     });
   }
 
-  public async iterateItems(numWorkers: number, func: (items: KVS<T>, workerId: number) => Promise<void>) {
-    const workers = Array.from(Array(numWorkers).keys());
+  public iterateItems(
+    numWorkers: number,
+    func: (items: KVS<T>, runningWorkers: number) => Promise<void>,
+  ) {
+    return new Promise((resolve, reject) => {
+      let runningWorkers = 0;
+      let isScanning = false;
+      let done = false;
+      let isResolved = false;
+      let scanCursor = '0';
 
-    let scanCursor = '0';
-    let depleted = false;
-    let pendingScan: Promise<ScanResult> = Promise.resolve(null);
+      const scan = async () => {
+        if (runningWorkers >= numWorkers || isScanning || isResolved) {
+          return;
+        }
+        if (done) {
+          if (!runningWorkers) {
+            isResolved = true;
+            resolve();
+          }
+          return;
+        }
+        isScanning = true;
 
-    await pmap(
-      workers,
-      async (workerId) => {
-
-        while (true) {
-          pendingScan = pendingScan.then(() =>
-            this.scan(scanCursor)
-              .then((result) => {
-                scanCursor = result.cursor;
-                return result;
-              })
-          );
-
-          const { cursor, items } = await pendingScan;
-
-          if (depleted) break;
-
+        try {
+          runningWorkers += 1;
+          const { cursor, items } = await this.scan(scanCursor);
+          scanCursor = cursor;
+          if (scanCursor === '0') {
+            done = true;
+          }
           const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => {
             return {
               ...acc,
               [key]: this.mapKeysGet(JSON.parse(strVal)),
             };
           }, {} as KVS<T>);
-
-          if (cursor === '0') depleted = true;
-          scanCursor = cursor;
-
-          await func(parsedItems, workerId);
+          setImmediate(workerFunc, parsedItems);
+        } catch(err) {
+          if (!isResolved) {
+            isResolved = true;
+            reject(err);
+          }
         }
-      },
-      {concurrency: numWorkers}
-    );
+        isScanning = false;
+        setImmediate(scan);
+      };
+
+      const workerFunc = async (items: KVS<T>) => {
+        try {
+          await func(items, runningWorkers);
+          runningWorkers -= 1;
+          setImmediate(scan);
+        } catch(err) {
+          if (!isResolved) {
+            isResolved = true;
+            reject(err);
+          }
+        }
+      };
+
+      scan();
+    });
   }
 
   public scan(scanCursor: string): Promise<ScanResult> {

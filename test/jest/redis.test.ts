@@ -25,7 +25,7 @@ const getHandler = (delay: number) => async (items: any, workerId: number): Prom
   }));
 };
 
-const getTestHandler = (handler: (items: any, workerId: number) => any | Promise<any>, numWorkers: number) => async () => {
+const getTestHandler = (handler: (items: any, activeWorkers: number) => any | Promise<any>, numWorkers: number) => async () => {
   const len = await kvs.len();
   const mockHandler = jest.fn(handler);
 
@@ -35,24 +35,19 @@ const getTestHandler = (handler: (items: any, workerId: number) => any | Promise
   expect(mockHandler).toHaveBeenCalled();
 
   let count = 0;
-  const workers = new Set();
+  let maxWorkers = 0;
   mockHandler.mock.calls
-    .forEach(([items, workerId]) => {
+    .forEach(([items, activeWorkers]) => {
       count += Object.keys(items).length;
-      workers.add(workerId);
+      if (maxWorkers < activeWorkers) {
+        maxWorkers = activeWorkers;
+      }
     });
 
   // ...iterated over all items
   expect(count).toEqual(len);
-
-  // ...using proper workers
-  const workersUsed = Array.from(workers) as number[];
-  const workerIdsExpected = Array.from(Array(numWorkers).keys());
-  const workerIdsUnexpected = workersUsed.filter((x) => !workerIdsExpected.includes(x));
-  const workerIdsUnused = workerIdsExpected.filter((x) => !workersUsed.includes(x));
-
-  expect(workerIdsUnused.length).toEqual(0);
-  expect(workerIdsUnexpected.length).toEqual(0);
+  // used right amount of workers
+  expect(maxWorkers).toEqual(numWorkers);
 };
 
 
@@ -74,9 +69,9 @@ describe('RedisKvs.iterateItems()', () => {
         await initMockData(kvs, numItems);
       });
 
-      describe(`Workers: 1`, () => {
+      describe(`Workers: 2`, () => {
         for (const timeout of timeouts) {
-          test(`${timeout} ms`, getTestHandler(getHandler(timeout), 1));
+          test(`${timeout} ms`, getTestHandler(getHandler(timeout), 2));
         }
       });
     });
