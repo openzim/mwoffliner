@@ -1,17 +1,17 @@
 import urlParser from 'url';
 import * as pathParser from 'path';
 import async from 'async';
-import logger from '../Logger';
+import logger from '../Logger.js';
 import axios from 'axios';
-import Downloader from '../Downloader';
-import { getFullUrl, jsPath, cssPath } from '.';
-import { config } from '../config';
-import MediaWiki from '../MediaWiki';
+import Downloader from '../Downloader.js';
+import { getFullUrl, jsPath, cssPath } from './index.js';
+import { config } from '../config.js';
+import MediaWiki from '../MediaWiki.js';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
-import { Dump } from '../Dump';
-import { filesToDownloadXPath } from '../stores';
+import { Dump } from '../Dump.js';
+import { filesToDownloadXPath } from '../stores.js';
 import fs from 'fs'
-import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL } from './const';
+import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL } from './const.js';
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
     let finalCss = '';

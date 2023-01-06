@@ -1,10 +1,10 @@
 import urlParser from 'url';
 import * as pathParser from 'path';
-import logger from './Logger';
-import * as util from './util';
+import logger from './Logger.js';
+import * as util from './util/index.js';
 import * as domino from 'domino';
-import type Downloader from './Downloader';
-import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util';
+import type Downloader from './Downloader.js';
+import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util/index.js';
 import axios from 'axios';
 import qs from 'querystring'
 import semver from 'semver';

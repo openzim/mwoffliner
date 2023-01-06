@@ -1,4 +1,4 @@
-import { RedisKvs } from './util/RedisKvs';
+import { RedisKvs } from './util/RedisKvs.js';
 import { RedisClient } from 'redis';
 
 export function populateFilesToDownload(redisClient: RedisClient) {

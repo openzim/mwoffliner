@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "es2022",
+    "module": "es2022",
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictNullChecks": false,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "sourceMap": true,
     "declaration": true,
     "baseUrl": ".",
@@ -14,6 +14,7 @@
     "rootDir": "./src/",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "types": [
       "node", "jest"
     ],
@@ -22,7 +23,6 @@
       "./src/"
     ],
     "lib": [
-      "es2017",
       "dom"
     ],
     "plugins": [

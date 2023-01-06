@@ -1,5 +1,5 @@
 import data from './sg.json';
-import type {RedisKvs} from '../../../src/util/RedisKvs';
+import type {RedisKvs} from '../../../src/util/RedisKvs.js';
 
 export const initMockData = async (kvs: RedisKvs<any>, size?: number): Promise<void> => {
   const len = Object.keys(data).length;

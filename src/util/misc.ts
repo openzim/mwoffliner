@@ -1,17 +1,21 @@
 import crypto from 'crypto';
 import domino from 'domino';
 import unicodeCutter from 'utf8-binary-cutter';
-const countryLanguage = require('@ladjs/country-language');
+import countryLanguage from '@ladjs/country-language';
 import fs from 'fs';
 import path from 'path';
 import mkdirp from 'mkdirp';
 import pathParser from 'path';
 import { ZimCreator, ZimArticle } from '@openzim/libzim';
-import { Config, config } from '../config';
-import logger from '../Logger';
+import { Config, config } from '../config.js';
+import logger from '../Logger.js';
 import { LATEX_IMAGE_URL_REGEX, FANDOM_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
-   WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const';
+   WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const.js';
 import { boolean } from 'yargs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -85,19 +89,19 @@ export function mkdirPromise(path: string) {
   }
 }
 
-export function writeFilePromise(path: string, content: string | Buffer, encoding = 'utf8') {
+export function writeFilePromise(path: string, content: string | Buffer, encoding: fs.EncodingOption = 'utf8') {
   return new Promise((resolve, reject) => {
     fs.writeFile(path, content, encoding, (err) => {
       if (err) {
         reject(err);
       } else {
-        resolve();
+        resolve(null);
       }
     });
   });
 }
 
-export function readFilePromise(path: string, encoding = 'utf8') {
+export function readFilePromise(path: string, encoding: fs.EncodingOption = 'utf8') {
   return new Promise<string | Buffer>((resolve, reject) => {
     fs.readFile(path, encoding, (err, content) => {
       if (err) {

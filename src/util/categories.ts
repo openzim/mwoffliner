@@ -1,10 +1,10 @@
-import Downloader from '../Downloader';
-import { RedisKvs } from './RedisKvs';
-import Redis from '../Redis';
-import logger from '../Logger';
-import { articleDetailXId } from '../stores';
-import { getArticlesByIds } from './mw-api';
-import { deDup } from '.';
+import Downloader from '../Downloader.js';
+import { RedisKvs } from './RedisKvs.js';
+import Redis from '../Redis.js';
+import logger from '../Logger.js';
+import { articleDetailXId } from '../stores.js';
+import { getArticlesByIds } from './mw-api.js';
+import { deDup } from './misc.js';
 
 export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDetail>, downloader: Downloader, redis: Redis, deleteArticleStore = false): Promise<void> {
     const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.client, `${Date.now()}-request`);

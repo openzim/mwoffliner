@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as urlParser from 'url';
 import deepmerge from 'deepmerge';
 import * as backoff from 'backoff';
-import * as imagemin from 'imagemin';
+import imagemin from 'imagemin';
 import imageminAdvPng from 'imagemin-advpng';
 import type { BackoffStrategy } from 'backoff';
 import axios, { AxiosRequestConfig } from 'axios';
@@ -28,11 +28,11 @@ import {
   isImageUrl,
   isWebpCandidateImageMimeType,
   isWebpCandidateImageUrl,
-} from './util';
-import S3 from './S3';
-import { Dump } from './Dump';
-import logger from './Logger';
-import MediaWiki from './MediaWiki';
+} from './util/index.js';
+import S3 from './S3.js';
+import { Dump } from './Dump.js';
+import logger from './Logger.js';
+import MediaWiki from './MediaWiki.js';
 
 
 const imageminOptions = new Map();

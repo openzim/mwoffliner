@@ -1,5 +1,5 @@
-import { Dump } from '../Dump';
-import { encodeArticleIdForZimHtmlUrl, isWebpCandidateImageUrl } from '../util';
+import { Dump } from '../Dump.js';
+import { encodeArticleIdForZimHtmlUrl, isWebpCandidateImageUrl } from '../util/index.js';
 
 export function makeArticleListItem(dump: Dump, articleEntry: ArticleDetail) {
     return `<li><a href="${encodeArticleIdForZimHtmlUrl(articleEntry.title.replace(/ /g, '_'))}">${articleEntry.title.replace(/_/g, ' ') || ''}<a></li>\n`;

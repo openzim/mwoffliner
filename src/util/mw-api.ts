@@ -1,8 +1,8 @@
 import pmap from 'p-map';
-import deepmerge = require('deepmerge');
-import logger from '../Logger';
-import Downloader from '../Downloader';
-import { articleDetailXId, redirectsXId } from '../stores';
+import deepmerge from 'deepmerge';
+import logger from '../Logger.js';
+import Downloader from '../Downloader.js';
+import { articleDetailXId, redirectsXId } from '../stores.js';
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
     let from = 0;

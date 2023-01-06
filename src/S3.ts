@@ -1,5 +1,5 @@
 import S3File from 'aws-sdk';
-import logger from './Logger';
+import logger from './Logger.js';
 import { Readable } from 'stream';
 import publicIp from 'public-ip';
 
@@ -71,7 +71,7 @@ class S3 {
                     }
                     resolve(val);
                 } else if (err && err.statusCode === 404) {
-                    resolve();
+                    resolve(null);
                 } else {
                     reject(err);
                 }

@@ -1,8 +1,13 @@
 import swig from 'swig-templates';
 import pathParser from 'path';
-import { config } from './config';
+import { config } from './config.js';
 import { readFileSync } from 'fs';
-import { genHeaderCSSLink, genHeaderScript } from './util';
+import { genHeaderCSSLink, genHeaderScript } from './util/index.js';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function readTemplate(t: string) {
     return readFileSync(pathParser.resolve(__dirname, '../res', t), 'utf-8');

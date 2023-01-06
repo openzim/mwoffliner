@@ -1,14 +1,19 @@
 import os from 'os';
-import S3 from './S3';
+import S3 from './S3.js';
 import axios from 'axios';
-import Redis from './Redis';
+import Redis from './Redis.js';
 import urlParser from 'url';
 import pathParser from 'path';
-import logger from './Logger';
-import { config } from './config';
+import logger from './Logger.js';
+import { config } from './config.js';
 import fs from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail, DEFAULT_WIKI_PATH } from './util';
+import { isValidEmail, DEFAULT_WIKI_PATH } from './util/index.js';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function sanitize_all(argv: any) {
 
