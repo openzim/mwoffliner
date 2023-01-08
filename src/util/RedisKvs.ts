@@ -3,12 +3,6 @@ import pmap from 'p-map';
 import type {RedisClient} from 'redis';
 
 
-interface ScanResult {
-  cursor: string;
-  items: string[][];
-}
-
-
 export class RedisKvs<T> {
   private redisClient: RedisClient;
   private readonly dbName: string;
@@ -193,13 +187,7 @@ export class RedisKvs<T> {
           if (scanCursor === '0') {
             done = true;
           }
-          const parsedItems: KVS<T> = items.reduce((acc, [key, strVal]) => {
-            return {
-              ...acc,
-              [key]: this.mapKeysGet(JSON.parse(strVal)),
-            };
-          }, {} as KVS<T>);
-          setImmediate(workerFunc, parsedItems);
+          setImmediate(workerFunc, items);
         } catch(err) {
           if (!isResolved) {
             isResolved = true;
@@ -227,12 +215,26 @@ export class RedisKvs<T> {
     });
   }
 
-  public scan(scanCursor: string): Promise<ScanResult> {
-    return new Promise<ScanResult>((resolve, reject) => {
+  public scan(scanCursor: string): Promise<{ cursor: string, items: KVS<T> }> {
+    return new Promise<{ cursor: string, items: KVS<T> }>((resolve, reject) => {
       this.redisClient.hscan(this.dbName, scanCursor, (err, [cursor, data]) => {
-        if (err) return reject(err);
-        const items = Array.from(data, (x, k) => k % 2 ? undefined : [x, data[k + 1]]).filter((x) => x);
-        resolve({cursor, items});
+        if (err) {
+          return reject(err);
+        }
+        const items: KVS<T> = {};
+        try {
+          for (let i = 0; i < data.length; i += 2) {
+            const key = data[i];
+            const val = this.mapKeysGet(JSON.parse(data[i + 1]));
+            items[key] = val;
+          }
+        } catch(err) {
+          return reject(err);
+        }
+        resolve({
+          cursor,
+          items,
+        });
       });
     });
   }
