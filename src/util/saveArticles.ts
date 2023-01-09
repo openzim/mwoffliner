@@ -16,7 +16,7 @@ import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../st
 import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl,
          interpolateTranslationString, isWebpCandidateImageUrl } from './misc';
 import { RedisKvs } from './RedisKvs';
-import { rewriteUrl } from './rewriteUrls';
+import { rewriteUrlsOfDoc } from './rewriteUrls';
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const';
 
 const genericJsModules = config.output.mw.js;
@@ -359,7 +359,7 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
                 return { url, path };
             }),
     );
-    const ruRet = await rewriteUrls(doc, articleId, downloader, mw, dump);
+    const ruRet = await rewriteUrlsOfDoc(doc, articleId, mw, dump);
     doc = ruRet.doc;
     mediaDependencies = mediaDependencies.concat(
         ruRet.mediaDependencies
@@ -704,24 +704,6 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
     return { doc: parsoidDoc, mediaDependencies, subtitles };
 }
 
-async function rewriteUrls(parsoidDoc: DominoElement, articleId: string, downloader: Downloader, mw: MediaWiki, dump: Dump) {
-    let mediaDependencies: string[] = [];
-    /* Go through all links */
-    const as = parsoidDoc.getElementsByTagName('a');
-    const areas = parsoidDoc.getElementsByTagName('area');
-    const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas));
-
-    await pmap(
-        linkNodes,
-        async (linkNode) => {
-            const { mediaDependencies: mediaDeps } = await rewriteUrl(articleId, mw, dump, linkNode);
-            mediaDependencies = mediaDependencies.concat(mediaDeps);
-        },
-        { concurrency: downloader.speed }
-    );
-    return { doc: parsoidDoc, mediaDependencies };
-}
-
 export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     const filtersConfig = config.filters;
 
@@ -1001,5 +983,5 @@ function isSubpage(id: string, mw: MediaWiki) {
 }
 
 export function isMirrored(id: string) {
-    return articleDetailXId.get(id);
+    return articleDetailXId.exists(id);
 }

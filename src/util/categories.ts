@@ -115,9 +115,9 @@ export async function trimUnmirroredPages(downloader: Downloader) {
                         subCategoriesExist,
                         pagesExist,
                     ] = await Promise.all([
-                        categoryIds.length ? articleDetailXId.exists(categoryIds) : Promise.resolve({}),
-                        subCategoryIds.length ? articleDetailXId.exists(subCategoryIds) : Promise.resolve({}),
-                        pageIds.length ? articleDetailXId.exists(pageIds) : Promise.resolve({}),
+                        categoryIds.length ? articleDetailXId.exists(categoryIds) as Promise<{ [key: string]: number; }> : Promise.resolve({}),
+                        subCategoryIds.length ? articleDetailXId.exists(subCategoryIds) as Promise<{ [key: string]: number; }> : Promise.resolve({}),
+                        pageIds.length ? articleDetailXId.exists(pageIds) as Promise<{ [key: string]: number; }> : Promise.resolve({}),
                     ]);
 
                     const existingCategories = Object.keys(categoriesExist).filter((key) => !!categoriesExist[key]);

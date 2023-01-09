@@ -1,5 +1,4 @@
 import {cpus} from 'os';
-import pmap from 'p-map';
 import type {RedisClient} from 'redis';
 
 
@@ -53,22 +52,41 @@ export class RedisKvs<T> {
     });
   }
 
-  public exists(prop: string[]): Promise<{ [key: string]: number }> {
-    return pmap(
-      prop,
-      (key: string) => {
-        return new Promise((resolve, reject) => {
-          this.redisClient.hexists(this.dbName, key, (err, val) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve({[key]: val});
-            }
-          });
+  public exists(
+    prop: string | string[],
+  ): Promise<{ [key: string]: number } | number> {
+    return new Promise((resolve, reject) => {
+      if (typeof prop === 'string') {
+        // single key
+        this.redisClient.hexists(this.dbName, prop, (err, val) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(val);
+          }
         });
-      },
-      {concurrency: cpus().length * 4}
-    ).then((vals: any[]) => vals.reduce((acc, val) => Object.assign(acc, val), {}));
+      } else {
+        // array of keys
+        const batch = this.redisClient.batch();
+        prop.forEach((index) => {
+          batch.hexists(this.dbName, index);
+        });
+        batch.exec((err, replies) => {
+          try {
+            if (err) {
+              throw err;
+            }
+            const result: { [key: string]: number } = {};
+            for (let u = 0; u < prop.length; u += 1) {
+              result[prop[u]] = replies[u];
+            }
+            resolve(result);
+          } catch(err) {
+            reject(err);
+          }
+        });
+      }
+    });
   }
 
   public set(prop: string, val: T) {
