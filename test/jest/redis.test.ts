@@ -1,11 +1,9 @@
-// noinspection ES6UnusedImports
-import {} from 'ts-jest';
 import {createClient} from 'redis-mock';
 import type {RedisClient} from 'redis-mock';
 // @ts-ignore
 import {initMockData} from './mock/mock';
 import {RedisKvs} from '../../src/util/RedisKvs';
-
+import {jest} from '@jest/globals';
 
 let client: RedisClient;
 let kvs: RedisKvs<any>;
@@ -20,7 +18,7 @@ const getHandler = (delay: number) => async (items: any, workerId: number): Prom
   const t = Math.random() * delay;
   return new Promise(((resolve, reject) => {
     setTimeout(() => {
-      resolve();
+      resolve(null);
     }, t);
   }));
 };

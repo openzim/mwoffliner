@@ -1,19 +1,18 @@
 // tslint:disable-next-line: no-reference
 ///<reference path="../../src/types.d.ts" />
 
-import test from 'blue-tape';
 import packageJSON from '../../package.json';
 
 import execa from 'execa';
 
 const mwo = `node lib/cli.js`;
 
-test('Exec Command With Bash', async (t) => {
+test('Exec Command With Bash', async () => {
     const version = await execa.command(`${mwo} --version`);
-    t.equal(version.stdout.trim(), packageJSON.version);
+    expect(version.stdout.trim()).toEqual(packageJSON.version);
 
     const help = await execa.command(`${mwo} --help`);
-    t.ok(help.stdout.trim().split('\n').length > 55);
+    expect(help.stdout.trim().split('\n').length).toBeGreaterThan(55);
 
     // TODO: Consider executing more e2e tests this way
 });
