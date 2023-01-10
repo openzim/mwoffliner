@@ -57,7 +57,7 @@ npm run test:e2e
 
 To run a specfic test:
 ```bash
-npm run tape -- test/e2e/localParsoid.test.ts
+npm run test:pattern test/e2e/localParsoid.test.ts
 ```
 
 For S3 tests to pass, create a '.env' file (at the root of your
