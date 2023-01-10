@@ -116,9 +116,9 @@ describe('saveArticles', () => {
 
       const sections = Array.from(doc.querySelectorAll('section'));
 
-      let fewestChildren;
+      let fewestChildren = 0;
       for (const d of sections) {
-        if (!fewestChildren || d.children.length < fewestChildren) {
+        if (fewestChildren === 0 || d.children.length < fewestChildren) {
           fewestChildren = d.children.length;
         }
       }
