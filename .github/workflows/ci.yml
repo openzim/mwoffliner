@@ -46,9 +46,6 @@ jobs:
     - name: running test with codecov
       run: REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=`find .. -name zimcheck` npm run codecov
 
-    - name: running test
-      run: npm run jest
-
     - name: codecov action
       uses: codecov/codecov-action@v1
       with:
