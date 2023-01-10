@@ -183,6 +183,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
       'Creating ZIM arcile',
       'Saving to ZIM',
     ];
+    const timeout = Math.max(
+      downloader.requestTimeout * 2,
+      15 * 60 * 1000,
+    );
 
     await articleDetailXId.iterateItems(
         downloader.speed,
@@ -194,10 +198,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                 };
 
                 // detect when worker is frozen
-                const timeout = Math.max(
-                  downloader.requestTimeout * 2,
-                  15 * 60 * 1000,
-                );
                 const timer = new Timer(() => {
                   const errorMessage = `Worker timed out at ${stages[tracker.stage]} ${tracker.articleId}`;
                   logger.error(errorMessage);
@@ -296,7 +296,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                         dump.status.articles.fail += 1;
                         logger.error(`Error downloading article ${articleId}`);
                         if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-                            throw err;
+                            timer.clear();
+                            reject(err);
+                            return;
                         }
                     }
 
