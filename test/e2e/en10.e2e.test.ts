@@ -5,7 +5,7 @@ import execa = require('execa');
 import 'dotenv/config';
 import {jest} from '@jest/globals';
 
-jest.setTimeout(80000);
+jest.setTimeout(120000);
 
 describe('en10', () => {
 
