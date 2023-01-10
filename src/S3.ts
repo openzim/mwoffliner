@@ -63,18 +63,30 @@ class S3 {
     }
   }
 
-  public async downloadBlob(key: string, version = '1'): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.s3Handler.getObject({ Bucket: this.bucketName, Key: key }, async (err: any, val: any) => {
-        if (val) {
-          if (val.Metadata.version !== version) {
-            val.Metadata.etag = undefined
-          }
-          resolve(val)
-        } else if (err && err.statusCode === 404) {
-          resolve(null)
-        } else {
-          reject(err)
+    public async bucketExists(bucket: string): Promise<any> {
+        return new Promise(( resolve, reject ) => {
+            this.s3Handler.headBucket({Bucket: bucket}, function(err: any) {
+                err ? reject(err) : resolve(true);
+            });
+        });
+    }
+
+    public async uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string) {
+        const params = {
+            Bucket: this.bucketName,
+            Key: key,
+            Metadata: {etag: eTag, version, contenttype: contentType},
+            Body: this.bufferToStream(data),
+        };
+
+        try {
+            this.s3Handler.upload( params, function (err: any, data: any) {
+                if (err) {
+                    logger.log(`Not able to upload ${key}: ${err}`);
+                }
+            });
+        } catch (err) {
+            logger.log('S3 error', err);
         }
       })
     }).catch((err) => {

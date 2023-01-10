@@ -24,12 +24,11 @@ import {
   isBitmapImageMimeType,
   isImageUrl,
   isWebpCandidateImageMimeType,
-  isWebpCandidateImageUrl,
-} from './util/index.js'
-import S3 from './S3.js'
-import { Dump } from './Dump.js'
-import logger from './Logger.js'
-import MediaWiki from './MediaWiki.js'
+} from './util/index.js';
+import S3 from './S3.js';
+import { Dump } from './Dump.js';
+import logger from './Logger.js';
+import MediaWiki from './MediaWiki.js';
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -588,11 +587,59 @@ class Downloader {
 
   private async downloadImage(url: string, handler: any) {
     try {
-      this.s3
-        .downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1')
-        .then(async (s3Resp) => {
-          if (s3Resp?.Metadata?.etag) {
-            this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
+      this.s3.downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1').then(async (s3Resp) => {
+        if (s3Resp?.Metadata?.etag) {
+          this.arrayBufferRequestOptions.headers['If-None-Match']
+            = this.removeEtagWeakPrefix(s3Resp.Metadata.etag);
+        }
+        const mwResp = await axios(url, this.arrayBufferRequestOptions);
+
+        // Most of the images after uploading once will always have
+        // 304 status, until modified.
+        // 304 does not have to answer with content-type, we have to get it
+        // via S3 metadata or extension
+        if (mwResp.status === 304) {
+          const headers = (({ Body, ...o }) => o)(s3Resp);
+          if (mwResp.headers['content-type']) {
+            headers['content-type'] = mwResp.headers['content-type'];
+          } else if (s3Resp?.Metadata?.contenttype) {
+            headers['content-type'] = s3Resp.Metadata.contenttype;
+          } else {
+            // workers with old versions will still save without content-type
+            // so we guess by extension
+            let contentTypeByExt = 'image/jpeg';
+            const pathname = new URL(url).pathname.toLowerCase();
+            if (pathname.endsWith('.webp')) {
+                contentTypeByExt = 'image/webp';
+            } else if (pathname.endsWith('.avif')) {
+                contentTypeByExt = 'image/avif';
+            } else if (pathname.endsWith('.png')) {
+                contentTypeByExt = 'image/png';
+            } else if (pathname.endsWith('.apng')) {
+                contentTypeByExt = 'image/apng';
+            } else if (pathname.endsWith('.gif')) {
+                contentTypeByExt = 'image/gif';
+            } else if (pathname.endsWith('.svg')) {
+                contentTypeByExt = 'image/svg+xml';
+            } else if (pathname.includes('.webp')) {
+                contentTypeByExt = 'image/webp';
+            } else if (pathname.includes('.avif')) {
+                contentTypeByExt = 'image/avif';
+            } else if (pathname.includes('.png')) {
+                contentTypeByExt = 'image/png';
+            } else if (pathname.includes('.apng')) {
+                contentTypeByExt = 'image/apng';
+            } else if (pathname.includes('.gif')) {
+                contentTypeByExt = 'image/gif';
+            }
+            headers['content-type'] = contentTypeByExt;
+          }
+
+          if (isWebpCandidateImageMimeType(this.webp, headers['content-type'])
+            && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)
+          ) {
+            headers.path_postfix = '.webp';
+            headers['content-type'] = 'image/webp';
           }
           const mwResp = await axios(url, this.arrayBufferRequestOptions)
 
@@ -630,13 +677,29 @@ class Downloader {
           }
 
           handler(null, {
-            responseHeaders: mwResp.headers,
-            content: mwResp.data,
-          })
-        })
-        .catch((err) => {
-          this.errHandler(err, url, handler)
-        })
+            responseHeaders: headers,
+            content: s3Resp.Body,
+          });
+          return;
+        }
+
+        // Compress content
+        await this.getCompressedBody(mwResp);
+
+        // Check for the etag and upload
+        const etag = this.removeEtagWeakPrefix(mwResp.headers.etag);
+        const contentType = mwResp.headers['content-type'];
+        if (etag) {
+          this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, contentType, this.webp ? 'webp' : '1');
+        }
+
+        handler(null, {
+          responseHeaders: mwResp.headers,
+          content: mwResp.data,
+        });
+      }).catch((err) => {
+        this.errHandler(err, url, handler);
+      });
     } catch (err) {
       this.errHandler(err, url, handler)
     }
