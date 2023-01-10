@@ -97,6 +97,7 @@ class Downloader {
   public readonly mw: MediaWiki;
   public loginCookie: string = '';
   public readonly speed: number;
+  public readonly requestTimeout: number;
   public baseUrl: string;
   public baseUrlForMainPage: string;
   public cssDependenceUrls: KVS<boolean> = {};
@@ -105,7 +106,6 @@ class Downloader {
   private readonly uaString: string;
   private activeRequests = 0;
   private maxActiveRequests = 1;
-  private readonly requestTimeout: number;
   private readonly urlPartCache: KVS<string> = {};
   private readonly backoffOptions: BackoffOptions;
   private readonly optimisationCacheUrl: string;

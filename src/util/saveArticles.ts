@@ -8,6 +8,7 @@ import * as QueryStringParser from 'querystring';
 import pmap from 'p-map';
 import DU from '../DOMUtils';
 import * as domino from 'domino';
+import Timer from './Timer';
 import { Dump } from '../Dump';
 import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from '.';
 import { config } from '../config';
@@ -172,103 +173,144 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         await getAllArticlesToKeep(downloader, mw, dump);
     }
 
+    const stages = [
+      'Download',
+      'Parse',
+      'Setting Media Dependencies',
+      'Setting subtitles',
+      'Setting module dependencies',
+      'Creating HTML from Template',
+      'Creating ZIM arcile',
+      'Saving to ZIM',
+    ];
+
     await articleDetailXId.iterateItems(
         downloader.speed,
-        async (articleKeyValuePairs, workerId) => {
-            logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
-            for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-                try {
-                    const rets = await downloader.getArticle(articleId, dump);
+        (articleKeyValuePairs, workerId) => {
+            return new Promise(async (resolve, reject) => {
+                const tracker: { stage: number, articleId: string } = {
+                  stage: 0,
+                  articleId: '',
+                };
 
-                    for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
-                        const nonPaginatedArticleId = articleDetail.title;
-                        if (!articleHtml) {
-                            logger.warn(`No HTML returned for article [${articleId}], skipping`);
-                            continue;
-                        }
+                // detect when worker is frozen
+                const timeout = Math.max(
+                  downloader.requestTimeout * 2,
+                  15 * 60 * 1000,
+                );
+                const timer = new Timer(() => {
+                  const errorMessage = `Worker timed out at ${stages[tracker.stage]} ${tracker.articleId}`;
+                  logger.error(errorMessage);
+                  reject(new Error(errorMessage));
+                }, timeout);
 
-                        const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
-                        let articleDoc = _articleDoc;
+                logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`);
+                for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+                    try {
+                        timer.reset();
+                        tracker.articleId = articleId;
+                        tracker.stage = 0;
+                        const rets = await downloader.getArticle(articleId, dump);
 
-                        if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
-                            articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
-                        }
-
-                        for (const dep of mediaDependencies) {
-
-                            const { mult, width } = getSizeFromUrl(dep.url);
-
-                            const existingVal = await filesToDownloadXPath.get(dep.path);
-                            const currentDepIsHigherRes = !existingVal || (existingVal.width < (width || 10e6)) || existingVal.mult < (mult || 1);
-                            if (currentDepIsHigherRes) {
-                                await filesToDownloadXPath.set(dep.path, { url: downloader.serializeUrl(dep.url), mult, width });
+                        tracker.stage += 1;
+                        for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
+                            const nonPaginatedArticleId = articleDetail.title;
+                            if (!articleHtml) {
+                                logger.warn(`No HTML returned for article [${articleId}], skipping`);
+                                continue;
                             }
-                        }
 
-                        for (const subtitle of subtitles) {
-                            await filesToDownloadXPath.set(subtitle.path, { url: subtitle.url, namespace: '-' });
-                        }
+                            const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId);
+                            let articleDoc = _articleDoc;
 
-                        const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader);
+                            if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
+                                articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc);
+                            }
 
-                        for (const dep of _moduleDependencies.jsDependenciesList) {
-                            jsModuleDependencies.add(dep);
-                        }
-                        for (const dep of _moduleDependencies.styleDependenciesList) {
-                            cssModuleDependencies.add(dep);
-                        }
+                            tracker.stage += 1;
+                            for (const dep of mediaDependencies) {
 
-                        jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars;
+                                const { mult, width } = getSizeFromUrl(dep.url);
 
-                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp);
+                                const existingVal = await filesToDownloadXPath.get(dep.path);
+                                const currentDepIsHigherRes = !existingVal || (existingVal.width < (width || 10e6)) || existingVal.mult < (mult || 1);
+                                if (currentDepIsHigherRes) {
+                                    await filesToDownloadXPath.set(dep.path, { url: downloader.serializeUrl(dep.url), mult, width });
+                                }
+                            }
 
-                        if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
-                            templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc);
-                        }
+                            tracker.stage += 1;
+                            for (const subtitle of subtitles) {
+                                await filesToDownloadXPath.set(subtitle.path, { url: subtitle.url, namespace: '-' });
+                            }
 
-                        let outHtml = templatedDoc.documentElement.outerHTML;
+                            tracker.stage += 1;
+                            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader);
 
-                        if (dump.opts.minifyHtml) {
-                            outHtml = htmlMinifier.minify(outHtml, {
-                                removeComments: true,
-                                conservativeCollapse: true,
-                                collapseBooleanAttributes: true,
-                                removeRedundantAttributes: true,
-                                removeEmptyAttributes: true,
-                                minifyCSS: true,
+                            for (const dep of _moduleDependencies.jsDependenciesList) {
+                                jsModuleDependencies.add(dep);
+                            }
+                            for (const dep of _moduleDependencies.styleDependenciesList) {
+                                cssModuleDependencies.add(dep);
+                            }
+
+                            jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars;
+
+                            tracker.stage += 1;
+                            let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp);
+
+                            if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
+                                templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc);
+                            }
+
+                            let outHtml = templatedDoc.documentElement.outerHTML;
+
+                            if (dump.opts.minifyHtml) {
+                                outHtml = htmlMinifier.minify(outHtml, {
+                                    removeComments: true,
+                                    conservativeCollapse: true,
+                                    collapseBooleanAttributes: true,
+                                    removeRedundantAttributes: true,
+                                    removeEmptyAttributes: true,
+                                    minifyCSS: true,
+                                });
+                            }
+
+                            const finalHTML = `<!DOCTYPE html>\n` + outHtml;
+
+                            tracker.stage += 1;
+                            const zimArticle = new ZimArticle({
+                                url: articleId,
+                                data: finalHTML,
+                                ns: articleDetail.ns === 14 ? 'U' : 'A',
+                                mimeType: 'text/html',
+                                title: articleTitle,
+                                shouldIndex: true,
                             });
+
+                            tracker.stage += 1;
+                            zimCreator.addArticle(zimArticle);
+                            dump.status.articles.success += 1;
                         }
-
-                        const finalHTML = `<!DOCTYPE html>\n` + outHtml;
-
-                        const zimArticle = new ZimArticle({
-                            url: articleId,
-                            data: finalHTML,
-                            ns: articleDetail.ns === 14 ? 'U' : 'A',
-                            mimeType: 'text/html',
-                            title: articleTitle,
-                            shouldIndex: true,
-                        });
-
-                        zimCreator.addArticle(zimArticle);
-                        dump.status.articles.success += 1;
+                    } catch (err) {
+                        dump.status.articles.fail += 1;
+                        logger.error(`Error downloading article ${articleId}`);
+                        if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
+                            throw err;
+                        }
                     }
-                } catch (err) {
-                    dump.status.articles.fail += 1;
-                    logger.error(`Error downloading article ${articleId}`);
-                    if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-                        throw err;
+
+                    if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
+                        const percentProgress = ((dump.status.articles.success + dump.status.articles.fail) / articlesTotal * 100).toFixed(1);
+                        if (percentProgress !== prevPercentProgress) {
+                            prevPercentProgress = percentProgress;
+                            logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
+                        }
                     }
                 }
-
-                if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
-                    const percentProgress = ((dump.status.articles.success + dump.status.articles.fail) / articlesTotal * 100).toFixed(1);
-                    if (percentProgress !== prevPercentProgress) {
-                        prevPercentProgress = percentProgress;
-                        logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`);
-                    }
-                }
-            }
+                timer.clear();
+                resolve();
+            });
         },
     );
 
