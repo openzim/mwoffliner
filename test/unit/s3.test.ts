@@ -4,7 +4,7 @@ import {jest} from '@jest/globals';
 
 jest.setTimeout(60000);
 
-let describeIf = process.env.BUCKET_NAME_TEST ? describe : describe.skip;
+const describeIf = process.env.BUCKET_NAME_TEST ? describe : describe.skip;
 
 describeIf('S3', () => {
 

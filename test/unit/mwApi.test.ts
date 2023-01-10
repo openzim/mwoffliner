@@ -92,7 +92,7 @@ describe('mwApi', () => {
     });
     // Namespaces have valid keys
     expect(keysAreValid).toBeTruthy();
-  
+
   });
 
   test('extracting title from href', () => {

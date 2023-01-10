@@ -4,7 +4,7 @@ import { Dump } from '../../src/Dump';
 describe('Dump formats', () => {
 
   beforeAll(startRedis);
-  afterAll(stopRedis);  
+  afterAll(stopRedis);
 
   const formatTests = {
     '': '',
@@ -23,7 +23,7 @@ describe('Dump formats', () => {
     test(`tag [${expectedFormatTags}] is correct`, async () => {
       const dump = new Dump(format, {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any);
       const outFormat = dump.computeFilenameRadical(true, false, true);
-  
+
       expect(outFormat).toEqual(`_${expectedFormatTags}`);
     });
   }

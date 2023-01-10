@@ -193,7 +193,7 @@ describe('Downloader class', () => {
   });
 });
 
-let describeIf = process.env.BUCKET_NAME_TEST ? describe : describe.skip;
+const describeIf = process.env.BUCKET_NAME_TEST ? describe : describe.skip;
 
 describeIf('Downloader class with optimisation', () => {
   let downloader: Downloader;

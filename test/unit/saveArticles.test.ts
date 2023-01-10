@@ -63,7 +63,10 @@ describe('saveArticles', () => {
   });
 
   describe('applyOtherTreatments', () => {
-    let dump: Dump, dump2: Dump, articleHtml: string;
+    let dump: Dump;
+    let dump2: Dump;
+    let articleHtml: string;
+
     beforeEach( async () => {
       const classes = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }); // en wikipedia
       dump = classes.dump
@@ -104,7 +107,7 @@ describe('saveArticles', () => {
           fewestChildren = d.children.length;
         }
       }
-      expect(fewestChildren).toBeLessThanOrEqual,(1);
+      expect(fewestChildren).toBeLessThanOrEqual(1);
     });
 
     test('Found empty sections when they should be left im desktop view', async () => {
@@ -119,7 +122,7 @@ describe('saveArticles', () => {
           fewestChildren = d.children.length;
         }
       }
-      expect(fewestChildren).toBeLessThanOrEqual,(1);
+      expect(fewestChildren).toBeLessThanOrEqual(1);
     });
   });
 

@@ -46,7 +46,7 @@ Wikipedia:Books/archive/Eye diseases`;
     for (const dump of outFiles) {
       if (dump.nopic) {
         const articleCount = articleListLines.split(/\r\n|\r|\n/).length;
-        // 
+
         expect(dump.status.articles.success).toEqual(articleCount);
       }
 
