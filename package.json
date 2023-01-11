@@ -12,10 +12,14 @@
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node ./lib/cli.js",
-    "test:pattern": "jest --runInBand --forceExit --detectOpenHandles --forceExit",
+    "test:pattern": "jest --runInBand --forceExit",
+    "test:pattern-coverage": "jest --runInBand --forceExit --coverage",
     "test:e2e": "npm run test:pattern 'test/e2e'",
     "test:unit": "npm run test:pattern 'test/unit'",
-    "test": "npm run test:unit && npm run test:e2e",
+    "test:e2e-coverage": "npm run test:pattern-coverage 'test/e2e'",
+    "test:unit-coverage": "npm run test:pattern-coverage 'test/unit'",
+    "test": "npm run test:unit-coverage && npm run test:e2e-coverage",
+    "test-without-coverage": "npm run test:unit && npm run test:e2e",
     "jest": "npm run test:pattern 'test/jest'",
     "codecov": "nyc --reporter=lcov npm t",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
@@ -111,7 +115,6 @@
     "zim"
   ],
   "devDependencies": {
-    "@types/blue-tape": "^0.1.33",
     "@types/jest": "^26.0.15",
     "@types/redis": "^2.8.28",
     "@types/redis-mock": "^0.17.0",
