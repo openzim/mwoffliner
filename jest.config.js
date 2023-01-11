@@ -3,7 +3,7 @@ module.exports = {
     "^.+\\.tsx?$": "ts-jest",
   },
   moduleFileExtensions: ["ts", "js"],
-  collectCoverage: false,
+  collectCoverage: true,
   preset: 'ts-jest/presets/js-with-ts',
   testEnvironment: 'node',
   globals: {
