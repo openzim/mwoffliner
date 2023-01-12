@@ -40,24 +40,49 @@ plugin.
 
 ## Tests
 
-To run the automated tests (both unit and e2e):
+To run the automated tests with collecting coverage (both unit and e2e):
 ```bash
 npm test # or "npm run test"
 ```
 
-To run the unit tests:
+To run the automated tests with collecting coverage and verbose all debug message (both unit and e2e):
+```bash
+npm run test-verbose
+```
+
+To run the automated tests without collecting coverage (both unit and e2e). This command will be a bit faster:
+```bash
+npm run test-without-coverage
+```
+
+To run the unit tests with collecting coverage:
+```bash
+npm run test:unit-coverage
+```
+
+To run the unit tests without collecting coverage:
 ```bash
 npm run test:unit
 ```
 
-To run end-2-end tests:
+To run end-2-end tests with collecting coverage:
+```bash
+npm run test:e2e-coverage
+```
+
+To run end-2-end tests without collecting coverage:
 ```bash
 npm run test:e2e
 ```
 
-To run a specfic test:
+To run a specfic test with collecting coverage:
 ```bash
-npm run tape -- test/e2e/localParsoid.test.ts
+npm run test:pattern-coverage test/e2e/localParsoid.test.ts
+```
+
+To run a specfic test with collecting coverage:
+```bash
+npm run test:pattern test/e2e/localParsoid.test.ts
 ```
 
 For S3 tests to pass, create a '.env' file (at the root of your

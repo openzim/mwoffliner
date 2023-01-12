@@ -1,19 +1,22 @@
-import test from 'blue-tape';
-import { execute } from '../../src/mwoffliner.lib';
+import * as mwoffliner from '../../src/mwoffliner.lib';
 import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
 import { writeFilePromise, mkdirPromise } from '../../src/util';
 import { join } from 'path';
 import execa = require('execa');
 import 'dotenv/config';
-// import { ZimReader } from '@openzim/libzim';
+import {jest} from '@jest/globals';
 
-const now = new Date();
-const testId = join(process.cwd(), `mwo-test-${+now}`);
+jest.setTimeout(20000);
 
-const articleListUrl = join(testId, '/articleList');
+describe('Extra', () => {
 
-test('Simple customMainPage', async (t) => {
+  const now = new Date();
+  const testId = join(process.cwd(), `mwo-test-${+now}`);
+
+  const articleListUrl = join(testId, '/articleList');
+
+  test('Simple customMainPage', async () => {
     await execa.command(`redis-cli flushall`);
     await mkdirPromise(testId);
 
@@ -27,40 +30,39 @@ Wikipedia:Books/archive/Eye diseases`;
 
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
 
-    const outFiles = await execute({
-        mwUrl: `https://en.wikipedia.org`,
-        adminEmail: `test@kiwix.org`,
-        articleList: articleListUrl,
-        customMainPage: 'Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine2',
-        outputDirectory: testId,
-        redis: process.env.REDIS,
-        format: ['nopic'],
+    const outFiles = await mwoffliner.execute({
+      mwUrl: `https://en.wikipedia.org`,
+      adminEmail: `test@kiwix.org`,
+      articleList: articleListUrl,
+      customMainPage: 'Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine2',
+      outputDirectory: testId,
+      redis: process.env.REDIS,
+      format: ['nopic'],
     });
 
-    t.equal(outFiles.length, 1, `Created 1 outputs`);
+    // Created 1 outputs
+    expect(outFiles).toHaveLength(1);
 
     for (const dump of outFiles) {
-        if (dump.nopic) {
-            const articleCount = articleListLines.split(/\r\n|\r|\n/).length;
-            t.equal(dump.status.articles.success, articleCount, 'nopic has ' + articleCount + ' articles');
-        }
+      if (dump.nopic) {
+        const articleCount = articleListLines.split(/\r\n|\r|\n/).length;
 
-        if (await zimcheckAvailable()) {
-            try {
-                await zimcheck(dump.outFile);
-                t.ok(true, `Zimcheck passes`);
-            } catch (err) {
-                t.ok(false, `Zimcheck passes`);
-            }
-        } else {
-            console.log(`Zimcheck not installed, skipping test`);
-        }
+        expect(dump.status.articles.success).toEqual(articleCount);
+      }
+
+      if (await zimcheckAvailable()) {
+          await expect(zimcheck(dump.outFile)).resolves.not.toThrowError();
+      } else {
+        console.log(`Zimcheck not installed, skipping test`);
+      }
     }
 
-    t.ok(true, 'Scraped customMainPage');
+    // Scraped customMainPage
     // TODO: clear test dir
     rimraf.sync(testId);
 
     const redisScan = await execa.command(`redis-cli --scan`);
-    t.equal(redisScan.stdout, '', 'Redis has been cleared');
+    // Redis has been cleared
+    expect(redisScan.stdout).toEqual('');
+  });
 });

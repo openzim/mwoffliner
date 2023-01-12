@@ -1,53 +1,54 @@
-import test from 'blue-tape';
-import { execute } from '../../src/mwoffliner.lib';
+import * as mwoffliner  from '../../src/mwoffliner.lib';
 import execa from 'execa';
 import rimraf from 'rimraf';
-import { zimcheckAvailable, zimcheck } from 'test/util';
+import { zimcheckAvailable, zimcheck } from '../util';
 import 'dotenv/config';
-// import { ZimReader } from '@openzim/libzim';
+import {jest} from '@jest/globals';
 
-const now = new Date();
-const testId = `mwo-test-${+now}`;
+jest.setTimeout(120000);
 
-const parameters = {
+describe('bm', () => {
+  const now = new Date();
+  const testId = `mwo-test-${+now}`;
+
+  const parameters = {
     mwUrl: `https://bm.wikipedia.org`,
     adminEmail: `test@kiwix.org`,
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
-};
+  };
 
-test('Simple articleList', async (t) => {
+  test('Simple articleList', async () => {
     await execa.command(`redis-cli flushall`);
 
-    const outFiles = await execute(parameters);
+    const outFiles = await mwoffliner.execute(parameters);
 
-    t.equal(outFiles.length, 1, `Created 1 output`);
+    // Created 1 output
+    expect(outFiles).toHaveLength(1);
 
     for (const dump of outFiles) {
-        if (dump.nopic) {
-            t.ok(dump.status.files.success > 16, 'nopic has enough files');
-            t.ok(dump.status.redirects.written > 170, 'nopic has enough redirects');
-            t.ok(dump.status.articles.success > 700, 'nopic has enough articles');
-        }
+      if (dump.nopic) {
+        // nopic has enough files
+        expect(dump.status.files.success).toBeGreaterThan(16);
+        // nopic has enough redirects
+        expect(dump.status.redirects.written).toBeGreaterThan(170);
+        // nopic has enough articles
+        expect(dump.status.articles.success).toBeGreaterThan(700);
+      }
     }
 
-    t.ok(true, 'Scraped BM Full');
-
     if (await zimcheckAvailable()) {
-        try {
-            await zimcheck(outFiles[0].outFile);
-            t.ok(true, `Zimcheck passes`);
-        } catch (err) {
-            t.ok(false, `Zimcheck passes`);
-        }
+      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError();
     } else {
-        console.log(`Zimcheck not installed, skipping test`);
+      console.log(`Zimcheck not installed, skipping test`);
     }
 
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
     const redisScan = await execa.command(`redis-cli --scan`);
-    t.equal(redisScan.stdout, '', 'Redis has been cleared');
+    // Redis has been cleared
+    expect(redisScan.stdout).toEqual('');
+  });
 });

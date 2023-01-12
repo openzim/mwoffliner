@@ -1,17 +1,20 @@
-import test from 'blue-tape';
-import { execute } from '../../src/mwoffliner.lib';
+import * as mwoffliner from '../../src/mwoffliner.lib';
 import { zimcheckAvailable, zimcheck } from '../util';
 import rimraf from 'rimraf';
 import execa = require('execa');
 import 'dotenv/config';
-// import { ZimReader } from '@openzim/libzim';
+import {jest} from '@jest/globals';
 
-const now = new Date();
-const testId = `mwo-test-${+now}`;
+jest.setTimeout(120000);
 
-const articleListUrl = `https://download.openzim.org/wp1/enwiki/tops/10.tsv`;
+describe('en10', () => {
 
-const parameters = {
+  const now = new Date();
+  const testId = `mwo-test-${+now}`;
+
+  const articleListUrl = `https://download.openzim.org/wp1/enwiki/tops/10.tsv`;
+
+  const parameters = {
     mwUrl: `https://en.wikipedia.org`,
     adminEmail: `test@kiwix.org`,
     articleList: articleListUrl,
@@ -19,44 +22,53 @@ const parameters = {
     redis: process.env.REDIS,
     // format: ['nopic', 'novid', 'nopdf', 'nodet'],
     format: ['nopic', 'nopdf'],
-};
+  };
 
-test('Simple articleList', async (t) => {
+  test('Simple articleList', async () => {
     await execa.command(`redis-cli flushall`);
 
-    const outFiles = await execute(parameters);
+    const outFiles = await mwoffliner.execute(parameters);
 
-    t.equal(outFiles.length, 2, `Created 2 outputs`);
+    // Created 2 outputs
+    expect(outFiles).toHaveLength(2);
 
     for (const dump of outFiles) {
-        if (dump.nopic) {
-            t.ok(dump.status.files.success > 20 && dump.status.files.success < 25, 'nopic has enough files');
-            t.ok(dump.status.redirects.written > 480, 'nopic has enough redirects');
-            t.ok(dump.status.articles.success === 10, 'nopic has 10 articles');
-        } else if (dump.novid) {
-            t.ok(dump.status.files.success > 420, 'novid has enough files');
-            t.ok(dump.status.redirects.written > 480, 'novid has enough redirects');
-            t.ok(dump.status.articles.success === 10, 'novid has 10 articles');
-        } else if (dump.nopdf) {
-            t.ok(dump.status.files.success > 450, 'nopdf has enough files');
-            t.ok(dump.status.redirects.written > 480, 'nopdf has enough redirects');
-            t.ok(dump.status.articles.success === 10, 'nopdf has 10 articles');
-        } else if (dump.nodet) {
-            t.ok(dump.status.files.success > 50, 'nodet has enough files');
-            t.ok(dump.status.redirects.written > 480, 'nodet has enough redirects');
-            t.ok(dump.status.articles.success === 10, 'nodet has 10 articles');
-        }
+      if (dump.nopic) {
+        // nopic has enough files
+        expect(dump.status.files.success).toBeGreaterThan(20);
+        expect(dump.status.files.success).toBeLessThan(25);
+        // nopic has enough redirects
+        expect(dump.status.redirects.written).toBeGreaterThan(480);
+        // nopic has 10 articles
+        expect(dump.status.articles.success).toEqual(10);
+      } else if (dump.novid) {
+        // novid has enough files
+        expect(dump.status.files.success).toBeGreaterThan(420);
+        // novid has enough redirects
+        expect(dump.status.redirects.written).toBeGreaterThan(480);
+        // novid has 10 articles
+        expect(dump.status.articles.success).toEqual(10);
+      } else if (dump.nopdf) {
+        // nopdf has enough files
+        expect(dump.status.files.success).toBeGreaterThan(450);
+        // nopdf has enough redirects
+        expect(dump.status.redirects.written).toBeGreaterThan(480);
+        // nopdf has 10 articles
+        expect(dump.status.articles.success).toEqual(10);
+      } else if (dump.nodet) {
+        // nodet has enough files
+        expect(dump.status.files.success).toBeGreaterThan(50);
+        // nodet has enough redirects
+        expect(dump.status.redirects.written).toBeGreaterThan(480);
+        // nodet has 10 articles
+        expect(dump.status.articles.success).toEqual(10);
+      }
 
-        if (await zimcheckAvailable()) {
-            try {
-                await zimcheck(dump.outFile);
-                t.ok(true, `Zimcheck passes`);
-            } catch (err) {
-                t.ok(false, `Zimcheck passes`);
-            }
-        } else {
-            console.log(`Zimcheck not installed, skipping test`);
-        }
+      if (await zimcheckAvailable()) {
+        await expect(zimcheck(dump.outFile)).resolves.not.toThrowError();
+      } else {
+        console.log(`Zimcheck not installed, skipping test`);
+      }
     }
 
     // TODO: fix node-libzim
@@ -64,10 +76,12 @@ test('Simple articleList', async (t) => {
     // const numArticles = await zimReader.getCountArticles();
     // console.log(numArticles)
 
-    t.ok(true, 'Scraped EN top 10');
+    // Scraped EN top 10
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
     const redisScan = await execa.command(`redis-cli --scan`);
-    t.equal(redisScan.stdout, '', 'Redis has been cleared');
+    // Redis has been cleared
+    expect(redisScan.stdout).toEqual('');
+  });
 });

@@ -1,153 +1,205 @@
-import './bootstrap.test.ts';
-import test from 'blue-tape';
-import tapePromise from 'tape-promise';
-import Downloader from 'src/Downloader';
-import MediaWiki from 'src/MediaWiki';
+import {startRedis, stopRedis} from './bootstrap';
+import Downloader from '../../src/Downloader';
+import MediaWiki from '../../src/MediaWiki';
 import Axios from 'axios';
-import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from 'src/util';
-import S3 from 'src/S3';
+import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util';
+import S3 from '../../src/S3';
 import rimraf from 'rimraf';
-import { Dump } from 'src/Dump';
-import { articleDetailXId } from 'src/stores';
-import { config } from 'src/config';
-import logger from 'src/Logger';
+import { Dump } from '../../src/Dump';
+import { articleDetailXId } from '../../src/stores';
+import { config } from '../../src/config';
+import logger from '../../src/Logger';
 import 'dotenv/config';
 import FileType from 'file-type'
 
-test('Downloader class', async (t) => {
-    const mw = new MediaWiki({
-        base: 'https://en.wikipedia.org',
-        getCategories: true,
+jest.setTimeout(60000);
+
+describe('Downloader class', () => {
+  let mw: MediaWiki;
+  let downloader: Downloader;
+  const cacheDir = `cac/dumps-${Date.now()}/`;
+
+  beforeAll(startRedis);
+  afterAll(stopRedis);
+
+  beforeAll(async () => {
+    mw = new MediaWiki({
+      base: 'https://en.wikipedia.org',
+      getCategories: true,
     } as any);
 
-    const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' });
+    downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
     await downloader.checkCapabilities();
     await downloader.setBaseUrls();
+  });
 
+  test('downloader.query returns valid JSON', async() => {
     const queryRet = await downloader.query(`?action=query&meta=siteinfo&siprop=statistics&format=json`);
-    t.ok(!!queryRet, 'downloader.query returns valid JSON');
+    expect(queryRet).toBeDefined();
+  });
 
+  test('downloader.getJSON returns valid JSON', async() => {
     const JSONRes = await downloader.getJSON(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`);
-    t.ok(!!JSONRes, 'downloader.getJSON returns valid JSON');
+    expect(JSONRes).toBeDefined();
+  });
 
+  test('downloader.canGetUrl returns valid answer (positive)', async() => {
     const urlExists = await downloader.canGetUrl(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`);
-    t.ok(urlExists, 'downloader.canGetUrl returns valid answer (positive)');
+    expect(urlExists).toBeDefined();
+  });
 
+  test('downloader.canGetUrl returns valid answer (negative)', async() => {
     const urlNotExists = await downloader.canGetUrl(`https://en.wikipedia.org/w/thisisa404`);
-    t.ok(!urlNotExists, 'downloader.canGetUrl returns valid answer (negative)');
+    expect(urlNotExists).toBeDefined();
+  });
 
-    try {
-        await downloader.getJSON(`https://en.wikipedia.org/w/thisisa404`);
-    } catch (err) {
-        t.ok(true, 'getJSON throws on non-existant url');
-        t.equal(err.response.status, 404, 'getJSON response status for non-existant url is 404');
-    }
+  test('getJSON response status for non-existant url is 404', async() => {
+    await expect(downloader.getJSON(`https://en.wikipedia.org/w/thisisa404`)).rejects.toThrowError(new Error('Request failed with status code 404'));
+  });
 
+  test('downloader.downloadContent returns', async() => {
     const contentRes = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg`);
-    t.ok(!!contentRes.responseHeaders, 'downloader.downloadContent returns');
+    expect(contentRes.responseHeaders).toBeDefined();
+  });
 
+  test('Webp compression working for cmyk color-space images', async() => {
     const {content} = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg`);
-     t.equal((await FileType.fromBuffer(Buffer.from(content))).mime, 'image/webp', 'Webp compression working for cmyk color-space images');
+    const fileType = await FileType.fromBuffer(Buffer.from(content))
+    expect(fileType?.mime).toEqual('image/webp');
+  });
 
-    try {
-        await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg`);
-    } catch (err) {
-        t.ok(true, 'downloader.downloadContent throws on non-existant url');
-        t.equal(err.response.status, 404, 'downloadContent response status for non-existant url is 404');
-    }
+  test('downloader.downloadContent throws on non-existant url', async() => {
+    await expect(downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg`))
+      .rejects
+      .toThrowError(new Error('Request failed with status code 404'));
+  });
 
+  test('getArticleDetailsIds Scraped \'London\', \'United_Kingdom\', \'Paris\', \'Zürich\', \'THISARTICLEDOESNTEXIST\' successfully', async() => {
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories']);
     const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet);
     articleDetailXId.setMany(articleDetailsRet);
     const { London, Paris, Zürich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet;
-    t.ok(!!London, 'getArticleDetailsIds Scraped "London" successfully');
-    t.ok(!!United_Kingdom, 'getArticleDetailsIds Scraped "United_Kingdom" successfully');
-    t.ok(!!Paris, 'getArticleDetailsIds Scraped "Paris" successfully');
-    t.ok(!!Zürich, 'getArticleDetailsIds Scraped "Zürich" successfully');
-    t.ok(typeof (THISARTICLEDOESNTEXIST as any).missing === 'string', 'getArticleDetailsIds Didn\'t scrape "THISARTICLEDOESNTEXIST" successfully');
+    expect(London).toBeDefined();
+    expect(United_Kingdom).toBeDefined();
+    expect(Paris).toBeDefined();
+    expect(Zürich).toBeDefined();
 
+    expect(THISARTICLEDOESNTEXIST.missing).toBe('');
+  });
+
+  test('getArticleDetailsNS query returns \'gapContinue\' or \'multiple articles\', ', async() => {
     const { gapContinue, articleDetails } = await downloader.getArticleDetailsNS(0);
-    t.ok(!!gapContinue, 'NS query returns a gapContinue');
-    t.ok(Object.keys(articleDetails).length > 10, 'NS query returns multiple articles');
+    expect(gapContinue).toBeDefined();
+    expect(Object.keys(articleDetails).length).toBeGreaterThan(10);
+
     const secondNsRet = await downloader.getArticleDetailsNS(0, gapContinue);
-    t.ok(!!secondNsRet.gapContinue, 'Second NS query returns a gapContinue');
+    expect(secondNsRet.gapContinue).toBeDefined();
+  });
 
-    try {
-        await downloader.downloadContent('');
-    } catch (err) {
-        t.ok(true, 'downloadContent throws when empty string is passed');
-    }
+  test('downloadContent throws when empty string is passed', async() => {
+      await expect(downloader.downloadContent('')).rejects.toThrowError();
+  });
 
+  test('downloadContent successfully downloaded an image', async() => {
     const { data: LondonDetail } = await Axios.get(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London`);
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls);
 
     const LondonImage = await downloader.downloadContent(imgToGet as string);
-    t.ok(!!LondonImage.responseHeaders['content-type'].includes('image/'), 'downloadContent successfully downloaded an image');
+    expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i);
+  });
 
-    const mwMetadata = await mw.getMwMetaData(downloader);
+  describe('getArticle method', () => {
+    let dump: Dump;
 
-    const dump = new Dump('', {} as any, mwMetadata);
+    beforeAll(async () => {
+      const mwMetadata = await mw.getMwMetaData(downloader);
+      dump = new Dump('', {} as any, mwMetadata);
+    });
 
-    const LondonArticle = await downloader.getArticle('London', dump);
-    t.equal(LondonArticle.length, 1, 'getArticle of "London" returns one article');
+    test('getArticle of "London" returns one article', async() => {
+      const LondonArticle = await downloader.getArticle('London', dump);
+      expect(LondonArticle).toHaveLength(1)
+    });
 
-    const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump);
-    t.ok(PaginatedArticle.length > 100, 'Categories with many subCategories are paginated');
+    test('Categories with many subCategories are paginated', async() => {
+      const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump);
+      expect(PaginatedArticle.length).toBeGreaterThan(100)
+    });
 
-    try {
-        await downloader.getArticle('NeverExistingArticle', dump);
-    } catch (err) {
-        t.ok(true, 'downloader.downloadContent throws on non-existent article id');
-        t.equal(err.response.status, 404, 'getArticle response status for non-existent article id is 404');
-    }
+    test('getArticle response status for non-existent article id is 404', async() => {
+        await expect(downloader.getArticle('NeverExistingArticle', dump))
+          .rejects
+          .toThrowError(new Error('Request failed with status code 404'));
+    });
+  });
 
-    rimraf.sync(cacheDir);
+  describe('isImageUrl method', () => {
+    beforeAll(async () => {
+      rimraf.sync(cacheDir);
+    });
 
-    const isPngFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
-    t.assert(isPngFile, 'Checked Image type: png');
+    test('Checked Image type: png', async() => {
+      const isPngFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
+      expect(isPngFile).toBeTruthy();
+    });
 
-    const isJpgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
-    t.assert(isJpgFile, 'Checked Image type: jpg');
+    test('Checked Image type: jpg', async() => {
+      const isJpgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG');
+      expect(isJpgFile).toBeTruthy();
+    });
 
-    const isSvgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
-    t.assert(isSvgFile, 'Checked Image type: svg');
+    test('Checked Image type: svg', async() => {
+      const isSvgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg');
+      expect(isSvgFile).toBeTruthy();
+    });
 
-    const isJpegFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
-    t.assert(isJpegFile, 'Checked Image type: jpeg');
+    test('Checked Image type: jpeg', async() => {
+      const isJpegFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG');
+      expect(isJpegFile).toBeTruthy();
+    });
 
-    const isgifFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
-    t.assert(isgifFile, 'Checked Image type: gif');
+    test('Checked Image type: gif', async() => {
+      const isgifFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif');
+      expect(isgifFile).toBeTruthy();
+    });
 
-    const isgifFileWithArgs = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif?foo=bar');
-    t.assert(isgifFileWithArgs, 'Checked Image URL with arguments');
+    test('Checked Image URL with arguments', async() => {
+      const isgifFileWithArgs = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif?foo=bar');
+      expect(isgifFileWithArgs).toBeTruthy();
+    });
 
-    const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
-    t.assert(!isnotImage, 'Url is not image type');
+    test('Url is not image type', async() => {
+      const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json');
+      expect(isnotImage).not.toBeTruthy();
+    });
 
-    const isEmptyString = isImageUrl('');
-    t.assert(!isEmptyString, 'Url is empty string');
+    test('Url is empty string', async() => {
+      const isEmptyString = isImageUrl('');
+      expect(isEmptyString).not.toBeTruthy();
+    });
 
-    const imageHasNoExtension = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
-    t.assert(!imageHasNoExtension, 'Image Url has no extension');
+    test('Image Url has no extension', async() => {
+      const imageHasNoExtension = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x');
+      expect(imageHasNoExtension).not.toBeTruthy();
+    });
 
-    const extensionIsUndefined =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined');
-    t.assert(!extensionIsUndefined, 'Image Url extension is undefined');
-    // TODO: find a way to get service-runner to stop properly
-    // await mcsHandle.stop();
+    test('Image Url extension is undefined', async() => {
+      const extensionIsUndefined =  isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined');
+      expect(extensionIsUndefined).not.toBeTruthy();
+    });
+  });
 });
 
-const _test = tapePromise(test);
+const describeIf = process.env.BUCKET_NAME_TEST ? describe : describe.skip;
 
-_test('Downloader class with optimisation', async (t) => {
-    if (!process.env.BUCKET_NAME_TEST) {
-        logger.log('Skip S3 tests in Downloader class');
-        return;
-    }
+describeIf('Downloader class with optimisation', () => {
+  let downloader: Downloader;
+  let s3: S3;
 
+  beforeAll(async () => {
     const mw = new MediaWiki({
         base: 'https://en.wikipedia.org',
         getCategories: true,
@@ -155,32 +207,37 @@ _test('Downloader class with optimisation', async (t) => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    const s3 = new S3(process.env.BASE_URL_TEST, {
+    s3 = new S3(process.env.BASE_URL_TEST, {
         bucketName: process.env.BUCKET_NAME_TEST,
         keyId: process.env.KEY_ID_TEST,
         secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
     });
-    const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: 'random-string' , s3});
+    downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: 'random-string' , s3});
 
     await s3.initialise();
+  });
 
-    const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
-    // Test for image where etag is not present
+  test('Etag Not Present', async() => {
     const etagNotPresent = await downloader.downloadContent(`https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c`);
-    t.equals(etagNotPresent.responseHeaders.etag, undefined , 'Etag Not Present');
+    expect(etagNotPresent.responseHeaders.etag).toBeUndefined();
+  });
+
+  test('Delete image from S3', async() => {
+    const testImage = 'https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png';
 
     // Strip http(s) from url
     const httpOrHttpsRemoved = stripHttpFromUrl(testImage);
-    t.assert(httpOrHttpsRemoved, 'http removed from url');
+    expect(httpOrHttpsRemoved).toBeDefined();
 
     // Delete the image already present in S3
     await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: httpOrHttpsRemoved });
-    t.ok(true, 'Image deleted from S3');
 
     // Check if image exists after deleting from S3
     const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved);
-    t.equals(imageNotExists, undefined, 'Image not exists in S3 after deleting');
+    expect(imageNotExists).toBeUndefined();
+  });
 
+  test('Delete image from S3', async() => {
     // Check Etag Flow
     const randomImage = await getRandomImageUrl();
     const imagePath = stripHttpFromUrl(randomImage);
@@ -196,15 +253,16 @@ _test('Downloader class with optimisation', async (t) => {
 
         // Download the uploaded image from S3 and check the Etags
         const imageContent =  await s3.downloadBlob(imagePath);
-        t.equal(downloader.removeEtagWeakPrefix(resp.headers.etag), imageContent.Metadata.etag, 'Etag Matched from online Mediawiki and S3');
+        expect(downloader.removeEtagWeakPrefix(resp.headers.etag)).toEqual(imageContent.Metadata.etag);
 
         // Upload Image with wrong Etag
         await s3.uploadBlob(imagePath, resp.data, 'random-string', '1');
 
         // Download again to check the Etag has been refreshed properly
         const updatedImage = await s3.downloadBlob(imagePath);
-        t.equal(updatedImage.Metadata.etag,  downloader.removeEtagWeakPrefix(resp.headers.etag), 'Image refreshed with proper Etag');
-    }, 5000)
+        expect(updatedImage.Metadata.etag).toEqual(downloader.removeEtagWeakPrefix(resp.headers.etag));
+    })
+  });
 });
 
 async function getRandomImageUrl(): Promise<string> {
