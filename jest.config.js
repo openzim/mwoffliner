@@ -6,6 +6,7 @@ module.exports = {
   collectCoverage: false,
   preset: 'ts-jest/presets/js-with-ts',
   testEnvironment: 'node',
+  verbose: true,
   globals: {
     'ts-jest': {
       tsConfig: {
