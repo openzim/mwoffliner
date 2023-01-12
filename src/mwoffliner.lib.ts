@@ -19,16 +19,6 @@ import * as QueryStringParser from 'querystring'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
 
 import {
-  articleDetailXId,
-  filesToDownloadXPath,
-  filesToRetryXPath,
-  populateArticleDetail,
-  populateFilesToDownload,
-  populateFilesToRetry,
-  populateRedirects,
-  redirectsXId,
-} from './stores.js'
-import {
   MAX_CPU_CORES,
   MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
   downloadAndSaveModule,
@@ -50,7 +40,7 @@ import {
   importPolyfillModules,
 } from './util/index.js'
 import S3 from './S3.js'
-import Redis from './Redis.js'
+import RedisStore from './RedisStore.js'
 import logger from './Logger.js'
 import { Dump } from './Dump.js'
 import { config } from './config.js'
@@ -66,17 +56,6 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'))
-
-function closeRedis(redis: Redis) {
-  logger.log('Flushing Redis DBs')
-  if (redis.client.connected) {
-    filesToDownloadXPath.flush()
-    filesToRetryXPath.flush()
-    articleDetailXId.flush()
-    redirectsXId.flush()
-    redis.client.quit()
-  }
-}
 
 async function execute(argv: any) {
   /* ********************************* */
@@ -214,11 +193,9 @@ async function execute(argv: any) {
   await downloader.checkCapabilities(mwMetaData.mainPage)
   await downloader.setBaseUrls()
 
-  const redis = new Redis(argv, config)
-  populateArticleDetail(redis.client)
-  populateRedirects(redis.client)
-  populateFilesToDownload(redis.client)
-  populateFilesToRetry(redis.client)
+  const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)
+  await redisStore.connect()
+  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = redisStore
 
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
@@ -242,14 +219,14 @@ async function execute(argv: any) {
     rimraf.sync(tmpDirectory)
   })
 
-  process.on('SIGTERM', () => {
+  process.on('SIGTERM', async () => {
     logger.log('SIGTERM')
-    closeRedis(redis)
+    await redisStore.close()
     process.exit(128 + 15)
   })
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     logger.log('SIGINT')
-    closeRedis(redis)
+    await redisStore.close()
     process.exit(128 + 2)
   })
 
@@ -326,16 +303,19 @@ async function execute(argv: any) {
   await mw.getNamespaces(addNamespaces, downloader)
 
   logger.info('Getting article ids')
-  await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
-  if (mw.getCategories) {
-    await getCategoriesForArticles(articleDetailXId, downloader, redis)
+  let stime = Date.now()
+  await getArticleIds(downloader, redisStore, mw, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
-    while ((await trimUnmirroredPages(downloader)) > 0) {
+  if (mw.getCategories) {
+    await getCategoriesForArticles(articleDetailXId, downloader, redisStore)
+
+    while ((await trimUnmirroredPages(downloader, redisStore)) > 0) {
       // Remove unmirrored pages, categories, subCategories
       // trimUnmirroredPages returns number of modified articles
     }
 
-    // while ((await simplifyGraph(downloader)).deletedNodes !== 0) {
+    // while ((await simplifyGraph(downloader, redisStore)).deletedNodes !== 0) {
     //   // keep simplifying graph
     // }
     // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
@@ -437,7 +417,7 @@ async function execute(argv: any) {
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
 
     logger.log('Downloading stylesheets and populating media queue')
-    const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
+    const { finalCss } = await getAndProcessStylesheets(downloader, redisStore, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
     const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' })
@@ -450,7 +430,9 @@ async function execute(argv: any) {
     await getMainPage(dump, zimCreator, downloader)
 
     logger.log('Getting articles')
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, mw, dump)
+    stime = Date.now()
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, redisStore, mw, dump)
+    logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
     logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
@@ -467,7 +449,7 @@ async function execute(argv: any) {
 
     logger.log('Downloading module dependencies')
     await Promise.all(
-      allDependenciesWithType.map(async ({ type, moduleList }) => {
+      allDependenciesWithType.map(({ type, moduleList }) => {
         return pmap(
           moduleList,
           (oneModule) => {
@@ -671,7 +653,10 @@ async function execute(argv: any) {
         const path = getMediaBase(suitableResUrl, false)
         articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
 
-        await Promise.all([filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width }), articleDetailXId.set(articleId, articleDetail)])
+        await Promise.all([
+          filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width } as FileDetail),
+          articleDetailXId.set(articleId, articleDetail),
+        ])
         articlesWithImages++
       } catch (err) {
         logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`)
@@ -679,7 +664,7 @@ async function execute(argv: any) {
     }
   }
 
-  closeRedis(redis)
+  redisStore.close()
 
   return dumps
 }

@@ -2,13 +2,19 @@ import domino from 'domino'
 import { categoriesTemplate, leadSectionTemplate, sectionTemplate, subCategoriesTemplate, subPagesTemplate, subSectionTemplate } from '../Templates.js'
 import logger from '../Logger.js'
 import type { Dump } from '../Dump.js'
-import { articleDetailXId } from '../stores.js'
 import { MWCapabilities } from '../Downloader.js'
 import { getStrippedTitleFromHtml } from './misc.js'
 import { DELETED_ARTICLE_ERROR } from './const.js'
 
-export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {
-  const articleDetail = await articleDetailXId.get(articleId)
+export const renderArticle = async (
+  json: any,
+  articleId: string,
+  dump: Dump,
+  articleDetailXId: RKVS<ArticleDetail>,
+  capabilities: MWCapabilities,
+  articleDetailIn?: ArticleDetail,
+): Promise<RenderedArticle[]> => {
+  const articleDetail = articleDetailIn || (await articleDetailXId.get(articleId))
   const isMainPage = dump.isMainPage(articleId)
 
   if (isMainPage || (capabilities.veApiAvailable && !capabilities.desktopRestApiAvailable)) {

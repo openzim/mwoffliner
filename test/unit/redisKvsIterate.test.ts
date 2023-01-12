@@ -1,10 +1,9 @@
-import redis from 'redis-mock'
-import { initMockData } from './mock/mock.js'
-import { RedisKvs } from '../../src/util/RedisKvs'
+import { initMockData, MockRedis } from './mock/mockRedis.js'
+import RedisKvs from '../../src/util/RedisKvs.js'
 import { jest } from '@jest/globals'
 
-let client: redis.RedisClient
-let kvs: RedisKvs<any>
+let client: MockRedis
+let kvs: RKVS<any>
 
 const numberOfItems = [100, 1000]
 const timeouts = [0, 10, 20]
@@ -44,17 +43,14 @@ const getTestHandler = (handler: (items: any, activeWorkers: number) => any | Pr
   expect(maxWorkers).toEqual(numWorkers)
 }
 
-beforeAll(() => {
-  client = redis.createClient()
-  kvs = new RedisKvs<{ value: number }>(client, 'test-kvs')
-})
-
 describe('RedisKvs.iterateItems()', () => {
   for (const numItems of numberOfItems) {
     describe(`Items: ${numItems}`, () => {
       beforeAll(async () => {
-        client = redis.createClient()
-        kvs = new RedisKvs<{ value: number }>(client, 'test-kvs')
+        client = new MockRedis()
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        kvs = new RedisKvs(client, 'test-kvs')
         await initMockData(kvs, numItems)
       })
 

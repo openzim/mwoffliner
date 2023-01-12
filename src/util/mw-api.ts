@@ -2,13 +2,15 @@ import pmap from 'p-map'
 import deepmerge from 'deepmerge'
 import logger from '../Logger.js'
 import Downloader from '../Downloader.js'
-import { articleDetailXId, redirectsXId } from '../stores.js'
+import Timer from './Timer.js'
 
-export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
+export async function getArticlesByIds(articleIds: string[], downloader: Downloader, redisStore: RS, log = true): Promise<void> {
   let from = 0
   let numThumbnails = 0
   const MAX_BATCH_SIZE = 50
   const MAX_URL_SIZE = 7900 // in bytes, approx.
+
+  const { articleDetailXId, redirectsXId } = redisStore
 
   // using async iterator to spawn workers
   await pmap(
@@ -66,46 +68,124 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
   )
 }
 
-export async function getArticlesByNS(ns: number, downloader: Downloader, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
-  let totalArticles = 0
-  let chunk: { articleDetails: QueryMwRet; gapContinue: string }
+async function saveToStore(
+  articleDetails: KVS<ArticleDetail>,
+  redirects: KVS<ArticleRedirect>,
+  articleDetailXId: RKVS<ArticleDetail>,
+  redirectsXId: RKVS<ArticleRedirect>,
+): Promise<[number, Error?]> {
+  try {
+    const [numArticles] = await Promise.all([articleDetailXId.setMany(articleDetails), redirectsXId.setMany(redirects)])
+    return [numArticles]
+  } catch (err) {
+    return [0, err]
+  }
+}
 
-  do {
-    chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
+export function getArticlesByNS(ns: number, downloader: Downloader, redisStore: RS, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
+  return new Promise(async (resolve, reject) => {
+    let totalArticles = 0
+    let chunk: { articleDetails: QueryMwRet; gapContinue: string }
 
-    if (articleIdsToIgnore) {
-      Object.keys(chunk.articleDetails).forEach((articleId) => {
-        const articleTitle = chunk.articleDetails[articleId].title
-        if (articleIdsToIgnore.includes(articleTitle)) {
-          delete chunk.articleDetails[articleId]
-          logger.info(`Excluded article ${articleTitle}`)
+    const { articleDetailXId, redirectsXId } = redisStore
+
+    const saveStorePromisQueue: Promise<[number, Error?]>[] = []
+
+    /*
+     * timer to detect freezes
+     */
+    const stages = ['Download ArticleDetails', 'Check Redirects', 'Store ArticleDetails in Redis', 'Clean Up left Promises']
+    let curStage = 0
+    const timeout = Math.max(downloader.requestTimeout * 2, 10 * 60 * 1000)
+    const timer = new Timer(() => {
+      const errorMessage = `Worker timed out at ${stages[curStage]}`
+      logger.error(errorMessage)
+      reject(new Error(errorMessage))
+    }, timeout)
+
+    try {
+      /*
+       * fetch article details in chunks and store them in redis
+       */
+      do {
+        timer.reset()
+        curStage = 0
+        chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
+
+        if (articleIdsToIgnore) {
+          Object.keys(chunk.articleDetails).forEach((articleId) => {
+            const articleTitle = chunk.articleDetails[articleId].title
+            if (articleIdsToIgnore.includes(articleTitle)) {
+              delete chunk.articleDetails[articleId]
+              logger.info(`Excluded article ${articleTitle}`)
+            }
+          })
         }
-      })
-    }
 
-    await articleDetailXId.setMany(mwRetToArticleDetail(chunk.articleDetails))
-
-    for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
-      await redirectsXId.setMany(
-        (articleDetail.redirects || []).reduce((acc, redirect) => {
-          const rId = redirect.title
-          return {
-            ...acc,
-            [rId]: { targetId: articleId, title: redirect.title },
+        curStage += 1
+        const redirects: KVS<ArticleRedirect> = {}
+        for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
+          if (articleDetail.redirects) {
+            for (const target of articleDetail.redirects) {
+              redirects[target.title] = {
+                targetId: articleId,
+                title: target.title,
+              }
+            }
           }
-        }, {}),
-      )
+        }
+
+        curStage += 1
+        /*
+         * Don't await redis, push promise into array queue
+         * and check if the oldest promise finished in the meantime.
+         * Like this we can store in redis simultaniously to downloading the
+         * next articles, but also won't run into an ever increasing backlog.
+         */
+        const newSavePromise = saveToStore(mwRetToArticleDetail(chunk.articleDetails), redirects, articleDetailXId, redirectsXId)
+
+        if (saveStorePromisQueue.length) {
+          /*
+           * in normal circumstances, where downloading is slower than storing,
+           * this promise will always be resolved here already
+           */
+          const [numArticles, err] = await saveStorePromisQueue.shift()
+          if (err) {
+            timer.clear()
+            reject(err)
+            return
+          }
+          totalArticles += numArticles
+          logger.log(`Got [${numArticles} / ${totalArticles}] articles chunk from namespace [${ns}]`)
+        }
+
+        saveStorePromisQueue.push(newSavePromise)
+
+        // Only for testing purposes
+        if (--(continueLimit as number) < 0) break
+      } while (chunk.gapContinue)
+
+      /*
+       * clear up potentially still pending promises
+       */
+      curStage = 3
+      const lastPending = await Promise.all(saveStorePromisQueue)
+      const errored = lastPending.find(([, err]) => err)
+      if (errored) {
+        throw errored[1]
+      }
+      totalArticles += lastPending.reduce((a, [b]) => a + b, 0)
+    } catch (err) {
+      logger.error(`Error fetching article details at ${stages[curStage]}`)
+      reject(err)
+      return
+    } finally {
+      timer.clear()
     }
 
-    const numDetails = Object.keys(chunk.articleDetails).length
-    logger.log(`Got [${numDetails}] articles chunk from namespace [${ns}]`)
-    totalArticles += numDetails
-
-    // Only for testing purposes
-    if (--(continueLimit as number) < 0) break
-  } while (chunk.gapContinue)
-
-  logger.log(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`)
+    logger.log(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`)
+    resolve()
+  })
 }
 
 export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {

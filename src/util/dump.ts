@@ -9,7 +9,6 @@ import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
 import { Dump } from '../Dump.js'
-import { filesToDownloadXPath } from '../stores.js'
 import fs from 'fs'
 import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL } from './const.js'
 import * as path from 'path'
@@ -18,8 +17,9 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
+export async function getAndProcessStylesheets(downloader: Downloader, redisStore: RS, links: Array<string | DominoElement>) {
   let finalCss = ''
+  const { filesToDownloadXPath } = redisStore
   const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
     const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.baseUrl) : link
     const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null

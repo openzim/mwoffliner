@@ -1,6 +1,5 @@
 import * as urlParser from 'url'
 import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc.js'
-import { articleDetailXId, redirectsXId } from '../stores.js'
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
 import DU from '../DOMUtils.js'
@@ -154,14 +153,14 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
   return null
 }
 
-async function checkIfArticlesMirrored(articleTitles: string[]): Promise<[string[], string[]]> {
+async function checkIfArticlesMirrored(articleTitles: string[], articleDetailXId: RKVS<ArticleDetail>): Promise<[string[], string[]]> {
   const mirrored: string[] = []
   const unmirrored: string[] = []
   if (!articleTitles.length) {
     return [mirrored, unmirrored]
   }
 
-  const articlesMirrored = (await articleDetailXId.exists(articleTitles)) as { [key: string]: number }
+  const articlesMirrored = await articleDetailXId.existsMany(articleTitles)
   for (const articleTitle of articleTitles) {
     if (articlesMirrored[articleTitle]) {
       mirrored.push(articleTitle)
@@ -172,7 +171,7 @@ async function checkIfArticlesMirrored(articleTitles: string[]): Promise<[string
   return [mirrored, unmirrored]
 }
 
-async function rewriteUrls(articleId: string, mw: MediaWiki, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
+async function rewriteUrls(articleId: string, redisStore: RS, mw: MediaWiki, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
   const mediaDependencies: string[] = []
 
   /*
@@ -194,10 +193,10 @@ async function rewriteUrls(articleId: string, mw: MediaWiki, dump: Dump, linkNod
     }
   }
 
-  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings))
+  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings), redisStore.articleDetailXId)
 
   if (unmirroredTitles.length) {
-    const articlesRedirected = (await redirectsXId.exists(unmirroredTitles)) as { [key: string]: number }
+    const articlesRedirected = await redisStore.redirectsXId.existsMany(unmirroredTitles)
     for (const articleTitle of unmirroredTitles) {
       const redirect = articlesRedirected[articleTitle]
       if (redirect) {
@@ -230,17 +229,23 @@ async function rewriteUrls(articleId: string, mw: MediaWiki, dump: Dump, linkNod
   return { mediaDependencies }
 }
 
-export function rewriteUrl(articleId: string, mw: MediaWiki, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
-  return rewriteUrls(articleId, mw, dump, [linkNode])
+export function rewriteUrl(articleId: string, redisStore: RS, mw: MediaWiki, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
+  return rewriteUrls(articleId, redisStore, mw, dump, [linkNode])
 }
 
-export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, articleId: string, mw: MediaWiki, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
+export async function rewriteUrlsOfDoc(
+  parsoidDoc: DominoElement,
+  articleId: string,
+  redisStore: RS,
+  mw: MediaWiki,
+  dump: Dump,
+): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
   /* Go through all links */
   const as = parsoidDoc.getElementsByTagName('a')
   const areas = parsoidDoc.getElementsByTagName('area')
   const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas))
 
-  const ret = await rewriteUrls(articleId, mw, dump, linkNodes)
+  const ret = await rewriteUrls(articleId, redisStore, mw, dump, linkNodes)
   return {
     ...ret,
     doc: parsoidDoc,
