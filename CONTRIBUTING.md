@@ -45,6 +45,11 @@ To run the automated tests with collecting coverage (both unit and e2e):
 npm test # or "npm run test"
 ```
 
+To run the automated tests with collecting coverage and verbose all debug message (both unit and e2e):
+```bash
+npm run test-verbose
+```
+
 To run the automated tests without collecting coverage (both unit and e2e). This command will be a bit faster:
 ```bash
 npm run test-without-coverage
@@ -52,7 +57,7 @@ npm run test-without-coverage
 
 To run the unit tests with collecting coverage:
 ```bash
-npm run ttest:unit-coverage
+npm run test:unit-coverage
 ```
 
 To run the unit tests without collecting coverage:
