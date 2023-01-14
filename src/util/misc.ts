@@ -133,10 +133,10 @@ export function migrateChildren(from: any, to: any, beforeNode: any) {
 export function getStringsForLang(language: string, fallbackLanguage = 'en') {
   let strings: { [id: string]: string } = {};
   try {
-    strings = require(`../../translation/${language}.json`);
+    strings = JSON.parse(fs.readFileSync(path.join(__dirname, `../../translation/${language}.json`)).toString());
   } catch (err) {
     logger.warn(`Couldn't find strings file for [${language}], falling back to [${fallbackLanguage}]`);
-    strings = require(`../../translation/${fallbackLanguage}.json`);
+    strings = JSON.parse(fs.readFileSync(path.join(__dirname, `../../translation/${fallbackLanguage}.json`)).toString());
   }
   return strings;
 }

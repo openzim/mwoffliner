@@ -1,5 +1,5 @@
-import S3 from '../../src/S3';
-import 'dotenv/config';
+import S3 from '../../src/S3.js';
+import 'dotenv/config.js';
 import {jest} from '@jest/globals';
 
 jest.setTimeout(60000);
@@ -37,6 +37,6 @@ describeIf('S3', () => {
 
     const imageNotExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
     // Image doesnt exist in S3
-    expect(imageNotExist).toBeUndefined()
+    expect(imageNotExist).toBeNull()
   });
 });

@@ -1,12 +1,12 @@
-import { startRedis, stopRedis } from './bootstrap';
+import { startRedis, stopRedis } from './bootstrap.js';
 import domino from 'domino';
-import { rewriteUrl } from '../../src/util/rewriteUrls';
-import { makeLink, setupScrapeClasses } from '../util';
-import { articleDetailXId, redirectsXId } from '../../src/stores';
-import { getArticleIds } from '../../src/util/redirects';
-import { saveArticles, isMirrored } from '../../src/util/saveArticles';
+import { rewriteUrl } from '../../src/util/rewriteUrls.js';
+import { makeLink, setupScrapeClasses } from '../util.js';
+import { articleDetailXId, redirectsXId } from '../../src/stores.js';
+import { getArticleIds } from '../../src/util/redirects.js';
+import { saveArticles, isMirrored } from '../../src/util/saveArticles.js';
 import { ZimArticle } from '@openzim/libzim';
-import { mwRetToArticleDetail } from '../../src/util';
+import { mwRetToArticleDetail } from '../../src/util/index.js';
 import {jest} from '@jest/globals';
 
 jest.setTimeout(20000);
@@ -136,7 +136,7 @@ describe('Styles', () => {
         if (article.title === 'London') {
           LondonArticle = article;
         }
-        return Promise.resolve();
+        return Promise.resolve(null);
       },
     } as any,
       downloader,

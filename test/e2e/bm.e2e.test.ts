@@ -1,8 +1,8 @@
-import * as mwoffliner  from '../../src/mwoffliner.lib';
-import execa from 'execa';
+import * as mwoffliner  from '../../src/mwoffliner.lib.js';
+import { execa } from 'execa';
 import rimraf from 'rimraf';
-import { zimcheckAvailable, zimcheck } from '../util';
-import 'dotenv/config';
+import { zimcheckAvailable, zimcheck } from '../util.js';
+import 'dotenv/config.js';
 import {jest} from '@jest/globals';
 
 jest.setTimeout(120000);
@@ -20,7 +20,7 @@ describe('bm', () => {
   };
 
   test('Simple articleList', async () => {
-    await execa.command(`redis-cli flushall`);
+    await execa(`redis-cli flushall`, { shell: true });
 
     const outFiles = await mwoffliner.execute(parameters);
 
@@ -47,7 +47,7 @@ describe('bm', () => {
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
-    const redisScan = await execa.command(`redis-cli --scan`);
+    const redisScan = await execa(`redis-cli --scan`, { shell: true });
     // Redis has been cleared
     expect(redisScan.stdout).toEqual('');
   });

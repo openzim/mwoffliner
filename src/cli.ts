@@ -5,6 +5,7 @@
 'use strict';
 
 import yargs from 'yargs';
+import {hideBin} from 'yargs/helpers';
 import { parameterDescriptions, requiredParams } from './parameterList.js';
 
 import * as  mwofflinerLib from './mwoffliner.lib.js';
@@ -12,8 +13,7 @@ import * as  mwofflinerLib from './mwoffliner.lib.js';
 /************************************/
 /* Command Parsing ******************/
 /************************************/
-
-const argv = yargs()
+const argv: any = yargs(hideBin(process.argv))
   .help('help')
   .usage(
     `Create a fancy HTML dump of a Mediawiki instance in a ZIM file

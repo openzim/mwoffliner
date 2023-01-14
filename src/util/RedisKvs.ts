@@ -192,7 +192,7 @@ export class RedisKvs<T> {
         if (done) {
           if (!runningWorkers) {
             isResolved = true;
-            resolve();
+            resolve(null);
           }
           return;
         }
@@ -263,7 +263,7 @@ export class RedisKvs<T> {
         if (err) {
           reject(err);
         } else {
-          resolve();
+          resolve(null);
         }
       });
     });

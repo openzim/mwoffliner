@@ -1,11 +1,10 @@
-import {createClient} from 'redis-mock';
-import type {RedisClient} from 'redis-mock';
+import redis from 'redis-mock';
 // @ts-ignore
-import {initMockData} from './mock/mock';
+import {initMockData} from './mock/mock.js';
 import {RedisKvs} from '../../src/util/RedisKvs';
 import {jest} from '@jest/globals';
 
-let client: RedisClient;
+let client: redis.RedisClient;
 let kvs: RedisKvs<any>;
 
 const numberOfItems = [100, 1000];
@@ -50,7 +49,7 @@ const getTestHandler = (handler: (items: any, activeWorkers: number) => any | Pr
 
 
 beforeAll(() => {
-  client = createClient();
+  client = redis.createClient();
   kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
 });
 
@@ -62,7 +61,7 @@ describe('RedisKvs.iterateItems()', () => {
     describe(`Items: ${numItems}`, () => {
 
       beforeAll(async () => {
-        client = createClient();
+        client = redis.createClient();
         kvs = new RedisKvs<{ value: number }>(client, 'test-kvs');
         await initMockData(kvs, numItems);
       });

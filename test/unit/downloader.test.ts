@@ -1,16 +1,16 @@
-import {startRedis, stopRedis} from './bootstrap';
-import Downloader from '../../src/Downloader';
-import MediaWiki from '../../src/MediaWiki';
+import {startRedis, stopRedis} from './bootstrap.js';
+import Downloader from '../../src/Downloader.js';
+import MediaWiki from '../../src/MediaWiki.js';
 import Axios from 'axios';
-import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util';
-import S3 from '../../src/S3';
+import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js';
+import S3 from '../../src/S3.js';
 import rimraf from 'rimraf';
 import { Dump } from '../../src/Dump';
-import { articleDetailXId } from '../../src/stores';
-import { config } from '../../src/config';
-import logger from '../../src/Logger';
-import 'dotenv/config';
-import FileType from 'file-type'
+import { articleDetailXId } from '../../src/stores.js';
+import { config } from '../../src/config.js';
+import 'dotenv/config.js';
+import * as FileType from 'file-type';
+import {jest} from '@jest/globals';
 
 jest.setTimeout(60000);
 
@@ -67,7 +67,7 @@ describe('Downloader class', () => {
 
   test('Webp compression working for cmyk color-space images', async() => {
     const {content} = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg`);
-    const fileType = await FileType.fromBuffer(Buffer.from(content))
+    const fileType = await FileType.fileTypeFromBuffer(Buffer.from(content))
     expect(fileType?.mime).toEqual('image/webp');
   });
 
@@ -234,7 +234,7 @@ describeIf('Downloader class with optimisation', () => {
 
     // Check if image exists after deleting from S3
     const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved);
-    expect(imageNotExists).toBeUndefined();
+    expect(imageNotExists).toBeNull();
   });
 
   test('Delete image from S3', async() => {

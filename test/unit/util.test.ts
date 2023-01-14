@@ -1,14 +1,19 @@
 import { URL } from 'url';
 import tmp from 'tmp';
 import pathParser from 'path';
-import { sanitize_customFlavour } from '../../src/sanitize-argument';
-import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl } from '../../src/util';
-import { testHtmlRewritingE2e } from '../util';
-import { getMediaBase, isWebpCandidateImageUrl, normalizeMwResponse } from '../../src/util/';
+import { sanitize_customFlavour } from '../../src/sanitize-argument.js';
+import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl,
+  getMediaBase, isWebpCandidateImageUrl, normalizeMwResponse } from '../../src/util/index.js';
+import { testHtmlRewritingE2e } from '../util.js';
 import axios from 'axios';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 import {jest} from '@jest/globals';
 
 jest.setTimeout(10000);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe('Utils', () => {
 

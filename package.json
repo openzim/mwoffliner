@@ -13,7 +13,7 @@
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node ./lib/cli.js",
-    "test:pattern": "jest --runInBand --forceExit",
+    "test:pattern": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
     "test:e2e": "npm run test:pattern 'test/e2e'",
     "test:unit": "npm run test:pattern 'test/unit'",
     "test:e2e-coverage": "npm run test:pattern 'test/e2e' --  --coverage",
@@ -82,7 +82,7 @@
     "deepmerge": "^4.2.2",
     "details-element-polyfill": "^2.4.0",
     "domino": "^2.1.6",
-    "execa": "^4.1.0",
+    "execa": "^6.1.0",
     "follow-redirects": "^1.15.2",
     "html-minifier": "^4.0.0",
     "imagemin": "^8.0.1",
@@ -123,6 +123,7 @@
     "@types/tmp": "^0.2.3",
     "dotenv": "^16.0.3",
     "eslint": "^8.31.0",
+    "file-type": "^18.0.0",
     "jest": "^29.3.1",
     "nyc": "^15.1.0",
     "redis-mock": "^0.56.3",
@@ -131,8 +132,5 @@
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2"
-  },
-  "jest": {
-    "preset": "ts-jest/presets/js-with-ts"
   }
 }
