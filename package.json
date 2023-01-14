@@ -13,7 +13,7 @@
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node ./lib/cli.js",
-    "test:pattern": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
+    "test:pattern": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit --detectOpenHandles",
     "test:e2e": "npm run test:pattern 'test/e2e'",
     "test:unit": "npm run test:pattern 'test/unit'",
     "test:e2e-coverage": "npm run test:pattern 'test/e2e' --  --coverage",
