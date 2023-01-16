@@ -1,57 +1,55 @@
-import * as mwoffliner from '../../src/mwoffliner.lib';
+import test from 'blue-tape';
+import { execute } from '../../src/mwoffliner.lib';
 import execa from 'execa';
 import rimraf from 'rimraf';
-import { zimcheckAvailable, zimcheck } from '../util';
-import 'dotenv/config.js';
-import {jest} from '@jest/globals';
+import { zimcheckAvailable, zimcheck } from 'test/util';
+import 'dotenv/config';
+import logger from '../../src/Logger';
+// import { ZimReader } from '@openzim/libzim';
 
-jest.setTimeout(20000);
+const now = new Date();
+const testId = `mwo-test-${+now}`;
 
-describe('wikisource', () => {
-
-  const now = new Date();
-  const testId = `mwo-test-${+now}`;
-
-  const parameters = {
+const parameters = {
     mwUrl: `https://fo.wikisource.org`,
     adminEmail: `test@kiwix.org`,
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
     noLocalParserFallback: true
-  };
+};
 
-  test('Wikisource List', async () => {
+test('Wikisource List', async (t) => {
     await execa.command(`redis-cli flushall`);
 
-    const outFiles = await mwoffliner.execute(parameters);
+    const outFiles = await execute(parameters);
 
-    // Created 1 output
-    expect(outFiles).toHaveLength(1);
+    t.equal(outFiles.length, 1, `Created 1 output`);
 
     for (const dump of outFiles) {
-      if (dump.nopic) {
-        // nopic has enough files
-        expect(dump.status.files.success).toBeGreaterThanOrEqual(20);
-        // nopic has enough redirects
-        expect(dump.status.redirects.written).toBeGreaterThanOrEqual(16);
-        // nopic has enough articles
-        expect(dump.status.articles.success).toBeGreaterThanOrEqual(61);
-      }
+        if (dump.nopic) {
+            t.ok(dump.status.files.success >= 20, 'nopic has enough files');
+            t.ok(dump.status.redirects.written >= 16 , 'nopic has enough redirects');
+            t.ok(dump.status.articles.success >= 61, 'nopic has enough articles');
+        }
     }
 
-    // Scraped Wikisource Full
+    t.ok(true, 'Scraped Wikisource Full');
+
     if (await zimcheckAvailable()) {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError();
+        try {
+            await zimcheck(outFiles[0].outFile);
+            t.ok(true, `Zimcheck passes`);
+        } catch (err) {
+            t.ok(false, `Zimcheck passes`);
+        }
     } else {
-      console.log(`Zimcheck not installed, skipping test`);
+        console.log(`Zimcheck not installed, skipping test`);
     }
 
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
     const redisScan = await execa.command(`redis-cli --scan`);
-    // Redis has been cleared
-    expect(redisScan.stdout).toEqual('');
-  });
+    t.equal(redisScan.stdout, '', 'Redis has been cleared');
 });

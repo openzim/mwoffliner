@@ -1,7 +1,7 @@
 import MediaWiki from '../src/MediaWiki';
 import Downloader from '../src/Downloader';
 import { Dump } from '../src/Dump';
-import { config } from '../src/config';
+import { config } from 'src/config';
 import axios from 'axios';
 import execa = require('execa');
 import logger from '../src/Logger';
@@ -81,7 +81,7 @@ export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): 
     }
 }
 
-export async function testHtmlRewritingE2e(wikicode: string, html: string) {
+export async function testHtmlRewritingE2e(t: any, wikicode: string, html: string, comment: string) {
     const resultHtml = await convertWikicodeToHtml(wikicode, 'https://en.wikipedia.org/');
-    expect(html).toEqual(resultHtml.data);
+    t.equal(html, resultHtml.data, comment);
 }

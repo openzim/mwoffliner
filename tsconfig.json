@@ -15,7 +15,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "types": [
-      "node", "jest"
+      "node"
     ],
     "typeRoots": [
       "node_modules/@types/",

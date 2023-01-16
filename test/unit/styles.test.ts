@@ -1,19 +1,12 @@
-import { startRedis, stopRedis } from './bootstrap';
+import './bootstrap.test';
+import test from 'blue-tape';
 
-import { setupScrapeClasses } from '../util';
-import { articleDetailXId } from '../../src/stores';
-import { getAndProcessStylesheets, mwRetToArticleDetail } from '../../src/util';
+import { setupScrapeClasses } from 'test/util';
+import { articleDetailXId } from 'src/stores';
+import { getAndProcessStylesheets, mwRetToArticleDetail } from 'src/util';
 import Axios from 'axios';
-import {jest} from '@jest/globals';
 
-jest.setTimeout(10000);
-
-describe('Styles', () => {
-
-  beforeAll(startRedis);
-  afterAll(stopRedis);
-
-  test('Stylesheet downloading', async () => {
+test('Stylesheet downloading', async (t) => {
     const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
@@ -29,14 +22,9 @@ describe('Styles', () => {
 
     const { finalCss } = await getAndProcessStylesheets(downloader, [offlineCSSUrl, siteStylesUrl]);
 
-    // Contains offline CSS url
-    expect(finalCss.includes(offlineCSSUrl)).toBeDefined();
-    // Contains offline CSS content
-    expect(finalCss.includes(offlineCSSContent)).toBeDefined();
+    t.assert(finalCss.includes(offlineCSSUrl), `Contains offline CSS url`);
+    t.assert(finalCss.includes(offlineCSSContent), `Contains offline CSS content`);
 
-    // Contains site CSS url
-    expect(finalCss.includes(siteStylesUrl)).toBeDefined();
-    // Contains re-written site CSS content
-    expect(!finalCss.includes(siteStylesContent)).toBeDefined();
-  });
+    t.assert(finalCss.includes(siteStylesUrl), `Contains site CSS url`);
+    t.assert(!finalCss.includes(siteStylesContent), `Contains re-written site CSS content`);
 });

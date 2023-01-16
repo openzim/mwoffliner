@@ -12,15 +12,11 @@
   "scripts": {
     "example-wiki": "docker run -p 8080:80 -v $(pwd)/test/mediawiki:/var/www/data -it openzim/mediawiki",
     "mwoffliner": "node ./lib/cli.js",
-    "test:pattern": "jest --runInBand --forceExit",
-    "test:e2e": "npm run test:pattern 'test/e2e'",
-    "test:unit": "npm run test:pattern 'test/unit'",
-    "test:e2e-coverage": "npm run test:pattern 'test/e2e' --  --coverage",
-    "test:unit-coverage": "npm run test:pattern 'test/unit' --  --coverage",
-    "test": "npm run test:unit-coverage -- --silent && npm run test:e2e-coverage -- --silent",
-    "test-verbose": "npm run test:unit-coverage && npm run test:e2e-coverage",
-    "test-without-coverage": "npm run test:unit -- -- --silent && npm run test:e2e -- -- --silent",
-    "jest": "npm run test:pattern 'test/jest'",
+    "tape": "tape -r tsconfig-paths/register -r ts-node/register",
+    "test:e2e": "npm run tape -- test/e2e/*.test.ts | tap-spec",
+    "test:unit": "npm run tape -- test/unit/*.test.ts | tap-spec",
+    "test": "npm run test:unit && npm run test:e2e",
+    "jest": "jest",
     "codecov": "nyc --reporter=lcov npm t",
     "lint": "./node_modules/.bin/tslint -p tsconfig.json -c tslint.json",
     "build": "./dev/build.sh",
@@ -115,19 +111,27 @@
     "zim"
   ],
   "devDependencies": {
+    "@types/blue-tape": "^0.1.33",
     "@types/jest": "^26.0.15",
     "@types/redis": "^2.8.28",
     "@types/redis-mock": "^0.17.0",
+    "@types/tape-promise": "^4.0.1",
     "@types/tmp": "^0.2.0",
+    "blue-tape": "^1.0.0",
     "dotenv": "^8.2.0",
     "eslint": "^7.11.0",
     "jest": "^26.6.1",
     "nyc": "^15.1.0",
     "redis-mock": "^0.52.0",
     "replace": "^1.2.0",
+    "tap-spec": "^5.0.0",
+    "tape-promise": "^4.0.0",
     "tmp": "^0.2.1",
     "ts-jest": "^26.4.1",
     "ts-node": "^9.0.0",
     "tsconfig-paths": "^3.9.0"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/js-with-ts"
   }
 }
