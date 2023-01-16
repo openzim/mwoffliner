@@ -154,20 +154,21 @@ async function execute(argv: any) {
   const customProcessor = customFlavour ?
     new(require(customFlavour)) : null;
 
+  let s3Obj;
   // Check for S3 creds
   if (optimisationCacheUrl) {
     // Decompose the url with path and other S3 creds
     const s3UrlObj = urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3UrlObj.query);
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '');
-    this.s3Obj = new S3(s3Url, queryReader);
-    await this.s3Obj.initialise().then(() => {
+    s3Obj = new S3(s3Url, queryReader);
+    await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3');
     });
   }
 
   // Extract S3 obj to pass to downloader class
-  const s3 = this.s3Obj ? this.s3Obj : {};
+  const s3 = s3Obj ? s3Obj : {};
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki({

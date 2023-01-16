@@ -11,6 +11,7 @@ import { config } from '../../src/config.js';
 import 'dotenv/config.js';
 import * as FileType from 'file-type';
 import {jest} from '@jest/globals';
+import urlParser from 'url';
 
 jest.setTimeout(60000);
 
@@ -193,11 +194,12 @@ describe('Downloader class', () => {
   });
 });
 
-const describeIf = process.env.BUCKET_NAME_TEST ? describe : describe.skip;
+const describeIf = process.env.S3_URL ? describe : describe.skip;
 
 describeIf('Downloader class with optimisation', () => {
   let downloader: Downloader;
   let s3: S3;
+  const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true);
 
   beforeAll(async () => {
     const mw = new MediaWiki({
@@ -207,10 +209,10 @@ describeIf('Downloader class with optimisation', () => {
 
     const cacheDir = `cac/dumps-${Date.now()}/`;
     await mkdirPromise(cacheDir);
-    s3 = new S3(process.env.BASE_URL_TEST, {
-        bucketName: process.env.BUCKET_NAME_TEST,
-        keyId: process.env.KEY_ID_TEST,
-        secretAccessKey: process.env.SECRET_ACCESS_KEY_TEST,
+    s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
+        bucketName: s3UrlObj.query.bucketName,
+        keyId: s3UrlObj.query.keyId,
+        secretAccessKey: s3UrlObj.query.secretAccessKey,
     });
     downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: 'random-string' , s3});
 
@@ -230,7 +232,7 @@ describeIf('Downloader class with optimisation', () => {
     expect(httpOrHttpsRemoved).toBeDefined();
 
     // Delete the image already present in S3
-    await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: httpOrHttpsRemoved });
+    await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: httpOrHttpsRemoved });
 
     // Check if image exists after deleting from S3
     const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved);
@@ -241,7 +243,7 @@ describeIf('Downloader class with optimisation', () => {
     // Check Etag Flow
     const randomImage = await getRandomImageUrl();
     const imagePath = stripHttpFromUrl(randomImage);
-    await s3.deleteBlob({ Bucket: process.env.BUCKET_NAME_TEST, Key: imagePath });
+    await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath });
 
     // Upload the image in S3
     await downloader.downloadContent(randomImage);
