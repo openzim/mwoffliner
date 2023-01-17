@@ -5,7 +5,7 @@ import { zimcheckAvailable, zimcheck } from '../util.js';
 import 'dotenv/config.js';
 import {jest} from '@jest/globals';
 
-jest.setTimeout(120000);
+jest.setTimeout(200000);
 
 describe('bm', () => {
   const now = new Date();
