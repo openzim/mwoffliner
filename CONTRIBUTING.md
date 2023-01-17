@@ -80,9 +80,14 @@ To run a specfic test with collecting coverage:
 npm run test:pattern test/e2e/wikisource.e2e.test.ts -- --coverage
 ```
 
-To run a specfic test with collecting coverage:
+To run a specfic test without collecting coverage:
 ```bash
 npm run test:pattern test/e2e/wikisource.e2e.test.ts
+```
+
+To run a tests by regex pattern. Example which runs all e2e tests:
+```bash
+npm run test:pattern ^.*e2e.*\.test\.ts
 ```
 
 For S3 tests to pass, create a '.env' file (at the root of your

@@ -255,14 +255,14 @@ describeIf('Downloader class with optimisation', () => {
 
         // Download the uploaded image from S3 and check the Etags
         const imageContent =  await s3.downloadBlob(imagePath);
-        expect(downloader.removeEtagWeakPrefix(resp.headers.etag)).toEqual(imageContent.Metadata.etag);
+        expect(downloader.removeEtagWeakPrefix(`${resp.headers.etag}`)).toEqual(imageContent.Metadata.etag);
 
         // Upload Image with wrong Etag
         await s3.uploadBlob(imagePath, resp.data, 'random-string', '1');
 
         // Download again to check the Etag has been refreshed properly
         const updatedImage = await s3.downloadBlob(imagePath);
-        expect(updatedImage.Metadata.etag).toEqual(downloader.removeEtagWeakPrefix(resp.headers.etag));
+        expect(updatedImage.Metadata.etag).toEqual(downloader.removeEtagWeakPrefix(`${resp.headers.etag}`));
     })
   });
 });

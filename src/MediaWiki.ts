@@ -88,9 +88,6 @@ class MediaWiki {
         }
 
         downloader.loginCookie = resp.headers['set-cookie'].join(';');
-        downloader.arrayBufferRequestOptions.headers.cookie = downloader.loginCookie;
-        downloader.jsonRequestOptions.headers.cookie = downloader.loginCookie;
-        downloader.streamRequestOptions.headers.cookie = downloader.loginCookie;
       })
       .catch((err) => {
         throw err;
