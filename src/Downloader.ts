@@ -572,7 +572,7 @@ class Downloader {
       } else {
         const resp = await axios(url, this.arrayBufferRequestOptions);
         resp.headers['content-type'] = getMimeType(
-          resp.headers['content-type'], url,
+          url, resp.headers['content-type'],
         );
         await this.getCompressedBody(resp);
         handler(null, {
@@ -600,8 +600,8 @@ class Downloader {
 
         // sanitize Content-Type
         mwResp.headers['content-type'] = getMimeType(
-          s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'],
           url,
+          s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'],
         );
 
         // Most of the images after uploading once will always have

@@ -75,7 +75,7 @@ class S3 {
         const params = {
             Bucket: this.bucketName,
             Key: key,
-            Metadata: {etag: eTag, version, contenttype: contentType},
+            Metadata: {etag: eTag, contenttype: contentType, version},
             Body: this.bufferToStream(data),
         };
 

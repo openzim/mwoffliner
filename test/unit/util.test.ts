@@ -1,13 +1,15 @@
-import { URL } from 'url'
-import tmp from 'tmp'
-import pathParser from 'path'
-import { sanitize_customFlavour } from '../../src/sanitize-argument.js'
-import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl, getMediaBase, isWebpCandidateImageUrl, normalizeMwResponse } from '../../src/util/index.js'
-import { testHtmlRewritingE2e } from '../util.js'
-import axios from 'axios'
-import * as path from 'path'
-import { fileURLToPath } from 'url'
-import { jest } from '@jest/globals'
+import { URL } from 'url';
+import tmp from 'tmp';
+import pathParser from 'path';
+import { sanitize_customFlavour } from '../../src/sanitize-argument.js';
+import { encodeArticleIdForZimHtmlUrl, interpolateTranslationString, getFullUrl,
+  getMediaBase, normalizeMwResponse, getMimeType, isWebpCandidateImageMimeType,
+} from '../../src/util/index.js';
+import { testHtmlRewritingE2e } from '../util.js';
+import axios from 'axios';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+import {jest} from '@jest/globals';
 
 jest.setTimeout(10000)
 
@@ -200,7 +202,59 @@ describe('Utils', () => {
     ).toEqual('589fd4e3821c15d4fcebcedf2effd5b0.png')
   })
 
-  test('isWebpCandidateImageUrl tests', async () => {
+  test('MIME Type parsing from content-type and url', async () => {
+
+    // upper-case url, no content-type
+    let mimeType = getMimeType(
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Peloneustes_philarchus_Tubingen.JPG/250px-Peloneustes_philarchus_Tubingen.JPG',
+    );
+    expect(mimeType).toEqual('image/jpeg');
+    // conflicting types -> prefer content-type
+    mimeType = getMimeType(
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Peloneustes_philarchus_Tubingen.JPG/250px-Peloneustes_philarchus_Tubingen.JPG',
+      'video/mp4',
+    );
+    expect(mimeType).toEqual('video/mp4');
+    // invalid url, no content-type
+    mimeType = getMimeType(
+      'http://example.com',
+    );
+    expect(mimeType).toEqual(null);
+    // fandom url
+    mimeType = getMimeType(
+      'https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/fc/Monolith_small.png/revision/latest/scale-to-width-down/250?cb=20191227051944',
+    );
+    expect(mimeType).toEqual('image/png');
+    // content-type with charset and space on weird position, url without extension
+    mimeType = getMimeType(
+      'https://en.wikipedia.org/wiki/Peloneustes',
+      'text/plain ; charset=UTF-8',
+    );
+    expect(mimeType).toEqual('text/plain');
+    // content-type none-prefered type, but url is
+    mimeType = getMimeType(
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Peloneustes_Skeletal_Mount_from_Andrews_%281910%29.png/357px-Peloneustes_Skeletal_Mount_from_Andrews_%281910%29.png',
+      'application/octet-stream',
+    );
+    expect(mimeType).toEqual('image/png');
+    // both none-prefered but conflicting types
+    mimeType = getMimeType(
+      'https://script.wikia.nocookie.net/fandom-ae-assets/platforms/v127.0.0/ucp-desktop/main.bundle.js',
+      'text/html',
+    );
+    expect(mimeType).toEqual('text/html');
+    // with query
+    mimeType = getMimeType(
+      'http://esample.com/test.svg?asdfa=asfas&328=x',
+    );
+    expect(mimeType).toEqual('image/svg+xml');
+  });
+
+  test('isWebpCandidate by image Url mime type', async () => {
+
+    const isWebpCandidateImageUrl = (url) => {
+      return isWebpCandidateImageMimeType(true, getMimeType(url));
+    };
     // Thumbs
     // Thumb 1
     expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg')).toBeTruthy()

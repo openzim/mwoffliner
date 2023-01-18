@@ -1,28 +1,3 @@
-<<<<<<< HEAD
-import crypto from 'crypto'
-import domino from 'domino'
-import countryLanguage from '@ladjs/country-language'
-import fs from 'fs'
-import path from 'path'
-import mkdirp from 'mkdirp'
-import pathParser from 'path'
-import { ZimCreator, ZimArticle } from '@openzim/libzim'
-import { Config, config } from '../config.js'
-import logger from '../Logger.js'
-import {
-  LATEX_IMAGE_URL_REGEX,
-  FANDOM_IMAGE_URL_REGEX,
-  WIKIHIERO_IMAGE_URL_REGEX,
-  IMAGE_THUMB_URL_REGEX,
-  FIND_HTTP_REGEX,
-  IMAGE_URL_REGEX,
-  BITMAP_IMAGE_MIME_REGEX,
-  IMAGE_MIME_REGEX,
-  WEBP_CANDIDATE_IMAGE_URL_REGEX,
-  WEBP_CANDIDATE_IMAGE_MIME_TYPE,
-} from './const.js'
-import { fileURLToPath } from 'url'
-=======
 import crypto from 'crypto';
 import domino from 'domino';
 import unicodeCutter from 'utf8-binary-cutter';
@@ -36,10 +11,9 @@ import { ZimCreator, ZimArticle } from '@openzim/libzim';
 import { Config, config } from '../config.js';
 import logger from '../Logger.js';
 import { LATEX_IMAGE_URL_REGEX, FANDOM_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
-   WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const.js';
+   WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const.js';
 import { boolean } from 'yargs';
 import { fileURLToPath } from 'url';
->>>>>>> 8f080df (use mime-type package and sanitze content-type header)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -376,10 +350,6 @@ export function isImageUrl(url: string): boolean {
   return IMAGE_URL_REGEX.test(url)
 }
 
-export function isWebpCandidateImageUrl(url: string): boolean {
-  return WEBP_CANDIDATE_IMAGE_URL_REGEX.test(url)
-}
-
 export function isImageMimeType(mimeType: string): boolean {
   return IMAGE_MIME_REGEX.test(mimeType)
 }
@@ -395,32 +365,47 @@ export function isWebpCandidateImageMimeType(webp: boolean, content_type: string
 /*
  * Get best fitting MIME type from contentType or pathname
  * Preference:
- *   1. extension with image meme-type
- *   2. any contentType
- *   3. any extension type
- *   4. null
+ *   1. content-type if one of preferedDiscreteTypes
+ *   2. mime-type from extension if in preferedDiscreteTypes
+ *   3. any other content-type
+ *   4. any other mime-type from extension
+ *   5. null
  */
-export function getMimeType(contentType: string, url: string): string {
-  let pMimeType: string;
-  if (url) {
-    let pathname = new URL(url).pathname;
-    pMimeType = mime.lookup(pathname);
-    if (!pMimeType && pathname.indexOf('/revision') !== -1) {
-      pMimeType = mime.lookup(
-        pathname.slice(0, pathname.indexOf('/revision')),
-      )
-    }
-    if (pMimeType && pMimeType.startsWith('image/')) {
-      return pMimeType;
-    }
-  }
+export function getMimeType(url: string, contentType?: string): string {
+  const preferedDiscreteTypes = ['image', 'audio', 'video'];
 
+  let cMimeType: string;
   if (contentType) {
     // i.e. "application/json; charset=utf-8"
-    const cMimeType = (contentType.indexOf(';') === -1)
+    cMimeType = (contentType.indexOf(';') === -1)
       ? contentType : contentType.slice(0, contentType.indexOf(';'))
-    return cMimeType;
+    cMimeType = cMimeType.trim();
+
+    const discreteType = cMimeType.slice(0, cMimeType.indexOf('/'));
+    if (preferedDiscreteTypes.includes(discreteType)) {
+      return cMimeType;
+    }
   }
 
-  return pMimeType || null;
+  let pMimeType: string;
+  if (url) {
+    // provide a bas url for parsing relative paths
+    let { pathname } = new URL(url, 'http://large.com/path/to/strip/here');
+
+    // Fandom has an URL scheme that attaches /revision/... to the path
+    const parts = FANDOM_IMAGE_URL_REGEX.exec(pathname);
+    if (parts !== null) {
+      pathname = parts[1];
+    }
+
+    pMimeType = mime.lookup(pathname);
+    if (pMimeType) {
+      const discreteType = pMimeType.slice(0, pMimeType.indexOf('/'));
+      if (preferedDiscreteTypes.includes(discreteType)) {
+        return pMimeType;
+      }
+    }
+  }
+
+  return cMimeType || pMimeType || null;
 }

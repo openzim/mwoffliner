@@ -5,18 +5,25 @@ import { ZimArticle, ZimCreator } from '@openzim/libzim'
 import htmlMinifier from 'html-minifier'
 import * as QueryStringParser from 'querystring'
 
-import pmap from 'p-map'
-import DU from '../DOMUtils.js'
-import * as domino from 'domino'
-import { Dump } from '../Dump.js'
-import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
-import { config } from '../config.js'
-import { footerTemplate, htmlTemplateCode } from '../Templates.js'
-import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores.js'
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageUrl } from './misc.js'
-import { RedisKvs } from './RedisKvs.js'
-import { rewriteUrlsOfDoc } from './rewriteUrls.js'
-import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const.js'
+import pmap from 'p-map';
+import DU from '../DOMUtils.js';
+import * as domino from 'domino';
+import { Dump } from '../Dump.js';
+import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js';
+import { config } from '../config.js';
+import { footerTemplate, htmlTemplateCode } from '../Templates.js';
+import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores.js';
+import {
+  getRelativeFilePath,
+  getSizeFromUrl,
+  encodeArticleIdForZimHtmlUrl,
+  interpolateTranslationString,
+  isWebpCandidateImageMimeType,
+  getMimeType,
+} from './misc.js';
+import { RedisKvs } from './RedisKvs.js';
+import { rewriteUrlsOfDoc } from './rewriteUrls.js';
+import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const.js';
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -486,7 +493,21 @@ export async function treatVideo(
     const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I')
 
     if (posterUrl) {
-      videoEl.setAttribute('poster', webp && isWebpCandidateImageUrl(newVideoPosterUrl) ? newVideoPosterUrl + '.webp' : newVideoPosterUrl)
+        const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl);
+        const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I');
+
+        if (posterUrl) {
+           videoEl.setAttribute('poster',
+               isWebpCandidateImageMimeType(webp, getMimeType(newVideoPosterUrl)) ?
+                   newVideoPosterUrl + '.webp' : newVideoPosterUrl
+           );
+        }
+        videoEl.removeAttribute('resource');
+
+        if (!srcCache.hasOwnProperty(videoPosterUrl)) {
+            srcCache[videoPosterUrl] = true;
+            mediaDependencies.push(videoPosterUrl);
+        }
     }
     videoEl.removeAttribute('resource')
 
@@ -597,8 +618,11 @@ async function treatImage(
     DU.deleteNode(img)
   }
 
-  /* Add lazy loading */
-  img.setAttribute('loading', 'lazy')
+        /* Change image source attribute to point to the local image */
+        img.setAttribute('src',
+            isWebpCandidateImageMimeType(downloader.webp, getMimeType(src)) ?
+                newSrc + '.webp': newSrc
+        );
 
   return { mediaDependencies }
 }
