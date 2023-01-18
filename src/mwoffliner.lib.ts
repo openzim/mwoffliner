@@ -27,7 +27,7 @@ import {
   populateFilesToRetry,
   populateRedirects,
   redirectsXId
-} from './stores';
+} from './stores.js';
 import {
   MAX_CPU_CORES,
   MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
@@ -49,18 +49,22 @@ import {
   saveStaticFiles,
   writeFilePromise,
   importPolyfillModules,
-} from './util';
-import S3 from './S3';
-import Redis from './Redis';
-import logger from './Logger';
-import { Dump } from './Dump';
-import { config } from './config';
-import MediaWiki from './MediaWiki';
-import Downloader from './Downloader';
-import { getArticleIds } from './util/redirects';
-import { articleListHomeTemplate } from './Templates';
-import { downloadFiles, saveArticles } from './util/saveArticles';
-import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories';
+} from './util/index.js';
+import S3 from './S3.js';
+import Redis from './Redis.js';
+import logger from './Logger.js';
+import { Dump } from './Dump.js';
+import { config } from './config.js';
+import MediaWiki from './MediaWiki.js';
+import Downloader from './Downloader.js';
+import { getArticleIds } from './util/redirects.js';
+import { articleListHomeTemplate } from './Templates.js';
+import { downloadFiles, saveArticles } from './util/saveArticles.js';
+import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
@@ -150,20 +154,21 @@ async function execute(argv: any) {
   const customProcessor = customFlavour ?
     new(require(customFlavour)) : null;
 
+  let s3Obj;
   // Check for S3 creds
   if (optimisationCacheUrl) {
     // Decompose the url with path and other S3 creds
     const s3UrlObj = urlParser.parse(optimisationCacheUrl);
     const queryReader = QueryStringParser.parse(s3UrlObj.query);
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '');
-    this.s3Obj = new S3(s3Url, queryReader);
-    await this.s3Obj.initialise().then(() => {
+    s3Obj = new S3(s3Url, queryReader);
+    await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3');
     });
   }
 
   // Extract S3 obj to pass to downloader class
-  const s3 = this.s3Obj ? this.s3Obj : {};
+  const s3 = s3Obj ? s3Obj : {};
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   const mw = new MediaWiki({

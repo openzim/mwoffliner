@@ -3,9 +3,9 @@ import * as urlParser from 'url';
 import { AsyncQueue } from 'async';
 import { existsSync } from 'fs';
 import * as domino from 'domino';
-import logger from './Logger';
-import Downloader from './Downloader';
-import { getStringsForLang } from './util';
+import logger from './Logger.js';
+import Downloader from './Downloader.js';
+import { getStringsForLang } from './util/index.js';
 
 interface DumpOpts {
     tmpDir: string;

@@ -1,11 +1,11 @@
-import MediaWiki from '../src/MediaWiki';
-import Downloader from '../src/Downloader';
-import { Dump } from '../src/Dump';
-import { config } from '../src/config';
+import MediaWiki from '../src/MediaWiki.js';
+import Downloader from '../src/Downloader.js';
+import { Dump } from '../src/Dump.js';
+import { config } from '../src/config.js';
 import axios from 'axios';
-import execa = require('execa');
-import logger from '../src/Logger';
-import 'dotenv/config';
+import { execa } from 'execa';
+import logger from '../src/Logger.js';
+import 'dotenv/config.js';
 
 export function leftPad(_num: number, length: number) {
     const num = `${_num}`;
@@ -58,7 +58,7 @@ export function sleep(ms: number) {
 const zimcheckPath = process.env.ZIMCHECK_PATH || 'zimcheck';
 export async function zimcheckAvailable() {
     try {
-        await execa.command(`which ${zimcheckPath}`);
+        await execa(`which ${zimcheckPath}`, { shell: true });
         return true;
     } catch (err) {
         return false;
@@ -66,7 +66,7 @@ export async function zimcheckAvailable() {
 }
 
 export async function zimcheck(filePath: string) {
-    return execa.command(`${zimcheckPath} ${filePath}`);
+    return execa(`${zimcheckPath} ${filePath}`, { shell: true });
 }
 
 export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<any> {

@@ -5,12 +5,12 @@ import {
   getFullUrl,
   getRelativeFilePath,
   encodeArticleIdForZimHtmlUrl,
-} from './misc';
-import { articleDetailXId, redirectsXId } from '../stores';
-import { Dump } from '../Dump';
-import MediaWiki from '../MediaWiki';
-import DU from '../DOMUtils';
-import logger from '../Logger';
+} from './misc.js';
+import { articleDetailXId, redirectsXId } from '../stores.js';
+import { Dump } from '../Dump.js';
+import MediaWiki from '../MediaWiki.js';
+import DU from '../DOMUtils.js';
+import logger from '../Logger.js';
 
 function rewriteUrlNoArticleCheck(
   articleId: string,

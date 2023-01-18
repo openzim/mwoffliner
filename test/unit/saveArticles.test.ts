@@ -1,12 +1,12 @@
-import { startRedis, stopRedis } from './bootstrap';
+import { startRedis, stopRedis } from './bootstrap.js';
 import domino from 'domino';
 
-import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from '../util';
-import { articleDetailXId } from '../../src/stores';
-import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles';
+import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from '../util.js';
+import { articleDetailXId } from '../../src/stores.js';
+import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js';
 import { ZimArticle } from '@openzim/libzim';
 import { Dump } from '../../src/Dump';
-import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index';
+import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index.js';
 import {jest} from '@jest/globals';
 
 jest.setTimeout(20000);
@@ -40,7 +40,7 @@ describe('saveArticles', () => {
         if (article.mimeType === 'text/html') {
           addedArticles.push(article);
         }
-        return Promise.resolve();
+        return Promise.resolve(null);
       }
     } as any,
       downloader,
@@ -223,7 +223,7 @@ describe('saveArticles', () => {
         if (article.mimeType === 'text/html') {
           writtenArticles[article.title] = article;
         }
-        return Promise.resolve();
+        return Promise.resolve(null);
       },
     } as any,
       downloader,

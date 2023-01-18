@@ -1,11 +1,11 @@
-import { startRedis, stopRedis } from './bootstrap';
-import Downloader from '../../src/Downloader';
-import MediaWiki from '../../src/MediaWiki';
-import { getArticleIds } from '../../src/util/redirects';
-import { articleDetailXId } from '../../src/stores';
-import { getArticlesByNS } from '../../src/util';
-import { config } from '../../src/config';
-import logger from '../../src/Logger';
+import { startRedis, stopRedis } from './bootstrap.js';
+import Downloader from '../../src/Downloader.js';
+import MediaWiki from '../../src/MediaWiki.js';
+import { getArticleIds } from '../../src/util/redirects.js';
+import { articleDetailXId } from '../../src/stores.js';
+import { getArticlesByNS } from '../../src/util/index.js';
+import { config } from '../../src/config.js';
+import {jest} from '@jest/globals';
 
 jest.setTimeout(10000);
 

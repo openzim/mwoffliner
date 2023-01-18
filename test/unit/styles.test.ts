@@ -1,8 +1,8 @@
-import { startRedis, stopRedis } from './bootstrap';
+import { startRedis, stopRedis } from './bootstrap.js';
 
-import { setupScrapeClasses } from '../util';
-import { articleDetailXId } from '../../src/stores';
-import { getAndProcessStylesheets, mwRetToArticleDetail } from '../../src/util';
+import { setupScrapeClasses } from '../util.js';
+import { articleDetailXId } from '../../src/stores.js';
+import { getAndProcessStylesheets, mwRetToArticleDetail } from '../../src/util/index.js';
 import Axios from 'axios';
 import {jest} from '@jest/globals';
 

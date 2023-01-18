@@ -1,5 +1,5 @@
 import redis from 'redis';
-import logger from './Logger';
+import logger from './Logger.js';
 
 class Redis {
   public client: any;

@@ -1,11 +1,12 @@
-import execa from 'execa';
+import {execa} from 'execa';
 import { join } from 'path';
-import * as MwOffliner from '../../src/mwoffliner.lib';
-import { writeFilePromise, mkdirPromise } from '../../src/util';
+import * as MwOffliner from '../../src/mwoffliner.lib.js';
+import { writeFilePromise, mkdirPromise } from '../../src/util/index.js';
 import { ZimReader } from '@openzim/libzim'
-import FileType from 'file-type'
-import { isWebpCandidateImageUrl } from '../../src/util/misc';
+import * as FileType from 'file-type'
+import { isWebpCandidateImageUrl } from '../../src/util/misc.js';
 import rimraf from 'rimraf';
+import {jest} from '@jest/globals';
 
 jest.setTimeout(30000);
 
@@ -15,7 +16,7 @@ const testId = join(process.cwd(), `mwo-test-${+now}`);
 const articleListUrl = join(testId, '/articleList');
 
 test('Webp Option check', async () => {
-    await execa.command(`redis-cli flushall`);
+    await execa(`redis-cli flushall`, { shell: true });
     await mkdirPromise(testId);
 
     const articleList = `
@@ -61,7 +62,7 @@ Real-time computer graphics`;
 async function isWebpPresent(path: string, zimFile: ZimReader) {
     return await zimFile.getArticleByUrl(path)
     .then(async (result) => {
-        return (await FileType.fromBuffer(result.data))?.mime === 'image/webp';
+        return (await FileType.fileTypeFromBuffer(result.data))?.mime === 'image/webp';
     })
     .catch(err => {
         return false;

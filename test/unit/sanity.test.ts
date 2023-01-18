@@ -1,4 +1,4 @@
-import { contains } from '../../src/util';
+import { contains } from '../../src/util/misc.js';
 
 describe('Sanity tests', () => {
   test('Symple sanity test', async () => {

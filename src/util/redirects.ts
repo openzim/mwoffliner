@@ -1,8 +1,8 @@
 import pmap from 'p-map';
-import MediaWiki from '../MediaWiki';
-import Downloader from '../Downloader';
-import { redirectsXId, articleDetailXId } from '../stores';
-import { getArticlesByIds, getArticlesByNS } from './mw-api';
+import MediaWiki from '../MediaWiki.js';
+import Downloader from '../Downloader.js';
+import { redirectsXId, articleDetailXId } from '../stores.js';
+import { getArticlesByIds, getArticlesByNS } from './mw-api.js';
 
 export async function getArticleIds(downloader: Downloader, mw: MediaWiki, mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
     if (mainPage) {

@@ -6,13 +6,13 @@ import {
     subCategoriesTemplate,
     subPagesTemplate,
     subSectionTemplate
-} from '../Templates';
-import logger from '../Logger';
-import type {Dump} from '../Dump';
-import {articleDetailXId} from '../stores';
-import {MWCapabilities} from '../Downloader';
-import {getStrippedTitleFromHtml} from './misc';
-import { DELETED_ARTICLE_ERROR } from './const';
+} from '../Templates.js';
+import logger from '../Logger.js';
+import type {Dump} from '../Dump.js';
+import {articleDetailXId} from '../stores.js';
+import {MWCapabilities} from '../Downloader.js';
+import {getStrippedTitleFromHtml} from './misc.js';
+import { DELETED_ARTICLE_ERROR } from './const.js';
 
 
 export const renderArticle = async (json: any, articleId: string, dump: Dump, capabilities: MWCapabilities): Promise<RenderedArticle[]> => {

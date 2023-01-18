@@ -1,7 +1,7 @@
 import S3File from 'aws-sdk';
-import logger from './Logger';
+import logger from './Logger.js';
 import { Readable } from 'stream';
-import publicIp from 'public-ip';
+import {publicIpv4} from 'public-ip';
 
 class S3 {
     public url: any;
@@ -31,7 +31,7 @@ class S3 {
             throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
                             Bucket used: ${this.bucketName}
                             End point used: ${s3UrlBase.href}
-                            Public IP used: ${await publicIp.v4()}`);
+                            Public IP used: ${await publicIpv4()}`);
         }
     }
 
@@ -71,7 +71,7 @@ class S3 {
                     }
                     resolve(val);
                 } else if (err && err.statusCode === 404) {
-                    resolve();
+                    resolve(null);
                 } else {
                     reject(err);
                 }

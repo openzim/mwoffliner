@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "nodenext",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictNullChecks": false,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "sourceMap": true,
     "declaration": true,
     "baseUrl": ".",
     "outDir": "./lib/",
-    "rootDir": "./src/",
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "types": [
       "node", "jest"
     ],
@@ -22,7 +22,6 @@
       "./src/"
     ],
     "lib": [
-      "es2017",
       "dom"
     ],
     "plugins": [
@@ -30,7 +29,12 @@
         "name": "typescript-tslint-plugin",
         "ignoreDefinitionFiles": false
       }
-    ]
+    ],
+    "paths": {
+      "#test*": [
+        "test/*"
+      ]
+    }
   },
   "include": [
     "src/**/*"

@@ -1,5 +1,5 @@
-import { startRedis, stopRedis } from './bootstrap';
-import { Dump } from '../../src/Dump';
+import { startRedis, stopRedis } from './bootstrap.js';
+import { Dump } from '../../src/Dump.js';
 
 describe('Dump formats', () => {
 

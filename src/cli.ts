@@ -5,15 +5,15 @@
 'use strict';
 
 import yargs from 'yargs';
-import { parameterDescriptions, requiredParams } from './parameterList';
+import {hideBin} from 'yargs/helpers';
+import { parameterDescriptions, requiredParams } from './parameterList.js';
 
-import * as  mwofflinerLib from './mwoffliner.lib';
+import * as  mwofflinerLib from './mwoffliner.lib.js';
 
 /************************************/
 /* Command Parsing ******************/
 /************************************/
-
-const argv = yargs
+const argv: any = yargs(hideBin(process.argv))
   .help('help')
   .usage(
     `Create a fancy HTML dump of a Mediawiki instance in a ZIM file
@@ -35,7 +35,7 @@ const argv = yargs
 /* ***********************************/
 
 import fs, { readFileSync } from 'fs';
-import logger from './Logger';
+import logger from './Logger.js';
 
 if (argv.osTmpDir) {
   const osTmpDir = argv.osTmpDir as string;
@@ -56,7 +56,7 @@ if (argv.osTmpDir) {
 /* TESTING ALL ARGUMENTS */
 /* ***********************/
 
-import { sanitize_all } from './sanitize-argument';
+import { sanitize_all } from './sanitize-argument.js';
 const execStartTime = Date.now();
 sanitize_all(argv)
 .then(() => {

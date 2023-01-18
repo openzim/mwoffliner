@@ -1,23 +1,23 @@
-import logger from '../Logger';
-import Downloader from '../Downloader';
-import MediaWiki from '../MediaWiki';
+import logger from '../Logger.js';
+import Downloader from '../Downloader.js';
+import MediaWiki from '../MediaWiki.js';
 import { ZimArticle, ZimCreator } from '@openzim/libzim';
 import htmlMinifier from 'html-minifier';
 import * as QueryStringParser from 'querystring';
 
 import pmap from 'p-map';
-import DU from '../DOMUtils';
+import DU from '../DOMUtils.js';
 import * as domino from 'domino';
-import { Dump } from '../Dump';
-import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from '.';
-import { config } from '../config';
-import { footerTemplate, htmlTemplateCode } from '../Templates';
-import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores';
+import { Dump } from '../Dump.js';
+import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js';
+import { config } from '../config.js';
+import { footerTemplate, htmlTemplateCode } from '../Templates.js';
+import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores.js';
 import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl,
-         interpolateTranslationString, isWebpCandidateImageUrl } from './misc';
-import { RedisKvs } from './RedisKvs';
-import { rewriteUrlsOfDoc } from './rewriteUrls';
-import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const';
+         interpolateTranslationString, isWebpCandidateImageUrl } from './misc.js';
+import { RedisKvs } from './RedisKvs.js';
+import { rewriteUrlsOfDoc } from './rewriteUrls.js';
+import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const.js';
 
 const genericJsModules = config.output.mw.js;
 const genericCssModules = config.output.mw.css;

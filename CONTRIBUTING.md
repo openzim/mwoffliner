@@ -14,7 +14,7 @@ npm ci
 
 To run it (this is only an example):
 ```bash
-./node_modules/.bin/ts-node ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
+./node_modules/.bin/ts-node-esm ./src/cli.ts --mwUrl=https://bm.wikipedia.org --adminEmail=XXX
 ```
 
 or
@@ -77,23 +77,27 @@ npm run test:e2e
 
 To run a specfic test with collecting coverage:
 ```bash
-npm run test:pattern-coverage test/e2e/localParsoid.test.ts
+npm run test:pattern test/e2e/wikisource.e2e.test.ts -- --coverage
 ```
 
-To run a specfic test with collecting coverage:
+To run a specfic test without collecting coverage:
 ```bash
-npm run test:pattern test/e2e/localParsoid.test.ts
+npm run test:pattern test/e2e/wikisource.e2e.test.ts
+```
+
+To run a tests by regex pattern. Example which runs all e2e tests:
+```bash
+npm run test:pattern ^.*e2e.*\.test\.ts
 ```
 
 For S3 tests to pass, create a '.env' file (at the root of your
-MWoffliner code directory) where you will configure the following
-keys:
+MWoffliner code directory) where you will configure S3 URL
+with credentials. Example:
 ```
-BASE_URL_TEST=...
-KEY_ID_TEST=...
-BUCKET_NAME_TEST=...
-SECRET_ACCESS_KEY_TEST=...
+S3_URL=https://s3.region.amazonaws.com/?bucketName=S3_BUCKET_NAME&keyId=S3_KEY_ID&secretAccessKey=S3_ACCESS_KEY
 ```
+
+... or just ensure the `S3_URL` environment variable is properly set.
 
 ## Debugging
 

@@ -1,5 +1,5 @@
 import { RedisKvs } from '../../src/util/RedisKvs';
-import { startRedis, stopRedis, redis } from './bootstrap';
+import { startRedis, stopRedis, redis } from './bootstrap.js';
 
 describe('Redis', () => {
 
