@@ -1,4 +1,4 @@
-export const requiredParams = ['mwUrl', 'adminEmail'];
+export const requiredParams = ['mwUrl', 'adminEmail']
 
 export const parameterDescriptions = {
   mwUrl: 'Mediawiki base URL.',
@@ -11,7 +11,8 @@ export const parameterDescriptions = {
   customZimTags: 'Allow to configure custom ZIM file tags (semi-colon separated).',
   customMainPage: 'Allow to configure a custom page as welcome page.',
   filenamePrefix: 'For the part of the ZIM filename which is before the format & date parts.',
-  format: 'Specify a flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFormat names can also be aliased using a ":"\nExample: "... --format=nopic:mini --format=novid,nopdf"',
+  format:
+    'Specify a flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFormat names can also be aliased using a ":"\nExample: "... --format=nopic:mini --format=novid,nopdf"',
   keepEmptyParagraphs: 'Keep all paragraphs, even empty ones.',
   mwWikiPath: 'Mediawiki wiki base path (per default "/wiki/")',
   mwApiPath: 'Mediawiki API path (per default "/w/api.php")',
@@ -22,17 +23,17 @@ export const parameterDescriptions = {
   mwPassword: 'Mediawiki user password (thought for private wikis)',
   minifyHtml: 'Try to reduce the size of the HTML',
   outputDirectory: 'Directory to write the downloaded content',
-  publisher: 'ZIM publisher meta data, per default \'Kiwix\'',
+  publisher: "ZIM publisher meta data, per default 'Kiwix'",
   redis: 'Redis configuration (https://github.com/NodeRedis/node_redis#rediscreateclient)',
   requestTimeout: 'Request timeout - in seconds(default value is 120 seconds)',
   resume: 'Do not overwrite if ZIM file already created',
   speed: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.',
   verbose: 'Print debug information to the stdout',
-  withoutZimFullTextIndex: 'Don\'t include a fulltext search index to the ZIM',
+  withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
   getCategories: '[WIP] Download category pages',
   osTmpDir: 'Override default operating system temporary directory path environment variable',
   customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
   optimisationCacheUrl: 'S3 url, including credentials and bucket name',
-};
+}

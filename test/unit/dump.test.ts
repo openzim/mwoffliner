@@ -1,10 +1,9 @@
-import { startRedis, stopRedis } from './bootstrap.js';
-import { Dump } from '../../src/Dump.js';
+import { startRedis, stopRedis } from './bootstrap.js'
+import { Dump } from '../../src/Dump.js'
 
 describe('Dump formats', () => {
-
-  beforeAll(startRedis);
-  afterAll(stopRedis);
+  beforeAll(startRedis)
+  afterAll(stopRedis)
 
   const formatTests = {
     '': '',
@@ -17,14 +16,14 @@ describe('Dump formats', () => {
     'nopic,novid:': '',
     'nopic,nodet': '_nopic_nodet',
     'nodet,nopic': '_nopic_nodet',
-  };
+  }
 
   for (const [format, expectedFormatTags] of Object.entries(formatTests)) {
     test(`tag [${expectedFormatTags}] is correct`, async () => {
-      const dump = new Dump(format, {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any);
-      const outFormat = dump.computeFilenameRadical(true, false, true);
+      const dump = new Dump(format, {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any)
+      const outFormat = dump.computeFilenameRadical(true, false, true)
 
-      expect(outFormat).toEqual(`_${expectedFormatTags}`);
-    });
+      expect(outFormat).toEqual(`_${expectedFormatTags}`)
+    })
   }
-});
+})

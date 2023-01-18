@@ -1,17 +1,17 @@
-import redis from 'redis';
-import logger from './Logger.js';
+import redis from 'redis'
+import logger from './Logger.js'
 
 class Redis {
-  public client: any;
+  public client: any
 
   constructor(argv: any, config: any) {
-    this.client = redis.createClient(argv.redis || config.defaults.redisConfig);
+    this.client = redis.createClient(argv.redis || config.defaults.redisConfig)
 
     this.client.on('error', function (err: Error) {
-      logger.error(err.message);
-      process.exit(1);
-    });
+      logger.error(err.message)
+      process.exit(1)
+    })
   }
 }
 
-export default Redis;
+export default Redis

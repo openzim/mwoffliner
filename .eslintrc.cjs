@@ -6,7 +6,6 @@ module.exports = {
     },
     "extends": [
         'plugin:@typescript-eslint/recommended',
-        'prettier/@typescript-eslint',
         'plugin:prettier/recommended',
     ],
     "parser": "@typescript-eslint/parser",
@@ -86,7 +85,10 @@ module.exports = {
         "@typescript-eslint/prefer-namespace-keyword": "error",
         "@typescript-eslint/quotes": [
             "error",
-            "single"
+            "single",
+            {
+                avoidEscape: true
+            }
         ],
         "@typescript-eslint/triple-slash-reference": [
             "error",
