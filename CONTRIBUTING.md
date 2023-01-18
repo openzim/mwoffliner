@@ -97,6 +97,8 @@ with credentials. Example:
 S3_URL=https://s3.region.amazonaws.com/?bucketName=S3_BUCKET_NAME&keyId=S3_KEY_ID&secretAccessKey=S3_ACCESS_KEY
 ```
 
+... or just ensure the `S3_URL` environment variable is properly set.
+
 ## Debugging
 
 There is a pre-configured debug config for
