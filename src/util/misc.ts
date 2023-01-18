@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import crypto from 'crypto'
 import domino from 'domino'
 import countryLanguage from '@ladjs/country-language'
@@ -21,6 +22,24 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
+=======
+import crypto from 'crypto';
+import domino from 'domino';
+import unicodeCutter from 'utf8-binary-cutter';
+import countryLanguage from '@ladjs/country-language';
+import fs from 'fs';
+import path from 'path';
+import mime from 'mime-types';
+import mkdirp from 'mkdirp';
+import pathParser from 'path';
+import { ZimCreator, ZimArticle } from '@openzim/libzim';
+import { Config, config } from '../config.js';
+import logger from '../Logger.js';
+import { LATEX_IMAGE_URL_REGEX, FANDOM_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
+   WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const.js';
+import { boolean } from 'yargs';
+import { fileURLToPath } from 'url';
+>>>>>>> 8f080df (use mime-type package and sanitze content-type header)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -370,5 +389,38 @@ export function isBitmapImageMimeType(mimeType: string): boolean {
 }
 
 export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
-  return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type)
+  return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type);
+}
+
+/*
+ * Get best fitting MIME type from contentType or pathname
+ * Preference:
+ *   1. extension with image meme-type
+ *   2. any contentType
+ *   3. any extension type
+ *   4. null
+ */
+export function getMimeType(contentType: string, url: string): string {
+  let pMimeType: string;
+  if (url) {
+    let pathname = new URL(url).pathname;
+    pMimeType = mime.lookup(pathname);
+    if (!pMimeType && pathname.indexOf('/revision') !== -1) {
+      pMimeType = mime.lookup(
+        pathname.slice(0, pathname.indexOf('/revision')),
+      )
+    }
+    if (pMimeType && pMimeType.startsWith('image/')) {
+      return pMimeType;
+    }
+  }
+
+  if (contentType) {
+    // i.e. "application/json; charset=utf-8"
+    const cMimeType = (contentType.indexOf(';') === -1)
+      ? contentType : contentType.slice(0, contentType.indexOf(';'))
+    return cMimeType;
+  }
+
+  return pMimeType || null;
 }
