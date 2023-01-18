@@ -106,7 +106,7 @@ class MediaWiki {
     return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}`;
   }
 
-  public subCategoriesApiUrl(articleId: string, continueStr: string = '') {
+  public subCategoriesApiUrl(articleId: string, continueStr = '') {
     return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`;
   }
 
@@ -122,7 +122,7 @@ class MediaWiki {
     return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`;
   }
 
-  public getApiQueryUrl(query: string = ''): string {
+  public getApiQueryUrl(query = ''): string {
     return `${this.apiUrl.href}${query}`;
   }
 
@@ -131,7 +131,6 @@ class MediaWiki {
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
-    const self = this;
     const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`;
     const json: any = await downloader.getJSON(url);
     ['namespaces', 'namespacealiases'].forEach((type) => {
@@ -145,16 +144,16 @@ class MediaWiki {
         const canonical = entry.canonical ? entry.canonical : '';
         const details = { num, allowedSubpages, isContent };
         /* Namespaces in local language */
-        self.namespaces[util.lcFirst(name)] = details;
-        self.namespaces[util.ucFirst(name)] = details;
+        this.namespaces[util.lcFirst(name)] = details;
+        this.namespaces[util.ucFirst(name)] = details;
         /* Namespaces in English (if available) */
         if (canonical) {
-          self.namespaces[util.lcFirst(canonical)] = details;
-          self.namespaces[util.ucFirst(canonical)] = details;
+          this.namespaces[util.lcFirst(canonical)] = details;
+          this.namespaces[util.ucFirst(canonical)] = details;
         }
         /* Is content to mirror */
         if (isContent) {
-          self.namespacesToMirror.push(name);
+          this.namespacesToMirror.push(name);
         }
       });
     });
@@ -244,9 +243,8 @@ class MediaWiki {
   }
 
   public async getSiteInfo(downloader: Downloader) {
-    const self = this;
     logger.log('Getting site info...');
-    const query = `action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc`;
+    const query = 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc';
     const body = await downloader.query(query);
     const entries = body.query.general;
 

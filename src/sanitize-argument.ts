@@ -1,4 +1,3 @@
-import os from 'os';
 import S3 from './S3.js';
 import axios from 'axios';
 import Redis from './Redis.js';
@@ -8,7 +7,7 @@ import logger from './Logger.js';
 import { config } from './config.js';
 import fs from 'fs';
 import * as QueryStringParser from 'querystring';
-import { isValidEmail, DEFAULT_WIKI_PATH } from './util/index.js';
+import { isValidEmail } from './util/index.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -24,10 +23,7 @@ export async function sanitize_all(argv: any) {
     mwUrl,
     customZimFavicon,
     optimisationCacheUrl,
-    mwWikiPath,
   } = argv;
-
-  const cpuCount = os.cpus().length;
 
   // sanitizing speed
   sanitize_speed(_speed);
@@ -86,7 +82,7 @@ export function sanitize_speed(_speed:any)
 {
   if (_speed && isNaN(_speed)) {
     throw new Error(
-      `speed is not a number, please give a number value to --speed.`
+      'speed is not a number, please give a number value to --speed.'
     );
   }
 }
@@ -95,7 +91,7 @@ export async function sanitize_mwUrl(mwUrl:string)
 {
     await axios
     .get(mwUrl)
-    .catch((err)=>{
+    .catch(()=>{
       throw new Error(`mwUrl [${mwUrl}] is not valid.`)
     })
 }
@@ -125,7 +121,7 @@ export async function sanitize_customZimFavicon(customZimFavicon:any)
       // make a download to check custom favicon link is valid
       await axios
         .get(customZimFavicon)
-        .catch((err) => {
+        .catch(() => {
           throw new Error(
             `Failed to download custom zim favicon from [${customZimFavicon}]`
           );

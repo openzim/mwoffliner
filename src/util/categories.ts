@@ -18,7 +18,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
                 logger.log(`Worker [${workerId}] getting categories for articles ${logger.logifyArray(articleKeys)}`);
 
                 const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs)
-                    .reduce((acc: any, [aId, detail]) => {
+                    .reduce((acc: any, [, detail]) => {
                         for (const cat of detail.categories || []) {
                             const catId = cat.title;
                             acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo);
@@ -29,7 +29,7 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
                 const foundCategoryIds = Object.keys(pagesXCategoryId);
                 if (foundCategoryIds.length) {
                     const existingArticles = await articleDetailXId.getMany(foundCategoryIds);
-                    const categoriesToGet = Object.entries(existingArticles).filter(([id, detail]) => !detail).map(([id]) => id);
+                    const categoriesToGet = Object.entries(existingArticles).filter(([, detail]) => !detail).map(([id]) => id);
                     if (categoriesToGet.length) {
                         await getArticlesByIds(categoriesToGet, downloader, false);
                     }
@@ -82,7 +82,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
     await articleDetailXId
         .iterateItems(
             downloader.speed,
-            async (articleKeyValuePairs, workerId) => {
+            async (articleKeyValuePairs) => {
 
                 for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                     processedArticles += 1;
@@ -167,7 +167,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
 }
 
 export async function simplifyGraph(downloader: Downloader) {
-    logger.log(`Simplifying graph (removing empty categories)`);
+    logger.log('Simplifying graph (removing empty categories)');
     const numKeys = await articleDetailXId.len();
     let prevPercentProgress = -1;
     let processedArticles = 0;
@@ -176,7 +176,7 @@ export async function simplifyGraph(downloader: Downloader) {
     await articleDetailXId
         .iterateItems(
             downloader.speed,
-            async (articleKeyValuePairs, workerId) => {
+            async (articleKeyValuePairs) => {
                 for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
                     processedArticles += 1;
 

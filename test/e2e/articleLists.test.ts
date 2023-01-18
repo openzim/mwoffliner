@@ -16,8 +16,8 @@ describe('articleList', () => {
   const articleListToIgnore = 'Wikipedia, Internet';
   const listMinusIgnore = 2;
   const parameters = {
-    mwUrl: `https://en.wikipedia.org`,
-    adminEmail: `test@kiwix.org`,
+    mwUrl: 'https://en.wikipedia.org',
+    adminEmail: 'test@kiwix.org',
     articleList,
     articleListToIgnore,
     outputDirectory: testId,
@@ -26,7 +26,7 @@ describe('articleList', () => {
   };
 
   test('articleList and articleListIgnore check', async () => {
-    await execa(`redis-cli flushall`, { shell: true });
+    await execa('redis-cli flushall', { shell: true });
 
     const outFiles = await mwoffliner.execute(parameters);
 
@@ -46,11 +46,11 @@ describe('articleList', () => {
     if (await zimcheckAvailable()) {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError();
     } else {
-      console.log(`Zimcheck not installed, skipping test`);
+      console.log('Zimcheck not installed, skipping test');
     }
 
     rimraf.sync(`./${testId}`);
-    const redisScan = await execa(`redis-cli --scan`, { shell: true });
+    const redisScan = await execa('redis-cli --scan', { shell: true });
     // Redis has been cleared
     expect(redisScan.stdout).toEqual('');
   })

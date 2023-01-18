@@ -121,7 +121,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
                     resp.result = r;
                     resp.path += resp.result.responseHeaders.path_postfix || '';
                     return resp;
-                }).catch((err) => {
+                }).catch(() => {
                     return resp;
                 });
             },
@@ -220,7 +220,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
                         jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars;
 
-                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp);
+                        let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail);
 
                         if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
                             templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc);
@@ -239,7 +239,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
                             });
                         }
 
-                        const finalHTML = `<!DOCTYPE html>\n` + outHtml;
+                        const finalHTML = '<!DOCTYPE html>\n' + outHtml;
 
                         const zimArticle = new ZimArticle({
                             url: articleId,
@@ -287,7 +287,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
 
     /* These vars will store the list of js and css dependencies for
     the article we are downloading. */
-    let jsConfigVars: string = '';
+    let jsConfigVars = '';
     let jsDependenciesList: string[] = [];
     let styleDependenciesList: string[] = [];
 
@@ -321,7 +321,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
     // the script below extracts the config with a regex executed on the page header returned from the api
     const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script');
     const regex = /mw\.config\.set\(\{.*?\}\);/mg;
-    // tslint:disable-next-line:prefer-for-of
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < scriptTags.length; i += 1) {
         if (scriptTags[i].text.includes('mw.config.set')) {
             jsConfigVars = regex.exec(scriptTags[i].text)[0] || '';
@@ -403,7 +403,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
     videoEl.setAttribute('controls', '40');
 
     /* Choose best fiting resolution <source> video node */
-    let videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
+    const videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE');
     const videoDisplayedWidth = Number(videoEl.getAttribute('width'));
     let bestWidthDiff = 424242;
     let chosenVideoSourceEl: DominoElement;
@@ -432,7 +432,7 @@ export async function treatVideo(mw: MediaWiki, dump: Dump, srcCache: KVS<boolea
             const chosenVideoSourceElWidth = chosenVideoSourceEl ?
                 chosenVideoSourceEl.getAttribute('data-file-width') || chosenVideoSourceEl.getAttribute('data-width') || 0 : 0;
             if (videoSourceElWidth > chosenVideoSourceElWidth ||
-                videoSourceElWidth == chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm')) {
+                videoSourceElWidth === chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm')) {
                 DU.deleteNode(chosenVideoSourceEl);
                 chosenVideoSourceEl = videoSourceEl;
                 return;
@@ -858,7 +858,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     return parsoidDoc;
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail, webp: boolean): Promise<Document> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<Document> {
     const {
         jsConfigVars,
         jsDependenciesList,
@@ -936,7 +936,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         }) : null;
 
     const creatorLink =
-        `<a class="external text" ` +
+        '<a class="external text" ' +
         `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
         `href="${mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
         `${dump.mwMetaData.creator}</a>`;

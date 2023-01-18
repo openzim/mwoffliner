@@ -12,11 +12,11 @@ describe('en10', () => {
   const now = new Date();
   const testId = `mwo-test-${+now}`;
 
-  const articleListUrl = `https://download.openzim.org/wp1/enwiki/tops/10.tsv`;
+  const articleListUrl = 'https://download.openzim.org/wp1/enwiki/tops/10.tsv';
 
   const parameters = {
-    mwUrl: `https://en.wikipedia.org`,
-    adminEmail: `test@kiwix.org`,
+    mwUrl: 'https://en.wikipedia.org',
+    adminEmail: 'test@kiwix.org',
     articleList: articleListUrl,
     outputDirectory: testId,
     redis: process.env.REDIS,
@@ -25,7 +25,7 @@ describe('en10', () => {
   };
 
   test('Simple articleList', async () => {
-    await execa(`redis-cli flushall`, { shell: true });
+    await execa('redis-cli flushall', { shell: true });
 
     const outFiles = await mwoffliner.execute(parameters);
 
@@ -74,7 +74,7 @@ describe('en10', () => {
       if (await zimcheckAvailable()) {
         await expect(zimcheck(dump.outFile)).resolves.not.toThrowError();
       } else {
-        console.log(`Zimcheck not installed, skipping test`);
+        console.log('Zimcheck not installed, skipping test');
       }
     }
 
@@ -87,7 +87,7 @@ describe('en10', () => {
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
-    const redisScan = await execa(`redis-cli --scan`, { shell: true });
+    const redisScan = await execa('redis-cli --scan', { shell: true });
     // Redis has been cleared
     expect(redisScan.stdout).toEqual('');
   });

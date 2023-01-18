@@ -31,15 +31,15 @@ describe('Utils', () => {
       'Que_faire_?', 'Que_faire_%3F',
       'Que_faire_?_(Lénine)', 'Que_faire_%3F_(L%C3%A9nine)',
       'Random_#hashtag', 'Random_%23hashtag',
-      `Guidelines:Règles_d'édition`, `Guidelines%3AR%C3%A8gles_d'%C3%A9dition`,
+      'Guidelines:Règles_d\'édition', 'Guidelines%3AR%C3%A8gles_d\'%C3%A9dition',
       'Avanti!', 'Avanti!',
       'McCormick_Tribune_Plaza_&_Ice Rink', 'McCormick_Tribune_Plaza_%26_Ice%20Rink',
       '2_+_2_=_5', '2_%2B_2_%3D_5',
-      `Guidelines:Règles d'édition`, `Guidelines%3AR%C3%A8gles%20d'%C3%A9dition`,
+      'Guidelines:Règles d\'édition', 'Guidelines%3AR%C3%A8gles%20d\'%C3%A9dition',
       'something/random/todo', 'something/random/todo',
       'Michael_Jackson', 'Michael_Jackson',
       '/dev/null', './/dev/null',
-      `0`, `0`,
+      '0', '0',
       undefined, undefined,
       null, null,
     ];
@@ -53,8 +53,8 @@ describe('Utils', () => {
 
   test('wikitext comparison', async () => {
     testHtmlRewritingE2e(
-      `An [[isolated system]] remains the system is free.`,
-      `<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>`,
+      'An [[isolated system]] remains the system is free.',
+      '<p id="mwAQ">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAg">isolated system</a> remains the system is free.</p>',
     )
   })
 

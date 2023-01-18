@@ -231,12 +231,9 @@ async function rewriteUrls(
         wikilinkMappings[articleLink] = [linkNode];
       }
     }
-  };
+  }
 
-  const [
-    mirroredTitles,
-    unmirroredTitles,
-  ] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings));
+  const [ , unmirroredTitles ] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings));
 
   if (unmirroredTitles.length) {
     const articlesRedirected = await redirectsXId.exists(unmirroredTitles) as { [key: string]: number; };
@@ -254,7 +251,7 @@ async function rewriteUrls(
         });
         delete wikilinkMappings[articleTitle];
       }
-    };
+    }
   }
 
   if (articleId.includes('/')) {
@@ -265,7 +262,7 @@ async function rewriteUrls(
       for (const linkNode of linkNodes) {
         const href = linkNode.getAttribute('href');
         linkNode.setAttribute('href', `${upStr}${resourceNamespace}/${href}`);
-      };
+      }
     });
   }
 
@@ -292,8 +289,6 @@ export async function rewriteUrlsOfDoc(
   mw: MediaWiki,
   dump: Dump,
 ): Promise<{ mediaDependencies: string[], doc: DominoElement}> {
-  const mediaDependencies: string[] = [];
-
   /* Go through all links */
   const as = parsoidDoc.getElementsByTagName('a');
   const areas = parsoidDoc.getElementsByTagName('area');

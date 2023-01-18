@@ -22,7 +22,7 @@ export const parameterDescriptions = {
   mwPassword: 'Mediawiki user password (thought for private wikis)',
   minifyHtml: 'Try to reduce the size of the HTML',
   outputDirectory: 'Directory to write the downloaded content',
-  publisher: `ZIM publisher meta data, per default 'Kiwix'`,
+  publisher: 'ZIM publisher meta data, per default \'Kiwix\'',
   redis: 'Redis configuration (https://github.com/NodeRedis/node_redis#rediscreateclient)',
   requestTimeout: 'Request timeout - in seconds(default value is 120 seconds)',
   resume: 'Do not overwrite if ZIM file already created',

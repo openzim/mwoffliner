@@ -12,15 +12,15 @@ describe('bm', () => {
   const testId = `mwo-test-${+now}`;
 
   const parameters = {
-    mwUrl: `https://bm.wikipedia.org`,
-    adminEmail: `test@kiwix.org`,
+    mwUrl: 'https://bm.wikipedia.org',
+    adminEmail: 'test@kiwix.org',
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
   };
 
   test('Simple articleList', async () => {
-    await execa(`redis-cli flushall`, { shell: true });
+    await execa('redis-cli flushall', { shell: true });
 
     const outFiles = await mwoffliner.execute(parameters);
 
@@ -41,13 +41,13 @@ describe('bm', () => {
     if (await zimcheckAvailable()) {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError();
     } else {
-      console.log(`Zimcheck not installed, skipping test`);
+      console.log('Zimcheck not installed, skipping test');
     }
 
     // TODO: clear test dir
     rimraf.sync(`./${testId}`);
 
-    const redisScan = await execa(`redis-cli --scan`, { shell: true });
+    const redisScan = await execa('redis-cli --scan', { shell: true });
     // Redis has been cleared
     expect(redisScan.stdout).toEqual('');
   });

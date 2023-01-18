@@ -1,4 +1,3 @@
-import {cpus} from 'os';
 import type {RedisClient} from 'redis';
 
 

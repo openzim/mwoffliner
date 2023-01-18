@@ -1,6 +1,6 @@
 #!/bin/sh
 // tslint:disable-next-line
-':' //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
+':' // # -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
 
 'use strict';
 
@@ -10,9 +10,9 @@ import { parameterDescriptions, requiredParams } from './parameterList.js';
 
 import * as  mwofflinerLib from './mwoffliner.lib.js';
 
-/************************************/
+/** **********************************/
 /* Command Parsing ******************/
-/************************************/
+/** **********************************/
 const argv: any = yargs(hideBin(process.argv))
   .help('help')
   .usage(
@@ -34,8 +34,7 @@ const argv: any = yargs(hideBin(process.argv))
 /* AT THE REALLY BEGIN               */
 /* ***********************************/
 
-import fs, { readFileSync } from 'fs';
-import logger from './Logger.js';
+import fs from 'fs';
 
 if (argv.osTmpDir) {
   const osTmpDir = argv.osTmpDir as string;

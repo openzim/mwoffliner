@@ -14,15 +14,15 @@ describe('Styles', () => {
   afterAll(stopRedis);
 
   test('Stylesheet downloading', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses(); // en wikipedia
+    const { downloader } = await setupScrapeClasses(); // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London']);
     const articlesDetail = mwRetToArticleDetail(_articlesDetail);
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
-    const offlineCSSUrl = `https://wiki.kiwix.org/w/index.php?title=Mediawiki:offline.css&action=raw`;
-    const siteStylesUrl = `http://en.wikipedia.org/w/load.php?lang=en&modules=site.styles&only=styles&skin=vector`;
+    const offlineCSSUrl = 'https://wiki.kiwix.org/w/index.php?title=Mediawiki:offline.css&action=raw';
+    const siteStylesUrl = 'http://en.wikipedia.org/w/load.php?lang=en&modules=site.styles&only=styles&skin=vector';
 
     const { data: offlineCSSContent } = await Axios.get(offlineCSSUrl);
     const { data: siteStylesContent } = await Axios.get(siteStylesUrl);

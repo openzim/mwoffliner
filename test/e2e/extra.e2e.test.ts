@@ -17,7 +17,7 @@ describe('Extra', () => {
   const articleListUrl = join(testId, '/articleList');
 
   test('Simple customMainPage', async () => {
-    await execa(`redis-cli flushall`, { shell: true });
+    await execa('redis-cli flushall', { shell: true });
     await mkdirPromise(testId);
 
     const articleListLines = `
@@ -30,8 +30,8 @@ AC/DC`;
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
 
     const outFiles = await mwoffliner.execute({
-      mwUrl: `https://en.wikipedia.org`,
-      adminEmail: `test@kiwix.org`,
+      mwUrl: 'https://en.wikipedia.org',
+      adminEmail: 'test@kiwix.org',
       articleList: articleListUrl,
       customMainPage: 'Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine2',
       outputDirectory: testId,
@@ -51,7 +51,7 @@ AC/DC`;
       if (await zimcheckAvailable()) {
           await expect(zimcheck(dump.outFile)).resolves.not.toThrowError();
       } else {
-        console.log(`Zimcheck not installed, skipping test`);
+        console.log('Zimcheck not installed, skipping test');
       }
     }
 
@@ -59,7 +59,7 @@ AC/DC`;
     // TODO: clear test dir
     rimraf.sync(testId);
 
-    const redisScan = await execa(`redis-cli --scan`, { shell: true });
+    const redisScan = await execa('redis-cli --scan', { shell: true });
     // Redis has been cleared
     expect(redisScan.stdout).toEqual('');
   });

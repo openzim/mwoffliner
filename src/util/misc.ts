@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import domino from 'domino';
-import unicodeCutter from 'utf8-binary-cutter';
 import countryLanguage from '@ladjs/country-language';
 import fs from 'fs';
 import path from 'path';
@@ -11,7 +10,6 @@ import { Config, config } from '../config.js';
 import logger from '../Logger.js';
 import { LATEX_IMAGE_URL_REGEX, FANDOM_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
    WEBP_CANDIDATE_IMAGE_URL_REGEX, WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const.js';
-import { boolean } from 'yargs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -177,20 +175,20 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   ]);
 }
 
-export function cssPath(css: string, subDirectory: string = '') {
+export function cssPath(css: string, subDirectory = '') {
   return `${subDirectory ? `${subDirectory}/` : ''}${css.replace(/(\.css)?$/, '')}.css`;
 }
-export function jsPath(js: string, subDirectory: string = '') {
+export function jsPath(js: string, subDirectory = '') {
   const path = (isNodeModule(js)) ? normalizeModule(js) : js;
   return `${subDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`;
 }
-export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory: string = '') {
+export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
   return `<link href="${upStr}${resourceNamespace}/${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`;
 }
-export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory: string = '') {
+export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory = '') {
   const resourceNamespace = '-';
   const slashesInUrl = articleId.split('/').length - 1;
   const upStr = '../'.repeat(slashesInUrl + 1);
@@ -206,10 +204,9 @@ export function getDumps(format: boolean | boolean[]) {
   if (format) {
     if (format instanceof Array) {
       dumps = [];
-      const self =
-        format.forEach((value) => {
-          dumps.push(value === true ? '' : value);
-        });
+      format.forEach((value) => {
+        dumps.push(value === true ? '' : value);
+      });
     } else if (format !== true) {
       dumps = [format];
     }

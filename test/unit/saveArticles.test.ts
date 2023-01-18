@@ -30,8 +30,6 @@ describe('saveArticles', () => {
     await articleDetailXId.flush();
     await articleDetailXId.setMany(articlesDetail);
 
-    const [{ html }] = await downloader.getArticle('London', dump);
-
     const addedArticles: typeof ZimArticle[] = [];
 
     // TODO: use proper spied (like sinon.js)
@@ -187,6 +185,7 @@ describe('saveArticles', () => {
     await downloader.checkCapabilities();
     await downloader.setBaseUrls();
     class CustomFlavour implements CustomProcessor {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async shouldKeepArticle(articleId: string, doc: Document) {
         return articleId !== 'London';
       }
@@ -243,10 +242,10 @@ describe('saveArticles', () => {
   });
 
   test('treat one subtitle', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: '' });
+    const { mw, dump } = await setupScrapeClasses({ format: '' });
 
     // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
-    const wikicode = `[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]`;
+    const wikicode = '[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]';
     const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
 
     const htmlDoc = domino.createDocument(htmlStr.data);
@@ -261,7 +260,7 @@ describe('saveArticles', () => {
     const { mw, dump } = await setupScrapeClasses({ format: '' });
 
     // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
-    const wikicode = `[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]`;
+    const wikicode = '[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]';
     const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl);
 
     const htmlDoc = domino.createDocument(htmlStr.data);

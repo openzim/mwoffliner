@@ -1,5 +1,4 @@
 import redis from 'redis-mock';
-// @ts-ignore
 import {initMockData} from './mock/mock.js';
 import {RedisKvs} from '../../src/util/RedisKvs';
 import {jest} from '@jest/globals';
@@ -13,9 +12,9 @@ const timeouts = [0, 10, 20];
 jest.setTimeout(10000);
 
 
-const getHandler = (delay: number) => async (items: any, workerId: number): Promise<any> => {
+const getHandler = (delay: number) => async (): Promise<any> => {
   const t = Math.random() * delay;
-  return new Promise(((resolve, reject) => {
+  return new Promise(((resolve) => {
     setTimeout(() => {
       resolve(null);
     }, t);
@@ -66,7 +65,7 @@ describe('RedisKvs.iterateItems()', () => {
         await initMockData(kvs, numItems);
       });
 
-      describe(`Workers: 2`, () => {
+      describe('Workers: 2', () => {
         for (const timeout of timeouts) {
           test(`${timeout} ms`, getTestHandler(getHandler(timeout), 2));
         }

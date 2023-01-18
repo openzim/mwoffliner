@@ -1,5 +1,5 @@
 // tslint:disable-next-line: no-reference
-///<reference path="./types.d.ts" />
+/// <reference path="./types.d.ts" />
 
 /* ********************************** */
 /* MODULE VARIABLE SECTION ********** */
@@ -44,7 +44,6 @@ import {
   makeArticleImageTile,
   makeArticleListItem,
   mkdirPromise,
-  readFilePromise,
   sanitizeString,
   saveStaticFiles,
   writeFilePromise,
@@ -70,7 +69,7 @@ const __dirname = path.dirname(__filename);
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
 
 function closeRedis(redis: Redis) {
-  logger.log(`Flushing Redis DBs`);
+  logger.log('Flushing Redis DBs');
   if (redis.client.connected) {
     filesToDownloadXPath.flush();
     filesToRetryXPath.flush();
@@ -152,7 +151,7 @@ async function execute(argv: any) {
   /* Instanciate custom flavour module */
   logger.info(`Using custom flavour: ${customFlavour || 'no'}`);
   const customProcessor = customFlavour ?
-    new(require(customFlavour)) : null;
+    new(await import (customFlavour))() : null;
 
   let s3Obj;
   // Check for S3 creds
@@ -202,7 +201,7 @@ async function execute(argv: any) {
   try {
     mwMetaData = await mw.getMwMetaData(downloader);
   } catch (err) {
-    logger.error(`FATAL - Failed to get MediaWiki Metadata`);
+    logger.error('FATAL - Failed to get MediaWiki Metadata');
     throw err;
   }
   // Sanitizing main page
@@ -236,7 +235,7 @@ async function execute(argv: any) {
     logger.info(`Creating temporary directory [${tmpDirectory}]`);
     await mkdirPromise(tmpDirectory);
   } catch (err) {
-    logger.error(`Failed to create temporary directory, exiting`, err);
+    logger.error('Failed to create temporary directory, exiting', err);
     throw err;
   }
   logger.log(`Using temporary directory ${tmpDirectory}`);
@@ -248,12 +247,12 @@ async function execute(argv: any) {
   });
 
   process.on('SIGTERM', () => {
-    logger.log(`SIGTERM`);
+    logger.log('SIGTERM');
     closeRedis(redis);
     process.exit(128 + 15);
   });
   process.on('SIGINT', () => {
-    logger.log(`SIGINT`);
+    logger.log('SIGINT');
     closeRedis(redis);
     process.exit(128 + 2);
   });
@@ -276,7 +275,7 @@ async function execute(argv: any) {
       logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`);
       content = await axios.get(customZimFavicon, downloader.arrayBufferRequestOptions)
         .then((a) => a.data)
-        .catch((err) => {
+        .catch(() => {
           throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`);
         });
     } else {
@@ -323,7 +322,7 @@ async function execute(argv: any) {
 
   await mw.getNamespaces(addNamespaces, downloader);
 
-  logger.info(`Getting article ids`);
+  logger.info('Getting article ids');
   await getArticleIds(downloader, mw, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null);
   if (mw.getCategories) {
     await getCategoriesForArticles(articleDetailXId, downloader, redis);
@@ -370,7 +369,7 @@ async function execute(argv: any) {
       customProcessor,
     );
     dumps.push(dump);
-    logger.log(`Doing dump`);
+    logger.log('Doing dump');
     let shouldSkip = false;
     try {
       dump.checkResume();
@@ -379,7 +378,7 @@ async function execute(argv: any) {
     }
 
     if (shouldSkip) {
-      logger.log(`Skipping dump`);
+      logger.log('Skipping dump');
     } else {
       try {
         await doDump(dump);
@@ -387,7 +386,7 @@ async function execute(argv: any) {
         debugger;
         throw err;
       }
-      logger.log(`Finished dump`);
+      logger.log('Finished dump');
     }
   }
 
@@ -429,11 +428,11 @@ async function execute(argv: any) {
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader);
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`);
 
-    logger.log(`Downloading stylesheets and populating media queue`);
+    logger.log('Downloading stylesheets and populating media queue');
     const {
       finalCss,
     } = await getAndProcessStylesheets(downloader, stylesheetsToGet);
-    logger.log(`Downloaded stylesheets`);
+    logger.log('Downloaded stylesheets');
 
     const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' });
     zimCreator.addArticle(article);
@@ -441,10 +440,10 @@ async function execute(argv: any) {
 
     await getThumbnailsData();
 
-    logger.log(`Getting Main Page`);
+    logger.log('Getting Main Page');
     await getMainPage(dump, zimCreator, downloader);
 
-    logger.log(`Getting articles`);
+    logger.log('Getting articles');
     const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, mw, dump);
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`);
@@ -460,7 +459,7 @@ async function execute(argv: any) {
       importPolyfillModules(zimCreator);
     }
 
-    logger.log(`Downloading module dependencies`);
+    logger.log('Downloading module dependencies');
     await Promise.all(allDependenciesWithType.map(async ({ type, moduleList }) => {
       return await pmap(moduleList, (oneModule) => {
         return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any);
@@ -469,17 +468,17 @@ async function execute(argv: any) {
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader);
 
-    logger.log(`Flushing Redis file store`);
+    logger.log('Flushing Redis file store');
     await filesToDownloadXPath.flush();
     await filesToRetryXPath.flush();
 
-    logger.log(`Writing Article Redirects`);
+    logger.log('Writing Article Redirects');
     await writeArticleRedirects(downloader, dump, zimCreator);
 
-    logger.log(`Finishing Zim Creation`);
+    logger.log('Finishing Zim Creation');
     await zimCreator.finalise();
 
-    logger.log(`Summary of scrape actions:`, JSON.stringify(dump.status, null, '\t'));
+    logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'));
   }
 
   /* ********************************* */
@@ -490,7 +489,7 @@ async function execute(argv: any) {
     await redirectsXId.iterateItems(
       downloader.speed,
       async (redirects) => {
-        for (const [redirectId, { targetId, title }] of Object.entries(redirects)) {
+        for (const [redirectId, { targetId }] of Object.entries(redirects)) {
           if (redirectId !== targetId) {
             const redirectArticle = new ZimArticle({
               url: redirectId,
@@ -512,10 +511,10 @@ async function execute(argv: any) {
     );
   }
 
-  async function saveFavicon(dump: Dump, zimCreator: ZimCreator): Promise<{}> {
+  async function saveFavicon(dump: Dump, zimCreator: ZimCreator): Promise<any> {
     logger.log('Saving favicon.png...');
 
-    async function saveFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<{}> {
+    async function saveFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<any> {
       try {
         const source = await fs.promises.readFile(faviconPath);
         const data = await sharp(source).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer();
@@ -563,8 +562,7 @@ async function execute(argv: any) {
         .map((part) => part.trim());
     }
 
-    let fileLines: string[];
-    fileLines = resourcePath ? fs.readFileSync(resourcePath).toString().split('\n').
+    const fileLines: string[] = resourcePath ? fs.readFileSync(resourcePath).toString().split('\n').
       map(a => a.replace(/\r/gm, '')).filter((a) => a) : [];
 
     return fileLines;
@@ -632,7 +630,7 @@ async function execute(argv: any) {
 
   async function getThumbnailsData(): Promise<void> {
     if (customMainPage || !articleList || articleListLines.length <= MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) return;
-    logger.log(`Updating article thumbnails for articles`);
+    logger.log('Updating article thumbnails for articles');
     let articleIndex = 0;
     let articlesWithImages = 0;
 
