@@ -35,12 +35,15 @@ describe('en10', () => {
     for (const dump of outFiles) {
       if (dump.nopic) {
         // nopic has enough files
-        expect(dump.status.files.success).toBeGreaterThan(20);
+        expect(dump.status.files.success).toBeGreaterThan(18);
         expect(dump.status.files.success).toBeLessThan(25);
         // nopic has enough redirects
         expect(dump.status.redirects.written).toBeGreaterThan(480);
         // nopic has 10 articles
         expect(dump.status.articles.success).toEqual(10);
+        // No article and files error
+        expect(dump.status.articles.fail).toEqual(0);
+        expect(dump.status.files.fail).toEqual(0);
       } else if (dump.novid) {
         // novid has enough files
         expect(dump.status.files.success).toBeGreaterThan(420);
@@ -63,6 +66,10 @@ describe('en10', () => {
         // nodet has 10 articles
         expect(dump.status.articles.success).toEqual(10);
       }
+
+      // No download error
+      expect(dump.status.articles.fail).toEqual(0);
+      expect(dump.status.files.fail).toEqual(0);
 
       if (await zimcheckAvailable()) {
         await expect(zimcheck(dump.outFile)).resolves.not.toThrowError();

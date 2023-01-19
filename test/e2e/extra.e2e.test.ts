@@ -24,9 +24,7 @@ describe('Extra', () => {
 1%_(South_Park)
 İznik
 Egyptian_hieroglyphs
-Wikipedia:Books/archive/Cancer care
-Wikipedia:Books/archive/Ears nose throat
-Wikipedia:Books/archive/Eye diseases`;
+AC/DC`;
 
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
 
@@ -46,7 +44,6 @@ Wikipedia:Books/archive/Eye diseases`;
     for (const dump of outFiles) {
       if (dump.nopic) {
         const articleCount = articleListLines.split(/\r\n|\r|\n/).length;
-
         expect(dump.status.articles.success).toEqual(articleCount);
       }
 
