@@ -27,15 +27,13 @@ jobs:
 
     - uses: shogo82148/actions-setup-redis@v1
       with:
-           redis-version: '6.x'
+        redis-version: '6.x'
 
     - name: Installing necessary packages
       run: sudo apt install gcc-9 g++-9 python3-pip libbz2-dev ccache zlib1g-dev uuid-dev
 
     - name: Installing dependencies
       run: npm ci
-      env:
-        PHANTOMJS_CDNURL: https://dev.kiwix.org/mwoffliner/phantomjs
 
     - name: Installing Codecov
       run: npm i -g codecov
