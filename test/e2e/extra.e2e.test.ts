@@ -24,7 +24,8 @@ describe('Extra', () => {
 1%_(South_Park)
 İznik
 Egyptian_hieroglyphs
-AC/DC`;
+AC/DC
+Wikipedia:Books/archive/Algorithms`;
 
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
 
