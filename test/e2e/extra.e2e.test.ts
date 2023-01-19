@@ -24,6 +24,7 @@ describe('Extra', () => {
 1%_(South_Park)
 İznik
 Egyptian_hieroglyphs
+Wikipedia:Books/archive/Cancer care
 AC/DC`;
 
     await writeFilePromise(articleListUrl, articleListLines, 'utf8');
