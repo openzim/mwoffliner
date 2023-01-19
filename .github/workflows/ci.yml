@@ -29,32 +29,33 @@ jobs:
       with:
            redis-version: '6.x'
 
-    - name: installing add on packages
+    - name: Installing necessary packages
       run: sudo apt install gcc-9 g++-9 python3-pip libbz2-dev ccache zlib1g-dev uuid-dev
 
-    - name: installing dependencies
+    - name: Installing dependencies
       run: npm ci
       env:
         PHANTOMJS_CDNURL: https://dev.kiwix.org/mwoffliner/phantomjs
 
-    - name: installing codecov
+    - name: Installing Codecov
       run: npm i -g codecov
 
-    - name: installing devtools
+    - name: Installing devtools
       run: dev/install-zimtools.sh
 
-    - name: building
+    - name: Building code
       run: npm run build
 
-    - name: running test with codecov
+    - name: Tunning tests (with Codecov)
       run: REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=`find .. -name zimcheck` npm run codecov
       env:
         S3_URL: ${{ secrets.S3_URL }}
 
-    - name: running test
+    - name: Tunning test
       run: npm run jest
 
-    - name: codecov action
+    - name: Upload Codecov stats
       uses: codecov/codecov-action@v3
+      if: ${{ matrix.node-version == '18.x' }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
