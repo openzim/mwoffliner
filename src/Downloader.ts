@@ -36,10 +36,7 @@ imageminOptions.set('default', new Map())
 imageminOptions.set('webp', new Map())
 
 imageminOptions.get('default').set('image/png', {
-  plugins: [
-    (imageminPngquant as any)({ speed: 3, strip: true, dithering: 0 }),
-    imageminAdvPng({ optimizationLevel: 4, iterations: 5 }),
-  ],
+  plugins: [(imageminPngquant as any)({ speed: 3, strip: true, dithering: 0 }), imageminAdvPng({ optimizationLevel: 4, iterations: 5 })],
 })
 imageminOptions.get('default').set('image/jpeg', {
   plugins: [imageminJpegoptim({ max: 60, stripAll: true })],
@@ -102,16 +99,7 @@ class Downloader {
   public jsonRequestOptions: AxiosRequestConfig
   public streamRequestOptions: AxiosRequestConfig
 
-  constructor({
-    mw,
-    uaString,
-    speed,
-    reqTimeout,
-    optimisationCacheUrl,
-    s3,
-    webp,
-    backoffOptions,
-  }: DownloaderOpts) {
+  constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.mw = mw
     this.uaString = uaString
     this.speed = speed
@@ -132,9 +120,7 @@ class Downloader {
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
-      retryIf: (err: any) =>
-        err.code === 'ECONNABORTED' ||
-        ![400, 403, 404].includes(err.response?.status),
+      retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`)
       },
@@ -197,9 +183,7 @@ class Downloader {
   public serializeUrl(url: string): string {
     const { path } = urlParser.parse(url)
     const cacheablePart = url.replace(path, '')
-    const cacheEntry = Object.entries(this.urlPartCache).find(
-      ([value]) => value === cacheablePart,
-    )
+    const cacheEntry = Object.entries(this.urlPartCache).find(([value]) => value === cacheablePart)
     let cacheKey
     if (!cacheEntry) {
       const cacheId = String(Object.keys(this.urlPartCache).length + 1)
@@ -228,19 +212,12 @@ class Downloader {
       ? this.mw.veApiUrl.href
       : undefined
 
-    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable
-      ? this.mw.desktopRestApiUrl.href
-      : this.mwCapabilities.veApiAvailable
-      ? this.mw.veApiUrl.href
-      : undefined
+    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href : this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href : undefined
 
     logger.log('Base Url: ', this.baseUrl)
     logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
 
-    if (!this.baseUrl || !this.baseUrlForMainPage)
-      throw new Error(
-        'Unable to find appropriate API end-point to retrieve article HTML',
-      )
+    if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
   }
 
   public async checkApiAvailabilty(url: string): Promise<boolean> {
@@ -249,48 +226,28 @@ class Downloader {
         headers: { cookie: this.loginCookie },
       })
       // Check for hostname is for domain name in cases of redirects.
-      return (
-        resp.status === 200 &&
-        !resp.headers['mediawiki-api-error'] &&
-        path.dirname(url) === path.dirname(resp.request.res.responseUrl)
-      )
+      return resp.status === 200 && !resp.headers['mediawiki-api-error'] && path.dirname(url) === path.dirname(resp.request.res.responseUrl)
     } catch (err) {
       return false
     }
   }
 
-  public async checkCapabilities(
-    testArticleId = 'MediaWiki:Sidebar',
-  ): Promise<void> {
+  public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
     // By default check all API's responses and set the capabilities
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(
-      this.mw.getMobileRestApiArticleUrl(testArticleId),
-    )
-    this.mwCapabilities.desktopRestApiAvailable =
-      await this.checkApiAvailabilty(
-        this.mw.getDesktopRestApiArticleUrl(testArticleId),
-      )
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(
-      this.mw.getVeApiArticleUrl(testArticleId),
-    )
-    this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(
-      this.mw.apiUrl.href,
-    )
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId))
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId))
+    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId))
+    this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href)
 
     // Coordinate fetching
     const reqOpts = objToQueryString({
       ...this.getArticleQueryOpts(),
     })
-    const resp = await this.getJSON<MwApiResponse>(
-      `${this.mw.apiUrl.href}${reqOpts}`,
-    )
-    const isCoordinateWarning =
-      resp.warnings &&
-      resp.warnings.query &&
-      (resp.warnings.query['*'] || '').includes('coordinates')
+    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl.href}${reqOpts}`)
+    const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
     if (isCoordinateWarning) {
       logger.info('Coordinates not available on this wiki')
       this.mwCapabilities.coordinatesAvailable = false
@@ -305,10 +262,7 @@ class Downloader {
     return this.getJSON(this.mw.getApiQueryUrl(query))
   }
 
-  public async getArticleDetailsIds(
-    articleIds: string[],
-    shouldGetThumbnail = false,
-  ): Promise<QueryMwRet> {
+  public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
     let continuation: ContinueOpts
     let finalProcessedResp: QueryMwRet
 
@@ -335,20 +289,12 @@ class Downloader {
         continuation = resp.continue
         const relevantDetails = this.stripNonContinuedProps(processedResponse)
 
-        finalProcessedResp =
-          finalProcessedResp === undefined
-            ? relevantDetails
-            : deepmerge(finalProcessedResp, relevantDetails)
+        finalProcessedResp = finalProcessedResp === undefined ? relevantDetails : deepmerge(finalProcessedResp, relevantDetails)
       } else {
         if (this.mw.getCategories) {
-          processedResponse = await this.setArticleSubCategories(
-            processedResponse,
-          )
+          processedResponse = await this.setArticleSubCategories(processedResponse)
         }
-        finalProcessedResp =
-          finalProcessedResp === undefined
-            ? processedResponse
-            : deepmerge(finalProcessedResp, processedResponse)
+        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
       }
     }
@@ -356,10 +302,7 @@ class Downloader {
     return finalProcessedResp
   }
 
-  public async getArticleDetailsNS(
-    ns: number,
-    gapcontinue = '',
-  ): Promise<{ gapContinue: string; articleDetails: QueryMwRet }> {
+  public async getArticleDetailsNS(ns: number, gapcontinue = ''): Promise<{ gapContinue: string; articleDetails: QueryMwRet }> {
     let queryContinuation: QueryContinueOpts
     let finalProcessedResp: QueryMwRet
     let gCont: string = null
@@ -382,14 +325,10 @@ class Downloader {
       }
 
       if (queryContinuation) {
-        queryOpts.cocontinue =
-          queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue
-        queryOpts.clcontinue =
-          queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue
-        queryOpts.picontinue =
-          queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue
-        queryOpts.rdcontinue =
-          queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
+        queryOpts.cocontinue = queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue
+        queryOpts.clcontinue = queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue
+        queryOpts.picontinue = queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue
+        queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
       }
 
       const queryString = objToQueryString(queryOpts)
@@ -402,31 +341,20 @@ class Downloader {
 
       gCont = resp['query-continue']?.allpages?.gapcontinue ?? gCont
 
-      const queryComplete =
-        Object.keys(resp['query-continue'] || {}).filter(
-          (key) => key !== 'allpages',
-        ).length === 0
+      const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => key !== 'allpages').length === 0
 
       if (!queryComplete) {
         queryContinuation = resp['query-continue']
 
         const relevantDetails = this.stripNonContinuedProps(processedResponse)
 
-        finalProcessedResp =
-          finalProcessedResp === undefined
-            ? relevantDetails
-            : deepmerge(finalProcessedResp, relevantDetails)
+        finalProcessedResp = finalProcessedResp === undefined ? relevantDetails : deepmerge(finalProcessedResp, relevantDetails)
       } else {
         if (this.mw.getCategories) {
-          processedResponse = await this.setArticleSubCategories(
-            processedResponse,
-          )
+          processedResponse = await this.setArticleSubCategories(processedResponse)
         }
 
-        finalProcessedResp =
-          finalProcessedResp === undefined
-            ? processedResponse
-            : deepmerge(finalProcessedResp, processedResponse)
+        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
       }
     }
@@ -437,10 +365,7 @@ class Downloader {
     }
   }
 
-  public async getArticle(
-    articleId: string,
-    dump: Dump,
-  ): Promise<RenderedArticle[]> {
+  public async getArticle(articleId: string, dump: Dump): Promise<RenderedArticle[]> {
     const isMainPage = dump.isMainPage(articleId)
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage)
 
@@ -470,9 +395,7 @@ class Downloader {
     })
   }
 
-  public async downloadContent(
-    _url: string,
-  ): Promise<{ content: Buffer | string; responseHeaders: any }> {
+  public async downloadContent(_url: string): Promise<{ content: Buffer | string; responseHeaders: any }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
@@ -503,30 +426,16 @@ class Downloader {
   }
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return `${
-      isMainPage ? this.baseUrlForMainPage : this.baseUrl
-    }${encodeURIComponent(articleId)}`
+    return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`
   }
 
-  private stripNonContinuedProps(
-    articleDetails: QueryMwRet,
-    cont: QueryContinueOpts | ContinueOpts = {},
-  ): QueryMwRet {
+  private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
     const propsMap: KVS<string[]> = {
       pageimages: ['thumbnail', 'pageimage'],
       coordinates: ['coordinates'],
       categories: ['categories'],
     }
-    const keysToKeep: string[] = [
-      'subCategories',
-      'revisions',
-      'redirects',
-    ].concat(
-      Object.keys(cont).reduce(
-        (acc, key) => acc.concat(propsMap[key] || []),
-        [],
-      ),
-    )
+    const keysToKeep: string[] = ['subCategories', 'revisions', 'redirects'].concat(Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []))
     const items = Object.entries(articleDetails).map(([aId, detail]) => {
       const newDetail = keysToKeep.reduce((acc, key) => {
         const val = (detail as any)[key]
@@ -547,34 +456,19 @@ class Downloader {
   }
 
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
-    if (resp.warnings)
-      logger.warn(
-        `Got warning from MW Query ${JSON.stringify(
-          resp.warnings,
-          null,
-          '\t',
-        )}`,
-      )
-    if (resp.error?.code === DB_ERROR)
-      throw new Error(
-        `Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`,
-      )
-    if (resp.error)
-      logger.log(
-        `Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`,
-      )
+    if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
+    if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`)
+    if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
   }
 
   private getArticleQueryOpts(includePageimages = false, redirects = false) {
-    const validNamespaceIds = this.mw.namespacesToMirror.map(
-      (ns) => this.mw.namespaces[ns].num,
-    )
+    const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num)
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${
-        this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''
-      }${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${
+        this.mw.getCategories ? '|categories' : ''
+      }`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
       redirects: redirects ? true : undefined,
@@ -587,8 +481,7 @@ class Downloader {
       const isCategoryArticle = articleDetail.ns === 14
       if (isCategoryArticle) {
         const categoryMembers = await this.getSubCategories(articleId)
-        ;(articleDetails[articleId] as any).subCategories =
-          categoryMembers.slice()
+        ;(articleDetails[articleId] as any).subCategories = categoryMembers.slice()
       }
     }
     return articleDetails
@@ -611,10 +504,7 @@ class Downloader {
     return null
   }
 
-  private getJSONCb = <T>(
-    url: string,
-    handler: (...args: any[]) => any,
-  ): void => {
+  private getJSONCb = <T>(url: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
     axios
       .get<T>(url, this.jsonRequestOptions)
@@ -623,13 +513,8 @@ class Downloader {
         try {
           if (err.response && err.response.status === 429) {
             logger.log('Received a [status=429], slowing down')
-            const newMaxActiveRequests: number = Math.max(
-              this.maxActiveRequests - 1,
-              1,
-            )
-            logger.log(
-              `Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`,
-            )
+            const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1)
+            logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`)
             this.maxActiveRequests = newMaxActiveRequests
             return this.getJSONCb(url, handler)
           } else if (err.response && err.response.status === 404) {
@@ -644,22 +529,13 @@ class Downloader {
 
   private async getCompressedBody(resp: any): Promise<any> {
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
-      if (
-        isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) &&
-        !this.cssDependenceUrls.hasOwnProperty(resp.config.url)
-      ) {
+      if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
         resp.data = await (imagemin as any)
-          .buffer(
-            resp.data,
-            imageminOptions.get('webp').get(resp.headers['content-type']),
-          )
+          .buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
           .catch(async (err) => {
             if (/Unsupported color conversion request/.test(err.stderr)) {
               return await (imagemin as any)
-                .buffer(
-                  await sharp(resp.data).toColorspace('srgb').toBuffer(),
-                  imageminOptions.get('webp').get(resp.headers['content-type']),
-                )
+                .buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
                 .catch(() => {
                   return resp.data
                 })
@@ -668,16 +544,9 @@ class Downloader {
                   return data
                 })
             } else {
-              return await (imagemin as any)
-                .buffer(
-                  resp.data,
-                  imageminOptions
-                    .get('default')
-                    .get(resp.headers['content-type']),
-                )
-                .catch(() => {
-                  return resp.data
-                })
+              return await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
+                return resp.data
+              })
             }
           })
           .then((data) => {
@@ -686,14 +555,9 @@ class Downloader {
           })
         resp.headers.path_postfix = '.webp'
       } else {
-        resp.data = await (imagemin as any)
-          .buffer(
-            resp.data,
-            imageminOptions.get('default').get(resp.headers['content-type']),
-          )
-          .catch(() => {
-            return resp.data
-          })
+        resp.data = await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
+          return resp.data
+        })
       }
       return true
     }
@@ -728,8 +592,7 @@ class Downloader {
         .downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1')
         .then(async (s3Resp) => {
           if (s3Resp?.Metadata?.etag) {
-            this.arrayBufferRequestOptions.headers['If-None-Match'] =
-              this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
+            this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
           const mwResp = await axios(url, this.arrayBufferRequestOptions)
 
@@ -742,18 +605,10 @@ class Downloader {
             const headers = (({ Body, ...o }) => o)(s3Resp)
             if (
               mwResp.headers['content-type']
-                ? isWebpCandidateImageMimeType(
-                    this.webp,
-                    mwResp.headers['content-type'],
-                  ) ||
+                ? isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) ||
                   // Hack because of https://phabricator.wikimedia.org/T298011
-                  (this.webp &&
-                    mwResp.headers['content-type'] ===
-                      'application/octet-stream' &&
-                    isWebpCandidateImageUrl(mwResp.config.url))
-                : this.webp &&
-                  isWebpCandidateImageUrl(mwResp.config.url) &&
-                  !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)
+                  (this.webp && mwResp.headers['content-type'] === 'application/octet-stream' && isWebpCandidateImageUrl(mwResp.config.url))
+                : this.webp && isWebpCandidateImageUrl(mwResp.config.url) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)
             ) {
               headers.path_postfix = '.webp'
               headers['content-type'] = 'image/webp'
@@ -771,12 +626,7 @@ class Downloader {
           // Check for the etag and upload
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
           if (etag) {
-            this.s3.uploadBlob(
-              stripHttpFromUrl(url),
-              mwResp.data,
-              etag,
-              this.webp ? 'webp' : '1',
-            )
+            this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, this.webp ? 'webp' : '1')
           }
 
           handler(null, {
@@ -795,26 +645,16 @@ class Downloader {
   private errHandler(err: any, url: string, handler: any): void {
     if (err.response && err.response.status === 429) {
       logger.log('Received a [status=429], slowing down')
-      const newMaxActiveRequests: number = Math.max(
-        this.maxActiveRequests - 1,
-        1,
-      )
-      logger.log(
-        `Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`,
-      )
+      const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1)
+      logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`)
       this.maxActiveRequests = newMaxActiveRequests
     }
     logger.log(`Not able to download content for ${url} due to ${err}`)
     handler(err)
   }
 
-  private async getSubCategories(
-    articleId: string,
-    continueStr = '',
-  ): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const { query, continue: cont } = await this.getJSON<any>(
-      this.mw.subCategoriesApiUrl(articleId, continueStr),
-    )
+  private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
+    const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr))
     const items = query.categorymembers.filter((a: any) => a && a.title)
     if (cont && cont.cmcontinue) {
       const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)
@@ -824,11 +664,7 @@ class Downloader {
     }
   }
 
-  private backoffCall(
-    handler: (...args: any[]) => void,
-    url: string,
-    callback: (...args: any[]) => void | Promise<void>,
-  ): void {
+  private backoffCall(handler: (...args: any[]) => void, url: string, callback: (...args: any[]) => void | Promise<void>): void {
     const call = backoff.call(handler, url, callback)
     call.setStrategy(this.backoffOptions.strategy)
     call.retryIf(this.backoffOptions.retryIf)
