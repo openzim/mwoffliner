@@ -19,7 +19,6 @@ jest.setTimeout(100000);
 describe('Downloader class', () => {
   let mw: MediaWiki;
   let downloader: Downloader;
-  const cacheDir = `cac/dumps-${Date.now()}/`;
 
   beforeAll(startRedis);
   afterAll(stopRedis);
@@ -30,7 +29,6 @@ describe('Downloader class', () => {
       getCategories: true,
     } as any);
 
-    await mkdirPromise(cacheDir);
     downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' });
 
     await mw.getMwMetaData(downloader);
@@ -139,10 +137,6 @@ describe('Downloader class', () => {
   });
 
   describe('isImageUrl method', () => {
-    beforeAll(async () => {
-      rimraf.sync(cacheDir);
-    });
-
     test('Checked Image type: png', async() => {
       const isPngFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png');
       expect(isPngFile).toBeTruthy();
@@ -207,8 +201,6 @@ describe('Downloader class', () => {
           getCategories: true,
       } as any);
 
-      const cacheDir = `cac/dumps-${Date.now()}/`;
-      await mkdirPromise(cacheDir);
       s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
           bucketName: s3UrlObj.query.bucketName,
           keyId: s3UrlObj.query.keyId,
