@@ -48,7 +48,7 @@ jobs:
       env:
         S3_URL: ${{ secrets.S3_URL }}
 
-    - name: Tunning test
+    - name: Running test
       run: npm run jest
 
     - name: Upload Codecov stats
