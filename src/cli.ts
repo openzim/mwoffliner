@@ -1,18 +1,18 @@
 #!/bin/sh
 // tslint:disable-next-line
-':' //# -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
+':' // # -*- mode: js -*-; exec /usr/bin/env node --max-old-space-size=9000 --stack-size=42000 "$0" "$@"
 
-'use strict';
+'use strict'
 
-import yargs from 'yargs';
-import {hideBin} from 'yargs/helpers';
-import { parameterDescriptions, requiredParams } from './parameterList.js';
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
+import { parameterDescriptions, requiredParams } from './parameterList.js'
 
-import * as  mwofflinerLib from './mwoffliner.lib.js';
+import * as mwofflinerLib from './mwoffliner.lib.js'
 
-/************************************/
+/** **********************************/
 /* Command Parsing ******************/
-/************************************/
+/** **********************************/
 const argv: any = yargs(hideBin(process.argv))
   .help('help')
   .usage(
@@ -27,28 +27,27 @@ const argv: any = yargs(hideBin(process.argv))
   )
   .describe(parameterDescriptions)
   .require(requiredParams as any)
-  .strict().argv;
+  .strict().argv
 
 /* ***********************************/
 /* TMPDIR OVERRIDE HAS TO BE HANDLED */
 /* AT THE REALLY BEGIN               */
 /* ***********************************/
 
-import fs, { readFileSync } from 'fs';
-import logger from './Logger.js';
+import fs from 'fs'
 
 if (argv.osTmpDir) {
-  const osTmpDir = argv.osTmpDir as string;
+  const osTmpDir = argv.osTmpDir as string
 
   try {
     if (fs.statSync(osTmpDir)) {
-      process.env.TMPDIR = osTmpDir;
+      process.env.TMPDIR = osTmpDir
     } else {
-      throw new Error();
+      throw new Error()
     }
   } catch {
-    console.error(`--osTmpDir value [${osTmpDir}] is not valid`);
-    process.exit(2);
+    console.error(`--osTmpDir value [${osTmpDir}] is not valid`)
+    process.exit(2)
   }
 }
 
@@ -56,65 +55,56 @@ if (argv.osTmpDir) {
 /* TESTING ALL ARGUMENTS */
 /* ***********************/
 
-import { sanitize_all } from './sanitize-argument.js';
-const execStartTime = Date.now();
+import { sanitize_all } from './sanitize-argument.js'
+const execStartTime = Date.now()
 sanitize_all(argv)
-.then(() => {
-  /* ***********************************/
-  /* GO THROUGH ENTRY POINT            */
-  /* ***********************************/
+  .then(() => {
+    /* ***********************************/
+    /* GO THROUGH ENTRY POINT            */
+    /* ***********************************/
 
-  mwofflinerLib
-  .execute(argv)
-    .then(() => {
-      console.info(
-        `Finished running mwoffliner after [${Math.round(
-          (Date.now() - execStartTime) / 1000,
-        )}s]`,
-      );
-      process.exit(0);
-    })
-    .catch((err) => {
-      errorHandler(err);
-    });
-})
-.catch((err) => {
-  errorHandler(err);
-});
+    mwofflinerLib
+      .execute(argv)
+      .then(() => {
+        console.info(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`)
+        process.exit(0)
+      })
+      .catch((err) => {
+        errorHandler(err)
+      })
+  })
+  .catch((err) => {
+    errorHandler(err)
+  })
 
 // Hack to allow serializing of Errors
 // https://stackoverflow.com/questions/18391212/is-it-not-possible-to-stringify-an-error-using-json-stringify
 if (!('toJSON' in Error.prototype)) {
   Object.defineProperty(Error.prototype, 'toJSON', {
     value() {
-      const alt = {} as any;
+      const alt = {} as any
 
       Object.getOwnPropertyNames(this).forEach(function (key) {
-        alt[key] = this[key];
-      }, this);
+        alt[key] = this[key]
+      }, this)
 
-      return alt;
+      return alt
     },
     configurable: true,
     writable: true,
-  });
+  })
 }
 
 function errorHandler(err: any) {
-  let loggableErr = err;
+  let loggableErr = err
   try {
-    loggableErr = JSON.stringify(err, null, '\t');
+    loggableErr = JSON.stringify(err, null, '\t')
   } catch (err) {
     /* NOOP */
   }
-  console.error(
-    `Failed to run mwoffliner after [${Math.round(
-      (Date.now() - execStartTime) / 1000,
-    )}s]:`,
-    loggableErr,
-  );
+  console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr)
   if (err && err.message) {
-    console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`);
+    console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`)
   }
-  process.exit(2);
+  process.exit(2)
 }

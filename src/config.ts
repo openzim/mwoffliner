@@ -1,4 +1,3 @@
-
 const config = {
   userAgent: 'MWOffliner/HEAD',
 
@@ -6,7 +5,7 @@ const config = {
     publisher: 'Kiwix',
     redisConfig: {
       host: '127.0.0.1',
-      port: 6379
+      port: 6379,
     },
     requestTimeout: 120 * 1000,
   },
@@ -15,9 +14,17 @@ const config = {
     /* All DOM nodes with one of these styles will be removed */
     /* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */
     cssClassBlackList: [
-      'noprint', 'metadata', 'ambox', 'stub',
-      'topicon', 'magnify', 'navbar', 'mw-kartographer-container',
-      'mw-dismissable-notice', 'navigation-only', 'listing-sister-icons',
+      'noprint',
+      'metadata',
+      'ambox',
+      'stub',
+      'topicon',
+      'magnify',
+      'navbar',
+      'mw-kartographer-container',
+      'mw-dismissable-notice',
+      'navigation-only',
+      'listing-sister-icons',
     ],
 
     /* Additional black list if only intro is dumped */
@@ -25,9 +32,7 @@ const config = {
 
     /* All DOM node with these styles will be deleted
      * if no <a> tag is included in the sub-tree */
-    cssClassBlackListIfNoLink: [
-      'mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote',
-    ],
+    cssClassBlackListIfNoLink: ['mainarticle', 'seealso', 'dablink', 'rellink', 'hatnote'],
 
     /* All DOM nodes which we should for to display */
     cssClassDisplayList: ['thumb'],
@@ -52,22 +57,36 @@ const config = {
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
 
-    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min',
-      '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: [
-        ['skins.minerva.base.reset', 'skins.minerva.content.styles',
-          'ext.cite.style', 'site.styles', 'mobile.app.pagestyles.android',
+        [
+          'skins.minerva.base.reset',
+          'skins.minerva.content.styles',
+          'ext.cite.style',
+          'site.styles',
+          'mobile.app.pagestyles.android',
           'mediawiki.page.gallery.styles',
-          'mediawiki.skinning.content.parsoid'].join('|'),
+          'mediawiki.skinning.content.parsoid',
+        ].join('|'),
       ],
-      js: ['startup', 'jquery', 'mediawiki.base', 'site', 'mediawiki.util', 'mediawiki.page.ready',
+      js: [
+        'startup',
+        'jquery',
+        'mediawiki.base',
+        'site',
+        'mediawiki.util',
+        'mediawiki.page.ready',
 
         // Gadget resources are not shared by Parsoid API https://phabricator.wikimedia.org/T161278
-        'jquery.cookie', 'mediawiki.cookie', 'mediawiki.storage', 'ext.gadget.VisibilityToggles',
-        'ext.gadget.defaultVisibilityToggles'],
+        'jquery.cookie',
+        'mediawiki.cookie',
+        'mediawiki.storage',
+        'ext.gadget.VisibilityToggles',
+        'ext.gadget.defaultVisibilityToggles',
+      ],
     },
 
     // Output directories for storing mw related js and css resources
@@ -77,7 +96,6 @@ const config = {
 
     // Output templates (TODO: Needs more docs)
     templates: {
-
       /* In these files, the following replacements will occur:
        * __ARTICLE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
@@ -106,11 +124,8 @@ const config = {
       subsection_wrapper: './templates/subsection_wrapper.html',
     },
   },
-};
+}
 
-type Config = typeof config;
+type Config = typeof config
 
-export {
-  config,
-  Config,
-};
+export { config, Config }
