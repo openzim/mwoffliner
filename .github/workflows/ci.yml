@@ -43,7 +43,7 @@ jobs:
     - name: Building code
       run: npm run build
 
-    - name: Tunning tests (with Codecov)
+    - name: Running tests (with Codecov)
       run: REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=`find .. -name zimcheck` npm run codecov
       env:
         S3_URL: ${{ secrets.S3_URL }}
