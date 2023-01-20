@@ -15,26 +15,29 @@ describeIf('S3', () => {
       bucketName: s3UrlObj.query.bucketName,
       keyId: s3UrlObj.query.keyId,
       secretAccessKey: s3UrlObj.query.secretAccessKey,
-  });
+    });
 
     const credentialExists = await s3.initialise();
     // Credentials on S3 exists
     expect(credentialExists).toBeTruthy()
 
-    const bucketExists = s3.bucketExists(s3UrlObj.query.bucketName as string);
+    const bucketExists = await s3.bucketExists(s3UrlObj.query.bucketName as string);
     // Given bucket exists in S3
     expect(bucketExists).toBeDefined()
 
-    const bucketNotExists = s3.bucketExists('random-string');
     // Given bucket does not exists in S3
-    expect(bucketNotExists).toBeDefined()
+    await expect(s3.bucketExists('random-string')).rejects.toThrowError();
 
+    const s3TestKey = `bm.wikipedia.org/static/images/project-logos/${Math.random().toString(36).slice(2, 7)}.png`;
     // Image uploaded to S3
-    await s3.uploadBlob('bm.wikipedia.org/static/images/project-logos/bmwiki-test.png', '42', '42', '1');
+    await s3.uploadBlob(s3TestKey, '42', '42', '1');
 
-    const imageExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/bmwiki-test.png');
+    const imageExist = await s3.downloadBlob(s3TestKey);
     // Image exists in S3
     expect(imageExist).toBeDefined()
+
+    // Remove Image after test
+    await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: s3TestKey });
 
     const imageNotExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png');
     // Image doesnt exist in S3
