@@ -38,7 +38,7 @@ class S3 {
   public async bucketExists(bucket: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.s3Handler.headBucket({ Bucket: bucket }, function (err: any) {
-        err ? reject(err) : resolve(true)
+        return err ? reject(err) : resolve(true)
       })
     })
   }
@@ -52,7 +52,7 @@ class S3 {
     }
 
     try {
-      this.s3Handler.upload(params, function (err: any, data: any) {
+      this.s3Handler.upload(params, function (err: any) {
         if (err) {
           logger.log(`Not able to upload ${key}: ${err}`)
         }
@@ -85,7 +85,7 @@ class S3 {
   public async deleteBlob(key: any): Promise<any> {
     return new Promise((resolve, reject) => {
       this.s3Handler.deleteObject(key, (err: any, val: any) => {
-        err ? reject(err) : resolve(val)
+        return err ? reject(err) : resolve(val)
       })
     })
   }

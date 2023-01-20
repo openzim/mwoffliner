@@ -122,7 +122,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
             resp.path += resp.result.responseHeaders.path_postfix || ''
             return resp
           })
-          .catch((err) => {
+          .catch(() => {
             return resp
           })
       },
@@ -214,7 +214,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars
 
-          let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail, downloader.webp)
+          let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail)
 
           if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
             templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
@@ -313,7 +313,7 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
   // the script below extracts the config with a regex executed on the page header returned from the api
   const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script')
   const regex = /mw\.config\.set\(\{.*?\}\);/gm
-  // tslint:disable-next-line:prefer-for-of
+  // eslint-disable-next-line @typescript-eslint/prefer-for-of
   for (let i = 0; i < scriptTags.length; i += 1) {
     if (scriptTags[i].text.includes('mw.config.set')) {
       jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
@@ -426,7 +426,7 @@ export async function treatVideo(
     const videoSourceElWidth = Number(videoSourceEl.getAttribute('data-file-width') || videoSourceEl.getAttribute('data-width') || 0)
     if (!videoDisplayedWidth) {
       const chosenVideoSourceElWidth = chosenVideoSourceEl ? chosenVideoSourceEl.getAttribute('data-file-width') || chosenVideoSourceEl.getAttribute('data-width') || 0 : 0
-      if (videoSourceElWidth > chosenVideoSourceElWidth || (videoSourceElWidth == chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
+      if (videoSourceElWidth > chosenVideoSourceElWidth || (videoSourceElWidth === chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
         DU.deleteNode(chosenVideoSourceEl)
         chosenVideoSourceEl = videoSourceEl
         return
@@ -848,15 +848,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
   return parsoidDoc
 }
 
-async function templateArticle(
-  parsoidDoc: DominoElement,
-  moduleDependencies: any,
-  mw: MediaWiki,
-  dump: Dump,
-  articleId: string,
-  articleDetail: ArticleDetail,
-  webp: boolean,
-): Promise<Document> {
+async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<Document> {
   const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
     jsConfigVars: string | RegExpExecArray
     jsDependenciesList: string[]

@@ -1,6 +1,5 @@
 import crypto from 'crypto'
 import domino from 'domino'
-import unicodeCutter from 'utf8-binary-cutter'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
@@ -21,7 +20,6 @@ import {
   IMAGE_MIME_REGEX,
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
-import { boolean } from 'yargs'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -211,7 +209,7 @@ export function getDumps(format: boolean | boolean[]) {
   if (format) {
     if (format instanceof Array) {
       dumps = []
-      const self = format.forEach((value) => {
+      format.forEach((value) => {
         dumps.push(value === true ? '' : value)
       })
     } else if (format !== true) {

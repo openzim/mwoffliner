@@ -19,7 +19,7 @@ const isWebpCandidateImageUrl = (url) => {
 }
 
 test('Webp Option check', async () => {
-  await execa(`redis-cli flushall`, { shell: true })
+  await execa('redis-cli flushall', { shell: true })
   await mkdirPromise(testId)
 
   const articleList = `
@@ -29,8 +29,8 @@ Real-time computer graphics`
   await writeFilePromise(articleListUrl, articleList, 'utf8')
 
   const outFiles = await MwOffliner.execute({
-    mwUrl: `https://en.wikipedia.org`,
-    adminEmail: `test@kiwix.org`,
+    mwUrl: 'https://en.wikipedia.org',
+    adminEmail: 'test@kiwix.org',
     articleList: articleListUrl,
     outputDirectory: testId,
     redis: process.env.REDIS,
@@ -58,23 +58,23 @@ Real-time computer graphics`
   // passed test for jpg
   expect(await isWebpPresent('I/Claychick.jpg.webp', zimFile)).toBeTruthy()
   // redirection check successful
-  expect(await isRedirectionPresent(`href="Real-time_rendering"`, zimFile)).toBeTruthy()
+  expect(await isRedirectionPresent('href="Real-time_rendering"', zimFile)).toBeTruthy()
   rimraf.sync(testId)
 })
 
 async function isWebpPresent(path: string, zimFile: ZimReader) {
-  return await zimFile
+  return zimFile
     .getArticleByUrl(path)
     .then(async (result) => {
       return (await FileType.fileTypeFromBuffer(result.data))?.mime === 'image/webp'
     })
-    .catch((err) => {
+    .catch(() => {
       return false
     })
 }
 
 async function isRedirectionPresent(path: string, zimFile: ZimReader) {
-  return await zimFile.getArticleByUrl('A/Animation').then((result) => {
+  return zimFile.getArticleByUrl('A/Animation').then((result) => {
     return result.data.toString().includes(path)
   })
 }

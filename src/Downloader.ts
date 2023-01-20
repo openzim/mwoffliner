@@ -1,4 +1,3 @@
-import md5 from 'md5'
 import * as path from 'path'
 import * as urlParser from 'url'
 import deepmerge from 'deepmerge'
@@ -184,7 +183,7 @@ class Downloader {
   public serializeUrl(url: string): string {
     const { path } = urlParser.parse(url)
     const cacheablePart = url.replace(path, '')
-    const cacheEntry = Object.entries(this.urlPartCache).find(([cacheId, value]) => value === cacheablePart)
+    const cacheEntry = Object.entries(this.urlPartCache).find(([, value]) => value === cacheablePart)
     let cacheKey
     if (!cacheEntry) {
       const cacheId = String(Object.keys(this.urlPartCache).length + 1)
@@ -378,12 +377,11 @@ class Downloader {
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
-    const self = this
     const url = this.deserializeUrl(_url)
-    await self.claimRequest()
+    await this.claimRequest()
     return new Promise<T>((resolve, reject) => {
       this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
-        self.releaseRequest()
+        this.releaseRequest()
         if (err) {
           const httpStatus = err.response && err.response.status
           logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
@@ -401,11 +399,10 @@ class Downloader {
     }
     const url = this.deserializeUrl(_url)
 
-    const self = this
-    await self.claimRequest()
+    await this.claimRequest()
     return new Promise((resolve, reject) => {
       this.backoffCall(this.getContentCb, url, async (err: any, val: any) => {
-        self.releaseRequest()
+        this.releaseRequest()
         if (err) {
           const httpStatus = err.response && err.response.status
           logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
@@ -606,6 +603,7 @@ class Downloader {
           // 304 does not have to answer with content-type, we have to get it
           // via S3 metadata or extension
           if (mwResp.status === 304) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const headers = (({ Body, ...o }) => o)(s3Resp)
 
             if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
