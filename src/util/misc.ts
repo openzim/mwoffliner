@@ -1,19 +1,28 @@
-import crypto from 'crypto';
-import domino from 'domino';
-import unicodeCutter from 'utf8-binary-cutter';
-import countryLanguage from '@ladjs/country-language';
-import fs from 'fs';
-import path from 'path';
-import mime from 'mime-types';
-import mkdirp from 'mkdirp';
-import pathParser from 'path';
-import { ZimCreator, ZimArticle } from '@openzim/libzim';
-import { Config, config } from '../config.js';
-import logger from '../Logger.js';
-import { LATEX_IMAGE_URL_REGEX, FANDOM_IMAGE_URL_REGEX, WIKIHIERO_IMAGE_URL_REGEX, IMAGE_THUMB_URL_REGEX, FIND_HTTP_REGEX, IMAGE_URL_REGEX, BITMAP_IMAGE_MIME_REGEX, IMAGE_MIME_REGEX,
-   WEBP_CANDIDATE_IMAGE_MIME_TYPE } from './const.js';
-import { boolean } from 'yargs';
-import { fileURLToPath } from 'url';
+import crypto from 'crypto'
+import domino from 'domino'
+import unicodeCutter from 'utf8-binary-cutter'
+import countryLanguage from '@ladjs/country-language'
+import fs from 'fs'
+import path from 'path'
+import mime from 'mime-types'
+import mkdirp from 'mkdirp'
+import pathParser from 'path'
+import { ZimCreator, ZimArticle } from '@openzim/libzim'
+import { Config, config } from '../config.js'
+import logger from '../Logger.js'
+import {
+  LATEX_IMAGE_URL_REGEX,
+  FANDOM_IMAGE_URL_REGEX,
+  WIKIHIERO_IMAGE_URL_REGEX,
+  IMAGE_THUMB_URL_REGEX,
+  FIND_HTTP_REGEX,
+  IMAGE_URL_REGEX,
+  BITMAP_IMAGE_MIME_REGEX,
+  IMAGE_MIME_REGEX,
+  WEBP_CANDIDATE_IMAGE_MIME_TYPE,
+} from './const.js'
+import { boolean } from 'yargs'
+import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -202,7 +211,7 @@ export function getDumps(format: boolean | boolean[]) {
   if (format) {
     if (format instanceof Array) {
       dumps = []
-      format.forEach((value) => {
+      const self = format.forEach((value) => {
         dumps.push(value === true ? '' : value)
       })
     } else if (format !== true) {
@@ -359,7 +368,7 @@ export function isBitmapImageMimeType(mimeType: string): boolean {
 }
 
 export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
-  return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type);
+  return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type)
 }
 
 /*
@@ -372,40 +381,39 @@ export function isWebpCandidateImageMimeType(webp: boolean, content_type: string
  *   5. null
  */
 export function getMimeType(url: string, contentType?: string): string {
-  const preferedDiscreteTypes = ['image', 'audio', 'video'];
+  const preferedDiscreteTypes = ['image', 'audio', 'video']
 
-  let cMimeType: string;
+  let cMimeType: string
   if (contentType) {
     // i.e. "application/json; charset=utf-8"
-    cMimeType = (contentType.indexOf(';') === -1)
-      ? contentType : contentType.slice(0, contentType.indexOf(';'))
-    cMimeType = cMimeType.trim();
+    cMimeType = contentType.indexOf(';') === -1 ? contentType : contentType.slice(0, contentType.indexOf(';'))
+    cMimeType = cMimeType.trim()
 
-    const discreteType = cMimeType.slice(0, cMimeType.indexOf('/'));
+    const discreteType = cMimeType.slice(0, cMimeType.indexOf('/'))
     if (preferedDiscreteTypes.includes(discreteType)) {
-      return cMimeType;
+      return cMimeType
     }
   }
 
-  let pMimeType: string;
+  let pMimeType: string
   if (url) {
     // provide a bas url for parsing relative paths
-    let { pathname } = new URL(url, 'http://large.com/path/to/strip/here');
+    let { pathname } = new URL(url, 'http://large.com/path/to/strip/here')
 
     // Fandom has an URL scheme that attaches /revision/... to the path
-    const parts = FANDOM_IMAGE_URL_REGEX.exec(pathname);
+    const parts = FANDOM_IMAGE_URL_REGEX.exec(pathname)
     if (parts !== null) {
-      pathname = parts[1];
+      pathname = parts[1]
     }
 
-    pMimeType = mime.lookup(pathname);
+    pMimeType = mime.lookup(pathname)
     if (pMimeType) {
-      const discreteType = pMimeType.slice(0, pMimeType.indexOf('/'));
+      const discreteType = pMimeType.slice(0, pMimeType.indexOf('/'))
       if (preferedDiscreteTypes.includes(discreteType)) {
-        return pMimeType;
+        return pMimeType
       }
     }
   }
 
-  return cMimeType || pMimeType || null;
+  return cMimeType || pMimeType || null
 }

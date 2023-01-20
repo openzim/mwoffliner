@@ -29,7 +29,7 @@ describeIf('S3', () => {
 
     const s3TestKey = `bm.wikipedia.org/static/images/project-logos/${Math.random().toString(36).slice(2, 7)}.png`
     // Image uploaded to S3
-    await s3.uploadBlob(s3TestKey, '42', '42', 'image/png', '1');
+    await s3.uploadBlob(s3TestKey, '42', '42', 'image/png', '1')
 
     const imageExist = await s3.downloadBlob(s3TestKey)
     // Image exists in S3

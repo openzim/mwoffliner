@@ -38,21 +38,20 @@ class S3 {
   public async bucketExists(bucket: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.s3Handler.headBucket({ Bucket: bucket }, function (err: any) {
-        return err ? reject(err) : resolve(true)
+        err ? reject(err) : resolve(true)
       })
     })
   }
 
-  public async uploadBlob(key: string, data: any, eTag: string, version: string) {
+  public async uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string) {
     const params = {
       Bucket: this.bucketName,
       Key: key,
-      Metadata: { etag: eTag, version },
+      Metadata: { etag: eTag, contenttype: contentType, version },
       Body: this.bufferToStream(data),
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       this.s3Handler.upload(params, function (err: any, data: any) {
         if (err) {
           logger.log(`Not able to upload ${key}: ${err}`)
@@ -63,30 +62,18 @@ class S3 {
     }
   }
 
-    public async bucketExists(bucket: string): Promise<any> {
-        return new Promise(( resolve, reject ) => {
-            this.s3Handler.headBucket({Bucket: bucket}, function(err: any) {
-                err ? reject(err) : resolve(true);
-            });
-        });
-    }
-
-    public async uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string) {
-        const params = {
-            Bucket: this.bucketName,
-            Key: key,
-            Metadata: {etag: eTag, contenttype: contentType, version},
-            Body: this.bufferToStream(data),
-        };
-
-        try {
-            this.s3Handler.upload( params, function (err: any, data: any) {
-                if (err) {
-                    logger.log(`Not able to upload ${key}: ${err}`);
-                }
-            });
-        } catch (err) {
-            logger.log('S3 error', err);
+  public async downloadBlob(key: string, version = '1'): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.s3Handler.getObject({ Bucket: this.bucketName, Key: key }, async (err: any, val: any) => {
+        if (val) {
+          if (val.Metadata.version !== version) {
+            val.Metadata.etag = undefined
+          }
+          resolve(val)
+        } else if (err && err.statusCode === 404) {
+          resolve(null)
+        } else {
+          reject(err)
         }
       })
     }).catch((err) => {
@@ -98,7 +85,7 @@ class S3 {
   public async deleteBlob(key: any): Promise<any> {
     return new Promise((resolve, reject) => {
       this.s3Handler.deleteObject(key, (err: any, val: any) => {
-        return err ? reject(err) : resolve(val)
+        err ? reject(err) : resolve(val)
       })
     })
   }

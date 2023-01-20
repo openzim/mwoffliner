@@ -1,12 +1,11 @@
-import {execa} from 'execa';
-import { join } from 'path';
-import * as MwOffliner from '../../src/mwoffliner.lib.js';
-import { writeFilePromise, mkdirPromise, isWebpCandidateImageMimeType,
-getMimeType, } from '../../src/util/index.js';
+import { execa } from 'execa'
+import { join } from 'path'
+import * as MwOffliner from '../../src/mwoffliner.lib.js'
+import { writeFilePromise, mkdirPromise, isWebpCandidateImageMimeType, getMimeType } from '../../src/util/index.js'
 import { ZimReader } from '@openzim/libzim'
 import * as FileType from 'file-type'
-import rimraf from 'rimraf';
-import {jest} from '@jest/globals';
+import rimraf from 'rimraf'
+import { jest } from '@jest/globals'
 
 jest.setTimeout(30000)
 
@@ -16,11 +15,11 @@ const testId = join(process.cwd(), `mwo-test-${+now}`)
 const articleListUrl = join(testId, '/articleList')
 
 const isWebpCandidateImageUrl = (url) => {
-  return isWebpCandidateImageMimeType(true, getMimeType(url));
-};
+  return isWebpCandidateImageMimeType(true, getMimeType(url))
+}
 
 test('Webp Option check', async () => {
-  await execa('redis-cli flushall', { shell: true })
+  await execa(`redis-cli flushall`, { shell: true })
   await mkdirPromise(testId)
 
   const articleList = `
@@ -30,8 +29,8 @@ Real-time computer graphics`
   await writeFilePromise(articleListUrl, articleList, 'utf8')
 
   const outFiles = await MwOffliner.execute({
-    mwUrl: 'https://en.wikipedia.org',
-    adminEmail: 'test@kiwix.org',
+    mwUrl: `https://en.wikipedia.org`,
+    adminEmail: `test@kiwix.org`,
     articleList: articleListUrl,
     outputDirectory: testId,
     redis: process.env.REDIS,
@@ -59,23 +58,23 @@ Real-time computer graphics`
   // passed test for jpg
   expect(await isWebpPresent('I/Claychick.jpg.webp', zimFile)).toBeTruthy()
   // redirection check successful
-  expect(await isRedirectionPresent('href="Real-time_rendering"', zimFile)).toBeTruthy()
+  expect(await isRedirectionPresent(`href="Real-time_rendering"`, zimFile)).toBeTruthy()
   rimraf.sync(testId)
 })
 
 async function isWebpPresent(path: string, zimFile: ZimReader) {
-  return zimFile
+  return await zimFile
     .getArticleByUrl(path)
     .then(async (result) => {
       return (await FileType.fileTypeFromBuffer(result.data))?.mime === 'image/webp'
     })
-    .catch(() => {
+    .catch((err) => {
       return false
     })
 }
 
 async function isRedirectionPresent(path: string, zimFile: ZimReader) {
-  return zimFile.getArticleByUrl('A/Animation').then((result) => {
+  return await zimFile.getArticleByUrl('A/Animation').then((result) => {
     return result.data.toString().includes(path)
   })
 }

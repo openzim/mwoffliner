@@ -2,8 +2,9 @@ import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
 import Axios from 'axios'
-import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
+import { mkdirPromise, mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
+import rimraf from 'rimraf'
 import { Dump } from '../../src/Dump'
 import { articleDetailXId } from '../../src/stores.js'
 import { config } from '../../src/config.js'
@@ -36,42 +37,42 @@ describe('Downloader class', () => {
   })
 
   test('downloader.query returns valid JSON', async () => {
-    const queryRet = await downloader.query('?action=query&meta=siteinfo&siprop=statistics&format=json')
+    const queryRet = await downloader.query(`?action=query&meta=siteinfo&siprop=statistics&format=json`)
     expect(queryRet).toBeDefined()
   })
 
   test('downloader.getJSON returns valid JSON', async () => {
-    const JSONRes = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
+    const JSONRes = await downloader.getJSON(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`)
     expect(JSONRes).toBeDefined()
   })
 
   test('downloader.canGetUrl returns valid answer (positive)', async () => {
-    const urlExists = await downloader.canGetUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
+    const urlExists = await downloader.canGetUrl(`https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json`)
     expect(urlExists).toBeDefined()
   })
 
   test('downloader.canGetUrl returns valid answer (negative)', async () => {
-    const urlNotExists = await downloader.canGetUrl('https://en.wikipedia.org/w/thisisa404')
+    const urlNotExists = await downloader.canGetUrl(`https://en.wikipedia.org/w/thisisa404`)
     expect(urlNotExists).toBeDefined()
   })
 
   test('getJSON response status for non-existant url is 404', async () => {
-    await expect(downloader.getJSON('https://en.wikipedia.org/w/thisisa404')).rejects.toThrowError(new Error('Request failed with status code 404'))
+    await expect(downloader.getJSON(`https://en.wikipedia.org/w/thisisa404`)).rejects.toThrowError(new Error('Request failed with status code 404'))
   })
 
   test('downloader.downloadContent returns', async () => {
-    const contentRes = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg')
+    const contentRes = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg`)
     expect(contentRes.responseHeaders).toBeDefined()
   })
 
   test('Webp compression working for cmyk color-space images', async () => {
-    const { content } = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg')
+    const { content } = await downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg`)
     const fileType = await FileType.fileTypeFromBuffer(Buffer.from(content))
     expect(fileType?.mime).toEqual('image/webp')
   })
 
   test('downloader.downloadContent throws on non-existant url', async () => {
-    await expect(downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg')).rejects.toThrowError(
+    await expect(downloader.downloadContent(`https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg`)).rejects.toThrowError(
       new Error('Request failed with status code 404'),
     )
   })
@@ -103,7 +104,7 @@ describe('Downloader class', () => {
   })
 
   test('downloadContent successfully downloaded an image', async () => {
-    const { data: LondonDetail } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London')
+    const { data: LondonDetail } = await Axios.get(`https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London`)
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls)
 
     const LondonImage = await downloader.downloadContent(imgToGet as string)
@@ -217,7 +218,7 @@ describe('Downloader class', () => {
     })
 
     test('Etag Not Present', async () => {
-      const etagNotPresent = await downloader.downloadContent('https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c')
+      const etagNotPresent = await downloader.downloadContent(`https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c`)
       expect(etagNotPresent.responseHeaders.etag).toBeUndefined()
     })
 
@@ -277,4 +278,4 @@ describe('Downloader class', () => {
     const url = resp.data.query.pages[0].imageinfo[0].url
     return isImageUrl(url) ? url : getRandomImageUrl()
   }
-});
+})
