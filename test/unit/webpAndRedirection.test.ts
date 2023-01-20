@@ -60,7 +60,7 @@ Real-time computer graphics`
 })
 
 async function isWebpPresent(path: string, zimFile: ZimReader) {
-  return await zimFile
+  return zimFile
     .getArticleByUrl(path)
     .then(async (result) => {
       return (await FileType.fileTypeFromBuffer(result.data))?.mime === 'image/webp'
@@ -71,7 +71,7 @@ async function isWebpPresent(path: string, zimFile: ZimReader) {
 }
 
 async function isRedirectionPresent(path: string, zimFile: ZimReader) {
-  return await zimFile.getArticleByUrl('A/Animation').then((result) => {
+  return zimFile.getArticleByUrl('A/Animation').then((result) => {
     return result.data.toString().includes(path)
   })
 }

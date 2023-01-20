@@ -468,7 +468,7 @@ async function execute(argv: any) {
     logger.log('Downloading module dependencies')
     await Promise.all(
       allDependenciesWithType.map(async ({ type, moduleList }) => {
-        return await pmap(
+        return pmap(
           moduleList,
           (oneModule) => {
             return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any)
@@ -535,7 +535,7 @@ async function execute(argv: any) {
     }
 
     if (customZimFavicon) {
-      return await saveFavicon(zimCreator, customZimFavicon)
+      return saveFavicon(zimCreator, customZimFavicon)
     }
     const body = await downloader.getJSON<any>(mw.siteInfoUrl())
     const entries = body.query.general
@@ -550,7 +550,7 @@ async function execute(argv: any) {
     const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo
     const logoContent = await downloader.downloadContent(logoUrl)
     await writeFilePromise(faviconPath, logoContent.content, null)
-    return await saveFavicon(zimCreator, faviconPath)
+    return saveFavicon(zimCreator, faviconPath)
   }
 
   async function readFileOrUrlByLine(resourcePath: string): Promise<string[]> {
