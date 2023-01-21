@@ -236,36 +236,32 @@ describe('Downloader class', () => {
       expect(imageNotExists).toBeNull()
     })
 
-    test('Delete image from S3', async () => {
-      const randomImageUrl = async () => {
-        const url = await getRandomImageUrl()
-        return isImageUrl(url) ? url : randomImageUrl() // recursion to get URL with image in needed format
-      }
-
-      // Check Etag Flow
-      const randomImage = await randomImageUrl()
+    test('Check Etag image flow from S3', async () => {
+      // Get an image URL to run the test with
+      const randomImage = await getRandomImageUrl()
       const imagePath = stripHttpFromUrl(randomImage)
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
 
-      // Upload the image in S3
+      // Download the image (and cache it in S3)
       await downloader.downloadContent(randomImage)
 
-      // downloadContent() is async so there is no way figure outs when the download completes, thats why setTimeout() is used
+      // Async downloadContent(), waiting this is done
       await setTimeout(5000)
 
-      // Get the online data of Image from Mediawiki
-      const resp = await Axios(randomImage)
+      // Check if S3 Etag is like online Etag
+      const upstreamResp = await Axios(randomImage)
+      const s3Resp = await s3.downloadBlob(imagePath)
+      expect(downloader.removeEtagWeakPrefix(`${upstreamResp.headers.etag}`)).toEqual(s3Resp.Metadata.etag)
 
-      // Download the uploaded image from S3 and check the Etags
-      const imageContent = await s3.downloadBlob(imagePath)
-      expect(downloader.removeEtagWeakPrefix(`${resp.headers.etag}`)).toEqual(imageContent.Metadata.etag)
+      // Overwrite Image with new Etag to S3
+      const newEtag = '686897696a7c876b7e'
+      await s3.uploadBlob(imagePath, upstreamResp.data, newEtag, '1')
+      await setTimeout(5000)
 
-      // Upload Image with wrong Etag
-      await s3.uploadBlob(imagePath, resp.data, 'random-string', '1')
+      // Download again to check the Etag has been overwritten properly
+      const newS3Resp = await s3.downloadBlob(imagePath)
+      expect(newS3Resp.Metadata.etag).toEqual(newEtag)
 
-      // Download again to check the Etag has been refreshed properly
-      const updatedImage = await s3.downloadBlob(imagePath)
-      expect(updatedImage.Metadata.etag).toEqual(downloader.removeEtagWeakPrefix(`${resp.headers.etag}`))
       // Remove Image after test
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
     })
@@ -275,6 +271,7 @@ describe('Downloader class', () => {
     const resp = await Axios(
       'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json',
     )
-    return resp.data.query.pages[0].imageinfo[0].url
+    const url = resp.data.query.pages[0].imageinfo[0].url
+    return isImageUrl(url) ? url : getRandomImageUrl()
   }
 })
