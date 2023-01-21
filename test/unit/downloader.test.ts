@@ -237,13 +237,9 @@ describe('Downloader class', () => {
     })
 
     test('Delete image from S3', async () => {
-      const randomImageUrl = async () => {
-        const url = await getRandomImageUrl()
-        return isImageUrl(url) ? url : randomImageUrl() // recursion to get URL with image in needed format
-      }
 
       // Check Etag Flow
-      const randomImage = await randomImageUrl()
+      const randomImage = await getRandomImageUrl()
       const imagePath = stripHttpFromUrl(randomImage)
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
 
@@ -276,6 +272,7 @@ describe('Downloader class', () => {
     const resp = await Axios(
       'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json',
     )
-    return resp.data.query.pages[0].imageinfo[0].url
+    const url = resp.data.query.pages[0].imageinfo[0].url
+    return isImageUrl(url) ? url : getRandomImageUrl()
   }
 })
