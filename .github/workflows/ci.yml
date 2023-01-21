@@ -34,6 +34,12 @@ jobs:
     - name: Installing dependencies
       run: npm ci
 
+    - name: Installing ESLint
+      run: npm i -g eslint
+
+    - name: Run ESLint
+      run: eslint . --ext .ts
+
     - name: Installing Codecov
       run: npm i -g codecov
 
