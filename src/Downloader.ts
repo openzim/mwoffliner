@@ -569,7 +569,6 @@ class Downloader {
         this.downloadImage(url, handler)
       } else {
         const resp = await axios(url, this.arrayBufferRequestOptions)
-        resp.headers['content-type'] = getMimeType(url, resp.headers['content-type'])
         await this.getCompressedBody(resp)
         handler(null, {
           responseHeaders: resp.headers,
