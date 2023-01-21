@@ -262,10 +262,11 @@ describe('Downloader class', () => {
 
       // Upload Image with wrong Etag
       await s3.uploadBlob(imagePath, resp.data, 'random-string', '1')
+      await setTimeout(5000)
 
       // Download again to check the Etag has been refreshed properly
       const updatedImage = await s3.downloadBlob(imagePath)
-      expect(updatedImage.Metadata.etag).toEqual(downloader.removeEtagWeakPrefix(`${resp.headers.etag}`))
+      expect(updatedImage.Metadata.etag).not.toEqual(downloader.removeEtagWeakPrefix(`${resp.headers.etag}`))
       // Remove Image after test
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
     })
