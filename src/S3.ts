@@ -43,17 +43,16 @@ class S3 {
     })
   }
 
-  public async uploadBlob(key: string, data: any, eTag: string, version: string) {
+  public async uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string) {
     const params = {
       Bucket: this.bucketName,
       Key: key,
-      Metadata: { etag: eTag, version },
+      Metadata: { etag: eTag, contenttype: contentType, version },
       Body: this.bufferToStream(data),
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      this.s3Handler.upload(params, function (err: any, data: any) {
+      this.s3Handler.upload(params, function (err: any) {
         if (err) {
           logger.log(`Not able to upload ${key}: ${err}`)
         }

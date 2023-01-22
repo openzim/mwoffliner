@@ -23,8 +23,8 @@ import {
   stripHttpFromUrl,
   isBitmapImageMimeType,
   isImageUrl,
+  getMimeType,
   isWebpCandidateImageMimeType,
-  isWebpCandidateImageUrl,
 } from './util/index.js'
 import S3 from './S3.js'
 import { Dump } from './Dump.js'
@@ -183,7 +183,7 @@ class Downloader {
   public serializeUrl(url: string): string {
     const { path } = urlParser.parse(url)
     const cacheablePart = url.replace(path, '')
-    const cacheEntry = Object.entries(this.urlPartCache).find(([value]) => value === cacheablePart)
+    const cacheEntry = Object.entries(this.urlPartCache).find(([, value]) => value === cacheablePart)
     let cacheKey
     if (!cacheEntry) {
       const cacheId = String(Object.keys(this.urlPartCache).length + 1)
@@ -222,9 +222,7 @@ class Downloader {
 
   public async checkApiAvailabilty(url: string): Promise<boolean> {
     try {
-      const resp = await axios.get(url, {
-        headers: { cookie: this.loginCookie },
-      })
+      const resp = await axios.get(url, { headers: { cookie: this.loginCookie } })
       // Check for hostname is for domain name in cases of redirects.
       return resp.status === 200 && !resp.headers['mediawiki-api-error'] && path.dirname(url) === path.dirname(resp.request.res.responseUrl)
     } catch (err) {
@@ -596,20 +594,18 @@ class Downloader {
           }
           const mwResp = await axios(url, this.arrayBufferRequestOptions)
 
+          // sanitize Content-Type
+          mwResp.headers['content-type'] = getMimeType(url, s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'])
+
           // Most of the images after uploading once will always have
-          // 304 status, until modified. We need to have
-          // isWebpCandidateImageUrl() as fallback check because
-          // of https://phabricator.wikimedia.org/T265006
+          // 304 status, until modified.
+          // 304 does not have to answer with content-type, we have to get it
+          // via S3 metadata or extension
           if (mwResp.status === 304) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const headers = (({ Body, ...o }) => o)(s3Resp)
-            if (
-              mwResp.headers['content-type']
-                ? isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) ||
-                  // Hack because of https://phabricator.wikimedia.org/T298011
-                  (this.webp && mwResp.headers['content-type'] === 'application/octet-stream' && isWebpCandidateImageUrl(mwResp.config.url))
-                : this.webp && isWebpCandidateImageUrl(mwResp.config.url) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)
-            ) {
+
+            if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
               headers.path_postfix = '.webp'
               headers['content-type'] = 'image/webp'
             }
@@ -626,7 +622,7 @@ class Downloader {
           // Check for the etag and upload
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
           if (etag) {
-            this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, this.webp ? 'webp' : '1')
+            this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, mwResp.headers['content-type'], this.webp ? 'webp' : '1')
           }
 
           handler(null, {

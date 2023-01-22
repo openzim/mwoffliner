@@ -13,7 +13,7 @@ import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullU
 import { config } from '../config.js'
 import { footerTemplate, htmlTemplateCode } from '../Templates.js'
 import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores.js'
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageUrl } from './misc.js'
+import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageMimeType, getMimeType } from './misc.js'
 import { RedisKvs } from './RedisKvs.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const.js'
@@ -486,7 +486,7 @@ export async function treatVideo(
     const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I')
 
     if (posterUrl) {
-      videoEl.setAttribute('poster', webp && isWebpCandidateImageUrl(newVideoPosterUrl) ? newVideoPosterUrl + '.webp' : newVideoPosterUrl)
+      videoEl.setAttribute('poster', isWebpCandidateImageMimeType(webp, getMimeType(newVideoPosterUrl)) ? newVideoPosterUrl + '.webp' : newVideoPosterUrl)
     }
     videoEl.removeAttribute('resource')
 
@@ -586,7 +586,7 @@ async function treatImage(
     }
 
     /* Change image source attribute to point to the local image */
-    img.setAttribute('src', downloader.webp && isWebpCandidateImageUrl(src) ? newSrc + '.webp' : newSrc)
+    img.setAttribute('src', isWebpCandidateImageMimeType(downloader.webp, getMimeType(src)) ? newSrc + '.webp' : newSrc)
 
     /* Remove useless 'resource' attribute */
     img.removeAttribute('resource')

@@ -3,6 +3,7 @@ import domino from 'domino'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
+import mime from 'mime-types'
 import mkdirp from 'mkdirp'
 import pathParser from 'path'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
@@ -17,7 +18,6 @@ import {
   IMAGE_URL_REGEX,
   BITMAP_IMAGE_MIME_REGEX,
   IMAGE_MIME_REGEX,
-  WEBP_CANDIDATE_IMAGE_URL_REGEX,
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
@@ -357,10 +357,6 @@ export function isImageUrl(url: string): boolean {
   return IMAGE_URL_REGEX.test(url)
 }
 
-export function isWebpCandidateImageUrl(url: string): boolean {
-  return WEBP_CANDIDATE_IMAGE_URL_REGEX.test(url)
-}
-
 export function isImageMimeType(mimeType: string): boolean {
   return IMAGE_MIME_REGEX.test(mimeType)
 }
@@ -371,4 +367,51 @@ export function isBitmapImageMimeType(mimeType: string): boolean {
 
 export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
   return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type)
+}
+
+/*
+ * Get best fitting MIME type from contentType or pathname
+ * Preference:
+ *   1. content-type if one of preferedDiscreteTypes
+ *   2. mime-type from extension if in preferedDiscreteTypes
+ *   3. any other content-type
+ *   4. any other mime-type from extension
+ *   5. null
+ */
+export function getMimeType(url: string, contentType?: string): string {
+  const preferedDiscreteTypes = ['image', 'audio', 'video']
+
+  let cMimeType: string
+  if (contentType) {
+    // i.e. "application/json; charset=utf-8"
+    cMimeType = contentType.indexOf(';') === -1 ? contentType : contentType.slice(0, contentType.indexOf(';'))
+    cMimeType = cMimeType.trim()
+
+    const discreteType = cMimeType.slice(0, cMimeType.indexOf('/'))
+    if (preferedDiscreteTypes.includes(discreteType)) {
+      return cMimeType
+    }
+  }
+
+  let pMimeType: string
+  if (url) {
+    // provide a bas url for parsing relative paths
+    let { pathname } = new URL(url, 'http://large.com/path/to/strip/here')
+
+    // Fandom has an URL scheme that attaches /revision/... to the path
+    const parts = FANDOM_IMAGE_URL_REGEX.exec(pathname)
+    if (parts !== null) {
+      pathname = parts[1]
+    }
+
+    pMimeType = mime.lookup(pathname)
+    if (pMimeType) {
+      const discreteType = pMimeType.slice(0, pMimeType.indexOf('/'))
+      if (preferedDiscreteTypes.includes(discreteType)) {
+        return pMimeType
+      }
+    }
+  }
+
+  return cMimeType || pMimeType || null
 }

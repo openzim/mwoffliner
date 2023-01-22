@@ -1,10 +1,9 @@
 import { execa } from 'execa'
 import { join } from 'path'
 import * as MwOffliner from '../../src/mwoffliner.lib.js'
-import { writeFilePromise, mkdirPromise } from '../../src/util/index.js'
+import { writeFilePromise, mkdirPromise, isWebpCandidateImageMimeType, getMimeType } from '../../src/util/index.js'
 import { ZimReader } from '@openzim/libzim'
 import * as FileType from 'file-type'
-import { isWebpCandidateImageUrl } from '../../src/util/misc.js'
 import rimraf from 'rimraf'
 import { jest } from '@jest/globals'
 
@@ -14,6 +13,10 @@ const now = new Date()
 const testId = join(process.cwd(), `mwo-test-${+now}`)
 
 const articleListUrl = join(testId, '/articleList')
+
+const isWebpCandidateImageUrl = (url) => {
+  return isWebpCandidateImageMimeType(true, getMimeType(url))
+}
 
 test('Webp Option check', async () => {
   await execa('redis-cli flushall', { shell: true })

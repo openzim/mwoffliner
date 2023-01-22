@@ -252,15 +252,18 @@ describe('Downloader class', () => {
       const upstreamResp = await Axios(randomImage)
       const s3Resp = await s3.downloadBlob(imagePath)
       expect(downloader.removeEtagWeakPrefix(`${upstreamResp.headers.etag}`)).toEqual(s3Resp.Metadata.etag)
+      expect(upstreamResp.headers['content-type']).toEqual(s3Resp.Metadata.contenttype)
 
       // Overwrite Image with new Etag to S3
       const newEtag = '686897696a7c876b7e'
-      await s3.uploadBlob(imagePath, upstreamResp.data, newEtag, '1')
+      const newContentType = 'application/octet-stream'
+      await s3.uploadBlob(imagePath, upstreamResp.data, newEtag, newContentType, '1')
       await setTimeout(5000)
 
       // Download again to check the Etag has been overwritten properly
       const newS3Resp = await s3.downloadBlob(imagePath)
       expect(newS3Resp.Metadata.etag).toEqual(newEtag)
+      expect(newS3Resp.Metadata.contenttype).toEqual(newContentType)
 
       // Remove Image after test
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
