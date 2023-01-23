@@ -393,25 +393,36 @@ class Downloader {
     })
   }
 
-  public async downloadContent(_url: string): Promise<{ content: Buffer | string; responseHeaders: any }> {
+  public async downloadContent(_url: string, retry = true): Promise<{ content: Buffer | string; responseHeaders: any }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
     const url = this.deserializeUrl(_url)
 
     await this.claimRequest()
-    return new Promise((resolve, reject) => {
-      this.backoffCall(this.getContentCb, url, async (err: any, val: any) => {
-        this.releaseRequest()
-        if (err) {
-          const httpStatus = err.response && err.response.status
-          logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
-          reject(err)
+
+    try {
+      return await new Promise((resolve, reject) => {
+        const cb = (err: any, val: any) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve(val)
+          }
+        }
+        if (retry) {
+          this.backoffCall(this.getContentCb, url, cb)
         } else {
-          resolve(val)
+          this.getContentCb(url, cb)
         }
       })
-    })
+    } catch (err) {
+      const httpStatus = err.response && err.response.status
+      logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
+      throw err
+    } finally {
+      this.releaseRequest()
+    }
   }
 
   public async canGetUrl(url: string): Promise<boolean> {

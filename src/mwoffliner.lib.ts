@@ -478,11 +478,7 @@ async function execute(argv: any) {
       }),
     )
 
-    await downloadFiles(filesToDownloadXPath, zimCreator, dump, downloader)
-
-    logger.log('Flushing Redis file store')
-    await filesToDownloadXPath.flush()
-    await filesToRetryXPath.flush()
+    await downloadFiles(filesToDownloadXPath, filesToRetryXPath, zimCreator, dump, downloader)
 
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(downloader, dump, zimCreator)
