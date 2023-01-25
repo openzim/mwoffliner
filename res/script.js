@@ -1,3 +1,5 @@
+function importScript() { return 1 } // this is to avoid the error from site.js
+
 window.onload = function () {
 
     /* Collapsing of the sections */

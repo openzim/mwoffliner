@@ -182,6 +182,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             continue
           }
 
+          const jsWithArticleId = new ZimArticle({ url: jsPath(articleId, config.output.dirs.mediawiki), data: `let articleId = '${articleId}';`, ns: '-' })
+          zimCreator.addArticle(jsWithArticleId)
+
           const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId)
           let articleDoc = _articleDoc
 
@@ -867,7 +870,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
         '__ARTICLE_CSS_LIST__',
         styleDependenciesList.length !== 0 ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
       )
-      .replace('__ARTICLE_ID__', `<script>let articleId = '${articleId}'</script>`),
+      .replace('__ARTICLE_ID__', genHeaderScript(config, encodeURIComponent(articleId), articleId, config.output.dirs.mediawiki)),
   )
 
   /* Create final document by merging template and parsoid documents */
