@@ -403,7 +403,7 @@ async function execute(argv: any) {
         LongDescription: dump.opts.customZimLongDescription ? dump.opts.customZimLongDescription.slice(0, 4000) : '',
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
-      },
+      } as any,
     )
     const scraperArticle = new ZimArticle({
       ns: 'M',
