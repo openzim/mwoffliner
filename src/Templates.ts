@@ -28,7 +28,12 @@ const htmlTemplateCode = (articleId: string) => {
   }, '')
 
   const jsScripts = config.output.jsResources.reduce((buf, js) => {
-    return buf + genHeaderScript(config, js, articleId)
+    return (
+      buf +
+      (js === 'script'
+        ? genHeaderScript(config, js, articleId, '', `data-article-id="${articleId.replace(/"/g, '\\\\"')}" id="script-js"`)
+        : genHeaderScript(config, js, articleId))
+    )
   }, '')
 
   return readTemplate(config.output.templates.page).replace('__CSS_LINKS__', cssLinks).replace('__JS_SCRIPTS__', jsScripts)

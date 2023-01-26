@@ -866,8 +866,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
       .replace(
         '__ARTICLE_CSS_LIST__',
         styleDependenciesList.length !== 0 ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
-      .replace('__ARTICLE_ID__', `<script>let articleId = '${articleId}'</script>`),
+      ),
   )
 
   /* Create final document by merging template and parsoid documents */
