@@ -8,6 +8,7 @@ export const parameterDescriptions = {
   customZimFavicon: 'Use this option to give a path to a PNG favicon, it will be used in place of the Mediawiki logo. This can be a local path or an HTTP(S) url',
   customZimTitle: 'Allow to configure a custom ZIM file title.',
   customZimDescription: 'Allow to configure a custom ZIM file description.',
+  customZimLongDescription: 'Allow to configure a custom ZIM file long description. Max length is 4000 chars.',
   customZimTags: 'Allow to configure custom ZIM file tags (semi-colon separated).',
   customMainPage: 'Allow to configure a custom page as welcome page.',
   filenamePrefix: 'For the part of the ZIM filename which is before the format & date parts.',
