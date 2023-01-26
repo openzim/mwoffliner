@@ -34,6 +34,8 @@ var webpScripts = ['../-/webpHeroPolyfill.js',
                    '../-/webpHeroBundle.js',
                    '../-/webpHandler.js'];
 webpScripts = webpScripts.map(function(scriptUrl) {
+    const articleId = document.getElementById('script-js').dataset.articleId;
+
     return (typeof(articleId)) ? '../'.repeat(articleId.split('/').length - 1) + scriptUrl : scriptUrl;
 });
 var script = document.createElement('script');
