@@ -526,8 +526,10 @@ class Downloader {
   }
 
   private async getCompressedBody(resp: any): Promise<any> {
+    logger.log('getCompressedBody', resp.headers['content-type'])
     if (isBitmapImageMimeType(resp.headers['content-type'])) {
       if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
+        logger.log('COMPRESS IT')
         resp.data = await (imagemin as any)
           .buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
           .catch(async (err) => {
@@ -553,12 +555,14 @@ class Downloader {
           })
         resp.headers.path_postfix = '.webp'
       } else {
+        logger.log('DONT COMPRESS')
         resp.data = await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
           return resp.data
         })
       }
       return true
     }
+    logger.log('NOT AN IMAGE')
     return false
   }
 

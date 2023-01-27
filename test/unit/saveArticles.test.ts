@@ -15,15 +15,31 @@ describe('saveArticles', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
+  let wikiEnClasses: any
+  let voyageClasses: any
+  let wikiEnNFClasses: any
+  let wikiEnNoPicClasses: any
+  let wikiEnNoVidClasses: any
+
+  beforeAll(async () => {
+    wikiEnClasses = await setupScrapeClasses()
+    voyageClasses = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' })
+    wikiEnNFClasses = await setupScrapeClasses({ format: '' })
+    wikiEnNoPicClasses = await setupScrapeClasses({ format: 'nopic' })
+    wikiEnNoVidClasses = await setupScrapeClasses({ format: 'novid' })
+    for (const scraperClasses of [wikiEnClasses, voyageClasses, wikiEnNFClasses, wikiEnNoPicClasses, wikiEnNoVidClasses]) {
+      await scraperClasses.downloader.checkCapabilities()
+      await scraperClasses.downloader.setBaseUrls()
+    }
+  })
+
   const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">
     <video poster=\"//upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg\" preload=\"none\" height=\"115\" width=\"120\" resource=\"./File:S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv\"><source src=\"https://upload.wikimedia.org/wikipedia/commons/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv\" type=\"video/ogg; codecs=&quot;theora&quot;\" data-file-width=\"264\" data-file-height=\"254\" data-title=\"Original Ogg file, 264 × 254 (501 kbps)\" data-shorttitle=\"Ogg source\"><source src=\"https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm\" type=\"video/webm; codecs=&quot;vp9, opus&quot;\" data-width=\"124\" data-height=\"120\" data-title=\"Lowest bandwidth VP9 (120P)\" data-shorttitle=\"VP9 120P\"><source src=\"https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.160p.webm\" type=\"video/webm; codecs=&quot;vp8, vorbis&quot;\" data-width=\"166\" data-height=\"160\" data-title=\"Low bandwidth WebM (160P)\" data-shorttitle=\"WebM 160P\"><source src=\"https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.180p.vp9.webm\" type=\"video/webm; codecs=&quot;vp9, opus&quot;\" data-width=\"188\" data-height=\"180\" data-title=\"Low bandwidth VP9 (180P)\" data-shorttitle=\"VP9 180P\"><source src=\"https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.240p.vp9.webm\" type=\"video/webm; codecs=&quot;vp9, opus&quot;\" data-width=\"250\" data-height=\"240\" data-title=\"Small VP9 (240P)\" data-shorttitle=\"VP9 240P\"><source src=\"https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.240p.webm\" type=\"video/webm; codecs=&quot;vp8, vorbis&quot;\" data-width=\"250\" data-height=\"240\" data-title=\"Small WebM (240P)\" data-shorttitle=\"WebM 240P\"></video>
 `
 
   test('Article html processing', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    await downloader.checkCapabilities()
-    await downloader.setBaseUrls()
+    const { downloader, mw, dump } = wikiEnClasses
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
     await articleDetailXId.flush()
@@ -60,72 +76,55 @@ describe('saveArticles', () => {
     expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
   })
 
-  describe('applyOtherTreatments', () => {
-    let dump: Dump
-    let dump2: Dump
-    let articleHtml: string
+  test('HTML parsing', async () => {
+    const dump = voyageClasses.dump
+    const downloader = voyageClasses.downloader
 
-    beforeEach(async () => {
-      const classes = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      dump = classes.dump
-      const downloader = classes.downloader
+    const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
+    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+    articleDetailXId.setMany(articlesDetail)
+    const [{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump)
+    const dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
 
-      await downloader.checkCapabilities()
-      await downloader.setBaseUrls()
-      const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
-      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
-      articleDetailXId.setMany(articlesDetail)
-      ;[{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump)
-      dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
-    })
+    const doc = domino.createDocument(articleHtml)
+    await applyOtherTreatments(doc, dump)
 
-    test('Found no empty details elements when they should be stripped in mobile view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump)
+    const doc2 = domino.createDocument(articleHtml)
+    await applyOtherTreatments(doc, dump2)
 
-      const details = Array.from(doc.querySelectorAll('details'))
-      let fewestChildren = 0
-      for (const d of details) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
+    let detailElems = Array.from(doc.querySelectorAll('details'))
+    let fewestChildren = 0
+    for (const d of detailElems) {
+      if (fewestChildren === 0 || d.children.length < fewestChildren) {
+        fewestChildren = d.children.length
       }
-      expect(fewestChildren).toBeGreaterThan(0)
-    })
+    }
+    // Found no empty details elements when they should be stripped in mobile view
+    expect(fewestChildren).toBeGreaterThan(0)
 
-    test('Found empty details elements when they should be left im mobile view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump2)
-
-      const details = Array.from(doc.querySelectorAll('details'))
-
-      let fewestChildren = 0
-      for (const d of details) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
+    detailElems = Array.from(doc2.querySelectorAll('details'))
+    fewestChildren = 0
+    for (const d of detailElems) {
+      if (fewestChildren === 0 || d.children.length < fewestChildren) {
+        fewestChildren = d.children.length
       }
-      expect(fewestChildren).toBeLessThanOrEqual(1)
-    })
+    }
+    // Found empty details elements when they should be left im mobile view
+    expect(fewestChildren).toBeLessThanOrEqual(1)
 
-    test('Found empty sections when they should be left im desktop view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump2)
-
-      const sections = Array.from(doc.querySelectorAll('section'))
-
-      let fewestChildren = 0
-      for (const d of sections) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
+    const sectionElems = Array.from(doc2.querySelectorAll('section'))
+    fewestChildren = 0
+    for (const d of sectionElems) {
+      if (fewestChildren === 0 || d.children.length < fewestChildren) {
+        fewestChildren = d.children.length
       }
-      expect(fewestChildren).toBeLessThanOrEqual(1)
-    })
+    }
+    // Found empty sections when they should be left im desktop view
+    expect(fewestChildren).toBeLessThanOrEqual(1)
   })
 
   test('treatMedias format=""', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: '' }) // en wikipedia
+    const { downloader, mw, dump } = wikiEnNFClasses
 
     const doc = domino.createDocument(html)
 
@@ -149,7 +148,7 @@ describe('saveArticles', () => {
   })
 
   test('treatMedias format="nopic"', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+    const { downloader, mw, dump } = wikiEnNoPicClasses
 
     const doc = domino.createDocument(html)
 
@@ -165,7 +164,7 @@ describe('saveArticles', () => {
   })
 
   test('treatMedias format="novid"', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: 'novid' }) // en wikipedia
+    const { downloader, mw, dump } = wikiEnNoVidClasses
 
     const doc = domino.createDocument(html)
 
@@ -181,9 +180,7 @@ describe('saveArticles', () => {
   })
 
   test('--customFlavour', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-    await downloader.checkCapabilities()
-    await downloader.setBaseUrls()
+    const { downloader, mw, dump } = wikiEnNoPicClasses
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async shouldKeepArticle(articleId: string, doc: Document) {
@@ -243,7 +240,7 @@ describe('saveArticles', () => {
   })
 
   test('treat one subtitle', async () => {
-    const { mw, dump } = await setupScrapeClasses({ format: '' })
+    const { mw, dump } = wikiEnNFClasses
 
     // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
     const wikicode =
@@ -259,7 +256,7 @@ describe('saveArticles', () => {
   })
 
   test('treat multiple subtitles in one video', async () => {
-    const { mw, dump } = await setupScrapeClasses({ format: '' })
+    const { mw, dump } = wikiEnNFClasses
 
     // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
     const wikicode = '[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]'
@@ -282,7 +279,7 @@ describe('saveArticles', () => {
   })
 
   test('correct resolution retrieval', async () => {
-    const { mw, dump } = await setupScrapeClasses({ format: '' })
+    const { mw, dump } = wikiEnNFClasses
 
     let htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="300" resource="./File:Gout.webm">
         <source src="//upload.wikimedia.org/wikipedia/commons/3/3d/Gout.webm" type="video/webm; codecs=&quot;vp9, vorbis&quot;" data-file-width="1920" data-file-height="1080" data-title="Original WebM file, 1,920 × 1,080 (735 kbps)" data-shorttitle="WebM source">
@@ -327,7 +324,7 @@ describe('saveArticles', () => {
   })
 
   test('Ogg audio retrival', async () => {
-    const { mw, dump } = await setupScrapeClasses({ format: '' })
+    const { mw, dump } = wikiEnNFClasses
     const htmlStr = `<audio controls="" preload="none" height="32" width="200" resource="./File:William_Shakespeare_(Spoken_Article).ogg">
         <source src="//upload.wikimedia.org/wikipedia/commons/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg" type="audio/ogg; codecs=&quot;vorbis&quot;" data-title="Original Ogg file (54 kbps)" data-shorttitle="Ogg source">
         <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg/William_Shakespeare_%28Spoken_Article%29.ogg.mp3" type="audio/mpeg" data-title="MP3" data-shorttitle="MP3">

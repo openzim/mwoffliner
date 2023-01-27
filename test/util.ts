@@ -37,8 +37,11 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
 
   const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
+  logger.log(`GET METADATA for ${mwUrl}`)
   await mw.getMwMetaData(downloader)
+  logger.log(`GOT METADATA for ${mwUrl}`)
   await downloader.checkCapabilities()
+  logger.log(`CHECKED CAPS for ${mwUrl}`)
 
   const dump = new Dump(format, {} as any, mw.metaData)
 
