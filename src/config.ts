@@ -73,8 +73,8 @@ const config = {
         'startup',
         'jquery',
         'mediawiki.base',
-        'site',
         'mediawiki.util',
+        'site',
         'mediawiki.page.ready',
 
         // Gadget resources are not shared by Parsoid API https://phabricator.wikimedia.org/T161278
