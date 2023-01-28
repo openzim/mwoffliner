@@ -112,6 +112,10 @@ async function execute(argv: any) {
     throw new Error(`Admin email [${adminEmail}] is not valid`)
   }
 
+  if (customZimLongDescription && customZimLongDescription.length > 4000) {
+    throw new Error('customZimLongDescription should be less than 4000 characters.')
+  }
+
   /* Number of parallel requests. To secure stability and avoid HTTP
   429 errors, no more than MAX_CPU_CORES can be considered */
   if (_speed && isNaN(_speed)) {
@@ -400,7 +404,7 @@ async function execute(argv: any) {
         Name: dump.computeFilenameRadical(false, true, true),
         Flavour: dump.computeFlavour(),
         Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
-        LongDescription: dump.opts.customZimLongDescription ? dump.opts.customZimLongDescription.slice(0, 4000) : '',
+        ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
       } as any,
