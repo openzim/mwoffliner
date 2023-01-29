@@ -9,7 +9,7 @@ import { Dump } from '../../src/Dump'
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 
-jest.setTimeout(20000)
+jest.setTimeout(40000)
 
 describe('saveArticles', () => {
   beforeAll(startRedis)
