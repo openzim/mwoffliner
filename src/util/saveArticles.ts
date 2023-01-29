@@ -12,11 +12,11 @@ import { Dump } from '../Dump.js'
 import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
 import { config } from '../config.js'
 import { footerTemplate, htmlTemplateCode } from '../Templates.js'
-import { articleDetailXId, filesToDownloadXPath, filesToRetryXPath } from '../stores.js'
+import { articleDetailXId, filesToDownloadXPath } from '../stores.js'
 import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageMimeType, getMimeType } from './misc.js'
 import { RedisKvs } from './RedisKvs.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
-import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR } from './const.js'
+import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -28,11 +28,13 @@ type FileStore = RedisKvs<{
   width?: number
 }>
 
-export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryLater = true) {
+export async function downloadFiles(fileStore: FileStore, retryStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
+  await retryStore.flush()
   const filesForAttempt = await fileStore.len()
   const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail
+  const doRetry = retryCounter < MAX_FILE_DOWNLOAD_RETRIES
 
-  logger.log(`${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files...`)
+  logger.log(`${retryCounter ? 'RE-' : ''}Downloading a total of [${retryCounter ? filesForAttempt : filesTotal}] files...`)
   let prevPercentProgress: string
 
   await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
@@ -64,9 +66,8 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
         isFailed = true
       } finally {
         if (isFailed) {
-          // todo don't queue 404 for retry
-          if (retryLater) {
-            await filesToRetryXPath.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width })
+          if (doRetry && resp.status !== 404) {
+            await retryStore.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width })
           } else {
             logger.warn(`Error downloading file [${downloader.deserializeUrl(resp.url)}], skipping`)
             dump.status.files.fail += 1
@@ -83,16 +84,19 @@ export async function downloadFiles(fileStore: FileStore, zimCreator: ZimCreator
     }
   })
 
-  if (retryLater) {
-    const isThereAnythingToRetry = (await filesToRetryXPath.len()) > 0
-    if (isThereAnythingToRetry) {
-      await downloadFiles(filesToRetryXPath, zimCreator, dump, downloader, false)
+  logger.log(`Done with ${retryCounter ? 'RE-' : ''}Downloading [${retryCounter ? filesForAttempt : filesTotal}] files`)
+
+  if (doRetry) {
+    const amountToRetry = await retryStore.len()
+    if (amountToRetry > 0) {
+      const ts = (retryCounter + 1) * 10
+      logger.log(`Waiting ${ts} seconds before retrying ${amountToRetry} files`)
+      await new Promise((res) => setTimeout(res, ts * 1000))
+      await downloadFiles(retryStore, fileStore, zimCreator, dump, downloader, retryCounter + 1)
     } else {
       logger.log('No files to retry')
     }
   }
-
-  logger.log(`Done with ${retryLater ? '' : 'RE-'}Downloading a total of [${retryLater ? filesTotal : filesForAttempt}] files`)
 }
 
 async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
@@ -116,13 +120,14 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
         resp.width = arg.val.width
 
         return downloader
-          .downloadContent(arg.val.url)
+          .downloadContent(arg.val.url, false)
           .then((r) => {
             resp.result = r
             resp.path += resp.result.responseHeaders.path_postfix || ''
             return resp
           })
-          .catch(() => {
+          .catch((err) => {
+            resp.status = err.response?.status
             return resp
           })
       },
