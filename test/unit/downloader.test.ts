@@ -1,11 +1,10 @@
-import { startRedis, stopRedis } from './bootstrap.js'
+import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
 import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump'
-import { articleDetailXId } from '../../src/stores.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -79,7 +78,7 @@ describe('Downloader class', () => {
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
     const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet)
-    articleDetailXId.setMany(articleDetailsRet)
+    redisStore.articleDetailXId.setMany(articleDetailsRet)
     const { London, Paris, Zürich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
     expect(London).toBeDefined()
     expect(United_Kingdom).toBeDefined()
@@ -119,17 +118,17 @@ describe('Downloader class', () => {
     })
 
     test('getArticle of "London" returns one article', async () => {
-      const LondonArticle = await downloader.getArticle('London', dump)
+      const LondonArticle = await downloader.getArticle('London', dump, redisStore.articleDetailXId)
       expect(LondonArticle).toHaveLength(1)
     })
 
     test('Categories with many subCategories are paginated', async () => {
-      const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump)
+      const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump, redisStore.articleDetailXId)
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
 
     test('getArticle response status for non-existent article id is 404', async () => {
-      await expect(downloader.getArticle('NeverExistingArticle', dump)).rejects.toThrowError(new Error('Request failed with status code 404'))
+      await expect(downloader.getArticle('NeverExistingArticle', dump, redisStore.articleDetailXId)).rejects.toThrowError(new Error('Request failed with status code 404'))
     })
   })
 

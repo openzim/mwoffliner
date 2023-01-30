@@ -9,26 +9,18 @@ import pmap from 'p-map'
 import DU from '../DOMUtils.js'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
+import Timer from './Timer.js'
 import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
 import { config } from '../config.js'
 import { footerTemplate, htmlTemplateCode } from '../Templates.js'
-import { articleDetailXId, filesToDownloadXPath } from '../stores.js'
 import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageMimeType, getMimeType } from './misc.js'
-import { RedisKvs } from './RedisKvs.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
 
-type FileStore = RedisKvs<{
-  url: string
-  namespace?: string
-  mult?: number
-  width?: number
-}>
-
-export async function downloadFiles(fileStore: FileStore, retryStore: FileStore, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
+export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
   const filesForAttempt = await fileStore.len()
   const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail
@@ -138,11 +130,11 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump: Dump) {
+async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
-    for (const [articleId] of Object.entries(articleKeyValuePairs)) {
+    for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
-        const rets = await downloader.getArticle(articleId, dump)
+        const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleDetail)
 
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
@@ -162,112 +154,208 @@ async function getAllArticlesToKeep(downloader: Downloader, mw: MediaWiki, dump:
   })
 }
 
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, mw: MediaWiki, dump: Dump) {
+function flattenPromises(promisArr: [string, Promise<Error>][]): [string, Promise<Error>] {
+  return [
+    // first articleId
+    promisArr[0][0],
+    // promise resolving to first error or void
+    (async () => {
+      const resolved = await Promise.all(promisArr.map((p) => p[1]))
+      return resolved.find((err) => err)
+    })(),
+  ]
+}
+
+/*
+ * Parse fetched article HTML, store files
+ * and dependencies and save in Zim
+ */
+async function saveArticle(
+  zimCreator: ZimCreator,
+  articleHtml: string,
+  downloader: Downloader,
+  redisStore: RS,
+  mw: MediaWiki,
+  dump: Dump,
+  articleId: string,
+  articleTitle: string,
+  articleDetail: ArticleDetail,
+  _moduleDependencies: any,
+): Promise<Error> {
+  try {
+    const { finalHTML, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, redisStore, mw, dump, articleId, articleDetail, _moduleDependencies, downloader.webp)
+
+    const filesToDownload: KVS<FileDetail> = {}
+
+    subtitles.forEach((s) => {
+      filesToDownload[s.path] = { url: s.url, namespace: '-' }
+    })
+
+    if (mediaDependencies.length) {
+      const existingVals = await redisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
+
+      for (const dep of mediaDependencies) {
+        const { mult, width } = getSizeFromUrl(dep.url)
+        const existingVal = existingVals[dep.path]
+        const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
+        if (currentDepIsHigherRes) {
+          filesToDownload[dep.path] = {
+            url: downloader.serializeUrl(dep.url),
+            mult,
+            width,
+          }
+        }
+      }
+    }
+
+    await redisStore.filesToDownloadXPath.setMany(filesToDownload)
+
+    const zimArticle = new ZimArticle({
+      url: articleId,
+      data: finalHTML,
+      ns: articleDetail.ns === 14 ? 'U' : 'A',
+      mimeType: 'text/html',
+      title: articleTitle,
+      shouldIndex: true,
+    })
+
+    zimCreator.addArticle(zimArticle)
+
+    return null
+  } catch (err) {
+    return err
+  }
+}
+
+/*
+ * Fetch Articles
+ */
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, redisStore: RS, mw: MediaWiki, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
 
+  const { articleDetailXId } = redisStore
   const articlesTotal = await articleDetailXId.len()
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, mw, dump)
+    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump)
   }
 
-  await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs, workerId) => {
-    logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`)
-    for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      try {
-        const rets = await downloader.getArticle(articleId, dump)
+  const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
+  const timeout = Math.max(downloader.requestTimeout * 2, 10 * 60 * 1000)
 
-        for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
-          const nonPaginatedArticleId = articleDetail.title
-          if (!articleHtml) {
-            logger.warn(`No HTML returned for article [${articleId}], skipping`)
-            continue
-          }
+  await articleDetailXId.iterateItems(downloader.speed, (articleKeyValuePairs, workerId) => {
+    return new Promise(async (resolve, reject) => {
+      /*
+       * timer to detect freezes
+       */
+      let curStage = 0
+      let curArticle = ''
+      const timer = new Timer(() => {
+        const errorMessage = `Worker timed out at ${stages[curStage]} ${curArticle}`
+        logger.error(errorMessage)
+        reject(new Error(errorMessage))
+      }, timeout)
 
-          const { articleDoc: _articleDoc, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, downloader, mw, dump, articleId)
-          let articleDoc = _articleDoc
+      logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`)
 
-          if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
-            articleDoc = await dump.customProcessor.preProcessArticle(articleId, articleDoc)
-          }
+      const parsePromiseQueue: [string, Promise<Error>][] = []
 
-          for (const dep of mediaDependencies) {
-            const { mult, width } = getSizeFromUrl(dep.url)
+      for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+        timer.reset()
+        curStage = 0
+        curArticle = articleId
+        const promises: [string, Promise<Error>][] = []
 
-            const existingVal = await filesToDownloadXPath.get(dep.path)
-            const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
-            if (currentDepIsHigherRes) {
-              await filesToDownloadXPath.set(dep.path, { url: downloader.serializeUrl(dep.url), mult, width })
+        try {
+          const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleDetail)
+
+          for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
+            const nonPaginatedArticleId = articleDetail.title
+            if (!articleHtml) {
+              logger.warn(`No HTML returned for article [${articleId}], skipping`)
+              continue
             }
+
+            curStage += 1
+            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader)
+            for (const dep of _moduleDependencies.jsDependenciesList) {
+              jsModuleDependencies.add(dep)
+            }
+            for (const dep of _moduleDependencies.styleDependenciesList) {
+              cssModuleDependencies.add(dep)
+            }
+            jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars
+
+            /*
+             * getModuleDependencies and downloader.getArticle are
+             * network heavy while parsing and saving is I/O.
+             * To parse and download simultaniously, we don't await on save,
+             * but instead cache the promise in a queue and check it later
+             */
+            promises.push([articleId, saveArticle(zimCreator, articleHtml, downloader, redisStore, mw, dump, articleId, articleTitle, articleDetail, _moduleDependencies)])
           }
-
-          for (const subtitle of subtitles) {
-            await filesToDownloadXPath.set(subtitle.path, { url: subtitle.url, namespace: '-' })
+        } catch (err) {
+          dump.status.articles.fail += 1
+          logger.error(`Error downloading article ${articleId}`)
+          if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
+            reject(err)
+            return
           }
+        }
 
-          const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader)
-
-          for (const dep of _moduleDependencies.jsDependenciesList) {
-            jsModuleDependencies.add(dep)
+        if (parsePromiseQueue.length) {
+          curStage += 1
+          const [articleId, parsePromise] = parsePromiseQueue.shift()
+          curArticle = articleId
+          /*
+           * in normal circumstances, where downloading is slower than
+           * saving, this promise will always be resolved here already
+           */
+          const err = await parsePromise
+          if (err) {
+            logger.error(`Error parsing article ${articleId}`)
+            timer.clear()
+            reject(err)
+            return
           }
-          for (const dep of _moduleDependencies.styleDependenciesList) {
-            cssModuleDependencies.add(dep)
-          }
-
-          jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars
-
-          let templatedDoc = await templateArticle(articleDoc, _moduleDependencies, mw, dump, articleId, articleDetail)
-
-          if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
-            templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
-          }
-
-          let outHtml = templatedDoc.documentElement.outerHTML
-
-          if (dump.opts.minifyHtml) {
-            outHtml = htmlMinifier.minify(outHtml, {
-              removeComments: true,
-              conservativeCollapse: true,
-              collapseBooleanAttributes: true,
-              removeRedundantAttributes: true,
-              removeEmptyAttributes: true,
-              minifyCSS: true,
-            })
-          }
-
-          const finalHTML = '<!DOCTYPE html>\n' + outHtml
-
-          const zimArticle = new ZimArticle({
-            url: articleId,
-            data: finalHTML,
-            ns: articleDetail.ns === 14 ? 'U' : 'A',
-            mimeType: 'text/html',
-            title: articleTitle,
-            shouldIndex: true,
-          })
-
-          zimCreator.addArticle(zimArticle)
           dump.status.articles.success += 1
         }
-      } catch (err) {
-        dump.status.articles.fail += 1
-        logger.error(`Error downloading article ${articleId}`)
-        if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-          throw err
+
+        if (promises.length) {
+          parsePromiseQueue.push(flattenPromises(promises))
+        }
+
+        if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
+          const percentProgress = (((dump.status.articles.success + dump.status.articles.fail) / articlesTotal) * 100).toFixed(1)
+          if (percentProgress !== prevPercentProgress) {
+            prevPercentProgress = percentProgress
+            logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`)
+          }
         }
       }
 
-      if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
-        const percentProgress = (((dump.status.articles.success + dump.status.articles.fail) / articlesTotal) * 100).toFixed(1)
-        if (percentProgress !== prevPercentProgress) {
-          prevPercentProgress = percentProgress
-          logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`)
+      /*
+       * clear up potentially still pending promises
+       */
+      curStage += 1
+      if (parsePromiseQueue.length) {
+        const [articleId, parsePromise] = flattenPromises(parsePromiseQueue)
+        curArticle = articleId
+        const err = await parsePromise
+        if (err) {
+          timer.clear()
+          reject(err)
+          return
         }
+        dump.status.articles.success += parsePromiseQueue.length
       }
-    }
+
+      timer.clear()
+      resolve()
+    })
   })
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
@@ -289,19 +377,20 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
   let styleDependenciesList: string[] = []
 
   const articleApiUrl = mw.articleApiUrl(articleId)
+
   const articleData = await downloader.getJSON<any>(articleApiUrl)
 
-  /* Something went wrong in modules retrieval at app level (no HTTP error) */
   if (articleData.error) {
-    logger.warn(`Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`)
+    const errorMessage = `Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`
+    logger.error(errorMessage)
 
     /* If article is missing (for example because it just has been deleted) */
     if (articleData.error.code === 'missingtitle') {
       return { jsConfigVars, jsDependenciesList, styleDependenciesList }
     }
 
-    /* Other kind of error (unsupported) */
-    process.exit(1)
+    /* Something went wrong in modules retrieval at app level (no HTTP error) */
+    throw new Error(errorMessage)
   }
 
   const {
@@ -331,11 +420,20 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
   return { jsConfigVars, jsDependenciesList, styleDependenciesList }
 }
 
-async function processArticleHtml(html: string, downloader: Downloader, mw: MediaWiki, dump: Dump, articleId: string) {
+async function processArticleHtml(
+  html: string,
+  redisStore: RS,
+  mw: MediaWiki,
+  dump: Dump,
+  articleId: string,
+  articleDetail: ArticleDetail,
+  _moduleDependencies: any,
+  webp: boolean,
+) {
   let mediaDependencies: Array<{ url: string; path: string }> = []
   let subtitles: Array<{ url: string; path: string }> = []
   let doc = domino.createDocument(html)
-  const tmRet = await treatMedias(doc, mw, dump, articleId, downloader)
+  const tmRet = await treatMedias(doc, mw, dump, articleId, webp, redisStore)
   doc = tmRet.doc
 
   mediaDependencies = mediaDependencies.concat(
@@ -356,7 +454,7 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
         return { url, path }
       }),
   )
-  const ruRet = await rewriteUrlsOfDoc(doc, articleId, mw, dump)
+  const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, mw, dump)
   doc = ruRet.doc
   mediaDependencies = mediaDependencies.concat(
     ruRet.mediaDependencies
@@ -367,8 +465,34 @@ async function processArticleHtml(html: string, downloader: Downloader, mw: Medi
       }),
   )
   doc = applyOtherTreatments(doc, dump)
+
+  if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
+    doc = await dump.customProcessor.preProcessArticle(articleId, doc)
+  }
+
+  let templatedDoc = await templateArticle(doc, _moduleDependencies, mw, dump, articleId, articleDetail, redisStore.articleDetailXId)
+
+  if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
+    templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
+  }
+
+  let outHtml = templatedDoc.documentElement.outerHTML
+
+  if (dump.opts.minifyHtml) {
+    outHtml = htmlMinifier.minify(outHtml, {
+      removeComments: true,
+      conservativeCollapse: true,
+      collapseBooleanAttributes: true,
+      removeRedundantAttributes: true,
+      removeEmptyAttributes: true,
+      minifyCSS: true,
+    })
+  }
+
+  const finalHTML = '<!DOCTYPE html>\n' + outHtml
+
   return {
-    articleDoc: doc,
+    finalHTML,
     mediaDependencies,
     subtitles,
   }
@@ -544,7 +668,8 @@ async function treatImage(
   srcCache: KVS<boolean>,
   articleId: string,
   img: DominoElement,
-  downloader: Downloader,
+  webp: boolean,
+  redisStore: RS,
 ): Promise<{ mediaDependencies: string[] }> {
   const mediaDependencies: string[] = []
 
@@ -559,7 +684,7 @@ async function treatImage(
     /* Check if the target is mirrored */
     const href = linkNode.getAttribute('href') || ''
     const title = mw.extractPageTitleFromHref(href)
-    const keepLink = title && (await isMirrored(title))
+    const keepLink = title && (await redisStore.articleDetailXId.exists(title))
 
     /* Under certain condition it seems that this is possible
      * to have parentNode == undefined, in this case this
@@ -591,7 +716,7 @@ async function treatImage(
     }
 
     /* Change image source attribute to point to the local image */
-    img.setAttribute('src', isWebpCandidateImageMimeType(downloader.webp, getMimeType(src)) ? newSrc + '.webp' : newSrc)
+    img.setAttribute('src', isWebpCandidateImageMimeType(webp, getMimeType(src)) ? newSrc + '.webp' : newSrc)
 
     /* Remove useless 'resource' attribute */
     img.removeAttribute('resource')
@@ -669,7 +794,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
   imageNode.parentNode.replaceChild(thumbDiv, imageNode)
 }
 
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, downloader: Downloader) {
+export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
   let mediaDependencies: string[] = []
   let subtitles: string[] = []
   /* Clean/rewrite image tags */
@@ -679,13 +804,13 @@ export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump
 
   for (const videoEl of videos) {
     // <video /> and <audio />
-    const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, downloader.webp)
+    const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, webp)
     mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
     subtitles = subtitles.concat(ret.subtitles)
   }
 
   for (const imgEl of imgs) {
-    const ret = await treatImage(mw, dump, srcCache, articleId, imgEl, downloader)
+    const ret = await treatImage(mw, dump, srcCache, articleId, imgEl, webp, redisStore)
     mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
   }
 
@@ -853,7 +978,15 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
   return parsoidDoc
 }
 
-async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: any, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail): Promise<Document> {
+async function templateArticle(
+  parsoidDoc: DominoElement,
+  moduleDependencies: any,
+  mw: MediaWiki,
+  dump: Dump,
+  articleId: string,
+  articleDetail: ArticleDetail,
+  articleDetailXId: RKVS<ArticleDetail>,
+): Promise<Document> {
   const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
     jsConfigVars: string | RegExpExecArray
     jsDependenciesList: string[]
@@ -894,7 +1027,7 @@ async function templateArticle(parsoidDoc: DominoElement, moduleDependencies: an
     await Promise.all(
       parents.map(async (parent) => {
         const label = parent.replace(/_/g, ' ')
-        const isParentMirrored = await isMirrored(`${articleId.split(parent)[0]}${parent}`)
+        const isParentMirrored = await articleDetailXId.exists(`${articleId.split(parent)[0]}${parent}`)
         subpages += `&lt; ${
           isParentMirrored ? `<a href="${'../'.repeat(parents.length)}${encodeArticleIdForZimHtmlUrl(`${articleId.split(parent)[0]}${parent}`)}" title="${label}">` : ''
         }${label}${isParentMirrored ? '</a> ' : ' '}`
@@ -960,8 +1093,4 @@ function isSubpage(id: string, mw: MediaWiki) {
     }
   }
   return false
-}
-
-export function isMirrored(id: string) {
-  return articleDetailXId.exists(id)
 }

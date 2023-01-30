@@ -1,8 +1,7 @@
-import { startRedis, stopRedis } from './bootstrap.js'
+import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import domino from 'domino'
 
 import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from '../util.js'
-import { articleDetailXId } from '../../src/stores.js'
 import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { Dump } from '../../src/Dump'
@@ -26,6 +25,7 @@ describe('saveArticles', () => {
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
+    const { articleDetailXId } = redisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -42,6 +42,7 @@ describe('saveArticles', () => {
         },
       } as any,
       downloader,
+      redisStore,
       mw,
       dump,
     )
@@ -50,7 +51,7 @@ describe('saveArticles', () => {
     expect(addedArticles).toHaveLength(1)
     expect(addedArticles[0].aid).toEqual('A/London')
 
-    await expect(downloader.getArticle('non-existent-article', dump)).rejects.toThrowError('')
+    await expect(downloader.getArticle('non-existent-article', dump, articleDetailXId)).rejects.toThrowError('')
 
     const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
 
@@ -74,8 +75,9 @@ describe('saveArticles', () => {
       await downloader.setBaseUrls()
       const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = redisStore
       articleDetailXId.setMany(articlesDetail)
-      ;[{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump)
+      ;[{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump, articleDetailXId)
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
 
@@ -129,7 +131,7 @@ describe('saveArticles', () => {
 
     const doc = domino.createDocument(html)
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader)
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader.webp, redisStore)
 
     const videoEl = ret.doc.querySelector('video')
     const videoPosterUrl = videoEl.getAttribute('poster')
@@ -153,7 +155,7 @@ describe('saveArticles', () => {
 
     const doc = domino.createDocument(html)
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader)
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader.webp, redisStore)
 
     const videoEl = ret.doc.querySelector('video')
     const imgEl = ret.doc.querySelector('img')
@@ -169,7 +171,7 @@ describe('saveArticles', () => {
 
     const doc = domino.createDocument(html)
 
-    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader)
+    const ret = await treatMedias(doc, mw, dump, 'Dendritic_cell', downloader.webp, redisStore)
 
     const videoEl = ret.doc.querySelector('video')
     const imgEl = ret.doc.querySelector('img')
@@ -213,6 +215,7 @@ describe('saveArticles', () => {
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
+    const { articleDetailXId } = redisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -227,6 +230,7 @@ describe('saveArticles', () => {
         },
       } as any,
       downloader,
+      redisStore,
       mw,
       dump,
     )

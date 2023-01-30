@@ -85,11 +85,11 @@ class Downloader {
   public baseUrlForMainPage: string
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
+  public readonly requestTimeout: number
 
   private readonly uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  private readonly requestTimeout: number
   private readonly urlPartCache: KVS<string> = {}
   private readonly backoffOptions: BackoffOptions
   private readonly optimisationCacheUrl: string
@@ -363,7 +363,7 @@ class Downloader {
     }
   }
 
-  public async getArticle(articleId: string, dump: Dump): Promise<RenderedArticle[]> {
+  public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleDetail?: ArticleDetail): Promise<RenderedArticle[]> {
     const isMainPage = dump.isMainPage(articleId)
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage)
 
@@ -373,7 +373,7 @@ class Downloader {
     if (json.error) {
       throw json.error
     }
-    return await renderArticle(json, articleId, dump, this.mwCapabilities)
+    return renderArticle(json, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
   }
 
   public async getJSON<T>(_url: string): Promise<T> {

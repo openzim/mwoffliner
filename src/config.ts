@@ -3,10 +3,7 @@ const config = {
 
   defaults: {
     publisher: 'Kiwix',
-    redisConfig: {
-      host: '127.0.0.1',
-      port: 6379,
-    },
+    redisPath: 'redis://127.0.0.1:6379',
     requestTimeout: 120 * 1000,
   },
 

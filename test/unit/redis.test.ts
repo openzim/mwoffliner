@@ -1,5 +1,5 @@
-import { RedisKvs } from '../../src/util/RedisKvs'
-import { startRedis, stopRedis, redis } from './bootstrap.js'
+import RedisKvs from '../../src/util/RedisKvs.js'
+import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 
 describe('Redis', () => {
   beforeAll(startRedis)
@@ -13,7 +13,7 @@ describe('Redis', () => {
   }
 
   test('Redis Tests', async () => {
-    const kvs = new RedisKvs<{ value: number }>(redis.client, 'test-kvs')
+    const kvs = new RedisKvs<{ value: number }>(redisStore.client, 'test-kvs')
 
     const len = await kvs.len()
     // New RedisKVS should have 0 items

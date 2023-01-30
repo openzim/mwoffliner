@@ -37,6 +37,47 @@ type ArticleDetail = PageInfo & {
   missing?: string
 }
 
+type FileDetail = {
+  url: string
+  namespace?: string
+  mult?: number
+  width?: number
+}
+
+type ArticleRedirect = {
+  targetId: string
+  title: string
+}
+
+// RedisKvs interface
+interface RKVS<T> {
+  get: (prop: string) => Promise<T>
+  getMany: (prop: string[]) => Promise<KVS<T>>
+  exists: (prop: string) => Promise<boolean>
+  existsMany: (prop: string[], blocking?: boolean) => Promise<KVS<boolean>>
+  set: (prop: string, val: T) => Promise<number>
+  setMany: (val: KVS<T>) => Promise<number>
+  delete: (prop: string) => Promise<number>
+  deleteMany: (prop: string[]) => Promise<number>
+  keys: () => Promise<string[]>
+  len: () => Promise<number>
+  iterateItems: (numWorkers: number, func: (items: KVS<T>, run: number) => Promise<void>) => Promise<void>
+  scan: (cursor: number) => Promise<{ cursor: number; items: KVS<T> }>
+  flush: () => Promise<number>
+}
+
+// RedisStore Interface
+interface RS {
+  readonly client: any // RedisClientType
+  readonly filesToDownloadXPath: RKVS<FileDetail>
+  readonly filesToRetryXPath: RKVS<FileDetail>
+  readonly articleDetailXId: RKVS<ArticleDetail>
+  readonly redirectsXId: RKVS<ArticleRedirect>
+  connect: (populateStores?: boolean) => Promise<void>
+  close: () => Promise<void>
+  createRedisKvs: (dbName: string, keyMapping?: KVS<string>) => RKVS<any>
+}
+
 type QueryCategoriesRet = PageInfo[]
 
 type QueryRevisionsRet = Array<{

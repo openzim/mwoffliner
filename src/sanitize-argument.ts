@@ -1,6 +1,6 @@
 import S3 from './S3.js'
 import axios from 'axios'
-import Redis from './Redis.js'
+import RedisStore from './RedisStore.js'
 import urlParser from 'url'
 import pathParser from 'path'
 import logger from './Logger.js'
@@ -88,14 +88,11 @@ export function sanitize_adminEmail(adminEmail: any) {
   }
 }
 
-export function sanitize_redis(argv: any) {
-  try {
-    const sanitize_redis = new Redis(argv, config)
-    logger.log('closing sanitize redis DB')
-    sanitize_redis.client.quit()
-  } catch (err) {
-    throw err
-  }
+export async function sanitize_redis(argv: any) {
+  const sanitize_redis = new RedisStore(argv.redis || config.defaults.redisPath)
+  await sanitize_redis.connect(false)
+  logger.log('closing sanitize redis DB')
+  await sanitize_redis.close()
 }
 
 export async function sanitize_customZimFavicon(customZimFavicon: any) {

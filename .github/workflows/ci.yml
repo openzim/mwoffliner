@@ -54,9 +54,6 @@ jobs:
       env:
         S3_URL: ${{ secrets.S3_URL }}
 
-    - name: Running test
-      run: npm run jest
-
     - name: Upload Codecov stats
       uses: codecov/codecov-action@v3
       if: ${{ matrix.node-version == '18.x' }}

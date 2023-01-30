@@ -1,20 +1,18 @@
 import Downloader from '../Downloader.js'
-import { RedisKvs } from './RedisKvs.js'
-import Redis from '../Redis.js'
 import logger from '../Logger.js'
-import { articleDetailXId } from '../stores.js'
 import { getArticlesByIds } from './mw-api.js'
 import { deDup } from './misc.js'
 
-export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDetail>, downloader: Downloader, redis: Redis, deleteArticleStore = false): Promise<void> {
-  const nextCategoriesBatch = new RedisKvs<ArticleDetail>(redis.client, `${Date.now()}-request`)
+export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>, downloader: Downloader, redisStore: RS, deleteArticleStore = false): Promise<void> {
+  const { articleDetailXId } = redisStore
+  const nextCategoriesBatch: RKVS<ArticleDetail> = redisStore.createRedisKvs(`${Date.now()}-request`)
   logger.log(`Fetching categories for [${await articleStore.len()}] articles`)
 
-  await articleStore.iterateItems(downloader.speed, async (articleKeyValuePairs, workerId) => {
+  await articleStore.iterateItems(downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, workerId: number) => {
     const articleKeys = Object.keys(articleKeyValuePairs)
     logger.log(`Worker [${workerId}] getting categories for articles ${logger.logifyArray(articleKeys)}`)
 
-    const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs).reduce((acc: any, [, detail]) => {
+    const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs).reduce((acc: any, [, detail]: [string, ArticleDetail]) => {
       for (const cat of detail.categories || []) {
         const catId = cat.title
         acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo)
@@ -29,10 +27,10 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
         .filter(([, detail]) => !detail)
         .map(([id]) => id)
       if (categoriesToGet.length) {
-        await getArticlesByIds(categoriesToGet, downloader, false)
+        await getArticlesByIds(categoriesToGet, downloader, redisStore, false)
       }
 
-      const catDetails = await articleDetailXId.getMany(foundCategoryIds)
+      const catDetails: KVS<ArticleDetail> = await articleDetailXId.getMany(foundCategoryIds)
 
       for (const [id, detail] of Object.entries(catDetails)) {
         if (!detail) {
@@ -62,13 +60,14 @@ export async function getCategoriesForArticles(articleStore: RedisKvs<ArticleDet
 
   const nextBatchSize = await nextCategoriesBatch.len()
   if (nextBatchSize) {
-    return getCategoriesForArticles(nextCategoriesBatch, downloader, redis, true)
+    return getCategoriesForArticles(nextCategoriesBatch, downloader, redisStore, true)
   } else {
     return null
   }
 }
 
-export async function trimUnmirroredPages(downloader: Downloader) {
+export async function trimUnmirroredPages(downloader: Downloader, redisStore: RS) {
+  const { articleDetailXId } = redisStore
   logger.log(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`)
   const numKeys = await articleDetailXId.len()
   let prevPercentProgress = -1
@@ -103,14 +102,14 @@ export async function trimUnmirroredPages(downloader: Downloader) {
       const pageIds = Object.keys(pagesXId)
 
       const [categoriesExist, subCategoriesExist, pagesExist] = await Promise.all([
-        categoryIds.length ? (articleDetailXId.exists(categoryIds) as Promise<{ [key: string]: number }>) : Promise.resolve({}),
-        subCategoryIds.length ? (articleDetailXId.exists(subCategoryIds) as Promise<{ [key: string]: number }>) : Promise.resolve({}),
-        pageIds.length ? (articleDetailXId.exists(pageIds) as Promise<{ [key: string]: number }>) : Promise.resolve({}),
+        categoryIds.length ? articleDetailXId.existsMany(categoryIds, true) : Promise.resolve({}),
+        subCategoryIds.length ? articleDetailXId.existsMany(subCategoryIds, true) : Promise.resolve({}),
+        pageIds.length ? articleDetailXId.existsMany(pageIds, true) : Promise.resolve({}),
       ])
 
-      const existingCategories = Object.keys(categoriesExist).filter((key) => !!categoriesExist[key])
-      const existingSubCategories = Object.keys(subCategoriesExist).filter((key) => !!subCategoriesExist[key])
-      const existingPages = Object.keys(pagesExist).filter((key) => !!pagesExist[key])
+      const existingCategories = Object.keys(categoriesExist).filter((key) => categoriesExist[key])
+      const existingSubCategories = Object.keys(subCategoriesExist).filter((key) => subCategoriesExist[key])
+      const existingPages = Object.keys(pagesExist).filter((key) => pagesExist[key])
 
       let hasUpdated = false
 
@@ -153,8 +152,9 @@ export async function trimUnmirroredPages(downloader: Downloader) {
   return modifiedArticles
 }
 
-export async function simplifyGraph(downloader: Downloader) {
+export async function simplifyGraph(downloader: Downloader, redisStore: RS) {
   logger.log('Simplifying graph (removing empty categories)')
+  const { articleDetailXId } = redisStore
   const numKeys = await articleDetailXId.len()
   let prevPercentProgress = -1
   let processedArticles = 0
