@@ -112,10 +112,6 @@ async function execute(argv: any) {
     throw new Error(`Admin email [${adminEmail}] is not valid`)
   }
 
-  if (customZimLongDescription && customZimLongDescription.length > 4000) {
-    throw new Error('customZimLongDescription should be less than 4000 characters.')
-  }
-
   /* Number of parallel requests. To secure stability and avoid HTTP
   429 errors, no more than MAX_CPU_CORES can be considered */
   if (_speed && isNaN(_speed)) {
