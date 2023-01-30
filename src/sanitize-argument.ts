@@ -22,10 +22,10 @@ export async function sanitize_all(argv: any) {
   sanitize_speed(_speed)
 
   // sanitizing longDescription
-  sanitizeStringMaxLenth(customZimLongDescription, 'customZimLongDescription', 4000)
+  sanitizeStringMaxLength(customZimLongDescription, 'customZimLongDescription', 4000)
 
   // sanitizing description
-  sanitizeStringMaxLenth(customZimDescription, 'customZimDescription', 80)
+  sanitizeStringMaxLength(customZimDescription, 'customZimDescription', 80)
 
   // sanitizing custom flavour
   if (argv.customFlavour) {
@@ -76,7 +76,7 @@ export async function sanitize_all(argv: any) {
   }
 }
 
-export function sanitizeStringMaxLenth(text: string, key: string, length: number) {
+export function sanitizeStringMaxLength(text: string, key: string, length: number) {
   if (text && text.length > length) {
     throw new Error(`${key} should be less than ${length} characters.`)
   }
