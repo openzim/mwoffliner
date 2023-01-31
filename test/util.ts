@@ -69,6 +69,20 @@ export async function zimcheck(filePath: string) {
   return execa(`${zimcheckPath} ${filePath}`, { shell: true })
 }
 
+const zimdumpPath = process.env.ZIMDUMP_PATH || 'zimdump'
+export async function zimdumpAvailable(): Promise<boolean> {
+  try {
+    await execa(`which ${zimdumpPath}`, { shell: true })
+    return true
+  } catch (err) {
+    return false
+  }
+}
+
+export async function zimdump(params: string): Promise<string> {
+  return execa(`${zimdumpPath} ${params}`, { shell: true }).then(({ stdout }) => stdout)
+}
+
 export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<any> {
   try {
     return await axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`, {

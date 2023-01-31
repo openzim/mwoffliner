@@ -16,10 +16,16 @@ const __dirname = path.dirname(__filename)
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
-  const { speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl } = argv
+  const { speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, customZimLongDescription, customZimDescription } = argv
 
   // sanitizing speed
   sanitize_speed(_speed)
+
+  // sanitizing longDescription
+  sanitizeStringMaxLength(customZimLongDescription, 'customZimLongDescription', 4000)
+
+  // sanitizing description
+  sanitizeStringMaxLength(customZimDescription, 'customZimDescription', 80)
 
   // sanitizing custom flavour
   if (argv.customFlavour) {
@@ -67,6 +73,12 @@ export async function sanitize_all(argv: any) {
     await sanitize_customZimFavicon(customZimFavicon).catch((err) => {
       throw err
     })
+  }
+}
+
+export function sanitizeStringMaxLength(text: string, key: string, length: number) {
+  if (text && text.length > length) {
+    throw new Error(`${key} should be less than ${length} characters.`)
   }
 }
 

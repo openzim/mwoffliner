@@ -257,7 +257,7 @@ describe('Downloader class', () => {
       const newEtag = '686897696a7c876b7e'
       const newContentType = 'application/octet-stream'
       await s3.uploadBlob(imagePath, upstreamResp.data, newEtag, newContentType, '1')
-      await setTimeout(5000)
+      await setTimeout(10000)
 
       // Download again to check the Etag has been overwritten properly
       const newS3Resp = await s3.downloadBlob(imagePath)

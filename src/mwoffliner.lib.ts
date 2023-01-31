@@ -80,6 +80,7 @@ async function execute(argv: any) {
     customMainPage,
     customZimTitle,
     customZimDescription,
+    customZimLongDescription,
     customZimTags,
     withoutZimFullTextIndex,
     webp,
@@ -341,6 +342,7 @@ async function execute(argv: any) {
         articleList,
         publisher,
         customZimDescription,
+        customZimLongDescription,
         customZimTags,
         customZimTitle,
         withoutZimFullTextIndex,
@@ -398,9 +400,10 @@ async function execute(argv: any) {
         Name: dump.computeFilenameRadical(false, true, true),
         Flavour: dump.computeFlavour(),
         Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
+        ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
         Creator: dump.mwMetaData.creator,
         Publisher: dump.opts.publisher,
-      },
+      } as any,
     )
     const scraperArticle = new ZimArticle({
       ns: 'M',
