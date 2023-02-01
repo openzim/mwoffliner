@@ -97,7 +97,7 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
       lat = parts[4]
       lon = parts[5]
     } else if (rel === 'mw:MediaLink') {
-      const shouldScrape = (href.includes('.pdf') && !dump.nopdf) || (href.includes('.ogg') && !dump.nopic && !dump.novid && !dump.nodet)
+      const shouldScrape = (href.includes('.pdf') && !dump.nopdf) || ((href.includes('.ogg') || href.includes('.oga')) && !dump.nopic && !dump.novid && !dump.nodet)
 
       if (shouldScrape) {
         try {
@@ -110,6 +110,8 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
           logger.warn('Error parsing url:', err)
           DU.deleteNode(linkNode)
         }
+      } else if (href.includes('.ogg') || href.includes('.oga')) {
+        linkNode.outerHTML = linkNode.innerHTML
       }
       return null
     }
