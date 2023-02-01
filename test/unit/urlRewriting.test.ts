@@ -46,6 +46,9 @@ describe('Styles', () => {
     const $resourceLink = makeLink($doc, '//upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', '', 'De-Z%C3%BCrich.ogg', 'Zurich', {
       resource: './Media:De-Zürich.ogg',
     })
+    const $ogaResourceLink = makeLink($doc, '//upload.wikimedia.org/wikipedia/commons/7/7e/Fr-Laissez-faire.oga', '', 'Fr-Laissez-faire.oga', 'listen', {
+      resource: './Media:Fr-Laissez-faire.oga',
+    })
 
     await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $geo)
     // Geo is still a link
@@ -122,6 +125,12 @@ describe('Styles', () => {
     expect($resourceLink.nodeName).toEqual('A')
     // resourceLink has been re-written
     expect($resourceLink.getAttribute('href')).toEqual('../../I/De-Z%C3%BCrich.ogg')
+
+    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $ogaResourceLink)
+    // ogaResourceLink is still a link
+    expect($ogaResourceLink.nodeName).toEqual('A')
+    // ogaResourceLink has been re-written
+    expect($ogaResourceLink.getAttribute('href')).toEqual('../../I/Fr-Laissez-faire.oga')
   })
 
   test('e2e url rewriting', async () => {
