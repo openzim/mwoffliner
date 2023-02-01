@@ -600,7 +600,7 @@ export async function treatVideo(
 
   /* If no appropriate source video can be found, delete the video */
   if (!chosenVideoSourceEl) {
-    logger.warn(`Unable to find an appropriate video/audio source for '${videoEl.resource}'`)
+    logger.warn(`Unable to find an appropriate video/audio source for an media element in article '${articleId}'`)
     DU.deleteNode(videoEl)
     return { mediaDependencies, subtitles }
   }
