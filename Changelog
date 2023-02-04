@@ -1,3 +1,20 @@
+1.12.0:
+* NEW: Add --articleListToIgnore option (@uriesk #1706)
+* NEW: Add --longDescription option (@pavel-karatsiuba #1755)
+* NEW: Remove support of LZMA (@kelson42 #1643)
+* NEW: Drop support of Node.js 14 (@kelson42 #1671)
+* NEW: Revamping of interactions with Redis (@uriesk #1719 #1720)
+* NEW: Use Jest in place of Tape for automated tests (@pavel-karatsiuba #1716)
+* NEW: Introduce/migrate to usage of ESM (@pavel-karatsiuba #1688)
+* NEW: Use Eslint instead Tslint (@pavel-karatsiuba #1738 #1747)
+* FIX: Simplisitc HTTP retry strategy for downloading files (@uriesk #1751)
+* FIX: Broken support of OGA audio files (@pavel-karatsiuba#1763)
+* FIX: Problematic inline Javascript to comply with CSP (@pavel-karatsiuba #1752)
+* FIX: Partly broken WEBP related mime-type mgmt (@uriesk 1723)
+* FIX: Broken show/hide toggle in Wikipedia infoboxes (@zhuowei #1665)
+* FIX: Handle properly Fandom images src URL (@uriesk #1712)
+* FIX: Upgrade most of the dependences (@uriesk @pavel-karatsiuba #1715)
+
 1.11.12:
 * FIX: ZIM illustration now always in PNG format
 * FIX: Somehow cropped ZIM illustration
