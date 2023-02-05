@@ -47,9 +47,12 @@ jobs:
       run: npm run build
 
     - name: Running tests (with Codecov)
-      run: REDIS=redis://127.0.0.1:6379 ZIMCHECK_PATH=`find .. -name zimcheck` ZIMDUMP_PATH=`find .. -name zimdump` npm run codecov
+      run: npm run codecov
       env:
+        REDIS: 'redis://127.0.0.1:6379'
         S3_URL: ${{ secrets.S3_URL }}
+        ZIMCHECK_PATH: $( find .. -name zimcheck )
+        ZIMDUMP_PATH: $( find .. -name zimdump )
 
     - name: Upload Codecov stats
       uses: codecov/codecov-action@v3
