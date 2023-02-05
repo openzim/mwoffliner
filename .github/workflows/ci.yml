@@ -29,16 +29,13 @@ jobs:
         redis-version: '6.x'
 
     - name: Installing dependencies
-      run: npm ci
-
-    - name: Installing ESLint
-      run: npm i -g eslint
+      run: |
+        npm ci
+        npm i -g eslint
+        npm i -g codecov
 
     - name: Run ESLint
       run: eslint . --ext .ts
-
-    - name: Installing Codecov
-      run: npm i -g codecov
 
     - name: Installing devtools
       run: dev/install-zimtools.sh
