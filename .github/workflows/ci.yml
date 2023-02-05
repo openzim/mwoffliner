@@ -28,9 +28,6 @@ jobs:
       with:
         redis-version: '6.x'
 
-    - name: Installing necessary packages
-      run: sudo apt install gcc-9 g++-9 python3-pip libbz2-dev ccache zlib1g-dev uuid-dev
-
     - name: Installing dependencies
       run: npm ci
 
