@@ -38,9 +38,9 @@ jobs:
         wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
 
     - name: Running ESLint
-      run: eslint . --ext .ts
+      run: npm run lint
 
-    - name: Running tests (with Codecov)
+    - name: Running tests
       run: npm run codecov
       env:
         REDIS: 'redis://127.0.0.1:6379'
