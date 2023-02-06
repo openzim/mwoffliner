@@ -40,9 +40,6 @@ jobs:
     - name: Running ESLint
       run: eslint . --ext .ts
 
-    - name: Building code
-      run: npm run build
-
     - name: Running tests (with Codecov)
       run: npm run codecov
       env:
