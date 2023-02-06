@@ -19,26 +19,27 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Installing Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
 
-    - uses: shogo82148/actions-setup-redis@v1
+    - name: Installing Redis
+      uses: shogo82148/actions-setup-redis@v1
       with:
         redis-version: '6.x'
 
-    - name: Installing dependencies
+    - name: Installing other dependencies
       run: |
         npm ci
         npm i -g eslint
         npm i -g codecov
 
-    - name: Run ESLint
-      run: eslint . --ext .ts
-
     - name: Installing devtools
       run: dev/install-zimtools.sh
+
+    - name: Running ESLint
+      run: eslint . --ext .ts
 
     - name: Building code
       run: npm run build
@@ -51,7 +52,7 @@ jobs:
         ZIMCHECK_PATH: $( find .. -name zimcheck )
         ZIMDUMP_PATH: $( find .. -name zimdump )
 
-    - name: Upload Codecov stats
+    - name: Uploading Codecov stats
       uses: codecov/codecov-action@v3
       if: ${{ matrix.node-version == '18.x' }}
       with:
