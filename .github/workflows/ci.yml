@@ -32,7 +32,7 @@ jobs:
 
     - name: Installing other dependencies
       run: |
-        npm ci
+        npm install
         npm i -g eslint
         npm i -g codecov
         wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
