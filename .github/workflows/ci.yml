@@ -16,8 +16,6 @@ jobs:
         node-version: [18.x]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
 
     - name: Installing Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
@@ -28,6 +26,9 @@ jobs:
       uses: shogo82148/actions-setup-redis@v1
       with:
         redis-version: '6.x'
+
+    - name: Downloading code
+      uses: actions/checkout@v3
 
     - name: Installing other dependencies
       run: |
