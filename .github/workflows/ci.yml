@@ -34,9 +34,7 @@ jobs:
         npm ci
         npm i -g eslint
         npm i -g codecov
-
-    - name: Installing devtools
-      run: dev/install-zimtools.sh
+        wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
 
     - name: Running ESLint
       run: eslint . --ext .ts
