@@ -63,7 +63,6 @@
     "@types/async": "^3.2.16",
     "@types/backoff": "^2.5.2",
     "@types/bluebird": "^3.5.38",
-    "@types/file-type": "^10.9.1",
     "@types/html-minifier": "^4.0.2",
     "@types/imagemin-gifsicle": "^7.0.1",
     "@types/imagemin-jpegtran": "^5.0.1",
