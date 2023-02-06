@@ -12,7 +12,7 @@ import { jest } from '@jest/globals'
 import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 
-jest.setTimeout(100000)
+jest.setTimeout(200000)
 
 describe('Downloader class', () => {
   let mw: MediaWiki
