@@ -605,6 +605,17 @@ class Downloader {
           }
           const mwResp = await axios(url, this.arrayBufferRequestOptions)
 
+          /* TODO: Code to remove in a few months (February 2023). For
+          some reason, it seems a few pictures have 'image/webp'
+          mime-type in S3 although they are png, ... This leads to
+          having the following code not assuming they should be
+          converted to wepb. To avoid this, as a temporary solution,
+          such scneario are ignored and mime-type definition relies
+          only on url and Mediawiki header. */
+          if (s3Resp?.Metadata?.contenttype === 'image/webp') {
+            s3Resp.Metadata.contenttype = undefined
+          }
+
           // sanitize Content-Type
           mwResp.headers['content-type'] = getMimeType(url, s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'])
 
