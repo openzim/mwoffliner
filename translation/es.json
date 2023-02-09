@@ -1,6 +1,9 @@
 {
-    "__direction": "ltr",
-    "DISCLAIMER": "Este artículo ha sido escrito por ${creator}. El texto está disponible bajo la licencia ${license}. Pueden aplicarse cláusulas adicionales a los archivos multimedia.",
-    "LAST_EDITED_ON": "Esta página se editó por última vez el ${date}",
-    "LICENSE_NAME": "Creative Commons - Atribución - CompartirIgual"
+	"@metadata": {
+		"authors": []
+	},
+	"__direction": "ltr",
+	"DISCLAIMER": "Este artículo ha sido escrito por ${creator}. El texto está disponible bajo la licencia ${license}. Pueden aplicarse cláusulas adicionales a los archivos multimedia.",
+	"LAST_EDITED_ON": "Esta página se editó por última vez el ${date}",
+	"LICENSE_NAME": "Creative Commons - Atribución - CompartirIgual"
 }
