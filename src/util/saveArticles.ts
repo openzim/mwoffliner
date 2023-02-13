@@ -369,7 +369,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   }
 }
 
-async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
+export async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
   /* These vars will store the list of js and css dependencies for
     the article we are downloading. */
   let jsConfigVars = ''

@@ -2,7 +2,7 @@ import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import domino from 'domino'
 
 import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from '../util.js'
-import { saveArticles, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js'
+import { saveArticles, getModuleDependencies, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { Dump } from '../../src/Dump'
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
@@ -348,5 +348,30 @@ describe('saveArticles', () => {
     }
     // Throwing error if article is deleted
     expect(() => renderDesktopArticle(articleJsonObject, 'deletedArticle', { title: 'deletedArticle' })).toThrow(new Error(DELETED_ARTICLE_ERROR))
+  })
+
+  test('Load inline js from HTML', async () => {
+    const { downloader, mw } = await setupScrapeClasses() // en wikipedia
+
+    const _moduleDependencies = await getModuleDependencies('Potato', mw, downloader)
+    // next variables declared to avoid "variable is not defined" errors
+    let RLCONF: any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let RLSTATE: any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    let RLPAGEMODULES: any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const document: any = { documentElement: { className: '' }, cookie: '' }
+
+    // eslint-disable-next-line no-eval
+    eval(_moduleDependencies.jsConfigVars)
+    expect(RLCONF).toMatchObject({
+      wgPageName: 'Potato',
+      wgTitle: 'Potato',
+      wgPageContentLanguage: 'en',
+      wgPageContentModel: 'wikitext',
+      wgRelevantPageName: 'Potato',
+      wgRelevantArticleId: 23501,
+    })
   })
 })
