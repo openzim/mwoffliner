@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"__direction": "ltr",
+	"DISCLAIMER": "Iste articulo es publicate per ${creator}. Le texto es licentiate sub ${license}. Additional terminos pote applicar se al files multimedial.",
+	"LAST_EDITED_ON": "Ultime modification le ${date}",
+	"LICENSE_NAME": "Creative Commons - Attribution - CompartiSimile"
+}
