@@ -71,7 +71,7 @@ const config = {
       ],
       js: [
         'startup',
-        'jquery',
+        'jquery,mediawiki',
         'mediawiki.base',
         'mediawiki.util',
         'site',
