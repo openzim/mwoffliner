@@ -5,6 +5,7 @@
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { parameterDescriptions, requiredParams } from './parameterList.js'
+import * as logger from './Logger.js'
 
 import * as mwofflinerLib from './mwoffliner.lib.js'
 
@@ -33,6 +34,7 @@ const argv: any = yargs(hideBin(process.argv))
 /* ***********************************/
 
 import fs from 'fs'
+;(process as any).verbose = argv.verbose
 
 if (argv.osTmpDir) {
   const osTmpDir = argv.osTmpDir as string
@@ -44,7 +46,7 @@ if (argv.osTmpDir) {
       throw new Error()
     }
   } catch {
-    console.error(`--osTmpDir value [${osTmpDir}] is not valid`)
+    logger.error(`--osTmpDir value [${osTmpDir}] is not valid`)
     process.exit(2)
   }
 }
@@ -64,7 +66,7 @@ sanitize_all(argv)
     mwofflinerLib
       .execute(argv)
       .then(() => {
-        console.info(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`)
+        logger.info(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`)
         process.exit(0)
       })
       .catch((err) => {
@@ -100,9 +102,9 @@ function errorHandler(err: any) {
   } catch (err) {
     /* NOOP */
   }
-  console.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr)
+  logger.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr)
   if (err && err.message) {
-    console.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`)
+    logger.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`)
   }
   process.exit(2)
 }
