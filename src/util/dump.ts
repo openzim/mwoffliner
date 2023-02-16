@@ -101,7 +101,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
   // it also removes requestIdleCallback as in our case window is idle after all script tags are called but those script tags
   // will require the functions which would have been loaded by doPropagation.
   function hackStartUpModule(jsCode: string) {
-  if ((!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) && !LOAD_PHP.test(jsCode)) {
+    if ((!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) && !LOAD_PHP.test(jsCode)) {
       throw new Error('unable to hack startup module')
     }
 
