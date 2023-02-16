@@ -1,7 +1,7 @@
 import urlParser from 'url'
 import * as pathParser from 'path'
 import async from 'async'
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 import axios from 'axios'
 import Downloader from '../Downloader.js'
 import { getFullUrl, jsPath, cssPath } from './index.js'

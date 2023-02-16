@@ -3,7 +3,7 @@ import * as urlParser from 'url'
 import { AsyncQueue } from 'async'
 import { existsSync } from 'fs'
 import * as domino from 'domino'
-import logger from './Logger.js'
+import * as logger from './Logger.js'
 import Downloader from './Downloader.js'
 import { getStringsForLang } from './util/index.js'
 

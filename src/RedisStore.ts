@@ -1,7 +1,7 @@
 import { createClient } from 'redis'
 import type { RedisClientType } from 'redis'
 import RedisKvs from './util/RedisKvs.js'
-import logger from './Logger.js'
+import * as logger from './Logger.js'
 
 class RedisStore implements RS {
   private readonly _client: RedisClientType

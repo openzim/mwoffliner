@@ -1,4 +1,4 @@
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import MediaWiki from '../MediaWiki.js'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'

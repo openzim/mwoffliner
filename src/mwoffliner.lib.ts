@@ -41,7 +41,7 @@ import {
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
-import logger from './Logger.js'
+import * as logger from './Logger.js'
 import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
@@ -97,7 +97,7 @@ async function execute(argv: any) {
 
   let { articleList, articleListToIgnore } = argv
 
-  ;(process as any).verbose = !!verbose
+  ;(process as any).verbose = verbose
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`)
 

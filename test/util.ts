@@ -4,7 +4,7 @@ import { Dump } from '../src/Dump.js'
 import { config } from '../src/config.js'
 import axios from 'axios'
 import { execa } from 'execa'
-import logger from '../src/Logger.js'
+import * as logger from '../src/Logger.js'
 import 'dotenv/config.js'
 
 export function leftPad(_num: number, length: number) {

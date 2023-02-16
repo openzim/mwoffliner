@@ -28,7 +28,7 @@ import {
 } from './util/index.js'
 import S3 from './S3.js'
 import { Dump } from './Dump.js'
-import logger from './Logger.js'
+import * as logger from './Logger.js'
 import MediaWiki from './MediaWiki.js'
 
 const imageminOptions = new Map()

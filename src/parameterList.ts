@@ -29,7 +29,7 @@ export const parameterDescriptions = {
   requestTimeout: 'Request timeout - in seconds(default value is 120 seconds)',
   resume: 'Do not overwrite if ZIM file already created',
   speed: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.',
-  verbose: 'Print debug information to the stdout',
+  verbose: 'Print information to the stdout. Can be one of "info", "log", "warn", "error"',
   withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',

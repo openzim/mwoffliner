@@ -1,6 +1,6 @@
 import pmap from 'p-map'
 import deepmerge from 'deepmerge'
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
 

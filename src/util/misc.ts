@@ -8,7 +8,7 @@ import mkdirp from 'mkdirp'
 import pathParser from 'path'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
 import { Config, config } from '../config.js'
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 import {
   LATEX_IMAGE_URL_REGEX,
   FANDOM_IMAGE_URL_REGEX,
