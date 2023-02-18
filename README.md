@@ -63,6 +63,12 @@ Then to run it:
 mwoffliner --help
 ```
 
+To install and run it locally:
+```bash
+npm i
+npm run mwoffliner -- --help
+```
+
 To use MWoffliner with a S3 cache, you should provide a S3 URL like
 this:
 ```bash
