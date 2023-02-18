@@ -433,6 +433,19 @@ async function processArticleHtml(
   let mediaDependencies: Array<{ url: string; path: string }> = []
   let subtitles: Array<{ url: string; path: string }> = []
   let doc = domino.createDocument(html)
+
+  const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, mw, dump)
+  doc = ruRet.doc
+  mediaDependencies = mediaDependencies.concat(
+    ruRet.mediaDependencies
+      .filter((a) => a)
+      .map((url) => {
+        const path = getMediaBase(url, false)
+        return { url, path }
+      }),
+  )
+  doc = applyOtherTreatments(doc, dump)
+
   const tmRet = await treatMedias(doc, mw, dump, articleId, webp, redisStore)
   doc = tmRet.doc
 
@@ -454,17 +467,6 @@ async function processArticleHtml(
         return { url, path }
       }),
   )
-  const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, mw, dump)
-  doc = ruRet.doc
-  mediaDependencies = mediaDependencies.concat(
-    ruRet.mediaDependencies
-      .filter((a) => a)
-      .map((url) => {
-        const path = getMediaBase(url, false)
-        return { url, path }
-      }),
-  )
-  doc = applyOtherTreatments(doc, dump)
 
   if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
     doc = await dump.customProcessor.preProcessArticle(articleId, doc)
