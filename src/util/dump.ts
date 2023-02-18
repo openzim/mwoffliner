@@ -10,7 +10,7 @@ import MediaWiki from '../MediaWiki.js'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
 import { Dump } from '../Dump.js'
 import fs from 'fs'
-import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL } from './const.js'
+import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP } from './const.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -101,11 +101,11 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
   // it also removes requestIdleCallback as in our case window is idle after all script tags are called but those script tags
   // will require the functions which would have been loaded by doPropagation.
   function hackStartUpModule(jsCode: string) {
-    if (!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) {
+    if ((!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) && !LOAD_PHP.test(jsCode)) {
       throw new Error('unable to hack startup module')
     }
 
-    return jsCode.replace(DO_PROPAGATION, 'doPropagation();').replace(ALL_READY_FUNCTION, 'function allReady( modules ) { return true;')
+    return jsCode.replace(DO_PROPAGATION, 'doPropagation();').replace(ALL_READY_FUNCTION, 'function allReady( modules ) { return true;').replace(LOAD_PHP, 'script.src ="";')
   }
 
   let apiParameterOnly
