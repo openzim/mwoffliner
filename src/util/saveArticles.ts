@@ -369,7 +369,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   }
 }
 
-async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
+export async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
   /* These vars will store the list of js and css dependencies for
     the article we are downloading. */
   let jsConfigVars = ''
@@ -411,10 +411,12 @@ async function getModuleDependencies(articleId: string, mw: MediaWiki, downloade
   for (let i = 0; i < scriptTags.length; i += 1) {
     if (scriptTags[i].text.includes('mw.config.set')) {
       jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
+      jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
+    } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
+      jsConfigVars = scriptTags[i].text
     }
   }
 
-  jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
   jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
   return { jsConfigVars, jsDependenciesList, styleDependenciesList }
