@@ -1,15 +1,11 @@
-const logLevels = ['info', 'log', 'warn', 'error']
-type LogLevel = (typeof logLevels)[number]
+export const logLevels = ['info', 'log', 'warn', 'error', 'quiet']
+export type LogLevel = (typeof logLevels)[number]
+
+let verboseLevel = 'error'
 
 const isVerbose = (level: LogLevel) => {
-  const verboseLevel = (process as any).verbose
-
   if (!verboseLevel) {
     return false
-  }
-
-  if (!logLevels.includes(verboseLevel)) {
-    return true
   }
 
   const verboseLevelIndex = logLevels.indexOf(verboseLevel)
@@ -29,6 +25,10 @@ const doLog = (type: LogLevel, args: any[]) => {
 
 const getTs = () => {
   return new Date().toISOString()
+}
+
+export const setVerboseLevel = (level: LogLevel | true) => {
+  verboseLevel = level === true ? 'info' : level
 }
 
 export const info = (...args: any[]) => {

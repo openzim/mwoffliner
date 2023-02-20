@@ -97,7 +97,7 @@ async function execute(argv: any) {
 
   let { articleList, articleListToIgnore } = argv
 
-  ;(process as any).verbose = verbose
+  if (verbose) logger.setVerboseLevel(verbose)
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`)
 

@@ -34,7 +34,6 @@ const argv: any = yargs(hideBin(process.argv))
 /* ***********************************/
 
 import fs from 'fs'
-;(process as any).verbose = argv.verbose
 
 if (argv.osTmpDir) {
   const osTmpDir = argv.osTmpDir as string

@@ -27,7 +27,8 @@ describe('Logger', () => {
   })
 
   test('logger info level', async () => {
-    ;(process as any).verbose = 'info'
+    logger.setVerboseLevel('info')
+
     logger.info('test info', 'info test message')
     logger.log('test log', 'log test message')
     logger.warn('test warn', 'warn test message')
@@ -40,7 +41,8 @@ describe('Logger', () => {
   })
 
   test('logger log level', async () => {
-    ;(process as any).verbose = 'log'
+    logger.setVerboseLevel('log')
+
     logger.info('test info', 'info test message')
     logger.log('test log', 'log test message')
     logger.warn('test warn', 'warn test message')
@@ -53,7 +55,8 @@ describe('Logger', () => {
   })
 
   test('logger warn level', async () => {
-    ;(process as any).verbose = 'warn'
+    logger.setVerboseLevel('warn')
+
     logger.info('test info', 'info test message')
     logger.log('test log', 'log test message')
     logger.warn('test warn', 'warn test message')
@@ -66,7 +69,8 @@ describe('Logger', () => {
   })
 
   test('logger error level', async () => {
-    ;(process as any).verbose = 'error'
+    logger.setVerboseLevel('error')
+
     logger.info('test info', 'info test message')
     logger.log('test log', 'log test message')
     logger.warn('test warn', 'warn test message')
@@ -79,7 +83,8 @@ describe('Logger', () => {
   })
 
   test('logger verbose true', async () => {
-    ;(process as any).verbose = true
+    logger.setVerboseLevel('true')
+
     logger.info('test info', 'info test message')
     logger.log('test log', 'log test message')
     logger.warn('test warn', 'warn test message')
@@ -92,7 +97,7 @@ describe('Logger', () => {
   })
 
   test('logger verbose empty', async () => {
-    ;(process as any).verbose = null
+    logger.setVerboseLevel(null)
 
     logger.info('test info', 'info test message')
     logger.log('test log', 'log test message')

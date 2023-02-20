@@ -23,5 +23,12 @@ describe('Exec Command With Bash', () => {
         /options --articlesList and --addNamespaces cannot be used together/,
       )
     })
+
+    test('Exec Command With --verbose option', async () => {
+      await expect(execa(`${mwo} --verbose=anyString --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test"`, { shell: true })).rejects.toThrow(
+        /verbose should be empty or one of \[info, log, warn, error, quiet\]/,
+      )
+    })
+
   })
 })

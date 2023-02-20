@@ -16,9 +16,12 @@ const __dirname = path.dirname(__filename)
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
-  const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, customZimLongDescription, customZimDescription } = argv
+  const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, verbose, customZimLongDescription, customZimDescription } = argv
 
   sanitize_articlesList_addNamespaces(articleList, addNamespaces)
+
+  // sanitizing verbose
+  sanitize_verbose(verbose)
 
   // sanitizing speed
   sanitize_speed(_speed)
@@ -81,6 +84,12 @@ export async function sanitize_all(argv: any) {
 export function sanitizeStringMaxLength(text: string, key: string, length: number) {
   if (text && text.length > length) {
     throw new Error(`${key} should be less than ${length} characters.`)
+  }
+}
+
+export function sanitize_verbose(verbose: logger.LogLevel | true) {
+  if (verbose && verbose !== true && !logger.logLevels.includes(verbose)) {
+    throw new Error('verbose should be empty or one of [info, log, warn, error, quiet].')
   }
 }
 

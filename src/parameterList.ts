@@ -29,7 +29,8 @@ export const parameterDescriptions = {
   requestTimeout: 'Request timeout - in seconds(default value is 120 seconds)',
   resume: 'Do not overwrite if ZIM file already created',
   speed: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (per default the number of CPU cores). The default value is 1.',
-  verbose: 'Print information to the stdout. Can be one of "info", "log", "warn", "error"',
+  verbose:
+    'Print information to the stdout if the level is "info" or "log", and to the stderr, if the level is warn or error. The option can be empty or one of "info", "log", "warn", "error", or "quiet". Option with an empty value is equal to "info".The default level is "error". If you choose the lower level then you will see messages also from the more high levels. For example, if you use warn then you will see warnings and errors.',
   withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
