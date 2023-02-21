@@ -186,9 +186,8 @@ async function rewriteUrls(articleId: string, redisStore: RS, mw: MediaWiki, dum
     const articleLink = rewriteUrlNoArticleCheck(articleId, mw, dump, linkNode, mediaDependencies)
 
     if (articleLink) {
-      const nodeArray = wikilinkMappings[articleLink]
-      if (nodeArray) {
-        nodeArray.push(linkNode)
+      if (Array.isArray(wikilinkMappings[articleLink])) {
+        wikilinkMappings[articleLink].push(linkNode)
       } else {
         wikilinkMappings[articleLink] = [linkNode]
       }
