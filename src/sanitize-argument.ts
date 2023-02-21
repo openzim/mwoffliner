@@ -16,7 +16,9 @@ const __dirname = path.dirname(__filename)
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
-  const { speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, customZimLongDescription, customZimDescription } = argv
+  const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, customZimLongDescription, customZimDescription } = argv
+
+  sanitize_articlesList_addNamespaces(articleList, addNamespaces)
 
   // sanitizing speed
   sanitize_speed(_speed)
@@ -79,6 +81,12 @@ export async function sanitize_all(argv: any) {
 export function sanitizeStringMaxLength(text: string, key: string, length: number) {
   if (text && text.length > length) {
     throw new Error(`${key} should be less than ${length} characters.`)
+  }
+}
+
+export function sanitize_articlesList_addNamespaces(articlesList: string, addNamespaces: string) {
+  if (articlesList && addNamespaces) {
+    throw new Error('options --articlesList and --addNamespaces cannot be used together')
   }
 }
 
