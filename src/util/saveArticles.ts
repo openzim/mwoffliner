@@ -16,6 +16,7 @@ import { footerTemplate, htmlTemplateCode } from '../Templates.js'
 import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageMimeType, getMimeType } from './misc.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
+import { AxiosError } from 'axios'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -301,7 +302,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
           dump.status.articles.fail += 1
           logger.error(`Error downloading article ${articleId}`)
           if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-            reject(err)
+            reject(cleanupAxiosError(err))
             return
           }
         }
@@ -1097,4 +1098,8 @@ function isSubpage(id: string, mw: MediaWiki) {
     }
   }
   return false
+}
+
+function cleanupAxiosError(err: AxiosError) {
+  return { name: err.name, message: err.message, status: err.response.status, responseType: err.config.responseType, data: err.response.data }
 }
