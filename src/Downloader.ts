@@ -265,7 +265,7 @@ class Downloader {
     let finalProcessedResp: QueryMwRet
 
     while (true) {
-      const queryOpts = {
+      const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(shouldGetThumbnail, true),
         titles: articleIds.join('|'),
         ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
@@ -285,7 +285,8 @@ class Downloader {
       let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {}
       if (resp.continue) {
         continuation = resp.continue
-        const relevantDetails = this.stripNonContinuedProps(processedResponse)
+        const queryContinueOpts: any = shouldGetThumbnail ? { pageimages: queryOpts.picontinue } : {}
+        const relevantDetails = this.stripNonContinuedProps(processedResponse, queryContinueOpts)
 
         finalProcessedResp = finalProcessedResp === undefined ? relevantDetails : deepmerge(finalProcessedResp, relevantDetails)
       } else {
