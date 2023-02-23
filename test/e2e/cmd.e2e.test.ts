@@ -6,12 +6,22 @@ import { execa } from 'execa'
 
 const mwo = 'node lib/cli.js'
 
-test('Exec Command With Bash', async () => {
-  const version = await execa(`${mwo} --version`, { shell: true })
-  expect(version.stdout.trim()).toEqual(packageJSON.version)
+describe('Exec Command With Bash', () => {
+  test('Exec Command With --version option', async () => {
+    const version = await execa(`${mwo} --version`, { shell: true })
+    expect(version.stdout.trim()).toEqual(packageJSON.version)
+  })
 
-  const help = await execa(`${mwo} --help`, { shell: true })
-  expect(help.stdout.trim().split('\n').length).toBeGreaterThan(55)
+  test('Exec Command With --help option', async () => {
+    const help = await execa(`${mwo} --help`, { shell: true })
+    expect(help.stdout.trim().split('\n').length).toBeGreaterThan(55)
+  })
 
-  // TODO: Consider executing more e2e tests this way
+  describe('Sanitizing', () => {
+    test('Exec Command With --articlesList and --addNamespaces together', async () => {
+      await expect(execa(`${mwo} --adminEmail=test@test.test --articleList=Portal:Biology --mwUrl=https://en.wikipedia.org/ --addNamespaces=100`, { shell: true })).rejects.toThrow(
+        /options --articlesList and --addNamespaces cannot be used together/,
+      )
+    })
+  })
 })
