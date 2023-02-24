@@ -21,6 +21,7 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
+import { AxiosError } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -414,4 +415,8 @@ export function getMimeType(url: string, contentType?: string): string {
   }
 
   return cMimeType || pMimeType || null
+}
+
+export function cleanupAxiosError(err: AxiosError) {
+  return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
 }

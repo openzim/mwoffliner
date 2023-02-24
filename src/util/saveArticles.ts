@@ -13,10 +13,17 @@ import Timer from './Timer.js'
 import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
 import { config } from '../config.js'
 import { footerTemplate, htmlTemplateCode } from '../Templates.js'
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageMimeType, getMimeType } from './misc.js'
+import {
+  getRelativeFilePath,
+  getSizeFromUrl,
+  encodeArticleIdForZimHtmlUrl,
+  interpolateTranslationString,
+  isWebpCandidateImageMimeType,
+  getMimeType,
+  cleanupAxiosError,
+} from './misc.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
-import { AxiosError } from 'axios'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -1098,8 +1105,4 @@ function isSubpage(id: string, mw: MediaWiki) {
     }
   }
   return false
-}
-
-function cleanupAxiosError(err: AxiosError) {
-  return { name: err.name, message: err.message, status: err.response.status, responseType: err.config.responseType, data: err.response.data }
 }
