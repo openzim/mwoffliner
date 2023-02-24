@@ -13,7 +13,7 @@ import {
   cleanupAxiosError,
 } from '../../src/util/index.js'
 import { testHtmlRewritingE2e } from '../util.js'
-import axios, { AxiosError, AxiosResponse } from 'axios'
+import axios from 'axios'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { jest } from '@jest/globals'
