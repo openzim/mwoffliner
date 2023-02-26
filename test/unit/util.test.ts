@@ -10,6 +10,7 @@ import {
   normalizeMwResponse,
   getMimeType,
   isWebpCandidateImageMimeType,
+  cleanupAxiosError,
 } from '../../src/util/index.js'
 import { testHtmlRewritingE2e } from '../util.js'
 import axios from 'axios'
@@ -312,5 +313,29 @@ describe('Utils', () => {
     const normalizedObject = normalizeMwResponse(resp.data.query)
     // normalizeMwResponse returns title constructor
     expect(Object.keys(normalizedObject)[0]).toEqual('constructor')
+  })
+
+  test('Cleanup AxiosError function', async () => {
+    const result = {
+      name: 'AxiosError',
+      message: 'Request failed with status code 403',
+      url: 'https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz',
+      status: 403,
+      responseType: undefined,
+      data: {
+        type: 'https://mediawiki.org/wiki/HyperSwitch/errors/access_denied#revision',
+        title: 'Access to resource denied',
+        method: 'get',
+        detail: 'Access is restricted for revision 4225685',
+        uri: '/en.wikibooks.org/v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz',
+      },
+    }
+    try {
+      await axios.get('https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz')
+      fail('it should not reach here')
+    } catch (err) {
+      const cleanupedError = cleanupAxiosError(err)
+      expect(cleanupedError).toEqual(result)
+    }
   })
 })

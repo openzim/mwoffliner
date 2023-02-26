@@ -13,7 +13,15 @@ import Timer from './Timer.js'
 import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
 import { config } from '../config.js'
 import { footerTemplate, htmlTemplateCode } from '../Templates.js'
-import { getRelativeFilePath, getSizeFromUrl, encodeArticleIdForZimHtmlUrl, interpolateTranslationString, isWebpCandidateImageMimeType, getMimeType } from './misc.js'
+import {
+  getRelativeFilePath,
+  getSizeFromUrl,
+  encodeArticleIdForZimHtmlUrl,
+  interpolateTranslationString,
+  isWebpCandidateImageMimeType,
+  getMimeType,
+  cleanupAxiosError,
+} from './misc.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 
@@ -301,7 +309,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
           dump.status.articles.fail += 1
           logger.error(`Error downloading article ${articleId}`)
           if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-            reject(err)
+            reject(cleanupAxiosError(err))
             return
           }
         }
