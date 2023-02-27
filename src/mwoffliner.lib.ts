@@ -38,6 +38,7 @@ import {
   saveStaticFiles,
   writeFilePromise,
   importPolyfillModules,
+  readFileOrUrlByLine,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -279,7 +280,7 @@ async function execute(argv: any) {
   let articleListToIgnoreLines: string[]
   if (articleListToIgnore) {
     try {
-      articleListToIgnoreLines = await readFileOrUrlByLine(articleListToIgnore)
+      articleListToIgnoreLines = await readFileOrUrlByLine(articleListToIgnore, downloader.streamRequestOptions, tmpDirectory)
       logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
@@ -290,7 +291,7 @@ async function execute(argv: any) {
   let articleListLines: string[]
   if (articleList) {
     try {
-      articleListLines = await readFileOrUrlByLine(articleList)
+      articleListLines = await readFileOrUrlByLine(articleList, downloader.streamRequestOptions, tmpDirectory)
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }
@@ -532,39 +533,6 @@ async function execute(argv: any) {
     const logoContent = await downloader.downloadContent(logoUrl)
     await writeFilePromise(faviconPath, logoContent.content, null)
     return saveFavicon(zimCreator, faviconPath)
-  }
-
-  async function readFileOrUrlByLine(resourcePath: string): Promise<string[]> {
-    if (resourcePath.includes('http')) {
-      const fileName = resourcePath.split('/').slice(-1)[0]
-      const { data: contentStream } = await axios.get(resourcePath, downloader.streamRequestOptions)
-      resourcePath = path.join(tmpDirectory, fileName)
-      const writeStream = fs.createWriteStream(resourcePath)
-      await new Promise((resolve, reject) => {
-        contentStream
-          .pipe(writeStream)
-          .on('error', (err: any) => reject(err))
-          .on('close', resolve)
-      })
-    }
-
-    if (!fs.existsSync(resourcePath)) {
-      return resourcePath
-        .split(',')
-        .filter((part) => part !== '')
-        .map((part) => part.trim())
-    }
-
-    const fileLines: string[] = resourcePath
-      ? fs
-          .readFileSync(resourcePath)
-          .toString()
-          .split('\n')
-          .map((a) => a.replace(/\r/gm, ''))
-          .filter((a) => a)
-      : []
-
-    return fileLines
   }
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator, downloader: Downloader) {

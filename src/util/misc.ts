@@ -21,7 +21,7 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
-import { AxiosError } from 'axios'
+import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -419,4 +419,46 @@ export function getMimeType(url: string, contentType?: string): string {
 
 export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
+}
+
+export async function readFileOrUrlByLine(resourcePath: string, streamRequestOptions: AxiosRequestConfig, tmpDirectory: string): Promise<string[]> {
+  if (resourcePath.includes('http') && !resourcePath.includes(',')) {
+    const fileName = resourcePath.split('/').slice(-1)[0]
+    const { data: contentStream } = await axios.get(resourcePath, streamRequestOptions)
+    resourcePath = path.join(tmpDirectory, fileName)
+    const writeStream = fs.createWriteStream(resourcePath)
+    await new Promise((resolve, reject) => {
+      contentStream
+        .pipe(writeStream)
+        .on('error', (err: any) => reject(err))
+        .on('close', resolve)
+    })
+  }
+
+  if (!fs.existsSync(resourcePath)) {
+    const list = await Promise.all(
+      resourcePath
+        .split(',')
+        .filter((n) => n)
+        .map(async (part) => {
+          const path = part.trim()
+          if (path.includes('http') || fs.existsSync(path)) {
+            return readFileOrUrlByLine(path, streamRequestOptions, tmpDirectory)
+          }
+          return part.trim()
+        }),
+    )
+    return list.flat(1)
+  }
+
+  const fileLines: string[] = resourcePath
+    ? fs
+        .readFileSync(resourcePath)
+        .toString()
+        .split('\n')
+        .map((a) => a.replace(/\r/gm, ''))
+        .filter((a) => a)
+    : []
+
+  return fileLines
 }
