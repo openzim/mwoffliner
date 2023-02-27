@@ -29,6 +29,5 @@ describe('Exec Command With Bash', () => {
         /verbose should be empty or one of \[info, log, warn, error, quiet\]/,
       )
     })
-
   })
 })

@@ -10,11 +10,7 @@ const isVerbose = (level: LogLevel) => {
 
   const verboseLevelIndex = logLevels.indexOf(verboseLevel)
   const logLevelIndex = logLevels.indexOf(level)
-  if (logLevelIndex >= verboseLevelIndex) {
-    return true
-  } else {
-    return false
-  }
+  return logLevelIndex >= verboseLevelIndex ? true : false
 }
 
 const doLog = (type: LogLevel, args: any[]) => {
