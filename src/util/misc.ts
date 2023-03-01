@@ -283,7 +283,7 @@ export function getStrippedTitleFromHtml(html: string) {
   const doc = domino.createDocument(html)
   const titleEl = doc.querySelector('title')
   if (titleEl) {
-    return titleEl.textContent
+    return titleEl.textContent.replace(/<[^>]*>?/gm, '')
   } else {
     return ''
   }
