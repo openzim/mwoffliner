@@ -1,6 +1,6 @@
 import urlParser from 'url'
 import * as pathParser from 'path'
-import logger from './Logger.js'
+import * as logger from './Logger.js'
 import * as util from './util/index.js'
 import * as domino from 'domino'
 import type Downloader from './Downloader.js'

@@ -1,6 +1,6 @@
 import domino from 'domino'
 import { categoriesTemplate, leadSectionTemplate, sectionTemplate, subCategoriesTemplate, subPagesTemplate, subSectionTemplate } from '../Templates.js'
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 import type { Dump } from '../Dump.js'
 import { MWCapabilities } from '../Downloader.js'
 import { getStrippedTitleFromHtml } from './misc.js'

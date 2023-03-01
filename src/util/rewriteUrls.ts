@@ -3,7 +3,7 @@ import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeA
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
 import DU from '../DOMUtils.js'
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 
 function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): string {
   let rel = linkNode.getAttribute('rel')

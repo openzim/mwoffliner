@@ -1,5 +1,5 @@
 import S3File from 'aws-sdk'
-import logger from './Logger.js'
+import * as logger from './Logger.js'
 import { Readable } from 'stream'
 import { publicIpv4 } from 'public-ip'
 

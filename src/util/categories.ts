@@ -1,5 +1,5 @@
 import Downloader from '../Downloader.js'
-import logger from '../Logger.js'
+import * as logger from '../Logger.js'
 import { getArticlesByIds } from './mw-api.js'
 import { deDup } from './misc.js'
 
