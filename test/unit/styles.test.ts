@@ -21,7 +21,7 @@ describe('Styles', () => {
     await articleDetailXId.setMany(articlesDetail)
 
     const offlineCSSUrl = 'https://wiki.kiwix.org/w/index.php?title=Mediawiki:offline.css&action=raw'
-    const siteStylesUrl = 'http://en.wikipedia.org/w/load.php?lang=en&modules=site.styles&only=styles&skin=vector'
+    const siteStylesUrl = 'https://en.wikipedia.org/w/load.php?lang=en&modules=site.styles&only=styles&skin=vector'
 
     const { data: offlineCSSContent } = await Axios.get(offlineCSSUrl)
     const { data: siteStylesContent } = await Axios.get(siteStylesUrl)

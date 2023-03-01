@@ -528,7 +528,7 @@ async function execute(argv: any) {
 
     const parsedUrl = urlParser.parse(entries.logo)
     const faviconPath = path.join(tmpDirectory, 'favicon.png')
-    const logoUrl = parsedUrl.protocol ? entries.logo : 'http:' + entries.logo
+    const logoUrl = parsedUrl.protocol ? entries.logo : mw.baseUrl.protocol + entries.logo
     const logoContent = await downloader.downloadContent(logoUrl)
     await writeFilePromise(faviconPath, logoContent.content, null)
     return saveFavicon(zimCreator, faviconPath)
