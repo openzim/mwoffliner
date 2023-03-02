@@ -285,10 +285,7 @@ class Downloader {
       let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {}
       if (resp.continue) {
         continuation = resp.continue
-        const queryContinueOpts: any = shouldGetThumbnail ? { pageimages: queryOpts.picontinue } : {}
-        const relevantDetails = this.stripNonContinuedProps(processedResponse, queryContinueOpts)
-
-        finalProcessedResp = finalProcessedResp === undefined ? relevantDetails : deepmerge(finalProcessedResp, relevantDetails)
+        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
         if (this.mw.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
@@ -345,9 +342,7 @@ class Downloader {
       if (!queryComplete) {
         queryContinuation = resp['query-continue']
 
-        const relevantDetails = this.stripNonContinuedProps(processedResponse)
-
-        finalProcessedResp = finalProcessedResp === undefined ? relevantDetails : deepmerge(finalProcessedResp, relevantDetails)
+        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
         if (this.mw.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
@@ -437,32 +432,6 @@ class Downloader {
 
   private getArticleUrl(articleId: string, isMainPage: boolean): string {
     return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`
-  }
-
-  private stripNonContinuedProps(articleDetails: QueryMwRet, cont: QueryContinueOpts | ContinueOpts = {}): QueryMwRet {
-    const propsMap: KVS<string[]> = {
-      pageimages: ['thumbnail', 'pageimage'],
-      coordinates: ['coordinates'],
-      categories: ['categories'],
-    }
-    const keysToKeep: string[] = ['subCategories', 'revisions', 'redirects'].concat(Object.keys(cont).reduce((acc, key) => acc.concat(propsMap[key] || []), []))
-    const items = Object.entries(articleDetails).map(([aId, detail]) => {
-      const newDetail = keysToKeep.reduce((acc, key) => {
-        const val = (detail as any)[key]
-        if (!val) {
-          return acc
-        } else {
-          return {
-            ...acc,
-            [key]: val,
-          }
-        }
-      }, {})
-      return [aId, newDetail]
-    })
-    return items.reduce((acc, [key, detail]: any[]) => {
-      return { ...acc, [key]: detail }
-    }, {})
   }
 
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
