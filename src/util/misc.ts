@@ -280,13 +280,13 @@ export function getMediaBase(url: string, escape: boolean) {
 }
 
 export function getStrippedTitleFromHtml(html: string) {
-  const doc = domino.createDocument(html)
-  const titleEl = doc.querySelector('title')
-  if (titleEl) {
-    return titleEl.textContent.replace(/<[^>]*>?/gm, '')
-  } else {
-    return ''
+  let [, , title = ''] = html.match(/<title( [^>]*)?>(.*)<[/]title>/i) || []
+  if (!title) {
+    const doc = domino.createDocument(html)
+    const titleEl = doc.querySelector('title')
+    title = titleEl ? titleEl.textContent : ''
   }
+  return title.replace(/<[^>]*>?/gm, '')
 }
 
 export function zip(...args: any[][]) {
