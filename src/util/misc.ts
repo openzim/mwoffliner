@@ -286,7 +286,7 @@ export function getStrippedTitleFromHtml(html: string) {
     const titleEl = doc.querySelector('title')
     title = titleEl ? titleEl.textContent : ''
   }
-  return title.replace(/<[^>]*>?/gm, '')
+  return title.replace(/(<|&lt;)[^>]*(>|&gt;)?/gm, '')
 }
 
 export function zip(...args: any[][]) {

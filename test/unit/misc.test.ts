@@ -56,6 +56,9 @@ describe('Misc utility', () => {
 
     test('title with different tags', async () => {
       const createDocumentSpy = jest.spyOn(domino, 'createDocument')
+      const title0 = getStrippedTitleFromHtml(html('&lt;i>Terminalia chebula&lt;/i>'))
+      expect(title0).toBe('Terminalia chebula')
+
       const title1 = getStrippedTitleFromHtml(html('<i>Example</i>'))
       expect(title1).toBe('Example')
 
