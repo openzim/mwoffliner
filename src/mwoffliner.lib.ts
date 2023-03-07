@@ -39,6 +39,7 @@ import {
   writeFilePromise,
   importPolyfillModules,
   readFileOrUrlByLine,
+  getTmpDirectory,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -205,14 +206,7 @@ async function execute(argv: any) {
   logger.log(`Using output directory ${outputDirectory}`)
 
   // Temporary directory
-  const tmpDirectory = path.resolve(os.tmpdir(), `mwoffliner-${Date.now()}`)
-  try {
-    logger.info(`Creating temporary directory [${tmpDirectory}]`)
-    await mkdirPromise(tmpDirectory)
-  } catch (err) {
-    logger.error('Failed to create temporary directory, exiting', err)
-    throw err
-  }
+  const tmpDirectory = await getTmpDirectory()
   logger.log(`Using temporary directory ${tmpDirectory}`)
 
   process.on('exit', async (code) => {
@@ -280,7 +274,7 @@ async function execute(argv: any) {
   let articleListToIgnoreLines: string[]
   if (articleListToIgnore) {
     try {
-      articleListToIgnoreLines = await readFileOrUrlByLine(articleListToIgnore, downloader.streamRequestOptions, tmpDirectory)
+      articleListToIgnoreLines = await readFileOrUrlByLine(articleListToIgnore)
       logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
@@ -291,7 +285,7 @@ async function execute(argv: any) {
   let articleListLines: string[]
   if (articleList) {
     try {
-      articleListLines = await readFileOrUrlByLine(articleList, downloader.streamRequestOptions, tmpDirectory)
+      articleListLines = await readFileOrUrlByLine(articleList)
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }

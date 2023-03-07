@@ -5,6 +5,7 @@ import fs from 'fs'
 import path from 'path'
 import mime from 'mime-types'
 import mkdirp from 'mkdirp'
+import os from 'os'
 import pathParser from 'path'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
 import { Config, config } from '../config.js'
@@ -21,10 +22,12 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
-import axios, { AxiosError, AxiosRequestConfig } from 'axios'
+import axios, { AxiosError } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+let tmpDirectory = ''
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -421,11 +424,21 @@ export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
 }
 
-export async function readFileOrUrlByLine(resourcePath: string, streamRequestOptions: AxiosRequestConfig, tmpDirectory: string): Promise<string[]> {
+export async function readFileOrUrlByLine(resourcePath: string): Promise<string[]> {
   if (resourcePath.includes('http') && !resourcePath.includes(',')) {
     const fileName = resourcePath.split('/').slice(-1)[0]
-    const { data: contentStream } = await axios.get(resourcePath, streamRequestOptions)
-    resourcePath = path.join(tmpDirectory, fileName)
+    const { data: contentStream } = await axios.get(resourcePath, {
+      headers: {
+        accept: 'application/octet-stream',
+        'cache-control': 'public, max-stale=86400',
+        'accept-encoding': 'gzip, deflate',
+        'user-agent': config.userAgent,
+      },
+      responseType: 'stream',
+      timeout: config.defaults.requestTimeout,
+      method: 'GET',
+    })
+    resourcePath = path.join(await getTmpDirectory(), fileName)
     const writeStream = fs.createWriteStream(resourcePath)
     await new Promise((resolve, reject) => {
       contentStream
@@ -443,7 +456,7 @@ export async function readFileOrUrlByLine(resourcePath: string, streamRequestOpt
         .map(async (part) => {
           const path = part.trim()
           if (path.includes('http') || fs.existsSync(path)) {
-            return readFileOrUrlByLine(path, streamRequestOptions, tmpDirectory)
+            return readFileOrUrlByLine(path)
           }
           return part.trim()
         }),
@@ -461,4 +474,18 @@ export async function readFileOrUrlByLine(resourcePath: string, streamRequestOpt
     : []
 
   return fileLines
+}
+
+export async function getTmpDirectory() {
+  if (!tmpDirectory) {
+    tmpDirectory = path.resolve(os.tmpdir(), `mwoffliner-${Date.now()}`)
+    try {
+      logger.info(`Creating temporary directory [${tmpDirectory}]`)
+      await mkdirPromise(tmpDirectory)
+    } catch (err) {
+      logger.error('Failed to create temporary directory, exiting', err)
+      throw err
+    }
+  }
+  return tmpDirectory
 }
