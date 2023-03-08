@@ -108,6 +108,8 @@ async function execute(argv: any) {
   const publisher = _publisher || config.defaults.publisher
   let customZimFavicon = _customZimFavicon
 
+  const zimMetadataMandatoryKeys = ['Creator', 'Description', 'Language', 'Name', 'Publisher', 'Title']
+
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
   if (!isValidEmail(adminEmail)) {
@@ -381,6 +383,24 @@ async function execute(argv: any) {
     logger.log(`Writing zim to [${outZim}]`)
     dump.outFile = outZim
 
+    const zimMetadata = {
+      Tags: dump.computeZimTags(),
+      Language: dump.mwMetaData.langIso3,
+      Title: dump.opts.customZimTitle || dump.mwMetaData.title,
+      Name: dump.computeFilenameRadical(false, true, true),
+      Flavour: dump.computeFlavour(),
+      Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
+      ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
+      Creator: dump.mwMetaData.creator,
+      Publisher: dump.opts.publisher,
+    }
+
+    zimMetadataMandatoryKeys.map((key) => {
+      if (!zimMetadata[key]) {
+        throw new Error(`Metadata "${key}" is required`)
+      }
+    })
+
     const zimCreator = new ZimCreator(
       {
         fileName: outZim,
@@ -388,17 +408,7 @@ async function execute(argv: any) {
         welcome: dump.opts.mainPage ? dump.opts.mainPage : 'index',
         compression: 'zstd',
       },
-      {
-        Tags: dump.computeZimTags(),
-        Language: dump.mwMetaData.langIso3,
-        Title: dump.opts.customZimTitle || dump.mwMetaData.title,
-        Name: dump.computeFilenameRadical(false, true, true),
-        Flavour: dump.computeFlavour(),
-        Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
-        ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
-        Creator: dump.mwMetaData.creator,
-        Publisher: dump.opts.publisher,
-      } as any,
+      zimMetadata,
     )
     const scraperArticle = new ZimArticle({
       ns: 'M',
