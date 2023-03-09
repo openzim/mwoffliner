@@ -395,11 +395,12 @@ async function execute(argv: any) {
       Publisher: dump.opts.publisher,
     }
 
-    zimMetadataMandatoryKeys.map((key) => {
+    for (const key of zimMetadataMandatoryKeys) {
       if (!zimMetadata[key]) {
-        throw new Error(`Metadata "${key}" is required`)
+        logger.error(`Metadata "${key}" is required`)
+        return
       }
-    })
+    }
 
     const zimCreator = new ZimCreator(
       {
