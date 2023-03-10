@@ -48,6 +48,8 @@ describe('zimMetadata', () => {
           expect(await zimdump(`show --url "M/${option}" ${outFiles[0].outFile}`)).toBe(output)
         }),
       )
+
+      expect(await zimdump(`show --url "M/Illustration_48x48@1" ${outFiles[0].outFile}`)).toBeDefined()
     } else {
       console.log('Zimdump not installed, skipping test')
     }
