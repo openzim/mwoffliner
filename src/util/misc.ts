@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import domino from 'domino'
+import { defaultStreamRequestOptions } from '../Downloader.js'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
@@ -424,56 +425,47 @@ export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
 }
 
-export async function readFileOrUrlByLine(resourcePath: string): Promise<string[]> {
-  if (resourcePath.includes('http') && !resourcePath.includes(',')) {
-    const fileName = resourcePath.split('/').slice(-1)[0]
-    const { data: contentStream } = await axios.get(resourcePath, {
-      headers: {
-        accept: 'application/octet-stream',
-        'cache-control': 'public, max-stale=86400',
-        'accept-encoding': 'gzip, deflate',
-        'user-agent': config.userAgent,
-      },
-      responseType: 'stream',
-      timeout: config.defaults.requestTimeout,
-      method: 'GET',
-    })
-    resourcePath = path.join(await getTmpDirectory(), fileName)
-    const writeStream = fs.createWriteStream(resourcePath)
-    await new Promise((resolve, reject) => {
-      contentStream
-        .pipe(writeStream)
-        .on('error', (err: any) => reject(err))
-        .on('close', resolve)
-    })
-  }
+async function downloadListByUrl(url: string): Promise<string> {
+  const fileName = url.split('/').slice(-1)[0]
+  const { data: contentStream } = await axios.get(url, defaultStreamRequestOptions)
+  const filePath = path.join(await getTmpDirectory(), fileName)
+  const writeStream = fs.createWriteStream(filePath)
+  await new Promise((resolve, reject) => {
+    contentStream
+      .pipe(writeStream)
+      .on('error', (err: any) => reject(err))
+      .on('close', resolve)
+  })
+  return filePath
+}
 
-  if (!fs.existsSync(resourcePath)) {
-    const list = await Promise.all(
-      resourcePath
-        .split(',')
-        .filter((n) => n)
-        .map(async (part) => {
-          const path = part.trim()
-          if (path.includes('http') || fs.existsSync(path)) {
-            return readFileOrUrlByLine(path)
+export async function extractArticleList(articleList: string): Promise<string[]> {
+  const list = await Promise.all(
+    articleList
+      .split(',')
+      .filter((n) => n)
+      .map(async (part) => {
+        let item: string | string[] = part.trim()
+        if (item.indexOf('http') === 0) {
+          try {
+            const url = new URL(item)
+            item = await downloadListByUrl(url.toString())
+          } catch (e) {
+            // URL is not valid continue processing
           }
-          return part.trim()
-        }),
-    )
-    return list.flat(1)
-  }
-
-  const fileLines: string[] = resourcePath
-    ? fs
-        .readFileSync(resourcePath)
-        .toString()
-        .split('\n')
-        .map((a) => a.replace(/\r/gm, ''))
-        .filter((a) => a)
-    : []
-
-  return fileLines
+        }
+        if (fs.existsSync(item)) {
+          item = fs
+            .readFileSync(item)
+            .toString()
+            .split('\n')
+            .map((a) => a.replace(/\r/gm, ''))
+            .filter((a) => a)
+        }
+        return item
+      }),
+  )
+  return list.flat(1)
 }
 
 export async function getTmpDirectory() {

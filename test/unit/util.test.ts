@@ -11,7 +11,7 @@ import {
   getMimeType,
   isWebpCandidateImageMimeType,
   cleanupAxiosError,
-  readFileOrUrlByLine,
+  extractArticleList,
   mkdirPromise,
   writeFilePromise,
 } from '../../src/util/index.js'
@@ -344,7 +344,7 @@ describe('Utils', () => {
     }
   })
 
-  describe('readFileOrUrlByLine', () => {
+  describe('extractArticleList', () => {
     const now = new Date()
     const dirname = path.join(process.cwd(), `mwo-test-${+now}`)
 
@@ -364,22 +364,22 @@ describe('Utils', () => {
     })
 
     test('One string as parameter', async () => {
-      const result: string[] = await readFileOrUrlByLine('testString')
+      const result: string[] = await extractArticleList('testString')
       expect(result).toEqual(['testString'])
     })
 
     test('Comma separated strings as parameter', async () => {
-      const result: string[] = await readFileOrUrlByLine(argumentsList.join(','))
+      const result: string[] = await extractArticleList(argumentsList.join(','))
       expect(result).toEqual(argumentsList)
     })
 
     test('Filename string as parameter', async () => {
-      const result: string[] = await readFileOrUrlByLine(filePath)
+      const result: string[] = await extractArticleList(filePath)
       expect(result).toEqual(argumentsList)
     })
 
     test('Comma separated filenames string as parameter', async () => {
-      const result: string[] = await readFileOrUrlByLine(`${filePath},${anotherFilePath}`)
+      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
@@ -387,7 +387,7 @@ describe('Utils', () => {
       jest.spyOn(axios, 'get').mockResolvedValue({
         data: fs.createReadStream(filePath),
       })
-      const result: string[] = await readFileOrUrlByLine('http://test.com/strings')
+      const result: string[] = await extractArticleList('http://test.com/strings')
       expect(result).toEqual(argumentsList)
     })
 
@@ -398,8 +398,13 @@ describe('Utils', () => {
       jest.spyOn(axios, 'get').mockResolvedValueOnce({
         data: fs.createReadStream(anotherFilePath),
       })
-      const result: string[] = await readFileOrUrlByLine('http://test.com/strings,http://test.com/another-strings')
+      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings')
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
+    })
+
+    test('The parameter starts from HTTP but it is not the URL', async () => {
+      const result: string[] = await extractArticleList('http-test')
+      expect(result).toEqual(['http-test'])
     })
   })
 })

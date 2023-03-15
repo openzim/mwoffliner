@@ -38,7 +38,7 @@ import {
   saveStaticFiles,
   writeFilePromise,
   importPolyfillModules,
-  readFileOrUrlByLine,
+  extractArticleList,
   getTmpDirectory,
 } from './util/index.js'
 import S3 from './S3.js'
@@ -274,7 +274,7 @@ async function execute(argv: any) {
   let articleListToIgnoreLines: string[]
   if (articleListToIgnore) {
     try {
-      articleListToIgnoreLines = await readFileOrUrlByLine(articleListToIgnore)
+      articleListToIgnoreLines = await extractArticleList(articleListToIgnore)
       logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
@@ -285,7 +285,7 @@ async function execute(argv: any) {
   let articleListLines: string[]
   if (articleList) {
     try {
-      articleListLines = await readFileOrUrlByLine(articleList)
+      articleListLines = await extractArticleList(articleList)
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }
