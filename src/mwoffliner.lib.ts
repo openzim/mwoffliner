@@ -40,6 +40,7 @@ import {
   importPolyfillModules,
   extractArticleList,
   getTmpDirectory,
+  validateMetadata,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -107,8 +108,6 @@ async function execute(argv: any) {
   if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
   const publisher = _publisher || config.defaults.publisher
   let customZimFavicon = _customZimFavicon
-
-  const zimMetadataMandatoryKeys = ['Creator', 'Description', 'Language', 'Name', 'Publisher', 'Title']
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -185,6 +184,15 @@ async function execute(argv: any) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
   }
+  const metaDataRequiredKeys = {
+    Creator: mwMetaData.creator,
+    Description: customZimDescription || mwMetaData.subTitle,
+    Language: mwMetaData.langIso3,
+    Publisher: publisher,
+    Title: customZimTitle || mwMetaData.title,
+  }
+  validateMetadata(metaDataRequiredKeys)
+
   // Sanitizing main page
   let mainPage = articleList ? '' : mwMetaData.mainPage
   if (customMainPage) {
@@ -383,25 +391,6 @@ async function execute(argv: any) {
     logger.log(`Writing zim to [${outZim}]`)
     dump.outFile = outZim
 
-    const zimMetadata = {
-      Tags: dump.computeZimTags(),
-      Language: dump.mwMetaData.langIso3,
-      Title: dump.opts.customZimTitle || dump.mwMetaData.title,
-      Name: dump.computeFilenameRadical(false, true, true),
-      Flavour: dump.computeFlavour(),
-      Description: dump.opts.customZimDescription || dump.mwMetaData.subTitle,
-      ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
-      Creator: dump.mwMetaData.creator,
-      Publisher: dump.opts.publisher,
-    }
-
-    for (const key of zimMetadataMandatoryKeys) {
-      if (!zimMetadata[key]) {
-        logger.error(`Metadata "${key}" is required`)
-        return
-      }
-    }
-
     const zimCreator = new ZimCreator(
       {
         fileName: outZim,
@@ -409,7 +398,13 @@ async function execute(argv: any) {
         welcome: dump.opts.mainPage ? dump.opts.mainPage : 'index',
         compression: 'zstd',
       },
-      zimMetadata,
+      {
+        ...metaDataRequiredKeys,
+        Tags: dump.computeZimTags(),
+        Name: dump.computeFilenameRadical(false, true, true),
+        Flavour: dump.computeFlavour(),
+        ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
+      } as any,
     )
     const scraperArticle = new ZimArticle({
       ns: 'M',

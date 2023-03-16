@@ -14,6 +14,7 @@ import {
   extractArticleList,
   mkdirPromise,
   writeFilePromise,
+   validateMetadata,
 } from '../../src/util/index.js'
 import { testHtmlRewritingE2e } from '../util.js'
 import axios from 'axios'
@@ -410,6 +411,51 @@ describe('Utils', () => {
     test('Error if trying to get articleList from wrong URL ', async () => {
       jest.spyOn(axios, 'get').mockRejectedValue({})
       await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+    })
+  })
+ 
+  describe('metaData', () => {
+    test('validate empty string', () => {
+      const metaData = {
+        Creator: '',
+        Description: 'test Description',
+        Language: 'test Language',
+        Publisher: 'test Publisher',
+        Title: 'test Title',
+      }
+      expect(() => validateMetadata(metaData)).toThrow('Metadata "Creator" is required')
+    })
+
+    test('validate missed metaData key', () => {
+      const metaData = {
+        Creator: 'test Creator',
+        Language: 'test Language',
+        Publisher: 'test Publisher',
+        Title: 'test Title',
+      }
+      expect(() => validateMetadata(metaData)).toThrow('Metadata "Description" is required')
+    })
+
+    test('validate long Description', () => {
+      const metaData = {
+        Creator: 'test Creator',
+        Description: 'test Description test Description test Description test Description test Description test Description ',
+        Language: 'test Language',
+        Publisher: 'test Publisher',
+        Title: 'test Title',
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must NOT have more than 80 characters')
+    })
+
+    test('validate long Title', () => {
+      const metaData = {
+        Creator: 'test Creator',
+        Description: 'test Description',
+        Language: 'test Language',
+        Publisher: 'test Publisher',
+        Title: 'test Title test Title test Title',
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Title: must NOT have more than 30 characters')
     })
   })
 })
