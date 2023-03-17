@@ -10,7 +10,7 @@ import MediaWiki from '../MediaWiki.js'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
 import { Dump } from '../Dump.js'
 import fs from 'fs'
-import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP } from './const.js'
+import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -89,13 +89,13 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
 }
 
 export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
-  // param :
-  //   module : string : the name of the module
-  //   moduleUri : string : the path where the module will be saved into the zim
-  //   type : string : either 'js' or 'css'
-  // this function save a key into Redis db in the form of module.type -> moduleUri
-  // return :
-  //   a promise resolving 1 if data has been succesfully saved or resolving 0 if data was already in Redis
+  const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
+    let text: string
+    replaceMap.forEach((textToReplace, regEx) => {
+      text = sourceText.replace(regEx, textToReplace)
+    })
+    return text
+  }
 
   // the function hackStartupModule changes startup script by returning true for all modules so that load.php is not called.
   // it also removes requestIdleCallback as in our case window is idle after all script tags are called but those script tags
@@ -104,8 +104,14 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     if ((!ALL_READY_FUNCTION.test(jsCode) || !DO_PROPAGATION.test(jsCode)) && !LOAD_PHP.test(jsCode)) {
       throw new Error('unable to hack startup module')
     }
-
-    return jsCode.replace(DO_PROPAGATION, 'doPropagation();').replace(ALL_READY_FUNCTION, 'function allReady( modules ) { return true;').replace(LOAD_PHP, 'script.src ="";')
+    return replaceCodeByRegex(
+      jsCode,
+      new Map([
+        [DO_PROPAGATION, 'doPropagation();'],
+        [ALL_READY_FUNCTION, 'function allReady( modules ) { return true;'],
+        [LOAD_PHP, 'script.src ="";'],
+      ]),
+    )
   }
 
   let apiParameterOnly
@@ -120,8 +126,16 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 
   const { content } = await downloader.downloadContent(moduleApiUrl)
   let text = content.toString()
-  if (module === 'startup' && type === 'js') {
-    text = hackStartUpModule(text)
+
+  if (type === 'js') {
+    switch (module) {
+      case 'startap':
+        text = hackStartUpModule(text)
+        break
+      case 'mediawiki.page.ready':
+        text = replaceCodeByRegex(text, new Map([[RULE_TO_REDIRECT, 'false']]))
+        break
+    }
   }
 
   try {
