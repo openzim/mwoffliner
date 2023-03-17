@@ -447,11 +447,18 @@ export async function extractArticleList(articleList: string): Promise<string[]>
       .map(async (part) => {
         let item: string | string[] = part.trim()
         if (item.indexOf('http') === 0) {
+          let url: URL
           try {
-            const url = new URL(item)
-            item = await downloadListByUrl(url.toString())
+            url = new URL(item)
           } catch (e) {
-            // URL is not valid continue processing
+            // URL is not valid. Continue processing
+          }
+          if (url && url.href) {
+            try {
+              item = await downloadListByUrl(url.href)
+            } catch (e) {
+              throw new Error(`Failed to read articleList from URL: ${url.href}`)
+            }
           }
         }
         if (fs.existsSync(item)) {

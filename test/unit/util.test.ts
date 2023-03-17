@@ -406,5 +406,10 @@ describe('Utils', () => {
       const result: string[] = await extractArticleList('http-test')
       expect(result).toEqual(['http-test'])
     })
+
+    test('Error if trying to get articleList from wrong URL ', async () => {
+      jest.spyOn(axios, 'get').mockRejectedValue({})
+      await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+    })
   })
 })
