@@ -503,10 +503,12 @@ async function execute(argv: any) {
       try {
         const source = await fs.promises.readFile(faviconPath)
         const data = await sharp(source).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
+        const illustrationMetadata = new ZimArticle({ url: 'Illustration_48x48@1', mimeType: 'image/png', data, ns: 'M' })
+        zimCreator.addArticle(illustrationMetadata)
         const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' })
         return zimCreator.addArticle(article)
       } catch (e) {
-        throw new Error('Failed to save favicon using sharp')
+        throw new Error('Failed to save favicon and IllustrationMetadata using sharp')
       }
     }
 
