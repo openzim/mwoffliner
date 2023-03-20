@@ -11,12 +11,17 @@ import {
   getMimeType,
   isWebpCandidateImageMimeType,
   cleanupAxiosError,
+  extractArticleList,
+  mkdirPromise,
+  writeFilePromise,
 } from '../../src/util/index.js'
 import { testHtmlRewritingE2e } from '../util.js'
 import axios from 'axios'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { jest } from '@jest/globals'
+import fs from 'fs'
+import rimraf from 'rimraf'
 
 jest.setTimeout(10000)
 
@@ -337,5 +342,74 @@ describe('Utils', () => {
       const cleanupedError = cleanupAxiosError(err)
       expect(cleanupedError).toEqual(result)
     }
+  })
+
+  describe('extractArticleList', () => {
+    const now = new Date()
+    const dirname = path.join(process.cwd(), `mwo-test-${+now}`)
+
+    const argumentsList = ['testString1', 'testString2', 'testString3']
+    const anotherArgumentsList = ['testString4', 'testString5', 'testString6']
+    const filePath = path.join(dirname, 'articles1.txt')
+    const anotherFilePath = path.join(dirname, 'articles2.txt')
+
+    beforeAll(async () => {
+      await mkdirPromise(dirname)
+      await writeFilePromise(filePath, argumentsList.join('\n'))
+      await writeFilePromise(anotherFilePath, anotherArgumentsList.join('\n'))
+    })
+
+    afterAll(() => {
+      rimraf.sync(dirname)
+    })
+
+    test('One string as parameter', async () => {
+      const result: string[] = await extractArticleList('testString')
+      expect(result).toEqual(['testString'])
+    })
+
+    test('Comma separated strings as parameter', async () => {
+      const result: string[] = await extractArticleList(argumentsList.join(','))
+      expect(result).toEqual(argumentsList)
+    })
+
+    test('Filename string as parameter', async () => {
+      const result: string[] = await extractArticleList(filePath)
+      expect(result).toEqual(argumentsList)
+    })
+
+    test('Comma separated filenames string as parameter', async () => {
+      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`)
+      expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
+    })
+
+    test('URL as parameter', async () => {
+      jest.spyOn(axios, 'get').mockResolvedValue({
+        data: fs.createReadStream(filePath),
+      })
+      const result: string[] = await extractArticleList('http://test.com/strings')
+      expect(result).toEqual(argumentsList)
+    })
+
+    test("Comma separated URL's as parameter", async () => {
+      jest.spyOn(axios, 'get').mockResolvedValueOnce({
+        data: fs.createReadStream(filePath),
+      })
+      jest.spyOn(axios, 'get').mockResolvedValueOnce({
+        data: fs.createReadStream(anotherFilePath),
+      })
+      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings')
+      expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
+    })
+
+    test('The parameter starts from HTTP but it is not the URL', async () => {
+      const result: string[] = await extractArticleList('http-test')
+      expect(result).toEqual(['http-test'])
+    })
+
+    test('Error if trying to get articleList from wrong URL ', async () => {
+      jest.spyOn(axios, 'get').mockRejectedValue({})
+      await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+    })
   })
 })

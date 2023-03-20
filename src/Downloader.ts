@@ -2,6 +2,7 @@ import * as path from 'path'
 import * as urlParser from 'url'
 import deepmerge from 'deepmerge'
 import * as backoff from 'backoff'
+import { config } from './config.js'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
@@ -75,6 +76,18 @@ export interface MWCapabilities {
   coordinatesAvailable: boolean
   desktopRestApiAvailable: boolean
   mobileRestApiAvailable: boolean
+}
+
+export const defaultStreamRequestOptions: AxiosRequestConfig = {
+  headers: {
+    accept: 'application/octet-stream',
+    'cache-control': 'public, max-stale=86400',
+    'accept-encoding': 'gzip, deflate',
+    'user-agent': config.userAgent,
+  },
+  responseType: 'stream',
+  timeout: config.defaults.requestTimeout,
+  method: 'GET',
 }
 
 class Downloader {
@@ -164,19 +177,16 @@ class Downloader {
 
     this.streamRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
+      ...defaultStreamRequestOptions,
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true }),
 
       headers: {
-        accept: 'application/octet-stream',
-        'cache-control': 'public, max-stale=86400',
-        'accept-encoding': 'gzip, deflate',
+        ...defaultStreamRequestOptions.headers,
         'user-agent': this.uaString,
         cookie: this.loginCookie,
       },
-      responseType: 'stream',
       timeout: this.requestTimeout,
-      method: 'GET',
     }
   }
 

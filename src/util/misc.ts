@@ -1,10 +1,12 @@
 import crypto from 'crypto'
 import domino from 'domino'
+import { defaultStreamRequestOptions } from '../Downloader.js'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
 import mime from 'mime-types'
 import mkdirp from 'mkdirp'
+import os from 'os'
 import pathParser from 'path'
 import { ZimCreator, ZimArticle } from '@openzim/libzim'
 import { Config, config } from '../config.js'
@@ -21,10 +23,12 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
-import { AxiosError } from 'axios'
+import axios, { AxiosError } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+let tmpDirectory = ''
 
 export function isValidEmail(email: string) {
   const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
@@ -419,4 +423,68 @@ export function getMimeType(url: string, contentType?: string): string {
 
 export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
+}
+
+async function downloadListByUrl(url: string): Promise<string> {
+  const fileName = url.split('/').slice(-1)[0]
+  const { data: contentStream } = await axios.get(url, defaultStreamRequestOptions)
+  const filePath = path.join(await getTmpDirectory(), fileName)
+  const writeStream = fs.createWriteStream(filePath)
+  await new Promise((resolve, reject) => {
+    contentStream
+      .pipe(writeStream)
+      .on('error', (err: any) => reject(err))
+      .on('close', resolve)
+  })
+  return filePath
+}
+
+export async function extractArticleList(articleList: string): Promise<string[]> {
+  const list = await Promise.all(
+    articleList
+      .split(',')
+      .filter((n) => n)
+      .map(async (part) => {
+        let item: string | string[] = part.trim()
+        if (item.indexOf('http') === 0) {
+          let url: URL
+          try {
+            url = new URL(item)
+          } catch (e) {
+            // URL is not valid. Continue processing
+          }
+          if (url && url.href) {
+            try {
+              item = await downloadListByUrl(url.href)
+            } catch (e) {
+              throw new Error(`Failed to read articleList from URL: ${url.href}`)
+            }
+          }
+        }
+        if (fs.existsSync(item)) {
+          item = fs
+            .readFileSync(item)
+            .toString()
+            .split('\n')
+            .map((a) => a.replace(/\r/gm, ''))
+            .filter((a) => a)
+        }
+        return item
+      }),
+  )
+  return list.flat(1)
+}
+
+export async function getTmpDirectory() {
+  if (!tmpDirectory) {
+    tmpDirectory = path.resolve(os.tmpdir(), `mwoffliner-${Date.now()}`)
+    try {
+      logger.info(`Creating temporary directory [${tmpDirectory}]`)
+      await mkdirPromise(tmpDirectory)
+    } catch (err) {
+      logger.error('Failed to create temporary directory, exiting', err)
+      throw err
+    }
+  }
+  return tmpDirectory
 }
