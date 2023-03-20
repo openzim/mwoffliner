@@ -4,7 +4,6 @@
 			"Verdy p"
 		]
 	},
-	"__direction": "ltr",
 	"DISCLAIMER": "Cet article est issu de ${creator}. Le texte est sous licence ${license}. Des conditions supplémentaires peuvent s’appliquer aux fichiers multimédias.",
 	"LAST_EDITED_ON": "Dernière modification le ${date}",
 	"LICENSE_NAME": "Creative Commons – Attribution – Partage à l’identique"
