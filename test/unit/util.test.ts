@@ -14,7 +14,7 @@ import {
   extractArticleList,
   mkdirPromise,
   writeFilePromise,
-   validateMetadata,
+  validateMetadata,
 } from '../../src/util/index.js'
 import { testHtmlRewritingE2e } from '../util.js'
 import axios from 'axios'
@@ -413,7 +413,7 @@ describe('Utils', () => {
       await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
     })
   })
- 
+
   describe('metaData', () => {
     test('validate empty string', () => {
       const metaData = {

@@ -17,6 +17,7 @@ describe('vikidia', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     articleList: 'Alaska',
+    customZimDescription: 'Alasks article',
   }
 
   test('right scrapping from vikidia.org', async () => {
