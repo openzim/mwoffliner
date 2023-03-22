@@ -13,7 +13,7 @@ This bundled redis server is configured to be used only through a unix socket an
 Use of this bundled server is transparent as `mwoffliner` command is aliased to `mwoffliner --redis /dev/shm/redis.sock`. 
 
 ``` sh
-docker run -ti openzim/mwoffliner mwoffliner --help
+docker run -ti ghcr.io/openzim/mwoffliner mwoffliner --help
 ```
 
 ## With dedicated redis
@@ -29,14 +29,14 @@ $docker run --name=redis -d redis
 ... and then run the moffliner interactively (remember to specify `--redis` in command):
 
 ```
-$docker run --link=redis:redis --name=mwoffliner -ti openzim/mwoffliner
+$docker run --link=redis:redis --name=mwoffliner -ti ghcr.io/openzim/mwoffliner
 ```
 
 ... or non-interactively, directly with a command line (this is an
 example, the second line is the mwoffliner command itself):
 
 ```
-docker run --link=redis:redis --name=mwoffliner -e REDIS="redis://redis" openzim/mwoffliner \
+docker run --link=redis:redis --name=mwoffliner -e REDIS="redis://redis" ghcr.io/openzim/mwoffliner \
        mwoffliner --verbose --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
 ```
 
@@ -52,5 +52,5 @@ docker-compose --file docker-compose.yml run mwoffliner
 
 Run from the repository root:
 ```
-docker build . -f docker/Dockerfile -t openzim/mwoffliner
+docker build . -f docker/Dockerfile -t ghcr.io/openzim/mwoffliner
 ```
