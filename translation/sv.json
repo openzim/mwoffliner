@@ -4,7 +4,6 @@
 			"Sabelöga"
 		]
 	},
-	"__direction": "ltr",
 	"DISCLAIMER": "Den här artikeln kommer från ${creator}. Texten är licensierad under ${license}. Ytterligare termer kan gälla för mediefiler.",
 	"LAST_EDITED_ON": "Senast redigerad den ${date}",
 	"LICENSE_NAME": "Creative Commons - Erkännande - DelaLika"

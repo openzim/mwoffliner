@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly"
+		]
+	},
+	"DISCLAIMER": "此條目由${creator}發布。內容文字基於${license}獲得許可。額外條款有機會適用於媒體檔案。",
+	"LAST_EDITED_ON": "最後編輯於${date}",
+	"LICENSE_NAME": "創用CC - 姓名標示 ─ 相同方式分享"
+}

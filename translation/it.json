@@ -4,7 +4,6 @@
 			"Beta16"
 		]
 	},
-	"__direction": "ltr",
 	"DISCLAIMER": "Questa voce è stata pubblicata da ${creator}. Il testo è rilasciato in base alla licenza ${license}. Potrebbero essere applicate clausole aggiuntive per i file multimediali.",
 	"LAST_EDITED_ON": "Ultima modifica il ${date}",
 	"LICENSE_NAME": "Creative Commons Attribuzione-Condividi allo stesso modo"
