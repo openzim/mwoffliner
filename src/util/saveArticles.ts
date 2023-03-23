@@ -773,6 +773,16 @@ function makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoEl
   return thumbDiv
 }
 
+function getInnerTextFromElement(domElement: DominoElement) {
+  const innerNodes = domElement.childNodes
+  for (const i in innerNodes) {
+    if (innerNodes[i].nodeType === domElement.TEXT_NODE) {
+      return innerNodes[i].textContent.trim()
+    }
+  }
+  return null
+}
+
 function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
   const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
 
@@ -795,7 +805,7 @@ function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, 
   thumbcaptionDiv.setAttribute('class', 'thumbcaption')
   const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right'
   thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`)
-  if (description) {
+  if (description && getInnerTextFromElement(imageNode.parentNode) !== getInnerTextFromElement(description)) {
     thumbcaptionDiv.innerHTML = description.innerHTML
   }
 
