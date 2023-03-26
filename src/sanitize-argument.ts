@@ -21,7 +21,7 @@ export async function sanitize_all(argv: any) {
   sanitize_articlesList_addNamespaces(articleList, addNamespaces)
 
   // sanitizing verbose
-  sanitize_verbose(verbose)
+  sanitize_verbose(verbose[0], verbose[1]);
 
   // sanitizing speed
   sanitize_speed(_speed)
@@ -87,8 +87,8 @@ export function sanitizeStringMaxLength(text: string, key: string, length: numbe
   }
 }
 
-export function sanitize_verbose(verbose: logger.LogLevel | true) {
-  if (verbose && verbose !== true && !logger.logLevels.includes(verbose)) {
+export function sanitize_verbose(verbose: boolean=false, log_level: any) {
+  if (verbose && log_level != true && !logger.logLevels.includes(log_level)) {
     throw new Error('verbose should be empty or one of [info, log, warn, error, quiet].')
   }
 }
