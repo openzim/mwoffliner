@@ -89,7 +89,7 @@ export function sanitizeStringMaxLength(text: string, key: string, length: numbe
 
 export function sanitize_verbose(verbose: logger.LogLevel | true) {
   if (verbose && verbose !== true && !logger.logLevels.includes(verbose)) {
-    throw new Error('verbose should be empty or one of [info, log, warn, error, quiet].')
+    throw new Error(`"${verbose}" is not a valid value for option verbose. It should be empty or one of [info, log, warn, error, quiet].`)
   }
 }
 
