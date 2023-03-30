@@ -17,6 +17,7 @@ const __dirname = path.dirname(__filename)
 export async function sanitize_all(argv: any) {
   // extracting all arguments
   const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, verbose, customZimLongDescription, customZimDescription } = argv
+  console.log("arguments: %o", argv);
 
   sanitize_articlesList_addNamespaces(articleList, addNamespaces)
 
