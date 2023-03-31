@@ -36,7 +36,6 @@ import {
   mkdirPromise,
   sanitizeString,
   saveStaticFiles,
-  writeFilePromise,
   importPolyfillModules,
   extractArticleList,
   getTmpDirectory,
@@ -93,7 +92,7 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     addNamespaces: _addNamespaces,
-    customZimFavicon: _customZimFavicon,
+    customZimFavicon,
     optimisationCacheUrl,
     customFlavour,
   } = argv
@@ -107,7 +106,6 @@ async function execute(argv: any) {
   if (articleList) articleList = String(articleList)
   if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
   const publisher = _publisher || config.defaults.publisher
-  let customZimFavicon = _customZimFavicon
 
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
@@ -190,6 +188,7 @@ async function execute(argv: any) {
     Language: mwMetaData.langIso3,
     Publisher: publisher,
     Title: customZimTitle || mwMetaData.title,
+    'Illustration_48x48@1': await getIllustrationMetadata(),
   }
   validateMetadata(metaDataRequiredKeys)
 
@@ -247,35 +246,6 @@ async function execute(argv: any) {
         .split(',')
         .map((a: string) => Number(a))
     : []
-
-  /* ZIM custom Favicon */
-  if (customZimFavicon) {
-    const faviconPath = path.join(tmpDirectory, 'favicon.png') // Later the PNG conversion (if necessary)
-    const faviconIsRemote = customZimFavicon.includes('http')
-    logger.log(`${faviconIsRemote ? 'Downloading' : 'Moving'} custom favicon to [${faviconPath}]`)
-    let content
-    if (faviconIsRemote) {
-      logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`)
-      content = await axios
-        .get(customZimFavicon, downloader.arrayBufferRequestOptions)
-        .then((a) => a.data)
-        .catch(() => {
-          throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
-        })
-    } else {
-      try {
-        content = fs.readFileSync(customZimFavicon)
-      } catch (err) {
-        throw new Error(`Failed to read custom zim favicon from [${customZimFavicon}]`)
-      }
-    }
-    fs.writeFileSync(faviconPath, content)
-    customZimFavicon = faviconPath
-
-    if (!fs.existsSync(customZimFavicon)) {
-      throw new Error(`Path ${customZimFavicon} is not a valid PNG file.`)
-    }
-  }
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -391,6 +361,15 @@ async function execute(argv: any) {
     logger.log(`Writing zim to [${outZim}]`)
     dump.outFile = outZim
 
+    const metadata = {
+      ...metaDataRequiredKeys,
+      Tags: dump.computeZimTags(),
+      Name: dump.computeFilenameRadical(false, true, true),
+      Flavour: dump.computeFlavour(),
+      ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
+    }
+    validateMetadata(metadata)
+
     const zimCreator = new ZimCreator(
       {
         fileName: outZim,
@@ -398,13 +377,7 @@ async function execute(argv: any) {
         welcome: dump.opts.mainPage ? dump.opts.mainPage : 'index',
         compression: 'zstd',
       },
-      {
-        ...metaDataRequiredKeys,
-        Tags: dump.computeZimTags(),
-        Name: dump.computeFilenameRadical(false, true, true),
-        Flavour: dump.computeFlavour(),
-        ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
-      } as any,
+      metadata as any,
     )
     const scraperArticle = new ZimArticle({
       ns: 'M',
@@ -426,7 +399,7 @@ async function execute(argv: any) {
 
     const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' })
     zimCreator.addArticle(article)
-    await saveFavicon(dump, zimCreator)
+    await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     await getThumbnailsData()
 
@@ -502,24 +475,30 @@ async function execute(argv: any) {
     })
   }
 
-  async function saveFavicon(dump: Dump, zimCreator: ZimCreator): Promise<any> {
-    logger.log('Saving favicon.png...')
-
-    async function saveFavicon(zimCreator: ZimCreator, faviconPath: string): Promise<any> {
-      try {
-        const source = await fs.promises.readFile(faviconPath)
-        const data = await sharp(source).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
-        const illustrationMetadata = new ZimArticle({ url: 'Illustration_48x48@1', mimeType: 'image/png', data, ns: 'M' })
-        zimCreator.addArticle(illustrationMetadata)
-        const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' })
-        return zimCreator.addArticle(article)
-      } catch (e) {
-        throw new Error('Failed to save favicon and IllustrationMetadata using sharp')
-      }
-    }
-
+  async function getIllustrationMetadata(): Promise<Buffer> {
     if (customZimFavicon) {
-      return saveFavicon(zimCreator, customZimFavicon)
+      const faviconIsRemote = customZimFavicon.includes('http')
+      let content
+      if (faviconIsRemote) {
+        logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`)
+        content = await axios
+          .get(customZimFavicon, downloader.arrayBufferRequestOptions)
+          .then((a) => a.data)
+          .catch(() => {
+            throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
+          })
+      } else {
+        try {
+          content = fs.readFileSync(customZimFavicon)
+        } catch (err) {
+          throw new Error(`Failed to read custom zim favicon from [${customZimFavicon}]`)
+        }
+      }
+      try {
+        return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
+      } catch (e) {
+        throw new Error('Failed to read or process IllustrationMetadata using sharp')
+      }
     }
     const body = await downloader.getJSON<any>(mw.siteInfoUrl())
     const entries = body.query.general
@@ -530,11 +509,19 @@ async function execute(argv: any) {
     }
 
     const parsedUrl = urlParser.parse(entries.logo)
-    const faviconPath = path.join(tmpDirectory, 'favicon.png')
     const logoUrl = parsedUrl.protocol ? entries.logo : mw.baseUrl.protocol + entries.logo
-    const logoContent = await downloader.downloadContent(logoUrl)
-    await writeFilePromise(faviconPath, logoContent.content, null)
-    return saveFavicon(zimCreator, faviconPath)
+    const { content } = await downloader.downloadContent(logoUrl)
+    return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
+  }
+
+  async function saveFavicon(zimCreator: ZimCreator, data: Buffer): Promise<any> {
+    logger.log('Saving favicon.png...')
+    try {
+      const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' })
+      return zimCreator.addArticle(article)
+    } catch (e) {
+      throw new Error('Failed to save favicon')
+    }
   }
 
   function getMainPage(dump: Dump, zimCreator: ZimCreator, downloader: Downloader) {

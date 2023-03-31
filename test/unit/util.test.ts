@@ -415,47 +415,139 @@ describe('Utils', () => {
   })
 
   describe('metaData', () => {
+    const pngImage = fs.readFileSync(`${__dirname}/mock/1x1.png`)
+
+    const minimumValidMetadata = {
+      Creator: 'the creator',
+      Description: 'test Description',
+      Language: 'eng,ita',
+      Publisher: 'test Publisher',
+      Title: 'test Title',
+      'Illustration_48x48@1': pngImage,
+    }
+
+    test('validate valid metadata', () => {
+      expect(() => validateMetadata(minimumValidMetadata)).not.toThrowError()
+    })
+
+    test('validate with unicode chars', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: '😎 Emoji, ❤ Hearts, 💲 Currencies, → Arrows, ☆ Stars',
+      }
+      expect(() => validateMetadata(metaData)).not.toThrowError()
+    })
+
     test('validate empty string', () => {
       const metaData = {
+        ...minimumValidMetadata,
         Creator: '',
-        Description: 'test Description',
-        Language: 'test Language',
-        Publisher: 'test Publisher',
-        Title: 'test Title',
       }
       expect(() => validateMetadata(metaData)).toThrow('Metadata "Creator" is required')
     })
 
     test('validate missed metaData key', () => {
       const metaData = {
-        Creator: 'test Creator',
-        Language: 'test Language',
-        Publisher: 'test Publisher',
-        Title: 'test Title',
+        ...minimumValidMetadata,
       }
+      delete metaData.Description
       expect(() => validateMetadata(metaData)).toThrow('Metadata "Description" is required')
     })
 
     test('validate long Description', () => {
       const metaData = {
-        Creator: 'test Creator',
+        ...minimumValidMetadata,
         Description: 'test Description test Description test Description test Description test Description test Description ',
-        Language: 'test Language',
-        Publisher: 'test Publisher',
-        Title: 'test Title',
       }
       expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must NOT have more than 80 characters')
     })
 
     test('validate long Title', () => {
       const metaData = {
-        Creator: 'test Creator',
-        Description: 'test Description',
-        Language: 'test Language',
-        Publisher: 'test Publisher',
+        ...minimumValidMetadata,
         Title: 'test Title test Title test Title',
       }
       expect(() => validateMetadata(metaData)).toThrow('MetaData Title: must NOT have more than 30 characters')
+    })
+
+    test('validate string with line brake', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: `test
+        Description
+        test`,
+      }
+      expect(() => validateMetadata(metaData)).not.toThrowError()
+    })
+
+    test('validate null value', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Creator: null,
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Creator: must be string')
+    })
+
+    test('validate undefined value', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: undefined,
+      }
+      expect(() => validateMetadata(metaData)).toThrow('Metadata "Description" is required')
+    })
+
+    test('validate Object value', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: { key: 'value' },
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must be string')
+    })
+
+    test('validate Array value', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: [1, 2, 3],
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must be string')
+    })
+
+    test('validate Boolean value', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: true,
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must be string')
+    })
+
+    test('validate NaN value', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        Description: NaN,
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must be string')
+    })
+
+    test('validate wrong language format', () => {
+      const metaDataLangTest = {
+        ...minimumValidMetadata,
+        Language: 'en',
+      }
+      expect(() => validateMetadata(metaDataLangTest)).toThrow('MetaData Language: must match pattern \"^\\w{3}(,\\w{3})*$\"') // prettier-ignore
+
+      const metaData = {
+        ...minimumValidMetadata,
+        Language: 'en,it',
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Language: must match pattern \"^\\w{3}(,\\w{3})*$\"') // prettier-ignore
+    })
+
+    test('validate wrong illustration', () => {
+      const metaData = {
+        ...minimumValidMetadata,
+        'Illustration_48x48@1': 'text is not png',
+      }
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Illustration_48x48@1: must match regex pattern')
     })
   })
 })
