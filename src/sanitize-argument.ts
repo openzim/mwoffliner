@@ -10,6 +10,7 @@ import * as QueryStringParser from 'querystring'
 import { isValidEmail } from './util/index.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
+import { parameterDescriptions } from './parameterList.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -17,6 +18,8 @@ const __dirname = path.dirname(__filename)
 export async function sanitize_all(argv: any) {
   // extracting all arguments
   const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, verbose, customZimLongDescription, customZimDescription } = argv
+
+  sanitizeDoubleUsedParameters(argv)
 
   sanitize_articlesList_addNamespaces(articleList, addNamespaces)
 
@@ -96,6 +99,16 @@ export function sanitize_verbose(verbose: logger.LogLevel | true) {
 export function sanitize_articlesList_addNamespaces(articlesList: string, addNamespaces: string) {
   if (articlesList && addNamespaces) {
     throw new Error('options --articlesList and --addNamespaces cannot be used together')
+  }
+}
+
+export function sanitizeDoubleUsedParameters(options: object) {
+  const parameterKeys = Object.keys(parameterDescriptions)
+  const parametersWithArrayType = ['articleList', 'articleListToIgnore', 'addNamespaces']
+  for (const [optionKey, optionValue] of Object.entries(options)) {
+    if (parameterKeys.includes(optionKey) && !parametersWithArrayType.includes(optionKey) && Array.isArray(optionValue)) {
+      throw new Error(`Parameter ${optionKey} can't take value "${JSON.stringify(optionValue)}"`)
+    }
   }
 }
 
