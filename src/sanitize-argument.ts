@@ -14,6 +14,7 @@ import { parameterDescriptions } from './parameterList.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const parametersWithArrayType = ['format']
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
@@ -104,10 +105,9 @@ export function sanitize_articlesList_addNamespaces(articlesList: string, addNam
 
 export function sanitizeDoubleUsedParameters(options: object) {
   const parameterKeys = Object.keys(parameterDescriptions)
-  const parametersWithArrayType = ['articleList', 'articleListToIgnore', 'addNamespaces']
   for (const [optionKey, optionValue] of Object.entries(options)) {
     if (parameterKeys.includes(optionKey) && !parametersWithArrayType.includes(optionKey) && Array.isArray(optionValue)) {
-      throw new Error(`Parameter ${optionKey} can't take value "${JSON.stringify(optionValue)}"`)
+      throw new Error(`Parameter ${optionKey} can only be used once`)
     }
   }
 }

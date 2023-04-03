@@ -32,10 +32,10 @@ describe('Exec Command With Bash', () => {
 
     test('Exec Command With doubled options', async () => {
       await expect(execa(`${mwo} --verbose --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test" --verbose=info`, { shell: true })).rejects.toThrow(
-        /Parameter verbose can't take value \"\[true,\"info\"\]\"/,
+        /Parameter verbose can only be used once/,
       )
       await expect(execa(`${mwo} --verbose --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test" --mwUrl="https://en.wikipedia.org"`, { shell: true })).rejects.toThrow(
-        /Parameter mwUrl can't take value \"\[\"https:\/\/en.wikipedia.org\",\"https:\/\/en.wikipedia.org\"\]\"/,
+        /Parameter mwUrl can only be used once/,
       )
     })
   })
