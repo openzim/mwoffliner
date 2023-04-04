@@ -194,20 +194,21 @@ async function saveArticle(
     const { finalHTML, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, redisStore, mw, dump, articleId, articleDetail, _moduleDependencies, downloader.webp)
 
     const filesToDownload: KVS<FileDetail> = {}
+    const mediaToDownload: KVS<FileDetail> = {}
 
     subtitles.forEach((s) => {
       filesToDownload[s.path] = { url: s.url, namespace: '-' }
     })
 
     if (mediaDependencies.length) {
-      const existingVals = await redisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
+      const existingVals = await redisStore.mediaToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
 
       for (const dep of mediaDependencies) {
         const { mult, width } = getSizeFromUrl(dep.url)
         const existingVal = existingVals[dep.path]
         const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
         if (currentDepIsHigherRes) {
-          filesToDownload[dep.path] = {
+          mediaToDownload[dep.path] = {
             url: downloader.serializeUrl(dep.url),
             mult,
             width,
@@ -216,6 +217,7 @@ async function saveArticle(
       }
     }
 
+    await redisStore.mediaToDownloadXPath.setMany(mediaToDownload)
     await redisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const zimArticle = new ZimArticle({

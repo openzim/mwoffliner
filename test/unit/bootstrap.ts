@@ -9,8 +9,8 @@ export const redisStore = new RedisStore(process.env.REDIS || config.defaults.re
 
 export const startRedis = async () => {
   await redisStore.connect()
-  const { articleDetailXId, redirectsXId, filesToDownloadXPath, filesToRetryXPath } = redisStore
-  await Promise.all([articleDetailXId.flush(), redirectsXId.flush(), filesToDownloadXPath.flush(), filesToRetryXPath.flush()])
+  const { articleDetailXId, redirectsXId, filesToDownloadXPath, mediaToDownloadXPath, filesToRetryXPath } = redisStore
+  await Promise.all([articleDetailXId.flush(), redirectsXId.flush(), mediaToDownloadXPath.flush(), filesToDownloadXPath.flush(), filesToRetryXPath.flush()])
 }
 
 export const stopRedis = async () => {
