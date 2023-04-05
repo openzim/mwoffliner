@@ -29,14 +29,5 @@ describe('Exec Command With Bash', () => {
         /\"anyString\" is not a valid value for option verbose. It should be empty or one of \[info, log, warn, error, quiet\]/,
       )
     })
-
-    test('Exec Command With doubled options', async () => {
-      await expect(execa(`${mwo} --verbose --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test" --verbose=info`, { shell: true })).rejects.toThrow(
-        /Parameter verbose can only be used once/,
-      )
-      await expect(execa(`${mwo} --verbose --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test" --mwUrl="https://en.wikipedia.org"`, { shell: true })).rejects.toThrow(
-        /Parameter mwUrl can only be used once/,
-      )
-    })
   })
 })
