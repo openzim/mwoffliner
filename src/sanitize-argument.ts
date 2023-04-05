@@ -107,7 +107,7 @@ export function sanitizeDoubleUsedParameters(options: object) {
   const parameterKeys = Object.keys(parameterDescriptions)
   for (const [optionKey, optionValue] of Object.entries(options)) {
     if (parameterKeys.includes(optionKey) && !parametersWithArrayType.includes(optionKey) && Array.isArray(optionValue)) {
-      throw new Error(`Parameter ${optionKey} can only be used once`)
+      throw new Error(`Parameter '--${optionKey}' can only be used once`)
     }
   }
 }
