@@ -193,11 +193,10 @@ async function saveArticle(
   try {
     const { finalHTML, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, redisStore, mw, dump, articleId, articleDetail, _moduleDependencies, downloader.webp)
 
-    const filesToDownload: KVS<FileDetail> = {}
     const mediaToDownload: KVS<FileDetail> = {}
 
     subtitles.forEach((s) => {
-      filesToDownload[s.path] = { url: s.url, namespace: '-' }
+      mediaToDownload[s.path] = { url: s.url, namespace: '-' }
     })
 
     if (mediaDependencies.length) {
@@ -218,7 +217,6 @@ async function saveArticle(
     }
 
     await redisStore.mediaToDownloadXPath.setMany(mediaToDownload)
-    await redisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const zimArticle = new ZimArticle({
       url: articleId,
