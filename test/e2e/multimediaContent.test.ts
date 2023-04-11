@@ -42,6 +42,7 @@ describe('Multimedia', () => {
           'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
           'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
           'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+          'I/Kiwix_icon.svg',
           'I/Kiwix_icon.svg.png',
           'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
           'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
