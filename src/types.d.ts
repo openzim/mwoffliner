@@ -69,7 +69,6 @@ interface RKVS<T> {
 // RedisStore Interface
 interface RS {
   readonly client: any // RedisClientType
-  readonly mediaToDownloadXPath: RKVS<FileDetail>
   readonly filesToDownloadXPath: RKVS<FileDetail>
   readonly filesToRetryXPath: RKVS<FileDetail>
   readonly articleDetailXId: RKVS<ArticleDetail>

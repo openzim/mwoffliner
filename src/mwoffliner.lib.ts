@@ -208,7 +208,7 @@ async function execute(argv: any) {
 
   const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)
   await redisStore.connect()
-  const { articleDetailXId, filesToDownloadXPath, mediaToDownloadXPath, filesToRetryXPath, redirectsXId } = redisStore
+  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = redisStore
 
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
@@ -346,7 +346,7 @@ async function execute(argv: any) {
     } else {
       try {
         await doDump(dump)
-        await mediaToDownloadXPath.flush()
+        await filesToDownloadXPath.flush()
       } catch (err) {
         debugger
         throw err
@@ -441,7 +441,6 @@ async function execute(argv: any) {
     )
 
     await downloadFiles(filesToDownloadXPath, filesToRetryXPath, zimCreator, dump, downloader)
-    await downloadFiles(mediaToDownloadXPath, filesToRetryXPath, zimCreator, dump, downloader)
 
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(downloader, dump, zimCreator)
@@ -618,7 +617,7 @@ async function execute(argv: any) {
         articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
 
         await Promise.all([
-          mediaToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width } as FileDetail),
+          filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width } as FileDetail),
           articleDetailXId.set(articleId, articleDetail),
         ])
         articlesWithImages++

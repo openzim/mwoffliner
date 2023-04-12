@@ -8,7 +8,6 @@ class RedisStore implements RS {
   private storesReady: boolean
 
   private _filesToDownloadXPath: RKVS<FileDetail>
-  private _mediaToDownloadXPath: RKVS<FileDetail>
   private _filesToRetryXPath: RKVS<FileDetail>
   private _articleDetailXId: RKVS<ArticleDetail>
   private _redirectsXId: RKVS<ArticleRedirect>
@@ -59,15 +58,8 @@ class RedisStore implements RS {
     }
   }
 
-  public async flushMediaToDownloadXPath() {
-    if (this._client.isReady && this.storesReady) {
-      logger.log('Flushing Redis DB for storing media')
-      await this._mediaToDownloadXPath.flush()
-    }
-  }
-
   public async checkForExistingStores() {
-    const patterns = ['*-media', '*-files', '*-media-retry', '*-detail', '*-redirect']
+    const patterns = ['*-media', '*-media-retry', '*-detail', '*-redirect']
     let keys: string[] = []
     for (const pattern of patterns) {
       keys = keys.concat(await this._client.keys(pattern))
@@ -85,13 +77,7 @@ class RedisStore implements RS {
   }
 
   private async populateStores() {
-    this._mediaToDownloadXPath = new RedisKvs(this._client, `${Date.now()}-media`, {
-      u: 'url',
-      n: 'namespace',
-      m: 'mult',
-      w: 'width',
-    })
-    this._filesToDownloadXPath = new RedisKvs(this._client, `${Date.now()}-files`, {
+    this._filesToDownloadXPath = new RedisKvs(this._client, `${Date.now()}-media`, {
       u: 'url',
       n: 'namespace',
       m: 'mult',
@@ -131,10 +117,6 @@ class RedisStore implements RS {
 
   public get filesToDownloadXPath(): RKVS<FileDetail> {
     return this._filesToDownloadXPath
-  }
-
-  public get mediaToDownloadXPath(): RKVS<FileDetail> {
-    return this._mediaToDownloadXPath
   }
 
   public get filesToRetryXPath(): RKVS<FileDetail> {
