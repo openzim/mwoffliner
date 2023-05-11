@@ -40,3 +40,5 @@ export const parameterDescriptions = {
   customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
   optimisationCacheUrl: 'S3 url, including credentials and bucket name',
 }
+
+// TODO: Add an interface based on the object above

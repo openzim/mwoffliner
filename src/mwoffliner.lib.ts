@@ -104,16 +104,19 @@ async function execute(argv: any) {
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`)
 
+  // TODO: Move it to sanitaze method
   if (articleList) articleList = String(articleList)
   if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
   const publisher = _publisher || config.defaults.publisher
 
+  // TODO: Move it to sanitaze method
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
   if (!isValidEmail(adminEmail)) {
     throw new Error(`Admin email [${adminEmail}] is not valid`)
   }
 
+  // TODO: Move it to sanitaze method
   /* Number of parallel requests. To secure stability and avoid HTTP
   429 errors, no more than MAX_CPU_CORES can be considered */
   if (_speed && isNaN(_speed)) {

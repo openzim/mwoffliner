@@ -36,22 +36,22 @@ class MediaWiki {
     this.password = config.password
     this.getCategories = config.getCategories
 
-    this.baseUrl = new URL(ensureTrailingChar(config.base, '/'))
+    this.baseUrl = new URL(ensureTrailingChar(config.base, '/')) // done
 
     this.apiPath = config.apiPath ?? 'w/api.php'
     this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH
 
-    this.webUrl = new URL(this.wikiPath, this.baseUrl)
-    this.apiUrl = new URL(`${this.apiPath}?`, this.baseUrl)
+    this.webUrl = new URL(this.wikiPath, this.baseUrl) // done
+    this.apiUrl = new URL(`${this.apiPath}?`, this.baseUrl) // done
 
-    this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`)
+    this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`) // done
 
-    this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'))
-    this.mobileRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/mobile-sections', this.baseUrl.href).toString(), '/'))
-    this.desktopRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/html', this.baseUrl.href).toString(), '/'))
+    this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/')) // done
+    this.mobileRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/mobile-sections', this.baseUrl.href).toString(), '/')) // done
+    this.desktopRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/html', this.baseUrl.href).toString(), '/')) // done
 
     this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`
-    this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`
+    this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=` // done
   }
 
   public async login(downloader: Downloader) {
@@ -98,27 +98,27 @@ class MediaWiki {
   // * encodeURIComponent is mandatory for languages with illegal letters for uri (fa.wikipedia.org)
   // * encodeURI is mandatory to encode the pipes '|' but the '&' and '=' must not be encoded
   public siteInfoUrl() {
-    return `${this.apiUrl.href}action=query&meta=siteinfo&format=json`
+    return `${this.apiUrl.href}action=query&meta=siteinfo&format=json` // done
   }
 
   public articleApiUrl(articleId: string): string {
-    return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}`
+    return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}` // done
   }
 
   public subCategoriesApiUrl(articleId: string, continueStr = '') {
-    return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`
+    return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}` // done
   }
 
   public getVeApiArticleUrl(articleId: string): string {
-    return `${this.veApiUrl.href}${encodeURIComponent(articleId)}`
+    return `${this.veApiUrl.href}${encodeURIComponent(articleId)}` // done
   }
 
   public getDesktopRestApiArticleUrl(articleId: string): string {
-    return `${this.desktopRestApiUrl.href}${encodeURIComponent(articleId)}`
+    return `${this.desktopRestApiUrl.href}${encodeURIComponent(articleId)}` // done
   }
 
   public getMobileRestApiArticleUrl(articleId: string): string {
-    return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`
+    return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}` // done
   }
 
   public getApiQueryUrl(query = ''): string {
