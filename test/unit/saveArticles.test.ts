@@ -55,8 +55,8 @@ describe('saveArticles', () => {
 
     let buf = Buffer.from('')
     const contentProvider = addedItems.shift().getContentProvider()
-    for(let feed = contentProvider.feed(); feed.size != 0; feed = contentProvider.feed()) {
-      buf = Buffer.concat([ buf, feed.data ])
+    for (let feed = contentProvider.feed(); feed.size !== 0; feed = contentProvider.feed()) {
+      buf = Buffer.concat([buf, feed.data])
     }
     const articleDoc = domino.createDocument(buf.toString())
 
@@ -224,7 +224,7 @@ describe('saveArticles', () => {
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
-    const writtenArticles: { [key: string]: WriterItem; } = {}
+    const writtenArticles: { [key: string]: WriterItem } = {}
     await saveArticles(
       {
         addItem(item: WriterItem) {
@@ -243,11 +243,11 @@ describe('saveArticles', () => {
     const getBufferData = (item: WriterItem) => {
       let buf = Buffer.from('')
       const contentProvider = item.getContentProvider()
-      for(let feed = contentProvider.feed(); feed.size != 0; feed = contentProvider.feed()) {
-        buf = Buffer.concat([ buf, feed.data ])
+      for (let feed = contentProvider.feed(); feed.size !== 0; feed = contentProvider.feed()) {
+        buf = Buffer.concat([buf, feed.data])
       }
-      return buf.toString();
-    };
+      return buf.toString()
+    }
 
     const ParisDocument = domino.createDocument(getBufferData(writtenArticles.Paris))
     const PragueDocument = domino.createDocument(getBufferData(writtenArticles.Prague))

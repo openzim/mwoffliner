@@ -162,8 +162,8 @@ describe('Styles', () => {
 
     let buf = Buffer.from('')
     const contentProvider = LondonItem.getContentProvider()
-    for(let feed = contentProvider.feed(); feed.size != 0; feed = contentProvider.feed()) {
-      buf = Buffer.concat([ buf, feed.data ])
+    for (let feed = contentProvider.feed(); feed.size !== 0; feed = contentProvider.feed()) {
+      buf = Buffer.concat([buf, feed.data])
     }
     const html = buf.toString()
     const doc = domino.createDocument(html)

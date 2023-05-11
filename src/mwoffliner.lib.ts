@@ -16,11 +16,7 @@ import urlParser from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import * as QueryStringParser from 'querystring'
-import {
-  Creator as ZimCreator,
-  StringItem,
-  Compression
-} from '@openzim/libzim'
+import { Creator as ZimCreator, StringItem, Compression } from '@openzim/libzim'
 
 import {
   MAX_CPU_CORES,
@@ -380,14 +376,14 @@ async function execute(argv: any) {
     const zimCreator = new ZimCreator()
       .configIndexing(true, dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3)
       .configCompression(Compression.Zstd)
-      .startZimCreation(outZim);
-    zimCreator.setMainPath(dump.opts.mainPage ?? 'index');
+      .startZimCreation(outZim)
+    zimCreator.setMainPath(dump.opts.mainPage ?? 'index')
 
     for (const [name, content] of Object.entries(metadata)) {
-      if(content === undefined || content === null) {
-        console.error(`Skipped adding metadata ${name}:[${content}]`);
+      if (content === undefined || content === null) {
+        console.error(`Skipped adding metadata ${name}:[${content}]`)
       }
-      zimCreator.addMetadata(name, content.toString());
+      zimCreator.addMetadata(name, content.toString())
     }
 
     logger.info('Copying Static Resource Files')
@@ -401,8 +397,8 @@ async function execute(argv: any) {
     const { finalCss } = await getAndProcessStylesheets(downloader, redisStore, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
-    const item = new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', '', {}, finalCss);
-    await zimCreator.addItem(item);
+    const item = new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', '', {}, finalCss)
+    await zimCreator.addItem(item)
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     await getThumbnailsData()
@@ -447,7 +443,7 @@ async function execute(argv: any) {
     await writeArticleRedirects(downloader, dump, zimCreator)
 
     logger.log('Finishing Zim Creation')
-    await zimCreator.finishZimCreation();
+    await zimCreator.finishZimCreation()
 
     logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
   }
@@ -461,13 +457,8 @@ async function execute(argv: any) {
       for (const [redirectId, { targetId }] of Object.entries(redirects)) {
         if (redirectId !== targetId) {
           // We fake a title, by just removing the underscores
-          const title = String(redirectId).replace(/_/g, ' ');
-          zimCreator.addRedirection(
-            redirectId,
-            title,
-            targetId,
-            { FRONT_ARTICLE: 1 },
-          );
+          const title = String(redirectId).replace(/_/g, ' ')
+          zimCreator.addRedirection(redirectId, title, targetId, { FRONT_ARTICLE: 1 })
           dump.status.redirects.written += 1
         }
       }
@@ -516,8 +507,8 @@ async function execute(argv: any) {
   async function saveFavicon(zimCreator: ZimCreator, data: Buffer): Promise<any> {
     logger.log('Saving favicon.png...')
     try {
-      const item = new StringItem('favicon', 'image/png', '', {}, data.toString());
-      return await zimCreator.addItem(item);
+      const item = new StringItem('favicon', 'image/png', '', {}, data.toString())
+      return await zimCreator.addItem(item)
     } catch (e) {
       throw new Error('Failed to save favicon')
     }

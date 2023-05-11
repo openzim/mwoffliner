@@ -140,7 +140,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 
   try {
     const articleId = type === 'js' ? jsPath(module, config.output.dirs.mediawiki) : cssPath(module, config.output.dirs.mediawiki)
-    const mimeType = (type === 'js') ? 'application/javascript' : 'text/css';
+    const mimeType = type === 'js' ? 'application/javascript' : 'text/css'
     const item = new StringItem(articleId, mimeType, '', {}, text)
     await zimCreator.addItem(item)
     logger.info(`Saved module [${module}]`)
@@ -157,10 +157,10 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
   ]
 
-  for(const { name, path } of polyfills) {
+  for (const { name, path } of polyfills) {
     const data = fs.readFileSync(path, 'utf8').toString()
     const item = new StringItem(jsPath(name), 'application/javascript', '', {}, data)
-    await zimCreator.addItem(item);
+    await zimCreator.addItem(item)
   }
 
   const content = await axios

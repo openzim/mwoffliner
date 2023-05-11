@@ -218,11 +218,11 @@ async function saveArticle(
     await redisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const item = new StringItem(
-      articleId,             // path / url
-      'text/html',           // mimetype
-      articleTitle,          // title
-      { FRONT_ARTICLE: 1 },  // Hints
-      finalHTML,             // Content
+      articleId, // path / url
+      'text/html', // mimetype
+      articleTitle, // title
+      { FRONT_ARTICLE: 1 }, // Hints
+      finalHTML, // Content
     )
     await zimCreator.addItem(item)
 
@@ -365,12 +365,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
-  const jsConfigVarItem = new StringItem(
-    jsPath('jsConfigVars', config.output.dirs.mediawiki),
-    'application/javascript',
-    '',
-    {},
-    jsConfigVars)
+  const jsConfigVarItem = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', '', {}, jsConfigVars)
   await zimCreator.addItem(jsConfigVarItem)
 
   return {

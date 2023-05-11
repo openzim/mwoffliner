@@ -64,12 +64,12 @@ Real-time computer graphics`
 
 async function isWebpPresent(path: string, zimFile: Archive) {
   try {
-  const entry = zimFile.getEntryByPath(path)
-  const blob = entry.item.data
-  const fileType = await FileType.fileTypeFromBuffer(blob.data)
-  return fileType?.mime === 'image/webp'
-  } catch(err) {
-    return false;
+    const entry = zimFile.getEntryByPath(path)
+    const blob = entry.item.data
+    const fileType = await FileType.fileTypeFromBuffer(blob.data)
+    return fileType?.mime === 'image/webp'
+  } catch (err) {
+    return false
   }
 }
 
