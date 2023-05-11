@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@ladjs/country-language": "^1.0.3",
-    "@openzim/libzim": "2.4.4",
+    "@openzim/libzim": "github:openzim/node-libzim",
     "@types/async": "^3.2.18",
     "@types/backoff": "^2.5.2",
     "@types/bluebird": "^3.5.38",
@@ -127,7 +127,7 @@
     "eslint-plugin-jsdoc": "^40.1.0",
     "eslint-plugin-prefer-arrow": "^1.2.3",
     "eslint-plugin-prettier": "^4.2.1",
-    "file-type": "^18.2.1",
+    "file-type": "^18.4.0",
     "jest": "^29.3.1",
     "nyc": "^15.1.0",
     "prettier": "2.8.7",

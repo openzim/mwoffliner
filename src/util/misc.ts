@@ -8,7 +8,7 @@ import mime from 'mime-types'
 import mkdirp from 'mkdirp'
 import os from 'os'
 import pathParser from 'path'
-import { ZimCreator, ZimArticle } from '@openzim/libzim'
+import { Creator as ZimCreator, FileItem } from '@openzim/libzim'
 import { Config, config } from '../config.js'
 import * as logger from '../Logger.js'
 import {
@@ -165,9 +165,9 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
 export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   const cssPromises = config.output.cssResources.concat(config.output.mainPageCssResources).map(async (css) => {
     try {
-      const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`))
-      const article = new ZimArticle({ url: cssPath(css), data: cssCont, ns: '-' })
-      zimCreator.addArticle(article)
+      const cssFilePath = pathParser.resolve(__dirname, `../../res/${css}.css`)
+      const item = new FileItem(cssPath(css), 'text/css', '', {}, cssFilePath)
+      await zimCreator.addItem(item)
     } catch (error) {
       logger.warn(`Could not create ${css} file : ${error}`)
     }
@@ -175,9 +175,9 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 
   const jsPromises = config.output.jsResources.map(async (js) => {
     try {
-      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`))
-      const article = new ZimArticle({ url: jsPath(js), data: jsCont, ns: '-' })
-      zimCreator.addArticle(article)
+      const jsFilePath = pathParser.resolve(__dirname, `../../res/${js}.js`)
+      const item = new FileItem(jsPath(js), 'application/javascript', '', {}, jsFilePath)
+      await zimCreator.addItem(item)
     } catch (error) {
       logger.warn(`Could not create ${js} file : ${error}`)
     }

@@ -4,7 +4,7 @@ import { rewriteUrl } from '../../src/util/rewriteUrls.js'
 import { makeLink, setupScrapeClasses } from '../util.js'
 import { getArticleIds } from '../../src/util/redirects.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
-import { ZimArticle } from '@openzim/libzim'
+import { WriterItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 
@@ -143,13 +143,13 @@ describe('Styles', () => {
 
     await getArticleIds(downloader, redisStore, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
-    let LondonArticle: typeof ZimArticle
+    let LondonItem: WriterItem
 
     await saveArticles(
       {
-        addArticle(article: typeof ZimArticle) {
-          if (article.title === 'London') {
-            LondonArticle = article
+        addItem(item: WriterItem) {
+          if (item.title === 'London') {
+            LondonItem = item
           }
           return Promise.resolve(null)
         },
@@ -160,7 +160,12 @@ describe('Styles', () => {
       dump,
     )
 
-    const html = LondonArticle.bufferData.toString()
+    let buf = Buffer.from('')
+    const contentProvider = LondonItem.getContentProvider()
+    for(let feed = contentProvider.feed(); feed.size != 0; feed = contentProvider.feed()) {
+      buf = Buffer.concat([ buf, feed.data ])
+    }
+    const html = buf.toString()
     const doc = domino.createDocument(html)
 
     const relevantAs = Array.from(doc.querySelectorAll('a')).filter((a) => !a.hash && !a.className.includes('external') && !a.host && a.getAttribute('href'))

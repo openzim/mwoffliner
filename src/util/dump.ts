@@ -7,7 +7,7 @@ import Downloader from '../Downloader.js'
 import { getFullUrl, jsPath, cssPath } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
-import { ZimCreator, ZimArticle } from '@openzim/libzim'
+import { Creator as ZimCreator, StringItem } from '@openzim/libzim'
 import { Dump } from '../Dump.js'
 import fs from 'fs'
 import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
@@ -140,8 +140,9 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 
   try {
     const articleId = type === 'js' ? jsPath(module, config.output.dirs.mediawiki) : cssPath(module, config.output.dirs.mediawiki)
-    const article = new ZimArticle({ url: articleId, data: text, ns: '-' })
-    zimCreator.addArticle(article)
+    const mimeType = (type === 'js') ? 'application/javascript' : 'text/css';
+    const item = new StringItem(articleId, mimeType, '', {}, text)
+    await zimCreator.addItem(item)
     logger.info(`Saved module [${module}]`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
@@ -151,17 +152,16 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
 
 // URLs should be kept the same as Kiwix JS relies on it.
 export async function importPolyfillModules(zimCreator: ZimCreator) {
-  ;[
+  const polyfills = [
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
-  ].forEach(({ name, path }) => {
-    const article = new ZimArticle({
-      url: jsPath(name),
-      data: fs.readFileSync(path, 'utf8').toString(),
-      ns: '-',
-    })
-    zimCreator.addArticle(article)
-  })
+  ]
+
+  for(const { name, path } of polyfills) {
+    const data = fs.readFileSync(path, 'utf8').toString()
+    const item = new StringItem(jsPath(name), 'application/javascript', '', {}, data)
+    await zimCreator.addItem(item);
+  }
 
   const content = await axios
     .get(WEBP_HANDLER_URL, {
@@ -176,10 +176,6 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
       throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)
     })
 
-  const article = new ZimArticle({
-    url: jsPath('webpHandler'),
-    data: content,
-    ns: '-',
-  })
-  zimCreator.addArticle(article)
+  const item = new StringItem(jsPath('webpHandler'), '', '', {}, content)
+  await zimCreator.addItem(item)
 }

@@ -3,7 +3,7 @@ import domino from 'domino'
 
 import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from '../util.js'
 import { saveArticles, getModuleDependencies, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js'
-import { ZimArticle } from '@openzim/libzim'
+import { WriterItem } from '@openzim/libzim'
 import { Dump } from '../../src/Dump'
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
@@ -29,14 +29,14 @@ describe('saveArticles', () => {
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
-    const addedArticles: (typeof ZimArticle)[] = []
+    const addedItems: WriterItem[] = []
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles(
       {
-        addArticle(article: typeof ZimArticle) {
-          if (article.mimeType === 'text/html') {
-            addedArticles.push(article)
+        addItem(item: WriterItem) {
+          if (item.mimeType === 'text/html') {
+            addedItems.push(item)
           }
           return Promise.resolve(null)
         },
@@ -48,12 +48,17 @@ describe('saveArticles', () => {
     )
 
     // Successfully scrapped existent articles
-    expect(addedArticles).toHaveLength(1)
-    expect(addedArticles[0].aid).toEqual('A/London')
+    expect(addedItems).toHaveLength(1)
+    expect(addedItems[0].path).toEqual('London')
 
     await expect(downloader.getArticle('non-existent-article', dump, articleDetailXId)).rejects.toThrowError('')
 
-    const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
+    let buf = Buffer.from('')
+    const contentProvider = addedItems.shift().getContentProvider()
+    for(let feed = contentProvider.feed(); feed.size != 0; feed = contentProvider.feed()) {
+      buf = Buffer.concat([ buf, feed.data ])
+    }
+    const articleDoc = domino.createDocument(buf.toString())
 
     // Successfully scrapped existent articles
     expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
@@ -219,12 +224,12 @@ describe('saveArticles', () => {
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
-    const writtenArticles: any = {}
+    const writtenArticles: { [key: string]: WriterItem; } = {}
     await saveArticles(
       {
-        addArticle(article: typeof ZimArticle) {
-          if (article.mimeType === 'text/html') {
-            writtenArticles[article.title] = article
+        addItem(item: WriterItem) {
+          if (item.mimeType === 'text/html') {
+            writtenArticles[item.title] = item
           }
           return Promise.resolve(null)
         },
@@ -235,8 +240,17 @@ describe('saveArticles', () => {
       dump,
     )
 
-    const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)
-    const PragueDocument = domino.createDocument(writtenArticles.Prague.bufferData)
+    const getBufferData = (item: WriterItem) => {
+      let buf = Buffer.from('')
+      const contentProvider = item.getContentProvider()
+      for(let feed = contentProvider.feed(); feed.size != 0; feed = contentProvider.feed()) {
+        buf = Buffer.concat([ buf, feed.data ])
+      }
+      return buf.toString();
+    };
+
+    const ParisDocument = domino.createDocument(getBufferData(writtenArticles.Paris))
+    const PragueDocument = domino.createDocument(getBufferData(writtenArticles.Prague))
 
     // London was correctly filtered out by customFlavour
     expect(writtenArticles.London).toBeUndefined()
