@@ -24,6 +24,7 @@ import {
 } from './misc.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
+import articleURLDirector from './builders/url/article.director.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -384,7 +385,7 @@ export async function getModuleDependencies(articleId: string, mw: MediaWiki, do
   let jsDependenciesList: string[] = []
   let styleDependenciesList: string[] = []
 
-  const articleApiUrl = mw.articleApiUrl(articleId)
+  const articleApiUrl = articleURLDirector.buildApiURL(mw.baseUrl.href, articleId)
 
   const articleData = await downloader.getJSON<any>(articleApiUrl)
 

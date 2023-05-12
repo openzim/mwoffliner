@@ -49,6 +49,8 @@ class URLBuilder {
    * a trailing character appended to it, and can be returned as a string or as a `URL` object
    * depending on the values of the `returnUrl` and `trailingChar` parameters.
    */
+  build(returnUrl?: false, trailingChar?: string): string
+  build(returnUrl?: true, trailingChar?: string): URL
   build(returnUrl?: boolean, trailingChar?: string) {
     const currentDomain = this.domain
     const currentPath = this.path

@@ -1,11 +1,11 @@
 import urlBuilder from './url.builder.js'
 
 class VisualEditorURLDirector {
-  buildVisualEditorURL(domain: string) {
+  buildURL(domain: string) {
     return urlBuilder.setDomain(domain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse' }).build(true)
   }
 
-  buildVisualEditorArticleURL(domain: string, articleId: string) {
+  buildArticleURL(domain: string, articleId: string) {
     return urlBuilder
       .setDomain(domain)
       .setQueryParams({ page: encodeURIComponent(articleId) }, '&')

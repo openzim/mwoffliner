@@ -1,14 +1,14 @@
 import urlBuilder from './url.builder.js'
 
 class DesktopURLDirector {
-  buildDesktopURL(domain: string, path: string) {
+  buildRestApiURL(domain: string, path?: string) {
     return urlBuilder
       .setDomain(domain)
       .setPath(path ?? 'api/rest_v1/page/html')
       .build(true, '/')
   }
 
-  buildDesktopArticleURL(domain: string, articleId: string) {
+  buildArticleURL(domain: string, articleId: string) {
     return urlBuilder.setDomain(domain).setPath(encodeURIComponent(articleId)).build()
   }
 }

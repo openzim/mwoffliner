@@ -31,6 +31,10 @@ import S3 from './S3.js'
 import { Dump } from './Dump.js'
 import * as logger from './Logger.js'
 import MediaWiki from './MediaWiki.js'
+import categoriesURLDirector from './util/builders/url/categories.director.js'
+import visualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import desktopURLDirector from './util/builders/url/desktop.director.js'
+import mobileURLDirector from './util/builders/url/mobile.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -245,9 +249,9 @@ class Downloader {
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId))
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId))
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId))
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(mobileURLDirector.buildArticleURL(this.mw.mobileRestApiUrl.href, testArticleId))
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(desktopURLDirector.buildArticleURL(this.mw.desktopRestApiUrl.href, testArticleId))
+    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(visualEditorURLDirector.buildArticleURL(this.mw.veApiUrl.href, testArticleId))
     this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href)
 
     // Coordinate fetching
@@ -652,7 +656,7 @@ class Downloader {
   }
 
   private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr))
+    const { query, continue: cont } = await this.getJSON<any>(categoriesURLDirector.buildSubCategoriesURL(this.mw.apiUrl.href, articleId, continueStr))
     const items = query.categorymembers.filter((a: any) => a && a.title)
     if (cont && cont.cmcontinue) {
       const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)

@@ -53,6 +53,7 @@ import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import { fileURLToPath } from 'url'
+import basicURLDirector from './util/builders/url/basic.director.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -506,7 +507,7 @@ async function execute(argv: any) {
         throw new Error('Failed to read or process IllustrationMetadata using sharp')
       }
     }
-    const body = await downloader.getJSON<any>(mw.siteInfoUrl())
+    const body = await downloader.getJSON<any>(basicURLDirector.buildSiteInfoURL(mw.baseUrl.href))
     const entries = body.query.general
     if (!entries.logo) {
       throw new Error(
