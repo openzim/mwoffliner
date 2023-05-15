@@ -1,18 +1,16 @@
 import urlBuilder from './url.builder.js'
 
-class DesktopURLDirector {
-  buildRestApiURL(domain: string, path?: string) {
-    return urlBuilder
-      .setDomain(domain)
-      .setPath(path ?? 'api/rest_v1/page/html')
-      .build(true, '/')
+/**
+ * Interface to build URLs based on Downloader desktop URL
+ */
+export default class DesktopURLDirector {
+  baseDomain: string
+
+  constructor(baseDomain: string) {
+    this.baseDomain = baseDomain
   }
 
-  buildArticleURL(domain: string, articleId: string) {
-    return urlBuilder.setDomain(domain).setPath(encodeURIComponent(articleId)).build()
+  buildArticleURL(articleId: string) {
+    return urlBuilder.setDomain(this.baseDomain).setPath(encodeURIComponent(articleId)).build()
   }
 }
-
-const desktopURLDirector = new DesktopURLDirector()
-
-export default desktopURLDirector

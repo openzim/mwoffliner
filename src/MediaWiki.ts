@@ -8,12 +8,8 @@ import axios from 'axios'
 import qs from 'querystring'
 import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
-import webURLDirector from './util/builders/url/web.director.js'
-import visualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import restURLDirector from './util/builders/url/rest.director.js'
-import mobileURLDirector from './util/builders/url/mobile.director.js'
-import desktopURLDirector from './util/builders/url/desktop.director.js'
-import moduleURLDirector from './util/builders/url/module.director.js'
+import BaseURLDirector from './util/builders/url/base.director.js'
+import ApiURLDirector from './util/builders/url/api.director.js'
 
 class MediaWiki {
   public metaData: MWMetaData
@@ -34,6 +30,7 @@ class MediaWiki {
   private readonly password: string
   private readonly apiPath: string
   private readonly domain: string
+  private apiUrlDirector: ApiURLDirector
 
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
@@ -46,21 +43,25 @@ class MediaWiki {
     this.apiPath = config.apiPath ?? 'w/api.php'
     this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH
 
-    this.webUrl = webURLDirector.buildURL(this.baseUrl.href, this.apiPath)
-    this.apiUrl = basicURLDirector.buildApiURL(this.baseUrl.href, this.apiPath)
+    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
 
-    this.veApiUrl = visualEditorURLDirector.buildURL(this.baseUrl.href)
+    this.webUrl = baseUrlDirector.buildURL(this.wikiPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.apiPath)
 
-    this.restApiUrl = restURLDirector.buildURL(this.baseUrl.href, config.restApiPath)
-    this.mobileRestApiUrl = mobileURLDirector.buildRestApiURL(this.baseUrl.href, config.restApiPath)
-    this.desktopRestApiUrl = desktopURLDirector.buildRestApiURL(this.baseUrl.href, config.restApiPath)
+    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
 
-    this.modulePath = moduleURLDirector.buildBasicURL(this.baseUrl.href, config.modulePath)
+    this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+
+    this.restApiUrl = baseUrlDirector.buildRestApiURL(config.restApiPath)
+    this.mobileRestApiUrl = baseUrlDirector.buildMobileRestApiURL(config.restApiPath)
+    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(config.restApiPath)
+
+    this.modulePath = baseUrlDirector.buildModuleURL(config.modulePath)
   }
 
   public async login(downloader: Downloader) {
     if (this.username && this.password) {
-      let url = this.apiUrl.href
+      let url = this.apiUrl.href + '?'
 
       // Add domain if configured
       if (this.domain) {
@@ -98,16 +99,9 @@ class MediaWiki {
     }
   }
 
-  public getApiQueryUrl(query = ''): string {
-    return `${this.apiUrl.href}${query}`
-  }
-
-  public getWebArticleUrlRaw(articleId: string): string {
-    return `${this.webUrl.href}?title=${encodeURIComponent(articleId)}&action=raw`
-  }
-
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
-    const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`
+    const url = this.apiUrlDirector.buildNamespacesURL()
+
     const json: any = await downloader.getJSON(url)
     ;['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type]
@@ -211,8 +205,8 @@ class MediaWiki {
 
   public async getSiteInfo(downloader: Downloader) {
     logger.log('Getting site info...')
-    const query = 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc'
-    const body = await downloader.query(query)
+    const body = await downloader.query()
+
     const entries = body.query.general
 
     // Checking mediawiki version

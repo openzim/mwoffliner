@@ -24,7 +24,7 @@ import {
 } from './misc.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
-import articleURLDirector from './builders/url/article.director.js'
+import ApiURLDirector from './builders/url/api.director.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -283,6 +283,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title
+
             if (!articleHtml) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
@@ -385,7 +386,9 @@ export async function getModuleDependencies(articleId: string, mw: MediaWiki, do
   let jsDependenciesList: string[] = []
   let styleDependenciesList: string[] = []
 
-  const articleApiUrl = articleURLDirector.buildApiURL(mw.baseUrl.href, articleId)
+  const apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
+
+  const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
 
   const articleData = await downloader.getJSON<any>(articleApiUrl)
 

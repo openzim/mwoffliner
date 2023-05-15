@@ -27,8 +27,24 @@ class URLBuilder {
    *
    * @returns the current object (`this`) after setting the `queryParams` property to a string
    */
-  setQueryParams<T extends Record<string, string>>(params: T, trailingChar = '?') {
-    const queryParams = new URLSearchParams(params)
+  setQueryParams<T extends Record<string, string>>(params: T, trailingChar = '?', filterParams?: boolean) {
+    if (!filterParams) {
+      const queryParams = new URLSearchParams(params)
+
+      this.queryParams = trailingChar + queryParams.toString()
+
+      return this
+    }
+
+    const filteredParams = Object.keys(params).reduce((accum, key) => {
+      if (params[key]) {
+        accum[key] = params[key]
+      }
+
+      return accum
+    }, {})
+
+    const queryParams = new URLSearchParams(filteredParams)
 
     this.queryParams = trailingChar + queryParams.toString()
 

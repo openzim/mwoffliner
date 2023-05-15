@@ -1,11 +1,13 @@
-import webURLDirector from '../../../../src/util/builders/url/web.director.js'
+import WebURLDirector from '../../../../src/util/builders/url/web.director.js'
 
 describe('WebURLDirector', () => {
-  describe('buildURL', () => {
-    it('should return basic web URL', () => {
-      const url = webURLDirector.buildURL('https://en.m.wikipedia.org/', 'w/api.php')
+  const webUrlDirector = new WebURLDirector('https://en.m.wikipedia.org/w/load.php')
 
-      expect(url.href).toBe('https://en.m.wikipedia.org/w/api.php')
+  describe('buildArticleRawURL', () => {
+    it('should return web URL to get an article', () => {
+      const url = webUrlDirector.buildArticleRawURL('article-123')
+
+      expect(url).toBe('https://en.m.wikipedia.org/w/load.php?title=article-123&action=raw')
     })
   })
 })

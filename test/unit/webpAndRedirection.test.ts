@@ -36,6 +36,7 @@ Real-time computer graphics`
     redis: process.env.REDIS,
     webp: true,
   })
+
   const zimFile = new ZimReader(outFiles[0].outFile)
 
   // detecting webp URL having png before arguments

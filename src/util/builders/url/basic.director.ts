@@ -1,16 +1,23 @@
 import urlBuilder from './url.builder.js'
 
+type DownloaderBaseUrlConditions = Array<{ condition: boolean; value: string }>
+
 class BasicURLDirector {
   buildMediawikiBaseURL(domain: string) {
     return urlBuilder.setDomain(domain).build(true, '/')
   }
 
-  buildSiteInfoURL(domain: string) {
-    return urlBuilder.setDomain(domain).setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json' }).build()
-  }
+  buildDownloaderBaseUrl(conditions: DownloaderBaseUrlConditions): string | undefined {
+    let baseUrl: string
 
-  buildApiURL(domain: string, path: string) {
-    return urlBuilder.setDomain(domain).setPath(path).build(true)
+    for (const { condition, value } of conditions) {
+      if (condition) {
+        baseUrl = value
+        break
+      }
+    }
+
+    return baseUrl
   }
 }
 

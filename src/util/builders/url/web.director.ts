@@ -1,18 +1,19 @@
 import urlBuilder from './url.builder.js'
 
-class WebURLDirector {
-  buildURL(domain: string, path: string) {
-    return urlBuilder.setDomain(domain).setPath(path).build(true)
+/**
+ * Interface to build URLs based on MediaWiki Web URL
+ */
+export default class WebURLDirector {
+  baseDomain: string
+
+  constructor(baseDomain: string) {
+    this.baseDomain = baseDomain
   }
 
-  buildArticleRawURL(domain: string, articleId: string) {
+  buildArticleRawURL(articleId: string) {
     return urlBuilder
-      .setDomain(domain)
+      .setDomain(this.baseDomain)
       .setQueryParams({ title: encodeURIComponent(articleId), action: 'raw' })
       .build()
   }
 }
-
-const webURLDirector = new WebURLDirector()
-
-export default webURLDirector

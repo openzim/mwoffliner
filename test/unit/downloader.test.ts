@@ -4,7 +4,7 @@ import MediaWiki from '../../src/MediaWiki.js'
 import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
-import { Dump } from '../../src/Dump'
+import { Dump } from '../../src/Dump.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -36,7 +36,7 @@ describe('Downloader class', () => {
   })
 
   test('downloader.query returns valid JSON', async () => {
-    const queryRet = await downloader.query('?action=query&meta=siteinfo&siprop=statistics&format=json')
+    const queryRet = await downloader.query()
     expect(queryRet).toBeDefined()
   })
 

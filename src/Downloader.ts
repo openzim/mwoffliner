@@ -17,7 +17,6 @@ import https from 'https'
 
 import {
   normalizeMwResponse,
-  objToQueryString,
   DB_ERROR,
   WEAK_ETAG_REGEX,
   renderArticle,
@@ -31,10 +30,11 @@ import S3 from './S3.js'
 import { Dump } from './Dump.js'
 import * as logger from './Logger.js'
 import MediaWiki from './MediaWiki.js'
-import categoriesURLDirector from './util/builders/url/categories.director.js'
-import visualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import desktopURLDirector from './util/builders/url/desktop.director.js'
-import mobileURLDirector from './util/builders/url/mobile.director.js'
+import ApiURLDirector from './util/builders/url/api.director.js'
+import DesktopURLDirector from './util/builders/url/desktop.director.js'
+import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import MobileURLDirector from './util/builders/url/mobile.director.js'
+import basicURLDirector from './util/builders/url/basic.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -94,6 +94,9 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
   method: 'GET',
 }
 
+/**
+ * Common interface to download the content
+ */
 class Downloader {
   public readonly mw: MediaWiki
   public loginCookie = ''
@@ -103,6 +106,9 @@ class Downloader {
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
+  public arrayBufferRequestOptions: AxiosRequestConfig
+  public jsonRequestOptions: AxiosRequestConfig
+  public streamRequestOptions: AxiosRequestConfig
 
   private readonly uaString: string
   private activeRequests = 0
@@ -112,9 +118,7 @@ class Downloader {
   private readonly optimisationCacheUrl: string
   private s3: S3
   private mwCapabilities: MWCapabilities // todo move to MW
-  public arrayBufferRequestOptions: AxiosRequestConfig
-  public jsonRequestOptions: AxiosRequestConfig
-  public streamRequestOptions: AxiosRequestConfig
+  private apiUrlDirector: ApiURLDirector
 
   constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.mw = mw
@@ -133,6 +137,7 @@ class Downloader {
       desktopRestApiAvailable: false,
       mobileRestApiAvailable: false,
     }
+    this.apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -218,15 +223,18 @@ class Downloader {
   }
 
   public async setBaseUrls() {
-    this.baseUrl = this.mwCapabilities.mobileRestApiAvailable
-      ? this.mw.mobileRestApiUrl.href
-      : this.mwCapabilities.desktopRestApiAvailable
-      ? this.mw.desktopRestApiUrl.href
-      : this.mwCapabilities.veApiAvailable
-      ? this.mw.veApiUrl.href
-      : undefined
+    //* Objects order in array matters!
+    this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
+      { condition: this.mwCapabilities.mobileRestApiAvailable, value: this.mw.mobileRestApiUrl.href },
+      { condition: this.mwCapabilities.desktopRestApiAvailable, value: this.mw.desktopRestApiUrl.href },
+      { condition: this.mwCapabilities.veApiAvailable, value: this.mw.veApiUrl.href },
+    ])
 
-    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href : this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href : undefined
+    //* Objects order in array matters!
+    this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
+      { condition: this.mwCapabilities.desktopRestApiAvailable, value: this.mw.desktopRestApiUrl.href },
+      { condition: this.mwCapabilities.veApiAvailable, value: this.mw.veApiUrl.href },
+    ])
 
     logger.log('Base Url: ', this.baseUrl)
     logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
@@ -245,20 +253,24 @@ class Downloader {
   }
 
   public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
+    const mobileURLDirector = new MobileURLDirector(this.mw.mobileRestApiUrl.href)
+    const desktopUrlDirector = new DesktopURLDirector(this.mw.desktopRestApiUrl.href)
+    const visualEditorURLDirector = new VisualEditorURLDirector(this.mw.veApiUrl.href)
+
     // By default check all API's responses and set the capabilities
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(mobileURLDirector.buildArticleURL(this.mw.mobileRestApiUrl.href, testArticleId))
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(desktopURLDirector.buildArticleURL(this.mw.desktopRestApiUrl.href, testArticleId))
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(visualEditorURLDirector.buildArticleURL(this.mw.veApiUrl.href, testArticleId))
+    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(mobileURLDirector.buildArticleURL(testArticleId))
+    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(desktopUrlDirector.buildArticleURL(testArticleId))
+    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(visualEditorURLDirector.buildArticleURL(testArticleId))
     this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href)
 
     // Coordinate fetching
-    const reqOpts = objToQueryString({
-      ...this.getArticleQueryOpts(),
-    })
-    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl.href}${reqOpts}`)
+    const reqOpts = this.getArticleQueryOpts()
+
+    const resp = await this.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
+
     const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
     if (isCoordinateWarning) {
       logger.info('Coordinates not available on this wiki')
@@ -270,8 +282,8 @@ class Downloader {
     return etag && etag.replace(WEAK_ETAG_REGEX, '')
   }
 
-  public query(query: string): KVS<any> {
-    return this.getJSON(this.mw.getApiQueryUrl(query))
+  public query(): KVS<any> {
+    return this.getJSON(this.apiUrlDirector.buildSiteInfoQueryURL())
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
@@ -291,9 +303,11 @@ class Downloader {
           : {}),
         ...(continuation || {}),
       }
-      const queryString = objToQueryString(queryOpts)
-      const reqUrl = this.mw.getApiQueryUrl(queryString)
+
+      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
+
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
+
       Downloader.handleMWWarningsAndErrors(resp)
 
       let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {}
@@ -316,6 +330,7 @@ class Downloader {
     let queryContinuation: QueryContinueOpts
     let finalProcessedResp: QueryMwRet
     let gCont: string = null
+
     while (true) {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(),
@@ -341,8 +356,7 @@ class Downloader {
         queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
       }
 
-      const queryString = objToQueryString(queryOpts)
-      const reqUrl = this.mw.getApiQueryUrl(queryString)
+      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
@@ -656,8 +670,11 @@ class Downloader {
   }
 
   private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const { query, continue: cont } = await this.getJSON<any>(categoriesURLDirector.buildSubCategoriesURL(this.mw.apiUrl.href, articleId, continueStr))
+    const apiUrlDirector = new ApiURLDirector(this.mw.apiUrl.href)
+
+    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
     const items = query.categorymembers.filter((a: any) => a && a.title)
+
     if (cont && cont.cmcontinue) {
       const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)
       return items.concat(nextItems)

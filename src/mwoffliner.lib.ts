@@ -53,7 +53,7 @@ import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import { fileURLToPath } from 'url'
-import basicURLDirector from './util/builders/url/basic.director.js'
+import ApiURLDirector from './util/builders/url/api.director.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -187,6 +187,7 @@ async function execute(argv: any) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
   }
+
   const metaDataRequiredKeys = {
     Creator: mwMetaData.creator,
     Description: customZimDescription || mwMetaData.subTitle,
@@ -199,6 +200,7 @@ async function execute(argv: any) {
 
   // Sanitizing main page
   let mainPage = articleList ? '' : mwMetaData.mainPage
+
   if (customMainPage) {
     mainPage = customMainPage
     const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage)
@@ -507,7 +509,11 @@ async function execute(argv: any) {
         throw new Error('Failed to read or process IllustrationMetadata using sharp')
       }
     }
-    const body = await downloader.getJSON<any>(basicURLDirector.buildSiteInfoURL(mw.baseUrl.href))
+
+    const apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
+
+    const body = await downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
+
     const entries = body.query.general
     if (!entries.logo) {
       throw new Error(

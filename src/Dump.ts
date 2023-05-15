@@ -6,6 +6,7 @@ import * as domino from 'domino'
 import * as logger from './Logger.js'
 import Downloader from './Downloader.js'
 import { getStringsForLang } from './util/index.js'
+import WebURLDirector from './util/builders/url/web.director.js'
 
 interface DumpOpts {
   tmpDir: string
@@ -214,7 +215,10 @@ export class Dump {
 
     /* Push Mediawiki:Offline.css (at the end) */
     // TODO: Weak URL (might fail in a number of cases where the wiki path is not like on Wikipedia)
-    const offlineCssUrl = downloader.mw.getWebArticleUrlRaw('Mediawiki:offline.css')
+    const webUrlDirector = new WebURLDirector(downloader.mw.webUrl.href)
+
+    const offlineCssUrl = webUrlDirector.buildArticleRawURL('Mediawiki:offline.css')
+
     if (await downloader.canGetUrl(offlineCssUrl)) {
       sheetUrls.push(offlineCssUrl)
     }

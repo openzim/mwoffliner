@@ -1,18 +1,19 @@
 import urlBuilder from './url.builder.js'
 
-class VisualEditorURLDirector {
-  buildURL(domain: string) {
-    return urlBuilder.setDomain(domain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse' }).build(true)
+/**
+ * Interface to build URLs based on MediaWiki visual editor URL
+ */
+export default class VisualEditorURLDirector {
+  baseDomain: string
+
+  constructor(baseDomain: string) {
+    this.baseDomain = baseDomain
   }
 
-  buildArticleURL(domain: string, articleId: string) {
+  buildArticleURL(articleId: string) {
     return urlBuilder
-      .setDomain(domain)
+      .setDomain(this.baseDomain)
       .setQueryParams({ page: encodeURIComponent(articleId) }, '&')
       .build()
   }
 }
-
-const visualEditorURLDirector = new VisualEditorURLDirector()
-
-export default visualEditorURLDirector

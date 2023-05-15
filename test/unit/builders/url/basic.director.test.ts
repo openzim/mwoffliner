@@ -9,11 +9,52 @@ describe('BasicURLDirector', () => {
     })
   })
 
-  describe('buildApiURL', () => {
-    it('should return an API URL as an URL object', () => {
-      const url = basicURLDirector.buildApiURL('https://en.m.wikipedia.org/', 'wiki/')
+  describe('buildDownloaderBaseUrl', () => {
+    it('should return the first value because its condition is true', () => {
+      const conditions = [
+        { condition: true, value: 'https://en.wikipedia.org' },
+        { condition: false, value: 'https://en.vikidia.org' },
+      ]
 
-      expect(url.href).toBe('https://en.m.wikipedia.org/wiki/')
+      const url = basicURLDirector.buildDownloaderBaseUrl(conditions)
+
+      expect(url).toBe('https://en.wikipedia.org')
+    })
+
+    it('should return the middle value because its condition is true and first one is false', () => {
+      const conditions = [
+        { condition: false, value: 'https://en.wikipedia.org' },
+        { condition: true, value: 'https://en.vikidia.org' },
+        { condition: true, value: 'https://en.wikimedia.org' },
+      ]
+
+      const url = basicURLDirector.buildDownloaderBaseUrl(conditions)
+
+      expect(url).toBe('https://en.vikidia.org')
+    })
+
+    it('should return the last value because its condition is true and first ones is false', () => {
+      const conditions = [
+        { condition: false, value: 'https://en.wikipedia.org' },
+        { condition: false, value: 'https://en.vikidia.org' },
+        { condition: true, value: 'https://en.wikimedia.org' },
+      ]
+
+      const url = basicURLDirector.buildDownloaderBaseUrl(conditions)
+
+      expect(url).toBe('https://en.wikimedia.org')
+    })
+
+    it('should return undefined if all conditions are false', () => {
+      const conditions = [
+        { condition: false, value: 'https://en.wikipedia.org' },
+        { condition: false, value: 'https://en.vikidia.org' },
+        { condition: false, value: 'https://en.wikimedia.org' },
+      ]
+
+      const url = basicURLDirector.buildDownloaderBaseUrl(conditions)
+
+      expect(url).toBe(undefined)
     })
   })
 })
