@@ -1,13 +1,13 @@
 # MWoffliner
 
 MWoffliner is a tool for making a local offline HTML snapshot of any
-online [Mediawiki](https://mediawiki.org) instance. It goes through
+online [MediaWiki](https://mediawiki.org) instance. It goes through
 all online articles (or a selection if specified) and create the
 corresponding [ZIM](https://openzim.org) file. It has mainly been
 tested against Wikimedia projects like
-[Wikipedia](https://wikipedia.org),
-[Wiktionary](https://wiktionary.org), ... But it should also work for
-any recent Mediawiki.
+[Wikipedia](https://wikipedia.org) and
+[Wiktionary](https://wiktionary.org) --- but it should also work for
+any recent MediaWiki.
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) to know more about
 MWoffliner development.
@@ -42,7 +42,7 @@ Run `mwoffliner --help` to get all the possible options.
   machine (packages `libjpeg-dev`, `libglu1`, `autoconf`, `automake`, `gcc` on
   Debian/Ubuntu)
 
-... and an online Mediawiki with its API available.
+... and an online MediaWiki with its API available.
 
 ## Usage
 
@@ -55,7 +55,7 @@ You might need to run this command with the `sudo` command, depending
 how your `npm` is configured.
 
 `npm` permission checking can be a bit annoying for a
-newcommer. Please read the documentation carefully if you hit
+newcomer. Please read the documentation carefully if you hit
 problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
 
 Then to run it:
