@@ -6,8 +6,20 @@ import { MWCapabilities } from '../Downloader.js'
 import { getStrippedTitleFromHtml } from './misc.js'
 import { DELETED_ARTICLE_ERROR } from './const.js'
 
+export enum ApiUrlType {
+  Unknown = 'unknown',
+  MobileRest = 'mobileRest',
+  DesktopRest = 'desktopRest',
+  VE = 've',
+}
+
+export interface ApiUrl {
+  url: string
+  type: ApiUrlType
+}
+
 export const renderArticle = async (
-  json: any,
+  json: { type: ApiUrlType; data: any },
   articleId: string,
   dump: Dump,
   articleDetailXId: RKVS<ArticleDetail>,
@@ -17,8 +29,9 @@ export const renderArticle = async (
   const articleDetail = articleDetailIn || (await articleDetailXId.get(articleId))
   const isMainPage = dump.isMainPage(articleId)
 
-  if (isMainPage || (capabilities.veApiAvailable && !capabilities.desktopRestApiAvailable)) {
-    const html = renderDesktopArticle(json, articleId, articleDetail, isMainPage)
+  // Main Page is never ApiUrlType.MobileRest
+  if (isMainPage || json.type == ApiUrlType.VE) {
+    const html = json.type === ApiUrlType.DesktopRest ? json.data : renderDesktopArticle(json, articleId, articleDetail, isMainPage)
     const strippedTitle = getStrippedTitleFromHtml(html)
     return [
       {
@@ -30,7 +43,7 @@ export const renderArticle = async (
   }
 
   const result = []
-  let html = json
+  let html
   // Paginate when there are more than 200 subCategories
   const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)
   for (let i = 0; i < numberOfPagesToSplitInto; i++) {
@@ -46,15 +59,16 @@ export const renderArticle = async (
       await articleDetailXId.set(_articleId, _articleDetail)
     }
 
-    // We don't really know the nature of 'json' variable because
-    // of weak software architecture. Got there is correct json.
-    if (json.lead) {
-      html = renderMCSArticle(json, dump, _articleId, _articleDetail)
+    if (json.type === ApiUrlType.DesktopRest) {
+      html = json.data
+    } else if (json.type === ApiUrlType.MobileRest) {
+      html = renderMCSArticle(json.data, dump, _articleId, _articleDetail)
     }
 
     let strippedTitle = getStrippedTitleFromHtml(html)
     if (!strippedTitle) {
-      const title = (json.lead || { displaytitle: articleId }).displaytitle
+      const lead = json.type === ApiUrlType.MobileRest ? json.data.lead : null
+      const title = (lead || { displaytitle: articleId }).displaytitle
       const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`)
       strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent
     }
@@ -79,24 +93,22 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
   return doc.documentElement.outerHTML
 }
 
-export const renderDesktopArticle = (json: any, articleId: string, articleDetail: ArticleDetail, isMainPage = false): string => {
-  if (!json) {
-    throw new Error(`Cannot render [${json}] into an article`)
+export const renderDesktopArticle = (wrappedJson: { type: ApiUrlType; data: any }, articleId: string, articleDetail: ArticleDetail, isMainPage = false): string => {
+  if (!wrappedJson || !wrappedJson.type) {
+    throw new Error(`Cannot render [${wrappedJson}] into an article`)
   }
-  if (json.visualeditor) {
+  if (wrappedJson.type === ApiUrlType.VE) {
+    const json = wrappedJson.data
     // Testing if article has been deleted between fetching list and downloading content.
     if (json.visualeditor.oldid === 0) {
       logger.error(DELETED_ARTICLE_ERROR)
       throw new Error(DELETED_ARTICLE_ERROR)
     }
     return isMainPage ? json.visualeditor.content : injectHeader(json.visualeditor.content, articleId, articleDetail)
-  } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
-    return json.html.body
-  } else if (json.error) {
-    logger.error(`Error in retrieved article [${articleId}]:`, json.error)
+  } else {
+    logger.error(`Error in retrieved article [${articleId}]`)
     return ''
   }
-  return json // This is HTML probably (the problem is that this is hard to know at this stage, buggy architecture)
 }
 
 const renderMCSArticle = (json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string => {
