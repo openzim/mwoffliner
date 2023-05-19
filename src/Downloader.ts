@@ -26,6 +26,8 @@ import {
   isImageUrl,
   getMimeType,
   isWebpCandidateImageMimeType,
+  ApiUrl,
+  ApiUrlType,
 } from './util/index.js'
 import S3 from './S3.js'
 import { Dump } from './Dump.js'
@@ -94,8 +96,8 @@ class Downloader {
   public readonly mw: MediaWiki
   public loginCookie = ''
   public readonly speed: number
-  public baseUrl: string
-  public baseUrlForMainPage: string
+  public baseUrl: ApiUrl
+  public baseUrlForMainPage: ApiUrl
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
@@ -214,20 +216,37 @@ class Downloader {
   }
 
   public async setBaseUrls() {
-    this.baseUrl = this.mwCapabilities.mobileRestApiAvailable
-      ? this.mw.mobileRestApiUrl.href
-      : this.mwCapabilities.desktopRestApiAvailable
-      ? this.mw.desktopRestApiUrl.href
-      : this.mwCapabilities.veApiAvailable
-      ? this.mw.veApiUrl.href
-      : undefined
+    if (this.mwCapabilities.desktopRestApiAvailable) {
+      this.baseUrl = {
+        url: this.mw.desktopRestApiUrl.href,
+        type: ApiUrlType.DesktopRest,
+      }
+    } else if (this.mwCapabilities.veApiAvailable) {
+      this.baseUrl = {
+        url: this.mw.veApiUrl.href,
+        type: ApiUrlType.VE,
+      }
+    } else {
+      this.baseUrl = {
+        url: undefined,
+        type: ApiUrlType.Unknown,
+      }
+    }
+    // The main page is rarely rendered correctly in the mobile API, so
+    // never use it for the main page, but use it for all the other pages.
+    this.baseUrlForMainPage = this.baseUrl
 
-    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href : this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href : undefined
+    if (this.mwCapabilities.mobileRestApiAvailable) {
+      this.baseUrl = {
+        url: this.mw.mobileRestApiUrl.href,
+        type: ApiUrlType.MobileRest,
+      }
+    }
 
-    logger.log('Base Url: ', this.baseUrl)
-    logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
+    logger.log('Base Url: ', this.baseUrl.type, this.baseUrl.url)
+    logger.log('Base Url for Main Page: ', this.baseUrlForMainPage.type, this.baseUrlForMainPage.url)
 
-    if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
+    if (!this.baseUrl.url || !this.baseUrlForMainPage.url) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
   }
 
   public async checkApiAvailabilty(url: string): Promise<boolean> {
@@ -371,15 +390,25 @@ class Downloader {
 
   public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleDetail?: ArticleDetail): Promise<RenderedArticle[]> {
     const isMainPage = dump.isMainPage(articleId)
-    const articleApiUrl = this.getArticleUrl(articleId, isMainPage)
+    const articleApiUrl: ApiUrl = this.getArticleApiUrl(articleId, isMainPage)
 
-    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`)
+    logger.info(`Getting article [${articleId}] from ${articleApiUrl.url} with type ${articleApiUrl.type}`)
 
-    const json = await this.getJSON<any>(articleApiUrl)
-    if (json.error) {
-      throw json.error
+    const json = await this.getJSON<any>(articleApiUrl.url)
+    let wrappedJson: { type: ApiUrlType; data: any }
+    switch (articleApiUrl.type) {
+      case ApiUrlType.DesktopRest:
+        // This is actually HTML
+        wrappedJson = { type: articleApiUrl.type, data: json }
+        break
+      default:
+        if (json.error) {
+          throw json.error
+        }
+        wrappedJson = { type: articleApiUrl.type, data: json }
+        break
     }
-    return renderArticle(json, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
+    return renderArticle(wrappedJson, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
@@ -440,8 +469,12 @@ class Downloader {
     }
   }
 
-  private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`
+  private getArticleApiUrl(articleId: string, isMainPage: boolean): ApiUrl {
+    const apiUrl = isMainPage ? this.baseUrlForMainPage : this.baseUrl
+    return {
+      url: `${apiUrl.url}${encodeURIComponent(articleId)}`,
+      type: apiUrl.type,
+    }
   }
 
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {

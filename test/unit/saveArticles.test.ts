@@ -5,7 +5,7 @@ import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from 
 import { saveArticles, getModuleDependencies, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { Dump } from '../../src/Dump'
-import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
+import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR, ApiUrlType } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 
 jest.setTimeout(40000)
@@ -347,7 +347,8 @@ describe('saveArticles', () => {
 
   test('Test deleted article rendering', async () => {
     const articleJsonObject = {
-      visualeditor: { oldid: 0 },
+      type: ApiUrlType.VE,
+      data: { visualeditor: { oldid: 0 } },
     }
     // Throwing error if article is deleted
     expect(() => renderDesktopArticle(articleJsonObject, 'deletedArticle', { title: 'deletedArticle' })).toThrow(new Error(DELETED_ARTICLE_ERROR))
