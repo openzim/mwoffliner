@@ -10,6 +10,7 @@ export const parameterDescriptions = {
   customZimDescription: 'Allow to configure a custom ZIM file description. Max length is 80 chars.',
   customZimLongDescription: 'Allow to configure a custom ZIM file long description. Max length is 4000 chars.',
   customZimTags: 'Allow to configure custom ZIM file tags (semi-colon separated).',
+  customZimLanguage: 'Allow to configure a custom ISO639-3 content language code.',
   customMainPage: 'Allow to configure a custom page as welcome page.',
   filenamePrefix: 'For the part of the ZIM filename which is before the format & date parts.',
   format:
