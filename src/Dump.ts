@@ -15,6 +15,7 @@ interface DumpOpts {
   publisher: string
   withoutZimFullTextIndex: boolean
   customZimTags?: string
+  customZimLanguage?: string
   customZimTitle?: string
   customZimDescription?: string
   customZimLongDescription?: string
