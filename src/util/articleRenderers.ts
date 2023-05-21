@@ -8,6 +8,7 @@ import { DELETED_ARTICLE_ERROR } from './const.js'
 
 export enum ApiUrlType {
   Unknown = 'unknown',
+  UseParsoid = 'useParsoid',
   MobileRest = 'mobileRest',
   DesktopRest = 'desktopRest',
   VE = 've',
@@ -28,6 +29,17 @@ export const renderArticle = async (
 ): Promise<RenderedArticle[]> => {
   const articleDetail = articleDetailIn || (await articleDetailXId.get(articleId))
   const isMainPage = dump.isMainPage(articleId)
+
+  if (json.type == ApiUrlType.UseParsoid) {
+    const html = renderParsoidArticle(json, articleId, articleDetail, isMainPage)
+    return [
+      {
+        articleId,
+        displayTitle: articleId.replace('_', ' '),
+        html,
+      },
+    ]
+  }
 
   // Main Page is never ApiUrlType.MobileRest
   if (isMainPage || json.type == ApiUrlType.VE) {
@@ -88,9 +100,22 @@ const injectHeader = (content: string, articleId: string, articleDetail: Article
   const header = doc.createElement('h1')
   header.appendChild(doc.createTextNode(articleDetail.title))
   header.classList.add('article-header')
-  const target = doc.querySelector('body.mw-body-content')
+  const target = doc.querySelector('body')
   target.insertAdjacentElement('afterbegin', header)
   return doc.documentElement.outerHTML
+}
+
+export const renderParsoidArticle = (wrappedJson: { type: ApiUrlType; data: any }, articleId: string, articleDetail: ArticleDetail, isMainPage = false): string => {
+  if (!wrappedJson || wrappedJson.type !== ApiUrlType.UseParsoid) {
+    throw new Error(`Cannot render [${wrappedJson}] into an article`)
+  }
+  const json = wrappedJson.data
+  // Testing if article has been deleted between fetching list and downloading content.
+  if (json.parse.revid === 0) {
+    logger.error(DELETED_ARTICLE_ERROR)
+    throw new Error(DELETED_ARTICLE_ERROR)
+  }
+  return injectHeader(json.parse.text, articleId, articleDetail)
 }
 
 export const renderDesktopArticle = (wrappedJson: { type: ApiUrlType; data: any }, articleId: string, articleDetail: ArticleDetail, isMainPage = false): string => {

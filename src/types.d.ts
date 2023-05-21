@@ -156,6 +156,7 @@ interface MWMetaData {
   creator: string
   mainPage: string
   textDir: TextDirection
+  mwVersion: string
 
   baseUrl: string
   wikiPath: string

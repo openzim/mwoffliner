@@ -19,6 +19,7 @@ class MediaWiki {
   public readonly restApiUrl: URL
   public readonly mobileRestApiUrl: URL
   public readonly desktopRestApiUrl: URL
+  public readonly useParsoidApiUrl: URL
   public readonly getCategories: boolean
   public readonly namespaces: MWNamespaces = {}
   public readonly namespacesToMirror: string[] = []
@@ -29,6 +30,7 @@ class MediaWiki {
   private readonly apiPath: string
   private readonly domain: string
   private readonly articleApiUrlBase: string
+  private readonly articleParsoidApiUrlBase: string
 
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
@@ -49,9 +51,11 @@ class MediaWiki {
     this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'))
     this.mobileRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/mobile-sections', this.baseUrl.href).toString(), '/'))
     this.desktopRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/html', this.baseUrl.href).toString(), '/'))
+    this.useParsoidApiUrl = new URL(`${this.apiUrl.href}action=parse&format=json&prop=text|revid&parsoid=1&formatversion=2&page=`)
 
     this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`
     this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`
+    this.articleParsoidApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml|text')}&useparsoid=1&page=`
   }
 
   public async login(downloader: Downloader) {
@@ -101,8 +105,8 @@ class MediaWiki {
     return `${this.apiUrl.href}action=query&meta=siteinfo&format=json`
   }
 
-  public articleApiUrl(articleId: string): string {
-    return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}`
+  public articleApiUrl(articleId: string, useParsoid: boolean): string {
+    return `${useParsoid ? this.articleParsoidApiUrlBase : this.articleApiUrlBase}${encodeURIComponent(articleId)}`
   }
 
   public subCategoriesApiUrl(articleId: string, continueStr = '') {
@@ -278,6 +282,7 @@ class MediaWiki {
       siteName,
       langIso2,
       langIso3,
+      mwVersion,
     }
   }
 
@@ -297,7 +302,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [textDir, { langIso2, langIso3, mainPage, siteName }, subTitle] = await Promise.all([
+    const [textDir, { langIso2, langIso3, mainPage, siteName, mwVersion }, subTitle] = await Promise.all([
       this.getTextDirection(downloader),
       this.getSiteInfo(downloader),
       this.getSubTitle(downloader),
@@ -320,6 +325,7 @@ class MediaWiki {
       subTitle,
       creator,
       mainPage,
+      mwVersion,
     }
 
     this.metaData = mwMetaData

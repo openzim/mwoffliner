@@ -14,6 +14,7 @@ import imageminWebp from 'imagemin-webp'
 import sharp from 'sharp'
 import http from 'http'
 import https from 'https'
+import semver from 'semver'
 
 import {
   normalizeMwResponse,
@@ -78,6 +79,7 @@ export interface MWCapabilities {
   coordinatesAvailable: boolean
   desktopRestApiAvailable: boolean
   mobileRestApiAvailable: boolean
+  useParsoidApiAvailable: boolean
 }
 
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
@@ -130,6 +132,7 @@ class Downloader {
       coordinatesAvailable: true,
       desktopRestApiAvailable: false,
       mobileRestApiAvailable: false,
+      useParsoidApiAvailable: false,
     }
 
     this.backoffOptions = {
@@ -216,7 +219,12 @@ class Downloader {
   }
 
   public async setBaseUrls() {
-    if (this.mwCapabilities.desktopRestApiAvailable) {
+    if (this.mwCapabilities.useParsoidApiAvailable) {
+      this.baseUrl = {
+        url: this.mw.useParsoidApiUrl.href,
+        type: ApiUrlType.UseParsoid,
+      }
+    } else if (this.mwCapabilities.desktopRestApiAvailable) {
       this.baseUrl = {
         url: this.mw.desktopRestApiUrl.href,
         type: ApiUrlType.DesktopRest,
@@ -236,7 +244,7 @@ class Downloader {
     // never use it for the main page, but use it for all the other pages.
     this.baseUrlForMainPage = this.baseUrl
 
-    if (this.mwCapabilities.mobileRestApiAvailable) {
+    if (this.mwCapabilities.mobileRestApiAvailable && this.baseUrl.type !== ApiUrlType.UseParsoid) {
       this.baseUrl = {
         url: this.mw.mobileRestApiUrl.href,
         type: ApiUrlType.MobileRest,
@@ -264,6 +272,7 @@ class Downloader {
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
+    this.mwCapabilities.useParsoidApiAvailable = semver.satisfies(this.mw.metaData.mwVersion, '>=1.41.0')
     this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId))
     this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId))
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId))
@@ -389,8 +398,7 @@ class Downloader {
   }
 
   public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleDetail?: ArticleDetail): Promise<RenderedArticle[]> {
-    const isMainPage = dump.isMainPage(articleId)
-    const articleApiUrl: ApiUrl = this.getArticleApiUrl(articleId, isMainPage)
+    const articleApiUrl: ApiUrl = this.getArticleApiUrl(articleId, dump)
 
     logger.info(`Getting article [${articleId}] from ${articleApiUrl.url} with type ${articleApiUrl.type}`)
 
@@ -469,7 +477,8 @@ class Downloader {
     }
   }
 
-  private getArticleApiUrl(articleId: string, isMainPage: boolean): ApiUrl {
+  public getArticleApiUrl(articleId: string, dump: Dump): ApiUrl {
+    const isMainPage = dump.isMainPage(articleId)
     const apiUrl = isMainPage ? this.baseUrlForMainPage : this.baseUrl
     return {
       url: `${apiUrl.url}${encodeURIComponent(articleId)}`,

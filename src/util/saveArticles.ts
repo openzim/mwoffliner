@@ -10,7 +10,7 @@ import DU from '../DOMUtils.js'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
-import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
+import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath, ApiUrlType } from './index.js'
 import { config } from '../config.js'
 import { footerTemplate, htmlTemplateCode } from '../Templates.js'
 import {
@@ -278,17 +278,19 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         const promises: [string, Promise<Error>][] = []
 
         try {
+          // When the UseParsoid api is available, this call could return the
+          // parsoid HTML in the same API invocation that gets the modules,
+          // but we're not going to make that optimization quite yet.
+          const _moduleDependencies = await getModuleDependencies(articleDetail.title, mw, downloader, dump)
           const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleDetail)
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
-            const nonPaginatedArticleId = articleDetail.title
             if (!articleHtml) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
             }
 
             curStage += 1
-            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader)
             for (const dep of _moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
@@ -377,14 +379,15 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   }
 }
 
-export async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
+export async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader, dump: Dump) {
   /* These vars will store the list of js and css dependencies for
     the article we are downloading. */
   let jsConfigVars = ''
   let jsDependenciesList: string[] = []
   let styleDependenciesList: string[] = []
 
-  const articleApiUrl = mw.articleApiUrl(articleId)
+  const downloadApiUrlType = downloader.getArticleApiUrl(articleId, dump).type
+  const articleApiUrl = mw.articleApiUrl(articleId, downloadApiUrlType === ApiUrlType.UseParsoid)
 
   const articleData = await downloader.getJSON<any>(articleApiUrl)
 

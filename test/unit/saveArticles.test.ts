@@ -355,9 +355,10 @@ describe('saveArticles', () => {
   })
 
   test('Load inline js from HTML', async () => {
-    const { downloader, mw } = await setupScrapeClasses() // en wikipedia
+    const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
+    await downloader.setBaseUrls()
 
-    const _moduleDependencies = await getModuleDependencies('Potato', mw, downloader)
+    const _moduleDependencies = await getModuleDependencies('Potato', mw, downloader, dump)
     // next variables declared to avoid "variable is not defined" errors
     let RLCONF: any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
