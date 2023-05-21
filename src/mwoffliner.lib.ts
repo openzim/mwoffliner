@@ -565,7 +565,7 @@ async function execute(argv: any) {
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to [${'A/' + mainPage}]`)
+      logger.log(`Create main page redirection from [index] to [${mainPage}]`)
       return zimCreator.addRedirection('index', mainPage, mainPage, { FRONT_ARTICLE: 1 })
     }
 
