@@ -97,9 +97,11 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
       lat = parts[4]
       lon = parts[5]
     } else if (rel === 'mw:MediaLink') {
-      const shouldScrape = (href.includes('.pdf') && !dump.nopdf) || ((href.includes('.ogg') || href.includes('.oga')) && !dump.nopic && !dump.novid && !dump.nodet)
+      const scrapePdf = href.includes('.pdf') && !dump.nopdf
+      const scrapeAudioVideo = (href.includes('.ogg') || href.includes('.oga')) && !dump.nopic && !dump.novid && !dump.nodet
+      const scrapeImage = href.includes('.svg') && !dump.nopic
 
-      if (shouldScrape) {
+      if (scrapePdf || scrapeAudioVideo || scrapeImage) {
         try {
           const newHref = getRelativeFilePath(articleId, getMediaBase(href, true), 'I')
           linkNode.setAttribute('href', newHref)
@@ -110,7 +112,7 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
           logger.warn('Error parsing url:', err)
           DU.deleteNode(linkNode)
         }
-      } else if (href.includes('.ogg') || href.includes('.oga')) {
+      } else if (href.includes('.ogg') || href.includes('.oga') || href.includes('.svg')) {
         linkNode.outerHTML = linkNode.innerHTML
       }
       return null
