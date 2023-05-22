@@ -5,7 +5,7 @@
 		]
 	},
 	"__direction": "{{optional}}\nOrientation of the content. 'ltr' or 'rtl'",
-	"DISCLAIMER": "Text printed in the footer of each article",
+	"DISCLAIMER": "Text printed in the footer of each article. With some publishers, \"${creator}\" will be the name of a person who wrote the article; with some others, it will be the publisher name (e.g. \"Wikipedia\").",
 	"LAST_EDITED_ON": "Hint indicated at which time the article has been updated last time",
 	"LICENSE_NAME": "Create Commons name localised"
 }
