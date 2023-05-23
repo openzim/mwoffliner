@@ -346,6 +346,7 @@ async function execute(argv: any) {
     } else {
       try {
         await doDump(dump)
+        await filesToDownloadXPath.flush()
       } catch (err) {
         debugger
         throw err

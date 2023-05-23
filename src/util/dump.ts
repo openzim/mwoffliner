@@ -45,7 +45,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
         while ((match = cssUrlRegexp.exec(body))) {
           let url = match[1]
 
-          /* Avoid 'data', so no url dependency */
+          /* Avoid 'data', so no URL dependency */
           if (!url.match('^data')) {
             const filePathname = urlParser.parse(url, false, true).pathname
             if (filePathname) {
