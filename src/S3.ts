@@ -18,7 +18,6 @@ class S3 {
   public async initialise() {
     const s3UrlBase: any = new URL(this.url);
     this.s3Handler = new S3Client({
-      region: this.params.region,
       credentials: {
         accessKeyId: this.params.keyId,
         secretAccessKey: this.params.secretAccessKey,
