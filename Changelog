@@ -1,5 +1,5 @@
 1.13.0:
-* FIX: Many akwards scenarios around Redis (@uriesk 1756)
+* FIX: Many akwards scenarios around Redis (@uriesk #1756)
 * FIX: Wrongly downloaded hidden media files (@pavel-karatsiuba #1780 #849)
 * FIX: Incompatibility scenario in hacking the start module (@pavel-karatsiuba #1783)
 * FIX: Bad ordering in Javascript module loading at reading time (@pavel-karatsiuba #1766)
