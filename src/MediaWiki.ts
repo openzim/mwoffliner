@@ -249,7 +249,10 @@ class MediaWiki {
     const mainPage = decodeURIComponent(entries.base.split('/').pop())
     const siteName = entries.sitename
 
-    const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code))
+    // Gather languages codes (en remove the 'dialect' part)
+    const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
+      return e.replace(/\-.*/, '')
+    })
 
     const [langIso2, langIso3] = await Promise.all(
       langs.map(async (lang: string) => {
