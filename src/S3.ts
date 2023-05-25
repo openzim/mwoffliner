@@ -16,14 +16,15 @@ class S3 {
   }
 
   public async initialise() {
-    const s3UrlBase: any = new URL(this.url)
+    const s3UrlObj: any = new URL(this.url)
     this.s3Handler = new S3Client({
+      region:'us-east-1',
       credentials: {
         accessKeyId: this.params.keyId,
         secretAccessKey: this.params.secretAccessKey,
       },
-      endpoint: s3UrlBase.href,
-      forcePathStyle: s3UrlBase.protocol === 'http:',
+      endpoint: s3UrlObj.href,
+      forcePathStyle: s3UrlObj.protocol === 'http:',
     })
 
     return this.bucketExists(this.bucketName)
@@ -31,12 +32,12 @@ class S3 {
       .catch(() => {
         throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
                             Bucket used: ${this.bucketName}
-                            End point used: ${s3UrlBase.href}
+                            End point used: ${s3UrlObj.href}
                             Public IP used: ${publicIpv4()}`)
       })
   }
 
-  public bucketExists(bucket: string): Promise<any> {
+  public async bucketExists(bucket: string): Promise<any> {
     const command = new HeadBucketCommand({ Bucket: bucket })
     return new Promise((resolve, reject) => {
       this.s3Handler.send(command, (err) => {

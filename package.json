@@ -93,7 +93,6 @@
     "imagemin-optipng": "^8.0.0",
     "imagemin-pngquant": "^9.0.2",
     "imagemin-webp": "^7.0.0",
-    "jpegoptim-bin": "^7.1.0",
     "md5": "^2.3.0",
     "merge": "^2.1.1",
     "mime-type": "^4.0.0",
