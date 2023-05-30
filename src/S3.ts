@@ -8,6 +8,7 @@ class S3 {
   public params: any
   public s3Handler: any
   public bucketName: string
+  public region: string
 
   constructor(s3Url: any, s3Params: any) {
     this.url = s3Url
@@ -17,7 +18,13 @@ class S3 {
 
   public async initialise() {
     const s3UrlObj: any = new URL(this.url)
+    const regionRegex: RegExp = /^https?:\/\/s3\.([^.]+)\.amazonaws\.com/;
+    const match: RegExpMatchArray | null = this.url.match(regionRegex);
+    if (match && match[1]) {
+       this.region = match[1];
+    }
     this.s3Handler = new S3Client({
+      region: this.region,
       credentials: {
         accessKeyId: this.params.keyId,
         secretAccessKey: this.params.secretAccessKey,
@@ -26,7 +33,7 @@ class S3 {
       forcePathStyle: s3UrlObj.protocol === 'http:',
     })
 
-    return this.bucketExists(this.bucketName)
+    return await this.bucketExists(this.bucketName)
       .then(() => true)
       .catch(() => {
         throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
