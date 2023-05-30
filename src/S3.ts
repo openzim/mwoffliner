@@ -33,7 +33,7 @@ class S3 {
       forcePathStyle: s3UrlObj.protocol === 'http:',
     })
 
-    return await this.bucketExists(this.bucketName)
+    return this.bucketExists(this.bucketName)
       .then(() => true)
       .catch(() => {
         throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
