@@ -54,6 +54,7 @@ import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import { fileURLToPath } from 'url'
 import ApiURLDirector from './util/builders/url/api.director.js'
+import urlHelper from './util/url.helper.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -627,7 +628,7 @@ async function execute(argv: any) {
         articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
 
         await Promise.all([
-          filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width } as FileDetail),
+          filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width } as FileDetail),
           articleDetailXId.set(articleId, articleDetail),
         ])
         articlesWithImages++

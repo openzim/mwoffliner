@@ -2,29 +2,19 @@ import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import MediaWiki from '../MediaWiki.js'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
-import htmlMinifier from 'html-minifier'
-import * as QueryStringParser from 'querystring'
 
 import pmap from 'p-map'
 import DU from '../DOMUtils.js'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
-import { contains, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getFullUrl, getMediaBase, jsPath } from './index.js'
+import { contains, jsPath } from './index.js'
 import { config } from '../config.js'
-import { footerTemplate, htmlTemplateCode } from '../Templates.js'
-import {
-  getRelativeFilePath,
-  getSizeFromUrl,
-  encodeArticleIdForZimHtmlUrl,
-  interpolateTranslationString,
-  isWebpCandidateImageMimeType,
-  getMimeType,
-  cleanupAxiosError,
-} from './misc.js'
-import { rewriteUrlsOfDoc } from './rewriteUrls.js'
+import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import ApiURLDirector from './builders/url/api.director.js'
+import articleTreatment from './treatments/article.treatment.js'
+import urlHelper from './url.helper.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -70,7 +60,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
           if (doRetry && resp.status !== 404) {
             await retryStore.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width })
           } else {
-            logger.warn(`Error downloading file [${downloader.deserializeUrl(resp.url)}], skipping`)
+            logger.warn(`Error downloading file [${urlHelper.deserializeUrl(resp.url)}], skipping`)
             dump.status.files.fail += 1
           }
         }
@@ -192,7 +182,16 @@ async function saveArticle(
   _moduleDependencies: any,
 ): Promise<Error> {
   try {
-    const { finalHTML, mediaDependencies, subtitles } = await processArticleHtml(articleHtml, redisStore, mw, dump, articleId, articleDetail, _moduleDependencies, downloader.webp)
+    const { finalHTML, mediaDependencies, subtitles } = await articleTreatment.processArticleHtml(
+      articleHtml,
+      redisStore,
+      mw,
+      dump,
+      articleId,
+      articleDetail,
+      _moduleDependencies,
+      downloader.webp,
+    )
 
     const filesToDownload: KVS<FileDetail> = {}
 
@@ -209,7 +208,7 @@ async function saveArticle(
         const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
         if (currentDepIsHigherRes) {
           filesToDownload[dep.path] = {
-            url: downloader.serializeUrl(dep.url),
+            url: urlHelper.serializeUrl(dep.url),
             mult,
             width,
           }
@@ -326,6 +325,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
            */
           const err = await parsePromise
           if (err) {
+            console.log(err)
+
             logger.error(`Error parsing article ${articleId}`)
             timer.clear()
             reject(err)
@@ -432,413 +433,6 @@ export async function getModuleDependencies(articleId: string, mw: MediaWiki, do
   jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
   return { jsConfigVars, jsDependenciesList, styleDependenciesList }
-}
-
-async function processArticleHtml(
-  html: string,
-  redisStore: RS,
-  mw: MediaWiki,
-  dump: Dump,
-  articleId: string,
-  articleDetail: ArticleDetail,
-  _moduleDependencies: any,
-  webp: boolean,
-) {
-  let mediaDependencies: Array<{ url: string; path: string }> = []
-  let subtitles: Array<{ url: string; path: string }> = []
-  let doc = domino.createDocument(html)
-
-  const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, mw, dump)
-  doc = ruRet.doc
-  mediaDependencies = mediaDependencies.concat(
-    ruRet.mediaDependencies
-      .filter((a) => a)
-      .map((url) => {
-        const path = getMediaBase(url, false)
-        return { url, path }
-      }),
-  )
-  doc = applyOtherTreatments(doc, dump)
-
-  const tmRet = await treatMedias(doc, mw, dump, articleId, webp, redisStore)
-  doc = tmRet.doc
-
-  mediaDependencies = mediaDependencies.concat(
-    tmRet.mediaDependencies
-      .filter((a) => a)
-      .map((url) => {
-        const path = getMediaBase(url, false)
-        return { url, path }
-      }),
-  )
-
-  subtitles = subtitles.concat(
-    tmRet.subtitles
-      .filter((a) => a)
-      .map((url) => {
-        const { title, lang } = QueryStringParser.parse(url) as { title: string; lang: string }
-        const path = `${title}-${lang}.vtt`
-        return { url, path }
-      }),
-  )
-
-  if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
-    doc = await dump.customProcessor.preProcessArticle(articleId, doc)
-  }
-
-  let templatedDoc = await templateArticle(doc, _moduleDependencies, mw, dump, articleId, articleDetail, redisStore.articleDetailXId)
-
-  if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
-    templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
-  }
-
-  let outHtml = templatedDoc.documentElement.outerHTML
-
-  if (dump.opts.minifyHtml) {
-    outHtml = htmlMinifier.minify(outHtml, {
-      removeComments: true,
-      conservativeCollapse: true,
-      collapseBooleanAttributes: true,
-      removeRedundantAttributes: true,
-      removeEmptyAttributes: true,
-      minifyCSS: true,
-    })
-  }
-
-  const finalHTML = '<!DOCTYPE html>\n' + outHtml
-
-  return {
-    finalHTML,
-    mediaDependencies,
-    subtitles,
-  }
-}
-
-export async function treatVideo(
-  mw: MediaWiki,
-  dump: Dump,
-  srcCache: KVS<boolean>,
-  articleId: string,
-  videoEl: DominoElement,
-  webp: boolean,
-): Promise<{ mediaDependencies: string[]; subtitles: string[] }> {
-  /* Worth noting:
-     - This function handles audio tags as well as video tags
-     - Video tags are used for audio files too (as opposed to the audio tag)
-     - When it's only audio, there will be a single OGG file
-     - For video, we get multiple SOURCE tages with different resolutions */
-  const mediaDependencies: string[] = []
-  const subtitles: string[] = []
-
-  /* Just delete video/audio element if the flavour requires it */
-  if (dump.nopic || dump.novid || dump.nodet) {
-    DU.deleteNode(videoEl)
-    return { mediaDependencies, subtitles }
-  }
-
-  /* Firefox is not able to display correctly <video> nodes with a
-     height < 40. In that case the controls are not displayed. */
-  if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
-    videoEl.setAttribute('height', '40')
-  }
-
-  /* Always show controls */
-  videoEl.setAttribute('controls', '40')
-
-  /* Choose best fiting resolution <source> video node */
-  const videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE')
-  const videoDisplayedWidth = Number(videoEl.getAttribute('width'))
-  let bestWidthDiff = 424242
-  let chosenVideoSourceEl: DominoElement
-  videoSourceEls.forEach((videoSourceEl: DominoElement) => {
-    // Ignore non-webm && non-audio sources
-    const videoSourceType = videoSourceEl.getAttribute('type')
-    if (!videoSourceEl.getAttribute('src').endsWith('.webm') && !videoSourceType.startsWith('audio')) {
-      DU.deleteNode(videoSourceEl)
-      return
-    }
-
-    // Handle audio content
-    if (videoSourceType.startsWith('audio/ogg')) {
-      chosenVideoSourceEl = videoSourceEl
-      return
-    } else if (videoSourceType.startsWith('audio')) {
-      DU.deleteNode(videoSourceEl)
-      return
-    }
-
-    // If undefined displayed width, then take the best <source> resolution
-    const videoSourceElWidth = Number(videoSourceEl.getAttribute('data-file-width') || videoSourceEl.getAttribute('data-width') || 0)
-    if (!videoDisplayedWidth) {
-      const chosenVideoSourceElWidth = chosenVideoSourceEl ? chosenVideoSourceEl.getAttribute('data-file-width') || chosenVideoSourceEl.getAttribute('data-width') || 0 : 0
-      if (videoSourceElWidth > chosenVideoSourceElWidth || (videoSourceElWidth === chosenVideoSourceElWidth && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
-        DU.deleteNode(chosenVideoSourceEl)
-        chosenVideoSourceEl = videoSourceEl
-        return
-      }
-    }
-
-    // Otherwise, choose <source> with better (smaller) width diff
-    else {
-      const widthDiff = Number(videoSourceElWidth - videoDisplayedWidth)
-
-      // If no source has been picked so far, just take this one
-      if (!chosenVideoSourceEl) {
-        chosenVideoSourceEl = videoSourceEl
-        bestWidthDiff = widthDiff
-        return
-      }
-
-      // Resolution of source is higher than displayed resolution
-      else if (widthDiff >= 0) {
-        if (bestWidthDiff < 0 || widthDiff < bestWidthDiff || (widthDiff === bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
-          DU.deleteNode(chosenVideoSourceEl)
-          chosenVideoSourceEl = videoSourceEl
-          bestWidthDiff = widthDiff
-          return
-        }
-      }
-
-      // Resolution of source is smaller than displayed resolution
-      else {
-        if (widthDiff > bestWidthDiff || (widthDiff === bestWidthDiff && videoSourceEl.getAttribute('src').endsWith('.vp9.webm'))) {
-          DU.deleteNode(chosenVideoSourceEl)
-          chosenVideoSourceEl = videoSourceEl
-          bestWidthDiff = widthDiff
-          return
-        }
-      }
-    }
-
-    // Delete all other nodes
-    DU.deleteNode(videoSourceEl)
-  })
-
-  /* If no appropriate source video can be found, delete the video */
-  if (!chosenVideoSourceEl) {
-    logger.warn(`Unable to find an appropriate video/audio source for an media element in article '${articleId}'`)
-    DU.deleteNode(videoEl)
-    return { mediaDependencies, subtitles }
-  }
-
-  /* Remove useless 'resource' attribute */
-  videoEl.removeAttribute('resource')
-
-  /* Handle video poster */
-  const posterUrl = videoEl.getAttribute('poster')
-  if (posterUrl) {
-    const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl)
-    const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I')
-
-    if (posterUrl) {
-      videoEl.setAttribute('poster', isWebpCandidateImageMimeType(webp, getMimeType(newVideoPosterUrl)) ? newVideoPosterUrl + '.webp' : newVideoPosterUrl)
-    }
-    videoEl.removeAttribute('resource')
-
-    if (!srcCache.hasOwnProperty(videoPosterUrl)) {
-      srcCache[videoPosterUrl] = true
-      mediaDependencies.push(videoPosterUrl)
-    }
-  }
-
-  /* Download content, but avoid duplicate calls */
-  const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), mw.baseUrl)
-  if (!srcCache.hasOwnProperty(sourceUrl)) {
-    srcCache[sourceUrl] = true
-    mediaDependencies.push(sourceUrl)
-  }
-
-  /* Set new URL for the video element */
-  const fileBase = getMediaBase(sourceUrl, true)
-  chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'))
-
-  /* Scrape subtitle */
-  for (const track of Array.from(videoEl.querySelectorAll('track'))) {
-    subtitles.push(await treatSubtitle(track, mw, articleId))
-  }
-
-  return { mediaDependencies, subtitles }
-}
-
-export async function treatSubtitle(trackEle: DominoElement, mw: MediaWiki, articleId: string): Promise<string> {
-  const subtitleSourceUrl = getFullUrl(trackEle.getAttribute('src'), mw.baseUrl)
-  const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string; lang: string }
-  // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
-  const vttFormatUrl = new URL(subtitleSourceUrl)
-  vttFormatUrl.searchParams.set('trackformat', 'vtt')
-  trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`)
-  return vttFormatUrl.href
-}
-
-function shouldKeepImage(dump: Dump, img: DominoElement) {
-  const imageNodeClass = img.getAttribute('class') || ''
-  const src = img.getAttribute('src')
-  return (
-    (!dump.nopic || imageNodeClass.includes('mwe-math-fallback-image-inline') || img.getAttribute('typeof') === 'mw:Extension/math') && src && !src.includes('./Special:FilePath/')
-  )
-}
-
-async function treatImage(
-  mw: MediaWiki,
-  dump: Dump,
-  srcCache: KVS<boolean>,
-  articleId: string,
-  img: DominoElement,
-  webp: boolean,
-  redisStore: RS,
-): Promise<{ mediaDependencies: string[] }> {
-  const mediaDependencies: string[] = []
-
-  if (!shouldKeepImage(dump, img)) {
-    DU.deleteNode(img)
-    return { mediaDependencies }
-  }
-
-  /* Remove image link */
-  const linkNode = img.parentNode
-  if (linkNode.tagName === 'A') {
-    /* Check if the target is mirrored */
-    const href = linkNode.getAttribute('href') || ''
-    const title = mw.extractPageTitleFromHref(href)
-    const keepLink = title && (await redisStore.articleDetailXId.exists(title))
-
-    /* Under certain condition it seems that this is possible
-     * to have parentNode == undefined, in this case this
-     * seems preferable to remove the whole link+content than
-     * keeping a wrong link. See for example this url
-     * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-    if (!keepLink) {
-      if (linkNode.parentNode) {
-        linkNode.parentNode.replaceChild(img, linkNode)
-      } else {
-        DU.deleteNode(img)
-        return { mediaDependencies }
-      }
-    }
-  }
-
-  /* Rewrite image src attribute */
-  const src = getFullUrl(img.getAttribute('src'), mw.baseUrl)
-  let newSrc: string
-  try {
-    const resourceNamespace = 'I'
-    const slashesInUrl = articleId.split('/').length - 1
-    const upStr = '../'.repeat(slashesInUrl + 1)
-    newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true)
-    /* Download image, but avoid duplicate calls */
-    if (!srcCache.hasOwnProperty(src)) {
-      srcCache[src] = true
-      mediaDependencies.push(src)
-    }
-
-    /* Change image source attribute to point to the local image */
-    img.setAttribute('src', isWebpCandidateImageMimeType(webp, getMimeType(src)) ? newSrc + '.webp' : newSrc)
-
-    /* Remove useless 'resource' attribute */
-    img.removeAttribute('resource')
-
-    /* Remove srcset */
-    img.removeAttribute('srcset')
-  } catch (err) {
-    DU.deleteNode(img)
-  }
-
-  /* Add lazy loading */
-  img.setAttribute('loading', 'lazy')
-
-  return { mediaDependencies }
-}
-
-function isStillLinked(image: DominoElement) {
-  return image && image.parentNode && image.parentNode.tagName === 'A'
-}
-
-function shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
-  return !dump.nopic && imageNode && image
-}
-
-function makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
-  const imageNodeClass = imageNode.getAttribute('class') || ''
-  let thumbDiv = parsoidDoc.createElement('div')
-  thumbDiv.setAttribute('class', 'thumb')
-  if (imageNodeClass.search('mw-halign-right') >= 0) {
-    DU.appendToAttr(thumbDiv, 'class', 'tright')
-  } else if (imageNodeClass.search('mw-halign-left') >= 0) {
-    DU.appendToAttr(thumbDiv, 'class', 'tleft')
-  } else if (imageNodeClass.search('mw-halign-center') >= 0) {
-    DU.appendToAttr(thumbDiv, 'class', 'tnone')
-    const centerDiv = parsoidDoc.createElement('center')
-    centerDiv.appendChild(thumbDiv)
-    thumbDiv = centerDiv
-  } else {
-    const revAutoAlign = dump.mwMetaData.textDir === 'ltr' ? 'right' : 'left'
-    DU.appendToAttr(thumbDiv, 'class', `t${revAutoAlign}`)
-  }
-  return thumbDiv
-}
-
-function treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
-  const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
-
-  if (!shouldKeepNode(dump, imageNode, image)) {
-    DU.deleteNode(imageNode)
-    return
-  }
-
-  const descriptions = imageNode.getElementsByTagName('figcaption')
-  const description = descriptions.length > 0 ? descriptions[0] : undefined
-  const imageWidth = parseInt(image.getAttribute('width'), 10)
-
-  const thumbDiv = makeThumbDiv(dump, parsoidDoc, imageNode)
-
-  const thumbinnerDiv = parsoidDoc.createElement('div')
-  thumbinnerDiv.setAttribute('class', 'thumbinner')
-  thumbinnerDiv.setAttribute('style', `width:${imageWidth + 2}px`)
-
-  const thumbcaptionDiv = parsoidDoc.createElement('div')
-  thumbcaptionDiv.setAttribute('class', 'thumbcaption')
-  const autoAlign = dump.mwMetaData.textDir === 'ltr' ? 'left' : 'right'
-  thumbcaptionDiv.setAttribute('style', `text-align: ${autoAlign}`)
-  if (description) {
-    thumbcaptionDiv.innerHTML = description.innerHTML
-  }
-
-  thumbinnerDiv.appendChild(isStillLinked(image) ? image.parentNode : image)
-  thumbinnerDiv.appendChild(thumbcaptionDiv)
-  thumbDiv.appendChild(thumbinnerDiv)
-
-  imageNode.parentNode.replaceChild(thumbDiv, imageNode)
-}
-
-export async function treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
-  let mediaDependencies: string[] = []
-  let subtitles: string[] = []
-  /* Clean/rewrite image tags */
-  const imgs = Array.from(parsoidDoc.getElementsByTagName('img'))
-  const videos: DominoElement = Array.from(parsoidDoc.querySelectorAll('video, audio'))
-  const srcCache: KVS<boolean> = {}
-
-  for (const videoEl of videos) {
-    // <video /> and <audio />
-    const ret = await treatVideo(mw, dump, srcCache, articleId, videoEl, webp)
-    mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
-    subtitles = subtitles.concat(ret.subtitles)
-  }
-
-  for (const imgEl of imgs) {
-    const ret = await treatImage(mw, dump, srcCache, articleId, imgEl, webp, redisStore)
-    mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
-  }
-
-  /* Improve image frames */
-  const figures = parsoidDoc.getElementsByTagName('figure')
-  const spans = parsoidDoc.querySelectorAll('span[typeof~=mw:Image/Frameless],span[typeof~=mw:File/Frameless]')
-  const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans))
-  for (const imageNode of imageNodes) {
-    treatImageFrames(mw, dump, parsoidDoc, imageNode)
-  }
-
-  return { doc: parsoidDoc, mediaDependencies, subtitles }
 }
 
 export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
@@ -995,121 +589,4 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
   }
 
   return parsoidDoc
-}
-
-async function templateArticle(
-  parsoidDoc: DominoElement,
-  moduleDependencies: any,
-  mw: MediaWiki,
-  dump: Dump,
-  articleId: string,
-  articleDetail: ArticleDetail,
-  articleDetailXId: RKVS<ArticleDetail>,
-): Promise<Document> {
-  const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
-    jsConfigVars: string | RegExpExecArray
-    jsDependenciesList: string[]
-    styleDependenciesList: string[]
-  }
-
-  const htmlTemplateDoc = domino.createDocument(
-    htmlTemplateCode(articleId)
-      .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
-      .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
-      .replace(
-        '__ARTICLE_JS_LIST__',
-        jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
-      .replace(
-        '__ARTICLE_CSS_LIST__',
-        styleDependenciesList.length !== 0 ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      ),
-  )
-
-  /* Create final document by merging template and parsoid documents */
-  htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.textDir)
-  htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML
-
-  /* Title */
-  htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-    ? htmlTemplateDoc.getElementById('title_0').textContent
-    : articleId.replace(/_/g, ' ')
-  DU.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
-
-  /* Subpage */
-  if (isSubpage(articleId, mw) && !dump.isMainPage(articleId)) {
-    const headingNode = htmlTemplateDoc.getElementById('mw-content-text')
-    const subpagesNode = htmlTemplateDoc.createElement('span')
-    const parents = articleId.split('/')
-    parents.pop()
-    let subpages = ''
-    await Promise.all(
-      parents.map(async (parent) => {
-        const label = parent.replace(/_/g, ' ')
-        const isParentMirrored = await articleDetailXId.exists(`${articleId.split(parent)[0]}${parent}`)
-        subpages += `&lt; ${
-          isParentMirrored ? `<a href="${'../'.repeat(parents.length)}${encodeArticleIdForZimHtmlUrl(`${articleId.split(parent)[0]}${parent}`)}" title="${label}">` : ''
-        }${label}${isParentMirrored ? '</a> ' : ' '}`
-      }),
-    )
-    subpagesNode.innerHTML = subpages
-    subpagesNode.setAttribute('class', 'subpages')
-    headingNode.parentNode.insertBefore(subpagesNode, headingNode)
-  }
-
-  /* Set footer */
-  const div = htmlTemplateDoc.createElement('div')
-
-  /* Revision date */
-  const date = new Date(articleDetail.timestamp)
-  const lastEditedOnString = date
-    ? interpolateTranslationString(dump.strings.LAST_EDITED_ON, {
-        date: date.toISOString().substring(0, 10),
-      })
-    : null
-
-  const creatorLink =
-    '<a class="external text" ' +
-    `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-    `href="${mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
-    `${dump.mwMetaData.creator}</a>`
-
-  const licenseLink = `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`
-
-  div.innerHTML = footerTemplate({
-    disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {
-      creator: creatorLink,
-      license: licenseLink,
-    }),
-    strings: dump.strings,
-  })
-  htmlTemplateDoc.getElementById('mw-content-text').appendChild(div)
-  addNoIndexCommentToElement(div)
-
-  /* Geo-coordinates */
-  if (articleDetail.coordinates) {
-    const geoCoordinates = articleDetail.coordinates
-    const metaNode = htmlTemplateDoc.createElement('meta')
-    metaNode.name = 'geo.position'
-    metaNode.content = geoCoordinates
-    htmlTemplateDoc.getElementsByTagName('head')[0].appendChild(metaNode)
-  }
-
-  return htmlTemplateDoc
-}
-
-function addNoIndexCommentToElement(element: DominoElement) {
-  const slices = element.parentElement.innerHTML.split(element.outerHTML)
-  element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
-}
-
-function isSubpage(id: string, mw: MediaWiki) {
-  if (id && id.indexOf('/') >= 0) {
-    const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
-    const ns = mw.namespaces[namespace] // namespace already defined
-    if (ns !== undefined) {
-      return ns.allowedSubpages
-    }
-  }
-  return false
 }

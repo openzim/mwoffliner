@@ -1,5 +1,4 @@
 import * as path from 'path'
-import * as urlParser from 'url'
 import deepmerge from 'deepmerge'
 import * as backoff from 'backoff'
 import { config } from './config.js'
@@ -34,6 +33,7 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
+import urlHelper from './util/url.helper.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -111,7 +111,6 @@ class Downloader {
   private readonly uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  private readonly urlPartCache: KVS<string> = {}
   private readonly backoffOptions: BackoffOptions
   private readonly optimisationCacheUrl: string
   private s3: S3
@@ -194,29 +193,6 @@ class Downloader {
       },
       timeout: this.requestTimeout,
     }
-  }
-
-  public serializeUrl(url: string): string {
-    const { path } = urlParser.parse(url)
-    const cacheablePart = url.replace(path, '')
-    const cacheEntry = Object.entries(this.urlPartCache).find(([, value]) => value === cacheablePart)
-    let cacheKey
-    if (!cacheEntry) {
-      const cacheId = String(Object.keys(this.urlPartCache).length + 1)
-      this.urlPartCache[cacheId] = cacheablePart
-      cacheKey = `_${cacheId}_`
-    } else {
-      cacheKey = `_${cacheEntry[0]}_`
-    }
-    return `${cacheKey}${path}`
-  }
-
-  public deserializeUrl(url: string): string {
-    if (!url.startsWith('_')) return url
-    const [, cacheId, ...pathParts] = url.split('_')
-    const path = pathParts.join('_')
-    const cachedPart = this.urlPartCache[cacheId]
-    return `${cachedPart}${path}`
   }
 
   public async setBaseUrls() {
@@ -395,7 +371,7 @@ class Downloader {
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
-    const url = this.deserializeUrl(_url)
+    const url = urlHelper.deserializeUrl(_url)
     await this.claimRequest()
     return new Promise<T>((resolve, reject) => {
       this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
@@ -415,7 +391,7 @@ class Downloader {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
-    const url = this.deserializeUrl(_url)
+    const url = urlHelper.deserializeUrl(_url)
 
     await this.claimRequest()
 
