@@ -14,17 +14,7 @@ import sharp from 'sharp'
 import http from 'http'
 import https from 'https'
 
-import {
-  normalizeMwResponse,
-  DB_ERROR,
-  WEAK_ETAG_REGEX,
-  renderArticle,
-  stripHttpFromUrl,
-  isBitmapImageMimeType,
-  isImageUrl,
-  getMimeType,
-  isWebpCandidateImageMimeType,
-} from './util/index.js'
+import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isImageUrl, getMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import S3 from './S3.js'
 import { Dump } from './Dump.js'
 import * as logger from './Logger.js'
@@ -34,6 +24,7 @@ import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
+import articleRenderer from './util/renderers/article.renderer.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -367,7 +358,7 @@ class Downloader {
     if (json.error) {
       throw json.error
     }
-    return renderArticle(json, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
+    return articleRenderer.renderArticle(json, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
