@@ -53,7 +53,6 @@ class MediaWiki {
     this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
 
     this.restApiUrl = baseUrlDirector.buildRestApiURL(config.restApiPath)
-    this.mobileRestApiUrl = baseUrlDirector.buildMobileRestApiURL(config.restApiPath)
     this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(config.restApiPath)
 
     this.modulePath = baseUrlDirector.buildModuleURL(config.modulePath)

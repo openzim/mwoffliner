@@ -21,13 +21,6 @@ export default class BaseURLDirector {
       .build(true, '/')
   }
 
-  buildMobileRestApiURL(path?: string) {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setPath(path ?? 'api/rest_v1/page/mobile-sections')
-      .build(true, '/')
-  }
-
   buildDesktopRestApiURL(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)

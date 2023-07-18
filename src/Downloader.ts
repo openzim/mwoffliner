@@ -33,7 +33,6 @@ import MediaWiki from './MediaWiki.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import MobileURLDirector from './util/builders/url/mobile.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
 
 const imageminOptions = new Map()
@@ -79,7 +78,6 @@ export interface MWCapabilities {
   veApiAvailable: boolean
   coordinatesAvailable: boolean
   desktopRestApiAvailable: boolean
-  mobileRestApiAvailable: boolean
 }
 
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
@@ -135,7 +133,6 @@ class Downloader {
       veApiAvailable: false,
       coordinatesAvailable: true,
       desktopRestApiAvailable: false,
-      mobileRestApiAvailable: false,
     }
     this.apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
 
@@ -225,7 +222,6 @@ class Downloader {
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mwCapabilities.mobileRestApiAvailable, value: this.mw.mobileRestApiUrl.href },
       { condition: this.mwCapabilities.desktopRestApiAvailable, value: this.mw.desktopRestApiUrl.href },
       { condition: this.mwCapabilities.veApiAvailable, value: this.mw.veApiUrl.href },
     ])
@@ -253,7 +249,6 @@ class Downloader {
   }
 
   public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
-    const mobileURLDirector = new MobileURLDirector(this.mw.mobileRestApiUrl.href)
     const desktopUrlDirector = new DesktopURLDirector(this.mw.desktopRestApiUrl.href)
     const visualEditorURLDirector = new VisualEditorURLDirector(this.mw.veApiUrl.href)
 
@@ -261,7 +256,6 @@ class Downloader {
     // accordingly. We need to set a default page (always there because
     // installed per default) to request the REST API, otherwise it would
     // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(mobileURLDirector.buildArticleURL(testArticleId))
     this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(desktopUrlDirector.buildArticleURL(testArticleId))
     this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(visualEditorURLDirector.buildArticleURL(testArticleId))
     this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href)
