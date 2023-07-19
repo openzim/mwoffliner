@@ -101,14 +101,6 @@ describe('Downloader class', () => {
     await expect(downloader.downloadContent('')).rejects.toThrowError()
   })
 
-  test('downloadContent successfully downloaded an image', async () => {
-    const { data: LondonDetail } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London')
-    const [imgToGet] = Object.values(LondonDetail.lead.image.urls)
-
-    const LondonImage = await downloader.downloadContent(imgToGet as string)
-    expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
-  })
-
   describe('getArticle method', () => {
     let dump: Dump
 

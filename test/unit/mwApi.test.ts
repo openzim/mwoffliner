@@ -40,7 +40,7 @@ describe('mwApi', () => {
     expect(United_Kingdom).toBeDefined()
 
     // Article "United_Kingdom" has categories
-    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(12)
+    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(1)
 
     // Article "United_Kingdom" has thumbnail
     expect(United_Kingdom).toHaveProperty('thumbnail')

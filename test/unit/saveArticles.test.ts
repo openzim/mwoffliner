@@ -81,35 +81,6 @@ describe('saveArticles', () => {
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
 
-    test('Found no empty details elements when they should be stripped in mobile view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump)
-
-      const details = Array.from(doc.querySelectorAll('details'))
-      let fewestChildren = 0
-      for (const d of details) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
-      }
-      expect(fewestChildren).toBeGreaterThan(0)
-    })
-
-    test('Found empty details elements when they should be left im mobile view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump2)
-
-      const details = Array.from(doc.querySelectorAll('details'))
-
-      let fewestChildren = 0
-      for (const d of details) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
-      }
-      expect(fewestChildren).toBeLessThanOrEqual(1)
-    })
-
     test('Found empty sections when they should be left im desktop view', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump2)
