@@ -11,6 +11,7 @@ import * as FileType from 'file-type'
 import { jest } from '@jest/globals'
 import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
+import domino from 'domino'
 
 jest.setTimeout(200000)
 
@@ -99,6 +100,19 @@ describe('Downloader class', () => {
 
   test('downloadContent throws when empty string is passed', async () => {
     await expect(downloader.downloadContent('')).rejects.toThrowError()
+  })
+
+  test('downloadContent successfully downloaded an image', async () => {
+    const { data: LondonHtml } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
+    const doc = domino.createDocument(LondonHtml)
+    const imgToGet = Array.from(doc.querySelectorAll('[data-mw-section-id="0"] img'))[0]
+    let imgToGetSrc = ''
+    if (imgToGet.getAttribute('src')) {
+      imgToGetSrc = imgToGet.getAttribute('src')
+    }
+    // This is the downloading of an image
+    const LondonImage = await downloader.downloadContent(imgToGetSrc)
+    expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
   })
 
   describe('getArticle method', () => {

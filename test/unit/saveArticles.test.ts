@@ -73,27 +73,26 @@ describe('saveArticles', () => {
 
       await downloader.checkCapabilities()
       await downloader.setBaseUrls()
-      const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
+      const _articleDetailsRet = await downloader.getArticleDetailsIds(['User:VadimKovalenkoSNF'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = redisStore
       articleDetailXId.setMany(articlesDetail)
-      ;[{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump, articleDetailXId)
+      ;[{ html: articleHtml }] = await downloader.getArticle('User:VadimKovalenkoSNF', dump, articleDetailXId)
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
 
-    test('Found empty sections when they should be left im desktop view', async () => {
+    test('Found no empty details elements when they should be stripped', async () => {
+      const doc = domino.createDocument(articleHtml)
+      await applyOtherTreatments(doc, dump)
+      const paragraphs = Array.from(doc.querySelectorAll('p'))
+      expect(paragraphs.length).toEqual(2)
+    })
+
+    test('Found empty details elements when they should be left', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump2)
-
-      const sections = Array.from(doc.querySelectorAll('section'))
-
-      let fewestChildren = 0
-      for (const d of sections) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
-      }
-      expect(fewestChildren).toBeLessThanOrEqual(1)
+      const paragraphs = Array.from(doc.querySelectorAll('p'))
+      expect(paragraphs.length).toEqual(4)
     })
   })
 

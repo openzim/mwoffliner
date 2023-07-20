@@ -942,17 +942,10 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
 
   /* Remove empty paragraphs */
   if (!dump.opts.keepEmptyParagraphs) {
-    // Mobile view === details
-    // Desktop view === section
-    const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
-    for (const section of sections) {
-      if (
-        section.children.length ===
-        Array.from(section.children).filter((child: DominoElement) => {
-          return child.matches('summary')
-        }).length
-      ) {
-        DU.deleteNode(section)
+    const paragraphs: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('p'))
+    for (const paragraph of paragraphs) {
+      if (!paragraph.textContent || (paragraph.textContent && paragraph.textContent.trim().length === 0)) {
+        DU.deleteNode(paragraph)
       }
     }
   }
