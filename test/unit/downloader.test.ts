@@ -234,7 +234,7 @@ describe('Downloader class', () => {
       expect(httpOrHttpsRemoved).toBeDefined()
 
       // Delete the image already present in S3
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: httpOrHttpsRemoved })
+      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: httpOrHttpsRemoved })
 
       // Check if image exists after deleting from S3
       const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved)
@@ -245,7 +245,7 @@ describe('Downloader class', () => {
       // Get an image URL to run the test with
       const randomImage = await getRandomImageUrl()
       const imagePath = stripHttpFromUrl(randomImage)
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
+      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
 
       // Download the image (and cache it in S3)
       await downloader.downloadContent(randomImage)
@@ -271,7 +271,7 @@ describe('Downloader class', () => {
       expect(newS3Resp.Metadata.contenttype).toEqual(newContentType)
 
       // Remove Image after test
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
+      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
     })
   })
 
