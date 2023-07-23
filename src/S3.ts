@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3'
 import * as logger from './Logger.js'
 import { Readable } from 'stream'
+import { publicIpv4 } from 'public-ip'
 
 interface BucketParams {
   Bucket: string
@@ -46,8 +47,13 @@ class S3 {
 
     return this.bucketExists(this.bucketName)
       .then(() => true)
-      .catch((err) => {
-        throw new Error(`Unable to connect to S3: ${err.message}`)
+      .catch(async () => {
+        throw new Error(`
+        Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
+                            Bucket used: ${this.bucketName}
+                            End point used: ${s3UrlBase.href}
+                            Public IP used: ${await publicIpv4()}
+        `)
       })
   }
 
@@ -97,10 +103,12 @@ class S3 {
           } else reject()
         })
         .catch((err: any) => {
-          logger.log('S3 error while downloading file', err)
-          if (err && err.statusCode === 404) {
+          // For 404 error handle AWS service-specific exception
+          if (err && err.name === 'NoSuchKey') {
+            logger.log(`Error: The specified key ${key} does not exist.`)
             resolve(null)
           } else {
+            logger.log(`Error while downloading the file ${err}`)
             reject(err)
           }
         })

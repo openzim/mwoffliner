@@ -38,7 +38,8 @@ describeIf('S3', () => {
     // Remove Image after test
     await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: s3TestKey })
 
+    const imageNotExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png')
     // Image doesnt exist in S3
-    await expect(s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png')).rejects.toThrow()
+    expect(imageNotExist).toBeNull()
   })
 })
