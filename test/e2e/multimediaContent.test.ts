@@ -20,6 +20,7 @@ describe('Multimedia', () => {
     customZimDescription: 'Example of the description',
   }
 
+  /** TODO: test this with Github actions and locally */
   test('check multimedia content from wikipedia test page', async () => {
     await execa('redis-cli flushall', { shell: true })
 
