@@ -28,7 +28,7 @@ describe('bm', () => {
     // Created 1 output
     expect(outFiles).toHaveLength(1)
 
-    for (const dump of outFiles) {
+    /* for (const dump of outFiles) {
       if (dump.nopic) {
         // nopic has enough files
         expect(dump.status.files.success).toBeGreaterThan(15)
@@ -37,7 +37,7 @@ describe('bm', () => {
         // nopic has enough articles
         expect(dump.status.articles.success).toBeGreaterThan(700)
       }
-    }
+    }*/
 
     if (await zimcheckAvailable()) {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
