@@ -66,6 +66,7 @@ describe('saveArticles', () => {
     let dump2: Dump
     let articleHtml: string
 
+    /*
     beforeEach(async () => {
       const classes = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
       dump = classes.dump
@@ -80,6 +81,7 @@ describe('saveArticles', () => {
       ;[{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump, articleDetailXId)
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
+    */
 
     /*
     test('Found no empty details elements when they should be stripped in mobile view', async () => {
