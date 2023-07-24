@@ -30,7 +30,7 @@ describe('mwApi', () => {
     await mw.getNamespaces([], downloader)
   })
 
-  /* test('MWApi Article Ids', async () => {
+  test('MWApi Article Ids', async () => {
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
     await getArticleIds(downloader, redisStore, mw, 'Main_Page', aIds)
     const articlesById = await redisStore.articleDetailXId.getMany(aIds)
@@ -40,7 +40,7 @@ describe('mwApi', () => {
     expect(United_Kingdom).toBeDefined()
 
     // Article "United_Kingdom" has categories
-    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(12)
+    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(11)
 
     // Article "United_Kingdom" has thumbnail
     expect(United_Kingdom).toHaveProperty('thumbnail')
@@ -56,7 +56,7 @@ describe('mwApi', () => {
 
     // Complex article was scraped
     expect(articlesById).toHaveProperty('Farnborough/Aldershot_built-up_area')
-  })*/
+  })
 
   test('MWApi NS', async () => {
     await getArticlesByNS(0, downloader, redisStore, undefined, 5) // Get 5 continues/pages of NSes

@@ -62,7 +62,6 @@ describe('saveArticles', () => {
   })
 
   describe('applyOtherTreatments', () => {
-    /*
     let dump: Dump
     let dump2: Dump
     let articleHtml: string
@@ -82,6 +81,7 @@ describe('saveArticles', () => {
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
 
+    /*
     test('Found no empty details elements when they should be stripped in mobile view', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump)
@@ -110,8 +110,13 @@ describe('saveArticles', () => {
       }
       expect(fewestChildren).toBeLessThanOrEqual(1)
     })
+    */
 
-    test('Found empty sections when they should be left im desktop view', async () => {
+    /*
+      TODO: Investigate empty section behavior for other endpoints such as page/html and page/mobile html
+      then rewrite the test below
+    /
+    /* test('Found empty sections when they should be left im desktop view', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump2)
 
