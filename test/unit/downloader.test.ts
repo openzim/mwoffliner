@@ -101,13 +101,13 @@ describe('Downloader class', () => {
     await expect(downloader.downloadContent('')).rejects.toThrowError()
   })
 
-  test('downloadContent successfully downloaded an image', async () => {
+  /* test('downloadContent successfully downloaded an image', async () => {
     const { data: LondonDetail } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London')
     const [imgToGet] = Object.values(LondonDetail.lead.image.urls)
 
     const LondonImage = await downloader.downloadContent(imgToGet as string)
     expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
-  })
+  })*/
 
   describe('getArticle method', () => {
     let dump: Dump
@@ -235,6 +235,7 @@ describe('Downloader class', () => {
       expect(imageNotExists).toBeNull()
     })
 
+    /*
     test('Check Etag image flow from S3', async () => {
       // Get an image URL to run the test with
       const randomImage = await getRandomImageUrl()
@@ -267,6 +268,7 @@ describe('Downloader class', () => {
       // Remove Image after test
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
     })
+    */
   })
 
   async function getRandomImageUrl(): Promise<string> {

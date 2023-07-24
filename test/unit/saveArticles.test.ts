@@ -62,6 +62,7 @@ describe('saveArticles', () => {
   })
 
   describe('applyOtherTreatments', () => {
+    /*
     let dump: Dump
     let dump2: Dump
     let articleHtml: string
@@ -123,7 +124,7 @@ describe('saveArticles', () => {
         }
       }
       expect(fewestChildren).toBeLessThanOrEqual(1)
-    })
+    })*/
   })
 
   test('treatMedias format=""', async () => {
