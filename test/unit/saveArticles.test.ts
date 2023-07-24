@@ -81,19 +81,38 @@ describe('saveArticles', () => {
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
 
-    test('Found no empty details elements when they should be stripped', async () => {
+    test('Found no empty paragraph elements when they should be stripped', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump)
       const paragraphs = Array.from(doc.querySelectorAll('p'))
       expect(paragraphs.length).toEqual(2)
     })
 
-    test('Found empty details elements when they should be left', async () => {
+    test('Found empty paragraph elements when they should be left', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump2)
       const paragraphs = Array.from(doc.querySelectorAll('p'))
       expect(paragraphs.length).toEqual(4)
     })
+
+    /*
+      TODO: Investigate empty section behavior for other endpoints such as page/html and page/mobile html
+      then rewrite the test below
+    /
+    /*
+    test('Found empty sections when they should be left im desktop view', async () => {
+      const doc = domino.createDocument(articleHtml)
+      await applyOtherTreatments(doc, dump2)
+      const sections = Array.from(doc.querySelectorAll('section'))
+      let fewestChildren = 0
+      for (const d of sections) {
+        if (fewestChildren === 0 || d.children.length < fewestChildren) {
+          fewestChildren = d.children.length
+        }
+      }
+      expect(fewestChildren).toBeLessThanOrEqual(1)
+    })
+    */
   })
 
   test('treatMedias format=""', async () => {
