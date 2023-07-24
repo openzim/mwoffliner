@@ -235,7 +235,6 @@ describe('Downloader class', () => {
       expect(imageNotExists).toBeNull()
     })
 
-    /*
     test('Check Etag image flow from S3', async () => {
       // Get an image URL to run the test with
       const randomImage = await getRandomImageUrl()
@@ -268,7 +267,6 @@ describe('Downloader class', () => {
       // Remove Image after test
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
     })
-    */
   })
 
   async function getRandomImageUrl(): Promise<string> {

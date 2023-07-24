@@ -941,6 +941,7 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
   })
 
   /* Remove empty paragraphs */
+  /*
   if (!dump.opts.keepEmptyParagraphs) {
     // Mobile view === details
     // Desktop view === section
@@ -953,6 +954,15 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
         }).length
       ) {
         DU.deleteNode(section)
+      }
+    }
+  }
+  */
+  if (!dump.opts.keepEmptyParagraphs) {
+    const paragraphs: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('p'))
+    for (const paragraph of paragraphs) {
+      if (!paragraph.textContent || (paragraph.textContent && paragraph.textContent.trim().length === 0)) {
+        DU.deleteNode(paragraph)
       }
     }
   }
