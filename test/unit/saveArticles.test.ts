@@ -66,8 +66,6 @@ describe('saveArticles', () => {
     let dump2: Dump
     let articleHtml: string
 
-    // TODO: This test will cause issues with intergational tests of multimedia content
-    /*
     beforeEach(async () => {
       const classes = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
       dump = classes.dump
@@ -96,7 +94,6 @@ describe('saveArticles', () => {
       const paragraphs = Array.from(doc.querySelectorAll('p'))
       expect(paragraphs.length).toEqual(4)
     })
-    */
 
     /*
       TODO: Investigate empty section behavior for other endpoints such as page/html and page/mobile html
