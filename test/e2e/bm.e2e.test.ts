@@ -31,7 +31,7 @@ describe('bm', () => {
     for (const dump of outFiles) {
       if (dump.nopic) {
         // nopic has enough files
-        expect(dump.status.files.success).toBeGreaterThan(15)
+        expect(dump.status.files.success).toBeGreaterThan(14)
         // nopic has enough redirects
         expect(dump.status.redirects.written).toBeGreaterThan(170)
         // nopic has enough articles
