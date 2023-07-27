@@ -941,15 +941,20 @@ export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
   })
 
   /* Remove empty paragraphs */
+  // TODO: Refactor this option to work with page/html and page/mobile-html output. See issues/1866
   if (!dump.opts.keepEmptyParagraphs) {
-    const paragraphs: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('p'))
-    const mediaTags = ['img', 'video', 'audio', 'embed', 'object', 'iframe', 'canvas', 'svg', 'picture', 'track', 'source']
-    for (const paragraph of paragraphs) {
-      const hasNoMediaContent = !mediaTags.some((tag) => paragraph.querySelector(tag))
-      // Check if no media content inside first
-      if (hasNoMediaContent) {
-        if (!paragraph.textContent || (paragraph.textContent && paragraph.textContent.trim().length === 0)) {
-          DU.deleteNode(paragraph)
+    if (!dump.opts.keepEmptyParagraphs) {
+      // Mobile view === details
+      // Desktop view === section
+      const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
+      for (const section of sections) {
+        if (
+          section.children.length ===
+          Array.from(section.children).filter((child: DominoElement) => {
+            return child.matches('summary')
+          }).length
+        ) {
+          DU.deleteNode(section)
         }
       }
     }

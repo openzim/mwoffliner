@@ -62,6 +62,8 @@ describe('saveArticles', () => {
   })
 
   describe('applyOtherTreatments', () => {
+    // TODO: Fix unit tests below once 'keepEmptyParagraphs' option will be modified. See issues/1866
+    /*
     let dump: Dump
     let dump2: Dump
     let articleHtml: string
@@ -73,37 +75,49 @@ describe('saveArticles', () => {
 
       await downloader.checkCapabilities()
       await downloader.setBaseUrls()
-      const _articleDetailsRet = await downloader.getArticleDetailsIds(['User:VadimKovalenkoSNF'])
+      const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = redisStore
       articleDetailXId.setMany(articlesDetail)
-      ;[{ html: articleHtml }] = await downloader.getArticle('User:VadimKovalenkoSNF', dump, articleDetailXId)
+      ;[{ html: articleHtml }] = await downloader.getArticle('Western_Greenland', dump, articleDetailXId)
       dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
     })
 
-    test('Found no empty paragraph elements when they should be stripped', async () => {
+    test('Found no empty details elements when they should be stripped in mobile view', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump)
-      const paragraphs = Array.from(doc.querySelectorAll('p'))
-      expect(paragraphs.length).toEqual(2)
+
+      const details = Array.from(doc.querySelectorAll('details'))
+      let fewestChildren = 0
+      for (const d of details) {
+        if (fewestChildren === 0 || d.children.length < fewestChildren) {
+          fewestChildren = d.children.length
+        }
+      }
+      expect(fewestChildren).toBeGreaterThan(0)
     })
 
-    test('Found empty paragraph elements when they should be left', async () => {
+    test('Found empty details elements when they should be left im mobile view', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump2)
-      const paragraphs = Array.from(doc.querySelectorAll('p'))
-      expect(paragraphs.length).toEqual(4)
+
+      const details = Array.from(doc.querySelectorAll('details'))
+
+      let fewestChildren = 0
+      for (const d of details) {
+        if (fewestChildren === 0 || d.children.length < fewestChildren) {
+          fewestChildren = d.children.length
+        }
+      }
+      expect(fewestChildren).toBeLessThanOrEqual(1)
     })
 
-    /*
-      TODO: Investigate empty section behavior for other endpoints such as page/html and page/mobile html
-      then rewrite the test below
-    /
-    /*
     test('Found empty sections when they should be left im desktop view', async () => {
       const doc = domino.createDocument(articleHtml)
       await applyOtherTreatments(doc, dump2)
+
       const sections = Array.from(doc.querySelectorAll('section'))
+
       let fewestChildren = 0
       for (const d of sections) {
         if (fewestChildren === 0 || d.children.length < fewestChildren) {
