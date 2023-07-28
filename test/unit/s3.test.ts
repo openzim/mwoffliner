@@ -42,4 +42,17 @@ describeIf('S3', () => {
     // Image doesnt exist in S3
     expect(imageNotExist).toBeNull()
   })
+
+  test('Test whether the wrong region was set', async () => {
+    const wrongS3UrlObj = urlParser.parse('https://wrong-s3.region.com/?keyId=123&secretAccessKey=123&bucketName=kiwix', true)
+
+    expect(
+      () =>
+        new S3(`${wrongS3UrlObj.protocol}//${wrongS3UrlObj.host}/`, {
+          bucketName: wrongS3UrlObj.query.bucketName,
+          keyId: wrongS3UrlObj.query.keyId,
+          secretAccessKey: wrongS3UrlObj.query.secretAccessKey,
+        }),
+    ).toThrow('Unknown S3 region set')
+  })
 })
