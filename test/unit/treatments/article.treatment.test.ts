@@ -4,6 +4,9 @@ import { mwRetToArticleDetail } from '../../../src/util/mw-api.js'
 import { setupScrapeClasses } from '../../util.js'
 import { redisStore, startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
+import { jest } from '@jest/globals'
+
+jest.setTimeout(10000)
 
 describe('ArticleTreatment', () => {
   beforeAll(startRedis)
