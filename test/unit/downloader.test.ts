@@ -37,22 +37,22 @@ describe('Downloader class', () => {
 
   test('downloader.query returns valid JSON', async () => {
     const queryRet = await downloader.query()
-    expect(queryRet).toBeDefined()
+    expect(typeof queryRet).toBe('object')
   })
 
   test('downloader.getJSON returns valid JSON', async () => {
     const JSONRes = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
-    expect(JSONRes).toBeDefined()
+    expect(typeof JSONRes).toBe('object')
   })
 
   test('downloader.canGetUrl returns valid answer (positive)', async () => {
     const urlExists = await downloader.canGetUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
-    expect(urlExists).toBeDefined()
+    expect(urlExists).toBe(true)
   })
 
   test('downloader.canGetUrl returns valid answer (negative)', async () => {
     const urlNotExists = await downloader.canGetUrl('https://en.wikipedia.org/w/thisisa404')
-    expect(urlNotExists).toBeDefined()
+    expect(urlNotExists).toBe(false)
   })
 
   test('getJSON response status for non-existant url is 404', async () => {
@@ -231,7 +231,7 @@ describe('Downloader class', () => {
 
       // Strip http(s) from url
       const httpOrHttpsRemoved = stripHttpFromUrl(testImage)
-      expect(httpOrHttpsRemoved).toBeDefined()
+      expect(httpOrHttpsRemoved).toEqual('bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png')
 
       // Delete the image already present in S3
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: httpOrHttpsRemoved })

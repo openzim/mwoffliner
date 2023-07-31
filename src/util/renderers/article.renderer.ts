@@ -4,7 +4,6 @@ import { Dump } from '../../Dump.js'
 import { DELETED_ARTICLE_ERROR } from '../const.js'
 import * as logger from '../../Logger.js'
 import { getStrippedTitleFromHtml } from '../misc.js'
-import { categoriesTemplate, leadSectionTemplate, sectionTemplate, subCategoriesTemplate, subPagesTemplate, subSectionTemplate } from '../../Templates.js'
 
 export class ArticleRenderer {
   async renderArticle(
@@ -31,7 +30,7 @@ export class ArticleRenderer {
     }
 
     const result = []
-    let html = json
+    const html = json
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)
     for (let i = 0; i < numberOfPagesToSplitInto; i++) {
@@ -45,12 +44,6 @@ export class ArticleRenderer {
 
       if ((articleDetail.subCategories || []).length > 200) {
         await articleDetailXId.set(_articleId, _articleDetail)
-      }
-
-      // We don't really know the nature of 'json' variable because
-      // of weak software architecture. Got there is correct json.
-      if (json.lead) {
-        html = this.renderMCSArticle(json, dump, _articleId, _articleDetail)
       }
 
       let strippedTitle = getStrippedTitleFromHtml(html)
@@ -102,117 +95,6 @@ export class ArticleRenderer {
     target.insertAdjacentElement('afterbegin', header)
 
     return doc.documentElement.outerHTML
-  }
-
-  private renderMCSArticle(json: any, dump: Dump, articleId: string, articleDetail: ArticleDetail): string {
-    let html = ''
-
-    // set the first section (open by default)
-    html += leadSectionTemplate({
-      lead_display_title: json.lead.displaytitle,
-      lead_section_text: json.lead.sections[0].text,
-      strings: dump.strings,
-    })
-
-    // set all other section (closed by default)
-    if (!dump.nodet && json.remaining.sections.length > 0) {
-      const firstTocLevel = json.remaining.sections[0].toclevel
-      json.remaining.sections.forEach((oneSection: any, i: number) => {
-        if (oneSection.toclevel === firstTocLevel) {
-          html = html.replace(`__SUB_LEVEL_SECTION_${i}__`, '') // remove unused anchor for subsection
-          html += sectionTemplate({
-            section_index: i + 1,
-            section_id: oneSection.id,
-            section_anchor: oneSection.anchor,
-            section_line: oneSection.line,
-            section_text: oneSection.text,
-            strings: dump.strings,
-          })
-        } else {
-          html = html.replace(
-            `__SUB_LEVEL_SECTION_${i}__`,
-            subSectionTemplate({
-              section_index: i + 1,
-              section_toclevel: oneSection.toclevel + 1,
-              section_id: oneSection.id,
-              section_anchor: oneSection.anchor,
-              section_line: oneSection.line,
-              section_text: oneSection.text,
-              strings: dump.strings,
-            }),
-          )
-        }
-      })
-    }
-    const articleResourceNamespace = 'A'
-    const categoryResourceNamespace = 'U'
-    const slashesInUrl = articleId.split('/').length - 1
-    const upStr = '../'.repeat(slashesInUrl + 1)
-    if (articleDetail.subCategories && articleDetail.subCategories.length) {
-      const subCategories = articleDetail.subCategories.map((category) => {
-        return {
-          name: category.title.split(':').slice(1).join(':'),
-          url: `${upStr}${categoryResourceNamespace}/${category.title}`,
-        }
-      })
-
-      const groups = this.groupAlphabetical(subCategories)
-
-      html += subCategoriesTemplate({
-        strings: dump.strings,
-        groups,
-        prevArticleUrl: articleDetail.prevArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.prevArticleId}` : null,
-        nextArticleUrl: articleDetail.nextArticleId ? `${upStr}${categoryResourceNamespace}/${articleDetail.nextArticleId}` : null,
-      })
-    }
-
-    if (articleDetail.pages && articleDetail.pages.length) {
-      const pages = articleDetail.pages.map((page) => {
-        return {
-          name: page.title,
-          url: `${upStr}${articleResourceNamespace}/${page.title}`,
-        }
-      })
-
-      const groups = this.groupAlphabetical(pages)
-
-      html += subPagesTemplate({
-        strings: dump.strings,
-        groups,
-      })
-    }
-
-    if (articleDetail.categories && articleDetail.categories.length) {
-      const categories = articleDetail.categories.map((category) => {
-        return {
-          name: category.title.split(':').slice(1).join(':'),
-          url: `${upStr}${categoryResourceNamespace}/${category.title}`,
-        }
-      })
-      html += categoriesTemplate({
-        strings: dump.strings,
-        categories,
-      })
-    }
-    html = html.replace(`__SUB_LEVEL_SECTION_${json.remaining.sections.length}__`, '') // remove the last subcestion anchor (all other anchor are removed in the forEach)
-    return html
-  }
-
-  private groupAlphabetical(items: PageRef[]) {
-    const groupsAlphabetical = items.reduce((acc: any, item) => {
-      const groupId = item.name[0].toLocaleUpperCase()
-      acc[groupId] = (acc[groupId] || []).concat(item)
-      return acc
-    }, {})
-
-    return Object.keys(groupsAlphabetical)
-      .sort()
-      .map((letter) => {
-        return {
-          title: letter,
-          items: groupsAlphabetical[letter],
-        }
-      })
   }
 }
 
