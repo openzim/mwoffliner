@@ -115,8 +115,9 @@ Advices for debugging mwoffliner issues:
     output itself.  For Wikimedia wikis you can easily generate and
     view the output in your browser using the Parsoid REST interface.
     Example URLs:
-    *   Mobile (most pages):
-        https://en.wikivoyage.org/api/rest_v1/page/mobile-sections/Hot_springs
+    *   <del>Mobile (most pages):
+        https://en.wikivoyage.org/api/rest_v1/page/mobile-sections/Hot_springs</del>
+        > :warning: **DEPRECATED**: Mobile Content Service endpoints are now deprecated.
     *   Desktop (main page):
         https://es.wikipedia.org/api/rest_v1/page/html/Espa%C3%B1a
 3.  If the error is with the Parsoid output

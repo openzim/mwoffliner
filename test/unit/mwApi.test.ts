@@ -32,7 +32,9 @@ describe('mwApi', () => {
 
   test('MWApi Article Ids', async () => {
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
+
     await getArticleIds(downloader, redisStore, mw, 'Main_Page', aIds)
+
     const articlesById = await redisStore.articleDetailXId.getMany(aIds)
     const { United_Kingdom, London } = articlesById
 

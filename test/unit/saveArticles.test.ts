@@ -4,7 +4,7 @@ import domino from 'domino'
 import { setupScrapeClasses, convertWikicodeToHtml, testHtmlRewritingE2e } from '../util.js'
 import { saveArticles, getModuleDependencies, treatMedias, applyOtherTreatments, treatSubtitle, treatVideo } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
-import { Dump } from '../../src/Dump'
+import { Dump } from '../../src/Dump.js'
 import { mwRetToArticleDetail, renderDesktopArticle, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 

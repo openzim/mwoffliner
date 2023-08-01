@@ -1,13 +1,15 @@
-import urlParser from 'url'
 import * as pathParser from 'path'
 import * as logger from './Logger.js'
 import * as util from './util/index.js'
 import * as domino from 'domino'
 import type Downloader from './Downloader.js'
-import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util/index.js'
+import { DEFAULT_WIKI_PATH } from './util/index.js'
 import axios from 'axios'
 import qs from 'querystring'
 import semver from 'semver'
+import basicURLDirector from './util/builders/url/basic.director.js'
+import BaseURLDirector from './util/builders/url/base.director.js'
+import ApiURLDirector from './util/builders/url/api.director.js'
 
 class MediaWiki {
   public metaData: MWMetaData
@@ -28,7 +30,7 @@ class MediaWiki {
   private readonly password: string
   private readonly apiPath: string
   private readonly domain: string
-  private readonly articleApiUrlBase: string
+  private apiUrlDirector: ApiURLDirector
 
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
@@ -36,27 +38,29 @@ class MediaWiki {
     this.password = config.password
     this.getCategories = config.getCategories
 
-    this.baseUrl = new URL(ensureTrailingChar(config.base, '/'))
+    this.baseUrl = basicURLDirector.buildMediawikiBaseURL(config.base)
 
     this.apiPath = config.apiPath ?? 'w/api.php'
     this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH
 
-    this.webUrl = new URL(this.wikiPath, this.baseUrl)
-    this.apiUrl = new URL(`${this.apiPath}?`, this.baseUrl)
+    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
 
-    this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`)
+    this.webUrl = baseUrlDirector.buildURL(this.wikiPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.apiPath)
 
-    this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'))
-    this.mobileRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/mobile-sections', this.baseUrl.href).toString(), '/'))
-    this.desktopRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/html', this.baseUrl.href).toString(), '/'))
+    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
 
-    this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`
-    this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`
+    this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+
+    this.restApiUrl = baseUrlDirector.buildRestApiURL(config.restApiPath)
+    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(config.restApiPath)
+
+    this.modulePath = baseUrlDirector.buildModuleURL(config.modulePath)
   }
 
   public async login(downloader: Downloader) {
     if (this.username && this.password) {
-      let url = this.apiUrl.href
+      let url = this.apiUrl.href + '?'
 
       // Add domain if configured
       if (this.domain) {
@@ -94,43 +98,9 @@ class MediaWiki {
     }
   }
 
-  // In all the url methods below:
-  // * encodeURIComponent is mandatory for languages with illegal letters for uri (fa.wikipedia.org)
-  // * encodeURI is mandatory to encode the pipes '|' but the '&' and '=' must not be encoded
-  public siteInfoUrl() {
-    return `${this.apiUrl.href}action=query&meta=siteinfo&format=json`
-  }
-
-  public articleApiUrl(articleId: string): string {
-    return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}`
-  }
-
-  public subCategoriesApiUrl(articleId: string, continueStr = '') {
-    return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`
-  }
-
-  public getVeApiArticleUrl(articleId: string): string {
-    return `${this.veApiUrl.href}${encodeURIComponent(articleId)}`
-  }
-
-  public getDesktopRestApiArticleUrl(articleId: string): string {
-    return `${this.desktopRestApiUrl.href}${encodeURIComponent(articleId)}`
-  }
-
-  public getMobileRestApiArticleUrl(articleId: string): string {
-    return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`
-  }
-
-  public getApiQueryUrl(query = ''): string {
-    return `${this.apiUrl.href}${query}`
-  }
-
-  public getWebArticleUrlRaw(articleId: string): string {
-    return `${this.webUrl.href}?title=${encodeURIComponent(articleId)}&action=raw`
-  }
-
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
-    const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`
+    const url = this.apiUrlDirector.buildNamespacesURL()
+
     const json: any = await downloader.getJSON(url)
     ;['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type]
@@ -234,8 +204,8 @@ class MediaWiki {
 
   public async getSiteInfo(downloader: Downloader) {
     logger.log('Getting site info...')
-    const query = 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc'
-    const body = await downloader.query(query)
+    const body = await downloader.query()
+
     const entries = body.query.general
 
     // Checking mediawiki version
