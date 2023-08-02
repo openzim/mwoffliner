@@ -19,6 +19,7 @@ export default class ApiURLDirector {
         cmtype: 'subcat',
         cmlimit: 'max',
         format: 'json',
+        formatversion: '2',
         cmtitle: articleId,
         cmcontinue: continueStr,
       })
@@ -28,7 +29,7 @@ export default class ApiURLDirector {
   buildSiteInfoQueryURL() {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json', siprop: 'general|namespaces|statistics|variables|category|wikidesc' })
+      .setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json', formatversion: '2', siprop: 'general|namespaces|statistics|variables|category|wikidesc' })
       .build()
   }
 
@@ -37,11 +38,14 @@ export default class ApiURLDirector {
   }
 
   buildNamespacesURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json' }).build()
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json', formatversion: '2' })
+      .build()
   }
 
   buildSiteInfoURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json' }).build()
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json', formatversion: '2' }).build()
   }
 
   buildVisualEditorURL() {
