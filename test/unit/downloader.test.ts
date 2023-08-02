@@ -38,8 +38,9 @@ describe('Downloader class', () => {
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
-    const actionAPIResV1 = await downloader.query('?action=parse&format=json&prop=modules|jsconfigvars|headhtml&page=Potato')
-    const actionAPIResV2 = await downloader.query('?action=parse&format=json&prop=modules|jsconfigvars|headhtml&formatversion=2&page=Potato')
+    const actionAPIResV1 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&page=Potato')
+    const actionAPIResV2 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&formatversion=2&page=Potato')
+    expect(actionAPIResV1).not.toEqual(actionAPIResV2)
   })
 
   test('downloader.query returns valid JSON', async () => {

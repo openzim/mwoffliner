@@ -38,10 +38,13 @@ export default class ApiURLDirector {
   }
 
   buildNamespacesURL() {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json', formatversion: '2' })
-      .build()
+    return (
+      urlBuilder
+        .setDomain(this.baseDomain)
+        // TODO: set formatversion: '2' here
+        .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json' })
+        .build()
+    )
   }
 
   buildSiteInfoURL() {
