@@ -62,6 +62,6 @@ export default class ApiURLDirector {
   }
 
   private buildBaseArticleURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml' }).build()
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2' }).build()
   }
 }
