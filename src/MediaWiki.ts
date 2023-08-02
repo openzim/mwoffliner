@@ -183,7 +183,7 @@ class MediaWiki {
       }
 
       // Getting token to login.
-      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json')
+      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2')
 
       // Logging in
       await axios(this.apiUrl.href, {
@@ -221,10 +221,10 @@ class MediaWiki {
       const entries = json.query[type]
       Object.keys(entries).forEach((key) => {
         const entry = entries[key]
-        const name = entry['*']
+        const name = entry.alias
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
-        const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isContent = !!(entry.content || util.contains(addNamespaces, num))
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
         /* Namespaces in local language */
