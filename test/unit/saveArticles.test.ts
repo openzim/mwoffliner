@@ -21,7 +21,8 @@ describe('saveArticles', () => {
 
   test('Article html processing', async () => {
     const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    await downloader.checkCapabilities()
+    // TODO: checkCapabilities is now in Mediawiki, do we need it here?
+    // await downloader.checkCapabilities()
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -187,7 +188,8 @@ describe('saveArticles', () => {
 
   test('--customFlavour', async () => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-    await downloader.checkCapabilities()
+    // TODO: checkCapabilities is now in Mediawiki, do we need it here?
+    // await downloader.checkCapabilities()
     await downloader.setBaseUrls()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -25,7 +25,8 @@ describe('mwApi', () => {
     downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
     await mw.getMwMetaData(downloader)
-    await downloader.checkCapabilities()
+    // TODO: checkCapabilities is now in Mediawiki, do we need it here?
+    // await downloader.checkCapabilities()
 
     await mw.getNamespaces([], downloader)
   })

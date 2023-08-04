@@ -209,7 +209,9 @@ async function execute(argv: any) {
     }
   }
 
-  await downloader.checkCapabilities(mwMetaData.mainPage)
+  // TODO: checkCapabilities is now in Mediawiki, do we need it here?
+  // await downloader.checkCapabilities(mwMetaData.mainPage)
+
   await downloader.setBaseUrls()
 
   const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)

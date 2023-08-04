@@ -3,6 +3,7 @@ import deepmerge from 'deepmerge'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
+import axios from 'axios'
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, redisStore: RS, log = true): Promise<void> {
   let from = 0
@@ -252,4 +253,13 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
     }
   }
   return ret
+}
+
+export async function checkApiAvailabilty(url: string, loginCookie = ''): Promise<boolean> {
+  try {
+    const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie: loginCookie } })
+    return resp.status === 200 && !resp.headers['mediawiki-api-error']
+  } catch (err) {
+    return false
+  }
 }

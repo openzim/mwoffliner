@@ -138,7 +138,8 @@ describe('Styles', () => {
     await articleDetailXId.flush()
     await redisStore.redirectsXId.flush()
     const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    await downloader.checkCapabilities()
+    // TODO: checkCapabilities is now in Mediawiki, do we need it here?
+    // await downloader.checkCapabilities()
     await downloader.setBaseUrls()
 
     await getArticleIds(downloader, redisStore, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
