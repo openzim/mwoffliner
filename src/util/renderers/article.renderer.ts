@@ -1,13 +1,40 @@
-import domino from 'domino'
 import { MWCapabilities } from '../../Downloader.js'
 import { Dump } from '../../Dump.js'
-import { DELETED_ARTICLE_ERROR } from '../const.js'
-import * as logger from '../../Logger.js'
-import { getStrippedTitleFromHtml } from '../misc.js'
+
+import { Renderer } from './abstractRenderer.js'
+import { ParsoidHtmlRestApiRenderer } from './parsoidHtmlRestApi.renderer.js'
+import { VisualEditorRenderer } from './visualEditor.renderer.js'
+
+export interface MWRendererArgs {
+  mwType: string
+  data: any
+  articleId: string
+  dump: any // TODO: Fix type of dump
+  articleDetailXId: RKVS<ArticleDetail>
+  capabilities: MWCapabilities
+  articleDetail: any
+  isMainPage: boolean
+}
 
 export class ArticleRenderer {
+  private createRenderer(mwRendererArgs: MWRendererArgs): Renderer {
+    switch (mwRendererArgs.mwType) {
+      case 'visualEditior':
+        return new VisualEditorRenderer(mwRendererArgs)
+      case 'parsoidHtmlRestApi':
+        return new ParsoidHtmlRestApiRenderer(mwRendererArgs)
+      default:
+        throw new Error(`Unknown renderer type: ${mwRendererArgs.mwType}`)
+    }
+  }
+
+  private mwRenderer(mwRendererArgs: MWRendererArgs): Promise<any> {
+    const renderer = this.createRenderer(mwRendererArgs)
+    return renderer.render()
+  }
+
   async renderArticle(
-    json: any,
+    data: any,
     articleId: string,
     dump: Dump,
     articleDetailXId: RKVS<ArticleDetail>,
@@ -17,84 +44,26 @@ export class ArticleRenderer {
     const articleDetail = articleDetailIn || (await articleDetailXId.get(articleId))
     const isMainPage = dump.isMainPage(articleId)
 
+    const mwRendererArgs = {
+      mwType: '',
+      data,
+      articleId,
+      dump: Dump,
+      articleDetailXId,
+      capabilities,
+      articleDetail,
+      isMainPage,
+    }
+
+    // Render visual editor representation of the article
     if (isMainPage || (capabilities.veApiAvailable && !capabilities.desktopRestApiAvailable)) {
-      const html = this.renderDesktopArticle(json, articleId, articleDetail, isMainPage)
-      const strippedTitle = getStrippedTitleFromHtml(html)
-      return [
-        {
-          articleId,
-          displayTitle: strippedTitle || articleId.replace('_', ' '),
-          html,
-        },
-      ]
+      mwRendererArgs.mwType = 'visualEditor'
+      return this.mwRenderer(mwRendererArgs)
     }
 
-    const result = []
-    const html = json
-    // Paginate when there are more than 200 subCategories
-    const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)
-    for (let i = 0; i < numberOfPagesToSplitInto; i++) {
-      const pageId = i === 0 ? '' : `__${i}`
-      const _articleId = articleId + pageId
-      const _articleDetail = Object.assign({}, articleDetail, {
-        subCategories: (articleDetail.subCategories || []).slice(i * 200, (i + 1) * 200),
-        nextArticleId: numberOfPagesToSplitInto > i + 1 ? `${articleId}__${i + 1}` : null,
-        prevArticleId: i - 1 > 0 ? `${articleId}__${i - 1}` : i - 1 === 0 ? articleId : null,
-      })
-
-      if ((articleDetail.subCategories || []).length > 200) {
-        await articleDetailXId.set(_articleId, _articleDetail)
-      }
-
-      let strippedTitle = getStrippedTitleFromHtml(html)
-      if (!strippedTitle) {
-        const title = (json.lead || { displaytitle: articleId }).displaytitle
-        const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`)
-        strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent
-      }
-
-      result.push({
-        articleId: _articleId,
-        displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
-        html,
-      })
-    }
-
-    return result
-  }
-
-  renderDesktopArticle(json: any, articleId: string, articleDetail: ArticleDetail, isMainPage = false): string {
-    if (!json) {
-      throw new Error(`Cannot render [${json}] into an article`)
-    }
-    if (json.visualeditor) {
-      // Testing if article has been deleted between fetching list and downloading content.
-      if (json.visualeditor.oldid === 0) {
-        logger.error(DELETED_ARTICLE_ERROR)
-        throw new Error(DELETED_ARTICLE_ERROR)
-      }
-      return isMainPage ? json.visualeditor.content : this.injectHeader(json.visualeditor.content, articleDetail)
-    } else if (json.contentmodel === 'wikitext' || (json.html && json.html.body)) {
-      return json.html.body
-    } else if (json.error) {
-      logger.error(`Error in retrieved article [${articleId}]:`, json.error)
-      return ''
-    }
-    return json // This is HTML probably (the problem is that this is hard to know at this stage, buggy architecture)
-  }
-
-  private injectHeader(content: string, articleDetail: ArticleDetail): string {
-    const doc = domino.createDocument(content)
-    const header = doc.createElement('h1')
-
-    header.appendChild(doc.createTextNode(articleDetail.title))
-    header.classList.add('article-header')
-
-    const target = doc.querySelector('body.mw-body-content')
-
-    target.insertAdjacentElement('afterbegin', header)
-
-    return doc.documentElement.outerHTML
+    // Render Parsoid page/html that comes from Wikimedia REST API
+    mwRendererArgs.mwType = 'parsoidHtmlRestApi'
+    return this.mwRenderer(mwRendererArgs)
   }
 }
 

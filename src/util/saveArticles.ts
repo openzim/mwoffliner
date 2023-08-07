@@ -134,7 +134,6 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
         const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleDetail)
-
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue

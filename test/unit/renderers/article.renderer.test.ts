@@ -3,7 +3,7 @@ import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
 import articleRenderer, { ArticleRenderer } from '../../../src/util/renderers/article.renderer.js'
 
 describe('ArticleRenderer', () => {
-  describe('renderDesktopArticle', () => {
+  describe('render Parsoid HTML', () => {
     const prepareFixtures = (json: Record<string, any> | null) => {
       return {
         articleDetails: { title: 'Eminem and D12' },
@@ -15,19 +15,19 @@ describe('ArticleRenderer', () => {
     it('should throw if no JSON was provided', () => {
       const { json, articleDetails, articleId } = prepareFixtures(null)
 
-      expect(() => articleRenderer.renderDesktopArticle(json, articleId, articleDetails)).toThrow(new Error('Cannot render [null] into an article'))
+      expect(() => articleRenderer.renderArticle(json, articleId, articleDetails)).toThrow(new Error('Cannot render [null] into an article'))
     })
 
     it('should throw if article has been deleted between fetching list and downloading content', () => {
       const { json, articleDetails, articleId } = prepareFixtures({ visualeditor: { oldid: 0 } })
 
-      expect(() => articleRenderer.renderDesktopArticle(json, articleId, articleDetails)).toThrow(new Error(DELETED_ARTICLE_ERROR))
+      expect(() => articleRenderer.renderArticle(json, articleId, articleDetails)).toThrow(new Error(DELETED_ARTICLE_ERROR))
     })
 
     it('should return visualeditor content if the main page flag is true', () => {
       const { json, articleDetails, articleId } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
 
-      const result = articleRenderer.renderDesktopArticle(json, articleId, articleDetails, true)
+      const result = articleRenderer.renderArticle(json, articleId, articleDetails, true)
 
       expect(result).toBe(json.visualeditor.content)
     })
@@ -40,7 +40,7 @@ describe('ArticleRenderer', () => {
 
       jest.spyOn(ArticleRenderer.prototype as any, 'injectHeader').mockReturnValue(contentWithHeader)
 
-      const result = articleRenderer.renderDesktopArticle(json, articleId, articleDetails)
+      const result = articleRenderer.renderArticle(json, articleId, articleDetails)
 
       expect(result).toBe(contentWithHeader)
     })
@@ -50,7 +50,7 @@ describe('ArticleRenderer', () => {
 
       const { json, articleDetails, articleId } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
 
-      const result = articleRenderer.renderDesktopArticle(json, articleId, articleDetails)
+      const result = articleRenderer.renderArticle(json, articleId, articleDetails)
 
       expect(result).toBe(htmlBody)
     })
@@ -60,7 +60,7 @@ describe('ArticleRenderer', () => {
 
       const { json, articleDetails, articleId } = prepareFixtures({ html: { body: htmlBody } })
 
-      const result = articleRenderer.renderDesktopArticle(json, articleId, articleDetails)
+      const result = articleRenderer.renderArticle(json, articleId, articleDetails)
 
       expect(result).toBe(htmlBody)
     })
@@ -68,7 +68,7 @@ describe('ArticleRenderer', () => {
     it('should return empty string if there was an error during article retrievement', () => {
       const { json, articleDetails, articleId } = prepareFixtures({ error: 'Unexpected internal error' })
 
-      const result = articleRenderer.renderDesktopArticle(json, articleId, articleDetails)
+      const result = articleRenderer.renderArticle(json, articleId, articleDetails)
 
       expect(result).toBe('')
     })
@@ -76,7 +76,7 @@ describe('ArticleRenderer', () => {
     it.only('should return json as it is by default', () => {
       const { json, articleDetails, articleId } = prepareFixtures({ api: { path: 'https://random.path.org' } })
 
-      const result = articleRenderer.renderDesktopArticle(json, articleId, articleDetails)
+      const result = articleRenderer.renderArticle(json, articleId, articleDetails)
 
       expect(result).toEqual(json)
     })

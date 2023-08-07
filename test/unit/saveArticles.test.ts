@@ -193,8 +193,7 @@ describe('saveArticles', () => {
     const articleJsonObject = {
       visualeditor: { oldid: 0 },
     }
-    // Throwing error if article is deleted
-    expect(() => articleRenderer.renderDesktopArticle(articleJsonObject, 'deletedArticle', { title: 'deletedArticle' })).toThrow(new Error(DELETED_ARTICLE_ERROR))
+    expect(() => articleRenderer.renderArticle(articleJsonObject, 'deletedArticle', { title: 'deletedArticle' })).toThrow(new Error(DELETED_ARTICLE_ERROR))
   })
 
   test('Load inline js from HTML', async () => {
