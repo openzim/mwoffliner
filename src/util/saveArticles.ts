@@ -15,6 +15,7 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import ApiURLDirector from './builders/url/api.director.js'
 import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
+import { ArticleRenderer } from './builders/renderers/renderer.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -129,11 +130,11 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump) {
+async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump, articleRenderer: ArticleRenderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
-        const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleDetail)
+        const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleRenderer, articleDetail)
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue
@@ -242,12 +243,12 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
-
+  const articleRenderer = new ArticleRenderer()
   const { articleDetailXId } = redisStore
   const articlesTotal = await articleDetailXId.len()
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump)
+    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, articleRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -277,7 +278,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         const promises: [string, Promise<Error>][] = []
 
         try {
-          const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleDetail)
+          const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleRenderer, articleDetail)
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title

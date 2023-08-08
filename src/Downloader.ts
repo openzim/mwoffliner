@@ -24,7 +24,7 @@ import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
-import articleRenderer from './util/renderers/article.renderer.js'
+import { ArticleRenderer } from './util/builders/renderers/renderer.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -105,7 +105,7 @@ class Downloader {
   private readonly backoffOptions: BackoffOptions
   private readonly optimisationCacheUrl: string
   private s3: S3
-  private mwCapabilities: MWCapabilities // todo move to MW
+  public mwCapabilities: MWCapabilities // TODO: move to MW, temporary open the property
   private apiUrlDirector: ApiURLDirector
 
   constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
@@ -215,6 +215,7 @@ class Downloader {
     }
   }
 
+  // TODO: Why this method is public?
   public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
     const desktopUrlDirector = new DesktopURLDirector(this.mw.desktopRestApiUrl.href)
     const visualEditorURLDirector = new VisualEditorURLDirector(this.mw.veApiUrl.href)
@@ -348,17 +349,34 @@ class Downloader {
     }
   }
 
-  public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleDetail?: ArticleDetail): Promise<RenderedArticle[]> {
+  public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleRenderer: ArticleRenderer, articleDetail?: ArticleDetail): Promise<any> {
+    // TODO: Can this condition be true for other renderers?
     const isMainPage = dump.isMainPage(articleId)
     const articleApiUrl = this.getArticleUrl(articleId, isMainPage)
 
     logger.info(`Getting article [${articleId}] from ${articleApiUrl}`)
 
-    const json = await this.getJSON<any>(articleApiUrl)
-    if (json.error) {
-      throw json.error
+    const data = await this.getJSON<any>(articleApiUrl)
+    if (data.error) {
+      throw data.error
     }
-    return articleRenderer.renderArticle(json, articleId, this.mwCapabilities, articleDetailXId, dump, articleDetail)
+
+    const renderOpts = {
+      data,
+      articleId,
+      articleDetailXId,
+      articleDetail,
+      dump,
+      isMainPage,
+    }
+
+    // Render visual editor representation of the article
+    if (isMainPage || (this.mwCapabilities.veApiAvailable && !this.mwCapabilities.desktopRestApiAvailable)) {
+      // return this.mwRenderer(mwRendererArgs)
+      return articleRenderer.renderArticle(renderOpts, 'visual-editor')
+    }
+    // Render Parsoid page/html that comes from Wikimedia REST API
+    return articleRenderer.renderArticle(renderOpts, 'desktop')
   }
 
   public async getJSON<T>(_url: string): Promise<T> {

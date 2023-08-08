@@ -1,3 +1,3 @@
 export abstract class Renderer {
-  abstract render(): Promise<any>
+  abstract render(): void
 }

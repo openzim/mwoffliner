@@ -1,21 +1,20 @@
 import domino from 'domino'
-import { Renderer } from './abstractRenderer.js'
-import { getStrippedTitleFromHtml } from '../misc.js'
-import { MWRendererArgs } from './article.renderer.js'
+import { Renderer } from './abstract.js'
+import { getStrippedTitleFromHtml } from '../../misc.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/html/'
-export class ParsoidHtmlRestApiRenderer extends Renderer {
+export class DesktopRendererDirector extends Renderer {
   private data
   private articleId
   private articleDetail
   private articleDetailXId
 
-  constructor(mwRendererArgs: MWRendererArgs) {
+  constructor(renderOpts) {
     super()
-    this.data = mwRendererArgs.data
-    this.articleId = mwRendererArgs.articleId
-    this.articleDetail = mwRendererArgs.articleDetail
-    this.articleDetailXId = mwRendererArgs.articleDetailXId
+    this.data = renderOpts.data
+    this.articleId = renderOpts.articleId
+    this.articleDetail = renderOpts.articleDetail
+    this.articleDetailXId = renderOpts.articleDetailXId
   }
 
   public async render(): Promise<any> {
@@ -32,13 +31,13 @@ export class ParsoidHtmlRestApiRenderer extends Renderer {
           prevArticleId: i - 1 > 0 ? `${this.articleId}__${i - 1}` : i - 1 === 0 ? this.articleId : null,
         })
 
-        if ((this.articleDetail.subCategories || []).length > 200) {
+        if (this.articleDetailXId && (this.articleDetail.subCategories || []).length > 200) {
           await this.articleDetailXId.set(_articleId, _articleDetail)
         }
 
         let strippedTitle = getStrippedTitleFromHtml(this.data)
         if (!strippedTitle) {
-          const title = (this.data.lead || { displaytitle: this.articleId }).displaytitle
+          const title = this.articleId
           const doc = domino.createDocument(`<span class='mw-title'>${title}</span>`)
           strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent
         }
