@@ -189,11 +189,19 @@ describe('saveArticles', () => {
     expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
   })
 
-  test('Test deleted article rendering', async () => {
+  test('Test deleted article rendering (Parsoid HTML renderer)', async () => {
     const articleJsonObject = {
       visualeditor: { oldid: 0 },
     }
-    expect(() => articleRenderer.renderArticle(articleJsonObject, 'deletedArticle', { title: 'deletedArticle' })).toThrow(new Error(DELETED_ARTICLE_ERROR))
+    const mwCapabilities = {
+      apiAvailable: true,
+      veApiAvailable: false,
+      coordinatesAvailable: true,
+      desktopRestApiAvailable: true,
+    }
+    expect(() => articleRenderer.renderArticle(articleJsonObject, 'deletedArticle', mwCapabilities, null, null, { title: 'deletedArticle' })).toThrow(
+      new Error(DELETED_ARTICLE_ERROR),
+    )
   })
 
   test('Load inline js from HTML', async () => {

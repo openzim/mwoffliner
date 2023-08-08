@@ -358,7 +358,7 @@ class Downloader {
     if (json.error) {
       throw json.error
     }
-    return articleRenderer.renderArticle(json, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
+    return articleRenderer.renderArticle(json, articleId, this.mwCapabilities, articleDetailXId, dump, articleDetail)
   }
 
   public async getJSON<T>(_url: string): Promise<T> {

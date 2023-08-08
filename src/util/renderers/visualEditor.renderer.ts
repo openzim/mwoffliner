@@ -27,6 +27,7 @@ export class VisualEditorRenderer extends Renderer {
     if (!this.data) {
       throw new Error(`Cannot render [${this.data}] into an article`)
     }
+
     if (this.data.visualeditor) {
       // Testing if article has been deleted between fetching list and downloading content.
       if (this.data.visualeditor.oldid === 0) {
@@ -40,6 +41,7 @@ export class VisualEditorRenderer extends Renderer {
       logger.error(`Error in retrieved article [${this.articleId}]:`, this.data.error)
       return ''
     }
+
     return this.data
   }
 

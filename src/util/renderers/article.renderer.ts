@@ -19,7 +19,7 @@ export interface MWRendererArgs {
 export class ArticleRenderer {
   private createRenderer(mwRendererArgs: MWRendererArgs): Renderer {
     switch (mwRendererArgs.mwType) {
-      case 'visualEditior':
+      case 'visualEditor':
         return new VisualEditorRenderer(mwRendererArgs)
       case 'parsoidHtmlRestApi':
         return new ParsoidHtmlRestApiRenderer(mwRendererArgs)
@@ -36,13 +36,20 @@ export class ArticleRenderer {
   async renderArticle(
     data: any,
     articleId: string,
-    dump: Dump,
-    articleDetailXId: RKVS<ArticleDetail>,
     capabilities: MWCapabilities,
+    articleDetailXId?: RKVS<ArticleDetail>,
+    dump?: Dump,
     articleDetailIn?: ArticleDetail,
   ): Promise<RenderedArticle[]> {
-    const articleDetail = articleDetailIn || (await articleDetailXId.get(articleId))
-    const isMainPage = dump.isMainPage(articleId)
+    let articleDetail: ArticleDetail | null
+    if (articleDetailIn) {
+      articleDetail = articleDetailIn || (await articleDetailXId.get(articleId))
+    }
+
+    let isMainPage = false
+    if (dump) {
+      isMainPage = dump.isMainPage(articleId)
+    }
 
     const mwRendererArgs = {
       mwType: '',
