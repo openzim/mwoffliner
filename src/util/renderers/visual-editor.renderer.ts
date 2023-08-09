@@ -1,31 +1,22 @@
 import domino from 'domino'
-import { Renderer } from './abstract.js'
+import { Renderer } from './abstract.renderer.js'
 
 /*
 Represent 'https://{wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
 or
 'https://{3rd-part-wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
 */
-export class VisualEditorRendererDirector extends Renderer {
-  private data
-  private articleId
-  private articleDetail
-  private isMainPage
-
-  constructor(renderOpts) {
+export class VisualEditorRenderer extends Renderer {
+  constructor() {
     super()
-    this.data = renderOpts.data
-    this.articleId = renderOpts.articleId
-    this.articleDetail = renderOpts.articleDetail
-    this.isMainPage = renderOpts.isMainPage
   }
 
-  // visualeditor.content returns an HTML for rendering
-  public async render(): Promise<any> {
-    if (!this.data) {
-      throw new Error(`Cannot render [${this.data}] into an article`)
+  public async render(renderOpts: any): Promise<any> {
+    const { data, isMainPage, articleDetail } = renderOpts
+    if (!data) {
+      throw new Error(`Cannot render [${data}] into an article`)
     }
-    return this.isMainPage ? this.data.visualeditor.content : this.injectHeader(this.data.visualeditor.content, this.articleDetail)
+    return isMainPage ? data : this.injectHeader(data, articleDetail)
   }
 
   private injectHeader(content: string, articleDetail: ArticleDetail): string {

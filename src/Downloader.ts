@@ -16,7 +16,6 @@ import https from 'https'
 
 import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isImageUrl, getMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import S3 from './S3.js'
-import { Dump } from './Dump.js'
 import * as logger from './Logger.js'
 import MediaWiki from './MediaWiki.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
@@ -24,7 +23,6 @@ import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
-import { ArticleRenderer } from './util/builders/renderers/renderer.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -349,14 +347,10 @@ class Downloader {
     }
   }
 
-  public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleRenderer: ArticleRenderer, articleDetail?: ArticleDetail): Promise<any> {
-    // TODO: Can this condition be true for other renderers?
-    const isMainPage = dump.isMainPage(articleId)
-    const articleApiUrl = this.getArticleUrl(articleId, isMainPage)
+  public async getArticle(articleId: string, articleDetailXId: RKVS<ArticleDetail>, articleRenderer, articleUrl, articleDetail?: ArticleDetail): Promise<any> {
+    logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
-    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`)
-
-    const data = await this.getJSON<any>(articleApiUrl)
+    const data = await this.getJSON<any>(articleUrl)
     if (data.error) {
       throw data.error
     }
@@ -366,17 +360,9 @@ class Downloader {
       articleId,
       articleDetailXId,
       articleDetail,
-      dump,
-      isMainPage,
     }
 
-    // Render visual editor representation of the article
-    if (isMainPage || (this.mwCapabilities.veApiAvailable && !this.mwCapabilities.desktopRestApiAvailable)) {
-      // return this.mwRenderer(mwRendererArgs)
-      return articleRenderer.renderArticle(renderOpts, 'visual-editor')
-    }
-    // Render Parsoid page/html that comes from Wikimedia REST API
-    return articleRenderer.renderArticle(renderOpts, 'desktop')
+    return articleRenderer.render(renderOpts)
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
@@ -435,10 +421,6 @@ class Downloader {
     } catch (err) {
       return false
     }
-  }
-
-  private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`
   }
 
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {

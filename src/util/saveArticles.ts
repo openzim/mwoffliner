@@ -15,7 +15,7 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import ApiURLDirector from './builders/url/api.director.js'
 import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
-import { ArticleRenderer } from './builders/renderers/renderer.js'
+import { RendererBuilder } from './renderers/renderer.builder.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -130,18 +130,20 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump, articleRenderer: ArticleRenderer) {
+async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump, desktopRenderer, visualEditorRenderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
-        const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleRenderer, articleDetail)
+        const articleRenderer = chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer)
+        const articleUrl = getArticleUrl(downloader, dump, articleId)
+        const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail)
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue
           }
 
           const doc = domino.createDocument(articleHtml)
-          if (!dump.isMainPage(articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
+          if (!isMainPage(dump, articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }
         }
@@ -235,6 +237,21 @@ async function saveArticle(
   }
 }
 
+function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
+  return `${isMainPage(dump, articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl}${encodeURIComponent(articleId)}`
+}
+
+function isMainPage(dump: Dump, articleId: string): boolean {
+  return dump.isMainPage(articleId)
+}
+
+function chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer) {
+  if (isMainPage(dump, articleId) || (downloader.mwCapabilities.veApiAvailable && !downloader.mwCapabilities.desktopRestApiAvailable)) {
+    return visualEditorRenderer
+  }
+  return desktopRenderer
+}
+
 /*
  * Fetch Articles
  */
@@ -243,12 +260,13 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
-  const articleRenderer = new ArticleRenderer()
+  const desktopRenderer = new RendererBuilder('desktop')
+  const visualEditorRenderer = new RendererBuilder('visual-editor')
   const { articleDetailXId } = redisStore
   const articlesTotal = await articleDetailXId.len()
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, articleRenderer)
+    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, desktopRenderer, visualEditorRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -277,8 +295,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         curArticle = articleId
         const promises: [string, Promise<Error>][] = []
 
+        let rets: any
         try {
-          const rets = await downloader.getArticle(articleId, dump, articleDetailXId, articleRenderer, articleDetail)
+          const articleRenderer = chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer)
+          const articleUrl = getArticleUrl(downloader, dump, articleId)
+          rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail)
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title
