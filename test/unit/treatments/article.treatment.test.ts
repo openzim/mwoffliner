@@ -5,6 +5,8 @@ import { setupScrapeClasses } from '../../util.js'
 import { redisStore, startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
+import { getArticleUrl } from '../../../src/util/saveArticles.js'
+import { RendererBuilder } from '../../../src/util/renderers/renderer.builder.js'
 
 jest.setTimeout(10000)
 
@@ -23,6 +25,10 @@ describe('ArticleTreatment', () => {
     await articleDetailXId.setMany(articlesDetail)
 
     const addedArticles: (typeof ZimArticle)[] = []
+
+    const desktopRenderer = new RendererBuilder('desktop')
+    const articleId = 'non-existent-article'
+    const articleUrl = getArticleUrl(downloader, dump, articleId)
 
     // TODO: use proper spied (like sinon.js)
     await saveArticles(
@@ -44,7 +50,7 @@ describe('ArticleTreatment', () => {
     expect(addedArticles).toHaveLength(1)
     expect(addedArticles[0].aid).toEqual('A/London')
 
-    await expect(downloader.getArticle('non-existent-article', dump, articleDetailXId)).rejects.toThrowError('')
+    await expect(downloader.getArticle(articleId, articleDetailXId, desktopRenderer, articleUrl)).rejects.toThrowError('')
 
     const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
 

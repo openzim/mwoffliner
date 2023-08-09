@@ -237,7 +237,7 @@ async function saveArticle(
   }
 }
 
-function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
+export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
   return `${isMainPage(dump, articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl}${encodeURIComponent(articleId)}`
 }
 

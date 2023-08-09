@@ -5,6 +5,8 @@ import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
+import { getArticleUrl } from '../../src/util/saveArticles.js'
+import { RendererBuilder } from '../../src/util/renderers/renderer.builder.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -117,6 +119,7 @@ describe('Downloader class', () => {
 
   describe('getArticle method', () => {
     let dump: Dump
+    const desktopRenderer = new RendererBuilder('desktop')
 
     beforeAll(async () => {
       const mwMetadata = await mw.getMwMetaData(downloader)
@@ -124,17 +127,25 @@ describe('Downloader class', () => {
     })
 
     test('getArticle of "London" returns one article', async () => {
-      const LondonArticle = await downloader.getArticle('London', dump, redisStore.articleDetailXId)
+      const articleId = 'London'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const LondonArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, desktopRenderer, articleUrl)
       expect(LondonArticle).toHaveLength(1)
     })
 
     test('Categories with many subCategories are paginated', async () => {
-      const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump, redisStore.articleDetailXId)
+      const articleId = 'Category:Container_categories'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const PaginatedArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, desktopRenderer, articleUrl)
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
 
     test('getArticle response status for non-existent article id is 404', async () => {
-      await expect(downloader.getArticle('NeverExistingArticle', dump, redisStore.articleDetailXId)).rejects.toThrowError(new Error('Request failed with status code 404'))
+      const articleId = 'NeverExistingArticle'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      await expect(downloader.getArticle('NeverExistingArticle', redisStore.articleDetailXId, desktopRenderer, articleUrl)).rejects.toThrowError(
+        new Error('Request failed with status code 404'),
+      )
     })
   })
 
