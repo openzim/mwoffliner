@@ -1,4 +1,3 @@
-import * as path from 'path'
 import deepmerge from 'deepmerge'
 import * as backoff from 'backoff'
 import { config } from './config.js'
@@ -19,8 +18,6 @@ import S3 from './S3.js'
 import * as logger from './Logger.js'
 import MediaWiki from './MediaWiki.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import DesktopURLDirector from './util/builders/url/desktop.director.js'
-import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
 
@@ -62,13 +59,6 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void
 }
 
-export interface MWCapabilities {
-  apiAvailable: boolean
-  veApiAvailable: boolean
-  coordinatesAvailable: boolean
-  desktopRestApiAvailable: boolean
-}
-
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
   headers: {
     accept: 'application/octet-stream',
@@ -103,7 +93,6 @@ class Downloader {
   private readonly backoffOptions: BackoffOptions
   private readonly optimisationCacheUrl: string
   private s3: S3
-  public mwCapabilities: MWCapabilities // TODO: move to MW, temporary open the property
   private apiUrlDirector: ApiURLDirector
 
   constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
@@ -116,12 +105,6 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl
     this.webp = webp
     this.s3 = s3
-    this.mwCapabilities = {
-      apiAvailable: false,
-      veApiAvailable: false,
-      coordinatesAvailable: true,
-      desktopRestApiAvailable: false,
-    }
     this.apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
 
     this.backoffOptions = {
@@ -187,54 +170,20 @@ class Downloader {
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mwCapabilities.desktopRestApiAvailable, value: this.mw.desktopRestApiUrl.href },
-      { condition: this.mwCapabilities.veApiAvailable, value: this.mw.veApiUrl.href },
+      { condition: await this.mw.hasDesktopRestApi(), value: this.mw.desktopRestApiUrl.href },
+      { condition: await this.mw.hasVeApi(), value: this.mw.veApiUrl.href },
     ])
 
     //* Objects order in array matters!
     this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mwCapabilities.desktopRestApiAvailable, value: this.mw.desktopRestApiUrl.href },
-      { condition: this.mwCapabilities.veApiAvailable, value: this.mw.veApiUrl.href },
+      { condition: await this.mw.hasDesktopRestApi(), value: this.mw.desktopRestApiUrl.href },
+      { condition: await this.mw.hasVeApi(), value: this.mw.veApiUrl.href },
     ])
 
     logger.log('Base Url: ', this.baseUrl)
     logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
 
     if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
-  }
-
-  public async checkApiAvailabilty(url: string): Promise<boolean> {
-    try {
-      const resp = await axios.get(url, { headers: { cookie: this.loginCookie } })
-      // Check for hostname is for domain name in cases of redirects.
-      return resp.status === 200 && !resp.headers['mediawiki-api-error'] && path.dirname(url) === path.dirname(resp.request.res.responseUrl)
-    } catch (err) {
-      return false
-    }
-  }
-
-  public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
-    const desktopUrlDirector = new DesktopURLDirector(this.mw.desktopRestApiUrl.href)
-    const visualEditorURLDirector = new VisualEditorURLDirector(this.mw.veApiUrl.href)
-
-    // By default check all API's responses and set the capabilities
-    // accordingly. We need to set a default page (always there because
-    // installed per default) to request the REST API, otherwise it would
-    // fail the check.
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(desktopUrlDirector.buildArticleURL(testArticleId))
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(visualEditorURLDirector.buildArticleURL(testArticleId))
-    this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href)
-
-    // Coordinate fetching
-    const reqOpts = this.getArticleQueryOpts()
-
-    const resp = await this.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
-
-    const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
-    if (isCoordinateWarning) {
-      logger.info('Coordinates not available on this wiki')
-      this.mwCapabilities.coordinatesAvailable = false
-    }
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -253,7 +202,7 @@ class Downloader {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(shouldGetThumbnail, true),
         titles: articleIds.join('|'),
-        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
+        ...(this.mw.hasCoordinatesApi ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories
           ? {
               cllimit: 'max',
@@ -293,7 +242,7 @@ class Downloader {
     while (true) {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(),
-        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
+        ...(this.mw.hasCoordinatesApi ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories
           ? {
               cllimit: 'max',
@@ -441,9 +390,7 @@ class Downloader {
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${
-        this.mw.getCategories ? '|categories' : ''
-      }`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mw.hasCoordinatesApi() ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
       redirects: redirects ? true : undefined,

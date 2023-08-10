@@ -10,6 +10,8 @@ class BasicURLDirector {
   buildDownloaderBaseUrl(conditions: DownloaderBaseUrlConditions): string | undefined {
     let baseUrl: string
 
+    console.log('Args for buildDownloaderBaseUrl ', conditions)
+
     for (const { condition, value } of conditions) {
       if (condition) {
         baseUrl = value

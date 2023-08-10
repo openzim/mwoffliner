@@ -10,27 +10,65 @@ import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
+import { checkApiAvailabilty } from './util/mw-api.js'
 
 class MediaWiki {
   public metaData: MWMetaData
   public readonly baseUrl: URL
-  public readonly modulePath: string
-  public readonly webUrl: URL
-  public readonly apiUrl: URL
-  public readonly veApiUrl: URL
-  public readonly restApiUrl: URL
-  public readonly mobileRestApiUrl: URL
-  public readonly desktopRestApiUrl: URL
   public readonly getCategories: boolean
+  public readonly modulePathConfig: string
   public readonly namespaces: MWNamespaces = {}
   public readonly namespacesToMirror: string[] = []
 
   private readonly wikiPath: string
+  private readonly restApiPath: string
   private readonly username: string
   private readonly password: string
   private readonly apiPath: string
   private readonly domain: string
   private apiUrlDirector: ApiURLDirector
+  private baseUrlDirector: BaseURLDirector
+
+  public veApiUrl: URL
+  public restApiUrl: URL
+  public apiUrl: URL
+  public modulePath: string
+  public webUrl: URL
+  public desktopRestApiUrl: URL
+
+  public hasDesktopRestApi = async function (loginCookie?: string, testArticleId?: string): Promise<any> {
+    const desktopRestApiAvailable = await checkApiAvailabilty(this.desktopRestApiUrl, loginCookie)
+    this.hasDesktopRestApi = async function (): Promise<boolean> {
+      return desktopRestApiAvailable
+    }
+  }
+
+  public hasVeApi = async function (loginCookie?: string, testArticleId?: string): Promise<any> {
+    const veRestApiAvailable = await checkApiAvailabilty(this.veApiUrl, loginCookie)
+    this.hasVeApi = async function (): Promise<boolean> {
+      return veRestApiAvailable
+    }
+  }
+
+  public hasCoordinatesApi = async function (downloader?: Downloader): Promise<any> {
+    const validNamespaceIds = this.namespacesToMirror.map((ns) => this.namespaces[ns].num)
+    const reqOpts = {
+      action: 'query',
+      format: 'json',
+      prop: `redirects|revisions${(await this.hasCoordinatesApi()) ? '|coordinates' : ''}${this.getCategories ? '|categories' : ''}`,
+      rdlimit: 'max',
+      rdnamespace: validNamespaceIds.join('|'),
+    }
+    if (downloader) {
+      const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
+      const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
+      if (isCoordinateWarning) {
+        logger.info('Coordinates not available on this wiki')
+        return false
+      }
+    }
+    return true
+  }
 
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
@@ -42,20 +80,30 @@ class MediaWiki {
 
     this.apiPath = config.apiPath ?? 'w/api.php'
     this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH
+    this.restApiPath = config.restApiPath
+    this.modulePathConfig = config.modulePath
 
     const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
 
     this.webUrl = baseUrlDirector.buildURL(this.wikiPath)
     this.apiUrl = baseUrlDirector.buildURL(this.apiPath)
-
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
-
     this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
 
-    this.restApiUrl = baseUrlDirector.buildRestApiURL(config.restApiPath)
-    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(config.restApiPath)
+    this.restApiUrl = baseUrlDirector.buildRestApiURL(this.restApiPath)
+    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.restApiPath)
 
-    this.modulePath = baseUrlDirector.buildModuleURL(config.modulePath)
+    this.modulePath = baseUrlDirector.buildModuleURL(this.modulePathConfig)
+
+    /*
+    this.restApiUrl = this.baseUrlDirector.buildRestApiURL(this.restApiPath)
+    this.apiUrl = this.baseUrlDirector.buildURL(this.apiPath)
+    this.modulePath = this.baseUrlDirector.buildModuleURL(this.modulePathConfig)
+    this.webUrl = this.baseUrlDirector.buildURL(this.wikiPath)
+    this.desktopRestApiUrl = this.baseUrlDirector.buildDesktopRestApiURL(config.restApiPath)
+
+    this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+    */
   }
 
   public async login(downloader: Downloader) {
@@ -85,12 +133,13 @@ class MediaWiki {
         },
         method: 'POST',
       })
-        .then((resp) => {
+        .then(async (resp) => {
           if (resp.data.login.result !== 'Success') {
             throw new Error('Login Failed')
           }
 
           downloader.loginCookie = resp.headers['set-cookie'].join(';')
+          await this.checkCapabilities(resp.headers['set-cookie'].join(';'))
         })
         .catch((err) => {
           throw err
@@ -295,6 +344,13 @@ class MediaWiki {
     this.metaData = mwMetaData
 
     return mwMetaData
+  }
+
+  // Set capability properties, usied while mw.login
+  private async checkCapabilities(loginCookie?: string, testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
+    await this.hasDesktopRestApi(loginCookie, testArticleId)
+    await this.hasVeApi(loginCookie, testArticleId)
+    await this.hasCoordinatesApi()
   }
 }
 

@@ -33,7 +33,6 @@ describe('Downloader class', () => {
     downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
     await mw.getMwMetaData(downloader)
-    await downloader.checkCapabilities()
     await downloader.setBaseUrls()
   })
 

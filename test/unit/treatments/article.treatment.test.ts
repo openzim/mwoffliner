@@ -16,7 +16,6 @@ describe('ArticleTreatment', () => {
 
   test('Article html processing', async () => {
     const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    await downloader.checkCapabilities()
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
