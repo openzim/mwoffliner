@@ -2,9 +2,8 @@ import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import domino from 'domino'
 
 import { setupScrapeClasses } from '../util.js'
-import { saveArticles, getModuleDependencies, applyOtherTreatments } from '../../src/util/saveArticles.js'
+import { saveArticles, getModuleDependencies } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
-import { Dump } from '../../src/Dump.js'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
@@ -193,23 +192,21 @@ describe('saveArticles', () => {
     expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
   })
 
-  // TODO: This test will work only for the visual editor renderer that need to be refactored
-  /*
-  test('Test deleted article rendering (Parsoid HTML renderer)', async () => {
+  test('Test deleted article rendering (Visual editor renderer)', async () => {
     const articleJsonObject = {
       visualeditor: { oldid: 0 },
     }
-    const mwCapabilities = {
-      apiAvailable: true,
-      veApiAvailable: false,
-      coordinatesAvailable: true,
-      desktopRestApiAvailable: true,
+    const visualEditorRenderer = new RendererBuilder('visual-editor')
+
+    const renderOpts = {
+      data: articleJsonObject,
+      articleId: 'deletedArticle',
     }
-    expect(() => articleRenderer.renderArticle(articleJsonObject, 'deletedArticle', mwCapabilities, null, null, { title: 'deletedArticle' })).toThrow(
-      new Error(DELETED_ARTICLE_ERROR),
-    )
+
+    expect(async () => {
+      await visualEditorRenderer.render(renderOpts)
+    }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
   })
-  */
 
   test('Load inline js from HTML', async () => {
     const { downloader, mw } = await setupScrapeClasses() // en wikipedia

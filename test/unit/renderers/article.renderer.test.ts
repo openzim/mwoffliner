@@ -1,93 +1,80 @@
 import { jest } from '@jest/globals'
 import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
-/* import { Dump } from '../../../src/Dump.js'
-import { config } from '../../../src/config.js'
-import Downloader from '../../../src/Downloader.js'
-import MediaWiki from '../../../src/MediaWiki.js'*/
-import { getArticleUrl } from '../../../src/util/saveArticles.js'
 import { RendererBuilder } from '../../../src/util/renderers/renderer.builder.js'
+import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
 
 jest.setTimeout(10000)
 
-// TODO: Refactor once visual editor will be refactored
 describe('ArticleRenderer', () => {
-  /*
   describe('test Visual Editor renderer', () => {
     const prepareFixtures = (json: Record<string, any> | null) => {
       return {
-        articleDetails: { title: 'Eminem and D12' },
+        data: json,
         articleId: '123',
-        json,
+        articleDetail: { title: 'Eminem and D12' },
+        isMainPage: false,
       }
     }
+    const visualEditorRenderer = new RendererBuilder('visual-editor')
 
-    const mwCapabilities = {
-      apiAvailable: true,
-      veApiAvailable: true,
-      coordinatesAvailable: true,
-      desktopRestApiAvailable: false,
-    }
+    it('should throw if no JSON was provided', async () => {
+      const renderOpts = {
+        data: null,
+      }
 
-    it('should throw if no JSON was provided', () => {
-      const { json, articleId } = prepareFixtures(null)
-
-      expect(async () => await articleRenderer.renderArticle(json, articleId, mwCapabilities)).toThrow(new Error('Cannot render [null] into an article'))
+      expect(async () => {
+        await visualEditorRenderer.render(renderOpts)
+      }).rejects.toThrow(new Error('Cannot render [null] into an article'))
     })
 
     it('should throw if article has been deleted between fetching list and downloading content', () => {
-      const { json, articleId } = prepareFixtures({ visualeditor: { oldid: 0 } })
+      const { data, articleId } = prepareFixtures({ visualeditor: { oldid: 0 } })
 
-      expect(async () => await articleRenderer.renderArticle(json, articleId, mwCapabilities)).toThrow(new Error(DELETED_ARTICLE_ERROR))
+      expect(async () => {
+        await visualEditorRenderer.render({ data, articleId })
+      }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
     })
 
     it('should return visualeditor content if the main page flag is true', async () => {
-      const { json, articleId } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
-      const result = await articleRenderer.renderArticle(json, articleId, mwCapabilities)
+      const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
+      const result = await visualEditorRenderer.render({ data, articleId, articleDetail, isMainPage: true })
 
-      expect(result).toBe(json.visualeditor.content)
+      expect(result[0].html).toBe(data.visualeditor.content)
     })
 
     it('should inject header to the visual editor content if the main page flag is false', async () => {
-      const content = '<body class="my-body-content">consectetur adipiscing elit</body>'
-      const contentWithHeader = '<body class="my-body-content"><h1 class="article-header"></h1>consectetur adipiscing elit</body>'
-      const { json, articleId } = prepareFixtures({ visualeditor: { content } })
+      const content = '<body class="mw-body-content">consectetur adipiscing elit</body>'
+      const contentWithHeader = '<html><head></head><body class="mw-body-content"><h1 class="article-header"></h1>consectetur adipiscing elit</body></html>'
+      const { data, articleId } = prepareFixtures({ visualeditor: { content } })
 
-      jest.spyOn(ArticleRenderer.prototype as any, 'injectHeader').mockReturnValue(contentWithHeader)
+      jest.spyOn(new VisualEditorRenderer() as any, 'injectHeader').mockReturnValue(contentWithHeader)
 
-      const result = await articleRenderer.renderArticle(json, articleId, mwCapabilities)
+      const result = await visualEditorRenderer.render({ data, articleId, articleDetail: 'consectetur adipiscing elit' })
 
-      expect(result).toBe(contentWithHeader)
+      expect(result[0].html).toBe(contentWithHeader)
     })
 
     it('should return html body if json contentmodel param is `wikitext`', async () => {
       const htmlBody = '<body>sed do eiusmod tempor incididunt</body>'
-      const { json, articleId } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
-      const result = await articleRenderer.renderArticle(json, articleId, mwCapabilities)
+      const { data, articleId } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
+      const result = await visualEditorRenderer.render({ data, articleId })
 
-      expect(result).toBe(htmlBody)
+      expect(result[0].html).toBe(htmlBody)
     })
 
     it('should return html body if it`s presented even if contentmodel param is not equal to wikitext', async () => {
       const htmlBody = '<body>ut labore et dolore magna aliqua. Ut enim ad minim veniam</body>'
-      const { json, articleId } = prepareFixtures({ html: { body: htmlBody } })
-      const result = await articleRenderer.renderArticle(json, articleId, mwCapabilities)
+      const { data, articleId } = prepareFixtures({ html: { body: htmlBody } })
+      const result = await visualEditorRenderer.render({ data, articleId })
 
-      expect(result).toBe(htmlBody)
+      expect(result[0].html).toBe(htmlBody)
     })
 
     it('should return empty string if there was an error during article retrievement', async () => {
-      const { json, articleId } = prepareFixtures({ error: 'Unexpected internal error' })
-      const result = await articleRenderer.renderArticle(json, articleId, mwCapabilities)
+      const { data, articleId } = prepareFixtures({ error: 'Unexpected internal error' })
+      const result = await visualEditorRenderer.render({ data, articleId })
 
       expect(result).toBe('')
     })
-
-    it.only('should return json as it is by default', async () => {
-      const { json, articleId } = prepareFixtures({ api: { path: 'https://random.path.org' } })
-      const result = await articleRenderer.renderArticle(json, articleId, mwCapabilities)
-
-      expect(result).toEqual(json)
-    })
   })
-  */
 })

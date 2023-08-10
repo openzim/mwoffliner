@@ -136,7 +136,7 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
       try {
         const articleRenderer = chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer)
         const articleUrl = getArticleUrl(downloader, dump, articleId)
-        const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail)
+        const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue
@@ -299,7 +299,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         try {
           const articleRenderer = chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer)
           const articleUrl = getArticleUrl(downloader, dump, articleId)
-          rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail)
+          rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title

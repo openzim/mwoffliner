@@ -213,7 +213,6 @@ class Downloader {
     }
   }
 
-  // TODO: Why this method is public?
   public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
     const desktopUrlDirector = new DesktopURLDirector(this.mw.desktopRestApiUrl.href)
     const visualEditorURLDirector = new VisualEditorURLDirector(this.mw.veApiUrl.href)
@@ -347,7 +346,14 @@ class Downloader {
     }
   }
 
-  public async getArticle(articleId: string, articleDetailXId: RKVS<ArticleDetail>, articleRenderer, articleUrl, articleDetail?: ArticleDetail): Promise<any> {
+  public async getArticle(
+    articleId: string,
+    articleDetailXId: RKVS<ArticleDetail>,
+    articleRenderer,
+    articleUrl,
+    articleDetail?: ArticleDetail,
+    isMainPage?: boolean,
+  ): Promise<any> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     const data = await this.getJSON<any>(articleUrl)
@@ -360,6 +366,7 @@ class Downloader {
       articleId,
       articleDetailXId,
       articleDetail,
+      isMainPage,
     }
 
     return articleRenderer.render(renderOpts)
