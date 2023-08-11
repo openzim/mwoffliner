@@ -90,6 +90,7 @@ class Downloader {
   private readonly uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
+  private hasCoordinates = true
   private readonly backoffOptions: BackoffOptions
   private readonly optimisationCacheUrl: string
   private s3: S3
@@ -167,6 +168,19 @@ class Downloader {
     }
   }
 
+  public async checkCoordinatesAvailability(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
+    // Coordinate fetching
+    const reqOpts = this.getArticleQueryOpts()
+
+    const resp = await this.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
+
+    const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
+    if (isCoordinateWarning) {
+      logger.info('Coordinates not available on this wiki')
+      this.hasCoordinates = false
+    }
+  }
+
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
@@ -202,7 +216,7 @@ class Downloader {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(shouldGetThumbnail, true),
         titles: articleIds.join('|'),
-        ...(this.mw.hasCoordinatesApi ? { colimit: 'max' } : {}),
+        ...(this.hasCoordinates ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories
           ? {
               cllimit: 'max',
@@ -242,7 +256,7 @@ class Downloader {
     while (true) {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(),
-        ...(this.mw.hasCoordinatesApi ? { colimit: 'max' } : {}),
+        ...(this.hasCoordinates ? { colimit: 'max' } : {}),
         ...(this.mw.getCategories
           ? {
               cllimit: 'max',
@@ -390,7 +404,7 @@ class Downloader {
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mw.hasCoordinatesApi() ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.hasCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
       redirects: redirects ? true : undefined,

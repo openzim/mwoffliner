@@ -44,27 +44,6 @@ class MediaWiki {
     return await checkApiAvailabilty(this.veApiUrl, loginCookie)
   }
 
-  public hasCoordinatesApi = async function (downloader?: Downloader): Promise<any> {
-    const validNamespaceIds = this.namespacesToMirror.map((ns) => this.namespaces[ns].num)
-    const reqOpts = {
-      action: 'query',
-      format: 'json',
-      // prop: `redirects|revisions${(await this.hasCoordinatesApi()) ? '|coordinates' : ''}${this.getCategories ? '|categories' : ''}`,
-      prop: `redirects|revisions${this.getCategories ? '|categories' : ''}`,
-      rdlimit: 'max',
-      rdnamespace: validNamespaceIds.join('|'),
-    }
-    if (downloader) {
-      const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
-      const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
-      if (isCoordinateWarning) {
-        logger.info('Coordinates not available on this wiki')
-        return false
-      }
-    }
-    return true
-  }
-
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
     this.username = config.username
@@ -335,7 +314,6 @@ class MediaWiki {
   private async checkCapabilities(loginCookie?: string): Promise<void> {
     await this.hasDesktopRestApi(loginCookie)
     await this.hasVeApi(loginCookie)
-    await this.hasCoordinatesApi()
   }
 }
 

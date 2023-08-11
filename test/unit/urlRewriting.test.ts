@@ -138,7 +138,7 @@ describe('Styles', () => {
     await articleDetailXId.flush()
     await redisStore.redirectsXId.flush()
     const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    // await downloader.checkCapabilities()
+    await downloader.checkCoordinatesAvailability()
     await downloader.setBaseUrls()
 
     await getArticleIds(downloader, redisStore, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
