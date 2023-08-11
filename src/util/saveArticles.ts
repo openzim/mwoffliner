@@ -134,7 +134,7 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
-        const articleRenderer = chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer)
+        const articleRenderer = await chooseRenderer(articleId, dump, mw, desktopRenderer, visualEditorRenderer)
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
         for (const { articleId, html: articleHtml } of rets) {
@@ -245,8 +245,8 @@ function isMainPage(dump: Dump, articleId: string): boolean {
   return dump.isMainPage(articleId)
 }
 
-function chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer) {
-  if (isMainPage(dump, articleId) || (downloader.mwCapabilities.veApiAvailable && !downloader.mwCapabilities.desktopRestApiAvailable)) {
+async function chooseRenderer(articleId, dump, mw: MediaWiki, desktopRenderer, visualEditorRenderer) {
+  if (isMainPage(dump, articleId) || ((await mw.hasVeApi()) && !(await mw.hasDesktopRestApi()))) {
     return visualEditorRenderer
   }
   return desktopRenderer
@@ -297,7 +297,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
         let rets: any
         try {
-          const articleRenderer = chooseRenderer(articleId, dump, downloader, desktopRenderer, visualEditorRenderer)
+          const articleRenderer = await chooseRenderer(articleId, dump, mw, desktopRenderer, visualEditorRenderer)
           const articleUrl = getArticleUrl(downloader, dump, articleId)
           rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
 

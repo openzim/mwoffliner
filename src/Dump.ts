@@ -7,6 +7,7 @@ import * as logger from './Logger.js'
 import Downloader from './Downloader.js'
 import { getStringsForLang } from './util/index.js'
 import WebURLDirector from './util/builders/url/web.director.js'
+import MediaWiki from './MediaWiki.js'
 
 interface DumpOpts {
   tmpDir: string
@@ -196,7 +197,7 @@ export class Dump {
     return zimRootPath
   }
 
-  public async getRelevantStylesheetUrls(downloader: Downloader) {
+  public async getRelevantStylesheetUrls(downloader: Downloader, mw: MediaWiki) {
     // TODO: consider moving to Downloader
     const sheetUrls: Array<string | DominoElement> = []
 
@@ -215,7 +216,7 @@ export class Dump {
 
     /* Push Mediawiki:Offline.css (at the end) */
     // TODO: Weak URL (might fail in a number of cases where the wiki path is not like on Wikipedia)
-    const webUrlDirector = new WebURLDirector(downloader.mw.webUrl.href)
+    const webUrlDirector = new WebURLDirector(mw.webUrl.href)
 
     const offlineCssUrl = webUrlDirector.buildArticleRawURL('Mediawiki:offline.css')
 

@@ -36,18 +36,12 @@ class MediaWiki {
   public webUrl: URL
   public desktopRestApiUrl: URL
 
-  public hasDesktopRestApi = async function (loginCookie?: string, testArticleId?: string): Promise<any> {
-    const desktopRestApiAvailable = await checkApiAvailabilty(this.desktopRestApiUrl, loginCookie)
-    this.hasDesktopRestApi = async function (): Promise<boolean> {
-      return desktopRestApiAvailable
-    }
+  public hasDesktopRestApi = async function (loginCookie?: string): Promise<boolean> {
+    return await checkApiAvailabilty(this.desktopRestApiUrl, loginCookie)
   }
 
-  public hasVeApi = async function (loginCookie?: string, testArticleId?: string): Promise<any> {
-    const veRestApiAvailable = await checkApiAvailabilty(this.veApiUrl, loginCookie)
-    this.hasVeApi = async function (): Promise<boolean> {
-      return veRestApiAvailable
-    }
+  public hasVeApi = async function (loginCookie?: string): Promise<boolean> {
+    return await checkApiAvailabilty(this.veApiUrl, loginCookie)
   }
 
   public hasCoordinatesApi = async function (downloader?: Downloader): Promise<any> {
@@ -55,7 +49,8 @@ class MediaWiki {
     const reqOpts = {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${(await this.hasCoordinatesApi()) ? '|coordinates' : ''}${this.getCategories ? '|categories' : ''}`,
+      // prop: `redirects|revisions${(await this.hasCoordinatesApi()) ? '|coordinates' : ''}${this.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${this.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
     }
@@ -94,16 +89,6 @@ class MediaWiki {
     this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.restApiPath)
 
     this.modulePath = baseUrlDirector.buildModuleURL(this.modulePathConfig)
-
-    /*
-    this.restApiUrl = this.baseUrlDirector.buildRestApiURL(this.restApiPath)
-    this.apiUrl = this.baseUrlDirector.buildURL(this.apiPath)
-    this.modulePath = this.baseUrlDirector.buildModuleURL(this.modulePathConfig)
-    this.webUrl = this.baseUrlDirector.buildURL(this.wikiPath)
-    this.desktopRestApiUrl = this.baseUrlDirector.buildDesktopRestApiURL(config.restApiPath)
-
-    this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    */
   }
 
   public async login(downloader: Downloader) {
@@ -347,9 +332,9 @@ class MediaWiki {
   }
 
   // Set capability properties, usied while mw.login
-  private async checkCapabilities(loginCookie?: string, testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
-    await this.hasDesktopRestApi(loginCookie, testArticleId)
-    await this.hasVeApi(loginCookie, testArticleId)
+  private async checkCapabilities(loginCookie?: string): Promise<void> {
+    await this.hasDesktopRestApi(loginCookie)
+    await this.hasVeApi(loginCookie)
     await this.hasCoordinatesApi()
   }
 }

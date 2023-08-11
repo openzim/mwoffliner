@@ -400,7 +400,7 @@ async function execute(argv: any) {
     await saveStaticFiles(config, zimCreator)
 
     logger.info('Finding stylesheets to download')
-    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
+    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader, mw)
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
 
     logger.log('Downloading stylesheets and populating media queue')
