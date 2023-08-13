@@ -38,6 +38,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
   await mw.getMwMetaData(downloader)
+  await mw.setCapabilities()
   await downloader.checkCoordinatesAvailability()
 
   const dump = new Dump(format, {} as any, mw.metaData)

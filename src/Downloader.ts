@@ -168,7 +168,7 @@ class Downloader {
     }
   }
 
-  public async checkCoordinatesAvailability(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
+  public async checkCoordinatesAvailability(): Promise<void> {
     // Coordinate fetching
     const reqOpts = this.getArticleQueryOpts()
 
@@ -184,14 +184,14 @@ class Downloader {
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: await this.mw.hasDesktopRestApi(), value: this.mw.desktopRestApiUrl.href },
-      { condition: await this.mw.hasVeApi(), value: this.mw.veApiUrl.href },
+      { condition: this.mw.hasDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
+      { condition: this.mw.hasVeApi, value: this.mw.veApiUrl.href },
     ])
 
     //* Objects order in array matters!
     this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: await this.mw.hasDesktopRestApi(), value: this.mw.desktopRestApiUrl.href },
-      { condition: await this.mw.hasVeApi(), value: this.mw.veApiUrl.href },
+      { condition: this.mw.hasDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
+      { condition: this.mw.hasVeApi, value: this.mw.veApiUrl.href },
     ])
 
     logger.log('Base Url: ', this.baseUrl)

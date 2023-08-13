@@ -17,6 +17,7 @@ describe('saveArticles', () => {
 
   test('Article html processing', async () => {
     const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
+    await mw.setCapabilities()
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -71,7 +72,7 @@ describe('saveArticles', () => {
       dump = classes.dump
       const downloader = classes.downloader
 
-      await downloader.checkCapabilities()
+      await downloader.setCapabilities()
       await downloader.setBaseUrls()
       const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
@@ -129,6 +130,7 @@ describe('saveArticles', () => {
 
   test('--customFlavour', async () => {
     const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+    await mw.setCapabilities()
     await downloader.setBaseUrls()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

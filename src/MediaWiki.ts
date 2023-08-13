@@ -10,6 +10,8 @@ import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
+import DesktopURLDirector from './util/builders/url/desktop.director.js'
+import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import { checkApiAvailabilty } from './util/mw-api.js'
 
 class MediaWiki {
@@ -27,7 +29,8 @@ class MediaWiki {
   private readonly apiPath: string
   private readonly domain: string
   private apiUrlDirector: ApiURLDirector
-  private baseUrlDirector: BaseURLDirector
+  private desktopUrlDirector: DesktopURLDirector
+  private visualEditorURLDirector: VisualEditorURLDirector
 
   public veApiUrl: URL
   public restApiUrl: URL
@@ -36,13 +39,8 @@ class MediaWiki {
   public webUrl: URL
   public desktopRestApiUrl: URL
 
-  public hasDesktopRestApi = async function (loginCookie?: string): Promise<boolean> {
-    return await checkApiAvailabilty(this.desktopRestApiUrl, loginCookie)
-  }
-
-  public hasVeApi = async function (loginCookie?: string): Promise<boolean> {
-    return await checkApiAvailabilty(this.veApiUrl, loginCookie)
-  }
+  public hasDesktopRestApi = false
+  public hasVeApi = false
 
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
@@ -68,6 +66,9 @@ class MediaWiki {
     this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.restApiPath)
 
     this.modulePath = baseUrlDirector.buildModuleURL(this.modulePathConfig)
+
+    this.desktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
+    this.visualEditorURLDirector = new VisualEditorURLDirector(this.veApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
@@ -103,7 +104,6 @@ class MediaWiki {
           }
 
           downloader.loginCookie = resp.headers['set-cookie'].join(';')
-          await this.checkCapabilities(resp.headers['set-cookie'].join(';'))
         })
         .catch((err) => {
           throw err
@@ -311,9 +311,9 @@ class MediaWiki {
   }
 
   // Set capability properties, usied while mw.login
-  private async checkCapabilities(loginCookie?: string): Promise<void> {
-    await this.hasDesktopRestApi(loginCookie)
-    await this.hasVeApi(loginCookie)
+  public async setCapabilities(articleId = 'MediaWiki:Sidebar', loginCookie?: string): Promise<void> {
+    this.hasDesktopRestApi = await checkApiAvailabilty(this.desktopUrlDirector.buildArticleURL(articleId), loginCookie)
+    this.hasVeApi = await checkApiAvailabilty(this.visualEditorURLDirector.buildArticleURL(articleId), loginCookie)
   }
 }
 

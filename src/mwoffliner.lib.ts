@@ -211,6 +211,7 @@ async function execute(argv: any) {
     }
   }
 
+  await mw.setCapabilities(mwMetaData.mainPage)
   await downloader.setBaseUrls()
 
   const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)

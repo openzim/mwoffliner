@@ -138,6 +138,7 @@ describe('Styles', () => {
     await articleDetailXId.flush()
     await redisStore.redirectsXId.flush()
     const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
+    await mw.setCapabilities()
     await downloader.checkCoordinatesAvailability()
     await downloader.setBaseUrls()
 

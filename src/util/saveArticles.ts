@@ -246,7 +246,7 @@ function isMainPage(dump: Dump, articleId: string): boolean {
 }
 
 async function chooseRenderer(articleId, dump, mw: MediaWiki, desktopRenderer, visualEditorRenderer) {
-  if (isMainPage(dump, articleId) || ((await mw.hasVeApi()) && !(await mw.hasDesktopRestApi()))) {
+  if (isMainPage(dump, articleId) || (mw.hasVeApi && !mw.hasDesktopRestApi)) {
     return visualEditorRenderer
   }
   return desktopRenderer
