@@ -2,6 +2,9 @@ import urlBuilder from './url.builder.js'
 
 type DownloaderBaseUrlConditions = Array<{ condition: boolean; value: string }>
 
+/**
+ * Build base URL for specific wiki. Expamle of the output: 'https://en.wikipedia.org' or 'https://de.wikivoyage.org
+ */
 class BasicURLDirector {
   buildMediawikiBaseURL(domain: string) {
     return urlBuilder.setDomain(domain).build(true, '/')

@@ -29,18 +29,18 @@ class MediaWiki {
   private readonly apiPath: string
   private readonly domain: string
   private apiUrlDirector: ApiURLDirector
-  private desktopUrlDirector: DesktopURLDirector
+  private wikimediaDesktopUrlDirector: DesktopURLDirector
   private visualEditorURLDirector: VisualEditorURLDirector
 
-  public veApiUrl: URL
+  public visualEditorApiUrl: URL
   public restApiUrl: URL
   public apiUrl: URL
   public modulePath: string
   public webUrl: URL
   public desktopRestApiUrl: URL
 
-  public hasDesktopRestApi = false
-  public hasVeApi = false
+  public hasWikimediaDesktopRestApi = false
+  public hasVisualEditorApi = false
 
   constructor(config: MWConfig) {
     this.domain = config.domain || ''
@@ -60,15 +60,15 @@ class MediaWiki {
     this.webUrl = baseUrlDirector.buildURL(this.wikiPath)
     this.apiUrl = baseUrlDirector.buildURL(this.apiPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
-    this.veApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
 
     this.restApiUrl = baseUrlDirector.buildRestApiURL(this.restApiPath)
     this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.restApiPath)
 
     this.modulePath = baseUrlDirector.buildModuleURL(this.modulePathConfig)
 
-    this.desktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
-    this.visualEditorURLDirector = new VisualEditorURLDirector(this.veApiUrl.href)
+    this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
+    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
@@ -312,8 +312,8 @@ class MediaWiki {
 
   // Set capability properties, usied while mw.login
   public async setCapabilities(articleId = 'MediaWiki:Sidebar', loginCookie?: string): Promise<void> {
-    this.hasDesktopRestApi = await checkApiAvailabilty(this.desktopUrlDirector.buildArticleURL(articleId), loginCookie)
-    this.hasVeApi = await checkApiAvailabilty(this.visualEditorURLDirector.buildArticleURL(articleId), loginCookie)
+    this.hasWikimediaDesktopRestApi = await checkApiAvailabilty(this.wikimediaDesktopUrlDirector.buildArticleURL(articleId), loginCookie)
+    this.hasVisualEditorApi = await checkApiAvailabilty(this.visualEditorURLDirector.buildArticleURL(articleId), loginCookie)
   }
 }
 

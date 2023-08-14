@@ -209,14 +209,14 @@ class Downloader {
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mw.hasDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
-      { condition: this.mw.hasVeApi, value: this.mw.veApiUrl.href },
+      { condition: this.mw.hasWikimediaDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
+      { condition: this.mw.hasVisualEditorApi, value: this.mw.visualEditorApiUrl.href },
     ])
 
     //* Objects order in array matters!
     this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mw.hasDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
-      { condition: this.mw.hasVeApi, value: this.mw.veApiUrl.href },
+      { condition: this.mw.hasWikimediaDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
+      { condition: this.mw.hasVisualEditorApi, value: this.mw.visualEditorApiUrl.href },
     ])
 
     logger.log('Base Url: ', this.baseUrl)
