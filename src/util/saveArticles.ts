@@ -15,6 +15,7 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import ApiURLDirector from './builders/url/api.director.js'
 import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
+import { Renderer } from './renderers/abstract.renderer.js'
 import { WikimediaDesktopRenderer } from './renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from './renderers/visual-editor.renderer.js'
 
@@ -137,14 +138,14 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
       try {
         const articleRenderer = await chooseRenderer(articleId, dump, mw, wikimediaDesktopRenderer, visualEditorRenderer)
         const articleUrl = getArticleUrl(downloader, dump, articleId)
-        const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
+        const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue
           }
 
           const doc = domino.createDocument(articleHtml)
-          if (!isMainPage(dump, articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
+          if (!dump.isMainPage(articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }
         }
@@ -239,18 +240,22 @@ async function saveArticle(
 }
 
 export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
-  return `${isMainPage(dump, articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl}${encodeURIComponent(articleId)}`
+  return `${dump.isMainPage(articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl}${encodeURIComponent(articleId)}`
 }
 
-function isMainPage(dump: Dump, articleId: string): boolean {
-  return dump.isMainPage(articleId)
+// TODO: refactor this function (if needed) to handle WikimediaMobile (page/mobile-html) endpoint
+function chooseRendererByCapability(mw: MediaWiki, wikimediaDesktopRenderer: WikimediaDesktopRenderer, visualEditorRenderer: VisualEditorRenderer): Renderer {
+  return mw.hasVisualEditorApi && !mw.hasWikimediaDesktopRestApi ? visualEditorRenderer : wikimediaDesktopRenderer
 }
 
-async function chooseRenderer(articleId, dump, mw: MediaWiki, wikimediaDesktopRenderer, visualEditorRenderer) {
-  if (mw.hasVisualEditorApi && !mw.hasWikimediaDesktopRestApi) {
-    return visualEditorRenderer
+async function chooseRenderer(articleId, dump: Dump, mw: MediaWiki, wikimediaDesktopRenderer: WikimediaDesktopRenderer, visualEditorRenderer: VisualEditorRenderer) {
+  // Choose separate renderer for the main page
+  if (dump.isMainPage(articleId)) {
+    return chooseRendererByCapability(mw, wikimediaDesktopRenderer, visualEditorRenderer)
+  } else {
+    // TODO: there should be WikimediaMobile renderer once it is done
+    return chooseRendererByCapability(mw, wikimediaDesktopRenderer, visualEditorRenderer)
   }
-  return wikimediaDesktopRenderer
 }
 
 /*
@@ -298,9 +303,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
         let rets: any
         try {
+          // TODO: render each article depending on renderer type
+
           const articleRenderer = await chooseRenderer(articleId, dump, mw, wikimediaDesktopRenderer, visualEditorRenderer)
           const articleUrl = getArticleUrl(downloader, dump, articleId)
-          rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
+          rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title
