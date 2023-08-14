@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals'
 import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
-import { RendererBuilder } from '../../../src/util/renderers/renderer.builder.js'
 import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
 
 jest.setTimeout(10000)
@@ -15,7 +14,7 @@ describe('ArticleRenderer', () => {
         isMainPage: false,
       }
     }
-    const visualEditorRenderer = new RendererBuilder('visual-editor')
+    const visualEditorRenderer = new VisualEditorRenderer()
 
     it('should throw if no JSON was provided', async () => {
       const renderOpts = {

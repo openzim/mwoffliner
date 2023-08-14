@@ -3,6 +3,7 @@ import { DELETED_ARTICLE_ERROR } from '../const.js'
 import * as logger from '../../Logger.js'
 import { Renderer } from './abstract.renderer.js'
 import { getStrippedTitleFromHtml } from '../misc.js'
+import { RenderOpts } from './../../Downloader.js'
 
 /*
 Represent 'https://{wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
@@ -14,7 +15,7 @@ export class VisualEditorRenderer extends Renderer {
     super()
   }
 
-  public async render(renderOpts: any): Promise<any> {
+  public async render(renderOpts: RenderOpts): Promise<any> {
     const { data, isMainPage, articleId, articleDetail } = renderOpts
 
     if (!data) {

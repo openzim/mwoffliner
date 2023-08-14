@@ -6,7 +6,7 @@ import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/ut
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
-import { RendererBuilder } from '../../src/util/renderers/renderer.builder.js'
+import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -119,7 +119,7 @@ describe('Downloader class', () => {
 
   describe('getArticle method', () => {
     let dump: Dump
-    const desktopRenderer = new RendererBuilder('desktop')
+    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
 
     beforeAll(async () => {
       const mwMetadata = await mw.getMwMetaData(downloader)
@@ -129,21 +129,21 @@ describe('Downloader class', () => {
     test('getArticle of "London" returns one article', async () => {
       const articleId = 'London'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const LondonArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, desktopRenderer, articleUrl)
+      const LondonArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl)
       expect(LondonArticle).toHaveLength(1)
     })
 
     test('Categories with many subCategories are paginated', async () => {
       const articleId = 'Category:Container_categories'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const PaginatedArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, desktopRenderer, articleUrl)
+      const PaginatedArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl)
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
 
     test('getArticle response status for non-existent article id is 404', async () => {
       const articleId = 'NeverExistingArticle'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      await expect(downloader.getArticle('NeverExistingArticle', redisStore.articleDetailXId, desktopRenderer, articleUrl)).rejects.toThrowError(
+      await expect(downloader.getArticle('NeverExistingArticle', redisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl)).rejects.toThrowError(
         new Error('Request failed with status code 404'),
       )
     })

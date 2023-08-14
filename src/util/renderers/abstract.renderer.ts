@@ -1,3 +1,4 @@
+import { RenderOpts } from './../../Downloader.js'
 export abstract class Renderer {
-  abstract render(renderOpts: any): Promise<any>
+  abstract render(renderOpts: RenderOpts): Promise<any>
 }

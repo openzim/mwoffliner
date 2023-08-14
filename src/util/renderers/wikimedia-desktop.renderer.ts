@@ -1,16 +1,17 @@
 import domino from 'domino'
 import { Renderer } from './abstract.renderer.js'
 import { getStrippedTitleFromHtml } from '../misc.js'
+import { RenderOpts } from '../../Downloader.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/html/'
-export class DesktopRenderer extends Renderer {
+export class WikimediaDesktopRenderer extends Renderer {
   constructor() {
     super()
   }
 
-  public async render(renderOpts: any): Promise<any> {
+  public async render(renderOpts: RenderOpts): Promise<any> {
     const { data, articleId, articleDetailXId } = renderOpts
-    const articleDetail = renderOpts.articleDetailIn || (await renderOpts.articleDetailXId.get(articleId))
+    const articleDetail = await renderOpts.articleDetailXId.get(articleId)
     const result = []
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)

@@ -15,7 +15,8 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import ApiURLDirector from './builders/url/api.director.js'
 import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
-import { RendererBuilder } from './renderers/renderer.builder.js'
+import { WikimediaDesktopRenderer } from './renderers/wikimedia-desktop.renderer.js'
+import { VisualEditorRenderer } from './renderers/visual-editor.renderer.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -130,11 +131,11 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump, desktopRenderer, visualEditorRenderer) {
+async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump, wikimediaDesktopRenderer, visualEditorRenderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
-        const articleRenderer = await chooseRenderer(articleId, dump, mw, desktopRenderer, visualEditorRenderer)
+        const articleRenderer = await chooseRenderer(articleId, dump, mw, wikimediaDesktopRenderer, visualEditorRenderer)
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
         for (const { articleId, html: articleHtml } of rets) {
@@ -245,11 +246,11 @@ function isMainPage(dump: Dump, articleId: string): boolean {
   return dump.isMainPage(articleId)
 }
 
-async function chooseRenderer(articleId, dump, mw: MediaWiki, desktopRenderer, visualEditorRenderer) {
-  if (isMainPage(dump, articleId) || (mw.hasVeApi && !mw.hasDesktopRestApi)) {
+async function chooseRenderer(articleId, dump, mw: MediaWiki, wikimediaDesktopRenderer, visualEditorRenderer) {
+  if (mw.hasVeApi && !mw.hasDesktopRestApi) {
     return visualEditorRenderer
   }
-  return desktopRenderer
+  return wikimediaDesktopRenderer
 }
 
 /*
@@ -260,13 +261,13 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
-  const desktopRenderer = new RendererBuilder('desktop')
-  const visualEditorRenderer = new RendererBuilder('visual-editor')
+  const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+  const visualEditorRenderer = new VisualEditorRenderer()
   const { articleDetailXId } = redisStore
   const articlesTotal = await articleDetailXId.len()
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, desktopRenderer, visualEditorRenderer)
+    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, wikimediaDesktopRenderer, visualEditorRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -297,7 +298,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
         let rets: any
         try {
-          const articleRenderer = await chooseRenderer(articleId, dump, mw, desktopRenderer, visualEditorRenderer)
+          const articleRenderer = await chooseRenderer(articleId, dump, mw, wikimediaDesktopRenderer, visualEditorRenderer)
           const articleUrl = getArticleUrl(downloader, dump, articleId)
           rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, isMainPage(dump, articleId))
 

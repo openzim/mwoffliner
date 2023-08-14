@@ -7,7 +7,8 @@ import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
-import { RendererBuilder } from '../../src/util/renderers/renderer.builder.js'
+import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
+import { VisualEditorRenderer } from '../../src/util/renderers/visual-editor.renderer.js'
 
 jest.setTimeout(40000)
 
@@ -47,10 +48,10 @@ describe('saveArticles', () => {
     expect(addedArticles).toHaveLength(1)
     expect(addedArticles[0].aid).toEqual('A/London')
 
-    const desktopRenderer = new RendererBuilder('desktop')
+    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
-    await expect(downloader.getArticle(articleId, articleDetailXId, desktopRenderer, articleUrl)).rejects.toThrowError('')
+    await expect(downloader.getArticle(articleId, articleDetailXId, wikimediaDesktopRenderer, articleUrl)).rejects.toThrowError('')
 
     const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
 
@@ -196,7 +197,7 @@ describe('saveArticles', () => {
     const articleJsonObject = {
       visualeditor: { oldid: 0 },
     }
-    const visualEditorRenderer = new RendererBuilder('visual-editor')
+    const visualEditorRenderer = new VisualEditorRenderer()
 
     const renderOpts = {
       data: articleJsonObject,
