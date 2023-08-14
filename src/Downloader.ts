@@ -80,7 +80,24 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
 }
 
 /**
- * Common interface to download the content
+ * Common interface to download the content. Main features:
+ *
+ * 1. Check whether coordinates params are present in the specific wiki.
+ * 2. Set API URL path depending on capabilities of wiki (Wikimedia desktop, Visual editor, etc.). Set for both main page and articles.
+ * 3. Remove weak etag prefixes.
+ * 4. Perfom query to MW Action Api.
+ * 5. Get article details about redirects, and revisions.
+ * 6. Get article content data (html or json) for renderers.
+ * 7. Interface for downloading content and response headers.
+ * 8. Utility function to check whether a specific url is accessible.
+ * 9. Handle warnings and errors across Downloader class methods.
+ * 10. Helper for article query options to MW Action API.
+ * 11. Set article subcategories for article details.
+ * 12. Handle a limited number of active requests.
+ * 13. Fetch JSON data from a specified URL.
+ * 14. Get regular and compressed images.
+ * 15. Get subcategories.
+ * 16. Implement the retry mechanism for other Downloader methods
  */
 class Downloader {
   public readonly mw: MediaWiki
