@@ -16,11 +16,32 @@ import ApiURLDirector from './builders/url/api.director.js'
 import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
 import { Renderer } from './renderers/abstract.renderer.js'
-import { WikimediaDesktopRenderer } from './renderers/wikimedia-desktop.renderer.js'
-import { VisualEditorRenderer } from './renderers/visual-editor.renderer.js'
+import { RendererBuilder } from './renderers/renderer.builder.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
+
+type RendererMode = 'auto' | 'desktop' | 'mobile' | 'specific'
+type RendererAPI = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
+
+interface RendererBuilderOptionsBase {
+  mw: MediaWiki
+  RendererMode: RendererMode
+}
+
+interface RendererBuilderOptionsCommon {
+  mw: MediaWiki
+  RendererMode: RendererMode
+  RendererAPI?: never
+}
+
+interface RendererBuilderOptionsSpecific extends RendererBuilderOptionsBase {
+  mw: MediaWiki
+  RendererMode: 'specific'
+  RendererAPI: RendererAPI
+}
+
+export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuilderOptionsSpecific
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -132,13 +153,23 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, mw: MediaWiki, dump: Dump, wikimediaDesktopRenderer, visualEditorRenderer) {
+async function getAllArticlesToKeep(
+  downloader: Downloader,
+  articleDetailXId: RKVS<ArticleDetail>,
+  mw: MediaWiki,
+  dump: Dump,
+  mainPageRenderer: Renderer,
+  articlesRenderer: Renderer,
+) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
-        const articleRenderer = await chooseRenderer(articleId, dump, mw, wikimediaDesktopRenderer, visualEditorRenderer)
         const articleUrl = getArticleUrl(downloader, dump, articleId)
-        const rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+        let rets: any
+        if (dump.isMainPage) {
+          rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+        }
+        rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue
@@ -243,21 +274,6 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
   return `${dump.isMainPage(articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl}${encodeURIComponent(articleId)}`
 }
 
-// TODO: refactor this function (if needed) to handle WikimediaMobile (page/mobile-html) endpoint
-function chooseRendererByCapability(mw: MediaWiki, wikimediaDesktopRenderer: WikimediaDesktopRenderer, visualEditorRenderer: VisualEditorRenderer): Renderer {
-  return mw.hasVisualEditorApi && !mw.hasWikimediaDesktopRestApi ? visualEditorRenderer : wikimediaDesktopRenderer
-}
-
-async function chooseRenderer(articleId, dump: Dump, mw: MediaWiki, wikimediaDesktopRenderer: WikimediaDesktopRenderer, visualEditorRenderer: VisualEditorRenderer) {
-  // Choose separate renderer for the main page
-  if (dump.isMainPage(articleId)) {
-    return chooseRendererByCapability(mw, wikimediaDesktopRenderer, visualEditorRenderer)
-  } else {
-    // TODO: there should be WikimediaMobile renderer once it is done
-    return chooseRendererByCapability(mw, wikimediaDesktopRenderer, visualEditorRenderer)
-  }
-}
-
 /*
  * Fetch Articles
  */
@@ -266,13 +282,20 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
-  const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
-  const visualEditorRenderer = new VisualEditorRenderer()
   const { articleDetailXId } = redisStore
   const articlesTotal = await articleDetailXId.len()
 
+  const rendererBuilder = new RendererBuilder()
+  const rendererBuilderOptions: RendererBuilderOptions = {
+    mw,
+    RendererMode: 'auto',
+  }
+  const mainPageRenderer = rendererBuilder.createRenderer(rendererBuilderOptions)
+  // TODO: article renderer will be switched to the mobiel mode later
+  const articlesRenderer = rendererBuilder.createRenderer(rendererBuilderOptions)
+
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, wikimediaDesktopRenderer, visualEditorRenderer)
+    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, mainPageRenderer, articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -303,11 +326,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
         let rets: any
         try {
-          // TODO: render each article depending on renderer type
-
-          const articleRenderer = await chooseRenderer(articleId, dump, mw, wikimediaDesktopRenderer, visualEditorRenderer)
           const articleUrl = getArticleUrl(downloader, dump, articleId)
-          rets = await downloader.getArticle(articleId, articleDetailXId, articleRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          if (dump.isMainPage) {
+            rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          }
+          rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title
