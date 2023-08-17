@@ -42,7 +42,6 @@ imageminOptions.get('webp').set('image/jpeg', {
 })
 
 interface DownloaderOpts {
-  mw: MediaWiki
   uaString: string
   speed: number
   reqTimeout: number
@@ -100,7 +99,6 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
  * 16. Implement the retry mechanism for other Downloader methods
  */
 class Downloader {
-  public readonly mw: MediaWiki
   public loginCookie = ''
   public readonly speed: number
   public baseUrl: string
@@ -121,8 +119,7 @@ class Downloader {
   private s3: S3
   private apiUrlDirector: ApiURLDirector
 
-  constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
-    this.mw = mw
+  constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.uaString = uaString
     this.speed = speed
     this.maxActiveRequests = speed * 10
@@ -131,7 +128,7 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl
     this.webp = webp
     this.s3 = s3
-    this.apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
+    this.apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -209,14 +206,14 @@ class Downloader {
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mw.hasWikimediaDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
-      { condition: this.mw.hasVisualEditorApi, value: this.mw.visualEditorApiUrl.href },
+      { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+      { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
     ])
 
     //* Objects order in array matters!
     this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: this.mw.hasWikimediaDesktopRestApi, value: this.mw.desktopRestApiUrl.href },
-      { condition: this.mw.hasVisualEditorApi, value: this.mw.visualEditorApiUrl.href },
+      { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+      { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
     ])
 
     logger.log('Base Url: ', this.baseUrl)
@@ -242,7 +239,7 @@ class Downloader {
         ...this.getArticleQueryOpts(shouldGetThumbnail, true),
         titles: articleIds.join('|'),
         ...(this.hasCoordinates ? { colimit: 'max' } : {}),
-        ...(this.mw.getCategories
+        ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
               clshow: '!hidden',
@@ -262,7 +259,7 @@ class Downloader {
         continuation = resp.continue
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (this.mw.getCategories) {
+        if (MediaWiki.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
         }
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
@@ -282,7 +279,7 @@ class Downloader {
       const queryOpts: KVS<any> = {
         ...this.getArticleQueryOpts(),
         ...(this.hasCoordinates ? { colimit: 'max' } : {}),
-        ...(this.mw.getCategories
+        ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
               clshow: '!hidden',
@@ -319,7 +316,7 @@ class Downloader {
 
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (this.mw.getCategories) {
+        if (MediaWiki.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
         }
 
@@ -425,11 +422,11 @@ class Downloader {
   }
 
   private getArticleQueryOpts(includePageimages = false, redirects = false) {
-    const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num)
+    const validNamespaceIds = MediaWiki.namespacesToMirror.map((ns) => MediaWiki.namespaces[ns].num)
     return {
       action: 'query',
       format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.hasCoordinates ? '|coordinates' : ''}${this.mw.getCategories ? '|categories' : ''}`,
+      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.hasCoordinates ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`,
       rdlimit: 'max',
       rdnamespace: validNamespaceIds.join('|'),
       redirects: redirects ? true : undefined,
@@ -624,7 +621,7 @@ class Downloader {
   }
 
   private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const apiUrlDirector = new ApiURLDirector(this.mw.apiUrl.href)
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
     const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
     const items = query.categorymembers.filter((a: any) => a && a.title)

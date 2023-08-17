@@ -22,7 +22,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
   let finalCss = ''
   const { filesToDownloadXPath } = redisStore
   const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
-    const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.baseUrl) : link
+    const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), MediaWiki.baseUrl) : link
     const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null
     try {
       /* link might be a 'link' DOM node or an URL */
@@ -89,7 +89,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -122,7 +122,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     apiParameterOnly = 'styles'
   }
 
-  const moduleApiUrl = encodeURI(`${mw.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+  const moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
   const { content } = await downloader.downloadContent(moduleApiUrl)

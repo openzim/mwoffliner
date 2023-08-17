@@ -18,22 +18,20 @@ import domino from 'domino'
 jest.setTimeout(200000)
 
 describe('Downloader class', () => {
-  let mw: MediaWiki
   let downloader: Downloader
 
   beforeAll(startRedis)
   afterAll(stopRedis)
 
   beforeAll(async () => {
-    mw = new MediaWiki({
-      base: 'https://en.wikipedia.org',
-      getCategories: true,
-    } as any)
+    MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
 
-    downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
-    await mw.getMwMetaData(downloader)
-    await mw.setCapabilities()
+    await MediaWiki.getMwMetaData(downloader)
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
   })
 
@@ -122,7 +120,7 @@ describe('Downloader class', () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
 
     beforeAll(async () => {
-      const mwMetadata = await mw.getMwMetaData(downloader)
+      const mwMetadata = await MediaWiki.getMwMetaData(downloader)
       dump = new Dump('', {} as any, mwMetadata)
     })
 
@@ -209,10 +207,8 @@ describe('Downloader class', () => {
     const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true)
 
     beforeAll(async () => {
-      const mw = new MediaWiki({
-        base: 'https://en.wikipedia.org',
-        getCategories: true,
-      } as any)
+      MediaWiki.base = 'https://en.wikipedia.org'
+      MediaWiki.getCategories = true
 
       s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
         bucketName: s3UrlObj.query.bucketName,
@@ -220,7 +216,6 @@ describe('Downloader class', () => {
         secretAccessKey: s3UrlObj.query.secretAccessKey,
       })
       downloader = new Downloader({
-        mw,
         uaString: `${config.userAgent} (contact@kiwix.org)`,
         speed: 1,
         reqTimeout: 1000 * 60,

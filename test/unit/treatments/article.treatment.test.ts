@@ -15,7 +15,7 @@ describe('ArticleTreatment', () => {
   afterAll(stopRedis)
 
   test('Article html processing', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
+    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -41,7 +41,6 @@ describe('ArticleTreatment', () => {
       } as any,
       downloader,
       redisStore,
-      mw,
       dump,
     )
 

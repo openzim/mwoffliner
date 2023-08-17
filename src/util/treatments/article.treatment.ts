@@ -12,12 +12,12 @@ import DOMUtils from '../../DOMUtils.js'
 import mediaTreatment from './media.treatment.js'
 
 class ArticleTreatment {
-  async processArticleHtml(html: string, redisStore: RS, mw: MediaWiki, dump: Dump, articleId: string, articleDetail: ArticleDetail, _moduleDependencies: any, webp: boolean) {
+  async processArticleHtml(html: string, redisStore: RS, dump: Dump, articleId: string, articleDetail: ArticleDetail, _moduleDependencies: any, webp: boolean) {
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
 
-    const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, mw, dump)
+    const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, dump)
     doc = ruRet.doc
     mediaDependencies = mediaDependencies.concat(
       ruRet.mediaDependencies
@@ -29,7 +29,7 @@ class ArticleTreatment {
     )
     doc = applyOtherTreatments(doc, dump)
 
-    const tmRet = await mediaTreatment.treatMedias(doc, mw, dump, articleId, webp, redisStore)
+    const tmRet = await mediaTreatment.treatMedias(doc, dump, articleId, webp, redisStore)
 
     doc = tmRet.doc
 
@@ -56,7 +56,7 @@ class ArticleTreatment {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
-    let templatedDoc = await this.templateArticle(doc, _moduleDependencies, mw, dump, articleId, articleDetail, redisStore.articleDetailXId)
+    let templatedDoc = await this.templateArticle(doc, _moduleDependencies, dump, articleId, articleDetail, redisStore.articleDetailXId)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
       templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
@@ -87,7 +87,6 @@ class ArticleTreatment {
   private async templateArticle(
     parsoidDoc: DominoElement,
     moduleDependencies: any,
-    mw: MediaWiki,
     dump: Dump,
     articleId: string,
     articleDetail: ArticleDetail,
@@ -101,7 +100,7 @@ class ArticleTreatment {
 
     const htmlTemplateDoc = domino.createDocument(
       htmlTemplateCode(articleId)
-        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, mw.webUrl.href, articleId))
+        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
         .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
         .replace(
           '__ARTICLE_JS_LIST__',
@@ -126,7 +125,7 @@ class ArticleTreatment {
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 
     /* Subpage */
-    if (this.isSubpage(articleId, mw) && !dump.isMainPage(articleId)) {
+    if (this.isSubpage(articleId) && !dump.isMainPage(articleId)) {
       const headingNode = htmlTemplateDoc.getElementById('mw-content-text')
       const subpagesNode = htmlTemplateDoc.createElement('span')
       const parents = articleId.split('/')
@@ -160,7 +159,7 @@ class ArticleTreatment {
     const creatorLink =
       '<a class="external text" ' +
       `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-      `href="${mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+      `href="${MediaWiki.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
       `${dump.mwMetaData.creator}</a>`
 
     const licenseLink = `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`
@@ -192,10 +191,10 @@ class ArticleTreatment {
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
   }
 
-  private isSubpage(id: string, mw: MediaWiki) {
+  private isSubpage(id: string) {
     if (id && id.indexOf('/') >= 0) {
       const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
-      const ns = mw.namespaces[namespace] // namespace already defined
+      const ns = MediaWiki.namespaces[namespace] // namespace already defined
       if (ns !== undefined) {
         return ns.allowedSubpages
       }

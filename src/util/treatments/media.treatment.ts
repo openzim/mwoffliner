@@ -6,14 +6,7 @@ import * as logger from '../../Logger.js'
 import { getFullUrl, getMediaBase, getMimeType, getRelativeFilePath, isWebpCandidateImageMimeType } from '../misc.js'
 
 class MediaTreatment {
-  async treatVideo(
-    mw: MediaWiki,
-    dump: Dump,
-    srcCache: KVS<boolean>,
-    articleId: string,
-    videoEl: DominoElement,
-    webp: boolean,
-  ): Promise<{ mediaDependencies: string[]; subtitles: string[] }> {
+  async treatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[]; subtitles: string[] }> {
     /* Worth noting:
      - This function handles audio tags as well as video tags
      - Video tags are used for audio files too (as opposed to the audio tag)
@@ -119,7 +112,7 @@ class MediaTreatment {
     /* Handle video poster */
     const posterUrl = videoEl.getAttribute('poster')
     if (posterUrl) {
-      const videoPosterUrl = getFullUrl(posterUrl, mw.baseUrl)
+      const videoPosterUrl = getFullUrl(posterUrl, MediaWiki.baseUrl)
       const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I')
 
       if (posterUrl) {
@@ -134,7 +127,7 @@ class MediaTreatment {
     }
 
     /* Download content, but avoid duplicate calls */
-    const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), mw.baseUrl)
+    const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), MediaWiki.baseUrl)
     if (!srcCache.hasOwnProperty(sourceUrl)) {
       srcCache[sourceUrl] = true
       mediaDependencies.push(sourceUrl)
@@ -146,14 +139,14 @@ class MediaTreatment {
 
     /* Scrape subtitle */
     for (const track of Array.from(videoEl.querySelectorAll('track'))) {
-      subtitles.push(await this.treatSubtitle(track, mw, articleId))
+      subtitles.push(await this.treatSubtitle(track, articleId))
     }
 
     return { mediaDependencies, subtitles }
   }
 
-  async treatSubtitle(trackEle: DominoElement, mw: MediaWiki, articleId: string): Promise<string> {
-    const subtitleSourceUrl = getFullUrl(trackEle.getAttribute('src'), mw.baseUrl)
+  async treatSubtitle(trackEle: DominoElement, articleId: string): Promise<string> {
+    const subtitleSourceUrl = getFullUrl(trackEle.getAttribute('src'), MediaWiki.baseUrl)
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string; lang: string }
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl = new URL(subtitleSourceUrl)
@@ -162,7 +155,7 @@ class MediaTreatment {
     return vttFormatUrl.href
   }
 
-  treatImageFrames(mw: MediaWiki, dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+  treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
 
     if (!this.shouldKeepNode(dump, imageNode, image)) {
@@ -195,15 +188,7 @@ class MediaTreatment {
     imageNode.parentNode.replaceChild(thumbDiv, imageNode)
   }
 
-  async treatImage(
-    mw: MediaWiki,
-    dump: Dump,
-    srcCache: KVS<boolean>,
-    articleId: string,
-    img: DominoElement,
-    webp: boolean,
-    redisStore: RS,
-  ): Promise<{ mediaDependencies: string[] }> {
+  async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean, redisStore: RS): Promise<{ mediaDependencies: string[] }> {
     const mediaDependencies: string[] = []
 
     if (!this.shouldKeepImage(dump, img)) {
@@ -216,7 +201,7 @@ class MediaTreatment {
     if (linkNode.tagName === 'A') {
       /* Check if the target is mirrored */
       const href = linkNode.getAttribute('href') || ''
-      const title = mw.extractPageTitleFromHref(href)
+      const title = MediaWiki.extractPageTitleFromHref(href)
       const keepLink = title && (await redisStore.articleDetailXId.exists(title))
 
       /* Under certain condition it seems that this is possible
@@ -235,7 +220,7 @@ class MediaTreatment {
     }
 
     /* Rewrite image src attribute */
-    const src = getFullUrl(img.getAttribute('src'), mw.baseUrl)
+    const src = getFullUrl(img.getAttribute('src'), MediaWiki.baseUrl)
     let newSrc: string
     try {
       const resourceNamespace = 'I'
@@ -276,7 +261,7 @@ class MediaTreatment {
     )
   }
 
-  async treatMedias(parsoidDoc: DominoElement, mw: MediaWiki, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
+  async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
     let mediaDependencies: string[] = []
     let subtitles: string[] = []
     /* Clean/rewrite image tags */
@@ -286,13 +271,13 @@ class MediaTreatment {
 
     for (const videoEl of videos) {
       // <video /> and <audio />
-      const ret = await mediaTreatment.treatVideo(mw, dump, srcCache, articleId, videoEl, webp)
+      const ret = await mediaTreatment.treatVideo(dump, srcCache, articleId, videoEl, webp)
       mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
       subtitles = subtitles.concat(ret.subtitles)
     }
 
     for (const imgEl of imgs) {
-      const ret = await this.treatImage(mw, dump, srcCache, articleId, imgEl, webp, redisStore)
+      const ret = await this.treatImage(dump, srcCache, articleId, imgEl, webp, redisStore)
       mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
     }
 
@@ -301,7 +286,7 @@ class MediaTreatment {
     const spans = parsoidDoc.querySelectorAll('span[typeof~=mw:Image/Frameless],span[typeof~=mw:File/Frameless]')
     const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans))
     for (const imageNode of imageNodes) {
-      mediaTreatment.treatImageFrames(mw, dump, parsoidDoc, imageNode)
+      mediaTreatment.treatImageFrames(dump, parsoidDoc, imageNode)
     }
 
     return { doc: parsoidDoc, mediaDependencies, subtitles }

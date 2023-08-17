@@ -15,69 +15,121 @@ import VisualEditorURLDirector from './util/builders/url/visual-editor.director.
 import { checkApiAvailability } from './util/mw-api.js'
 
 class MediaWiki {
+  private static instance: MediaWiki
+
+  public static getInstance(): MediaWiki {
+    if (!MediaWiki.instance) {
+      MediaWiki.instance = new MediaWiki()
+    }
+    return MediaWiki.instance
+  }
+
   public metaData: MWMetaData
-  public readonly baseUrl: URL
-  public readonly getCategories: boolean
-  public readonly modulePathConfig: string
+  public _base: string
+  public baseUrl: URL
+  public getCategories: boolean
   public readonly namespaces: MWNamespaces = {}
   public readonly namespacesToMirror: string[] = []
+  public mwArticleId = 'MediaWiki:Sidebar'
 
-  private readonly wikiPath: string
-  private readonly restApiPath: string
-  private readonly username: string
-  private readonly password: string
-  private readonly apiPath: string
-  private readonly domain: string
+  #wikiPath: string
+  #restApiPath: string
+  #username: string
+  #password: string
+  #apiPath: string
+  #domain: string
   private apiUrlDirector: ApiURLDirector
   private wikimediaDesktopUrlDirector: DesktopURLDirector
   private visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
-  public restApiUrl: URL
   public apiUrl: URL
-  public modulePath: string
+  public modulePath: string // only for reading
+  public _modulePathOpt: string // only for whiting to generate modulePath
   public webUrl: URL
   public desktopRestApiUrl: URL
 
-  public hasWikimediaDesktopRestApi = false
-  public hasVisualEditorApi = false
+  #hasWikimediaDesktopRestApi = false
+  #hasVisualEditorApi = false
 
-  constructor(config: MWConfig) {
-    this.domain = config.domain || ''
-    this.username = config.username
-    this.password = config.password
-    this.getCategories = config.getCategories
+  set username(value: string) {
+    this.#username = value
+  }
 
-    this.baseUrl = basicURLDirector.buildMediawikiBaseURL(config.base)
+  set password(value: string) {
+    this.#password = value
+  }
 
-    this.apiPath = config.apiPath ?? 'w/api.php'
-    this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH
-    this.restApiPath = config.restApiPath
-    this.modulePathConfig = config.modulePath
+  set apiPath(value: string) {
+    this.#apiPath = value
+  }
 
+  set restApiPath(value: string) {
+    this.#restApiPath = value
+  }
+
+  set domain(value: string) {
+    this.#domain = value
+  }
+
+  set wikiPath(value: string) {
+    this.#wikiPath = value
+  }
+
+  set base(value: string) {
+    this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
+    this.initMWApis()
+  }
+
+  set modulePathOpt(value: string) {
+    this._modulePathOpt = value
+  }
+
+  private constructor() {
+    this.#domain = ''
+    this.#username = ''
+    this.#password = ''
+    this.getCategories = false
+
+    this.#apiPath = 'w/api.php'
+    this.#wikiPath = 'wiki/'
+  }
+
+  public async hasWikimediaDesktopRestApi(): Promise<boolean> {
+    if (!this.#hasWikimediaDesktopRestApi) {
+      this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.mwArticleId))
+      return this.#hasWikimediaDesktopRestApi
+    }
+    return this.#hasWikimediaDesktopRestApi
+  }
+
+  public async hasVisualEditorApi(): Promise<boolean> {
+    if (!this.#hasVisualEditorApi) {
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.mwArticleId))
+      return this.#hasVisualEditorApi
+    }
+    return this.#hasVisualEditorApi
+  }
+
+  private initMWApis() {
     const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
-
-    this.webUrl = baseUrlDirector.buildURL(this.wikiPath)
-    this.apiUrl = baseUrlDirector.buildURL(this.apiPath)
+    this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-
-    this.restApiUrl = baseUrlDirector.buildRestApiURL(this.restApiPath)
-    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.restApiPath)
-
-    this.modulePath = baseUrlDirector.buildModuleURL(this.modulePathConfig)
-
+    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.#restApiPath)
+    this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
     this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
-    if (this.username && this.password) {
+    if (this.#username && this.#password) {
       let url = this.apiUrl.href + '?'
 
       // Add domain if configured
-      if (this.domain) {
-        url = `${url}lgdomain=${this.domain}&`
+      if (this.#domain) {
+        url = `${url}lgdomain=${this.#domain}&`
       }
 
       // Getting token to login.
@@ -88,8 +140,8 @@ class MediaWiki {
         data: qs.stringify({
           action: 'login',
           format: 'json',
-          lgname: this.username,
-          lgpassword: this.password,
+          lgname: this.#username,
+          lgpassword: this.#password,
           lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
         }),
         headers: {
@@ -291,10 +343,10 @@ class MediaWiki {
       apiUrl: this.apiUrl.href,
       modulePath: this.modulePath,
       webUrlPath: this.webUrl.pathname,
-      wikiPath: this.wikiPath,
+      wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
-      apiPath: this.apiPath,
-      domain: this.domain,
+      apiPath: this.#apiPath,
+      domain: this.#domain,
 
       textDir: textDir as TextDirection,
       langIso2,
@@ -309,12 +361,7 @@ class MediaWiki {
 
     return mwMetaData
   }
-
-  // Set capability properties, usied while mw.login
-  public async setCapabilities(articleId = 'MediaWiki:Sidebar', loginCookie?: string): Promise<void> {
-    this.hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(articleId), loginCookie)
-    this.hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(articleId), loginCookie)
-  }
 }
 
-export default MediaWiki
+const mw = MediaWiki.getInstance()
+export default mw as MediaWiki

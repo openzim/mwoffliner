@@ -14,42 +14,43 @@ describe('RendererBuilder', () => {
   })
 
   it('should create a WikimediaDesktopRenderer for desktop mode', async () => {
-    const { mw } = await setupScrapeClasses() // en wikipedia
+    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
     const renderer = rendererBuilder.createRenderer({
-      mw,
+      MediaWiki,
       RendererMode: 'desktop',
     } as RendererBuilderOptions)
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
   it('should create a WikimediaDesktopRenderer for auto mode as this is default for en wikipedia', async () => {
-    const { mw } = await setupScrapeClasses() // en wikipedia
-    await mw.setCapabilities()
+    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
 
     const renderer = rendererBuilder.createRenderer({
-      mw,
+      MediaWiki,
       RendererMode: 'auto',
     } as RendererBuilderOptions)
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
   it('should throw error for unknown render mode', async () => {
-    const { mw } = await setupScrapeClasses() // en wikipedia
+    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
     expect(() => {
       rendererBuilder.createRenderer({
-        mw,
+        MediaWiki,
         RendererMode: 'unknownMode' as any,
       } as RendererBuilderOptions)
     }).toThrow('Unknown render mode: unknownMode')
   })
 
   it('should return VisualEditorRenderer for specific mode with RendererAPI as VisualEditor', async () => {
-    const { mw } = await setupScrapeClasses() // en wikipedia
+    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
     const rendererBuilderOptions = {
-      mw,
+      MediaWiki,
       RendererMode: 'specific',
       RendererAPI: 'VisualEditor',
     }
@@ -60,10 +61,10 @@ describe('RendererBuilder', () => {
   })
 
   it('should return WikimediaDesktopRenderer for specific mode with RendererAPI as WikimediaDesktop', async () => {
-    const { mw } = await setupScrapeClasses() // en wikipedia
+    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
     const rendererBuilderOptions = {
-      mw,
+      MediaWiki,
       RendererMode: 'specific',
       RendererAPI: 'WikimediaDesktop',
     }
@@ -74,12 +75,13 @@ describe('RendererBuilder', () => {
   })
 
   it('should throw an error for unknown RendererAPI in specific mode', async () => {
-    const { downloader, mw } = await setupScrapeClasses() // en wikipedia
-    await mw.setCapabilities()
+    const { downloader, MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
 
     const rendererBuilderOptions = {
-      mw,
+      MediaWiki,
       RendererMode: 'specific',
       RendererAPI: 'UnknownAPI', // Using an invalid RendererAPI for the test
     }

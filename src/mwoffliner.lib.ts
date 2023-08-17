@@ -155,21 +155,18 @@ async function execute(argv: any) {
   const s3 = s3Obj ? s3Obj : {}
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
-  const mw = new MediaWiki({
-    getCategories: !!argv.getCategories,
-    apiPath: mwApiPath,
-    restApiPath: mwRestApiPath,
-    modulePath: mwModulePath,
-    base: mwUrl,
-    domain: mwDomain,
-    password: mwPassword,
-    username: mwUsername,
-    wikiPath: mwWikiPath,
-  })
+  MediaWiki.base = mwUrl
+  MediaWiki.getCategories = !!argv.getCategories
+  MediaWiki.apiPath = mwApiPath
+  MediaWiki.restApiPath = mwRestApiPath
+  MediaWiki.modulePathOpt = mwModulePath
+  MediaWiki.domain = mwDomain
+  MediaWiki.password = mwPassword
+  MediaWiki.username = mwUsername
+  MediaWiki.wikiPath = mwWikiPath
 
   /* Download helpers; TODO: Merge with something else / expand this. */
   const downloader = new Downloader({
-    mw,
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
@@ -179,12 +176,12 @@ async function execute(argv: any) {
   })
 
   /* perform login */
-  await mw.login(downloader)
+  await MediaWiki.login(downloader)
 
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await mw.getMwMetaData(downloader)
+    mwMetaData = await MediaWiki.getMwMetaData(downloader)
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -205,13 +202,16 @@ async function execute(argv: any) {
 
   if (customMainPage) {
     mainPage = customMainPage
-    const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage)
+    const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
     if (!(await checkApiAvailability(mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
 
-  await mw.setCapabilities(mwMetaData.mainPage)
+  MediaWiki.mwArticleId = mwMetaData.mainPage
+  await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasVisualEditorApi()
+
   await downloader.setBaseUrls()
 
   const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)
@@ -285,14 +285,14 @@ async function execute(argv: any) {
     }
   }
 
-  await mw.getNamespaces(addNamespaces, downloader)
+  await MediaWiki.getNamespaces(addNamespaces, downloader)
 
   logger.info('Getting article ids')
   let stime = Date.now()
-  await getArticleIds(downloader, redisStore, mw, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  await getArticleIds(downloader, redisStore, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
-  if (mw.getCategories) {
+  if (MediaWiki.getCategories) {
     await getCategoriesForArticles(articleDetailXId, downloader, redisStore)
 
     while ((await trimUnmirroredPages(downloader, redisStore)) > 0) {
@@ -401,7 +401,7 @@ async function execute(argv: any) {
     await saveStaticFiles(config, zimCreator)
 
     logger.info('Finding stylesheets to download')
-    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader, mw)
+    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
 
     logger.log('Downloading stylesheets and populating media queue')
@@ -419,7 +419,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, redisStore, mw, dump)
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, redisStore, dump)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
@@ -441,7 +441,7 @@ async function execute(argv: any) {
         return pmap(
           moduleList,
           (oneModule) => {
-            return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any)
+            return downloadAndSaveModule(zimCreator, downloader, dump, oneModule, type as any)
           },
           { concurrency: downloader.speed },
         )
@@ -512,7 +512,7 @@ async function execute(argv: any) {
       }
     }
 
-    const apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
     const body = await downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
 
@@ -524,7 +524,7 @@ async function execute(argv: any) {
     }
 
     const parsedUrl = urlParser.parse(entries.logo)
-    const logoUrl = parsedUrl.protocol ? entries.logo : mw.baseUrl.protocol + entries.logo
+    const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
     const { content } = await downloader.downloadContent(logoUrl)
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }

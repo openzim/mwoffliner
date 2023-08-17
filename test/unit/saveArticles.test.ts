@@ -17,8 +17,9 @@ describe('saveArticles', () => {
   afterAll(stopRedis)
 
   test('Article html processing', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    await mw.setCapabilities()
+    const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -40,7 +41,6 @@ describe('saveArticles', () => {
       } as any,
       downloader,
       redisStore,
-      mw,
       dump,
     )
 
@@ -130,8 +130,9 @@ describe('saveArticles', () => {
   })
 
   test('--customFlavour', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-    await mw.setCapabilities()
+    const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -178,7 +179,6 @@ describe('saveArticles', () => {
       } as any,
       downloader,
       redisStore,
-      mw,
       dump,
     )
 
@@ -210,9 +210,9 @@ describe('saveArticles', () => {
   })
 
   test('Load inline js from HTML', async () => {
-    const { downloader, mw } = await setupScrapeClasses() // en wikipedia
+    const { downloader } = await setupScrapeClasses() // en wikipedia
 
-    const _moduleDependencies = await getModuleDependencies('Potato', mw, downloader)
+    const _moduleDependencies = await getModuleDependencies('Potato', downloader)
     // next variables declared to avoid "variable is not defined" errors
     let RLCONF: any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

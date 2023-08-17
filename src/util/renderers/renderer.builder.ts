@@ -7,24 +7,25 @@ import { RendererBuilderOptions } from './../saveArticles.js'
 export class RendererBuilder {
   private renderApi: 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
   private renderMode: 'auto' | 'desktop' | 'mobile' | 'specific'
-  private mw: MediaWiki
 
   public createRenderer(options: RendererBuilderOptions): Renderer {
-    const { mw, RendererMode, RendererAPI } = options
+    const { RendererMode, RendererAPI } = options
 
-    this.mw = mw
     this.renderMode = RendererMode
     this.renderApi = RendererAPI
 
     switch (this.renderMode) {
       case 'desktop':
+        if (MediaWiki.hasVisualEditorApi && !MediaWiki.hasWikimediaDesktopRestApi) {
+          return new VisualEditorRenderer()
+        }
         return new WikimediaDesktopRenderer()
       case 'mobile':
         // TODO: return WikimediaMobile renderer
         break
       case 'auto':
         // Auto mode is code driven and based on mw api capabilities of specific wiki
-        if (this.mw.hasVisualEditorApi && !this.mw.hasWikimediaDesktopRestApi) {
+        if (MediaWiki.hasVisualEditorApi && !MediaWiki.hasWikimediaDesktopRestApi) {
           return new VisualEditorRenderer()
         }
         return new WikimediaDesktopRenderer()

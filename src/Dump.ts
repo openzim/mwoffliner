@@ -197,7 +197,7 @@ export class Dump {
     return zimRootPath
   }
 
-  public async getRelevantStylesheetUrls(downloader: Downloader, mw: MediaWiki) {
+  public async getRelevantStylesheetUrls(downloader: Downloader) {
     // TODO: consider moving to Downloader
     const sheetUrls: Array<string | DominoElement> = []
 
@@ -216,7 +216,7 @@ export class Dump {
 
     /* Push Mediawiki:Offline.css (at the end) */
     // TODO: Weak URL (might fail in a number of cases where the wiki path is not like on Wikipedia)
-    const webUrlDirector = new WebURLDirector(mw.webUrl.href)
+    const webUrlDirector = new WebURLDirector(MediaWiki.webUrl.href)
 
     const offlineCssUrl = webUrlDirector.buildArticleRawURL('Mediawiki:offline.css')
 

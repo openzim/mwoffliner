@@ -12,29 +12,28 @@ describe('mwApi', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
-  let mw: MediaWiki
   let downloader: Downloader
 
   beforeEach(async () => {
     await redisStore.articleDetailXId.flush()
-    mw = new MediaWiki({
-      base: 'https://en.wikipedia.org',
-      getCategories: true,
-    } as any)
 
-    downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+    MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
 
-    await mw.getMwMetaData(downloader)
-    await mw.setCapabilities()
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+
+    await MediaWiki.getMwMetaData(downloader)
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.checkCoordinatesAvailability()
 
-    await mw.getNamespaces([], downloader)
+    await MediaWiki.getNamespaces([], downloader)
   })
 
   test('MWApi Article Ids', async () => {
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
 
-    await getArticleIds(downloader, redisStore, mw, 'Main_Page', aIds)
+    await getArticleIds(downloader, redisStore, 'Main_Page', aIds)
 
     const articlesById = await redisStore.articleDetailXId.getMany(aIds)
     const { United_Kingdom, London } = articlesById
@@ -84,10 +83,10 @@ describe('mwApi', () => {
     expect(Circle).toHaveProperty('coordinates')
 
     // Got items in namespaces
-    expect(Object.keys(mw.namespaces).length).toBeGreaterThan(0)
+    expect(Object.keys(MediaWiki.namespaces).length).toBeGreaterThan(0)
 
     let keysAreValid = true
-    Object.values(mw.namespaces).forEach((item) => {
+    Object.values(MediaWiki.namespaces).forEach((item) => {
       if (!Object.keys(item).includes('num') || !Object.keys(item).includes('allowedSubpages') || !Object.keys(item).includes('isContent')) keysAreValid = false
     })
     // Namespaces have valid keys
@@ -95,23 +94,23 @@ describe('mwApi', () => {
   })
 
   test('extracting title from href', () => {
-    const titleWithWiki = mw.extractPageTitleFromHref('/wiki/Hades')
+    const titleWithWiki = MediaWiki.extractPageTitleFromHref('/wiki/Hades')
     // Title with hrefs contaning /wiki
     expect(titleWithWiki).toEqual('Hades')
 
-    const titleWithRelativePath = mw.extractPageTitleFromHref('./Damage_Formula')
+    const titleWithRelativePath = MediaWiki.extractPageTitleFromHref('./Damage_Formula')
     // Title with relative path
     expect(titleWithRelativePath).toEqual('Damage_Formula')
 
-    const titleWithTwoDir = mw.extractPageTitleFromHref('../../Mali_Dung')
+    const titleWithTwoDir = MediaWiki.extractPageTitleFromHref('../../Mali_Dung')
     // Title with two dir path
     expect(titleWithTwoDir).toEqual('Mali_Dung')
 
-    const titleWithAnchorJump = mw.extractPageTitleFromHref('./Subarns#Mali')
+    const titleWithAnchorJump = MediaWiki.extractPageTitleFromHref('./Subarns#Mali')
     // Title with Anchor Jump
     expect(titleWithAnchorJump).toEqual('Subarns')
 
-    const interWikiTitle = mw.extractPageTitleFromHref('Maldives')
+    const interWikiTitle = MediaWiki.extractPageTitleFromHref('Maldives')
     // Interwiki title
     expect(interWikiTitle).toBeNull()
   })

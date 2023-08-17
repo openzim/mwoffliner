@@ -15,7 +15,7 @@ describe('Styles', () => {
   afterAll(stopRedis)
 
   test('Url re-writing', async () => {
-    const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
+    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -50,83 +50,83 @@ describe('Styles', () => {
       resource: './Media:Fr-Laissez-faire.oga',
     })
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $geo)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $geo)
     // Geo is still a link
     expect($geo.nodeName).toEqual('A')
     // Geo HREF is correct
     expect($geo.getAttribute('href')).toEqual('geo:37.786971,-122.399677')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $geoHack)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $geoHack)
     // GeoHack is still a link
     expect($geoHack.nodeName).toEqual('A')
     // GeoHack HREF is correct
     expect($geoHack.getAttribute('href')).toEqual('geo:51.507222222222225,-0.1275')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $extHttp)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $extHttp)
     // extHttp is still a link
     expect($extHttp.nodeName).toEqual('A')
     // extHttp HREF is correct
     expect($extHttp.getAttribute('href')).toEqual('http://google.com')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $extHttps)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $extHttps)
     // extHttps is still a link
     expect($extHttps.nodeName).toEqual('A')
     // extHttps HREF is correct
     expect($extHttps.getAttribute('href')).toEqual('https://google.com')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $extNoProtocol)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $extNoProtocol)
     // extNoProtocol is still a link
     expect($extNoProtocol.nodeName).toEqual('A')
     // $extNoProtocol HREF has HTTPS Protocol
     expect($extNoProtocol.getAttribute('href')).toEqual('https://google.com')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $extHttpsNoRel)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $extHttpsNoRel)
     // extHttpsNoRel is still a link
     expect($extHttpsNoRel.nodeName).toEqual('A')
     // extHttpsNoRel HREF is correct
     expect($extHttpsNoRel.getAttribute('href')).toEqual('https://google.com')
 
-    await rewriteUrl(parentArticleId, redisStore, mw, dump, $wikiLink)
+    await rewriteUrl(parentArticleId, redisStore, dump, $wikiLink)
     // wikiLink is still a link with simple parent id
     expect($wikiLink.nodeName).toEqual('A')
     // wikiLink HREF is correct with simple parent id
     expect($wikiLink.getAttribute('href')).toEqual('British_Museum')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $wikiLink2)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $wikiLink2)
     // wikiLink is still a link with complex parent id
     expect($wikiLink2.nodeName).toEqual('A')
     // wikiLink HREF is correct with complex parent id
     expect($wikiLink2.getAttribute('href')).toEqual('../../A/British_Museum')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $wikiLinkWithSlash)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $wikiLinkWithSlash)
     // wikiLinkWithSlash is still a link
     expect($wikiLinkWithSlash.nodeName).toEqual('A')
     // wikiLinkWithSlash HREF is correct
     expect($wikiLinkWithSlash.getAttribute('href')).toEqual('../../A/Farnborough/Aldershot_built-up_area')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $specialMap)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $specialMap)
     // specialMap is still a link
     expect($specialMap.nodeName).toEqual('A')
     // specialMap HREF is correct
     expect($specialMap.getAttribute('href')).toEqual('geo:51.51,-0.08')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $hashLink)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $hashLink)
     // hashLink is still a link
     expect($hashLink.nodeName).toEqual('A')
     // hashLink HREF is correct
     expect($hashLink.getAttribute('href')).toEqual('#cite_note-LAS-150')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $nonScrapedWikiLink)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $nonScrapedWikiLink)
     // nonScrapedWikiLink has been deleted
     expect($nonScrapedWikiLink.parentElement).toBeNull()
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $resourceLink)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $resourceLink)
     // resourceLink is still a link
     expect($resourceLink.nodeName).toEqual('A')
     // resourceLink has been re-written
     expect($resourceLink.getAttribute('href')).toEqual('../../I/De-Z%C3%BCrich.ogg')
 
-    await rewriteUrl(complexParentArticleId, redisStore, mw, dump, $ogaResourceLink)
+    await rewriteUrl(complexParentArticleId, redisStore, dump, $ogaResourceLink)
     // ogaResourceLink is still a link
     expect($ogaResourceLink.nodeName).toEqual('A')
     // ogaResourceLink has been re-written
@@ -137,12 +137,13 @@ describe('Styles', () => {
     const { articleDetailXId } = redisStore
     await articleDetailXId.flush()
     await redisStore.redirectsXId.flush()
-    const { downloader, mw, dump } = await setupScrapeClasses() // en wikipedia
-    await mw.setCapabilities()
+    const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.checkCoordinatesAvailability()
     await downloader.setBaseUrls()
 
-    await getArticleIds(downloader, redisStore, mw, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
+    await getArticleIds(downloader, redisStore, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
     let LondonArticle: typeof ZimArticle
 
@@ -157,7 +158,6 @@ describe('Styles', () => {
       } as any,
       downloader,
       redisStore,
-      mw,
       dump,
     )
 

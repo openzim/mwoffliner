@@ -3,7 +3,7 @@ import MediaWiki from '../MediaWiki.js'
 import Downloader from '../Downloader.js'
 import { getArticlesByIds, getArticlesByNS } from './mw-api.js'
 
-export async function getArticleIds(downloader: Downloader, redisStore: RS, mw: MediaWiki, mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
+export async function getArticleIds(downloader: Downloader, redisStore: RS, mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
   if (mainPage) {
     await getArticlesByIds([mainPage], downloader, redisStore)
   }
@@ -12,9 +12,9 @@ export async function getArticleIds(downloader: Downloader, redisStore: RS, mw: 
     await getArticlesByIds(articleIds, downloader, redisStore)
   } else {
     await pmap(
-      mw.namespacesToMirror,
+      MediaWiki.namespacesToMirror,
       (namespace: string) => {
-        return getArticlesByNS(mw.namespaces[namespace].num, downloader, redisStore, articleIdsToIgnore)
+        return getArticlesByNS(MediaWiki.namespaces[namespace].num, downloader, redisStore, articleIdsToIgnore)
       },
       { concurrency: downloader.speed },
     )

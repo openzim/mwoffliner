@@ -25,18 +25,15 @@ type RendererMode = 'auto' | 'desktop' | 'mobile' | 'specific'
 type RendererAPI = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
 
 interface RendererBuilderOptionsBase {
-  mw: MediaWiki
   RendererMode: RendererMode
 }
 
 interface RendererBuilderOptionsCommon {
-  mw: MediaWiki
   RendererMode: RendererMode
   RendererAPI?: never
 }
 
 interface RendererBuilderOptionsSpecific extends RendererBuilderOptionsBase {
-  mw: MediaWiki
   RendererMode: 'specific'
   RendererAPI: RendererAPI
 }
@@ -153,14 +150,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(
-  downloader: Downloader,
-  articleDetailXId: RKVS<ArticleDetail>,
-  mw: MediaWiki,
-  dump: Dump,
-  mainPageRenderer: Renderer,
-  articlesRenderer: Renderer,
-) {
+async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
@@ -209,7 +199,6 @@ async function saveArticle(
   articleHtml: string,
   downloader: Downloader,
   redisStore: RS,
-  mw: MediaWiki,
   dump: Dump,
   articleId: string,
   articleTitle: string,
@@ -220,7 +209,6 @@ async function saveArticle(
     const { finalHTML, mediaDependencies, subtitles } = await articleTreatment.processArticleHtml(
       articleHtml,
       redisStore,
-      mw,
       dump,
       articleId,
       articleDetail,
@@ -277,7 +265,7 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, redisStore: RS, mw: MediaWiki, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, redisStore: RS, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
@@ -287,7 +275,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   const rendererBuilder = new RendererBuilder()
   const rendererBuilderOptions: RendererBuilderOptions = {
-    mw,
     RendererMode: 'auto',
   }
   const mainPageRenderer = rendererBuilder.createRenderer(rendererBuilderOptions)
@@ -295,7 +282,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const articlesRenderer = rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, mw, dump, mainPageRenderer, articlesRenderer)
+    await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -341,7 +328,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             }
 
             curStage += 1
-            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, mw, downloader)
+            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
             for (const dep of _moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
@@ -356,7 +343,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
              * To parse and download simultaniously, we don't await on save,
              * but instead cache the promise in a queue and check it later
              */
-            promises.push([articleId, saveArticle(zimCreator, articleHtml, downloader, redisStore, mw, dump, articleId, articleTitle, articleDetail, _moduleDependencies)])
+            promises.push([articleId, saveArticle(zimCreator, articleHtml, downloader, redisStore, dump, articleId, articleTitle, articleDetail, _moduleDependencies)])
           }
         } catch (err) {
           dump.status.articles.fail += 1
@@ -432,14 +419,14 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   }
 }
 
-export async function getModuleDependencies(articleId: string, mw: MediaWiki, downloader: Downloader) {
+export async function getModuleDependencies(articleId: string, downloader: Downloader) {
   /* These vars will store the list of js and css dependencies for
     the article we are downloading. */
   let jsConfigVars = ''
   let jsDependenciesList: string[] = []
   let styleDependenciesList: string[] = []
 
-  const apiUrlDirector = new ApiURLDirector(mw.apiUrl.href)
+  const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
   const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
 
