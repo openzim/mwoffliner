@@ -3,6 +3,7 @@ import { Renderer } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { RendererBuilderOptions } from './../saveArticles.js'
+import * as logger from './../../Logger.js'
 
 export class RendererBuilder {
   private renderApi: 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
@@ -18,8 +19,11 @@ export class RendererBuilder {
       case 'desktop':
         if (MediaWiki.hasVisualEditorApi && !MediaWiki.hasWikimediaDesktopRestApi) {
           return new VisualEditorRenderer()
+        } else if (MediaWiki.hasWikimediaDesktopRestApi) {
+          return new WikimediaDesktopRenderer()
         }
-        return new WikimediaDesktopRenderer()
+        logger.error('No available renderer for desktop mode.')
+        process.exit(1)
       case 'mobile':
         // TODO: return WikimediaMobile renderer
         break
@@ -27,15 +31,26 @@ export class RendererBuilder {
         // Auto mode is code driven and based on mw api capabilities of specific wiki
         if (MediaWiki.hasVisualEditorApi && !MediaWiki.hasWikimediaDesktopRestApi) {
           return new VisualEditorRenderer()
+        } else if (MediaWiki.hasWikimediaDesktopRestApi) {
+          return new WikimediaDesktopRenderer()
         }
-        return new WikimediaDesktopRenderer()
+        logger.error('No available renderer for auto mode.')
+        process.exit(1)
       case 'specific':
         // renderApi argument is required for 'specific' mode
         switch (this.renderApi) {
           case 'WikimediaDesktop':
-            return new WikimediaDesktopRenderer()
+            if (MediaWiki.hasWikimediaDesktopRestApi) {
+              return new WikimediaDesktopRenderer()
+            }
+            logger.error('Cannot create an instance of WikimediaDesktop renderer.')
+            process.exit(1)
           case 'VisualEditor':
-            return new VisualEditorRenderer()
+            if (MediaWiki.hasVisualEditorApi) {
+              return new VisualEditorRenderer()
+            }
+            logger.error('Cannot create an instance of VisualEditor renderer.')
+            process.exit(1)
           case 'WikimediaMobile':
             // TODO: return WikimediaMobile renderer
             return
