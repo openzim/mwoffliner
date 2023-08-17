@@ -12,7 +12,7 @@ import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import { checkApiAvailabilty } from './util/mw-api.js'
+import { checkApiAvailability } from './util/mw-api.js'
 
 class MediaWiki {
   public metaData: MWMetaData
@@ -312,8 +312,8 @@ class MediaWiki {
 
   // Set capability properties, usied while mw.login
   public async setCapabilities(articleId = 'MediaWiki:Sidebar', loginCookie?: string): Promise<void> {
-    this.hasWikimediaDesktopRestApi = await checkApiAvailabilty(this.wikimediaDesktopUrlDirector.buildArticleURL(articleId), loginCookie)
-    this.hasVisualEditorApi = await checkApiAvailabilty(this.visualEditorURLDirector.buildArticleURL(articleId), loginCookie)
+    this.hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(articleId), loginCookie)
+    this.hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(articleId), loginCookie)
   }
 }
 

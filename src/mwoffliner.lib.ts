@@ -17,7 +17,7 @@ import semver from 'semver'
 import * as path from 'path'
 import * as QueryStringParser from 'querystring'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
-import { checkApiAvailabilty } from './util/mw-api.js'
+import { checkApiAvailability } from './util/mw-api.js'
 
 import {
   MAX_CPU_CORES,
@@ -206,7 +206,7 @@ async function execute(argv: any) {
   if (customMainPage) {
     mainPage = customMainPage
     const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage)
-    if (!(await checkApiAvailabilty(mainPageUrl))) {
+    if (!(await checkApiAvailability(mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
