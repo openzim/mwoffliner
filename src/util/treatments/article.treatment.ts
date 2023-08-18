@@ -12,7 +12,15 @@ import DOMUtils from '../../DOMUtils.js'
 import mediaTreatment from './media.treatment.js'
 
 class ArticleTreatment {
-  async processArticleHtml(html: string, redisStore: RS, dump: Dump, articleId: string, articleDetail: ArticleDetail, _moduleDependencies: any, webp: boolean) {
+  /**
+   * TODO: add temporary workaround to bypass 'test/e2e/cmd.e2e.test.ts'
+   * Once article treatments will be replaced to render() method,
+   * there should not be a problem to access to MediaWiki singleton
+   */
+  private mw: typeof MediaWiki
+
+  async processArticleHtml(html: string, redisStore: RS, mw: any, dump: Dump, articleId: string, articleDetail: ArticleDetail, _moduleDependencies: any, webp: boolean) {
+    this.mw = mw
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
@@ -100,7 +108,7 @@ class ArticleTreatment {
 
     const htmlTemplateDoc = domino.createDocument(
       htmlTemplateCode(articleId)
-        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
+        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, this.mw.webUrl.href, articleId))
         .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
         .replace(
           '__ARTICLE_JS_LIST__',
@@ -159,7 +167,7 @@ class ArticleTreatment {
     const creatorLink =
       '<a class="external text" ' +
       `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-      `href="${MediaWiki.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+      `href="${this.mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
       `${dump.mwMetaData.creator}</a>`
 
     const licenseLink = `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`
@@ -194,7 +202,7 @@ class ArticleTreatment {
   private isSubpage(id: string) {
     if (id && id.indexOf('/') >= 0) {
       const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
-      const ns = MediaWiki.namespaces[namespace] // namespace already defined
+      const ns = this.mw.namespaces[namespace] // namespace already defined
       if (ns !== undefined) {
         return ns.allowedSubpages
       }

@@ -209,6 +209,7 @@ async function saveArticle(
     const { finalHTML, mediaDependencies, subtitles } = await articleTreatment.processArticleHtml(
       articleHtml,
       redisStore,
+      MediaWiki,
       dump,
       articleId,
       articleDetail,
