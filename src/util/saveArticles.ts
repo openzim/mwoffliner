@@ -277,9 +277,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const rendererBuilderOptions: RendererBuilderOptions = {
     RendererMode: 'auto',
   }
-  const mainPageRenderer = rendererBuilder.createRenderer(rendererBuilderOptions)
+  const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
   // TODO: article renderer will be switched to the mobiel mode later
-  const articlesRenderer = rendererBuilder.createRenderer(rendererBuilderOptions)
+  const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
     await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)

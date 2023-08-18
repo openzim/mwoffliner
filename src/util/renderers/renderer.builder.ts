@@ -9,44 +9,49 @@ export class RendererBuilder {
   private renderApi: 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
   private renderMode: 'auto' | 'desktop' | 'mobile' | 'specific'
 
-  public createRenderer(options: RendererBuilderOptions): Renderer {
+  public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { RendererMode, RendererAPI } = options
 
     this.renderMode = RendererMode
     this.renderApi = RendererAPI
 
+    const [hasVisualEditorApi, hasWikimediaDesktopRestApi] = await Promise.all([MediaWiki.hasVisualEditorApi(), MediaWiki.hasWikimediaDesktopRestApi()])
+
     switch (this.renderMode) {
       case 'desktop':
-        if (MediaWiki.hasVisualEditorApi && !MediaWiki.hasWikimediaDesktopRestApi) {
-          return new VisualEditorRenderer()
-        } else if (MediaWiki.hasWikimediaDesktopRestApi) {
+        if (hasWikimediaDesktopRestApi) {
+          // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
+        } else if (hasVisualEditorApi) {
+          return new VisualEditorRenderer()
+        } else {
+          logger.error('No available renderer for desktop mode.')
+          process.exit(1)
         }
-        logger.error('No available renderer for desktop mode.')
-        process.exit(1)
       case 'mobile':
         // TODO: return WikimediaMobile renderer
         break
       case 'auto':
-        // Auto mode is code driven and based on mw api capabilities of specific wiki
-        if (MediaWiki.hasVisualEditorApi && !MediaWiki.hasWikimediaDesktopRestApi) {
-          return new VisualEditorRenderer()
-        } else if (MediaWiki.hasWikimediaDesktopRestApi) {
+        if (hasWikimediaDesktopRestApi) {
+          // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
+        } else if (hasVisualEditorApi) {
+          return new VisualEditorRenderer()
+        } else {
+          logger.error('No available renderer for auto mode.')
+          process.exit(1)
         }
-        logger.error('No available renderer for auto mode.')
-        process.exit(1)
       case 'specific':
         // renderApi argument is required for 'specific' mode
         switch (this.renderApi) {
           case 'WikimediaDesktop':
-            if (MediaWiki.hasWikimediaDesktopRestApi) {
+            if (hasWikimediaDesktopRestApi) {
               return new WikimediaDesktopRenderer()
             }
             logger.error('Cannot create an instance of WikimediaDesktop renderer.')
             process.exit(1)
           case 'VisualEditor':
-            if (MediaWiki.hasVisualEditorApi) {
+            if (hasVisualEditorApi) {
               return new VisualEditorRenderer()
             }
             logger.error('Cannot create an instance of VisualEditor renderer.')

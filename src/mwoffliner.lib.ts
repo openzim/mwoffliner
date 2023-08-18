@@ -639,6 +639,7 @@ async function execute(argv: any) {
     }
   }
 
+  MediaWiki.reset()
   redisStore.close()
 
   return dumps

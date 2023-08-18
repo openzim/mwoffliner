@@ -16,19 +16,17 @@ describe('RendererBuilder', () => {
   it('should create a WikimediaDesktopRenderer for desktop mode', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
-    const renderer = rendererBuilder.createRenderer({
+    const renderer = await rendererBuilder.createRenderer({
       MediaWiki,
       RendererMode: 'desktop',
     } as RendererBuilderOptions)
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
-  it('should create a WikimediaDesktopRenderer for auto mode as this is default for en wikipedia', async () => {
+  it('should create a WikimediaDesktopRenderer for auto mode for en wikipedia', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
-    await MediaWiki.hasWikimediaDesktopRestApi()
-    await MediaWiki.hasVisualEditorApi()
 
-    const renderer = rendererBuilder.createRenderer({
+    const renderer = await rendererBuilder.createRenderer({
       MediaWiki,
       RendererMode: 'auto',
     } as RendererBuilderOptions)
@@ -38,16 +36,19 @@ describe('RendererBuilder', () => {
   it('should throw error for unknown render mode', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
-    expect(() => {
-      rendererBuilder.createRenderer({
+    expect(async () => {
+      await rendererBuilder.createRenderer({
         MediaWiki,
         RendererMode: 'unknownMode' as any,
       } as RendererBuilderOptions)
-    }).toThrow('Unknown render mode: unknownMode')
+    }).rejects.toThrow('Unknown render mode: unknownMode')
   })
 
   it('should return VisualEditorRenderer for specific mode with RendererAPI as VisualEditor', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+
+    // Force MediaWiki to have capability for the VisualEditor for test purpose
+    jest.spyOn(MediaWiki, 'hasVisualEditorApi').mockResolvedValue(true)
 
     const rendererBuilderOptions = {
       MediaWiki,
@@ -55,7 +56,7 @@ describe('RendererBuilder', () => {
       RendererAPI: 'VisualEditor',
     }
 
-    const renderer = rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
+    const renderer = await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
 
     expect(renderer).toBeInstanceOf(VisualEditorRenderer)
   })
@@ -63,13 +64,16 @@ describe('RendererBuilder', () => {
   it('should return WikimediaDesktopRenderer for specific mode with RendererAPI as WikimediaDesktop', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
+    // Force MediaWiki to have capability for the WikimediaDesktop for test purpose
+    jest.spyOn(MediaWiki, 'hasWikimediaDesktopRestApi').mockResolvedValue(true)
+
     const rendererBuilderOptions = {
       MediaWiki,
       RendererMode: 'specific',
       RendererAPI: 'WikimediaDesktop',
     }
 
-    const renderer = rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
+    const renderer = await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
 
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
@@ -86,7 +90,7 @@ describe('RendererBuilder', () => {
       RendererAPI: 'UnknownAPI', // Using an invalid RendererAPI for the test
     }
 
-    expect(() => rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)).toThrow(
+    expect(async () => await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)).rejects.toThrow(
       `Unknown RendererAPI for specific mode: ${rendererBuilderOptions.RendererAPI}`,
     )
   })

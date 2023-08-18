@@ -27,9 +27,9 @@ class MediaWiki {
   public _base: string
   public baseUrl: URL
   public getCategories: boolean
-  public readonly namespaces: MWNamespaces = {}
-  public readonly namespacesToMirror: string[] = []
-  public mwArticleId = 'MediaWiki:Sidebar'
+  public namespaces: MWNamespaces = {}
+  public namespacesToMirror: string[] = []
+  public mwArticleId: string
 
   #wikiPath: string
   #restApiPath: string
@@ -48,8 +48,8 @@ class MediaWiki {
   public webUrl: URL
   public desktopRestApiUrl: URL
 
-  #hasWikimediaDesktopRestApi = false
-  #hasVisualEditorApi = false
+  #hasWikimediaDesktopRestApi: boolean | null
+  #hasVisualEditorApi: boolean | null
 
   set username(value: string) {
     this.#username = value
@@ -84,18 +84,29 @@ class MediaWiki {
     this._modulePathOpt = value
   }
 
-  private constructor() {
+  private initializeMediaWikiDefaults(): void {
     this.#domain = ''
     this.#username = ''
     this.#password = ''
     this.getCategories = false
 
+    this.namespaces = {}
+    this.namespacesToMirror = []
+
     this.#apiPath = 'w/api.php'
     this.#wikiPath = 'wiki/'
+    this.mwArticleId = 'MediaWiki:Sidebar'
+
+    this.#hasWikimediaDesktopRestApi = null
+    this.#hasVisualEditorApi = null
+  }
+
+  private constructor() {
+    this.initializeMediaWikiDefaults()
   }
 
   public async hasWikimediaDesktopRestApi(): Promise<boolean> {
-    if (!this.#hasWikimediaDesktopRestApi) {
+    if (this.#hasWikimediaDesktopRestApi === null) {
       this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.mwArticleId))
       return this.#hasWikimediaDesktopRestApi
     }
@@ -103,7 +114,7 @@ class MediaWiki {
   }
 
   public async hasVisualEditorApi(): Promise<boolean> {
-    if (!this.#hasVisualEditorApi) {
+    if (this.#hasVisualEditorApi === null) {
       this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.mwArticleId))
       return this.#hasVisualEditorApi
     }
@@ -359,6 +370,10 @@ class MediaWiki {
     this.metaData = mwMetaData
 
     return mwMetaData
+  }
+
+  public reset(): void {
+    this.initializeMediaWikiDefaults()
   }
 }
 
