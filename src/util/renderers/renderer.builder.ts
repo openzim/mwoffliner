@@ -2,22 +2,16 @@ import MediaWiki from './../../MediaWiki.js'
 import { Renderer } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
-import { RendererBuilderOptions } from './../saveArticles.js'
+import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../../Logger.js'
 
 export class RendererBuilder {
-  private renderApi: 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
-  private renderMode: 'auto' | 'desktop' | 'mobile' | 'specific'
-
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
-    const { RendererMode, RendererAPI } = options
-
-    this.renderMode = RendererMode
-    this.renderApi = RendererAPI
+    const { renderType, renderName } = options
 
     const [hasVisualEditorApi, hasWikimediaDesktopRestApi] = await Promise.all([MediaWiki.hasVisualEditorApi(), MediaWiki.hasWikimediaDesktopRestApi()])
 
-    switch (this.renderMode) {
+    switch (renderType) {
       case 'desktop':
         if (hasWikimediaDesktopRestApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
@@ -25,7 +19,7 @@ export class RendererBuilder {
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         } else {
-          logger.error('No available renderer for desktop mode.')
+          logger.error('No available desktop renderer.')
           process.exit(1)
         }
       case 'mobile':
@@ -38,12 +32,12 @@ export class RendererBuilder {
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         } else {
-          logger.error('No available renderer for auto mode.')
+          logger.error('No render available at all.')
           process.exit(1)
         }
       case 'specific':
-        // renderApi argument is required for 'specific' mode
-        switch (this.renderApi) {
+        // renderName argument is required for 'specific' mode
+        switch (renderName) {
           case 'WikimediaDesktop':
             if (hasWikimediaDesktopRestApi) {
               return new WikimediaDesktopRenderer()
@@ -60,10 +54,10 @@ export class RendererBuilder {
             // TODO: return WikimediaMobile renderer
             return
           default:
-            throw new Error(`Unknown RendererAPI for specific mode: ${this.renderApi}`)
+            throw new Error(`Unknown renderName for specific mode: ${renderName}`)
         }
       default:
-        throw new Error(`Unknown render mode: ${this.renderMode}`)
+        throw new Error(`Unknown render: ${renderType}`)
     }
   }
 }

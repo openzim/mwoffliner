@@ -15,30 +15,11 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import ApiURLDirector from './builders/url/api.director.js'
 import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
-import { Renderer } from './renderers/abstract.renderer.js'
+import { RendererBuilderOptions, Renderer } from './renderers/abstract.renderer.js'
 import { RendererBuilder } from './renderers/renderer.builder.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
-
-type RendererMode = 'auto' | 'desktop' | 'mobile' | 'specific'
-type RendererAPI = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
-
-interface RendererBuilderOptionsBase {
-  RendererMode: RendererMode
-}
-
-interface RendererBuilderOptionsCommon {
-  RendererMode: RendererMode
-  RendererAPI?: never
-}
-
-interface RendererBuilderOptionsSpecific extends RendererBuilderOptionsBase {
-  RendererMode: 'specific'
-  RendererAPI: RendererAPI
-}
-
-export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuilderOptionsSpecific
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -276,7 +257,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   const rendererBuilder = new RendererBuilder()
   const rendererBuilderOptions: RendererBuilderOptions = {
-    RendererMode: 'auto',
+    renderType: 'auto',
   }
   const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
   // TODO: article renderer will be switched to the mobiel mode later

@@ -3,7 +3,7 @@ import { DELETED_ARTICLE_ERROR } from '../const.js'
 import * as logger from '../../Logger.js'
 import { Renderer } from './abstract.renderer.js'
 import { getStrippedTitleFromHtml } from '../misc.js'
-import { RenderOpts } from './../../Downloader.js'
+import { RenderOpts } from './abstract.renderer.js'
 
 /*
 Represent 'https://{wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'

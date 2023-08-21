@@ -2,8 +2,8 @@ import { jest } from '@jest/globals'
 import { setupScrapeClasses } from '../../util.js'
 import { RendererBuilder } from '../../../src/util/renderers/renderer.builder.js'
 import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
+import { RendererBuilderOptions } from '../../../src/util/renderers/abstract.renderer.js'
 import { WikimediaDesktopRenderer } from '../../../src/util/renderers/wikimedia-desktop.renderer.js'
-import { RendererBuilderOptions } from '../../../src/util/saveArticles.js'
 
 jest.setTimeout(10000)
 
@@ -18,7 +18,7 @@ describe('RendererBuilder', () => {
 
     const renderer = await rendererBuilder.createRenderer({
       MediaWiki,
-      RendererMode: 'desktop',
+      renderType: 'desktop',
     } as RendererBuilderOptions)
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
@@ -28,7 +28,7 @@ describe('RendererBuilder', () => {
 
     const renderer = await rendererBuilder.createRenderer({
       MediaWiki,
-      RendererMode: 'auto',
+      renderType: 'auto',
     } as RendererBuilderOptions)
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
@@ -39,9 +39,9 @@ describe('RendererBuilder', () => {
     expect(async () => {
       await rendererBuilder.createRenderer({
         MediaWiki,
-        RendererMode: 'unknownMode' as any,
+        renderType: 'unknownMode' as any,
       } as RendererBuilderOptions)
-    }).rejects.toThrow('Unknown render mode: unknownMode')
+    }).rejects.toThrow('Unknown render: unknownMode')
   })
 
   it('should return VisualEditorRenderer for specific mode with RendererAPI as VisualEditor', async () => {
@@ -52,8 +52,8 @@ describe('RendererBuilder', () => {
 
     const rendererBuilderOptions = {
       MediaWiki,
-      RendererMode: 'specific',
-      RendererAPI: 'VisualEditor',
+      renderType: 'specific',
+      renderName: 'VisualEditor',
     }
 
     const renderer = await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
@@ -69,8 +69,8 @@ describe('RendererBuilder', () => {
 
     const rendererBuilderOptions = {
       MediaWiki,
-      RendererMode: 'specific',
-      RendererAPI: 'WikimediaDesktop',
+      renderType: 'specific',
+      renderName: 'WikimediaDesktop',
     }
 
     const renderer = await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
@@ -86,12 +86,12 @@ describe('RendererBuilder', () => {
 
     const rendererBuilderOptions = {
       MediaWiki,
-      RendererMode: 'specific',
-      RendererAPI: 'UnknownAPI', // Using an invalid RendererAPI for the test
+      renderType: 'specific',
+      renderName: 'UnknownAPI', // Using an invalid RendererAPI for the test
     }
 
     expect(async () => await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)).rejects.toThrow(
-      `Unknown RendererAPI for specific mode: ${rendererBuilderOptions.RendererAPI}`,
+      `Unknown renderName for specific mode: ${rendererBuilderOptions.renderName}`,
     )
   })
 })

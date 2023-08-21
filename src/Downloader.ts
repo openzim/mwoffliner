@@ -58,14 +58,6 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void
 }
 
-export interface RenderOpts {
-  data?: any
-  articleId?: string
-  articleDetailXId?: RKVS<ArticleDetail>
-  articleDetail?: ArticleDetail | string
-  isMainPage?: boolean
-}
-
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
   headers: {
     accept: 'application/octet-stream',
@@ -329,15 +321,13 @@ class Downloader {
       throw data.error
     }
 
-    const renderOpts: RenderOpts = {
+    return articleRenderer.render({
       data,
       articleId,
       articleDetailXId,
       articleDetail,
       isMainPage,
-    }
-
-    return articleRenderer.render(renderOpts)
+    })
   }
 
   public async getJSON<T>(_url: string): Promise<T> {

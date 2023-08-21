@@ -1,7 +1,7 @@
 import domino from 'domino'
 import { Renderer } from './abstract.renderer.js'
 import { getStrippedTitleFromHtml } from '../misc.js'
-import { RenderOpts } from '../../Downloader.js'
+import { RenderOpts } from './abstract.renderer.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/html/'
 export class WikimediaDesktopRenderer extends Renderer {
