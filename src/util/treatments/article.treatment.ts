@@ -1,3 +1,5 @@
+// TODO: remove file later
+
 import * as domino from 'domino'
 import htmlMinifier from 'html-minifier'
 import * as QueryStringParser from 'querystring'
@@ -5,7 +7,6 @@ import { Dump } from '../../../src/Dump.js'
 import MediaWiki from '../../../src/MediaWiki.js'
 import { rewriteUrlsOfDoc } from '../rewriteUrls.js'
 import { encodeArticleIdForZimHtmlUrl, genCanonicalLink, genHeaderCSSLink, genHeaderScript, getMediaBase, interpolateTranslationString } from '../misc.js'
-import { applyOtherTreatments } from '../saveArticles.js'
 import { footerTemplate, htmlTemplateCode } from '../../Templates.js'
 import { config } from '../../config.js'
 import DOMUtils from '../../DOMUtils.js'

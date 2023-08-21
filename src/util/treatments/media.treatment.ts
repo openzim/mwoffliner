@@ -1,3 +1,5 @@
+// TODO: remove file later
+
 import * as QueryStringParser from 'querystring'
 import { Dump } from '../../Dump.js'
 import MediaWiki from '../../MediaWiki.js'

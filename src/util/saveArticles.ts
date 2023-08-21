@@ -4,7 +4,6 @@ import MediaWiki from '../MediaWiki.js'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
 
 import pmap from 'p-map'
-import DU from '../DOMUtils.js'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
@@ -131,16 +130,24 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
+async function getAllArticlesToKeep(
+  redisStore: RS,
+  downloader: Downloader,
+  articleDetailXId: RKVS<ArticleDetail>,
+  dump: Dump,
+  mainPageRenderer: Renderer,
+  articlesRenderer: Renderer,
+) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         let rets: any
         if (dump.isMainPage) {
-          rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          // TODO: _moduleDependencies are not allowed here
+          rets = await downloader.getArticle(redisStore, downloader.webp, _moduleDependencies, articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
         }
-        rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+        rets = await downloader.getArticle(redisStore, downloader.webp, _moduleDependencies, articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
         for (const { articleId, html: articleHtml } of rets) {
           if (!articleHtml) {
             continue
@@ -264,7 +271,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
+    // TODO: _moduleDependencies are not allowed here
+    await getAllArticlesToKeep(redisStore, downloader.webp, _moduleDependencies,, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -297,9 +305,31 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         try {
           const articleUrl = getArticleUrl(downloader, dump, articleId)
           if (dump.isMainPage) {
-            rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+            // TODO: _moduleDependencies are not allowed here
+            rets = await downloader.getArticle(
+              redisStore,
+              downloader.webp,
+              _moduleDependencies,
+              articleId,
+              articleDetailXId,
+              mainPageRenderer,
+              articleUrl,
+              articleDetail,
+              dump.isMainPage(articleId),
+            )
           }
-          rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          rets = await downloader.getArticle(
+            redisStore,
+            downloader.webp,
+            // TODO: _moduleDependencies are not allowed here
+            _moduleDependencies,
+            articleId,
+            articleDetailXId,
+            articlesRenderer,
+            articleUrl,
+            articleDetail,
+            dump.isMainPage(articleId),
+          )
 
           for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title
@@ -454,160 +484,4 @@ export async function getModuleDependencies(articleId: string, downloader: Downl
   jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
   return { jsConfigVars, jsDependenciesList, styleDependenciesList }
-}
-
-export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
-  const filtersConfig = config.filters
-
-  /* Don't need <link> and <input> tags */
-  const nodesToDelete: Array<{ class?: string; tag?: string; filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }]
-
-  /* Remove "map" tags if necessary */
-  if (dump.nopic) {
-    nodesToDelete.push({ tag: 'map' })
-  }
-
-  /* Remove useless DOM nodes without children */
-  function emptyChildFilter(n: any) {
-    return !n.innerHTML
-  }
-  nodesToDelete.push({ tag: 'li', filter: emptyChildFilter })
-  nodesToDelete.push({ tag: 'span', filter: emptyChildFilter })
-
-  /* Remove gallery boxes if pics need stripping of if it doesn't have thumbs */
-  nodesToDelete.push({
-    class: 'gallerybox',
-    filter(n) {
-      return !n.getElementsByTagName('img').length && !n.getElementsByTagName('audio').length && !n.getElementsByTagName('video').length
-    },
-  })
-  nodesToDelete.push({
-    class: 'gallery',
-    filter(n) {
-      return !n.getElementsByClassName('gallerybox').length
-    },
-  })
-
-  /* Remove element with black listed CSS classes */
-  filtersConfig.cssClassBlackList.forEach((classname: string) => {
-    nodesToDelete.push({ class: classname })
-  })
-
-  if (dump.nodet) {
-    filtersConfig.nodetCssClassBlackList.forEach((classname: string) => {
-      nodesToDelete.push({ class: classname })
-    })
-  }
-
-  /* Remove element with black listed CSS classes and no link */
-  filtersConfig.cssClassBlackListIfNoLink.forEach((classname: string) => {
-    nodesToDelete.push({
-      class: classname,
-      filter(n) {
-        return n.getElementsByTagName('a').length === 0
-      },
-    })
-  })
-
-  /* Delete them all */
-  for (const t of nodesToDelete) {
-    let nodes
-    if (t.tag) {
-      nodes = parsoidDoc.getElementsByTagName(t.tag)
-    } else if (t.class) {
-      nodes = parsoidDoc.getElementsByClassName(t.class)
-    } else {
-      return /* throw error? */
-    }
-
-    for (const node of Array.from(nodes)) {
-      if (!t.filter || t.filter(node)) {
-        DU.deleteNode(node)
-      }
-    }
-  }
-
-  /* Go through all reference calls */
-  const spans: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('span'))
-  for (const span of spans) {
-    const rel = span.getAttribute('rel')
-    if (rel === 'dc:references') {
-      const sup = parsoidDoc.createElement('sup')
-      if (span.innerHTML) {
-        sup.id = span.id
-        sup.innerHTML = span.innerHTML
-        span.parentNode.replaceChild(sup, span)
-      } else {
-        DU.deleteNode(span)
-      }
-    }
-  }
-
-  /* Remove element with id in the blacklist */
-  filtersConfig.idBlackList.forEach((id) => {
-    const node = parsoidDoc.getElementById(id)
-    if (node) {
-      DU.deleteNode(node)
-    }
-  })
-
-  /* Force display of element with that CSS class */
-  filtersConfig.cssClassDisplayList.map((classname: string) => {
-    const nodes: DominoElement[] = Array.from(parsoidDoc.getElementsByClassName(classname))
-    for (const node of nodes) {
-      node.style.removeProperty('display')
-    }
-  })
-
-  /* Remove empty paragraphs */
-  // TODO: Refactor this option to work with page/html and page/mobile-html output. See issues/1866
-  if (!dump.opts.keepEmptyParagraphs) {
-    if (!dump.opts.keepEmptyParagraphs) {
-      // Mobile view === details
-      // Desktop view === section
-      const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
-      for (const section of sections) {
-        if (
-          section.children.length ===
-          Array.from(section.children).filter((child: DominoElement) => {
-            return child.matches('summary')
-          }).length
-        ) {
-          DU.deleteNode(section)
-        }
-      }
-    }
-  }
-
-  /* Clean the DOM of all uncessary code */
-  const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
-  for (const node of allNodes) {
-    node.removeAttribute('data-parsoid')
-    node.removeAttribute('typeof')
-    node.removeAttribute('about')
-    node.removeAttribute('data-mw')
-
-    if (node.getAttribute('rel') && node.getAttribute('rel').substr(0, 3) === 'mw:') {
-      node.removeAttribute('rel')
-    } else if (node.getAttribute('img')) {
-      /* Remove a few images Parsoid attributes */
-      node.removeAttribute('data-file-width')
-      node.removeAttribute('data-file-height')
-      node.removeAttribute('data-file-type')
-    }
-
-    /* Remove a few css calls */
-    filtersConfig.cssClassCallsBlackList.map((classname: string) => {
-      if (node.getAttribute('class')) {
-        node.setAttribute('class', node.getAttribute('class').replace(classname, ''))
-      }
-    })
-  }
-
-  const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink')).filter((n) => !!n.textContent)
-  for (const node of kartographerMaplinkNodes) {
-    node.textContent = '🌍'
-  }
-
-  return parsoidDoc
 }

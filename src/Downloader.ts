@@ -293,6 +293,8 @@ class Downloader {
   }
 
   public async getArticle(
+    redisStore: RS,
+    webp: boolean,
     articleId: string,
     articleDetailXId: RKVS<ArticleDetail>,
     articleRenderer,
@@ -307,8 +309,12 @@ class Downloader {
       throw data.error
     }
 
+    // TODO: apply same arguments as processArticleHtml() require
+
     return articleRenderer.render({
       data,
+      redisStore,
+      webp,
       articleId,
       articleDetailXId,
       articleDetail,
