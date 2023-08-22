@@ -5,7 +5,7 @@ import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
-import { getArticleUrl } from '../../src/util/saveArticles.js'
+import { getArticleUrl, getModuleDependencies } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
@@ -128,23 +128,80 @@ describe('Downloader class', () => {
     test('getArticle of "London" returns one article', async () => {
       const articleId = 'London'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const LondonArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl)
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const articleDetail = {
+        title: articleId,
+        thumbnail: {
+          width: 50,
+          height: 28,
+          source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_Skyline_%28125508655%29.jpeg/50px-London_Skyline_%28125508655%29.jpeg',
+        },
+        revisionId: 1171340841,
+        timestamp: '2023-08-20T14:54:01Z',
+        coordinates: '51.50722222;-0.1275',
+      }
+      const LondonArticle = await downloader.getArticle(
+        redisStore,
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        redisStore.articleDetailXId,
+        wikimediaDesktopRenderer,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
       expect(LondonArticle).toHaveLength(1)
     })
 
     test('Categories with many subCategories are paginated', async () => {
       const articleId = 'Category:Container_categories'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const PaginatedArticle = await downloader.getArticle(articleId, redisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl)
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const articleDetail = {
+        title: articleId,
+        ns: 14,
+        revisionId: 1168361498,
+        timestamp: '2023-08-02T09:57:11Z',
+      }
+      const PaginatedArticle = await downloader.getArticle(
+        redisStore,
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        redisStore.articleDetailXId,
+        wikimediaDesktopRenderer,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
 
     test('getArticle response status for non-existent article id is 404', async () => {
       const articleId = 'NeverExistingArticle'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      await expect(downloader.getArticle('NeverExistingArticle', redisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl)).rejects.toThrowError(
-        new Error('Request failed with status code 404'),
-      )
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const articleDetail = {
+        title: articleId,
+        missing: '',
+      }
+      await expect(
+        downloader.getArticle(
+          redisStore,
+          downloader.webp,
+          _moduleDependencies,
+          'NeverExistingArticle',
+          redisStore.articleDetailXId,
+          wikimediaDesktopRenderer,
+          articleUrl,
+          dump,
+          articleDetail,
+          dump.isMainPage(articleId),
+        ),
+      ).rejects.toThrowError(new Error('Request failed with status code 404'))
     })
   })
 

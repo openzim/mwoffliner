@@ -45,10 +45,12 @@ export interface RenderOpts {
   data?: any
   redisStore: RS
   webp: boolean
+  _moduleDependencies: any
   articleId?: string
   articleDetailXId?: RKVS<ArticleDetail>
-  articleDetail?: ArticleDetail | string
+  articleDetail?: ArticleDetail
   isMainPage?: boolean
+  dump: Dump
 }
 
 export abstract class Renderer {
@@ -379,7 +381,7 @@ export abstract class Renderer {
    */
   private mw: typeof MediaWiki
 
-  public async processArticleHtml(html: string, redisStore: RS, mw: any, dump: Dump, articleId: string, articleDetail: ArticleDetail, _moduleDependencies: any, webp: boolean) {
+  private async processArticleHtml(html: string, redisStore: RS, mw: any, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean) {
     this.mw = mw
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
@@ -726,15 +728,11 @@ export abstract class Renderer {
     return parsoidDoc
   }
 
-  render(renderOpts: RenderOpts): Promise<any> {
-    /** TODO:
-      1. Treat media.
-      2. Process article HTML.
-      3. Apply specific rendering transformations based on specific renderer.
-     */
-    const { data, redisStore, articleId, articleDetail, webp } = renderOpts
+  async render(renderOpts: RenderOpts): Promise<any> {
+    const { data, redisStore, articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
     if (data) {
-      return this.processArticleHtml(data, redisStore, MediaWiki, Dump, articleId, articleDetail, _moduleDependencies, webp)
+      const { finalHTML, mediaDependencies, subtitles } = await this.processArticleHtml(data, redisStore, MediaWiki, dump, articleId, articleDetail, _moduleDependencies, webp)
+      return { finalHTML, mediaDependencies, subtitles }
     }
   }
 }

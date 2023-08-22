@@ -35,10 +35,14 @@ export class WikimediaDesktopRenderer extends Renderer {
         strippedTitle = doc.getElementsByClassName('mw-title')[0].textContent
       }
 
+      const { finalHTML, mediaDependencies, subtitles } = await super.render({ ...renderOpts, data })
+
       result.push({
         articleId: _articleId,
         displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
-        html: data,
+        html: finalHTML,
+        mediaDependencies,
+        subtitles,
       })
     }
     return result

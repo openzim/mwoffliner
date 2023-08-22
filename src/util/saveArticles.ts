@@ -12,7 +12,6 @@ import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import ApiURLDirector from './builders/url/api.director.js'
-import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
 import { RendererBuilderOptions, Renderer } from './renderers/abstract.renderer.js'
 import { RendererBuilder } from './renderers/renderer.builder.js'
@@ -140,20 +139,43 @@ async function getAllArticlesToKeep(
 ) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+      const nonPaginatedArticleId = articleDetail.title
+      const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         let rets: any
         if (dump.isMainPage) {
-          // TODO: _moduleDependencies are not allowed here
-          rets = await downloader.getArticle(redisStore, downloader.webp, _moduleDependencies, articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          rets = await downloader.getArticle(
+            redisStore,
+            downloader.webp,
+            _moduleDependencies,
+            articleId,
+            articleDetailXId,
+            mainPageRenderer,
+            articleUrl,
+            dump,
+            articleDetail,
+            dump.isMainPage(articleId),
+          )
         }
-        rets = await downloader.getArticle(redisStore, downloader.webp, _moduleDependencies, articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
-        for (const { articleId, html: articleHtml } of rets) {
-          if (!articleHtml) {
+        rets = await downloader.getArticle(
+          redisStore,
+          downloader.webp,
+          _moduleDependencies,
+          articleId,
+          articleDetailXId,
+          articlesRenderer,
+          articleUrl,
+          dump,
+          articleDetail,
+          dump.isMainPage(articleId),
+        )
+        for (const { articleId, articleHTML } of rets) {
+          if (!articleHTML) {
             continue
           }
 
-          const doc = domino.createDocument(articleHtml)
+          const doc = domino.createDocument(articleHTML)
           if (!dump.isMainPage(articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }
@@ -184,27 +206,15 @@ function flattenPromises(promisArr: [string, Promise<Error>][]): [string, Promis
  */
 async function saveArticle(
   zimCreator: ZimCreator,
-  articleHtml: string,
-  downloader: Downloader,
+  finalHTML: string,
+  mediaDependencies: any,
+  subtitles: any,
   redisStore: RS,
-  dump: Dump,
   articleId: string,
   articleTitle: string,
-  articleDetail: ArticleDetail,
-  _moduleDependencies: any,
+  articleDetail: any,
 ): Promise<Error> {
   try {
-    const { finalHTML, mediaDependencies, subtitles } = await articleTreatment.processArticleHtml(
-      articleHtml,
-      redisStore,
-      MediaWiki,
-      dump,
-      articleId,
-      articleDetail,
-      _moduleDependencies,
-      downloader.webp,
-    )
-
     const filesToDownload: KVS<FileDetail> = {}
 
     subtitles.forEach((s) => {
@@ -267,12 +277,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     renderType: 'auto',
   }
   const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-  // TODO: article renderer will be switched to the mobiel mode later
+  // TODO: article renderer will be switched to the mobile mode later
   const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    // TODO: _moduleDependencies are not allowed here
-    await getAllArticlesToKeep(redisStore, downloader.webp, _moduleDependencies,, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
+    await getAllArticlesToKeep(redisStore, downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -301,11 +310,13 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         curArticle = articleId
         const promises: [string, Promise<Error>][] = []
 
+        const nonPaginatedArticleId = articleDetail.title
+        const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
+
         let rets: any
         try {
           const articleUrl = getArticleUrl(downloader, dump, articleId)
           if (dump.isMainPage) {
-            // TODO: _moduleDependencies are not allowed here
             rets = await downloader.getArticle(
               redisStore,
               downloader.webp,
@@ -314,6 +325,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
               articleDetailXId,
               mainPageRenderer,
               articleUrl,
+              dump,
               articleDetail,
               dump.isMainPage(articleId),
             )
@@ -321,26 +333,23 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
           rets = await downloader.getArticle(
             redisStore,
             downloader.webp,
-            // TODO: _moduleDependencies are not allowed here
             _moduleDependencies,
             articleId,
             articleDetailXId,
             articlesRenderer,
             articleUrl,
+            dump,
             articleDetail,
             dump.isMainPage(articleId),
           )
 
-          for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
-            const nonPaginatedArticleId = articleDetail.title
-
-            if (!articleHtml) {
+          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, subtitles } of rets) {
+            if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
             }
 
             curStage += 1
-            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
             for (const dep of _moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
@@ -355,7 +364,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
              * To parse and download simultaniously, we don't await on save,
              * but instead cache the promise in a queue and check it later
              */
-            promises.push([articleId, saveArticle(zimCreator, articleHtml, downloader, redisStore, dump, articleId, articleTitle, articleDetail, _moduleDependencies)])
+            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, subtitles, redisStore, articleId, articleTitle, articleDetail)])
           }
         } catch (err) {
           dump.status.articles.fail += 1

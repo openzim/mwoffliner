@@ -1,8 +1,8 @@
 import domino from 'domino'
 import { convertWikicodeToHtml, setupScrapeClasses, testHtmlRewritingE2e } from '../../util.js'
-import mediaTreatment from '../../../src/util/treatments/media.treatment.js'
 import { redisStore, startRedis, stopRedis } from '../bootstrap.js'
 
+// TODO: test this separately, probably expose these methods as public
 describe('MediaTreatment', () => {
   const html = `
     <img src=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg\" data-file-width=\"3000\" data-file-height=\"2250\" data-file-type=\"bitmap\" height=\"188\" width=\"250\" srcset=\"//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/500px-Dendritic_cell_revealed.jpg 2x, //upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/375px-Dendritic_cell_revealed.jpg 1.5x\">

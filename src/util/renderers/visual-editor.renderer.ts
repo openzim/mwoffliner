@@ -32,18 +32,25 @@ export class VisualEditorRenderer extends Renderer {
       }
       const dataHtml = isMainPage ? data.visualeditor.content : this.injectHeader(data.visualeditor.content, articleDetail)
       strippedTitle = getStrippedTitleFromHtml(dataHtml)
+
+      const { finalHTML, mediaDependencies, subtitles } = await super.render({ ...renderOpts, data: dataHtml })
       result.push({
         articleId,
         displayTitle: strippedTitle || articleId.replace('_', ' '),
-        html: dataHtml,
+        html: finalHTML,
+        mediaDependencies,
+        subtitles,
       })
       return result
     } else if (data.contentmodel === 'wikitext' || (data.html && data.html.body)) {
       strippedTitle = getStrippedTitleFromHtml(data.html.body)
+      const { finalHTML, mediaDependencies, subtitles } = await super.render({ ...renderOpts, data: data.html.body })
       result.push({
         articleId,
         displayTitle: strippedTitle || articleId.replace('_', ' '),
-        html: data.html.body,
+        html: finalHTML,
+        mediaDependencies,
+        subtitles,
       })
       return result
     } else if (data.error) {

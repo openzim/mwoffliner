@@ -52,7 +52,23 @@ describe('saveArticles', () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
-    await expect(downloader.getArticle(articleId, articleDetailXId, wikimediaDesktopRenderer, articleUrl)).rejects.toThrowError('')
+    const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+    const articleDetail = { title: 'Non-existent-article', missing: '' }
+
+    await expect(
+      downloader.getArticle(
+        redisStore,
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        wikimediaDesktopRenderer,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      ),
+    ).rejects.toThrowError('')
 
     const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
 
@@ -196,9 +212,17 @@ describe('saveArticles', () => {
   })
 
   test('Test deleted article rendering (Visual editor renderer)', async () => {
+    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { articleDetailXId } = redisStore
+    const articleId = 'deletedArticle'
+
     const articleJsonObject = {
       visualeditor: { oldid: 0 },
     }
+
+    const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+    const articleDetail = { title: articleId, missing: '' }
+
     const visualEditorRenderer = new VisualEditorRenderer()
 
     expect(async () => {
