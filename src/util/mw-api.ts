@@ -4,6 +4,7 @@ import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
 import axios from 'axios'
+import MediaWiki from '../MediaWiki.js'
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, redisStore: RS, log = true): Promise<void> {
   let from = 0
@@ -261,5 +262,23 @@ export async function checkApiAvailability(url: string, loginCookie = ''): Promi
     return resp.status === 200 && !resp.headers['mediawiki-api-error']
   } catch (err) {
     return false
+  }
+}
+
+export async function getArticleIds(downloader: Downloader, redisStore: RS, mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
+  if (mainPage) {
+    await getArticlesByIds([mainPage], downloader, redisStore)
+  }
+
+  if (articleIds) {
+    await getArticlesByIds(articleIds, downloader, redisStore)
+  } else {
+    await pmap(
+      MediaWiki.namespacesToMirror,
+      (namespace: string) => {
+        return getArticlesByNS(MediaWiki.namespaces[namespace].num, downloader, redisStore, articleIdsToIgnore)
+      },
+      { concurrency: downloader.speed },
+    )
   }
 }

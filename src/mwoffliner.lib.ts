@@ -49,7 +49,7 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
-import { getArticleIds } from './util/redirects.js'
+import { getArticleIds } from './util/mw-api.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
@@ -208,7 +208,7 @@ async function execute(argv: any) {
     }
   }
 
-  MediaWiki.mwArticleId = mwMetaData.mainPage
+  MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasWikimediaDesktopRestApi()
   await MediaWiki.hasVisualEditorApi()
 

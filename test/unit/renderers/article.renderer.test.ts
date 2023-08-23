@@ -17,12 +17,10 @@ describe('ArticleRenderer', () => {
     const visualEditorRenderer = new VisualEditorRenderer()
 
     it('should throw if no JSON was provided', async () => {
-      const renderOpts = {
-        data: null,
-      }
-
       expect(async () => {
-        await visualEditorRenderer.render(renderOpts)
+        await visualEditorRenderer.render({
+          data: null,
+        })
       }).rejects.toThrow(new Error('Cannot render [null] into an article'))
     })
 

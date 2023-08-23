@@ -1,7 +1,7 @@
 import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
-import { getArticleIds } from '../../src/util/redirects.js'
+import { getArticleIds } from '../../src/util/mw-api.js'
 import { getArticlesByNS } from '../../src/util/index.js'
 import { config } from '../../src/config.js'
 import { jest } from '@jest/globals'

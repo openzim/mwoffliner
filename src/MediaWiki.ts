@@ -29,7 +29,7 @@ class MediaWiki {
   public getCategories: boolean
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
-  public mwArticleId: string
+  public apiCheckArticleId: string
 
   #wikiPath: string
   #restApiPath: string
@@ -95,7 +95,7 @@ class MediaWiki {
 
     this.#apiPath = 'w/api.php'
     this.#wikiPath = 'wiki/'
-    this.mwArticleId = 'MediaWiki:Sidebar'
+    this.apiCheckArticleId = 'MediaWiki:Sidebar'
 
     this.#hasWikimediaDesktopRestApi = null
     this.#hasVisualEditorApi = null
@@ -107,7 +107,7 @@ class MediaWiki {
 
   public async hasWikimediaDesktopRestApi(): Promise<boolean> {
     if (this.#hasWikimediaDesktopRestApi === null) {
-      this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.mwArticleId))
+      this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaDesktopRestApi
     }
     return this.#hasWikimediaDesktopRestApi
@@ -115,7 +115,7 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.mwArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi

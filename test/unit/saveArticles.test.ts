@@ -199,13 +199,11 @@ describe('saveArticles', () => {
     }
     const visualEditorRenderer = new VisualEditorRenderer()
 
-    const renderOpts = {
-      data: articleJsonObject,
-      articleId: 'deletedArticle',
-    }
-
     expect(async () => {
-      await visualEditorRenderer.render(renderOpts)
+      await visualEditorRenderer.render({
+        data: articleJsonObject,
+        articleId: 'deletedArticle',
+      })
     }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
   })
 
