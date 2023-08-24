@@ -13,7 +13,6 @@ export const DELETED_ARTICLE_ERROR = 'Article has been deleted.'
 export const WEAK_ETAG_REGEX = /^(W\/)/
 export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|gif)$/
 export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png)/
-export const DEFAULT_WIKI_PATH = 'wiki/'
 export const ALL_READY_FUNCTION = /function allReady\( modules \) {/
 export const DO_PROPAGATION = /mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);/
 export const LOAD_PHP = /script.src = ".*load\.php.*";/

@@ -1,5 +1,8 @@
 import { ensureTrailingChar } from '../../misc.js'
 
+/**
+ * Concat the path to the domain and setting query params
+ */
 class URLBuilder {
   private domain = ''
   private path = ''
