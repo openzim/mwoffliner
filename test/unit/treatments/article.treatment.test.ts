@@ -5,7 +5,7 @@ import { setupScrapeClasses } from '../../util.js'
 import { redisStore, startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
-import { getArticleUrl, getModuleDependencies } from '../../../src/util/saveArticles.js'
+import { getArticleUrl } from '../../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../../src/util/renderers/wikimedia-desktop.renderer.js'
 
 jest.setTimeout(10000)
@@ -30,7 +30,7 @@ describe('ArticleTreatment', () => {
     const articleId = 'non-existent-article'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
 
-    const _moduleDependencies = await getModuleDependencies(title, downloader)
+    const _moduleDependencies = await downloader.getModuleDependencies(title)
     const articleDetail = {
       title,
       thumbnail: {

@@ -1,23 +1,18 @@
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
-import MediaWiki from '../MediaWiki.js'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
 
 import pmap from 'p-map'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
-import { contains, jsPath } from './index.js'
+import { jsPath } from './index.js'
 import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
-import ApiURLDirector from './builders/url/api.director.js'
 import urlHelper from './url.helper.js'
 import { RendererBuilderOptions, Renderer } from './renderers/abstract.renderer.js'
 import { RendererBuilder } from './renderers/renderer.builder.js'
-
-const genericJsModules = config.output.mw.js
-const genericCssModules = config.output.mw.css
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -140,7 +135,7 @@ async function getAllArticlesToKeep(
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       const nonPaginatedArticleId = articleDetail.title
-      const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
+      const _moduleDependencies = await downloader.getModuleDependencies(nonPaginatedArticleId)
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         let rets: any
@@ -311,7 +306,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         const promises: [string, Promise<Error>][] = []
 
         const nonPaginatedArticleId = articleDetail.title
-        const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
+        const _moduleDependencies = await downloader.getModuleDependencies(nonPaginatedArticleId)
 
         let rets: any
         try {
@@ -438,59 +433,4 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     jsModuleDependencies,
     cssModuleDependencies,
   }
-}
-
-export async function getModuleDependencies(articleId: string, downloader: Downloader) {
-  /* These vars will store the list of js and css dependencies for
-    the article we are downloading. */
-  let jsConfigVars = ''
-  let jsDependenciesList: string[] = []
-  let styleDependenciesList: string[] = []
-
-  const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
-
-  const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
-
-  const articleData = await downloader.getJSON<any>(articleApiUrl)
-
-  if (articleData.error) {
-    const errorMessage = `Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`
-    logger.error(errorMessage)
-
-    /* If article is missing (for example because it just has been deleted) */
-    if (articleData.error.code === 'missingtitle') {
-      return { jsConfigVars, jsDependenciesList, styleDependenciesList }
-    }
-
-    /* Something went wrong in modules retrieval at app level (no HTTP error) */
-    throw new Error(errorMessage)
-  }
-
-  const {
-    parse: { modules, modulescripts, modulestyles, headhtml },
-  } = articleData
-  jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
-  styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
-  styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
-
-  logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`)
-  logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`)
-
-  // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
-  // the script below extracts the config with a regex executed on the page header returned from the api
-  const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script')
-  const regex = /mw\.config\.set\(\{.*?\}\);/gm
-  // eslint-disable-next-line @typescript-eslint/prefer-for-of
-  for (let i = 0; i < scriptTags.length; i += 1) {
-    if (scriptTags[i].text.includes('mw.config.set')) {
-      jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
-      jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
-    } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
-      jsConfigVars = scriptTags[i].text
-    }
-  }
-
-  jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
-
-  return { jsConfigVars, jsDependenciesList, styleDependenciesList }
 }

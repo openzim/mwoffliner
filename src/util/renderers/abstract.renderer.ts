@@ -71,29 +71,43 @@ export abstract class Renderer {
     videoEl: DominoElement,
     webp: boolean,
   ): Promise<{ mediaDependencies: string[]; subtitles: string[] }> {
-    /* Worth noting:
-     - This function handles audio tags as well as video tags
-     - Video tags are used for audio files too (as opposed to the audio tag)
-     - When it's only audio, there will be a single OGG file
-     - For video, we get multiple SOURCE tages with different resolutions */
     const mediaDependencies: string[] = []
     const subtitles: string[] = []
 
-    /* Just delete video/audio element if the flavour requires it */
     if (dump.nopic || dump.novid || dump.nodet) {
       DOMUtils.deleteNode(videoEl)
       return { mediaDependencies, subtitles }
     }
 
-    /* Firefox is not able to display correctly <video> nodes with a
-     height < 40. In that case the controls are not displayed. */
+    this.adjustVideoElementAttributes(videoEl)
+
+    const chosenVideoSourceEl = this.chooseBestVideoSource(videoEl)
+
+    if (!chosenVideoSourceEl) {
+      logger.warn(`Unable to find an appropriate video/audio source for an media element in article '${articleId}'`)
+      DOMUtils.deleteNode(videoEl)
+      return { mediaDependencies, subtitles }
+    }
+
+    this.handleVideoPoster(videoEl, articleId, webp, mediaDependencies, srcCache)
+    this.updateVideoSrc(chosenVideoSourceEl, articleId, srcCache, mediaDependencies)
+
+    const trackElements = Array.from(videoEl.querySelectorAll('track'))
+    for (const track of trackElements) {
+      subtitles.push(await this.treatSubtitle(track, articleId))
+    }
+
+    return { mediaDependencies, subtitles }
+  }
+
+  private adjustVideoElementAttributes(videoEl: DominoElement): void {
     if (videoEl.getAttribute('height') && videoEl.getAttribute('height') < 40) {
       videoEl.setAttribute('height', '40')
     }
-
-    /* Always show controls */
     videoEl.setAttribute('controls', '40')
+  }
 
+  private chooseBestVideoSource(videoEl: DominoElement): DominoElement | null {
     /* Choose best fiting resolution <source> video node */
     const videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE')
     const videoDisplayedWidth = Number(videoEl.getAttribute('width'))
@@ -163,17 +177,10 @@ export abstract class Renderer {
       DOMUtils.deleteNode(videoSourceEl)
     })
 
-    /* If no appropriate source video can be found, delete the video */
-    if (!chosenVideoSourceEl) {
-      logger.warn(`Unable to find an appropriate video/audio source for an media element in article '${articleId}'`)
-      DOMUtils.deleteNode(videoEl)
-      return { mediaDependencies, subtitles }
-    }
+    return chosenVideoSourceEl
+  }
 
-    /* Remove useless 'resource' attribute */
-    videoEl.removeAttribute('resource')
-
-    /* Handle video poster */
+  private handleVideoPoster(videoEl: DominoElement, articleId: string, webp: boolean, mediaDependencies: string[], srcCache: KVS<boolean>): void {
     const posterUrl = videoEl.getAttribute('poster')
     if (posterUrl) {
       const videoPosterUrl = getFullUrl(posterUrl, MediaWiki.baseUrl)
@@ -189,7 +196,9 @@ export abstract class Renderer {
         mediaDependencies.push(videoPosterUrl)
       }
     }
+  }
 
+  private updateVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, mediaDependencies: string[]): void {
     /* Download content, but avoid duplicate calls */
     const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), MediaWiki.baseUrl)
     if (!srcCache.hasOwnProperty(sourceUrl)) {
@@ -200,13 +209,6 @@ export abstract class Renderer {
     /* Set new URL for the video element */
     const fileBase = getMediaBase(sourceUrl, true)
     chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'))
-
-    /* Scrape subtitle */
-    for (const track of Array.from(videoEl.querySelectorAll('track'))) {
-      subtitles.push(await this.treatSubtitle(track, articleId))
-    }
-
-    return { mediaDependencies, subtitles }
   }
 
   protected async treatSubtitle(trackEle: DominoElement, articleId: string): Promise<string> {

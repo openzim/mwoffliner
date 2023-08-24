@@ -5,7 +5,7 @@ import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
-import { getArticleUrl, getModuleDependencies } from '../../src/util/saveArticles.js'
+import { getArticleUrl } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
@@ -128,7 +128,7 @@ describe('Downloader class', () => {
     test('getArticle of "London" returns one article', async () => {
       const articleId = 'London'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -158,7 +158,7 @@ describe('Downloader class', () => {
     test('Categories with many subCategories are paginated', async () => {
       const articleId = 'Category:Container_categories'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const articleDetail = {
         title: articleId,
         ns: 14,
@@ -183,7 +183,7 @@ describe('Downloader class', () => {
     test('getArticle response status for non-existent article id is 404', async () => {
       const articleId = 'NeverExistingArticle'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const articleDetail = {
         title: articleId,
         missing: '',

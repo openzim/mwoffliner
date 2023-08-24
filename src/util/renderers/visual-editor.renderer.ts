@@ -20,7 +20,7 @@ export class VisualEditorRenderer extends Renderer {
   }
 
   private async getHTML(renderOpts: RenderOpts): Promise<any> {
-    const { data, isMainPage, articleId, articleDetail } = renderOpts
+    const { data, articleId, articleDetail, isMainPage } = renderOpts
 
     if (!data) {
       throw new Error(`Cannot render [${data}] into an article`)

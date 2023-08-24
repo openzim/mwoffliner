@@ -10,13 +10,13 @@ describe('MediaTreatment', () => {
       return null
     }
     public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean) {
-      return await this.treatVideo(dump, srcCache, articleId, videoEl, webp)
+      return this.treatVideo(dump, srcCache, articleId, videoEl, webp)
     }
     public async testTreatSubtitle(trackEle: DominoElement, articleId: string) {
-      return await this.treatSubtitle(trackEle, articleId)
+      return this.treatSubtitle(trackEle, articleId)
     }
     public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
-      return await this.treatMedias(parsoidDoc, dump, articleId, webp, redisStore)
+      return this.treatMedias(parsoidDoc, dump, articleId, webp, redisStore)
     }
   }
 

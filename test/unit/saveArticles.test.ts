@@ -2,7 +2,7 @@ import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import domino from 'domino'
 
 import { setupScrapeClasses } from '../util.js'
-import { saveArticles, getModuleDependencies } from '../../src/util/saveArticles.js'
+import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
@@ -52,7 +52,7 @@ describe('saveArticles', () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
-    const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+    const _moduleDependencies = await downloader.getModuleDependencies(articleId)
     const articleDetail = { title: 'Non-existent-article', missing: '' }
 
     await expect(
@@ -220,7 +220,7 @@ describe('saveArticles', () => {
       visualeditor: { oldid: 0 },
     }
 
-    const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+    const _moduleDependencies = await downloader.getModuleDependencies(articleId)
     const articleDetail = { title: articleId, missing: '' }
 
     const visualEditorRenderer = new VisualEditorRenderer()
@@ -245,7 +245,7 @@ describe('saveArticles', () => {
   test('Load inline js from HTML', async () => {
     const { downloader } = await setupScrapeClasses() // en wikipedia
 
-    const _moduleDependencies = await getModuleDependencies('Potato', downloader)
+    const _moduleDependencies = await downloader.getModuleDependencies('Potato')
     // next variables declared to avoid "variable is not defined" errors
     let RLCONF: any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
