@@ -1,6 +1,11 @@
+import domino from 'domino'
 import { jest } from '@jest/globals'
 import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
 import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
+import { setupScrapeClasses } from '../../util.js'
+import { getModuleDependencies } from '../../../src/util/saveArticles.js'
+import { redisStore } from '../bootstrap.js'
+import { RenderOpts } from 'src/util/renderers/abstract.renderer.js'
 
 jest.setTimeout(10000)
 
@@ -10,7 +15,7 @@ describe('ArticleRenderer', () => {
       return {
         data: json,
         articleId: '123',
-        articleDetail: { title: 'Eminem and D12' },
+        articleDetail: { title: 'Eminem and D12', timestamp: '2023-08-24T02:19:04Z' },
         isMainPage: false,
       }
     }
@@ -20,7 +25,7 @@ describe('ArticleRenderer', () => {
       expect(async () => {
         await visualEditorRenderer.render({
           data: null,
-        })
+        } as RenderOpts)
       }).rejects.toThrow(new Error('Cannot render [null] into an article'))
     })
 
@@ -28,48 +33,109 @@ describe('ArticleRenderer', () => {
       const { data, articleId } = prepareFixtures({ visualeditor: { oldid: 0 } })
 
       expect(async () => {
-        await visualEditorRenderer.render({ data, articleId })
+        await visualEditorRenderer.render({ data, articleId } as RenderOpts)
       }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
     })
 
     it('should return visualeditor content if the main page flag is true', async () => {
+      const { downloader, dump } = await setupScrapeClasses({ format: '' })
       const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
-      const result = await visualEditorRenderer.render({ data, articleId, articleDetail, isMainPage: true })
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const result = await visualEditorRenderer.render({
+        data,
+        redisStore,
+        webp: downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetail,
+        isMainPage: true,
+        dump,
+      } as RenderOpts)
 
-      expect(result[0].html).toBe(data.visualeditor.content)
+      const doc = domino.createDocument(result[0].html)
+      const content = doc.getElementById('mw-content-text').firstChild.textContent
+
+      expect(content).toBe(data.visualeditor.content)
     })
 
     it('should inject header to the visual editor content if the main page flag is false', async () => {
+      const { downloader, dump } = await setupScrapeClasses({ format: '' })
       const content = '<body class="mw-body-content">consectetur adipiscing elit</body>'
-      const contentWithHeader = '<html><head></head><body class="mw-body-content"><h1 class="article-header"></h1>consectetur adipiscing elit</body></html>'
       const { data, articleId } = prepareFixtures({ visualeditor: { content } })
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const result = await visualEditorRenderer.render({
+        data,
+        redisStore,
+        webp: downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetail: { title: 'consectetur adipiscing elit', timestamp: '2023-08-24T02:19:04Z' },
+        isMainPage: false,
+        dump,
+      } as RenderOpts)
 
-      jest.spyOn(new VisualEditorRenderer() as any, 'injectHeader').mockReturnValue(contentWithHeader)
-
-      const result = await visualEditorRenderer.render({ data, articleId, articleDetail: 'consectetur adipiscing elit' })
-
-      expect(result[0].html).toBe(contentWithHeader)
+      const hasTitle = domino.createDocument(result[0].html).querySelector('h1')
+      expect(hasTitle).toBeTruthy()
     })
 
     it('should return html body if json contentmodel param is `wikitext`', async () => {
+      const { downloader, dump } = await setupScrapeClasses({ format: '' })
       const htmlBody = '<body>sed do eiusmod tempor incididunt</body>'
-      const { data, articleId } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
-      const result = await visualEditorRenderer.render({ data, articleId })
+      const { data, articleId, articleDetail } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const result = await visualEditorRenderer.render({
+        data,
+        redisStore,
+        webp: downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetail,
+        isMainPage: false,
+        dump,
+      } as RenderOpts)
 
-      expect(result[0].html).toBe(htmlBody)
+      const doc = domino.createDocument(result[0].html)
+      const content = doc.querySelector('body')
+
+      expect(content).toBeTruthy()
     })
 
     it('should return html body if it`s presented even if contentmodel param is not equal to wikitext', async () => {
+      const { downloader, dump } = await setupScrapeClasses({ format: '' })
       const htmlBody = '<body>ut labore et dolore magna aliqua. Ut enim ad minim veniam</body>'
-      const { data, articleId } = prepareFixtures({ html: { body: htmlBody } })
-      const result = await visualEditorRenderer.render({ data, articleId })
+      const { data, articleId, articleDetail } = prepareFixtures({ html: { body: htmlBody } })
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const result = await visualEditorRenderer.render({
+        data,
+        redisStore,
+        webp: downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetail,
+        isMainPage: false,
+        dump,
+      } as RenderOpts)
 
-      expect(result[0].html).toBe(htmlBody)
+      const doc = domino.createDocument(result[0].html)
+      const content = doc.querySelector('body')
+
+      expect(content).toBeTruthy()
     })
 
     it('should return empty string if there was an error during article retrievement', async () => {
-      const { data, articleId } = prepareFixtures({ error: 'Unexpected internal error' })
-      const result = await visualEditorRenderer.render({ data, articleId })
+      const { downloader, dump } = await setupScrapeClasses({ format: '' })
+      const { data, articleId, articleDetail } = prepareFixtures({ error: 'Unexpected internal error' })
+      const _moduleDependencies = await getModuleDependencies(articleId, downloader)
+      const result = await visualEditorRenderer.render({
+        data,
+        redisStore,
+        webp: downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetail,
+        isMainPage: false,
+        dump,
+      } as RenderOpts)
 
       expect(result).toBe('')
     })

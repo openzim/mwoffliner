@@ -53,8 +53,18 @@ export interface RenderOpts {
   dump: Dump
 }
 
+export interface RenderSingleOutput {
+  articleId: string
+  displayTitle: string
+  html: string
+  mediaDependencies: any
+  subtitles: any
+}
+
+export type RenderOutput = RenderSingleOutput[]
+
 export abstract class Renderer {
-  private async treatVideo(
+  protected async treatVideo(
     dump: Dump,
     srcCache: KVS<boolean>,
     articleId: string,
@@ -199,7 +209,7 @@ export abstract class Renderer {
     return { mediaDependencies, subtitles }
   }
 
-  private async treatSubtitle(trackEle: DominoElement, articleId: string): Promise<string> {
+  protected async treatSubtitle(trackEle: DominoElement, articleId: string): Promise<string> {
     const subtitleSourceUrl = getFullUrl(trackEle.getAttribute('src'), MediaWiki.baseUrl)
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string; lang: string }
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
@@ -209,7 +219,7 @@ export abstract class Renderer {
     return vttFormatUrl.href
   }
 
-  private treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+  protected treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
 
     if (!this.shouldKeepNode(dump, imageNode, image)) {
@@ -242,7 +252,7 @@ export abstract class Renderer {
     imageNode.parentNode.replaceChild(thumbDiv, imageNode)
   }
 
-  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean, redisStore: RS): Promise<{ mediaDependencies: string[] }> {
+  protected async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean, redisStore: RS): Promise<{ mediaDependencies: string[] }> {
     const mediaDependencies: string[] = []
 
     if (!this.shouldKeepImage(dump, img)) {
@@ -305,7 +315,7 @@ export abstract class Renderer {
     return { mediaDependencies }
   }
 
-  private shouldKeepImage(dump: Dump, img: DominoElement) {
+  protected shouldKeepImage(dump: Dump, img: DominoElement) {
     const imageNodeClass = img.getAttribute('class') || ''
     const src = img.getAttribute('src')
     return (
@@ -315,7 +325,7 @@ export abstract class Renderer {
     )
   }
 
-  private async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
+  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
     let mediaDependencies: string[] = []
     let subtitles: string[] = []
     /* Clean/rewrite image tags */
@@ -346,15 +356,15 @@ export abstract class Renderer {
     return { doc: parsoidDoc, mediaDependencies, subtitles }
   }
 
-  private isStillLinked(image: DominoElement) {
+  protected isStillLinked(image: DominoElement) {
     return image && image.parentNode && image.parentNode.tagName === 'A'
   }
 
-  private shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
+  protected shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
     return !dump.nopic && imageNode && image
   }
 
-  private makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+  protected makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const imageNodeClass = imageNode.getAttribute('class') || ''
     let thumbDiv = parsoidDoc.createElement('div')
     thumbDiv.setAttribute('class', 'thumb')
@@ -374,15 +384,7 @@ export abstract class Renderer {
     return thumbDiv
   }
 
-  /**
-   * TODO: add temporary workaround to bypass 'test/e2e/cmd.e2e.test.ts'
-   * Once article treatments will be replaced to render() method,
-   * there should not be a problem to access to MediaWiki singleton
-   */
-  private mw: typeof MediaWiki
-
-  private async processArticleHtml(html: string, redisStore: RS, mw: any, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean) {
-    this.mw = mw
+  public async processHtml(html: string, redisStore: RS, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean) {
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
@@ -454,7 +456,7 @@ export abstract class Renderer {
     }
   }
 
-  private async templateArticle(
+  protected async templateArticle(
     parsoidDoc: DominoElement,
     moduleDependencies: any,
     dump: Dump,
@@ -470,7 +472,7 @@ export abstract class Renderer {
 
     const htmlTemplateDoc = domino.createDocument(
       htmlTemplateCode(articleId)
-        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, this.mw.webUrl.href, articleId))
+        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
         .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
         .replace(
           '__ARTICLE_JS_LIST__',
@@ -529,7 +531,7 @@ export abstract class Renderer {
     const creatorLink =
       '<a class="external text" ' +
       `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-      `href="${this.mw.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+      `href="${MediaWiki.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
       `${dump.mwMetaData.creator}</a>`
 
     const licenseLink = `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`
@@ -556,15 +558,15 @@ export abstract class Renderer {
     return htmlTemplateDoc
   }
 
-  private addNoIndexCommentToElement(element: DominoElement) {
+  protected addNoIndexCommentToElement(element: DominoElement) {
     const slices = element.parentElement.innerHTML.split(element.outerHTML)
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
   }
 
-  private isSubpage(id: string) {
+  protected isSubpage(id: string) {
     if (id && id.indexOf('/') >= 0) {
       const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
-      const ns = this.mw.namespaces[namespace] // namespace already defined
+      const ns = MediaWiki.namespaces[namespace] // namespace already defined
       if (ns !== undefined) {
         return ns.allowedSubpages
       }
@@ -572,7 +574,7 @@ export abstract class Renderer {
     return false
   }
 
-  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
+  protected applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     const filtersConfig = config.filters
 
     /* Don't need <link> and <input> tags */
@@ -728,11 +730,5 @@ export abstract class Renderer {
     return parsoidDoc
   }
 
-  async render(renderOpts: RenderOpts): Promise<any> {
-    const { data, redisStore, articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
-    if (data) {
-      const { finalHTML, mediaDependencies, subtitles } = await this.processArticleHtml(data, redisStore, MediaWiki, dump, articleId, articleDetail, _moduleDependencies, webp)
-      return { finalHTML, mediaDependencies, subtitles }
-    }
-  }
+  abstract render(renderOpts: RenderOpts): Promise<any>
 }

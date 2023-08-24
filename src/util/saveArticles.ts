@@ -170,12 +170,12 @@ async function getAllArticlesToKeep(
           articleDetail,
           dump.isMainPage(articleId),
         )
-        for (const { articleId, articleHTML } of rets) {
-          if (!articleHTML) {
+        for (const { articleId, html } of rets) {
+          if (!html) {
             continue
           }
 
-          const doc = domino.createDocument(articleHTML)
+          const doc = domino.createDocument(html)
           if (!dump.isMainPage(articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }

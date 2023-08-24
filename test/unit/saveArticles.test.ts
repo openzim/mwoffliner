@@ -225,11 +225,20 @@ describe('saveArticles', () => {
 
     const visualEditorRenderer = new VisualEditorRenderer()
 
+    const renderOpts = {
+      data: articleJsonObject,
+      redisStore,
+      webp: downloader.webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      articleDetail,
+      isMainPage: dump.isMainPage(articleId),
+      dump,
+    }
+
     expect(async () => {
-      await visualEditorRenderer.render({
-        data: articleJsonObject,
-        articleId: 'deletedArticle',
-      })
+      await visualEditorRenderer.render(renderOpts)
     }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
   })
 
