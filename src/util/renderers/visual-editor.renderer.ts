@@ -1,4 +1,3 @@
-import domino from 'domino'
 import { DELETED_ARTICLE_ERROR } from '../const.js'
 import * as logger from '../../Logger.js'
 import { Renderer } from './abstract.renderer.js'
@@ -36,7 +35,7 @@ export class VisualEditorRenderer extends Renderer {
         logger.error(DELETED_ARTICLE_ERROR)
         throw new Error(DELETED_ARTICLE_ERROR)
       }
-      html = isMainPage ? data.visualeditor.content : this.injectHeader(data.visualeditor.content, articleDetail)
+      html = isMainPage ? data.visualeditor.content : super.injectHeader(data.visualeditor.content, articleDetail)
       strippedTitle = getStrippedTitleFromHtml(html)
       displayTitle = this.getDisplayTitleFromVisualEditor(strippedTitle, articleId)
       return { html, displayTitle }
@@ -75,21 +74,5 @@ export class VisualEditorRenderer extends Renderer {
       logger.error(err.message)
       throw new Error(err.message)
     }
-  }
-
-  private injectHeader(content: string, articleDetail: any): string {
-    const doc = domino.createDocument(content)
-    const header = doc.createElement('h1')
-
-    if (articleDetail?.title) {
-      header.appendChild(doc.createTextNode(articleDetail.title))
-    }
-    header.classList.add('article-header')
-
-    const target = doc.querySelector('body.mw-body-content')
-
-    target.insertAdjacentElement('afterbegin', header)
-
-    return doc.documentElement.outerHTML
   }
 }

@@ -9,6 +9,7 @@ import { config } from '../../config.js'
 import { Dump } from '../../Dump.js'
 import { rewriteUrlsOfDoc } from '../rewriteUrls.js'
 import { footerTemplate, htmlTemplateCode } from '../../Templates.js'
+import { ARTICLE_HEADER_CLASS } from '../const.js'
 import {
   getFullUrl,
   getMediaBase,
@@ -221,7 +222,7 @@ export abstract class Renderer {
     return vttFormatUrl.href
   }
 
-  protected treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+  private treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
 
     if (!this.shouldKeepNode(dump, imageNode, image)) {
@@ -254,7 +255,7 @@ export abstract class Renderer {
     imageNode.parentNode.replaceChild(thumbDiv, imageNode)
   }
 
-  protected async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean, redisStore: RS): Promise<{ mediaDependencies: string[] }> {
+  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean, redisStore: RS): Promise<{ mediaDependencies: string[] }> {
     const mediaDependencies: string[] = []
 
     if (!this.shouldKeepImage(dump, img)) {
@@ -317,7 +318,7 @@ export abstract class Renderer {
     return { mediaDependencies }
   }
 
-  protected shouldKeepImage(dump: Dump, img: DominoElement) {
+  private shouldKeepImage(dump: Dump, img: DominoElement) {
     const imageNodeClass = img.getAttribute('class') || ''
     const src = img.getAttribute('src')
     return (
@@ -358,15 +359,15 @@ export abstract class Renderer {
     return { doc: parsoidDoc, mediaDependencies, subtitles }
   }
 
-  protected isStillLinked(image: DominoElement) {
+  private isStillLinked(image: DominoElement) {
     return image && image.parentNode && image.parentNode.tagName === 'A'
   }
 
-  protected shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
+  private shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
     return !dump.nopic && imageNode && image
   }
 
-  protected makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
+  private makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const imageNodeClass = imageNode.getAttribute('class') || ''
     let thumbDiv = parsoidDoc.createElement('div')
     thumbDiv.setAttribute('class', 'thumb')
@@ -458,7 +459,7 @@ export abstract class Renderer {
     }
   }
 
-  protected async templateArticle(
+  private async templateArticle(
     parsoidDoc: DominoElement,
     moduleDependencies: any,
     dump: Dump,
@@ -560,12 +561,12 @@ export abstract class Renderer {
     return htmlTemplateDoc
   }
 
-  protected addNoIndexCommentToElement(element: DominoElement) {
+  private addNoIndexCommentToElement(element: DominoElement) {
     const slices = element.parentElement.innerHTML.split(element.outerHTML)
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
   }
 
-  protected isSubpage(id: string) {
+  private isSubpage(id: string) {
     if (id && id.indexOf('/') >= 0) {
       const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
       const ns = MediaWiki.namespaces[namespace] // namespace already defined
@@ -576,7 +577,7 @@ export abstract class Renderer {
     return false
   }
 
-  protected applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
+  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     const filtersConfig = config.filters
 
     /* Don't need <link> and <input> tags */
@@ -730,6 +731,24 @@ export abstract class Renderer {
     }
 
     return parsoidDoc
+  }
+
+  protected injectHeader(content: string, articleDetail: any): string {
+    const doc = domino.createDocument(content)
+    const header = doc.createElement('h1')
+
+    if (articleDetail?.title) {
+      header.appendChild(doc.createTextNode(articleDetail.title))
+      header.classList.add(ARTICLE_HEADER_CLASS)
+
+      const target = doc.querySelector('body.mw-body-content')
+
+      if (target) {
+        target.insertAdjacentElement('afterbegin', header)
+      }
+    }
+
+    return doc.documentElement.outerHTML
   }
 
   abstract render(renderOpts: RenderOpts): Promise<any>

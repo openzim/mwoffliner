@@ -4,7 +4,7 @@ import domino from 'domino'
 import { setupScrapeClasses } from '../util.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
-import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
+import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR, ARTICLE_HEADER_CLASS } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
@@ -76,6 +76,37 @@ describe('saveArticles', () => {
     expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
     // Geo Position data is correct
     expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
+    // Check if header exists
+    expect(articleDoc.querySelector(`h1.${ARTICLE_HEADER_CLASS}`)).toBeTruthy()
+  })
+
+  test('Load main page and check that it is without header', async () => {
+    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+    const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+    await downloader.setBaseUrls()
+    const articleId = 'Main_Page'
+    const articleUrl = getArticleUrl(downloader, dump, articleId)
+    const _moduleDependencies = await downloader.getModuleDependencies(articleId)
+    const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+    const { articleDetailXId } = redisStore
+    const articleDetail = { title: articleId }
+    articleDetailXId.setMany(articlesDetail)
+    const result = await downloader.getArticle(
+      redisStore,
+      downloader.webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      wikimediaDesktopRenderer,
+      articleUrl,
+      dump,
+      articleDetail,
+      dump.isMainPage(articleId),
+    )
+
+    const articleDoc = domino.createDocument(result[0].html)
+    expect(articleDoc.querySelector(`h1.${ARTICLE_HEADER_CLASS}`)).toBeFalsy()
   })
 
   describe('applyOtherTreatments', () => {
