@@ -34,7 +34,7 @@ export class WikimediaDesktopRenderer extends Renderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleDetailXId, redisStore, webp, _moduleDependencies, isMainPage, dump } = renderOpts
+    const { data, articleId, articleDetailXId, webp, _moduleDependencies, isMainPage, dump } = renderOpts
     const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
     // Paginate when there are more than 200 subCategories
@@ -44,9 +44,9 @@ export class WikimediaDesktopRenderer extends Renderer {
       const { strippedTitle, _articleId } = await this.getHTML(data, i, articleId, articleDetail, numberOfPagesToSplitInto, articleDetailXId)
       let dataWithHeader = ''
       if (!isMainPage) {
-        dataWithHeader = super.injectHeader(data, articleDetail)
+        dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)
       }
-      const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(dataWithHeader || data, redisStore, dump, articleId, articleDetail, _moduleDependencies, webp)
+      const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(dataWithHeader || data, dump, articleId, articleDetail, _moduleDependencies, webp)
 
       result.push({
         articleId: _articleId,

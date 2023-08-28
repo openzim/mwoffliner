@@ -1,10 +1,11 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import domino from 'domino'
 
+import RedisStore from '../../src/RedisStore.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import { setupScrapeClasses } from '../util.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
-import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR, ARTICLE_HEADER_CLASS } from '../../src/util/index.js'
+import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
@@ -24,7 +25,7 @@ describe('saveArticles', () => {
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -41,7 +42,6 @@ describe('saveArticles', () => {
         },
       } as any,
       downloader,
-      redisStore,
       dump,
     )
 
@@ -57,7 +57,6 @@ describe('saveArticles', () => {
 
     await expect(
       downloader.getArticle(
-        redisStore,
         downloader.webp,
         _moduleDependencies,
         articleId,
@@ -77,7 +76,7 @@ describe('saveArticles', () => {
     // Geo Position data is correct
     expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
     // Check if header exists
-    expect(articleDoc.querySelector(`h1.${ARTICLE_HEADER_CLASS}`)).toBeTruthy()
+    expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
   })
 
   test('Load main page and check that it is without header', async () => {
@@ -89,11 +88,10 @@ describe('saveArticles', () => {
     const _moduleDependencies = await downloader.getModuleDependencies(articleId)
     const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
     const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     const articleDetail = { title: articleId }
     articleDetailXId.setMany(articlesDetail)
     const result = await downloader.getArticle(
-      redisStore,
       downloader.webp,
       _moduleDependencies,
       articleId,
@@ -106,7 +104,7 @@ describe('saveArticles', () => {
     )
 
     const articleDoc = domino.createDocument(result[0].html)
-    expect(articleDoc.querySelector(`h1.${ARTICLE_HEADER_CLASS}`)).toBeFalsy()
+    expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
   })
 
   describe('applyOtherTreatments', () => {
@@ -212,7 +210,7 @@ describe('saveArticles', () => {
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -227,7 +225,6 @@ describe('saveArticles', () => {
         },
       } as any,
       downloader,
-      redisStore,
       dump,
     )
 
@@ -244,7 +241,7 @@ describe('saveArticles', () => {
 
   test('Test deleted article rendering (Visual editor renderer)', async () => {
     const { downloader, dump } = await setupScrapeClasses() // en wikipedia
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     const articleId = 'deletedArticle'
 
     const articleJsonObject = {
@@ -258,7 +255,7 @@ describe('saveArticles', () => {
 
     const renderOpts = {
       data: articleJsonObject,
-      redisStore,
+      RedisStore,
       webp: downloader.webp,
       _moduleDependencies,
       articleId,

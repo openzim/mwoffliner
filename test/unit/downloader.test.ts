@@ -1,6 +1,7 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
+import RedisStore from '../../src/RedisStore.js'
 import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
@@ -80,7 +81,7 @@ describe('Downloader class', () => {
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
     const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet)
-    redisStore.articleDetailXId.setMany(articleDetailsRet)
+    RedisStore.articleDetailXId.setMany(articleDetailsRet)
     const { London, Paris, Zürich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
     expect(London).toBeDefined()
     expect(United_Kingdom).toBeDefined()
@@ -141,11 +142,10 @@ describe('Downloader class', () => {
         coordinates: '51.50722222;-0.1275',
       }
       const LondonArticle = await downloader.getArticle(
-        redisStore,
         downloader.webp,
         _moduleDependencies,
         articleId,
-        redisStore.articleDetailXId,
+        RedisStore.articleDetailXId,
         wikimediaDesktopRenderer,
         articleUrl,
         dump,
@@ -166,11 +166,10 @@ describe('Downloader class', () => {
         timestamp: '2023-08-02T09:57:11Z',
       }
       const PaginatedArticle = await downloader.getArticle(
-        redisStore,
         downloader.webp,
         _moduleDependencies,
         articleId,
-        redisStore.articleDetailXId,
+        RedisStore.articleDetailXId,
         wikimediaDesktopRenderer,
         articleUrl,
         dump,
@@ -190,11 +189,10 @@ describe('Downloader class', () => {
       }
       await expect(
         downloader.getArticle(
-          redisStore,
           downloader.webp,
           _moduleDependencies,
           'NeverExistingArticle',
-          redisStore.articleDetailXId,
+          RedisStore.articleDetailXId,
           wikimediaDesktopRenderer,
           articleUrl,
           dump,

@@ -1,5 +1,6 @@
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
+import RedisStore from '../RedisStore.js'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
 
 import pmap from 'p-map'
@@ -124,14 +125,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(
-  redisStore: RS,
-  downloader: Downloader,
-  articleDetailXId: RKVS<ArticleDetail>,
-  dump: Dump,
-  mainPageRenderer: Renderer,
-  articlesRenderer: Renderer,
-) {
+async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       const nonPaginatedArticleId = articleDetail.title
@@ -141,7 +135,6 @@ async function getAllArticlesToKeep(
         let rets: any
         if (dump.isMainPage) {
           rets = await downloader.getArticle(
-            redisStore,
             downloader.webp,
             _moduleDependencies,
             articleId,
@@ -154,7 +147,6 @@ async function getAllArticlesToKeep(
           )
         }
         rets = await downloader.getArticle(
-          redisStore,
           downloader.webp,
           _moduleDependencies,
           articleId,
@@ -204,7 +196,6 @@ async function saveArticle(
   finalHTML: string,
   mediaDependencies: any,
   subtitles: any,
-  redisStore: RS,
   articleId: string,
   articleTitle: string,
   articleDetail: any,
@@ -217,7 +208,7 @@ async function saveArticle(
     })
 
     if (mediaDependencies.length) {
-      const existingVals = await redisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
+      const existingVals = await RedisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
 
       for (const dep of mediaDependencies) {
         const { mult, width } = getSizeFromUrl(dep.url)
@@ -233,7 +224,7 @@ async function saveArticle(
       }
     }
 
-    await redisStore.filesToDownloadXPath.setMany(filesToDownload)
+    await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const zimArticle = new ZimArticle({
       url: articleId,
@@ -259,12 +250,12 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, redisStore: RS, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
-  const { articleDetailXId } = redisStore
+  const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
 
   const rendererBuilder = new RendererBuilder()
@@ -276,7 +267,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(redisStore, downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
+    await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -313,7 +304,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
           const articleUrl = getArticleUrl(downloader, dump, articleId)
           if (dump.isMainPage) {
             rets = await downloader.getArticle(
-              redisStore,
               downloader.webp,
               _moduleDependencies,
               articleId,
@@ -326,7 +316,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             )
           }
           rets = await downloader.getArticle(
-            redisStore,
             downloader.webp,
             _moduleDependencies,
             articleId,
@@ -359,7 +348,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
              * To parse and download simultaniously, we don't await on save,
              * but instead cache the promise in a queue and check it later
              */
-            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, subtitles, redisStore, articleId, articleTitle, articleDetail)])
+            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, subtitles, articleId, articleTitle, articleDetail)])
           }
         } catch (err) {
           dump.status.articles.fail += 1

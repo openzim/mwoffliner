@@ -1,5 +1,5 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
-
+import RedisStore from '../../src/RedisStore.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import { setupScrapeClasses } from '../util.js'
 import { getAndProcessStylesheets, mwRetToArticleDetail } from '../../src/util/index.js'
 import Axios from 'axios'
@@ -12,7 +12,7 @@ describe('Styles', () => {
   afterAll(stopRedis)
 
   test('Stylesheet downloading', async () => {
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     const { downloader } = await setupScrapeClasses() // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
@@ -26,7 +26,7 @@ describe('Styles', () => {
     const { data: offlineCSSContent } = await Axios.get(offlineCSSUrl)
     const { data: siteStylesContent } = await Axios.get(siteStylesUrl)
 
-    const { finalCss } = await getAndProcessStylesheets(downloader, redisStore, [offlineCSSUrl, siteStylesUrl])
+    const { finalCss } = await getAndProcessStylesheets(downloader, [offlineCSSUrl, siteStylesUrl])
 
     // Contains offline CSS url
     expect(finalCss.includes(offlineCSSUrl)).toBeDefined()

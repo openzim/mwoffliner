@@ -2,7 +2,7 @@ import domino from 'domino'
 import { Dump } from '../../../src/Dump.js'
 import { Renderer } from '../../../src/util/renderers/abstract.renderer.js'
 import { convertWikicodeToHtml, setupScrapeClasses, testHtmlRewritingE2e } from '../../util.js'
-import { redisStore, startRedis, stopRedis } from '../bootstrap.js'
+import { startRedis, stopRedis } from '../bootstrap.js'
 
 describe('MediaTreatment', () => {
   class TestableRenderer extends Renderer {
@@ -15,8 +15,8 @@ describe('MediaTreatment', () => {
     public async testTreatSubtitle(trackEle: DominoElement, articleId: string) {
       return this.treatSubtitle(trackEle, articleId)
     }
-    public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
-      return this.treatMedias(parsoidDoc, dump, articleId, webp, redisStore)
+    public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean) {
+      return this.treatMedias(parsoidDoc, dump, articleId, webp)
     }
   }
 
@@ -136,7 +136,7 @@ describe('MediaTreatment', () => {
 
       const doc = domino.createDocument(html)
 
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp, redisStore)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp)
 
       const videoEl = ret.doc.querySelector('video')
       const videoPosterUrl = videoEl.getAttribute('poster')
@@ -160,7 +160,7 @@ describe('MediaTreatment', () => {
 
       const doc = domino.createDocument(html)
 
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp, redisStore)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp)
 
       const videoEl = ret.doc.querySelector('video')
       const imgEl = ret.doc.querySelector('img')
@@ -176,7 +176,7 @@ describe('MediaTreatment', () => {
 
       const doc = domino.createDocument(html)
 
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp, redisStore)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp)
 
       const videoEl = ret.doc.querySelector('video')
       const imgEl = ret.doc.querySelector('img')

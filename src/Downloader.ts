@@ -295,7 +295,6 @@ class Downloader {
   }
 
   public async getArticle(
-    redisStore: RS,
     webp: boolean,
     _moduleDependencies: any,
     articleId: string,
@@ -315,7 +314,6 @@ class Downloader {
 
     return articleRenderer.render({
       data,
-      redisStore,
       webp,
       _moduleDependencies,
       articleId,

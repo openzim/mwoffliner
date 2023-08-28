@@ -215,9 +215,9 @@ async function execute(argv: any) {
 
   await downloader.setBaseUrls()
 
-  const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)
-  await redisStore.connect()
-  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = redisStore
+  RedisStore.setOptions(argv.redis || config.defaults.redisPath)
+  await RedisStore.connect()
+  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = RedisStore
 
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
@@ -236,12 +236,12 @@ async function execute(argv: any) {
 
   process.on('SIGTERM', async () => {
     logger.log('SIGTERM')
-    await redisStore.close()
+    await RedisStore.close()
     process.exit(128 + 15)
   })
   process.on('SIGINT', async () => {
     logger.log('SIGINT')
-    await redisStore.close()
+    await RedisStore.close()
     process.exit(128 + 2)
   })
 
@@ -290,13 +290,13 @@ async function execute(argv: any) {
 
   logger.info('Getting article ids')
   let stime = Date.now()
-  await getArticleIds(downloader, redisStore, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  await getArticleIds(downloader, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
   if (MediaWiki.getCategories) {
-    await getCategoriesForArticles(articleDetailXId, downloader, redisStore)
+    await getCategoriesForArticles(articleDetailXId, downloader)
 
-    while ((await trimUnmirroredPages(downloader, redisStore)) > 0) {
+    while ((await trimUnmirroredPages(downloader)) > 0) {
       // Remove unmirrored pages, categories, subCategories
       // trimUnmirroredPages returns number of modified articles
     }
@@ -406,7 +406,7 @@ async function execute(argv: any) {
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
 
     logger.log('Downloading stylesheets and populating media queue')
-    const { finalCss } = await getAndProcessStylesheets(downloader, redisStore, stylesheetsToGet)
+    const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
     const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' })
@@ -420,7 +420,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, redisStore, dump)
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
@@ -641,7 +641,7 @@ async function execute(argv: any) {
   }
 
   MediaWiki.reset()
-  redisStore.close()
+  RedisStore.close()
 
   return dumps
 }

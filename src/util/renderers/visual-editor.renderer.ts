@@ -35,7 +35,7 @@ export class VisualEditorRenderer extends Renderer {
         logger.error(DELETED_ARTICLE_ERROR)
         throw new Error(DELETED_ARTICLE_ERROR)
       }
-      html = isMainPage ? data.visualeditor.content : super.injectHeader(data.visualeditor.content, articleDetail)
+      html = isMainPage ? data.visualeditor.content : super.injectH1TitleToHtml(data.visualeditor.content, articleDetail)
       strippedTitle = getStrippedTitleFromHtml(html)
       displayTitle = this.getDisplayTitleFromVisualEditor(strippedTitle, articleId)
       return { html, displayTitle }
@@ -56,10 +56,10 @@ export class VisualEditorRenderer extends Renderer {
   public async render(renderOpts: RenderOpts): Promise<any> {
     try {
       const result: RenderOutput = []
-      const { redisStore, articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
+      const { articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
       const { html, displayTitle } = await this.getHTML(renderOpts)
       if (html) {
-        const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(html, redisStore, dump, articleId, articleDetail, _moduleDependencies, webp)
+        const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(html, dump, articleId, articleDetail, _moduleDependencies, webp)
         result.push({
           articleId,
           displayTitle,

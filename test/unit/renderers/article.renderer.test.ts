@@ -3,7 +3,6 @@ import { jest } from '@jest/globals'
 import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
 import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
 import { setupScrapeClasses } from '../../util.js'
-import { redisStore } from '../bootstrap.js'
 import { RenderOpts } from 'src/util/renderers/abstract.renderer.js'
 
 jest.setTimeout(10000)
@@ -42,7 +41,6 @@ describe('ArticleRenderer', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const result = await visualEditorRenderer.render({
         data,
-        redisStore,
         webp: downloader.webp,
         _moduleDependencies,
         articleId,
@@ -64,7 +62,6 @@ describe('ArticleRenderer', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const result = await visualEditorRenderer.render({
         data,
-        redisStore,
         webp: downloader.webp,
         _moduleDependencies,
         articleId,
@@ -84,7 +81,6 @@ describe('ArticleRenderer', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const result = await visualEditorRenderer.render({
         data,
-        redisStore,
         webp: downloader.webp,
         _moduleDependencies,
         articleId,
@@ -106,7 +102,6 @@ describe('ArticleRenderer', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const result = await visualEditorRenderer.render({
         data,
-        redisStore,
         webp: downloader.webp,
         _moduleDependencies,
         articleId,
@@ -127,7 +122,6 @@ describe('ArticleRenderer', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const result = await visualEditorRenderer.render({
         data,
-        redisStore,
         webp: downloader.webp,
         _moduleDependencies,
         articleId,

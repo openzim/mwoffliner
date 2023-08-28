@@ -2,6 +2,7 @@ import * as urlParser from 'url'
 import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc.js'
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
+import RedisStore from '../RedisStore.js'
 import DU from '../DOMUtils.js'
 import * as logger from '../Logger.js'
 
@@ -173,7 +174,7 @@ async function checkIfArticlesMirrored(articleTitles: string[], articleDetailXId
   return [mirrored, unmirrored]
 }
 
-async function rewriteUrls(articleId: string, redisStore: RS, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
+async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
   const mediaDependencies: string[] = []
 
   /*
@@ -194,10 +195,10 @@ async function rewriteUrls(articleId: string, redisStore: RS, dump: Dump, linkNo
     }
   }
 
-  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings), redisStore.articleDetailXId)
+  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings), RedisStore.articleDetailXId)
 
   if (unmirroredTitles.length) {
-    const articlesRedirected = await redisStore.redirectsXId.existsMany(unmirroredTitles)
+    const articlesRedirected = await RedisStore.redirectsXId.existsMany(unmirroredTitles)
     for (const articleTitle of unmirroredTitles) {
       const redirect = articlesRedirected[articleTitle]
       if (redirect) {
@@ -230,17 +231,17 @@ async function rewriteUrls(articleId: string, redisStore: RS, dump: Dump, linkNo
   return { mediaDependencies }
 }
 
-export function rewriteUrl(articleId: string, redisStore: RS, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
-  return rewriteUrls(articleId, redisStore, dump, [linkNode])
+export function rewriteUrl(articleId: string, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
+  return rewriteUrls(articleId, dump, [linkNode])
 }
 
-export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, articleId: string, redisStore: RS, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
+export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, articleId: string, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
   /* Go through all links */
   const as = parsoidDoc.getElementsByTagName('a')
   const areas = parsoidDoc.getElementsByTagName('area')
   const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas))
 
-  const ret = await rewriteUrls(articleId, redisStore, dump, linkNodes)
+  const ret = await rewriteUrls(articleId, dump, linkNodes)
   return {
     ...ret,
     doc: parsoidDoc,

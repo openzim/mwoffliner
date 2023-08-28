@@ -3,13 +3,13 @@ import * as logger from '../../Logger.js'
 import * as QueryStringParser from 'querystring'
 import htmlMinifier from 'html-minifier'
 import MediaWiki from '../../MediaWiki.js'
+import RedisStore from '../../RedisStore.js'
 import DOMUtils from '../../DOMUtils.js'
 import DU from '../../DOMUtils.js'
 import { config } from '../../config.js'
 import { Dump } from '../../Dump.js'
 import { rewriteUrlsOfDoc } from '../rewriteUrls.js'
 import { footerTemplate, htmlTemplateCode } from '../../Templates.js'
-import { ARTICLE_HEADER_CLASS } from '../const.js'
 import {
   getFullUrl,
   getMediaBase,
@@ -44,7 +44,6 @@ export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuil
 
 export interface RenderOpts {
   data?: any
-  redisStore: RS
   webp: boolean
   _moduleDependencies: any
   articleId?: string
@@ -255,7 +254,7 @@ export abstract class Renderer {
     imageNode.parentNode.replaceChild(thumbDiv, imageNode)
   }
 
-  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean, redisStore: RS): Promise<{ mediaDependencies: string[] }> {
+  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[] }> {
     const mediaDependencies: string[] = []
 
     if (!this.shouldKeepImage(dump, img)) {
@@ -269,7 +268,7 @@ export abstract class Renderer {
       /* Check if the target is mirrored */
       const href = linkNode.getAttribute('href') || ''
       const title = MediaWiki.extractPageTitleFromHref(href)
-      const keepLink = title && (await redisStore.articleDetailXId.exists(title))
+      const keepLink = title && (await RedisStore.articleDetailXId.exists(title))
 
       /* Under certain condition it seems that this is possible
        * to have parentNode == undefined, in this case this
@@ -328,7 +327,7 @@ export abstract class Renderer {
     )
   }
 
-  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean, redisStore: RS) {
+  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean) {
     let mediaDependencies: string[] = []
     let subtitles: string[] = []
     /* Clean/rewrite image tags */
@@ -344,7 +343,7 @@ export abstract class Renderer {
     }
 
     for (const imgEl of imgs) {
-      const ret = await this.treatImage(dump, srcCache, articleId, imgEl, webp, redisStore)
+      const ret = await this.treatImage(dump, srcCache, articleId, imgEl, webp)
       mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
     }
 
@@ -387,12 +386,12 @@ export abstract class Renderer {
     return thumbDiv
   }
 
-  public async processHtml(html: string, redisStore: RS, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean) {
+  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean) {
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
 
-    const ruRet = await rewriteUrlsOfDoc(doc, articleId, redisStore, dump)
+    const ruRet = await rewriteUrlsOfDoc(doc, articleId, dump)
     doc = ruRet.doc
     mediaDependencies = mediaDependencies.concat(
       ruRet.mediaDependencies
@@ -404,7 +403,7 @@ export abstract class Renderer {
     )
     doc = this.applyOtherTreatments(doc, dump)
 
-    const tmRet = await this.treatMedias(doc, dump, articleId, webp, redisStore)
+    const tmRet = await this.treatMedias(doc, dump, articleId, webp)
 
     doc = tmRet.doc
 
@@ -431,7 +430,7 @@ export abstract class Renderer {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
-    let templatedDoc = await this.templateArticle(doc, _moduleDependencies, dump, articleId, articleDetail, redisStore.articleDetailXId)
+    let templatedDoc = await this.templateArticle(doc, _moduleDependencies, dump, articleId, articleDetail, RedisStore.articleDetailXId)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
       templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
@@ -733,13 +732,16 @@ export abstract class Renderer {
     return parsoidDoc
   }
 
-  protected injectHeader(content: string, articleDetail: any): string {
+  /**
+   * Add an H1 tag with page title on top of article except main page
+   */
+  protected injectH1TitleToHtml(content: string, articleDetail: any): string {
     const doc = domino.createDocument(content)
     const header = doc.createElement('h1')
 
     if (articleDetail?.title) {
       header.appendChild(doc.createTextNode(articleDetail.title))
-      header.classList.add(ARTICLE_HEADER_CLASS)
+      header.classList.add('article-header')
 
       const target = doc.querySelector('body.mw-body-content')
 

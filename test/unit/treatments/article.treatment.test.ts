@@ -1,8 +1,9 @@
-import { ZimArticle } from '@openzim/libzim'
 import domino from 'domino'
+import RedisStore from '../../../src/RedisStore.js'
+import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../../src/util/mw-api.js'
 import { setupScrapeClasses } from '../../util.js'
-import { redisStore, startRedis, stopRedis } from '../bootstrap.js'
+import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../../src/util/saveArticles.js'
@@ -20,7 +21,7 @@ describe('ArticleTreatment', () => {
     const title = 'London'
     const _articlesDetail = await downloader.getArticleDetailsIds([title])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -54,7 +55,6 @@ describe('ArticleTreatment', () => {
         },
       } as any,
       downloader,
-      redisStore,
       dump,
     )
 
@@ -64,7 +64,6 @@ describe('ArticleTreatment', () => {
 
     await expect(
       downloader.getArticle(
-        redisStore,
         downloader.webp,
         _moduleDependencies,
         articleId,
