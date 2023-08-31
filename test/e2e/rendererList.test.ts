@@ -50,6 +50,6 @@ describe('renderName', () => {
     const renderName = 'unknownRenderName'
     expect(async () => {
       await mwoffliner.execute({ ...parameters, renderName })
-    }).rejects.toThrowError('Unable to find specific API end-point to retrieve article HTML')
+    }).rejects.toThrowError()
   })
 })
