@@ -209,6 +209,7 @@ async function execute(argv: any) {
   }
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
+  await MediaWiki.hasMediawikiParsoidApi()
   await MediaWiki.hasWikimediaDesktopRestApi()
   await MediaWiki.hasVisualEditorApi()
 

@@ -181,12 +181,14 @@ class Downloader {
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
+      { condition: await MediaWiki.hasMediawikiParsoidApi(), value: MediaWiki.useParsoidApiUrl.href },
       { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
       { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
     ])
 
     //* Objects order in array matters!
     this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
+      { condition: await MediaWiki.hasMediawikiParsoidApi(), value: MediaWiki.useParsoidApiUrl.href },
       { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
       { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
     ])

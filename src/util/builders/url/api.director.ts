@@ -48,6 +48,10 @@ export default class ApiURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', page: '' }).build(true)
   }
 
+  buildUseParsoidURL() {
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'parse', format: 'json', prop: 'text|modules|jsconfigvars|headhtml', parsoid: '1', page: '' }).build(true)
+  }
+
   buildArticleApiURL(articleId: string) {
     const domain = this.buildBaseArticleURL()
 
