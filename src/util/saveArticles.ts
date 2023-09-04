@@ -17,6 +17,7 @@ import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
 import { RendererBuilderOptions, Renderer } from './renderers/abstract.renderer.js'
 import { RendererBuilder } from './renderers/renderer.builder.js'
+import { MediawikiParsoidRenderer } from './renderers/mediawiki-parsoid-renderer.js'
 
 const genericJsModules = config.output.mw.js
 const genericCssModules = config.output.mw.css
@@ -296,13 +297,22 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         let rets: any
         try {
           const articleUrl = getArticleUrl(downloader, dump, articleId)
+          let isRenderReturnModules: boolean
           if (dump.isMainPage) {
+            /*
+             Check whether the renderer API can download modules along with article text content.
+             Only MediawikiParsoidRenderer has this feature.
+             */
+            isRenderReturnModules = mainPageRenderer instanceof MediawikiParsoidRenderer
             rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
           }
+          isRenderReturnModules = articlesRenderer instanceof MediawikiParsoidRenderer
           rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
 
-          for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
+          for (const { articleId, displayTitle: articleTitle, html: articleHtml, modules, modulescripts, modulestyles, headhtml } of rets) {
             const nonPaginatedArticleId = articleDetail.title
+
+            const modulesData = { modules, modulescripts, modulestyles, headhtml }
 
             if (!articleHtml) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
@@ -310,7 +320,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             }
 
             curStage += 1
-            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
+
+            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader, isRenderReturnModules, modulesData)
+
             for (const dep of _moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
@@ -401,37 +413,56 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   }
 }
 
-export async function getModuleDependencies(articleId: string, downloader: Downloader) {
+export async function getModuleDependencies(articleId: string, downloader: Downloader, isRenderReturnModules: boolean, modulesData: object) {
   /* These vars will store the list of js and css dependencies for
     the article we are downloading. */
   let jsConfigVars = ''
   let jsDependenciesList: string[] = []
   let styleDependenciesList: string[] = []
 
-  const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
-
-  const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
-
-  const articleData = await downloader.getJSON<any>(articleApiUrl)
-
-  if (articleData.error) {
-    const errorMessage = `Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`
-    logger.error(errorMessage)
-
-    /* If article is missing (for example because it just has been deleted) */
-    if (articleData.error.code === 'missingtitle') {
-      return { jsConfigVars, jsDependenciesList, styleDependenciesList }
-    }
-
-    /* Something went wrong in modules retrieval at app level (no HTTP error) */
-    throw new Error(errorMessage)
+  let moduleObj = {
+    modules: '',
+    modulescripts: '',
+    modulestyles: '',
+    headhtml: '',
   }
 
-  const {
-    parse: { modules, modulescripts, modulestyles, headhtml },
-  } = articleData
-  jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
-  styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
+  if (isRenderReturnModules) {
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+
+    const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
+
+    const articleData = await downloader.getJSON<any>(articleApiUrl)
+
+    if (articleData.error) {
+      const errorMessage = `Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`
+      logger.error(errorMessage)
+
+      /* If article is missing (for example because it just has been deleted) */
+      if (articleData.error.code === 'missingtitle') {
+        return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+      }
+
+      /* Something went wrong in modules retrieval at app level (no HTTP error) */
+      throw new Error(errorMessage)
+    }
+
+    const {
+      parse: { modules, modulescripts, modulestyles, headhtml },
+    } = articleData
+
+    moduleObj = {
+      modules,
+      modulescripts,
+      modulestyles,
+      headhtml,
+    }
+  } else {
+    moduleObj = { ...moduleObj, ...modulesData }
+  }
+
+  jsDependenciesList = genericJsModules.concat(moduleObj.modules, moduleObj.modulescripts).filter((a) => a)
+  styleDependenciesList = [].concat(moduleObj.modules, moduleObj.modulestyles, genericCssModules).filter((a) => a)
   styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
 
   logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`)
@@ -439,7 +470,7 @@ export async function getModuleDependencies(articleId: string, downloader: Downl
 
   // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
   // the script below extracts the config with a regex executed on the page header returned from the api
-  const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script')
+  const scriptTags = domino.createDocument(`${moduleObj.headhtml}</body></html>`).getElementsByTagName('script')
   const regex = /mw\.config\.set\(\{.*?\}\);/gm
   // eslint-disable-next-line @typescript-eslint/prefer-for-of
   for (let i = 0; i < scriptTags.length; i += 1) {

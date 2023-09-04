@@ -1,5 +1,5 @@
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
-type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
+type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'MediawikiParsoid'
 
 interface RendererBuilderOptionsBase {
   renderType: renderType

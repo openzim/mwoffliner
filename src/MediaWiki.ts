@@ -11,6 +11,7 @@ import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import UseParsoidURLDirector from './util/builders/url/use-parsoid.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 
 class MediaWiki {
@@ -40,8 +41,10 @@ class MediaWiki {
   private apiUrlDirector: ApiURLDirector
   private wikimediaDesktopUrlDirector: DesktopURLDirector
   private visualEditorURLDirector: VisualEditorURLDirector
+  private useParsoidURLDirector: UseParsoidURLDirector
 
   public visualEditorApiUrl: URL
+  public useParsoidApiUrl: URL
   public apiUrl: URL
   public modulePath: string // only for reading
   public _modulePathOpt: string // only for whiting to generate modulePath
@@ -50,6 +53,7 @@ class MediaWiki {
 
   #hasWikimediaDesktopRestApi: boolean | null
   #hasVisualEditorApi: boolean | null
+  #hasMediawikiParsoidApi: boolean | null
 
   set username(value: string) {
     this.#username = value
@@ -99,6 +103,7 @@ class MediaWiki {
 
     this.#hasWikimediaDesktopRestApi = null
     this.#hasVisualEditorApi = null
+    this.#hasMediawikiParsoidApi = null
   }
 
   private constructor() {
@@ -121,16 +126,26 @@ class MediaWiki {
     return this.#hasVisualEditorApi
   }
 
+  public async hasMediawikiParsoidApi(): Promise<boolean> {
+    if (this.#hasMediawikiParsoidApi === null) {
+      this.#hasMediawikiParsoidApi = await checkApiAvailability(this.useParsoidURLDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasMediawikiParsoidApi
+    }
+    return this.#hasMediawikiParsoidApi
+  }
+
   private initMWApis() {
     const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
     this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
     this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+    this.useParsoidApiUrl = this.apiUrlDirector.buildUseParsoidURL()
     this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.#restApiPath)
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
     this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+    this.useParsoidURLDirector = new UseParsoidURLDirector(this.useParsoidApiUrl.href)
   }
 
   public async login(downloader: Downloader) {

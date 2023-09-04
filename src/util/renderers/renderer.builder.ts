@@ -2,6 +2,7 @@ import MediaWiki from './../../MediaWiki.js'
 import { Renderer } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
+import { MediawikiParsoidRenderer } from './mediawiki-parsoid-renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../../Logger.js'
 
@@ -9,11 +10,17 @@ export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
-    const [hasVisualEditorApi, hasWikimediaDesktopRestApi] = await Promise.all([MediaWiki.hasVisualEditorApi(), MediaWiki.hasWikimediaDesktopRestApi()])
+    const [hasVisualEditorApi, hasWikimediaDesktopRestApi, hasMediawikiParsoidApi] = await Promise.all([
+      MediaWiki.hasVisualEditorApi(),
+      MediaWiki.hasWikimediaDesktopRestApi(),
+      MediaWiki.hasMediawikiParsoidApi(),
+    ])
 
     switch (renderType) {
       case 'desktop':
-        if (hasWikimediaDesktopRestApi) {
+        if (hasMediawikiParsoidApi) {
+          return new MediawikiParsoidRenderer()
+        } else if (hasWikimediaDesktopRestApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
@@ -26,7 +33,9 @@ export class RendererBuilder {
         // TODO: return WikimediaMobile renderer
         break
       case 'auto':
-        if (hasWikimediaDesktopRestApi) {
+        if (hasMediawikiParsoidApi) {
+          return new MediawikiParsoidRenderer()
+        } else if (hasWikimediaDesktopRestApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
@@ -38,6 +47,12 @@ export class RendererBuilder {
       case 'specific':
         // renderName argument is required for 'specific' mode
         switch (renderName) {
+          case 'MediawikiParsoid':
+            if (hasMediawikiParsoidApi) {
+              return new MediawikiParsoidRenderer()
+            }
+            logger.error('Cannot create an instance of MediawikiParsoid renderer.')
+            process.exit(1)
           case 'WikimediaDesktop':
             if (hasWikimediaDesktopRestApi) {
               return new WikimediaDesktopRenderer()

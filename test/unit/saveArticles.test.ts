@@ -18,6 +18,7 @@ describe('saveArticles', () => {
 
   test('Article html processing', async () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasMediawikiParsoidApi()
     await MediaWiki.hasWikimediaDesktopRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
@@ -210,7 +211,7 @@ describe('saveArticles', () => {
   test('Load inline js from HTML', async () => {
     const { downloader } = await setupScrapeClasses() // en wikipedia
 
-    const _moduleDependencies = await getModuleDependencies('Potato', downloader)
+    const _moduleDependencies = await getModuleDependencies('Potato', downloader, false, {})
     // next variables declared to avoid "variable is not defined" errors
     let RLCONF: any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -138,6 +138,7 @@ describe('Styles', () => {
     await articleDetailXId.flush()
     await redisStore.redirectsXId.flush()
     const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasMediawikiParsoidApi()
     await MediaWiki.hasWikimediaDesktopRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.checkCoordinatesAvailability()
