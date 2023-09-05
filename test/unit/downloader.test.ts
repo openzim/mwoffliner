@@ -7,7 +7,7 @@ import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/ut
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
-import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
+import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'

@@ -1,7 +1,7 @@
-import { DELETED_ARTICLE_ERROR } from '../const.js'
-import * as logger from '../../Logger.js'
+import { DELETED_ARTICLE_ERROR } from '../util/const.js'
+import * as logger from '../Logger.js'
 import { Renderer } from './abstract.renderer.js'
-import { getStrippedTitleFromHtml } from '../misc.js'
+import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 /*
@@ -14,11 +14,7 @@ export class VisualEditorRenderer extends Renderer {
     super()
   }
 
-  private getDisplayTitleFromVisualEditor(strippedTitle: string, articleId: string) {
-    return strippedTitle || articleId.replace('_', ' ')
-  }
-
-  private async getHTML(renderOpts: RenderOpts): Promise<any> {
+  private async retrieveHtml(renderOpts: RenderOpts): Promise<any> {
     const { data, articleId, articleDetail, isMainPage } = renderOpts
 
     if (!data) {
@@ -37,12 +33,12 @@ export class VisualEditorRenderer extends Renderer {
       }
       html = isMainPage ? data.visualeditor.content : super.injectH1TitleToHtml(data.visualeditor.content, articleDetail)
       strippedTitle = getStrippedTitleFromHtml(html)
-      displayTitle = this.getDisplayTitleFromVisualEditor(strippedTitle, articleId)
+      displayTitle = strippedTitle || articleId.replace('_', ' ')
       return { html, displayTitle }
     } else if (data.contentmodel === 'wikitext' || (data.html && data.html.body)) {
       html = data.html.body
       strippedTitle = getStrippedTitleFromHtml(html)
-      displayTitle = this.getDisplayTitleFromVisualEditor(strippedTitle, articleId)
+      displayTitle = strippedTitle || articleId.replace('_', ' ')
 
       return { html, displayTitle }
     } else if (data.error) {
@@ -57,7 +53,7 @@ export class VisualEditorRenderer extends Renderer {
     try {
       const result: RenderOutput = []
       const { articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
-      const { html, displayTitle } = await this.getHTML(renderOpts)
+      const { html, displayTitle } = await this.retrieveHtml(renderOpts)
       if (html) {
         const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(html, dump, articleId, articleDetail, _moduleDependencies, webp)
         result.push({

@@ -8,8 +8,8 @@ import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
-import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
-import { VisualEditorRenderer } from '../../src/util/renderers/visual-editor.renderer.js'
+import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
+import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 
 jest.setTimeout(40000)
 

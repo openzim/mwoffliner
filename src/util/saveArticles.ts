@@ -12,8 +12,8 @@ import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
-import { RendererBuilderOptions, Renderer } from './renderers/abstract.renderer.js'
-import { RendererBuilder } from './renderers/renderer.builder.js'
+import { RendererBuilderOptions, Renderer } from '../renderers/abstract.renderer.js'
+import { RendererBuilder } from '../renderers/renderer.builder.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -128,8 +128,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      const nonPaginatedArticleId = articleDetail.title
-      const _moduleDependencies = await downloader.getModuleDependencies(nonPaginatedArticleId)
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         let rets: any
@@ -296,8 +295,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         curArticle = articleId
         const promises: [string, Promise<Error>][] = []
 
-        const nonPaginatedArticleId = articleDetail.title
-        const _moduleDependencies = await downloader.getModuleDependencies(nonPaginatedArticleId)
+        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
         let rets: any
         try {

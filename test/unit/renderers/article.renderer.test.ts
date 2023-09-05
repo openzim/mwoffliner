@@ -1,9 +1,9 @@
 import domino from 'domino'
 import { jest } from '@jest/globals'
 import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
-import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
+import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { setupScrapeClasses } from '../../util.js'
-import { RenderOpts } from 'src/util/renderers/abstract.renderer.js'
+import { RenderOpts } from 'src/renderers/abstract.renderer.js'
 
 jest.setTimeout(10000)
 

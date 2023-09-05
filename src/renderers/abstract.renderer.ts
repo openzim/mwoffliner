@@ -1,15 +1,15 @@
 import * as domino from 'domino'
-import * as logger from '../../Logger.js'
+import * as logger from '../Logger.js'
 import * as QueryStringParser from 'querystring'
 import htmlMinifier from 'html-minifier'
-import MediaWiki from '../../MediaWiki.js'
-import RedisStore from '../../RedisStore.js'
-import DOMUtils from '../../DOMUtils.js'
-import DU from '../../DOMUtils.js'
-import { config } from '../../config.js'
-import { Dump } from '../../Dump.js'
-import { rewriteUrlsOfDoc } from '../rewriteUrls.js'
-import { footerTemplate, htmlTemplateCode } from '../../Templates.js'
+import MediaWiki from '../MediaWiki.js'
+import RedisStore from '../RedisStore.js'
+import DOMUtils from '../DOMUtils.js'
+import DU from '../DOMUtils.js'
+import { config } from '../config.js'
+import { Dump } from '../Dump.js'
+import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
+import { footerTemplate, htmlTemplateCode } from '../Templates.js'
 import {
   getFullUrl,
   getMediaBase,
@@ -21,7 +21,7 @@ import {
   genHeaderScript,
   genHeaderCSSLink,
   encodeArticleIdForZimHtmlUrl,
-} from '../misc.js'
+} from '../util/misc.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'

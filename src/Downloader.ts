@@ -609,7 +609,7 @@ class Downloader {
     call.start()
   }
 
-  public async getModuleDependencies(articleId: string) {
+  public async getModuleDependencies(title: string) {
     const genericJsModules = config.output.mw.js
     const genericCssModules = config.output.mw.css
     /* These vars will store the list of js and css dependencies for
@@ -620,12 +620,12 @@ class Downloader {
 
     const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
-    const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
+    const articleApiUrl = apiUrlDirector.buildArticleApiURL(title)
 
     const articleData = await this.getJSON<any>(articleApiUrl)
 
     if (articleData.error) {
-      const errorMessage = `Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`
+      const errorMessage = `Unable to retrieve js/css dependencies for article '${title}': ${articleData.error.code}`
       logger.error(errorMessage)
 
       /* If article is missing (for example because it just has been deleted) */
@@ -644,8 +644,8 @@ class Downloader {
     styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
     styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
 
-    logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`)
-    logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`)
+    logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
+    logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
 
     // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
     // the script below extracts the config with a regex executed on the page header returned from the api

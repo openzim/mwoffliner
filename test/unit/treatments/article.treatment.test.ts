@@ -7,7 +7,7 @@ import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../../src/util/saveArticles.js'
-import { WikimediaDesktopRenderer } from '../../../src/util/renderers/wikimedia-desktop.renderer.js'
+import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 
 jest.setTimeout(10000)
 

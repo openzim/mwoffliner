@@ -1,6 +1,6 @@
 import domino from 'domino'
 import { Renderer } from './abstract.renderer.js'
-import { getStrippedTitleFromHtml } from '../misc.js'
+import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/html/'
@@ -9,7 +9,7 @@ export class WikimediaDesktopRenderer extends Renderer {
     super()
   }
 
-  private async getHTML(data: string, i: number, articleId, articleDetail, numberOfPagesToSplitInto: number, articleDetailXId): Promise<any> {
+  private async retrieveHtml(data: string, i: number, articleId, articleDetail, numberOfPagesToSplitInto: number, articleDetailXId): Promise<any> {
     const pageId = i === 0 ? '' : `__${i}`
     const _articleId = articleId + pageId
     const _articleDetail = Object.assign({}, articleDetail, {
@@ -41,7 +41,7 @@ export class WikimediaDesktopRenderer extends Renderer {
     const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)
 
     for (let i = 0; i < numberOfPagesToSplitInto; i++) {
-      const { strippedTitle, _articleId } = await this.getHTML(data, i, articleId, articleDetail, numberOfPagesToSplitInto, articleDetailXId)
+      const { strippedTitle, _articleId } = await this.retrieveHtml(data, i, articleId, articleDetail, numberOfPagesToSplitInto, articleDetailXId)
       let dataWithHeader = ''
       if (!isMainPage) {
         dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)

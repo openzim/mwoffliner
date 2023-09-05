@@ -1,6 +1,6 @@
 import domino from 'domino'
 import { Dump } from '../../../src/Dump.js'
-import { Renderer } from '../../../src/util/renderers/abstract.renderer.js'
+import { Renderer } from '../../../src/renderers/abstract.renderer.js'
 import { convertWikicodeToHtml, setupScrapeClasses, testHtmlRewritingE2e } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
 

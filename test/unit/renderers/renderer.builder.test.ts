@@ -1,9 +1,9 @@
 import { jest } from '@jest/globals'
 import { setupScrapeClasses } from '../../util.js'
-import { RendererBuilder } from '../../../src/util/renderers/renderer.builder.js'
-import { VisualEditorRenderer } from '../../../src/util/renderers/visual-editor.renderer.js'
-import { RendererBuilderOptions } from '../../../src/util/renderers/abstract.renderer.js'
-import { WikimediaDesktopRenderer } from '../../../src/util/renderers/wikimedia-desktop.renderer.js'
+import { RendererBuilder } from '../../../src/renderers/renderer.builder.js'
+import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
+import { RendererBuilderOptions } from '../../../src/renderers/abstract.renderer.js'
+import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 
 jest.setTimeout(10000)
 
