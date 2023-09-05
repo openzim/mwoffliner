@@ -91,7 +91,7 @@ describe('RendererBuilder', () => {
       renderName: 'UnknownAPI', // Using an invalid RendererAPI for the test
     }
 
-    expect(async () => await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)).rejects.toThrow(
+    expect(async () => rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)).rejects.toThrow(
       `Unknown renderName for specific mode: ${rendererBuilderOptions.renderName}`,
     )
   })

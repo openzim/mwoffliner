@@ -458,7 +458,7 @@ class Downloader {
           .buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
           .catch(async (err) => {
             if (/Unsupported color conversion request/.test(err.stderr)) {
-              return await (imagemin as any)
+              return (imagemin as any)
                 .buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
                 .catch(() => {
                   return resp.data
@@ -468,7 +468,7 @@ class Downloader {
                   return data
                 })
             } else {
-              return await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
+              return (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
                 return resp.data
               })
             }
