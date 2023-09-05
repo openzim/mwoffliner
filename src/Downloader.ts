@@ -16,7 +16,7 @@ import https from 'https'
 import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isImageUrl, getMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import S3 from './S3.js'
 import * as logger from './Logger.js'
-import MediaWiki from './MediaWiki.js'
+import MediaWiki, { QueryOpts } from './MediaWiki.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
@@ -88,7 +88,6 @@ class Downloader {
   private readonly uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  private hasCoordinates = true
   private readonly backoffOptions: BackoffOptions
   private readonly optimisationCacheUrl: string
   private s3: S3
@@ -165,19 +164,6 @@ class Downloader {
     }
   }
 
-  public async checkCoordinatesAvailability(): Promise<void> {
-    // Coordinate fetching
-    const reqOpts = this.getArticleQueryOpts()
-
-    const resp = await this.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
-
-    const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
-    if (isCoordinateWarning) {
-      logger.info('Coordinates not available on this wiki')
-      this.hasCoordinates = false
-    }
-  }
-
   public async setBaseUrls() {
     //* Objects order in array matters!
     this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
@@ -211,9 +197,9 @@ class Downloader {
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...this.getArticleQueryOpts(shouldGetThumbnail, true),
+        ...(await this.getArticleQueryOpts(shouldGetThumbnail, true)),
         titles: articleIds.join('|'),
-        ...(this.hasCoordinates ? { colimit: 'max' } : {}),
+        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
@@ -252,8 +238,8 @@ class Downloader {
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...this.getArticleQueryOpts(),
-        ...(this.hasCoordinates ? { colimit: 'max' } : {}),
+        ...(await this.getArticleQueryOpts()),
+        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
@@ -394,13 +380,12 @@ class Downloader {
     if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
   }
 
-  private getArticleQueryOpts(includePageimages = false, redirects = false) {
+  private async getArticleQueryOpts(includePageimages = false, redirects = false): Promise<QueryOpts> {
     const validNamespaceIds = MediaWiki.namespacesToMirror.map((ns) => MediaWiki.namespaces[ns].num)
+    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates(this)) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
     return {
-      action: 'query',
-      format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.hasCoordinates ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`,
-      rdlimit: 'max',
+      ...MediaWiki.queryOpts,
+      prop: MediaWiki.queryOpts.prop.concat(prop),
       rdnamespace: validNamespaceIds.join('|'),
       redirects: redirects ? true : undefined,
     }

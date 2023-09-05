@@ -80,6 +80,7 @@ describe('RendererBuilder', () => {
 
   it('should throw an error for unknown RendererAPI in specific mode', async () => {
     const { downloader, MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()

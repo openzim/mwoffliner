@@ -36,9 +36,9 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
   await MediaWiki.getMwMetaData(downloader)
+  await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopRestApi()
   await MediaWiki.hasVisualEditorApi()
-  await downloader.checkCoordinatesAvailability()
 
   const dump = new Dump(format, {} as any, MediaWiki.metaData)
 

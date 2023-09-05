@@ -13,6 +13,15 @@ import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 
+export interface QueryOpts {
+  action: string
+  format: string
+  prop: string
+  rdlimit: string
+  rdnamespace: string | number
+  redirects?: boolean
+}
+
 class MediaWiki {
   private static instance: MediaWiki
 
@@ -30,6 +39,7 @@ class MediaWiki {
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
   public apiCheckArticleId: string
+  public queryOpts: QueryOpts
 
   #wikiPath: string
   #restApiPath: string
@@ -50,6 +60,7 @@ class MediaWiki {
 
   #hasWikimediaDesktopRestApi: boolean | null
   #hasVisualEditorApi: boolean | null
+  #hasCoordinates: boolean | null
 
   set username(value: string) {
     this.#username = value
@@ -97,8 +108,18 @@ class MediaWiki {
     this.#wikiPath = 'wiki/'
     this.apiCheckArticleId = 'MediaWiki:Sidebar'
 
+    this.queryOpts = {
+      action: 'query',
+      format: 'json',
+      prop: 'redirects|revisions',
+      rdlimit: 'max',
+      rdnamespace: 0,
+      redirects: false,
+    }
+
     this.#hasWikimediaDesktopRestApi = null
     this.#hasVisualEditorApi = null
+    this.#hasCoordinates = null
   }
 
   private constructor() {
@@ -119,6 +140,25 @@ class MediaWiki {
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
+  }
+
+  public async hasCoordinates(downloader: Downloader): Promise<boolean> {
+    if (this.#hasCoordinates === null) {
+      const validNamespaceIds = this.namespacesToMirror.map((ns) => this.namespaces[ns].num)
+      const reqOpts = {
+        ...this.queryOpts,
+        rdnamespace: validNamespaceIds,
+      }
+
+      const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
+      const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
+      if (isCoordinateWarning) {
+        logger.info('Coordinates not available on this wiki')
+        return (this.#hasCoordinates = false)
+      }
+      return (this.#hasCoordinates = true)
+    }
+    return this.#hasCoordinates
   }
 
   private initMWApis() {

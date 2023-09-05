@@ -18,6 +18,7 @@ describe('saveArticles', () => {
 
   test('Article html processing', async () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
@@ -131,6 +132,7 @@ describe('saveArticles', () => {
 
   test('--customFlavour', async () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+    await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
