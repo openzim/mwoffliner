@@ -39,6 +39,8 @@ export const parameterDescriptions = {
   osTmpDir: 'Override default operating system temporary directory path environment variable',
   customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
   optimisationCacheUrl: 'S3 url, including credentials and bucket name',
+  forceRender:
+    'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile ]. More details at https://github.com/openzim/mwoffliner/wiki/API-end-points',
 }
 
 // TODO: Add an interface based on the object above

@@ -99,6 +99,7 @@ async function execute(argv: any) {
     customZimFavicon,
     optimisationCacheUrl,
     customFlavour,
+    forceRender,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -212,8 +213,7 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopRestApi()
   await MediaWiki.hasVisualEditorApi()
-
-  await downloader.setBaseUrls()
+  await downloader.setBaseUrls(forceRender)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -420,7 +420,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump)
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)

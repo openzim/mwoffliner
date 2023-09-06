@@ -166,23 +166,49 @@ class Downloader {
     }
   }
 
-  public async setBaseUrls() {
-    //* Objects order in array matters!
-    this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
-      { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-    ])
+  public async setBaseUrls(forceRender = null) {
+    if (!forceRender) {
+      //* Objects order in array matters!
+      this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
+        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+      ])
 
-    //* Objects order in array matters!
-    this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-      { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
-      { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-    ])
+      //* Objects order in array matters!
+      this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
+        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+      ])
 
-    logger.log('Base Url: ', this.baseUrl)
-    logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
+      logger.log('Base Url: ', this.baseUrl)
+      logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
 
-    if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
+      if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
+    } else {
+      switch (forceRender) {
+        case 'WikimediaDesktop':
+          if (MediaWiki.hasWikimediaDesktopRestApi()) {
+            this.baseUrl = MediaWiki.desktopRestApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.desktopRestApiUrl.href
+            logger.log('Base Url: ', this.baseUrl)
+            logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
+            break
+          }
+          break
+        case 'VisualEditor':
+          if (MediaWiki.hasVisualEditorApi()) {
+            this.baseUrl = MediaWiki.visualEditorApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.visualEditorApiUrl.href
+
+            logger.log('Base Url: ', this.baseUrl)
+            logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
+            break
+          }
+          break
+        default:
+          throw new Error('Unable to find specific API end-point to retrieve article HTML')
+      }
+    }
   }
 
   public removeEtagWeakPrefix(etag: string): string {
