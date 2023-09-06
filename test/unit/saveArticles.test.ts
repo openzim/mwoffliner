@@ -52,8 +52,8 @@ describe('saveArticles', () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
-    const _moduleDependencies = await downloader.getModuleDependencies(articleId)
     const articleDetail = { title: 'Non-existent-article', missing: '' }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
     await expect(
       downloader.getArticle(
@@ -85,11 +85,11 @@ describe('saveArticles', () => {
     await downloader.setBaseUrls()
     const articleId = 'Main_Page'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
-    const _moduleDependencies = await downloader.getModuleDependencies(articleId)
     const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
     const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
     const { articleDetailXId } = RedisStore
     const articleDetail = { title: articleId }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
     articleDetailXId.setMany(articlesDetail)
     const result = await downloader.getArticle(
       downloader.webp,
@@ -248,8 +248,8 @@ describe('saveArticles', () => {
       visualeditor: { oldid: 0 },
     }
 
-    const _moduleDependencies = await downloader.getModuleDependencies(articleId)
     const articleDetail = { title: articleId, missing: '' }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
     const visualEditorRenderer = new VisualEditorRenderer()
 

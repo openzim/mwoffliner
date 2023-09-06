@@ -129,7 +129,6 @@ describe('Downloader class', () => {
     test('getArticle of "London" returns one article', async () => {
       const articleId = 'London'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -141,6 +140,7 @@ describe('Downloader class', () => {
         timestamp: '2023-08-20T14:54:01Z',
         coordinates: '51.50722222;-0.1275',
       }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       const LondonArticle = await downloader.getArticle(
         downloader.webp,
         _moduleDependencies,
@@ -157,7 +157,6 @@ describe('Downloader class', () => {
 
     test('Categories with many subCategories are paginated', async () => {
       const articleId = 'Category:Container_categories'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const articleDetail = {
         title: articleId,
@@ -165,6 +164,7 @@ describe('Downloader class', () => {
         revisionId: 1168361498,
         timestamp: '2023-08-02T09:57:11Z',
       }
+      const articleUrl = getArticleUrl(downloader, dump, articleDetail.title)
       const PaginatedArticle = await downloader.getArticle(
         downloader.webp,
         _moduleDependencies,
@@ -182,11 +182,11 @@ describe('Downloader class', () => {
     test('getArticle response status for non-existent article id is 404', async () => {
       const articleId = 'NeverExistingArticle'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const articleDetail = {
         title: articleId,
         missing: '',
       }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       await expect(
         downloader.getArticle(
           downloader.webp,
