@@ -131,10 +131,10 @@ export function sanitize_adminEmail(adminEmail: any) {
 }
 
 export async function sanitize_redis(argv: any) {
-  const sanitize_redis = new RedisStore(argv.redis || config.defaults.redisPath)
-  await sanitize_redis.connect(false)
+  RedisStore.setOptions(argv.redis || config.defaults.redisPath)
+  await RedisStore.connect(false)
   logger.log('closing sanitize redis DB')
-  await sanitize_redis.close()
+  await RedisStore.close()
 }
 
 export async function sanitize_customZimFavicon(customZimFavicon: any) {

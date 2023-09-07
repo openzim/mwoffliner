@@ -1,11 +1,12 @@
 import Downloader from '../Downloader.js'
+import RedisStore from '../RedisStore.js'
 import * as logger from '../Logger.js'
 import { getArticlesByIds } from './mw-api.js'
 import { deDup } from './misc.js'
 
-export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>, downloader: Downloader, redisStore: RS, deleteArticleStore = false): Promise<void> {
-  const { articleDetailXId } = redisStore
-  const nextCategoriesBatch: RKVS<ArticleDetail> = redisStore.createRedisKvs(`${Date.now()}-request`)
+export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>, downloader: Downloader, deleteArticleStore = false): Promise<void> {
+  const { articleDetailXId } = RedisStore
+  const nextCategoriesBatch: RKVS<ArticleDetail> = RedisStore.createRedisKvs(`${Date.now()}-request`)
   logger.log(`Fetching categories for [${await articleStore.len()}] articles`)
 
   await articleStore.iterateItems(downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, workerId: number) => {
@@ -27,7 +28,7 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
         .filter(([, detail]) => !detail)
         .map(([id]) => id)
       if (categoriesToGet.length) {
-        await getArticlesByIds(categoriesToGet, downloader, redisStore, false)
+        await getArticlesByIds(categoriesToGet, downloader, false)
       }
 
       const catDetails: KVS<ArticleDetail> = await articleDetailXId.getMany(foundCategoryIds)
@@ -60,14 +61,14 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
 
   const nextBatchSize = await nextCategoriesBatch.len()
   if (nextBatchSize) {
-    return getCategoriesForArticles(nextCategoriesBatch, downloader, redisStore, true)
+    return getCategoriesForArticles(nextCategoriesBatch, downloader, true)
   } else {
     return null
   }
 }
 
-export async function trimUnmirroredPages(downloader: Downloader, redisStore: RS) {
-  const { articleDetailXId } = redisStore
+export async function trimUnmirroredPages(downloader: Downloader) {
+  const { articleDetailXId } = RedisStore
   logger.log(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`)
   const numKeys = await articleDetailXId.len()
   let prevPercentProgress = -1
@@ -152,9 +153,9 @@ export async function trimUnmirroredPages(downloader: Downloader, redisStore: RS
   return modifiedArticles
 }
 
-export async function simplifyGraph(downloader: Downloader, redisStore: RS) {
+export async function simplifyGraph(downloader: Downloader) {
   logger.log('Simplifying graph (removing empty categories)')
-  const { articleDetailXId } = redisStore
+  const { articleDetailXId } = RedisStore
   const numKeys = await articleDetailXId.len()
   let prevPercentProgress = -1
   let processedArticles = 0

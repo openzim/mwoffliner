@@ -1,9 +1,9 @@
-import MediaWiki from './../../MediaWiki.js'
+import MediaWiki from './../MediaWiki.js'
 import { Renderer } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
-import * as logger from './../../Logger.js'
+import * as logger from './../Logger.js'
 
 export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {

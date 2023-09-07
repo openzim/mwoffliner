@@ -4,57 +4,89 @@ import RedisKvs from './util/RedisKvs.js'
 import * as logger from './Logger.js'
 
 class RedisStore implements RS {
-  private readonly _client: RedisClientType
-  private storesReady: boolean
+  private static instance: RedisStore
 
-  private _filesToDownloadXPath: RKVS<FileDetail>
-  private _filesToRetryXPath: RKVS<FileDetail>
-  private _articleDetailXId: RKVS<ArticleDetail>
-  private _redirectsXId: RKVS<ArticleRedirect>
+  #client: RedisClientType
+  #storesReady: boolean
+  #filesToDownloadXPath: RKVS<FileDetail>
+  #filesToRetryXPath: RKVS<FileDetail>
+  #articleDetailXId: RKVS<ArticleDetail>
+  #redirectsXId: RKVS<ArticleRedirect>
 
-  constructor(redisPath: string, opts?: any) {
-    const options = { ...opts }
-    const quitOnError = !(options.quitOnError === false)
-    delete options.quitOnError
+  public get client() {
+    return this.#client
+  }
 
-    if (redisPath.startsWith('/') || redisPath.startsWith('./')) {
-      options.socket = {
-        ...options.socket,
-        path: redisPath,
-      }
-    } else {
-      options.url = redisPath
+  public get filesToDownloadXPath(): RKVS<FileDetail> {
+    return this.#filesToDownloadXPath
+  }
+
+  public get filesToRetryXPath(): RKVS<FileDetail> {
+    return this.#filesToRetryXPath
+  }
+
+  public get articleDetailXId(): RKVS<ArticleDetail> {
+    return this.#articleDetailXId
+  }
+
+  public get redirectsXId(): RKVS<ArticleRedirect> {
+    return this.#redirectsXId
+  }
+
+  public static getInstance(): RedisStore {
+    if (!RedisStore.instance) {
+      RedisStore.instance = new RedisStore()
     }
+    return RedisStore.instance
+  }
 
-    this._client = createClient(options)
+  public setOptions(redisPath: string, opts?: any): void {
+    if (RedisStore.instance) {
+      const options = { ...opts }
+      const quitOnError = !(options.quitOnError === false)
+      delete options.quitOnError
 
-    this._client.on('error', (err) => {
-      if (quitOnError) {
-        logger.error('Redis Client Error', err)
-        process.exit(3)
+      if (redisPath.startsWith('/') || redisPath.startsWith('./')) {
+        options.socket = {
+          ...options.socket,
+          path: redisPath,
+        }
+      } else {
+        options.url = redisPath
       }
-    })
+
+      this.#client = createClient(options)
+
+      this.#client.on('error', (err) => {
+        if (quitOnError) {
+          logger.error('Redis Client Error', err)
+          process.exit(3)
+        }
+      })
+    } else {
+      throw new Error('Redis store has not been instantiated before setting options')
+    }
   }
 
   public async connect(populateStores = true) {
-    if (this._client.isOpen) {
+    if (this.#client.isOpen) {
       return
     }
-    await this._client.connect()
+    await this.#client.connect()
     if (populateStores) {
       await this.checkForExistingStores()
       await this.populateStores()
-      this.storesReady = true
+      this.#storesReady = true
     }
   }
 
   public async close() {
-    if (this._client.isReady && this.storesReady) {
+    if (this.#client.isReady && this.#storesReady) {
       logger.log('Flushing Redis DBs')
-      await Promise.all([this._filesToDownloadXPath.flush(), this._filesToRetryXPath.flush(), this._articleDetailXId.flush(), this._redirectsXId.flush()])
+      await Promise.all([this.#filesToDownloadXPath.flush(), this.#filesToRetryXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush()])
     }
-    if (this._client.isOpen) {
-      await this._client.quit()
+    if (this.#client.isOpen) {
+      await this.#client.quit()
     }
   }
 
@@ -62,12 +94,12 @@ class RedisStore implements RS {
     const patterns = ['*-media', '*-media-retry', '*-detail', '*-redirect']
     let keys: string[] = []
     for (const pattern of patterns) {
-      keys = keys.concat(await this._client.keys(pattern))
+      keys = keys.concat(await this.#client.keys(pattern))
     }
 
     keys.forEach(async (key) => {
       try {
-        const length = await this._client.hLen(key)
+        const length = await this.#client.hLen(key)
         const time = new Date(Number(key.slice(0, key.indexOf('-'))))
         logger.error(`Found store from previous run from ${time} that is still in redis: ${key} with length ${length}`)
       } catch {
@@ -77,19 +109,19 @@ class RedisStore implements RS {
   }
 
   private async populateStores() {
-    this._filesToDownloadXPath = new RedisKvs(this._client, `${Date.now()}-media`, {
+    this.#filesToDownloadXPath = new RedisKvs(this.#client, `${Date.now()}-media`, {
       u: 'url',
       n: 'namespace',
       m: 'mult',
       w: 'width',
     })
-    this._filesToRetryXPath = new RedisKvs(this._client, `${Date.now()}-media-retry`, {
+    this.#filesToRetryXPath = new RedisKvs(this.#client, `${Date.now()}-media-retry`, {
       u: 'url',
       n: 'namespace',
       m: 'mult',
       w: 'width',
     })
-    this._articleDetailXId = new RedisKvs(this._client, `${Date.now()}-detail`, {
+    this.#articleDetailXId = new RedisKvs(this.#client, `${Date.now()}-detail`, {
       s: 'subCategories',
       c: 'categories',
       p: 'pages',
@@ -101,35 +133,16 @@ class RedisStore implements RS {
       m: 'missing',
       n: 'title',
     })
-    this._redirectsXId = new RedisKvs(this._client, `${Date.now()}-redirect`, {
+    this.#redirectsXId = new RedisKvs(this.#client, `${Date.now()}-redirect`, {
       t: 'targetId',
       n: 'title',
     })
   }
 
   public createRedisKvs(...args: [string, KVS<string>?]): RKVS<any> {
-    return new RedisKvs(this._client, ...args)
-  }
-
-  public get client() {
-    return this._client
-  }
-
-  public get filesToDownloadXPath(): RKVS<FileDetail> {
-    return this._filesToDownloadXPath
-  }
-
-  public get filesToRetryXPath(): RKVS<FileDetail> {
-    return this._filesToRetryXPath
-  }
-
-  public get articleDetailXId(): RKVS<ArticleDetail> {
-    return this._articleDetailXId
-  }
-
-  public get redirectsXId(): RKVS<ArticleRedirect> {
-    return this._redirectsXId
+    return new RedisKvs(this.#client, ...args)
   }
 }
 
-export default RedisStore
+const rs = RedisStore.getInstance()
+export default rs as RedisStore

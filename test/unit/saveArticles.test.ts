@@ -1,14 +1,15 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
 import domino from 'domino'
 
+import RedisStore from '../../src/RedisStore.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import { setupScrapeClasses } from '../util.js'
-import { saveArticles, getModuleDependencies } from '../../src/util/saveArticles.js'
+import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
-import { WikimediaDesktopRenderer } from '../../src/util/renderers/wikimedia-desktop.renderer.js'
-import { VisualEditorRenderer } from '../../src/util/renderers/visual-editor.renderer.js'
+import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
+import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 
 jest.setTimeout(40000)
 
@@ -24,7 +25,7 @@ describe('saveArticles', () => {
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -41,7 +42,6 @@ describe('saveArticles', () => {
         },
       } as any,
       downloader,
-      redisStore,
       dump,
     )
 
@@ -52,7 +52,22 @@ describe('saveArticles', () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
-    await expect(downloader.getArticle(articleId, articleDetailXId, wikimediaDesktopRenderer, articleUrl)).rejects.toThrowError('')
+    const articleDetail = { title: 'Non-existent-article', missing: '' }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+
+    await expect(
+      downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        wikimediaDesktopRenderer,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      ),
+    ).rejects.toThrowError('')
 
     const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
 
@@ -60,6 +75,36 @@ describe('saveArticles', () => {
     expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
     // Geo Position data is correct
     expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
+    // Check if header exists
+    expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
+  })
+
+  test('Load main page and check that it is without header', async () => {
+    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+    const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+    await downloader.setBaseUrls()
+    const articleId = 'Main_Page'
+    const articleUrl = getArticleUrl(downloader, dump, articleId)
+    const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+    const { articleDetailXId } = RedisStore
+    const articleDetail = { title: articleId }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+    articleDetailXId.setMany(articlesDetail)
+    const result = await downloader.getArticle(
+      downloader.webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      wikimediaDesktopRenderer,
+      articleUrl,
+      dump,
+      articleDetail,
+      dump.isMainPage(articleId),
+    )
+
+    const articleDoc = domino.createDocument(result[0].html)
+    expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
   })
 
   describe('applyOtherTreatments', () => {
@@ -165,7 +210,7 @@ describe('saveArticles', () => {
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = redisStore
+    const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
 
@@ -180,7 +225,6 @@ describe('saveArticles', () => {
         },
       } as any,
       downloader,
-      redisStore,
       dump,
     )
 
@@ -196,23 +240,40 @@ describe('saveArticles', () => {
   })
 
   test('Test deleted article rendering (Visual editor renderer)', async () => {
+    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { articleDetailXId } = RedisStore
+    const articleId = 'deletedArticle'
+
     const articleJsonObject = {
       visualeditor: { oldid: 0 },
     }
+
+    const articleDetail = { title: articleId, missing: '' }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+
     const visualEditorRenderer = new VisualEditorRenderer()
 
+    const renderOpts = {
+      data: articleJsonObject,
+      RedisStore,
+      webp: downloader.webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      articleDetail,
+      isMainPage: dump.isMainPage(articleId),
+      dump,
+    }
+
     expect(async () => {
-      await visualEditorRenderer.render({
-        data: articleJsonObject,
-        articleId: 'deletedArticle',
-      })
+      await visualEditorRenderer.render(renderOpts)
     }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
   })
 
   test('Load inline js from HTML', async () => {
     const { downloader } = await setupScrapeClasses() // en wikipedia
 
-    const _moduleDependencies = await getModuleDependencies('Potato', downloader)
+    const _moduleDependencies = await downloader.getModuleDependencies('Potato')
     // next variables declared to avoid "variable is not defined" errors
     let RLCONF: any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

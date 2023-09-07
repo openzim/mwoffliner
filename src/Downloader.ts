@@ -1,6 +1,8 @@
-import deepmerge from 'deepmerge'
 import * as backoff from 'backoff'
 import { config } from './config.js'
+import { contains } from './util/index.js'
+import deepmerge from 'deepmerge'
+import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
@@ -293,10 +295,13 @@ class Downloader {
   }
 
   public async getArticle(
+    webp: boolean,
+    _moduleDependencies: any,
     articleId: string,
     articleDetailXId: RKVS<ArticleDetail>,
     articleRenderer,
     articleUrl,
+    dump,
     articleDetail?: ArticleDetail,
     isMainPage?: boolean,
   ): Promise<any> {
@@ -309,10 +314,13 @@ class Downloader {
 
     return articleRenderer.render({
       data,
+      webp,
+      _moduleDependencies,
       articleId,
       articleDetailXId,
       articleDetail,
       isMainPage,
+      dump,
     })
   }
 
@@ -450,7 +458,7 @@ class Downloader {
           .buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
           .catch(async (err) => {
             if (/Unsupported color conversion request/.test(err.stderr)) {
-              return await (imagemin as any)
+              return (imagemin as any)
                 .buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
                 .catch(() => {
                   return resp.data
@@ -460,7 +468,7 @@ class Downloader {
                   return data
                 })
             } else {
-              return await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
+              return (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
                 return resp.data
               })
             }
@@ -599,6 +607,63 @@ class Downloader {
     call.failAfter(this.backoffOptions.failAfter)
     call.on('backoff', this.backoffOptions.backoffHandler)
     call.start()
+  }
+
+  public async getModuleDependencies(title: string) {
+    const genericJsModules = config.output.mw.js
+    const genericCssModules = config.output.mw.css
+    /* These vars will store the list of js and css dependencies for
+      the article we are downloading. */
+    let jsConfigVars = ''
+    let jsDependenciesList: string[] = []
+    let styleDependenciesList: string[] = []
+
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+
+    const articleApiUrl = apiUrlDirector.buildArticleApiURL(title)
+
+    const articleData = await this.getJSON<any>(articleApiUrl)
+
+    if (articleData.error) {
+      const errorMessage = `Unable to retrieve js/css dependencies for article '${title}': ${articleData.error.code}`
+      logger.error(errorMessage)
+
+      /* If article is missing (for example because it just has been deleted) */
+      if (articleData.error.code === 'missingtitle') {
+        return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+      }
+
+      /* Something went wrong in modules retrieval at app level (no HTTP error) */
+      throw new Error(errorMessage)
+    }
+
+    const {
+      parse: { modules, modulescripts, modulestyles, headhtml },
+    } = articleData
+    jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
+    styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
+    styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
+
+    logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
+    logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
+
+    // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
+    // the script below extracts the config with a regex executed on the page header returned from the api
+    const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script')
+    const regex = /mw\.config\.set\(\{.*?\}\);/gm
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < scriptTags.length; i += 1) {
+      if (scriptTags[i].text.includes('mw.config.set')) {
+        jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
+        jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
+      } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
+        jsConfigVars = scriptTags[i].text
+      }
+    }
+
+    jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
+
+    return { jsConfigVars, jsDependenciesList, styleDependenciesList }
   }
 }
 

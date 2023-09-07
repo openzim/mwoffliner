@@ -1,6 +1,7 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
+import RedisStore from '../../src/RedisStore.js'
 import { getArticleIds } from '../../src/util/mw-api.js'
 import { getArticlesByNS } from '../../src/util/index.js'
 import { config } from '../../src/config.js'
@@ -15,7 +16,7 @@ describe('mwApi', () => {
   let downloader: Downloader
 
   beforeEach(async () => {
-    await redisStore.articleDetailXId.flush()
+    await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
@@ -33,9 +34,9 @@ describe('mwApi', () => {
   test('MWApi Article Ids', async () => {
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
 
-    await getArticleIds(downloader, redisStore, 'Main_Page', aIds)
+    await getArticleIds(downloader, 'Main_Page', aIds)
 
-    const articlesById = await redisStore.articleDetailXId.getMany(aIds)
+    const articlesById = await RedisStore.articleDetailXId.getMany(aIds)
     const { United_Kingdom, London } = articlesById
 
     // Article "United_Kingdom" was scraped
@@ -61,9 +62,9 @@ describe('mwApi', () => {
   })
 
   test('MWApi NS', async () => {
-    await getArticlesByNS(0, downloader, redisStore, undefined, 5) // Get 5 continues/pages of NSes
+    await getArticlesByNS(0, downloader, undefined, 5) // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"M"_Circle']
-    const articles = await redisStore.articleDetailXId.getMany(interestingAIds)
+    const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
     const Ladies = articles['"...And_Ladies_of_the_Club"']
     const Circle = articles['"M"_Circle']
 

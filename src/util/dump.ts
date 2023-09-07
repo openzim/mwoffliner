@@ -4,6 +4,7 @@ import async from 'async'
 import * as logger from '../Logger.js'
 import axios from 'axios'
 import Downloader from '../Downloader.js'
+import RedisStore from '../RedisStore.js'
 import { getFullUrl, jsPath, cssPath } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
@@ -18,9 +19,9 @@ import urlHelper from './url.helper.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export async function getAndProcessStylesheets(downloader: Downloader, redisStore: RS, links: Array<string | DominoElement>) {
+export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
   let finalCss = ''
-  const { filesToDownloadXPath } = redisStore
+  const { filesToDownloadXPath } = RedisStore
   const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
     const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), MediaWiki.baseUrl) : link
     const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null

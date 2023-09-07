@@ -1,25 +1,19 @@
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
-import MediaWiki from '../MediaWiki.js'
+import RedisStore from '../RedisStore.js'
 import { ZimArticle, ZimCreator } from '@openzim/libzim'
 
 import pmap from 'p-map'
-import DU from '../DOMUtils.js'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
-import { contains, jsPath } from './index.js'
+import { jsPath } from './index.js'
 import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
-import ApiURLDirector from './builders/url/api.director.js'
-import articleTreatment from './treatments/article.treatment.js'
 import urlHelper from './url.helper.js'
-import { RendererBuilderOptions, Renderer } from './renderers/abstract.renderer.js'
-import { RendererBuilder } from './renderers/renderer.builder.js'
-
-const genericJsModules = config.output.mw.js
-const genericCssModules = config.output.mw.css
+import { RendererBuilderOptions, Renderer } from '../renderers/abstract.renderer.js'
+import { RendererBuilder } from '../renderers/renderer.builder.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -134,19 +128,40 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
         let rets: any
         if (dump.isMainPage) {
-          rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          rets = await downloader.getArticle(
+            downloader.webp,
+            _moduleDependencies,
+            articleId,
+            articleDetailXId,
+            mainPageRenderer,
+            articleUrl,
+            dump,
+            articleDetail,
+            dump.isMainPage(articleId),
+          )
         }
-        rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
-        for (const { articleId, html: articleHtml } of rets) {
-          if (!articleHtml) {
+        rets = await downloader.getArticle(
+          downloader.webp,
+          _moduleDependencies,
+          articleId,
+          articleDetailXId,
+          articlesRenderer,
+          articleUrl,
+          dump,
+          articleDetail,
+          dump.isMainPage(articleId),
+        )
+        for (const { articleId, html } of rets) {
+          if (!html) {
             continue
           }
 
-          const doc = domino.createDocument(articleHtml)
+          const doc = domino.createDocument(html)
           if (!dump.isMainPage(articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }
@@ -177,27 +192,14 @@ function flattenPromises(promisArr: [string, Promise<Error>][]): [string, Promis
  */
 async function saveArticle(
   zimCreator: ZimCreator,
-  articleHtml: string,
-  downloader: Downloader,
-  redisStore: RS,
-  dump: Dump,
+  finalHTML: string,
+  mediaDependencies: any,
+  subtitles: any,
   articleId: string,
   articleTitle: string,
-  articleDetail: ArticleDetail,
-  _moduleDependencies: any,
+  articleDetail: any,
 ): Promise<Error> {
   try {
-    const { finalHTML, mediaDependencies, subtitles } = await articleTreatment.processArticleHtml(
-      articleHtml,
-      redisStore,
-      MediaWiki,
-      dump,
-      articleId,
-      articleDetail,
-      _moduleDependencies,
-      downloader.webp,
-    )
-
     const filesToDownload: KVS<FileDetail> = {}
 
     subtitles.forEach((s) => {
@@ -205,7 +207,7 @@ async function saveArticle(
     })
 
     if (mediaDependencies.length) {
-      const existingVals = await redisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
+      const existingVals = await RedisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
 
       for (const dep of mediaDependencies) {
         const { mult, width } = getSizeFromUrl(dep.url)
@@ -221,7 +223,7 @@ async function saveArticle(
       }
     }
 
-    await redisStore.filesToDownloadXPath.setMany(filesToDownload)
+    await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const zimArticle = new ZimArticle({
       url: articleId,
@@ -247,12 +249,12 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, redisStore: RS, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
-  const { articleDetailXId } = redisStore
+  const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
 
   const rendererBuilder = new RendererBuilder()
@@ -260,7 +262,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     renderType: 'auto',
   }
   const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-  // TODO: article renderer will be switched to the mobiel mode later
+  // TODO: article renderer will be switched to the mobile mode later
   const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
@@ -293,24 +295,43 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         curArticle = articleId
         const promises: [string, Promise<Error>][] = []
 
+        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+
         let rets: any
         try {
           const articleUrl = getArticleUrl(downloader, dump, articleId)
           if (dump.isMainPage) {
-            rets = await downloader.getArticle(articleId, articleDetailXId, mainPageRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+            rets = await downloader.getArticle(
+              downloader.webp,
+              _moduleDependencies,
+              articleId,
+              articleDetailXId,
+              mainPageRenderer,
+              articleUrl,
+              dump,
+              articleDetail,
+              dump.isMainPage(articleId),
+            )
           }
-          rets = await downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, articleDetail, dump.isMainPage(articleId))
+          rets = await downloader.getArticle(
+            downloader.webp,
+            _moduleDependencies,
+            articleId,
+            articleDetailXId,
+            articlesRenderer,
+            articleUrl,
+            dump,
+            articleDetail,
+            dump.isMainPage(articleId),
+          )
 
-          for (const { articleId, displayTitle: articleTitle, html: articleHtml } of rets) {
-            const nonPaginatedArticleId = articleDetail.title
-
-            if (!articleHtml) {
+          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, subtitles } of rets) {
+            if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
             }
 
             curStage += 1
-            const _moduleDependencies = await getModuleDependencies(nonPaginatedArticleId, downloader)
             for (const dep of _moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
@@ -325,7 +346,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
              * To parse and download simultaniously, we don't await on save,
              * but instead cache the promise in a queue and check it later
              */
-            promises.push([articleId, saveArticle(zimCreator, articleHtml, downloader, redisStore, dump, articleId, articleTitle, articleDetail, _moduleDependencies)])
+            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, subtitles, articleId, articleTitle, articleDetail)])
           }
         } catch (err) {
           dump.status.articles.fail += 1
@@ -399,215 +420,4 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     jsModuleDependencies,
     cssModuleDependencies,
   }
-}
-
-export async function getModuleDependencies(articleId: string, downloader: Downloader) {
-  /* These vars will store the list of js and css dependencies for
-    the article we are downloading. */
-  let jsConfigVars = ''
-  let jsDependenciesList: string[] = []
-  let styleDependenciesList: string[] = []
-
-  const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
-
-  const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
-
-  const articleData = await downloader.getJSON<any>(articleApiUrl)
-
-  if (articleData.error) {
-    const errorMessage = `Unable to retrieve js/css dependencies for article '${articleId}': ${articleData.error.code}`
-    logger.error(errorMessage)
-
-    /* If article is missing (for example because it just has been deleted) */
-    if (articleData.error.code === 'missingtitle') {
-      return { jsConfigVars, jsDependenciesList, styleDependenciesList }
-    }
-
-    /* Something went wrong in modules retrieval at app level (no HTTP error) */
-    throw new Error(errorMessage)
-  }
-
-  const {
-    parse: { modules, modulescripts, modulestyles, headhtml },
-  } = articleData
-  jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
-  styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
-  styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
-
-  logger.info(`Js dependencies of ${articleId} : ${jsDependenciesList}`)
-  logger.info(`Css dependencies of ${articleId} : ${styleDependenciesList}`)
-
-  // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
-  // the script below extracts the config with a regex executed on the page header returned from the api
-  const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script')
-  const regex = /mw\.config\.set\(\{.*?\}\);/gm
-  // eslint-disable-next-line @typescript-eslint/prefer-for-of
-  for (let i = 0; i < scriptTags.length; i += 1) {
-    if (scriptTags[i].text.includes('mw.config.set')) {
-      jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
-      jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
-    } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
-      jsConfigVars = scriptTags[i].text
-    }
-  }
-
-  jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
-
-  return { jsConfigVars, jsDependenciesList, styleDependenciesList }
-}
-
-export function applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
-  const filtersConfig = config.filters
-
-  /* Don't need <link> and <input> tags */
-  const nodesToDelete: Array<{ class?: string; tag?: string; filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }]
-
-  /* Remove "map" tags if necessary */
-  if (dump.nopic) {
-    nodesToDelete.push({ tag: 'map' })
-  }
-
-  /* Remove useless DOM nodes without children */
-  function emptyChildFilter(n: any) {
-    return !n.innerHTML
-  }
-  nodesToDelete.push({ tag: 'li', filter: emptyChildFilter })
-  nodesToDelete.push({ tag: 'span', filter: emptyChildFilter })
-
-  /* Remove gallery boxes if pics need stripping of if it doesn't have thumbs */
-  nodesToDelete.push({
-    class: 'gallerybox',
-    filter(n) {
-      return !n.getElementsByTagName('img').length && !n.getElementsByTagName('audio').length && !n.getElementsByTagName('video').length
-    },
-  })
-  nodesToDelete.push({
-    class: 'gallery',
-    filter(n) {
-      return !n.getElementsByClassName('gallerybox').length
-    },
-  })
-
-  /* Remove element with black listed CSS classes */
-  filtersConfig.cssClassBlackList.forEach((classname: string) => {
-    nodesToDelete.push({ class: classname })
-  })
-
-  if (dump.nodet) {
-    filtersConfig.nodetCssClassBlackList.forEach((classname: string) => {
-      nodesToDelete.push({ class: classname })
-    })
-  }
-
-  /* Remove element with black listed CSS classes and no link */
-  filtersConfig.cssClassBlackListIfNoLink.forEach((classname: string) => {
-    nodesToDelete.push({
-      class: classname,
-      filter(n) {
-        return n.getElementsByTagName('a').length === 0
-      },
-    })
-  })
-
-  /* Delete them all */
-  for (const t of nodesToDelete) {
-    let nodes
-    if (t.tag) {
-      nodes = parsoidDoc.getElementsByTagName(t.tag)
-    } else if (t.class) {
-      nodes = parsoidDoc.getElementsByClassName(t.class)
-    } else {
-      return /* throw error? */
-    }
-
-    for (const node of Array.from(nodes)) {
-      if (!t.filter || t.filter(node)) {
-        DU.deleteNode(node)
-      }
-    }
-  }
-
-  /* Go through all reference calls */
-  const spans: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('span'))
-  for (const span of spans) {
-    const rel = span.getAttribute('rel')
-    if (rel === 'dc:references') {
-      const sup = parsoidDoc.createElement('sup')
-      if (span.innerHTML) {
-        sup.id = span.id
-        sup.innerHTML = span.innerHTML
-        span.parentNode.replaceChild(sup, span)
-      } else {
-        DU.deleteNode(span)
-      }
-    }
-  }
-
-  /* Remove element with id in the blacklist */
-  filtersConfig.idBlackList.forEach((id) => {
-    const node = parsoidDoc.getElementById(id)
-    if (node) {
-      DU.deleteNode(node)
-    }
-  })
-
-  /* Force display of element with that CSS class */
-  filtersConfig.cssClassDisplayList.map((classname: string) => {
-    const nodes: DominoElement[] = Array.from(parsoidDoc.getElementsByClassName(classname))
-    for (const node of nodes) {
-      node.style.removeProperty('display')
-    }
-  })
-
-  /* Remove empty paragraphs */
-  // TODO: Refactor this option to work with page/html and page/mobile-html output. See issues/1866
-  if (!dump.opts.keepEmptyParagraphs) {
-    if (!dump.opts.keepEmptyParagraphs) {
-      // Mobile view === details
-      // Desktop view === section
-      const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
-      for (const section of sections) {
-        if (
-          section.children.length ===
-          Array.from(section.children).filter((child: DominoElement) => {
-            return child.matches('summary')
-          }).length
-        ) {
-          DU.deleteNode(section)
-        }
-      }
-    }
-  }
-
-  /* Clean the DOM of all uncessary code */
-  const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
-  for (const node of allNodes) {
-    node.removeAttribute('data-parsoid')
-    node.removeAttribute('typeof')
-    node.removeAttribute('about')
-    node.removeAttribute('data-mw')
-
-    if (node.getAttribute('rel') && node.getAttribute('rel').substr(0, 3) === 'mw:') {
-      node.removeAttribute('rel')
-    } else if (node.getAttribute('img')) {
-      /* Remove a few images Parsoid attributes */
-      node.removeAttribute('data-file-width')
-      node.removeAttribute('data-file-height')
-      node.removeAttribute('data-file-type')
-    }
-
-    /* Remove a few css calls */
-    filtersConfig.cssClassCallsBlackList.map((classname: string) => {
-      if (node.getAttribute('class')) {
-        node.setAttribute('class', node.getAttribute('class').replace(classname, ''))
-      }
-    })
-  }
-
-  const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink')).filter((n) => !!n.textContent)
-  for (const node of kartographerMaplinkNodes) {
-    node.textContent = '🌍'
-  }
-
-  return parsoidDoc
 }
