@@ -415,6 +415,7 @@ class Downloader {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
       rdnamespace: validNamespaceIds.join('|'),
+      formatversion: '2',
       redirects: redirects ? true : undefined,
     }
   }

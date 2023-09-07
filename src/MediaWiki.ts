@@ -20,6 +20,7 @@ export interface QueryOpts {
   rdlimit: string
   rdnamespace: string | number
   redirects?: boolean
+  formatversion: string
 }
 
 class MediaWiki {
@@ -115,6 +116,7 @@ class MediaWiki {
       rdlimit: 'max',
       rdnamespace: 0,
       redirects: false,
+      formatversion: '2',
     }
 
     this.#hasWikimediaDesktopRestApi = null
@@ -213,15 +215,21 @@ class MediaWiki {
     }
   }
 
+  /*
+  TODO: fix this to handle formatversion=2
+  Entries for namespaces and namespacealiases are different now. Make sure to distinguish 'alias' and 'name' properties for each of them
+  */
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
     const url = this.apiUrlDirector.buildNamespacesURL()
 
     const json: any = await downloader.getJSON(url)
+    console.log('json ', json)
     ;['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type]
+      console.log('entries ', entries)
       Object.keys(entries).forEach((key) => {
         const entry = entries[key]
-        const name = entry.alias
+        const name = entry.name
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
         const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num))

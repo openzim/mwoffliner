@@ -124,7 +124,7 @@ interface MwApiQueryResponse {
 }
 
 interface MwApiResponse {
-  batchcomplete: string
+  batchcomplete: boolean
   query: MwApiQueryResponse
   continue?: {
     [key: string]: string

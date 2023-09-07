@@ -41,7 +41,7 @@ describe('ApiURLDirector', () => {
     it('should return a string URL with predefined query params to get article namespaces', () => {
       const url = apiUrlDirector.buildNamespacesURL()
 
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases&format=json')
+      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases&format=json&formatversion=2')
     })
   })
 
