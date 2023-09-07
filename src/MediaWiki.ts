@@ -151,7 +151,7 @@ class MediaWiki {
       }
 
       const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
-      const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
+      const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
       if (isCoordinateWarning) {
         logger.info('Coordinates not available on this wiki')
         return (this.#hasCoordinates = false)
@@ -224,7 +224,7 @@ class MediaWiki {
         const name = entry.alias
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
-        const isContent = !!(entry.content || util.contains(addNamespaces, num))
+        const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num))
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
         /* Namespaces in local language */

@@ -669,7 +669,7 @@ class Downloader {
 
     // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
     // the script below extracts the config with a regex executed on the page header returned from the api
-    const scriptTags = domino.createDocument(`${headhtml['*']}</body></html>`).getElementsByTagName('script')
+    const scriptTags = domino.createDocument(`${headhtml}</body></html>`).getElementsByTagName('script')
     const regex = /mw\.config\.set\(\{.*?\}\);/gm
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < scriptTags.length; i += 1) {

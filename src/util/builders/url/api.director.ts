@@ -38,13 +38,10 @@ export default class ApiURLDirector {
   }
 
   buildNamespacesURL() {
-    return (
-      urlBuilder
-        .setDomain(this.baseDomain)
-        // TODO: set formatversion: '2' here
-        .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json' })
-        .build()
-    )
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json', formatversion: '2' })
+      .build()
   }
 
   buildSiteInfoURL() {
@@ -52,7 +49,10 @@ export default class ApiURLDirector {
   }
 
   buildVisualEditorURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', page: '' }).build(true)
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2', page: '' })
+      .build(true)
   }
 
   buildArticleApiURL(articleId: string) {

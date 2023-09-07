@@ -94,7 +94,7 @@ describe('Downloader class', () => {
     expect(Paris).toBeDefined()
     expect(Zürich).toBeDefined()
 
-    expect(THISARTICLEDOESNTEXIST.missing).toBe(true)
+    expect(THISARTICLEDOESNTEXIST.missing).toBe('')
   })
 
   test("getArticleDetailsNS query returns 'gapContinue' or 'multiple articles', ", async () => {

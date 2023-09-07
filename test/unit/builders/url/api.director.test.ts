@@ -57,7 +57,7 @@ describe('ApiURLDirector', () => {
     it('should return base visual editor URL object with default query params', () => {
       const url = apiUrlDirector.buildVisualEditorURL()
 
-      expect(url.href).toBe('https://en.wikipedia.org/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page=')
+      expect(url.href).toBe('https://en.wikipedia.org/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&formatversion=2&page=')
     })
   })
 })
