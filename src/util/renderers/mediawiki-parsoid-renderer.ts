@@ -30,7 +30,7 @@ export class MediawikiParsoidRenderer extends Renderer {
         logger.error(DELETED_ARTICLE_ERROR)
         throw new Error(DELETED_ARTICLE_ERROR)
       }
-      const dataHtml = isMainPage ? data.parse.text['*'] : this.injectHeader(data.parse.text['*'], articleDetail)
+      const dataHtml = isMainPage ? this.removeNoscript(data.parse.text['*']) : this.injectHeader(this.removeNoscript(data.parse.text['*']), articleDetail)
       strippedTitle = getStrippedTitleFromHtml(dataHtml)
       result.push({
         articleId,
@@ -64,6 +64,40 @@ export class MediawikiParsoidRenderer extends Renderer {
       if (target) {
         target.insertAdjacentElement('afterbegin', header)
       }
+    }
+
+    return doc.documentElement.outerHTML
+  }
+
+  // Remove noscript elements but preserve inner content
+  private removeNoscript(content: string) {
+    const doc = domino.createDocument(content)
+    const noscriptNodes = Array.from(doc.querySelectorAll('noscript'))
+
+    if (noscriptNodes && noscriptNodes.length > 0) {
+      noscriptNodes.forEach((noscriptEl) => {
+        const noscriptElParent = noscriptEl.parentNode
+
+        if (noscriptElParent) {
+          // Transfer noscript children into the parent node
+          while (noscriptEl.firstChild) {
+            if (noscriptEl.firstChild.nodeType === doc.TEXT_NODE) {
+              const domElem = domino.createDocument(noscriptEl.innerHTML).documentElement
+              // Remove any text content as it's no longer needed
+              noscriptEl.removeChild(noscriptEl.firstChild)
+              // Retrieve img from noscript
+              const imgs = Array.from(domElem.querySelectorAll('img'))
+              imgs.forEach((img) => {
+                noscriptEl.appendChild(img)
+              })
+            }
+            noscriptElParent.insertBefore(noscriptEl.firstChild, noscriptEl)
+          }
+
+          // Remove noscript along with children
+          noscriptElParent.removeChild(noscriptEl)
+        }
+      })
     }
 
     return doc.documentElement.outerHTML

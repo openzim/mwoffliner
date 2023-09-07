@@ -427,7 +427,7 @@ export async function getModuleDependencies(articleId: string, downloader: Downl
     headhtml: '',
   }
 
-  if (isRenderReturnModules) {
+  if (!isRenderReturnModules) {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
     const articleApiUrl = apiUrlDirector.buildArticleApiURL(articleId)
@@ -470,7 +470,7 @@ export async function getModuleDependencies(articleId: string, downloader: Downl
 
   // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
   // the script below extracts the config with a regex executed on the page header returned from the api
-  const scriptTags = domino.createDocument(`${moduleObj.headhtml}</body></html>`).getElementsByTagName('script')
+  const scriptTags = domino.createDocument(`${moduleObj.headhtml['*']}</body></html>`).getElementsByTagName('script')
   const regex = /mw\.config\.set\(\{.*?\}\);/gm
   // eslint-disable-next-line @typescript-eslint/prefer-for-of
   for (let i = 0; i < scriptTags.length; i += 1) {
