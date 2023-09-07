@@ -259,7 +259,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
 export async function checkApiAvailability(url: string, loginCookie = ''): Promise<boolean> {
   try {
     const resp = await axios.get(url, { maxRedirects: 0, headers: { cookie: loginCookie } })
-    return resp.status === 200 && !resp.headers['mediawiki-api-error']
+    return resp.status === 200 && !resp.headers['mediawiki-api-error'] && !(resp.data.warnings?.main['*'] === 'Unrecognized parameter: parsoid.')
   } catch (err) {
     return false
   }
