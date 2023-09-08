@@ -576,9 +576,7 @@ export abstract class Renderer {
     return false
   }
 
-  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
-    const filtersConfig = config.filters
-
+  private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump) {
     /* Don't need <link> and <input> tags */
     const nodesToDelete: Array<{ class?: string; tag?: string; filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }]
 
@@ -646,6 +644,42 @@ export abstract class Renderer {
         }
       }
     }
+  }
+
+  private clearNodes(parsoidDoc: DominoElement, filtersConfig: any) {
+    const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
+    for (const node of allNodes) {
+      node.removeAttribute('data-parsoid')
+      node.removeAttribute('typeof')
+      node.removeAttribute('about')
+      node.removeAttribute('data-mw')
+
+      if (node.getAttribute('rel') && node.getAttribute('rel').substr(0, 3) === 'mw:') {
+        node.removeAttribute('rel')
+      } else if (node.getAttribute('img')) {
+        /* Remove a few images Parsoid attributes */
+        node.removeAttribute('data-file-width')
+        node.removeAttribute('data-file-height')
+        node.removeAttribute('data-file-type')
+      }
+
+      /* Remove a few css calls */
+      filtersConfig.cssClassCallsBlackList.map((classname: string) => {
+        if (node.getAttribute('class')) {
+          node.setAttribute('class', node.getAttribute('class').replace(classname, ''))
+        }
+      })
+    }
+
+    const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink')).filter((n) => !!n.textContent)
+    for (const node of kartographerMaplinkNodes) {
+      node.textContent = '🌍'
+    }
+  }
+
+  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
+    const filtersConfig = config.filters
+    this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
 
     /* Go through all reference calls */
     const spans: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('span'))
@@ -682,53 +716,22 @@ export abstract class Renderer {
     /* Remove empty paragraphs */
     // TODO: Refactor this option to work with page/html and page/mobile-html output. See issues/1866
     if (!dump.opts.keepEmptyParagraphs) {
-      if (!dump.opts.keepEmptyParagraphs) {
-        // Mobile view === details
-        // Desktop view === section
-        const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
-        for (const section of sections) {
-          if (
-            section.children.length ===
-            Array.from(section.children).filter((child: DominoElement) => {
-              return child.matches('summary')
-            }).length
-          ) {
-            DU.deleteNode(section)
-          }
+      // Mobile view === details
+      // Desktop view === section
+      const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
+      for (const section of sections) {
+        if (
+          section.children.length ===
+          Array.from(section.children).filter((child: DominoElement) => {
+            return child.matches('summary')
+          }).length
+        ) {
+          DU.deleteNode(section)
         }
       }
     }
 
-    /* Clean the DOM of all uncessary code */
-    const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
-    for (const node of allNodes) {
-      node.removeAttribute('data-parsoid')
-      node.removeAttribute('typeof')
-      node.removeAttribute('about')
-      node.removeAttribute('data-mw')
-
-      if (node.getAttribute('rel') && node.getAttribute('rel').substr(0, 3) === 'mw:') {
-        node.removeAttribute('rel')
-      } else if (node.getAttribute('img')) {
-        /* Remove a few images Parsoid attributes */
-        node.removeAttribute('data-file-width')
-        node.removeAttribute('data-file-height')
-        node.removeAttribute('data-file-type')
-      }
-
-      /* Remove a few css calls */
-      filtersConfig.cssClassCallsBlackList.map((classname: string) => {
-        if (node.getAttribute('class')) {
-          node.setAttribute('class', node.getAttribute('class').replace(classname, ''))
-        }
-      })
-    }
-
-    const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink')).filter((n) => !!n.textContent)
-    for (const node of kartographerMaplinkNodes) {
-      node.textContent = '🌍'
-    }
-
+    this.clearNodes(parsoidDoc, filtersConfig)
     return parsoidDoc
   }
 

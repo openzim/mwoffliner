@@ -99,6 +99,7 @@ async function execute(argv: any) {
     customZimFavicon,
     optimisationCacheUrl,
     customFlavour,
+    forceRender,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -212,8 +213,7 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopRestApi()
   await MediaWiki.hasVisualEditorApi()
-
-  await downloader.setBaseUrls()
+  await downloader.setBaseUrls(forceRender)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -420,7 +420,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump)
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
@@ -607,32 +607,41 @@ async function execute(argv: any) {
     return mainPage ? createMainPageRedirect() : createMainPage()
   }
 
+  async function fetchArticleDetail(articleId: string) {
+    return await articleDetailXId.get(articleId)
+  }
+
+  async function updateArticleThumbnail(articleDetail: any, articleId: string) {
+    const imageUrl = articleDetail.thumbnail
+    if (!imageUrl) return
+
+    const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
+    const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
+    const { mult, width } = getSizeFromUrl(suitableResUrl)
+    const path = getMediaBase(suitableResUrl, false)
+
+    articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
+
+    await Promise.all([filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width } as FileDetail), articleDetailXId.set(articleId, articleDetail)])
+  }
+
   async function getThumbnailsData(): Promise<void> {
     if (customMainPage || !articleList || articleListLines.length <= MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) return
+
     logger.log('Updating article thumbnails for articles')
+
     let articleIndex = 0
     let articlesWithImages = 0
 
     while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
       const articleId = articleListLines[articleIndex]
       articleIndex++
+
       try {
-        const articleDetail = await articleDetailXId.get(articleId)
+        const articleDetail = await fetchArticleDetail(articleId)
         if (!articleDetail) continue
 
-        const imageUrl = articleDetail.thumbnail
-        if (!imageUrl) continue
-
-        const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
-        const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
-        const { mult, width } = getSizeFromUrl(suitableResUrl)
-        const path = getMediaBase(suitableResUrl, false)
-        articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
-
-        await Promise.all([
-          filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width } as FileDetail),
-          articleDetailXId.set(articleId, articleDetail),
-        ])
+        await updateArticleThumbnail(articleDetail, articleId)
         articlesWithImages++
       } catch (err) {
         logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`)

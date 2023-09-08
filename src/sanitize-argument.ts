@@ -18,7 +18,19 @@ const parametersWithArrayType = ['format']
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
-  const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, verbose, customZimLongDescription, customZimDescription } = argv
+  const {
+    articleList,
+    addNamespaces,
+    speed: _speed,
+    adminEmail,
+    mwUrl,
+    customZimFavicon,
+    optimisationCacheUrl,
+    verbose,
+    customZimLongDescription,
+    customZimDescription,
+    forceRender,
+  } = argv
 
   sanitizeDoubleUsedParameters(argv)
 
@@ -72,6 +84,11 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail)
+
+  // sanitizing renderer
+  if (forceRender) {
+    sanitize_forceRender(forceRender)
+  }
 
   // Redis client sanitization
   // created a redis client and then closed it.
@@ -172,4 +189,15 @@ export function sanitize_customFlavour(customFlavour: string): string {
       return fs.existsSync(possiblePath)
     }) || null
   )
+}
+
+export function sanitize_forceRender(renderName: string): string {
+  const renderNames = ['VisualEditor', 'WikimediaDesktop', 'WikimediaMobile']
+  const checkRenderName = (arr: string[], val: string) => {
+    return arr.some((arrVal) => val === arrVal)
+  }
+  if (checkRenderName(renderNames, renderName)) {
+    return renderName
+  }
+  throw new Error(`Invalid render name: ${renderName}`)
 }

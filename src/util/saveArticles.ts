@@ -249,7 +249,7 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
@@ -258,9 +258,19 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const articlesTotal = await articleDetailXId.len()
 
   const rendererBuilder = new RendererBuilder()
-  const rendererBuilderOptions: RendererBuilderOptions = {
-    renderType: 'auto',
+
+  let rendererBuilderOptions: RendererBuilderOptions
+  if (forceRender) {
+    rendererBuilderOptions = {
+      renderType: 'specific',
+      renderName: forceRender,
+    }
+  } else {
+    rendererBuilderOptions = {
+      renderType: 'auto',
+    }
   }
+
   const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
   // TODO: article renderer will be switched to the mobile mode later
   const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
