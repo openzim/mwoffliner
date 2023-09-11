@@ -173,12 +173,14 @@ class Downloader {
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
         { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileRestApi(), value: MediaWiki.mobileRestApiUrl.href },
       ])
 
       //* Objects order in array matters!
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
         { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileRestApi(), value: MediaWiki.mobileRestApiUrl.href },
       ])
     } else {
       switch (forceRender) {

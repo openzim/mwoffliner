@@ -10,6 +10,7 @@ import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import DesktopURLDirector from './util/builders/url/desktop.director.js'
+import MobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
@@ -50,6 +51,7 @@ class MediaWiki {
   #domain: string
   private apiUrlDirector: ApiURLDirector
   private wikimediaDesktopUrlDirector: DesktopURLDirector
+  private wikimediaMobileUrlDirector: MobileURLDirector
   private visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
@@ -58,8 +60,10 @@ class MediaWiki {
   public _modulePathOpt: string // only for whiting to generate modulePath
   public webUrl: URL
   public desktopRestApiUrl: URL
+  public mobileRestApiUrl: URL
 
   #hasWikimediaDesktopRestApi: boolean | null
+  #hasWikimediaMobileRestApi: boolean | null
   #hasVisualEditorApi: boolean | null
   #hasCoordinates: boolean | null
 
@@ -120,6 +124,7 @@ class MediaWiki {
     }
 
     this.#hasWikimediaDesktopRestApi = null
+    this.#hasWikimediaMobileRestApi = null
     this.#hasVisualEditorApi = null
     this.#hasCoordinates = null
   }
@@ -134,6 +139,14 @@ class MediaWiki {
       return this.#hasWikimediaDesktopRestApi
     }
     return this.#hasWikimediaDesktopRestApi
+  }
+
+  public async hasWikimediaMobileRestApi(): Promise<boolean> {
+    if (this.#hasWikimediaMobileRestApi === null) {
+      this.#hasWikimediaMobileRestApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasWikimediaMobileRestApi
+    }
+    return this.#hasWikimediaMobileRestApi
   }
 
   public async hasVisualEditorApi(): Promise<boolean> {
@@ -170,8 +183,10 @@ class MediaWiki {
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
     this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.#restApiPath)
+    this.mobileRestApiUrl = baseUrlDirector.buildMobileRestApiURL(this.#restApiPath)
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
     this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
+    this.wikimediaMobileUrlDirector = new MobileURLDirector(this.mobileRestApiUrl.href)
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 

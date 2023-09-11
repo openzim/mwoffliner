@@ -206,7 +206,7 @@ async function saveArticle(
       filesToDownload[s.path] = { url: s.url, namespace: '-' }
     })
 
-    if (mediaDependencies.length) {
+    if (mediaDependencies && mediaDependencies.length) {
       const existingVals = await RedisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
 
       for (const dep of mediaDependencies) {
@@ -260,20 +260,24 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   const rendererBuilder = new RendererBuilder()
 
   let rendererBuilderOptions: RendererBuilderOptions
+
+  let mainPageRenderer
+  let articlesRenderer
   if (forceRender) {
     rendererBuilderOptions = {
       renderType: 'specific',
       renderName: forceRender,
     }
+    // All articles and main page will use the same renderer if 'forceRender' is specified
+    mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
+    articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
   } else {
     rendererBuilderOptions = {
-      renderType: 'auto',
+      renderType: 'desktop',
     }
+    mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
+    articlesRenderer = await rendererBuilder.createRenderer({ ...rendererBuilderOptions, renderType: 'mobile' })
   }
-
-  const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-  // TODO: article renderer will be switched to the mobile mode later
-  const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
     await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)

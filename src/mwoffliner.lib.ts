@@ -212,6 +212,7 @@ async function execute(argv: any) {
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasWikimediaMobileRestApi()
   await MediaWiki.hasVisualEditorApi()
   await downloader.setBaseUrls(forceRender)
 

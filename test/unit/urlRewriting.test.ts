@@ -141,6 +141,7 @@ describe('Styles', () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasWikimediaMobileRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
 
