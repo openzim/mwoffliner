@@ -25,6 +25,20 @@ describe('BaseURLDirector', () => {
     })
   })
 
+  describe('buildMobileRestApiURL', () => {
+    it('should return mobile rest URL with provided path and trailing char', () => {
+      const url = baseUrlDirector.buildMobileRestApiURL('api/rest_v2/page/mobile-html')
+
+      expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v2/page/mobile-html/')
+    })
+
+    it('should return mobile rest URL with default path and trailing char', () => {
+      const url = baseUrlDirector.buildMobileRestApiURL()
+
+      expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v1/page/mobile-html/')
+    })
+  })
+
   describe('buildDesktopRestApiURL', () => {
     it('should return a desktop URL with provided path and trailing char', () => {
       const url = baseUrlDirector.buildDesktopRestApiURL('api/rest_v2/page/html')

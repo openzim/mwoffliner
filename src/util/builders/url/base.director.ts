@@ -28,6 +28,13 @@ export default class BaseURLDirector {
       .build(true, '/')
   }
 
+  buildMobileRestApiURL(path?: string) {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setPath(path ?? 'api/rest_v1/page/mobile-html')
+      .build(true, '/')
+  }
+
   buildModuleURL(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)

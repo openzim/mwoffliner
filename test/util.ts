@@ -38,6 +38,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   await MediaWiki.getMwMetaData(downloader)
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasWikimediaMobileRestApi()
   await MediaWiki.hasVisualEditorApi()
 
   const dump = new Dump(format, {} as any, MediaWiki.metaData)

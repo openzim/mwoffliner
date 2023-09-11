@@ -21,6 +21,7 @@ describe('saveArticles', () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasWikimediaMobileRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
@@ -243,6 +244,7 @@ describe('saveArticles', () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasWikimediaMobileRestApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
     class CustomFlavour implements CustomProcessor {
