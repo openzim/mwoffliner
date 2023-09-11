@@ -20,6 +20,7 @@ export interface QueryOpts {
   rdlimit: string
   rdnamespace: string | number
   redirects?: boolean
+  formatversion: string
 }
 
 class MediaWiki {
@@ -115,6 +116,7 @@ class MediaWiki {
       rdlimit: 'max',
       rdnamespace: 0,
       redirects: false,
+      formatversion: '2',
     }
 
     this.#hasWikimediaDesktopRestApi = null
@@ -151,7 +153,7 @@ class MediaWiki {
       }
 
       const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
-      const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
+      const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
       if (isCoordinateWarning) {
         logger.info('Coordinates not available on this wiki')
         return (this.#hasCoordinates = false)
@@ -183,7 +185,7 @@ class MediaWiki {
       }
 
       // Getting token to login.
-      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json')
+      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2')
 
       // Logging in
       await axios(this.apiUrl.href, {
@@ -221,10 +223,10 @@ class MediaWiki {
       const entries = json.query[type]
       Object.keys(entries).forEach((key) => {
         const entry = entries[key]
-        const name = entry['*']
+        const name = type === 'namespaces' ? entry.name : entry.alias
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
-        const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isContent = type === 'namespaces' ? !!(entry.content || util.contains(addNamespaces, num)) : !!(entry.content !== undefined || util.contains(addNamespaces, num))
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
         /* Namespaces in local language */

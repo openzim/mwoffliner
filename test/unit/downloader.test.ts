@@ -37,6 +37,12 @@ describe('Downloader class', () => {
     await downloader.setBaseUrls()
   })
 
+  test('Test Action API version 2 response in comparison with version 1', async () => {
+    const actionAPIResV1 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&page=Potato')
+    const actionAPIResV2 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&formatversion=2&page=Potato')
+    expect(actionAPIResV1).not.toEqual(actionAPIResV2)
+  })
+
   test('downloader.query returns valid JSON', async () => {
     const queryRet = await downloader.query()
     expect(typeof queryRet).toBe('object')
@@ -88,7 +94,7 @@ describe('Downloader class', () => {
     expect(Paris).toBeDefined()
     expect(Zürich).toBeDefined()
 
-    expect(THISARTICLEDOESNTEXIST.missing).toBe('')
+    expect(THISARTICLEDOESNTEXIST.missing).toBe(true)
   })
 
   test("getArticleDetailsNS query returns 'gapContinue' or 'multiple articles', ", async () => {
@@ -235,7 +241,7 @@ describe('Downloader class', () => {
     })
 
     test('Url is not image type', async () => {
-      const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
+      const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json&formatversion=2')
       expect(isnotImage).not.toBeTruthy()
     })
 
@@ -339,7 +345,7 @@ describe('Downloader class', () => {
 
   async function getRandomImageUrl(): Promise<string> {
     const resp = await Axios(
-      'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json',
+      'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json&formatversion=2',
     )
     const url = resp.data.query.pages[0].imageinfo[0].url
     return isImageUrl(url) ? url : getRandomImageUrl()
