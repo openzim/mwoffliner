@@ -44,6 +44,7 @@ describe('saveArticles', () => {
       } as any,
       downloader,
       dump,
+      true,
     )
 
     // Successfully scrapped existent articles
@@ -292,6 +293,7 @@ describe('saveArticles', () => {
       } as any,
       downloader,
       dump,
+      true,
     )
 
     const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)

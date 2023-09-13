@@ -160,6 +160,7 @@ describe('Styles', () => {
       } as any,
       downloader,
       dump,
+      true,
     )
 
     const html = LondonArticle.bufferData.toString()
