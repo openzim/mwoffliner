@@ -130,33 +130,13 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      let rets: any
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
-        let rets: any
-        if (dump.isMainPage) {
-          rets = await downloader.getArticle(
-            downloader.webp,
-            _moduleDependencies,
-            articleId,
-            articleDetailXId,
-            mainPageRenderer,
-            articleUrl,
-            dump,
-            articleDetail,
-            dump.isMainPage(articleId),
-          )
-        }
-        rets = await downloader.getArticle(
-          downloader.webp,
-          _moduleDependencies,
-          articleId,
-          articleDetailXId,
-          articlesRenderer,
-          articleUrl,
-          dump,
-          articleDetail,
-          dump.isMainPage(articleId),
-        )
+        const isMainPage = dump.isMainPage(articleId)
+        const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+
+        rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -280,10 +260,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     }
     mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
     // If the mobile renderer API is not available, switch articles rendering to the auto mode instead
-    if (await MediaWiki.hasWikimediaMobileRestApi()) {
-      articlesRenderer = await rendererBuilder.createRenderer({ ...rendererBuilderOptions, renderType: 'mobile' })
-    }
-    articlesRenderer = await rendererBuilder.createRenderer({ ...rendererBuilderOptions, renderType: 'auto' })
+    rendererBuilderOptions.renderType = (await MediaWiki.hasWikimediaMobileRestApi()) ? 'mobile' : 'auto'
+    articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
   }
 
   if (dump.customProcessor?.shouldKeepArticle) {
@@ -321,30 +299,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         let rets: any
         try {
           const articleUrl = getArticleUrl(downloader, dump, articleId)
-          if (dump.isMainPage) {
-            rets = await downloader.getArticle(
-              downloader.webp,
-              _moduleDependencies,
-              articleId,
-              articleDetailXId,
-              mainPageRenderer,
-              articleUrl,
-              dump,
-              articleDetail,
-              dump.isMainPage(articleId),
-            )
-          }
-          rets = await downloader.getArticle(
-            downloader.webp,
-            _moduleDependencies,
-            articleId,
-            articleDetailXId,
-            articlesRenderer,
-            articleUrl,
-            dump,
-            articleDetail,
-            dump.isMainPage(articleId),
-          )
+          const isMainPage = dump.isMainPage(articleId)
+          const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+
+          rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
           for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, subtitles } of rets) {
             if (!finalHTML) {
