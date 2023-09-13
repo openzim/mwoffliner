@@ -31,13 +31,13 @@ export class WikimediaMobileRenderer extends Renderer {
         if (!isMainPage) {
           dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)
         }
-        const { finalHTML, subtitles } = await super.processHtml(dataWithHeader || data, dump, articleId, articleDetail, _moduleDependencies, webp)
+        const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(dataWithHeader || data, dump, articleId, articleDetail, _moduleDependencies, webp)
 
         result.push({
           articleId,
           displayTitle,
           html: finalHTML,
-          mediaDependencies: null,
+          mediaDependencies,
           subtitles,
         })
         return result

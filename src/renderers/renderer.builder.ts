@@ -33,13 +33,14 @@ export class RendererBuilder {
         }
         logger.error('No available mobile renderer.')
         process.exit(1)
-        break
       case 'auto':
         if (hasWikimediaDesktopRestApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
+        } else if (hasWikimediaMobileRestApi) {
+          return new WikimediaMobileRenderer()
         } else {
           logger.error('No render available at all.')
           process.exit(1)
