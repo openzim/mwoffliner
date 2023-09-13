@@ -14,6 +14,7 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import urlHelper from './url.helper.js'
 import { RendererBuilderOptions, Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
+import MediaWiki from '../../src/MediaWiki.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -202,9 +203,11 @@ async function saveArticle(
   try {
     const filesToDownload: KVS<FileDetail> = {}
 
-    subtitles.forEach((s) => {
-      filesToDownload[s.path] = { url: s.url, namespace: '-' }
-    })
+    if (subtitles?.length > 0) {
+      subtitles.forEach((s) => {
+        filesToDownload[s.path] = { url: s.url, namespace: '-' }
+      })
+    }
 
     if (mediaDependencies && mediaDependencies.length) {
       const existingVals = await RedisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
@@ -276,7 +279,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
       renderType: 'desktop',
     }
     mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-    articlesRenderer = await rendererBuilder.createRenderer({ ...rendererBuilderOptions, renderType: 'mobile' })
+    // If the mobile renderer API is not available, switch articles rendering to the auto mode instead
+    if (await MediaWiki.hasWikimediaMobileRestApi()) {
+      articlesRenderer = await rendererBuilder.createRenderer({ ...rendererBuilderOptions, renderType: 'mobile' })
+    }
+    articlesRenderer = await rendererBuilder.createRenderer({ ...rendererBuilderOptions, renderType: 'auto' })
   }
 
   if (dump.customProcessor?.shouldKeepArticle) {
