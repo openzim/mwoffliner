@@ -14,7 +14,6 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import urlHelper from './url.helper.js'
 import { RendererBuilderOptions, Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
-import MediaWiki from '../../src/MediaWiki.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -232,7 +231,7 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, forceRender = null) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileRestApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
@@ -260,7 +259,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     }
     mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
     // If the mobile renderer API is not available, switch articles rendering to the auto mode instead
-    rendererBuilderOptions.renderType = (await MediaWiki.hasWikimediaMobileRestApi()) ? 'mobile' : 'auto'
+    rendererBuilderOptions.renderType = hasWikimediaMobileRestApi ? 'mobile' : 'auto'
     articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
   }
 
