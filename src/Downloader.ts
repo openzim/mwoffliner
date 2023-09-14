@@ -1,6 +1,7 @@
 import * as backoff from 'backoff'
 import { config } from './config.js'
 import { contains } from './util/index.js'
+import { Readable } from 'stream'
 import deepmerge from 'deepmerge'
 import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
@@ -569,7 +570,7 @@ class Downloader {
             }
             handler(null, {
               responseHeaders: headers,
-              content: s3Resp.Body,
+              content: (await this.streamToBuffer(s3Resp.Body as Readable)) as any,
             })
             return
           }
@@ -685,6 +686,16 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+  }
+
+  // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
+  private async streamToBuffer(stream: Readable): Promise<Buffer> {
+    return await new Promise((resolve, reject) => {
+      const chunks: Uint8Array[] = []
+      stream.on('data', (chunk) => chunks.push(chunk))
+      stream.on('error', reject)
+      stream.on('end', () => resolve(Buffer.concat(chunks)))
+    })
   }
 }
 
