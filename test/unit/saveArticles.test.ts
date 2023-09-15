@@ -79,7 +79,6 @@ describe('saveArticles', () => {
     expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
   })
 
-  // TODO: make similar test for Visual Editor renderer
   test('Check nodet article for en.wikipedia.org using Visual Editor renderer', async () => {
     const visualEditorRenderer = new VisualEditorRenderer()
     const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
