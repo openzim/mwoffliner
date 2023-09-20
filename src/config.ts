@@ -34,6 +34,9 @@ const config = {
     /* All DOM nodes which we should for to display */
     cssClassDisplayList: ['thumb'],
 
+    /* Lead section to display */
+    leadSectonId: '0',
+
     /* List of style to be removed. 'onlyoffline' is a *hack* to
     /* display WPEN medical articles, see for example
     /* [[Carcinoid_syndrome]] */

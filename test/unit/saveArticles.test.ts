@@ -79,6 +79,70 @@ describe('saveArticles', () => {
     expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
   })
 
+  test('Check nodet article for en.wikipedia.org using Visual Editor renderer', async () => {
+    const visualEditorRenderer = new VisualEditorRenderer()
+    const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+    await downloader.setBaseUrls('VisualEditor')
+    const articleId = 'Canada'
+    const articleUrl = getArticleUrl(downloader, dump, articleId)
+    const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+    const { articleDetailXId } = RedisStore
+    const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+    articleDetailXId.setMany(articlesDetail)
+    const result = await downloader.getArticle(
+      downloader.webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      visualEditorRenderer,
+      articleUrl,
+      dump,
+      articleDetail,
+      dump.isMainPage(articleId),
+    )
+
+    const articleDoc = domino.createDocument(result[0].html)
+
+    const sections = Array.from(articleDoc.querySelectorAll('section'))
+    const leadSection = sections[0]
+    expect(sections.length).toEqual(1)
+    expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
+  })
+
+  test('Check nodet article for en.wikipedia.org using Wikimedia Desktop renderer', async () => {
+    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+    const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+    await downloader.setBaseUrls('WikimediaDesktop')
+    const articleId = 'London'
+    const articleUrl = getArticleUrl(downloader, dump, articleId)
+    const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+    const { articleDetailXId } = RedisStore
+    const articleDetail = { title: articleId }
+    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+    articleDetailXId.setMany(articlesDetail)
+    const result = await downloader.getArticle(
+      downloader.webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      wikimediaDesktopRenderer,
+      articleUrl,
+      dump,
+      articleDetail,
+      dump.isMainPage(articleId),
+    )
+
+    const articleDoc = domino.createDocument(result[0].html)
+
+    const sections = Array.from(articleDoc.querySelectorAll('section'))
+    const leadSection = sections[0]
+    expect(sections.length).toEqual(1)
+    expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
+  })
+
   test('Load main page and check that it is without header', async () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia

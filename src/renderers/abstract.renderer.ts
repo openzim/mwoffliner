@@ -615,6 +615,12 @@ export abstract class Renderer {
       filtersConfig.nodetCssClassBlackList.forEach((classname: string) => {
         nodesToDelete.push({ class: classname })
       })
+      nodesToDelete.push({
+        tag: 'section',
+        filter(n) {
+          return n.getAttribute('data-mw-section-id') !== filtersConfig.leadSectonId
+        },
+      })
     }
 
     /* Remove element with black listed CSS classes and no link */
