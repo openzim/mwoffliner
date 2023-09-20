@@ -2,10 +2,9 @@ import * as mwoffliner from '../../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import { renderers } from './rendererList.js'
 import rimraf from 'rimraf'
-import { zimcheckAvailable, zimcheck } from '../util.js'
+import { zimcheckAvailable, zimdumpAvailable, zimcheck, zimdump } from '../util.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
-import { zimdumpAvailable, zimdump } from '../util.js'
 
 jest.setTimeout(200000)
 
@@ -24,7 +23,7 @@ describe('bm', () => {
         format: ['nopic'],
       }
 
-      const renderParameters = { ...parameters, renderName: renderer }
+      const renderParameters = { ...parameters, forceRender: renderer }
 
       test('Simple articleList', async () => {
         await execa('redis-cli flushall', { shell: true })

@@ -16,7 +16,7 @@ describe('renderName', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
-    articleList: 'France',
+    articleList: 'Fàransi, Kanada',
   }
 
   beforeAll(async () => {
