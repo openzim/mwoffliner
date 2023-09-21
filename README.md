@@ -125,6 +125,33 @@ cd mwoffliner-1.13.0 # or whatever version you downloaded
 npm i
 npm run mwoffliner -- --help
 ```
+### Local (non-root) Redis Install
+
+You may wish to install the prerequesit Redis locally in order to run the tool.  See https://github.com/redis/redis/tree/unstable and https://redis.io/docs/getting-started/installation/install-redis-from-source/ for more details.
+
+1. Get and unzip Redis Locally
+
+```
+wget https://download.redis.io/redis-stable.tar.gz
+tar xvfz redis-stable.tar.gz
+```
+
+2. Build Redis Locally
+
+```
+cd redis-stable/src
+make PREFIX=$HOME USE_JEMALLOC=no
+```
+
+3. Run Redis Locally
+
+You'll need to do this in a separate window or run it in the background.
+
+```
+cd redis-stable/src
+./redis-server
+```
+
 
 ## API
 
