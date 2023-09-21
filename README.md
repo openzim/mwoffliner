@@ -75,6 +75,52 @@ this:
 --optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket&keyId=my-key-id&secretAccessKey=my-sac"
 ```
 
+### Local (non-root) Installs
+
+To update the NPM and Node versions in your local home directory, you can do the following.
+This was tested on Ubuntu 18.04 LTS and Ubuntu 22.04 LTS.
+
+1. Install NVM Locally
+
+See https://github.com/nvm-sh/nvm for details.
+
+```
+git clone https://github.com/nvm-sh/nvm.git ~/.nvm
+cd ~/.nvm
+git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+```
+
+2. Upgrade Node Locally
+
+```
+. ~/.nvm/nvm.sh
+nvm install 18
+```
+
+Note: for Ubuntu 18.04 LTS use `nvm install 16` instead.
+
+3. Update NPM Locally
+
+This assumes that the system NPM is already installed using apt-get or similar.
+
+```
+. ~/.nvm/nvm.sh
+npm install npm@latest
+```
+
+Note: for Ubuntu 18.04 LTS use `npm install npm@8` instead.
+
+4. Compile and Test
+
+See above for more details.
+
+```
+. ~/.nvm/nvm.sh
+cd mwoffliner-1.13.0 # or whatever version you downloaded
+npm i
+npm run mwoffliner -- --help
+```
+
 ## API
 
 MWoffliner provides also an API and therefore can be used as a NodeJS
