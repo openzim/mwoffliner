@@ -1,6 +1,6 @@
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
 import { execa } from 'execa'
-import { renderers } from './rendererList.js'
+import { RENDERERS_LIST } from '../../src/util/const.js'
 import rimraf from 'rimraf'
 import { zimcheckAvailable, zimdumpAvailable, zimcheck, zimdump } from '../util.js'
 import 'dotenv/config.js'
@@ -9,7 +9,7 @@ import { jest } from '@jest/globals'
 jest.setTimeout(200000)
 
 describe('bm', () => {
-  for (const renderer of renderers) {
+  for (const renderer of RENDERERS_LIST) {
     // Test only render API that is supported by the wiki
     if (renderer === 'WikimediaDesktop') {
       const now = new Date()
