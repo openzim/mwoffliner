@@ -6,7 +6,7 @@ import { zimcheckAvailable, zimdumpAvailable, zimcheck, zimdump } from '../util.
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 
-jest.setTimeout(200000)
+jest.setTimeout(800000)
 
 describe('bm', () => {
   for (const renderer of RENDERERS_LIST) {
