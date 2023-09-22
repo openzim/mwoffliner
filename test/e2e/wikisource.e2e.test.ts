@@ -18,6 +18,7 @@ describe('wikisource', () => {
     redis: process.env.REDIS,
     format: ['nopic'],
     noLocalParserFallback: true,
+    forcdRender: 'WikimediaDesktop',
   }
 
   test('Wikisource List', async () => {

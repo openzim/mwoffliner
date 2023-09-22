@@ -18,6 +18,7 @@ describe('treatment test', () => {
     articleList,
     outputDirectory: testId,
     redis: process.env.REDIS,
+    forcdRender: 'WikimediaDesktop',
   }
 
   test('media file from hidden element should not be downloaded', async () => {

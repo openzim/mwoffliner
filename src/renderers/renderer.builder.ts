@@ -10,15 +10,15 @@ export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
-    const [hasVisualEditorApi, hasWikimediaDesktopRestApi, hasWikimediaMobileRestApi] = await Promise.all([
+    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi] = await Promise.all([
       MediaWiki.hasVisualEditorApi(),
-      MediaWiki.hasWikimediaDesktopRestApi(),
-      MediaWiki.hasWikimediaMobileRestApi(),
+      MediaWiki.hasWikimediaDesktopApi(),
+      MediaWiki.hasWikimediaMobileApi(),
     ])
 
     switch (renderType) {
       case 'desktop':
-        if (hasWikimediaDesktopRestApi) {
+        if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
@@ -28,18 +28,18 @@ export class RendererBuilder {
           process.exit(1)
         }
       case 'mobile':
-        if (hasWikimediaMobileRestApi) {
+        if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         }
         logger.error('No available mobile renderer.')
         process.exit(1)
       case 'auto':
-        if (hasWikimediaDesktopRestApi) {
+        if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
-        } else if (hasWikimediaMobileRestApi) {
+        } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         } else {
           logger.error('No render available at all.')
@@ -49,7 +49,7 @@ export class RendererBuilder {
         // renderName argument is required for 'specific' mode
         switch (renderName) {
           case 'WikimediaDesktop':
-            if (hasWikimediaDesktopRestApi) {
+            if (hasWikimediaDesktopApi) {
               return new WikimediaDesktopRenderer()
             }
             logger.error('Cannot create an instance of WikimediaDesktop renderer.')
@@ -61,7 +61,7 @@ export class RendererBuilder {
             logger.error('Cannot create an instance of VisualEditor renderer.')
             process.exit(1)
           case 'WikimediaMobile':
-            if (hasWikimediaMobileRestApi) {
+            if (hasWikimediaMobileApi) {
               return new WikimediaMobileRenderer()
             }
             logger.error('No available mobile renderer.')

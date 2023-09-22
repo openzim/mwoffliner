@@ -211,8 +211,8 @@ async function execute(argv: any) {
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopRestApi()
-  const hasWikimediaMobileRestApi = await MediaWiki.hasWikimediaMobileRestApi()
+  await MediaWiki.hasWikimediaDesktopApi()
+  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
   await MediaWiki.hasVisualEditorApi()
   await downloader.setBaseUrls(forceRender)
 
@@ -421,7 +421,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileRestApi, forceRender)
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileApi, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)

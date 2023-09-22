@@ -18,6 +18,7 @@ describe('bm', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
+    forceRender: 'WikimediaDesktop',
   }
 
   test('Simple articleList', async () => {

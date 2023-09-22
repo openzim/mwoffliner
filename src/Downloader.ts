@@ -171,23 +171,23 @@ class Downloader {
     if (!forceRender) {
       //* Objects order in array matters!
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaMobileRestApi(), value: MediaWiki.mobileRestApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.mobileApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.desktopApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
       ])
 
       //* Objects order in array matters!
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.desktopApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaMobileRestApi(), value: MediaWiki.mobileRestApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.mobileApiUrl.href },
       ])
     } else {
       switch (forceRender) {
         case 'WikimediaDesktop':
-          if (MediaWiki.hasWikimediaDesktopRestApi()) {
-            this.baseUrl = MediaWiki.desktopRestApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.desktopRestApiUrl.href
+          if (MediaWiki.hasWikimediaDesktopApi()) {
+            this.baseUrl = MediaWiki.desktopApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.desktopApiUrl.href
             break
           }
           break

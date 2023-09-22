@@ -18,6 +18,7 @@ describe('vikidia', () => {
     redis: process.env.REDIS,
     articleList: 'Alaska',
     customZimDescription: 'Alaska article',
+    forcdRender: 'WikimediaDesktop',
   }
 
   test('right scrapping from vikidia.org', async () => {

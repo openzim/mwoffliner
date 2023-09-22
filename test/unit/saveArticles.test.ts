@@ -20,10 +20,10 @@ describe('saveArticles', () => {
   test('Article html processing', async () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopRestApi()
-    await MediaWiki.hasWikimediaMobileRestApi()
+    await MediaWiki.hasWikimediaDesktopApi()
+    await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls()
+    await downloader.setBaseUrls('WikimediaDesktop')
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
     const { articleDetailXId } = RedisStore
@@ -45,6 +45,7 @@ describe('saveArticles', () => {
       downloader,
       dump,
       true,
+      'WikimediaDesktop',
     )
 
     // Successfully scrapped existent articles
@@ -148,7 +149,7 @@ describe('saveArticles', () => {
   test('Load main page and check that it is without header', async () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-    await downloader.setBaseUrls()
+    await downloader.setBaseUrls('WikimediaDesktop')
     const articleId = 'Main_Page'
     const articleUrl = getArticleUrl(downloader, dump, articleId)
     const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
@@ -244,8 +245,8 @@ describe('saveArticles', () => {
   test('--customFlavour', async () => {
     const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopRestApi()
-    await MediaWiki.hasWikimediaMobileRestApi()
+    await MediaWiki.hasWikimediaDesktopApi()
+    await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
     class CustomFlavour implements CustomProcessor {
@@ -294,6 +295,7 @@ describe('saveArticles', () => {
       downloader,
       dump,
       true,
+      'WikimediaDesktop',
     )
 
     const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)

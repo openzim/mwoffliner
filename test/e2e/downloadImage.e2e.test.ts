@@ -20,6 +20,7 @@ describeIf('Check image downloading from S3 using optimisationCacheUrl parameter
     articleList: 'Paris',
     format: ['nodet'],
     optimisationCacheUrl: process.env.S3_URL,
+    forceRender: 'WikimediaDesktop',
   }
 
   test('right scrapping from fr.wikipedia.org with optimisationCacheUrl parameter', async () => {

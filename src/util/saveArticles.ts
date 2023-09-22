@@ -12,7 +12,7 @@ import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
-import { RendererBuilderOptions, Renderer } from '../renderers/abstract.renderer.js'
+import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
@@ -231,7 +231,7 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileRestApi: boolean, forceRender = null) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   let jsConfigVars = ''
@@ -241,26 +241,21 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   const rendererBuilder = new RendererBuilder()
 
-  let rendererBuilderOptions: RendererBuilderOptions
-
   let mainPageRenderer
   let articlesRenderer
   if (forceRender) {
-    rendererBuilderOptions = {
+    // All articles and main page will use the same renderer if 'forceRender' is specified
+    const renderer = await rendererBuilder.createRenderer({
       renderType: 'specific',
       renderName: forceRender,
-    }
-    // All articles and main page will use the same renderer if 'forceRender' is specified
-    mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-    articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
+    })
+    mainPageRenderer = renderer
+    articlesRenderer = renderer
   } else {
-    rendererBuilderOptions = {
-      renderType: 'desktop',
-    }
-    mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-    // If the mobile renderer API is not available, switch articles rendering to the auto mode instead
-    rendererBuilderOptions.renderType = hasWikimediaMobileRestApi ? 'mobile' : 'auto'
-    articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
+    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
+    articlesRenderer = await rendererBuilder.createRenderer({
+      renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
+    })
   }
 
   if (dump.customProcessor?.shouldKeepArticle) {

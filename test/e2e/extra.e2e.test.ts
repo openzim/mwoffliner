@@ -36,6 +36,7 @@ AC/DC`
       outputDirectory: testId,
       redis: process.env.REDIS,
       format: ['nopic'],
+      forceRender: 'WikimediaDesktop',
     })
 
     // Created 1 outputs

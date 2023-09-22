@@ -185,6 +185,9 @@ export class WikimediaMobileRenderer extends Renderer {
       .reference-link::after {
         content: none !important;
       }
+      .mw-body h3, .mw-body h2 {
+        width: auto;
+      }
     `
     doc.head.appendChild(styleEl)
 

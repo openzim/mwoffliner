@@ -18,6 +18,7 @@ describe('Multimedia', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     customZimDescription: 'Example of the description',
+    forceRender: 'WikimediaDesktop',
   }
 
   test('check multimedia content from wikipedia test page', async () => {
