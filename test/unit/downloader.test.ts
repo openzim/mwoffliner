@@ -32,8 +32,8 @@ describe('Downloader class', () => {
 
     await MediaWiki.getMwMetaData(downloader)
     await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopRestApi()
-    await MediaWiki.hasWikimediaMobileRestApi()
+    await MediaWiki.hasWikimediaDesktopApi()
+    await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
   })

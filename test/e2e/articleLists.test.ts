@@ -22,6 +22,7 @@ describe('articleList', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
+    forceRender: 'WikimediaDesktop',
   }
 
   test('articleList and articleListIgnore check', async () => {

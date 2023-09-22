@@ -59,11 +59,11 @@ class MediaWiki {
   public modulePath: string // only for reading
   public _modulePathOpt: string // only for whiting to generate modulePath
   public webUrl: URL
-  public desktopRestApiUrl: URL
-  public mobileRestApiUrl: URL
+  public desktopApiUrl: URL
+  public mobileApiUrl: URL
 
-  #hasWikimediaDesktopRestApi: boolean | null
-  #hasWikimediaMobileRestApi: boolean | null
+  #hasWikimediaDesktopApi: boolean | null
+  #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
   #hasCoordinates: boolean | null
 
@@ -123,8 +123,8 @@ class MediaWiki {
       formatversion: '2',
     }
 
-    this.#hasWikimediaDesktopRestApi = null
-    this.#hasWikimediaMobileRestApi = null
+    this.#hasWikimediaDesktopApi = null
+    this.#hasWikimediaMobileApi = null
     this.#hasVisualEditorApi = null
     this.#hasCoordinates = null
   }
@@ -133,20 +133,20 @@ class MediaWiki {
     this.initializeMediaWikiDefaults()
   }
 
-  public async hasWikimediaDesktopRestApi(): Promise<boolean> {
-    if (this.#hasWikimediaDesktopRestApi === null) {
-      this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
-      return this.#hasWikimediaDesktopRestApi
+  public async hasWikimediaDesktopApi(): Promise<boolean> {
+    if (this.#hasWikimediaDesktopApi === null) {
+      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasWikimediaDesktopApi
     }
-    return this.#hasWikimediaDesktopRestApi
+    return this.#hasWikimediaDesktopApi
   }
 
-  public async hasWikimediaMobileRestApi(): Promise<boolean> {
-    if (this.#hasWikimediaMobileRestApi === null) {
-      this.#hasWikimediaMobileRestApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
-      return this.#hasWikimediaMobileRestApi
+  public async hasWikimediaMobileApi(): Promise<boolean> {
+    if (this.#hasWikimediaMobileApi === null) {
+      this.#hasWikimediaMobileApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasWikimediaMobileApi
     }
-    return this.#hasWikimediaMobileRestApi
+    return this.#hasWikimediaMobileApi
   }
 
   public async hasVisualEditorApi(): Promise<boolean> {
@@ -182,11 +182,11 @@ class MediaWiki {
     this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.#restApiPath)
-    this.mobileRestApiUrl = baseUrlDirector.buildMobileRestApiURL(this.#restApiPath)
+    this.desktopApiUrl = baseUrlDirector.buildDesktopApiUrl(this.#restApiPath)
+    this.mobileApiUrl = baseUrlDirector.buildMobileApiUrl(this.#restApiPath)
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
-    this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
-    this.wikimediaMobileUrlDirector = new MobileURLDirector(this.mobileRestApiUrl.href)
+    this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopApiUrl.href)
+    this.wikimediaMobileUrlDirector = new MobileURLDirector(this.mobileApiUrl.href)
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 

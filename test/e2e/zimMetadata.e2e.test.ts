@@ -23,6 +23,7 @@ describe('zimMetadata', () => {
     customZimLongDescription: 'Example of the long description',
     customZimTitle: 'Example of the title',
     publisher: 'Example of the publisher',
+    forcdRender: 'WikimediaDesktop',
   }
 
   test('check all zim metadata using zimdump', async () => {
