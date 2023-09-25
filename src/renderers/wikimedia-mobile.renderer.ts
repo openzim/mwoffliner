@@ -1,10 +1,11 @@
 import * as domino from 'domino'
 import * as logger from '../Logger.js'
+import { config } from '../config.js'
 import { Renderer } from './abstract.renderer.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
-type PipeFunction = (data: string) => string
+type PipeFunction = (value: DominoElement) => DominoElement | Promise<DominoElement>
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/mobile-html/'
 export class WikimediaMobileRenderer extends Renderer {
@@ -27,25 +28,32 @@ export class WikimediaMobileRenderer extends Renderer {
 
       const displayTitle = this.getStrippedTitle(renderOpts)
       if (data) {
-        const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(data, dump, articleId, articleDetail, _moduleDependencies, webp)
-        const finalHTMLDoc = domino.createDocument(finalHTML)
-        const mobileHTML = this.pipeMobileTransformations(
-          finalHTMLDoc,
-          this.addMobileModules,
+        let mediaDependenciesVal
+        let subtitlesVal
+        const mobileHTML = domino.createDocument(data)
+        const finalHTMLMobile = await this.pipeMobileTransformations(
+          mobileHTML,
           this.convertLazyLoadToImages,
           this.removeEditContainer,
           this.removeHiddenClass,
+          async (doc) => {
+            const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(doc.documentElement.outerHTML, dump, articleId, articleDetail, _moduleDependencies, webp)
+
+            mediaDependenciesVal = mediaDependencies
+            subtitlesVal = subtitles
+            return domino.createDocument(finalHTML)
+          },
           this.restoreLinkDefaults,
-          this.disableClientLinkListener,
+          this.addMobileModules,
           this.overrideMobileStyles,
         )
 
         result.push({
           articleId,
           displayTitle,
-          html: mobileHTML.documentElement.outerHTML,
-          mediaDependencies,
-          subtitles,
+          html: finalHTMLMobile.documentElement.outerHTML,
+          mediaDependencies: mediaDependenciesVal,
+          subtitles: subtitlesVal,
         })
         return result
       }
@@ -55,8 +63,12 @@ export class WikimediaMobileRenderer extends Renderer {
     }
   }
 
-  private pipeMobileTransformations(value, ...fns: PipeFunction[]) {
-    return fns.reduce((acc, fn) => fn(acc), value)
+  private async pipeMobileTransformations(value: DominoElement, ...fns: PipeFunction[]): Promise<DominoElement> {
+    let result: DominoElement | Promise<DominoElement> = value
+    for (const fn of fns) {
+      result = fn(await result)
+    }
+    return result
   }
 
   private addMobileModules(doc: DominoElement) {
@@ -152,26 +164,6 @@ export class WikimediaMobileRenderer extends Renderer {
       sup.innerHTML = ''
       sup.appendChild(anchor)
     })
-
-    return doc
-  }
-
-  private disableClientLinkListener(doc: DominoElement) {
-    const scriptEl = doc.createElement('script')
-    scriptEl.type = 'text/javascript'
-    scriptEl.text = `
-      document.addEventListener("DOMContentLoaded", function() {
-        const supElements = document.querySelectorAll('sup');
-        const backLinkElements = document.querySelectorAll('a.pcs-ref-back-link');
-        const disabledElems = Array.from(supElements).concat(Array.from(backLinkElements))
-        disabledElems.forEach((elem) => {
-          elem.addEventListener('click', (event) => {
-            event.stopPropagation();
-          }, true);
-        });
-      });
-    `
-    doc.head.appendChild(scriptEl)
 
     return doc
   }
