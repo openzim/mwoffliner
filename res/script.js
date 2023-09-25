@@ -27,6 +27,21 @@ window.onload = function () {
 
     /* Add the user-agent to allow dedicated CSS rules (like for KaiOS) */
     document.querySelector('body').setAttribute('data-useragent',  navigator.userAgent);
+
+    // Check if there is a PCS output page
+    if (document.querySelector('#pcs')) {
+      document.addEventListener("DOMContentLoaded", function() {
+        const supElements = document.querySelectorAll('sup');
+        const backLinkElements = document.querySelectorAll('a.pcs-ref-back-link');
+        const disabledElems = Array.from(supElements).concat(Array.from(backLinkElements))
+        disabledElems.forEach((elem) => {
+          elem.addEventListener('click', (event) => {
+            event.stopPropagation();
+          }, true);
+        });
+      });
+    }
+
 }
 
 /* WebP Polyfill */

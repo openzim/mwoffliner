@@ -198,6 +198,13 @@ class Downloader {
             break
           }
           break
+        case 'WikimediaMobile':
+          if (MediaWiki.hasWikimediaMobileApi()) {
+            this.baseUrl = MediaWiki.mobileApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.mobileApiUrl.href
+            break
+          }
+          break
         default:
           throw new Error('Unable to find specific API end-point to retrieve article HTML')
       }

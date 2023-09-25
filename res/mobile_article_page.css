@@ -1,0 +1,9 @@
+body {
+  margin: 0 auto;
+}
+.reference-link::after {
+  content: none !important;
+}
+.mw-body h3, .mw-body h2 {
+  width: auto;
+}
