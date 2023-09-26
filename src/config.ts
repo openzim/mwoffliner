@@ -56,7 +56,6 @@ const config = {
     // CSS resources added by Kiwix
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
-    mobileArticleCssResources: ['mobile_article_page'],
 
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 

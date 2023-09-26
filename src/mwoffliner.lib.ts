@@ -338,6 +338,7 @@ async function execute(argv: any) {
         keepEmptyParagraphs,
         tags: customZimTags,
         filenameDate,
+        isMobileRenderer: false,
       },
       { ...mwMetaData, mainPage },
       customProcessor,

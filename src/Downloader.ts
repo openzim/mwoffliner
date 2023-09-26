@@ -87,6 +87,8 @@ class Downloader {
   public arrayBufferRequestOptions: AxiosRequestConfig
   public jsonRequestOptions: AxiosRequestConfig
   public streamRequestOptions: AxiosRequestConfig
+  public mobileJsDependenciesList: string[] = []
+  public mobileStyleDependenciesList: string[] = []
 
   private readonly uaString: string
   private activeRequests = 0
@@ -694,7 +696,24 @@ class Downloader {
 
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
-    return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+    // Download mobile page dependencies only once
+    if (this.mobileJsDependenciesList.length === 0 && this.mobileStyleDependenciesList.length === 0) {
+      const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}${title}`)
+      mobileModulesData.forEach((module: string) => {
+        if (module.includes('javascript')) {
+          this.mobileJsDependenciesList.push(module)
+        } else if (module.includes('css')) {
+          this.mobileStyleDependenciesList.push(module)
+        }
+      })
+    }
+    return {
+      jsConfigVars,
+      jsDependenciesList,
+      styleDependenciesList,
+      mobileJsDependenciesList: this.mobileJsDependenciesList,
+      mobileStyleDependenciesList: this.mobileStyleDependenciesList,
+    }
   }
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877

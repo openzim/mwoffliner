@@ -41,4 +41,11 @@ export default class BaseURLDirector {
       .setPath(path ?? 'w/load.php')
       .build(false, '?')
   }
+
+  buildMobileModuleURL(path?: string) {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setPath(path ?? 'api/rest_v1/page/mobile-html-offline-resources')
+      .build(false, '/')
+  }
 }

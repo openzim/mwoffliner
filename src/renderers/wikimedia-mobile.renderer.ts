@@ -1,6 +1,5 @@
 import * as domino from 'domino'
 import * as logger from '../Logger.js'
-import { config } from '../config.js'
 import { Renderer } from './abstract.renderer.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
@@ -44,7 +43,6 @@ export class WikimediaMobileRenderer extends Renderer {
             return domino.createDocument(finalHTML)
           },
           this.restoreLinkDefaults,
-          this.addMobileModules,
           this.overrideMobileStyles,
         )
 
@@ -69,31 +67,6 @@ export class WikimediaMobileRenderer extends Renderer {
       result = fn(await result)
     }
     return result
-  }
-
-  private addMobileModules(doc: DominoElement) {
-    const protocol = 'https://'
-    // TODO: query this instead of hardcoding.
-    const offlineResourcesCSSList = [
-      'meta.wikimedia.org/api/rest_v1/data/css/mobile/base',
-      'meta.wikimedia.org/api/rest_v1/data/css/mobile/pcs',
-      'en.wikipedia.org/api/rest_v1/data/css/mobile/site',
-    ]
-    const offlineResourcesJSList = ['meta.wikimedia.org/api/rest_v1/data/javascript/mobile/pcs']
-
-    offlineResourcesCSSList.forEach((cssUrl) => {
-      const linkEl = doc.createElement('link') as DominoElement
-      Object.assign(linkEl, { rel: 'stylesheet', href: `${protocol}${cssUrl}` })
-      doc.head.appendChild(linkEl)
-    })
-
-    offlineResourcesJSList.forEach((jsUrl) => {
-      const scriptEl = doc.createElement('script') as DominoElement
-      scriptEl.setAttribute('src', `${protocol}${jsUrl}`)
-      doc.head.appendChild(scriptEl)
-    })
-
-    return doc
   }
 
   private removeEditContainer(doc: DominoElement) {
