@@ -20,6 +20,8 @@ import {
   genCanonicalLink,
   genHeaderScript,
   genHeaderCSSLink,
+  genHeaderMobileScript,
+  genHeaderMobileCSSLink,
   encodeArticleIdForZimHtmlUrl,
 } from '../util/misc.js'
 
@@ -466,27 +468,43 @@ export abstract class Renderer {
     articleDetail: ArticleDetail,
     articleDetailXId: RKVS<ArticleDetail>,
   ): Promise<Document> {
-    const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
+    const { jsConfigVars, jsDependenciesList, styleDependenciesList, mobileJsDependenciesList, mobileStyleDependenciesList } = moduleDependencies as {
       jsConfigVars: string | RegExpExecArray
       jsDependenciesList: string[]
       styleDependenciesList: string[]
+      mobileJsDependenciesList: string[]
+      mobileStyleDependenciesList: string[]
     }
 
-    const htmlTemplateDoc = domino.createDocument(
-      htmlTemplateCode(articleId)
-        .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
-        .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
-        .replace(
-          '__ARTICLE_JS_LIST__',
-          jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-        )
-        .replace(
-          '__ARTICLE_CSS_LIST__',
-          styleDependenciesList.length !== 0
-            ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
-            : '',
-        ),
-    )
+    const isMobileRenderer = dump.opts.isMobileRenderer
+
+    // Conditional replacements based on mobile render enabling
+    const articleConfigVarsList = isMobileRenderer ? '' : jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : ''
+    const articleJsList = isMobileRenderer
+      ? mobileJsDependenciesList.length !== 0
+        ? mobileJsDependenciesList.map((oneMobJsDep) => genHeaderMobileScript(oneMobJsDep)).join('\n')
+        : ''
+      : jsDependenciesList.length !== 0
+      ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+      : ''
+    const articleCssList = isMobileRenderer
+      ? mobileStyleDependenciesList.length !== 0
+        ? mobileStyleDependenciesList.map((oneMobCssDep) => genHeaderMobileCSSLink(oneMobCssDep)).join('\n')
+        : ''
+      : styleDependenciesList.length !== 0
+      ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+      : ''
+
+    // Perform replacements
+    const htmlTemplateString = htmlTemplateCode(articleId)
+      .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
+      .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
+      .replace('__ARTICLE_JS_LIST__', articleJsList)
+      .replace('__ARTICLE_CSS_LIST__', articleCssList)
+      .replace('__JS_SCRIPTS_MOBILE__', isMobileRenderer ? articleJsList : '')
+      .replace('__CSS_LINKS_MOBILE__', isMobileRenderer ? articleCssList : '')
+
+    const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
 
     /* Create final document by merging template and parsoid documents */
     htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.textDir)

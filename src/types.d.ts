@@ -165,6 +165,7 @@ interface MWMetaData {
   apiUrl: string
   webUrlPath: string
   modulePath: string
+  mobileModulePath: string
 }
 
 interface MWNamespaces {

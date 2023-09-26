@@ -58,6 +58,7 @@ class MediaWiki {
   public apiUrl: URL
   public modulePath: string // only for reading
   public _modulePathOpt: string // only for whiting to generate modulePath
+  public mobileModulePath: string
   public webUrl: URL
   public desktopApiUrl: URL
   public mobileApiUrl: URL
@@ -185,6 +186,7 @@ class MediaWiki {
     this.desktopApiUrl = baseUrlDirector.buildDesktopApiUrl(this.#apiPath)
     this.mobileApiUrl = baseUrlDirector.buildMobileApiUrl(this.#apiPath)
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
+    this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
     this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopApiUrl.href)
     this.wikimediaMobileUrlDirector = new MobileURLDirector(this.mobileApiUrl.href)
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
@@ -413,6 +415,7 @@ class MediaWiki {
       webUrl: this.webUrl.href,
       apiUrl: this.apiUrl.href,
       modulePath: this.modulePath,
+      mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,

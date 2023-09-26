@@ -245,17 +245,23 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   let articlesRenderer
   if (forceRender) {
     // All articles and main page will use the same renderer if 'forceRender' is specified
-    const renderer = await rendererBuilder.createRenderer({
-      renderType: 'specific',
-      renderName: forceRender,
-    })
+    const renderer = await rendererBuilder.createRenderer(
+      {
+        renderType: 'specific',
+        renderName: forceRender,
+      },
+      dump,
+    )
     mainPageRenderer = renderer
     articlesRenderer = renderer
   } else {
-    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
-    articlesRenderer = await rendererBuilder.createRenderer({
-      renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-    })
+    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' }, dump)
+    articlesRenderer = await rendererBuilder.createRenderer(
+      {
+        renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
+      },
+      dump,
+    )
   }
 
   if (dump.customProcessor?.shouldKeepArticle) {

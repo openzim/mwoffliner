@@ -4,10 +4,11 @@ import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
+import { Dump } from './../Dump.js'
 import * as logger from './../Logger.js'
 
 export class RendererBuilder {
-  public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
+  public async createRenderer(options: RendererBuilderOptions, dump: Dump): Promise<Renderer> {
     const { renderType, renderName } = options
 
     const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi] = await Promise.all([
@@ -29,6 +30,7 @@ export class RendererBuilder {
         }
       case 'mobile':
         if (hasWikimediaMobileApi) {
+          dump.opts.isMobileRenderer = true
           return new WikimediaMobileRenderer()
         }
         logger.error('No available mobile renderer.')
@@ -40,6 +42,7 @@ export class RendererBuilder {
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         } else if (hasWikimediaMobileApi) {
+          dump.opts.isMobileRenderer = true
           return new WikimediaMobileRenderer()
         } else {
           logger.error('No render available at all.')
@@ -62,6 +65,7 @@ export class RendererBuilder {
             process.exit(1)
           case 'WikimediaMobile':
             if (hasWikimediaMobileApi) {
+              dump.opts.isMobileRenderer = true
               return new WikimediaMobileRenderer()
             }
             logger.error('No available mobile renderer.')
