@@ -697,15 +697,20 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     // Download mobile page dependencies only once
-    if (this.mobileJsDependenciesList.length === 0 && this.mobileStyleDependenciesList.length === 0) {
-      const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}${title}`)
-      mobileModulesData.forEach((module: string) => {
-        if (module.includes('javascript')) {
-          this.mobileJsDependenciesList.push(module)
-        } else if (module.includes('css')) {
-          this.mobileStyleDependenciesList.push(module)
-        }
-      })
+    if ((await MediaWiki.hasWikimediaMobileApi()) && this.mobileJsDependenciesList.length === 0 && this.mobileStyleDependenciesList.length === 0) {
+      try {
+        // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
+        const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
+        mobileModulesData.forEach((module: string) => {
+          if (module.includes('javascript')) {
+            this.mobileJsDependenciesList.push(module.replace('//', ''))
+          } else if (module.includes('css')) {
+            this.mobileStyleDependenciesList.push(module.replace('//', ''))
+          }
+        })
+      } catch (err) {
+        throw new Error(`Error getting mobile modules ${err.message}`)
+      }
     }
     return {
       jsConfigVars,

@@ -23,6 +23,7 @@ export class WikimediaMobileRenderer extends Renderer {
     try {
       const result: RenderOutput = []
       const { data, articleId, webp, _moduleDependencies, dump } = renderOpts
+      dump.opts.isMobileRenderer = true
       const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
       const displayTitle = this.getStrippedTitle(renderOpts)
