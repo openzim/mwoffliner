@@ -234,6 +234,8 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
+  const jsMobileModuleDependencies = new Set<string>()
+  const cssMobileModuleDependencies = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
   const { articleDetailXId } = RedisStore
@@ -245,23 +247,17 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   let articlesRenderer
   if (forceRender) {
     // All articles and main page will use the same renderer if 'forceRender' is specified
-    const renderer = await rendererBuilder.createRenderer(
-      {
-        renderType: 'specific',
-        renderName: forceRender,
-      },
-      dump,
-    )
+    const renderer = await rendererBuilder.createRenderer({
+      renderType: 'specific',
+      renderName: forceRender,
+    })
     mainPageRenderer = renderer
     articlesRenderer = renderer
   } else {
-    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' }, dump)
-    articlesRenderer = await rendererBuilder.createRenderer(
-      {
-        renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-      },
-      dump,
-    )
+    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
+    articlesRenderer = await rendererBuilder.createRenderer({
+      renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
+    })
   }
 
   if (dump.customProcessor?.shouldKeepArticle) {
@@ -316,6 +312,12 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             }
             for (const dep of _moduleDependencies.styleDependenciesList) {
               cssModuleDependencies.add(dep)
+            }
+            for (const dep of _moduleDependencies.mobileJsDependenciesList) {
+              jsMobileModuleDependencies.add(dep)
+            }
+            for (const dep of _moduleDependencies.mobileStyleDependenciesList) {
+              cssMobileModuleDependencies.add(dep)
             }
             jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars
 
@@ -398,5 +400,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   return {
     jsModuleDependencies,
     cssModuleDependencies,
+    jsMobileModuleDependencies,
+    cssMobileModuleDependencies,
   }
 }

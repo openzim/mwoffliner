@@ -35,6 +35,7 @@ export class WikimediaDesktopRenderer extends Renderer {
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
     const { data, articleId, articleDetailXId, webp, _moduleDependencies, isMainPage, dump } = renderOpts
+    dump.opts.isMobileRenderer = false
     const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
     // Paginate when there are more than 200 subCategories

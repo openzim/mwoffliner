@@ -90,7 +90,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css' | 'mobileJs' | 'mobileCss') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -117,13 +117,19 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
   }
 
   let apiParameterOnly
-  if (type === 'js') {
+  let moduleApiUrl: string
+  if (type === 'js' || type === 'mobileJs') {
     apiParameterOnly = 'scripts'
-  } else if (type === 'css') {
+  } else if (type === 'css' || type === 'mobileCss') {
     apiParameterOnly = 'styles'
   }
 
-  const moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+  if (type === 'js' || type === 'css') {
+    moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+  } else if (type === 'mobileJs' || type === 'mobileCss') {
+    moduleApiUrl = encodeURI(`https:${module}`)
+  }
+
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
   const { content } = await downloader.downloadContent(moduleApiUrl)
@@ -141,7 +147,18 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
   }
 
   try {
-    const articleId = type === 'js' ? jsPath(module, config.output.dirs.mediawiki) : cssPath(module, config.output.dirs.mediawiki)
+    let articleId
+    const pathFunctions = {
+      js: jsPath,
+      css: cssPath,
+      mobileJs: jsPath,
+      mobileCss: cssPath,
+    }
+
+    const pathFunction = pathFunctions[type]
+    if (pathFunction) {
+      articleId = pathFunction(module, config.output.dirs.mediawiki)
+    }
     const article = new ZimArticle({ url: articleId, data: text, ns: '-' })
     zimCreator.addArticle(article)
     logger.info(`Saved module [${module}]`)

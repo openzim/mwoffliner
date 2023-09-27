@@ -198,18 +198,12 @@ export function genHeaderCSSLink(config: Config, css: string, articleId: string,
   const upStr = '../'.repeat(slashesInUrl + 1)
   return `<link href="${upStr}${resourceNamespace}/${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`
 }
-export function genHeaderMobileCSSLink(css: string) {
-  return `<link href="https:${css}" rel="stylesheet" type="text/css"/>`
-}
 export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory = '', attributes = '') {
   const resourceNamespace = '-'
   const slashesInUrl = articleId.split('/').length - 1
   const upStr = '../'.repeat(slashesInUrl + 1)
   const path = isNodeModule(js) ? normalizeModule(js) : js
   return `<script ${attributes} src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}"></script>`
-}
-export function genHeaderMobileScript(js: string) {
-  return `<script src="https:${js}"></script>`
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`
