@@ -404,7 +404,8 @@ async function execute(argv: any) {
     logger.info('Copying Static Resource Files')
     await saveStaticFiles(config, zimCreator)
 
-    logger.info('Copying Static PCS Files')
+    // TODO: refactor sequence, this only needed for mobile renderer
+    logger.info('Copying Static PCS Override Files')
     await saveStaticPCSFiles(config, zimCreator)
 
     logger.info('Finding stylesheets to download')
