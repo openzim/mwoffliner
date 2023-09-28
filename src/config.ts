@@ -58,6 +58,7 @@ const config = {
     mainPageCssResources: ['mobile_main_page'],
 
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+    pcsJsResources: ['pcs_override_script'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
