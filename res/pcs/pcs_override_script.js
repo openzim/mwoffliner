@@ -4,8 +4,8 @@ window.onload = function () {
   // Check if there is a PCS output page
   if (document.querySelector('#pcs')) {
       const supElements = document.querySelectorAll('sup');
-      const backLinkElements = document.querySelectorAll('a.pcs-ref-back-link');
-      const disabledElems = Array.from(supElements).concat(Array.from(backLinkElements))
+      const linkElements = document.querySelectorAll('a');
+      const disabledElems = Array.from(supElements).concat(Array.from(linkElements))
       disabledElems.forEach((elem) => {
         elem.addEventListener('click', (event) => {
           event.stopPropagation();

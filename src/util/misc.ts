@@ -186,16 +186,26 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
 }
 
 export function saveStaticPCSFiles(config: Config, zimCreator: ZimCreator) {
+  const pcsCssPromises = config.output.pcsCssResources.map(async (pcsCss) => {
+    try {
+      const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/pcs/${pcsCss}.css`))
+      const article = new ZimArticle({ url: cssPath(pcsCss), data: cssCont, ns: '-' })
+      zimCreator.addArticle(article)
+    } catch (error) {
+      logger.warn(`Could not create style PCS override ${pcsCss} file : ${error}`)
+    }
+  })
+
   const pcsJsPromises = config.output.pcsJsResources.map(async (pcsJs) => {
     try {
       const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/pcs/${pcsJs}.js`))
       const article = new ZimArticle({ url: jsPath(pcsJs), data: jsCont, ns: '-' })
       zimCreator.addArticle(article)
     } catch (error) {
-      logger.warn(`Could not create pcs override ${pcsJs} file : ${error}`)
+      logger.warn(`Could not create script PCS override ${pcsJs} file : ${error}`)
     }
   })
-  return pcsJsPromises
+  return Promise.all([...pcsCssPromises, ...pcsJsPromises])
 }
 
 export function cssPath(css: string, subDirectory = '') {
@@ -220,6 +230,9 @@ export function genHeaderScript(config: Config, js: string, articleId: string, s
 }
 export function genPCSOverrideScript(js: string) {
   return `<script src='../-/${js}.js'></script>`
+}
+export function genPCSCOverrideCSSLink(css: string) {
+  return `<link rel="stylesheet" href="../-/${css}.css" />`
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`

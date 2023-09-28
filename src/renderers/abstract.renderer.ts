@@ -21,6 +21,7 @@ import {
   genHeaderScript,
   genHeaderCSSLink,
   genPCSOverrideScript,
+  genPCSCOverrideCSSLink,
   encodeArticleIdForZimHtmlUrl,
 } from '../util/misc.js'
 
@@ -492,6 +493,7 @@ export abstract class Renderer {
         )
         .replace('__JS_SCRIPTS_MOBILE__', '')
         .replace('__CSS_LINKS_MOBILE__', '')
+        .replace('__PCS_CSS_OVERRIDE__', '')
         .replace('__PCS_JS_OVERRIDE__', '')
     } else {
       htmlTemplateString = htmlTemplateString
@@ -510,6 +512,7 @@ export abstract class Renderer {
             ? mobileStyleDependenciesList.map((oneMobCssDep) => genHeaderCSSLink(config, oneMobCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
             : '',
         )
+        .replace('__PCS_CSS_OVERRIDE__', genPCSCOverrideCSSLink(config.output.pcsCssResources[0]))
         .replace('__PCS_JS_OVERRIDE__', genPCSOverrideScript(config.output.pcsJsResources[0]))
     }
 

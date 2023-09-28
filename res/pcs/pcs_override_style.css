@@ -1,6 +1,12 @@
 body {
   margin: 0 auto;
 }
+p#pcs-edit-section-add-title-description {
+  display: none !important;
+}
+span.noviewer {
+  display: none !important;
+}
 .reference-link::after {
   content: none !important;
 }

@@ -44,7 +44,6 @@ export class WikimediaMobileRenderer extends Renderer {
             return domino.createDocument(finalHTML)
           },
           this.restoreLinkDefaults,
-          this.overrideMobileStyles,
         )
 
         result.push({
@@ -138,24 +137,6 @@ export class WikimediaMobileRenderer extends Renderer {
       sup.innerHTML = ''
       sup.appendChild(anchor)
     })
-
-    return doc
-  }
-
-  private overrideMobileStyles(doc: DominoElement) {
-    const styleEl = doc.createElement('style')
-    styleEl.innerHTML = `
-      body {
-        margin: 0 auto;
-      }
-      .reference-link::after {
-        content: none !important;
-      }
-      .mw-body h3, .mw-body h2 {
-        width: auto;
-      }
-    `
-    doc.head.appendChild(styleEl)
 
     return doc
   }
