@@ -185,6 +185,19 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   return Promise.all([...cssPromises, ...jsPromises])
 }
 
+export function saveStaticPCSFiles(config: Config, zimCreator: ZimCreator) {
+  const pcsJsPromises = config.output.pcsJsResources.map(async (pcsJs) => {
+    try {
+      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/pcs/${pcsJs}.js`))
+      const article = new ZimArticle({ url: jsPath(pcsJs), data: jsCont, ns: '-' })
+      zimCreator.addArticle(article)
+    } catch (error) {
+      logger.warn(`Could not create pcs override ${pcsJs} file : ${error}`)
+    }
+  })
+  return pcsJsPromises
+}
+
 export function cssPath(css: string, subDirectory = '') {
   return `${subDirectory ? `${subDirectory}/` : ''}${css.replace(/(\.css)?$/, '')}.css`
 }
@@ -204,6 +217,9 @@ export function genHeaderScript(config: Config, js: string, articleId: string, s
   const upStr = '../'.repeat(slashesInUrl + 1)
   const path = isNodeModule(js) ? normalizeModule(js) : js
   return `<script ${attributes} src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}"></script>`
+}
+export function genPCSOverrideScript(js: string) {
+  return `<script src='../-/${js}.js'></script>`
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`

@@ -20,6 +20,7 @@ import {
   genCanonicalLink,
   genHeaderScript,
   genHeaderCSSLink,
+  genPCSOverrideScript,
   encodeArticleIdForZimHtmlUrl,
 } from '../util/misc.js'
 
@@ -491,6 +492,7 @@ export abstract class Renderer {
         )
         .replace('__JS_SCRIPTS_MOBILE__', '')
         .replace('__CSS_LINKS_MOBILE__', '')
+        .replace('__PCS_JS_OVERRIDE__', '')
     } else {
       htmlTemplateString = htmlTemplateString
         .replace('__ARTICLE_CONFIGVARS_LIST__', '')
@@ -508,6 +510,7 @@ export abstract class Renderer {
             ? mobileStyleDependenciesList.map((oneMobCssDep) => genHeaderCSSLink(config, oneMobCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
             : '',
         )
+        .replace('__PCS_JS_OVERRIDE__', genPCSOverrideScript(config.output.pcsJsResources[0]))
     }
 
     const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
