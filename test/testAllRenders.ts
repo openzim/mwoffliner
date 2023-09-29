@@ -34,20 +34,15 @@ export async function testAllRenders(mwUrl: string, articleList: string, format:
   if (!zimcheckIsAvailable || !zimdumpIsAvailable) {
     const missingTool = !zimcheckIsAvailable ? 'Zimcheck' : 'Zimdump'
     console.log(`${missingTool} not installed, skipping test`)
-    return
-  }
-
-  for (const renderer of RENDERERS_LIST) {
-    const now = new Date()
-    const testId = `mwo-test-${+now}`
-    const outFiles = await getOutFiles(renderer, testId, articleList, mwUrl, format)
-    outFiles[0].testId = testId
-    outFiles[0].renderer = renderer
-    /*
-    TODO: render name should be passed to the test name somehow.
-    But since jest test methods are not available inside the callback, this is impossible given this pattern
-    */
-    console.log('test renderer:', renderer)
-    await callback(outFiles)
+    return callback({ isSkipped: true })
+  } else {
+    for (const renderer of RENDERERS_LIST) {
+      const now = new Date()
+      const testId = `mwo-test-${+now}`
+      const outFiles = await getOutFiles(renderer, testId, articleList, mwUrl, format)
+      outFiles[0].testId = testId
+      outFiles[0].renderer = renderer
+      await callback(outFiles)
+    }
   }
 }
