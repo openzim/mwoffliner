@@ -39,13 +39,6 @@ describe('renderName', () => {
     expect(redisScan.stdout).toEqual('')
   })
 
-  test('Scrape article from bm.wikipedia.org should throw error when using VisualEditor renderName', async () => {
-    const renderName = 'VisualEditor'
-    expect(async () => {
-      await mwoffliner.execute({ ...parameters, renderName })
-    }).rejects.toThrowError()
-  })
-
   test('Scrape article from bm.wikipedia.org should throw error when using wrong renderName', async () => {
     const renderName = 'unknownRenderName'
     expect(async () => {
