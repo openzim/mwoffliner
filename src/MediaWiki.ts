@@ -227,18 +227,22 @@ class MediaWiki {
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
         const isContent = type === 'namespaces' ? !!(entry.content || util.contains(addNamespaces, num)) : !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isBlacklisted = name === 'Story' // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
+
         /* Namespaces in local language */
         this.namespaces[util.lcFirst(name)] = details
         this.namespaces[util.ucFirst(name)] = details
+
         /* Namespaces in English (if available) */
         if (canonical) {
           this.namespaces[util.lcFirst(canonical)] = details
           this.namespaces[util.ucFirst(canonical)] = details
         }
+
         /* Is content to mirror */
-        if (isContent) {
+        if (isContent && !isBlacklisted) {
           this.namespacesToMirror.push(name)
         }
       })
