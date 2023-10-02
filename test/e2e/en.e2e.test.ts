@@ -24,14 +24,8 @@ const articleList = 'User:Kelson/MWoffliner_CI_reference'
 const format = ''
 
 await testAllRenders(mwUrl, articleList, format, async (outFiles) => {
-  const describeIf = outFiles.isSkipped ? describe.skip : describe
-
-  let articleFromDump
-  if (!outFiles.isSkipped) {
-    articleFromDump = await zimdump(`show --url A/${articleList} ${outFiles[0].outFile}`)
-  }
-
-  describeIf('e2e test for en.wikipedia.org', () => {
+  const articleFromDump = await zimdump(`show --url A/${articleList} ${outFiles[0].outFile}`)
+  describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
       expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()

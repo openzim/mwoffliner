@@ -1,3 +1,4 @@
+import * as logger from '../src/Logger.js'
 import * as mwoffliner from '../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import { RENDERERS_LIST } from '../src/util/const.js'
@@ -33,16 +34,16 @@ export async function testAllRenders(mwUrl: string, articleList: string, format:
 
   if (!zimcheckIsAvailable || !zimdumpIsAvailable) {
     const missingTool = !zimcheckIsAvailable ? 'Zimcheck' : 'Zimdump'
-    console.log(`${missingTool} not installed, skipping test`)
-    return callback({ isSkipped: true })
-  } else {
-    for (const renderer of RENDERERS_LIST) {
-      const now = new Date()
-      const testId = `mwo-test-${+now}`
-      const outFiles = await getOutFiles(renderer, testId, articleList, mwUrl, format)
-      outFiles[0].testId = testId
-      outFiles[0].renderer = renderer
-      await callback(outFiles)
-    }
+    logger.error(`${missingTool} not installed, exiting test`)
+    process.exit(1)
+  }
+
+  for (const renderer of RENDERERS_LIST) {
+    const now = new Date()
+    const testId = `mwo-test-${+now}`
+    const outFiles = await getOutFiles(renderer, testId, articleList, mwUrl, format)
+    outFiles[0].testId = testId
+    outFiles[0].renderer = renderer
+    await callback(outFiles)
   }
 }

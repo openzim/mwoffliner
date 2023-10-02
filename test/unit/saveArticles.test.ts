@@ -81,49 +81,47 @@ describe('saveArticles', () => {
   })
 
   for (const renderer of RENDERERS_LIST) {
-    if (['WikimediaDesktop', 'VisualEditor'].includes(renderer)) {
-      test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
-        let rendererInstance
-        switch (renderer) {
-          case 'VisualEditor':
-            rendererInstance = new VisualEditorRenderer()
-            break
-          case 'WikimediaDesktop':
-            rendererInstance = new WikimediaDesktopRenderer()
-            break
-          default:
-            throw new Error(`Unknown renderer: ${renderer}`)
-        }
-        const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
-        await downloader.setBaseUrls(renderer)
-        const articleId = 'Canada'
-        const articleUrl = getArticleUrl(downloader, dump, articleId)
-        const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
-        const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
-        const { articleDetailXId } = RedisStore
-        const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
-        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-        articleDetailXId.setMany(articlesDetail)
-        const result = await downloader.getArticle(
-          downloader.webp,
-          _moduleDependencies,
-          articleId,
-          articleDetailXId,
-          rendererInstance,
-          articleUrl,
-          dump,
-          articleDetail,
-          dump.isMainPage(articleId),
-        )
+    test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
+      let rendererInstance
+      switch (renderer) {
+        case 'VisualEditor':
+          rendererInstance = new VisualEditorRenderer()
+          break
+        case 'WikimediaDesktop':
+          rendererInstance = new WikimediaDesktopRenderer()
+          break
+        default:
+          throw new Error(`Unknown renderer: ${renderer}`)
+      }
+      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      await downloader.setBaseUrls(renderer)
+      const articleId = 'Canada'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      articleDetailXId.setMany(articlesDetail)
+      const result = await downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        rendererInstance,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
 
-        const articleDoc = domino.createDocument(result[0].html)
+      const articleDoc = domino.createDocument(result[0].html)
 
-        const sections = Array.from(articleDoc.querySelectorAll('section'))
-        const leadSection = sections[0]
-        expect(sections.length).toEqual(1)
-        expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
-      })
-    }
+      const sections = Array.from(articleDoc.querySelectorAll('section'))
+      const leadSection = sections[0]
+      expect(sections.length).toEqual(1)
+      expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
+    })
   }
 
   test('Load main page and check that it is without header', async () => {
