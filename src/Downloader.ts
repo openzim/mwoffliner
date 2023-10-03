@@ -87,8 +87,8 @@ class Downloader {
   public arrayBufferRequestOptions: AxiosRequestConfig
   public jsonRequestOptions: AxiosRequestConfig
   public streamRequestOptions: AxiosRequestConfig
-  public mobileJsDependenciesList: string[] = []
-  public mobileStyleDependenciesList: string[] = []
+  public wikimediaMobileJsDependenciesList: string[] = []
+  public wikimediaMobileStyleDependenciesList: string[] = []
 
   private readonly uaString: string
   private activeRequests = 0
@@ -173,23 +173,23 @@ class Downloader {
     if (!forceRender) {
       //* Objects order in array matters!
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.mobileApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.desktopApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
       ])
 
       //* Objects order in array matters!
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.desktopApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.mobileApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
       ])
     } else {
       switch (forceRender) {
         case 'WikimediaDesktop':
           if (MediaWiki.hasWikimediaDesktopApi()) {
-            this.baseUrl = MediaWiki.desktopApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.desktopApiUrl.href
+            this.baseUrl = MediaWiki.WikimediaDesktopApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.WikimediaDesktopApiUrl.href
             break
           }
           break
@@ -202,8 +202,8 @@ class Downloader {
           break
         case 'WikimediaMobile':
           if (MediaWiki.hasWikimediaMobileApi()) {
-            this.baseUrl = MediaWiki.mobileApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.mobileApiUrl.href
+            this.baseUrl = MediaWiki.WikimediaMobileApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.WikimediaMobileApiUrl.href
             break
           }
           break
@@ -697,15 +697,15 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi()) && this.mobileJsDependenciesList.length === 0 && this.mobileStyleDependenciesList.length === 0) {
+    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
       try {
         // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
         mobileModulesData.forEach((module: string) => {
           if (module.includes('javascript')) {
-            this.mobileJsDependenciesList.push(module.replace('//', ''))
+            this.wikimediaMobileJsDependenciesList.push(module.replace('//', ''))
           } else if (module.includes('css')) {
-            this.mobileStyleDependenciesList.push(module.replace('//', ''))
+            this.wikimediaMobileStyleDependenciesList.push(module.replace('//', ''))
           }
         })
       } catch (err) {
@@ -714,8 +714,8 @@ class Downloader {
     }
     return {
       jsConfigVars,
-      jsDependenciesList: jsDependenciesList.concat(this.mobileJsDependenciesList),
-      styleDependenciesList: styleDependenciesList.concat(this.mobileStyleDependenciesList),
+      jsDependenciesList: jsDependenciesList.concat(this.wikimediaMobileJsDependenciesList),
+      styleDependenciesList: styleDependenciesList.concat(this.wikimediaMobileStyleDependenciesList),
     }
   }
 

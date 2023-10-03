@@ -1,7 +1,7 @@
-import DesktopURLDirector from '../../../../src/util/builders/url/desktop.director.js'
+import WikimediaDesktopURLDirector from '../../../../src/util/builders/url/desktop.director.js'
 
-describe('DesktopURLDirector', () => {
-  const wikimediaDesktopUrlDirector = new DesktopURLDirector('https://en.m.wikipedia.org/api/rest_v1/page/html/')
+describe('WikimediaDesktopURLDirector', () => {
+  const wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector('https://en.m.wikipedia.org/api/rest_v1/page/html/')
 
   describe('buildArticleURL', () => {
     it('should return the URL to retrieve a desktop article', () => {

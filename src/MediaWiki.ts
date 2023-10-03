@@ -9,8 +9,8 @@ import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import DesktopURLDirector from './util/builders/url/desktop.director.js'
-import MobileURLDirector from './util/builders/url/mobile.director.js'
+import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
+import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
@@ -50,9 +50,9 @@ class MediaWiki {
   #apiActionPath: string
   #domain: string
   private apiUrlDirector: ApiURLDirector
-  private wikimediaDesktopUrlDirector: DesktopURLDirector
-  private wikimediaMobileUrlDirector: MobileURLDirector
-  private visualEditorURLDirector: VisualEditorURLDirector
+  private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
+  private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
+  private VisualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
   public apiUrl: URL
@@ -60,8 +60,8 @@ class MediaWiki {
   public _modulePathOpt: string // only for whiting to generate modulePath
   public mobileModulePath: string
   public webUrl: URL
-  public desktopApiUrl: URL
-  public mobileApiUrl: URL
+  public WikimediaDesktopApiUrl: URL
+  public WikimediaMobileApiUrl: URL
 
   #hasWikimediaDesktopApi: boolean | null
   #hasWikimediaMobileApi: boolean | null
@@ -152,7 +152,7 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(this.VisualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -183,13 +183,13 @@ class MediaWiki {
     this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.desktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
-    this.mobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
+    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
+    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
     this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
-    this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopApiUrl.href)
-    this.wikimediaMobileUrlDirector = new MobileURLDirector(this.mobileApiUrl.href)
-    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+    this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
+    this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
+    this.VisualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
