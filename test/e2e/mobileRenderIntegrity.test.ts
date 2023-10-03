@@ -1,5 +1,6 @@
 import 'dotenv/config.js'
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
+import * as logger from '../../src/Logger.js'
 import rimraf from 'rimraf'
 import { execa } from 'execa'
 import { jest } from '@jest/globals'
@@ -34,8 +35,8 @@ async function getOutFiles(testId: string, articleList: string, mwUrl: string): 
 const commonTreatmentTest = async (articleList: string, mwUrl: string) => {
   if (!zimcheckIsAvailable || !zimdumpIsAvailable) {
     const missingTool = !zimcheckIsAvailable ? 'Zimcheck' : 'Zimdump'
-    console.log(`${missingTool} not installed, skipping test`)
-    return
+    logger.error(`${missingTool} not installed, exiting test`)
+    process.exit(1)
   }
   const now = new Date()
   const testId = `mwo-test-${+now}`

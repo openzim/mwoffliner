@@ -162,49 +162,32 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
   return newString
 }
 
-export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
-  const cssPromises = config.output.cssResources.concat(config.output.mainPageCssResources).map(async (css) => {
+function saveResourceFile(resource: string, type: 'css' | 'js', basePath: string, config: Config, zimCreator: ZimCreator) {
+  return async () => {
     try {
-      const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`))
-      const article = new ZimArticle({ url: cssPath(css), data: cssCont, ns: '-' })
+      const content = await readFilePromise(pathParser.resolve(__dirname, `../../res/${basePath}${resource}.${type}`))
+      const article = new ZimArticle({
+        url: type === 'css' ? cssPath(resource) : jsPath(resource),
+        data: content,
+        ns: '-',
+      })
       zimCreator.addArticle(article)
     } catch (error) {
-      logger.warn(`Could not create ${css} file : ${error}`)
+      const fileType = type === 'css' ? (basePath.includes('pcs') ? 'style PCS override' : 'style') : 'script'
+      logger.warn(`Could not create ${fileType} ${resource} file : ${error}`)
     }
-  })
+  }
+}
 
-  const jsPromises = config.output.jsResources.map(async (js) => {
-    try {
-      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`))
-      const article = new ZimArticle({ url: jsPath(js), data: jsCont, ns: '-' })
-      zimCreator.addArticle(article)
-    } catch (error) {
-      logger.warn(`Could not create ${js} file : ${error}`)
-    }
-  })
+export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
+  const cssPromises = config.output.cssResources.concat(config.output.mainPageCssResources).map((css) => saveResourceFile(css, 'css', '', config, zimCreator)())
+  const jsPromises = config.output.jsResources.map((js) => saveResourceFile(js, 'js', '', config, zimCreator)())
   return Promise.all([...cssPromises, ...jsPromises])
 }
 
 export function saveStaticPCSFiles(config: Config, zimCreator: ZimCreator) {
-  const pcsCssPromises = config.output.pcsCssResources.map(async (pcsCss) => {
-    try {
-      const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/pcs/${pcsCss}.css`))
-      const article = new ZimArticle({ url: cssPath(pcsCss), data: cssCont, ns: '-' })
-      zimCreator.addArticle(article)
-    } catch (error) {
-      logger.warn(`Could not create style PCS override ${pcsCss} file : ${error}`)
-    }
-  })
-
-  const pcsJsPromises = config.output.pcsJsResources.map(async (pcsJs) => {
-    try {
-      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/pcs/${pcsJs}.js`))
-      const article = new ZimArticle({ url: jsPath(pcsJs), data: jsCont, ns: '-' })
-      zimCreator.addArticle(article)
-    } catch (error) {
-      logger.warn(`Could not create script PCS override ${pcsJs} file : ${error}`)
-    }
-  })
+  const pcsCssPromises = config.output.pcsCssResources.map((pcsCss) => saveResourceFile(pcsCss, 'css', 'pcs/', config, zimCreator)())
+  const pcsJsPromises = config.output.pcsJsResources.map((pcsJs) => saveResourceFile(pcsJs, 'js', 'pcs/', config, zimCreator)())
   return Promise.all([...pcsCssPromises, ...pcsJsPromises])
 }
 
