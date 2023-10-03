@@ -427,30 +427,16 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies, jsMobileModuleDependencies, cssMobileModuleDependencies } = await saveArticles(
-      zimCreator,
-      downloader,
-      dump,
-      hasWikimediaMobileApi,
-      forceRender,
-    )
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileApi, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
     logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
 
-    let allDependenciesWithType = [
+    const allDependenciesWithType = [
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ]
-
-    if (dump.opts.isMobileRenderer) {
-      allDependenciesWithType = [
-        ...allDependenciesWithType,
-        { type: 'mobileJs', moduleList: Array.from(jsMobileModuleDependencies) },
-        { type: 'mobileCss', moduleList: Array.from(cssMobileModuleDependencies) },
-      ]
-    }
 
     if (downloader.webp) {
       logger.log('Downloading polyfill module')

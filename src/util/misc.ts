@@ -228,12 +228,6 @@ export function genHeaderScript(config: Config, js: string, articleId: string, s
   const path = isNodeModule(js) ? normalizeModule(js) : js
   return `<script ${attributes} src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}"></script>`
 }
-export function genPCSOverrideScript(js: string) {
-  return `<script src='../-/${js}.js'></script>`
-}
-export function genPCSCOverrideCSSLink(css: string) {
-  return `<link rel="stylesheet" href="../-/${css}.css" />`
-}
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`
 }
