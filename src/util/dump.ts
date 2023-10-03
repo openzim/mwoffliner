@@ -90,7 +90,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css' | 'mobileJs' | 'mobileCss') {
+export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -118,15 +118,15 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
 
   let apiParameterOnly
   let moduleApiUrl: string
-  if (type === 'js' || type === 'mobileJs') {
+  if (type === 'js') {
     apiParameterOnly = 'scripts'
-  } else if (type === 'css' || type === 'mobileCss') {
+  } else if (type === 'css') {
     apiParameterOnly = 'styles'
   }
 
-  if (type === 'js' || type === 'css') {
+  if (!module.includes('javascript/mobile') && !module.includes('css/mobile')) {
     moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
-  } else if (type === 'mobileJs' || type === 'mobileCss') {
+  } else {
     moduleApiUrl = encodeURI(`https:${module}`)
   }
 

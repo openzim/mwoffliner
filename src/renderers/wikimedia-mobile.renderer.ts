@@ -1,13 +1,13 @@
 import * as domino from 'domino'
 import * as logger from '../Logger.js'
-import { Renderer } from './abstract.renderer.js'
+import { MobileRenderer } from './abstractMobile.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 type PipeFunction = (value: DominoElement) => DominoElement | Promise<DominoElement>
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/mobile-html/'
-export class WikimediaMobileRenderer extends Renderer {
+export class WikimediaMobileRenderer extends MobileRenderer {
   constructor() {
     super()
   }
@@ -37,7 +37,15 @@ export class WikimediaMobileRenderer extends Renderer {
           this.removeEditContainer,
           this.removeHiddenClass,
           async (doc) => {
-            const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(doc.documentElement.outerHTML, dump, articleId, articleDetail, _moduleDependencies, webp)
+            const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(
+              doc.documentElement.outerHTML,
+              dump,
+              articleId,
+              articleDetail,
+              _moduleDependencies,
+              webp,
+              super.templateMobileArticle.bind(this),
+            )
 
             mediaDependenciesVal = mediaDependencies
             subtitlesVal = subtitles

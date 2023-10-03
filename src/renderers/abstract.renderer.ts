@@ -9,7 +9,7 @@ import DU from '../DOMUtils.js'
 import { config } from '../config.js'
 import { Dump } from '../Dump.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
-import { footerTemplate, htmlTemplateCode } from '../Templates.js'
+import { footerTemplate } from '../Templates.js'
 import {
   getFullUrl,
   getMediaBase,
@@ -17,11 +17,6 @@ import {
   getRelativeFilePath,
   isWebpCandidateImageMimeType,
   interpolateTranslationString,
-  genCanonicalLink,
-  genHeaderScript,
-  genHeaderCSSLink,
-  genPCSOverrideScript,
-  genPCSCOverrideCSSLink,
   encodeArticleIdForZimHtmlUrl,
 } from '../util/misc.js'
 
@@ -388,7 +383,8 @@ export abstract class Renderer {
     return thumbDiv
   }
 
-  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean) {
+  // TODO: The first part of this method is common for all renders
+  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean, callback) {
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
@@ -432,7 +428,8 @@ export abstract class Renderer {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
-    let templatedDoc = await this.templateArticle(doc, _moduleDependencies, dump, articleId, articleDetail, RedisStore.articleDetailXId)
+    let templatedDoc = callback(_moduleDependencies, articleId)
+    templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
       templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
@@ -460,64 +457,14 @@ export abstract class Renderer {
     }
   }
 
-  private async templateArticle(
+  private async mergeTemplateDoc(
+    htmlTemplateDoc: DominoElement,
     parsoidDoc: DominoElement,
-    moduleDependencies: any,
     dump: Dump,
-    articleId: string,
     articleDetail: ArticleDetail,
     articleDetailXId: RKVS<ArticleDetail>,
-  ): Promise<Document> {
-    const { jsConfigVars, jsDependenciesList, styleDependenciesList, mobileJsDependenciesList, mobileStyleDependenciesList } = moduleDependencies as {
-      jsConfigVars: string | RegExpExecArray
-      jsDependenciesList: string[]
-      styleDependenciesList: string[]
-      mobileJsDependenciesList: string[]
-      mobileStyleDependenciesList: string[]
-    }
-
-    let htmlTemplateString = htmlTemplateCode(articleId).replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
-
-    if (!dump.opts.isMobileRenderer) {
-      htmlTemplateString = htmlTemplateString
-        .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
-        .replace(
-          '__ARTICLE_JS_LIST__',
-          jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-        )
-        .replace(
-          '__ARTICLE_CSS_LIST__',
-          styleDependenciesList.length !== 0
-            ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
-            : '',
-        )
-        .replace('__JS_SCRIPTS_MOBILE__', '')
-        .replace('__CSS_LINKS_MOBILE__', '')
-        .replace('__PCS_CSS_OVERRIDE__', '')
-        .replace('__PCS_JS_OVERRIDE__', '')
-    } else {
-      htmlTemplateString = htmlTemplateString
-        .replace('__ARTICLE_CONFIGVARS_LIST__', '')
-        .replace('__ARTICLE_JS_LIST__', '')
-        .replace('__ARTICLE_CSS_LIST__', '')
-        .replace(
-          '__JS_SCRIPTS_MOBILE__',
-          mobileJsDependenciesList.length !== 0
-            ? mobileJsDependenciesList.map((oneMobJsDep) => genHeaderScript(config, oneMobJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
-            : '',
-        )
-        .replace(
-          '__CSS_LINKS_MOBILE__',
-          mobileStyleDependenciesList.length !== 0
-            ? mobileStyleDependenciesList.map((oneMobCssDep) => genHeaderCSSLink(config, oneMobCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
-            : '',
-        )
-        .replace('__PCS_CSS_OVERRIDE__', genPCSCOverrideCSSLink(config.output.pcsCssResources[0]))
-        .replace('__PCS_JS_OVERRIDE__', genPCSOverrideScript(config.output.pcsJsResources[0]))
-    }
-
-    const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
-
+    articleId: string,
+  ) {
     /* Create final document by merging template and parsoid documents */
     htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.textDir)
     htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML

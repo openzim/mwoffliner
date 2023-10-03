@@ -1,10 +1,10 @@
 import domino from 'domino'
-import { Renderer } from './abstract.renderer.js'
+import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest_v1/page/html/'
-export class WikimediaDesktopRenderer extends Renderer {
+export class WikimediaDesktopRenderer extends DesktopRenderer {
   constructor() {
     super()
   }
@@ -47,7 +47,15 @@ export class WikimediaDesktopRenderer extends Renderer {
       if (!isMainPage) {
         dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)
       }
-      const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(dataWithHeader || data, dump, articleId, articleDetail, _moduleDependencies, webp)
+      const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(
+        dataWithHeader || data,
+        dump,
+        articleId,
+        articleDetail,
+        _moduleDependencies,
+        webp,
+        super.templateDesktopArticle.bind(this),
+      )
 
       result.push({
         articleId: _articleId,

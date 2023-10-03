@@ -714,10 +714,8 @@ class Downloader {
     }
     return {
       jsConfigVars,
-      jsDependenciesList,
-      styleDependenciesList,
-      mobileJsDependenciesList: this.mobileJsDependenciesList,
-      mobileStyleDependenciesList: this.mobileStyleDependenciesList,
+      jsDependenciesList: jsDependenciesList.concat(this.mobileJsDependenciesList),
+      styleDependenciesList: styleDependenciesList.concat(this.mobileStyleDependenciesList),
     }
   }
 
