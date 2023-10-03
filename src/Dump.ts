@@ -29,7 +29,6 @@ interface DumpOpts {
   keepEmptyParagraphs: boolean
   tags?: string
   filenameDate: string
-  isMobileRenderer: boolean
 }
 
 export class Dump {

@@ -21,14 +21,14 @@ export default class BaseURLDirector {
       .build(true, '/')
   }
 
-  buildDesktopApiUrl(path?: string) {
+  buildWikimediaDesktopApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setPath(path ?? 'api/rest_v1/page/html')
       .build(true, '/')
   }
 
-  buildMobileApiUrl(path?: string) {
+  buildWikimediaMobileApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setPath(path ?? 'api/rest_v1/page/mobile-html')

@@ -339,7 +339,6 @@ async function execute(argv: any) {
         keepEmptyParagraphs,
         tags: customZimTags,
         filenameDate,
-        isMobileRenderer: false,
       },
       { ...mwMetaData, mainPage },
       customProcessor,
@@ -401,12 +400,10 @@ async function execute(argv: any) {
     })
     zimCreator.addArticle(scraperArticle)
 
-    logger.info('Copying Static Resource Files')
-    await saveStaticFiles(config, zimCreator)
-
-    // TODO: refactor sequence, this only needed for mobile renderer
     logger.info('Copying Static PCS Override Files')
     await saveStaticPCSFiles(config, zimCreator)
+    logger.info('Copying Static Resource Files')
+    await saveStaticFiles(config, zimCreator)
 
     logger.info('Finding stylesheets to download')
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)

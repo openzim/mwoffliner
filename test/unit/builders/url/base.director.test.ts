@@ -25,29 +25,29 @@ describe('BaseURLDirector', () => {
     })
   })
 
-  describe('buildMobileApiUrl', () => {
+  describe('buildWikimediaMobileApiUrl', () => {
     it('should return mobile rest URL with provided path and trailing char', () => {
-      const url = baseUrlDirector.buildMobileApiUrl('api/rest_v2/page/mobile-html')
+      const url = baseUrlDirector.buildWikimediaMobileApiUrl('api/rest_v2/page/mobile-html')
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v2/page/mobile-html/')
     })
 
     it('should return mobile rest URL with default path and trailing char', () => {
-      const url = baseUrlDirector.buildMobileApiUrl()
+      const url = baseUrlDirector.buildWikimediaMobileApiUrl()
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v1/page/mobile-html/')
     })
   })
 
-  describe('buildDesktopApiUrl', () => {
+  describe('buildWikimediaDesktopApiUrl', () => {
     it('should return a desktop URL with provided path and trailing char', () => {
-      const url = baseUrlDirector.buildDesktopApiUrl('api/rest_v2/page/html')
+      const url = baseUrlDirector.buildWikimediaDesktopApiUrl('api/rest_v2/page/html')
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v2/page/html/')
     })
 
     it('should return a desktop URL with default path and trailing char', () => {
-      const url = baseUrlDirector.buildDesktopApiUrl()
+      const url = baseUrlDirector.buildWikimediaDesktopApiUrl()
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v1/page/html/')
     })
