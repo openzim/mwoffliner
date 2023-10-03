@@ -1,7 +1,7 @@
-import MobileURLDirector from '../../../../src/util/builders/url/mobile.director.js'
+import WikimediaMobileURLDirector from '../../../../src/util/builders/url/mobile.director.js'
 
-describe('MobileURLDirector', () => {
-  const mobuleUrlDirector = new MobileURLDirector('https://en.m.wikipedia.org/api/rest_v1/page/mobile-html/')
+describe('WikimediaMobileURLDirector', () => {
+  const mobuleUrlDirector = new WikimediaMobileURLDirector('https://en.m.wikipedia.org/api/rest_v1/page/mobile-html/')
 
   describe('buildArticleURL', () => {
     it('should return a URL for retrieving mobile article', () => {
