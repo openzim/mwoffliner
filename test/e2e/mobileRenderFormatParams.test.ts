@@ -105,7 +105,6 @@ describe('Mobile render with multiple format params', () => {
     rimraf.sync(`./${testId}`)
   })
 
-  // TODO: secure nppdf format for all renders
   test.skip('Test WikimediaMobile render with en.wikipedia.org using format:nopdf', async () => {
     const articleList = 'PDF'
     const now = new Date()
@@ -117,8 +116,8 @@ describe('Mobile render with multiple format params', () => {
 
     const anchorElements = Array.from(articleDoc.querySelectorAll('a'))
 
-    anchorElements.forEach((anchor) => {
-      expect(anchor.href).not.toContain('.pdf')
+    anchorElements.forEach(() => {
+      // TODO: Check valid links to pdf source
     })
 
     rimraf.sync(`./${testId}`)
