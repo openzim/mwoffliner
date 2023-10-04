@@ -9,10 +9,22 @@ import { jest } from '@jest/globals'
 
 jest.setTimeout(10000)
 
-describe('mwApi', () => {
-  beforeAll(startRedis)
-  afterAll(stopRedis)
+beforeAll(async () => {
+  MediaWiki.reset()
+  await startRedis()
+})
+afterAll(stopRedis)
 
+const initMW = async (downloader: Downloader) => {
+  await MediaWiki.getMwMetaData(downloader)
+  await MediaWiki.hasCoordinates(downloader)
+  await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasVisualEditorApi()
+
+  await MediaWiki.getNamespaces([], downloader)
+}
+
+describe('mwApi', () => {
   let downloader: Downloader
 
   beforeEach(async () => {
@@ -20,15 +32,9 @@ describe('mwApi', () => {
 
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-
     downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
-    await MediaWiki.getMwMetaData(downloader)
-    await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopRestApi()
-    await MediaWiki.hasVisualEditorApi()
-
-    await MediaWiki.getNamespaces([], downloader)
+    await initMW(downloader)
   })
 
   test('MWApi Article Ids', async () => {
@@ -114,5 +120,27 @@ describe('mwApi', () => {
     const interWikiTitle = MediaWiki.extractPageTitleFromHref('Maldives')
     // Interwiki title
     expect(interWikiTitle).toBeNull()
+  })
+})
+
+describe('Test blacklisted NSs', () => {
+  let downloader: Downloader
+
+  beforeEach(async () => {
+    await RedisStore.articleDetailXId.flush()
+
+    MediaWiki.base = 'https://id.wikipedia.org'
+    MediaWiki.getCategories = true
+
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+
+    await initMW(downloader)
+  })
+
+  test('Prevent blacklisted namespaces to mirroring', async () => {
+    const aIds = ['Story:Satelit_Oberon', 'London']
+    await getArticleIds(downloader, 'Main_Page', aIds)
+
+    expect(MediaWiki.namespacesToMirror).not.toContain('Story')
   })
 })

@@ -12,6 +12,7 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import DesktopURLDirector from './util/builders/url/desktop.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
+import { BLACKLISTED_NS } from './util/const.js'
 
 export interface QueryOpts {
   action: string
@@ -34,7 +35,6 @@ class MediaWiki {
   }
 
   public metaData: MWMetaData
-  public _base: string
   public baseUrl: URL
   public getCategories: boolean
   public namespaces: MWNamespaces = {}
@@ -227,18 +227,22 @@ class MediaWiki {
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
         const isContent = type === 'namespaces' ? !!(entry.content || util.contains(addNamespaces, num)) : !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isBlacklisted = BLACKLISTED_NS.includes(name)
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
+
         /* Namespaces in local language */
         this.namespaces[util.lcFirst(name)] = details
         this.namespaces[util.ucFirst(name)] = details
+
         /* Namespaces in English (if available) */
         if (canonical) {
           this.namespaces[util.lcFirst(canonical)] = details
           this.namespaces[util.ucFirst(canonical)] = details
         }
+
         /* Is content to mirror */
-        if (isContent) {
+        if (isContent && !isBlacklisted) {
           this.namespacesToMirror.push(name)
         }
       })
