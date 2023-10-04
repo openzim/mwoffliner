@@ -6,10 +6,28 @@ import { zimcheckAvailable, zimdumpAvailable } from './util.js'
 
 /*
   This is the template for e2e tests of different wikis
-  1. Verify zimcheck and zimdump availability
+  1. Verify zimcheck and zimdump availability and caches result
   2. Gets output file and checks its integrity
   3. Returns output file per renderer in the callback function
 */
+
+let zimToolsChecked = false
+async function checkZimTools() {
+  if (zimToolsChecked) {
+    return
+  }
+
+  const zimcheckIsAvailable = await zimcheckAvailable()
+  const zimdumpIsAvailable = await zimdumpAvailable()
+
+  if (!zimcheckIsAvailable || !zimdumpIsAvailable) {
+    const missingTool = !zimcheckIsAvailable ? 'Zimcheck' : 'Zimdump'
+    logger.error(`${missingTool} not installed, exiting test`)
+    process.exit(1)
+  }
+
+  zimToolsChecked = true
+}
 
 async function getOutFiles(renderName: string, testId: string, articleList: string, mwUrl: string, format?: string | string[]): Promise<any> {
   const parameters = {
@@ -29,15 +47,7 @@ async function getOutFiles(renderName: string, testId: string, articleList: stri
 }
 
 export async function testAllRenders(mwUrl: string, articleList: string, format: string | string[], callback) {
-  const zimcheckIsAvailable = await zimcheckAvailable()
-  const zimdumpIsAvailable = await zimdumpAvailable()
-
-  if (!zimcheckIsAvailable || !zimdumpIsAvailable) {
-    const missingTool = !zimcheckIsAvailable ? 'Zimcheck' : 'Zimdump'
-    logger.error(`${missingTool} not installed, exiting test`)
-    process.exit(1)
-  }
-
+  await checkZimTools()
   for (const renderer of RENDERERS_LIST) {
     const now = new Date()
     const testId = `mwo-test-${+now}`
