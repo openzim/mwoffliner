@@ -38,8 +38,8 @@ export abstract class DesktopRenderer extends Renderer {
       )
       .replace('__JS_SCRIPTS_MOBILE__', '')
       .replace('__CSS_LINKS_MOBILE__', '')
-      .replace('__PCS_CSS_OVERRIDE__', '')
-      .replace('__PCS_JS_OVERRIDE__', '')
+      .replace('__WM_MOBILE_CSS_OVERRIDE__', '')
+      .replace('__WM_MOBILE_JS_OVERRIDE__', '')
 
     const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
     return htmlTemplateDoc

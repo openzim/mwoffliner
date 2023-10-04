@@ -173,7 +173,7 @@ function saveResourceFile(resource: string, type: 'css' | 'js', basePath: string
       })
       zimCreator.addArticle(article)
     } catch (error) {
-      const fileType = type === 'css' ? (basePath.includes('pcs') ? 'style PCS override' : 'style') : 'script'
+      const fileType = type === 'css' ? (basePath.includes('wm_mobile') ? 'style Wikimedia mobile override' : 'style') : 'script'
       logger.warn(`Could not create ${fileType} ${resource} file : ${error}`)
     }
   }
@@ -185,10 +185,10 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   return Promise.all([...cssPromises, ...jsPromises])
 }
 
-export function saveStaticPCSFiles(config: Config, zimCreator: ZimCreator) {
-  const pcsCssPromises = config.output.pcsCssResources.map((pcsCss) => saveResourceFile(pcsCss, 'css', 'pcs/', config, zimCreator)())
-  const pcsJsPromises = config.output.pcsJsResources.map((pcsJs) => saveResourceFile(pcsJs, 'js', 'pcs/', config, zimCreator)())
-  return Promise.all([...pcsCssPromises, ...pcsJsPromises])
+export function saveStaticWmMobileFiles(config: Config, zimCreator: ZimCreator) {
+  const wmMobileCssPromises = config.output.wmMobileCssResources.map((wmMobileCss) => saveResourceFile(wmMobileCss, 'css', 'wm_mobile/', config, zimCreator)())
+  const wmMobileJsPromises = config.output.mwMobileJsResources.map((wmMobileJs) => saveResourceFile(wmMobileJs, 'js', 'wm_mobile/', config, zimCreator)())
+  return Promise.all([...wmMobileCssPromises, ...wmMobileJsPromises])
 }
 
 export function cssPath(css: string, subDirectory = '') {

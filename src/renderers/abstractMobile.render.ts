@@ -11,11 +11,11 @@ export abstract class MobileRenderer extends Renderer {
     super()
   }
 
-  private genPCSCOverrideCSSLink(css: string) {
+  private genWmMobileOverrideCSSLink(css: string) {
     return `<link rel="stylesheet" href="../-/${css}.css" />`
   }
 
-  private genPCSOverrideScript(js: string) {
+  private genWmMobileOverrideScript(js: string) {
     return `<script src='../-/${js}.js'></script>`
   }
 
@@ -45,8 +45,8 @@ export abstract class MobileRenderer extends Renderer {
           ? mobileCssModuleDependencies.map((oneMobCssDep) => genHeaderCSSLink(config, oneMobCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
           : '',
       )
-      .replace('__PCS_CSS_OVERRIDE__', this.genPCSCOverrideCSSLink(config.output.pcsCssResources[0]))
-      .replace('__PCS_JS_OVERRIDE__', this.genPCSOverrideScript(config.output.pcsJsResources[0]))
+      .replace('__WM_MOBILE_CSS_OVERRIDE__', this.genWmMobileOverrideCSSLink(config.output.wmMobileCssResources[0]))
+      .replace('__WM_MOBILE_JS_OVERRIDE__', this.genWmMobileOverrideScript(config.output.mwMobileJsResources[0]))
 
     const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
     return htmlTemplateDoc
