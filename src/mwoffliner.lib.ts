@@ -37,7 +37,7 @@ import {
   mkdirPromise,
   sanitizeString,
   saveStaticFiles,
-  saveStaticPCSFiles,
+  saveStaticWmMobileFiles,
   importPolyfillModules,
   extractArticleList,
   getTmpDirectory,
@@ -400,8 +400,8 @@ async function execute(argv: any) {
     })
     zimCreator.addArticle(scraperArticle)
 
-    logger.info('Copying Static PCS Override Files')
-    await saveStaticPCSFiles(config, zimCreator)
+    logger.info('Copying Static Wikimedia Mobile Override Files')
+    await saveStaticWmMobileFiles(config, zimCreator)
     logger.info('Copying Static Resource Files')
     await saveStaticFiles(config, zimCreator)
 

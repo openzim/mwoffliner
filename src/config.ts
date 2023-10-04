@@ -56,10 +56,10 @@ const config = {
     // CSS resources added by Kiwix
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
-    pcsCssResources: ['pcs_override_style'],
+    wmMobileCssResources: ['wm_mobile_override_style'],
 
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
-    pcsJsResources: ['pcs_override_script'],
+    mwMobileJsResources: ['wm_mobile_override_script'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
