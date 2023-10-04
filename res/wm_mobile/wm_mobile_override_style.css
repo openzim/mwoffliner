@@ -13,3 +13,8 @@ span.noviewer {
 .mw-body h3, .mw-body h2 {
   width: auto;
 }
+
+.thumbinner img.pcs-widen-image-override {
+  width: auto !important;
+    max-width: 100% !important;
+}
