@@ -47,6 +47,7 @@ const commonTreatmentTest = async (articleList: string, mwUrl: string) => {
   rimraf.sync(`./${testId}`)
 }
 
+// TODO: articulate this test with /pull/1898 once merged
 describe('Mobile render zim file integrity', () => {
   const mwUrl = 'https://en.wikipedia.org'
   // TODO: some articles such as 'Canada' don't pass this test even with desktop renderer
