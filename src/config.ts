@@ -103,7 +103,8 @@ const config = {
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
-      page: './templates/page.html',
+      pageWikimediaDesktop: './templates/pageWikimediaDesktop.html',
+      pageWikimediaMobile: './templates/pageWikimediaMobile.html',
 
       categories: './templates/categories.html',
 

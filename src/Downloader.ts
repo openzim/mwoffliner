@@ -703,9 +703,9 @@ class Downloader {
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
         mobileModulesData.forEach((module: string) => {
           if (module.includes('javascript')) {
-            this.wikimediaMobileJsDependenciesList.push(module.replace('//', ''))
+            this.wikimediaMobileJsDependenciesList.push(module)
           } else if (module.includes('css')) {
-            this.wikimediaMobileStyleDependenciesList.push(module.replace('//', ''))
+            this.wikimediaMobileStyleDependenciesList.push(module)
           }
         })
       } catch (err) {

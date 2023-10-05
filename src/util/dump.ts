@@ -151,8 +151,6 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
     const pathFunctions = {
       js: jsPath,
       css: cssPath,
-      mobileJs: jsPath,
-      mobileCss: cssPath,
     }
 
     const pathFunction = pathFunctions[type]

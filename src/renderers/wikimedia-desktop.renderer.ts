@@ -37,6 +37,8 @@ export class WikimediaDesktopRenderer extends DesktopRenderer {
     const { data, articleId, articleDetailXId, webp, _moduleDependencies, isMainPage, dump } = renderOpts
     const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
+    const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
+
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)
 
@@ -51,7 +53,7 @@ export class WikimediaDesktopRenderer extends DesktopRenderer {
         dump,
         articleId,
         articleDetail,
-        _moduleDependencies,
+        moduleDependenciesFiltered,
         webp,
         super.templateDesktopArticle.bind(this),
       )
@@ -61,7 +63,7 @@ export class WikimediaDesktopRenderer extends DesktopRenderer {
         displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
         html: finalHTML,
         mediaDependencies,
-        moduleDependencies: _moduleDependencies,
+        moduleDependencies: moduleDependenciesFiltered,
         subtitles,
       })
     }

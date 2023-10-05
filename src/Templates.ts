@@ -2,7 +2,6 @@ import swig from 'swig-templates'
 import pathParser from 'path'
 import { config } from './config.js'
 import { readFileSync } from 'fs'
-import { genHeaderCSSLink, genHeaderScript } from './util/index.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -22,21 +21,12 @@ const categoriesTemplate = swig.compile(readTemplate(config.output.templates.cat
 const subCategoriesTemplate = swig.compile(readTemplate(config.output.templates.subCategories))
 const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPages))
 
-const htmlTemplateCode = (articleId: string) => {
-  const cssLinks = config.output.cssResources.reduce((buf, css) => {
-    return buf + genHeaderCSSLink(config, css, articleId)
-  }, '')
+const htmlWikimediaMobileTemplateCode = () => {
+  return readTemplate(config.output.templates.pageWikimediaMobile)
+}
 
-  const jsScripts = config.output.jsResources.reduce((buf, js) => {
-    return (
-      buf +
-      (js === 'script'
-        ? genHeaderScript(config, js, articleId, '', `data-article-id="${articleId.replace(/"/g, '\\\\"')}" id="script-js"`)
-        : genHeaderScript(config, js, articleId))
-    )
-  }, '')
-
-  return readTemplate(config.output.templates.page).replace('__CSS_LINKS__', cssLinks).replace('__JS_SCRIPTS__', jsScripts)
+const htmlWikimediaDesktopTemplateCode = () => {
+  return readTemplate(config.output.templates.pageWikimediaDesktop)
 }
 
 const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate)
@@ -46,7 +36,8 @@ export {
   leadSectionTemplate,
   sectionTemplate,
   subSectionTemplate,
-  htmlTemplateCode,
+  htmlWikimediaMobileTemplateCode,
+  htmlWikimediaDesktopTemplateCode,
   articleListHomeTemplate,
   categoriesTemplate,
   subCategoriesTemplate,

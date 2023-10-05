@@ -53,6 +53,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
     try {
       const result: RenderOutput = []
       const { articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
+      const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
       const { html, displayTitle } = await this.retrieveHtml(renderOpts)
       if (html) {
         const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(
@@ -60,7 +61,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
           dump,
           articleId,
           articleDetail,
-          _moduleDependencies,
+          moduleDependenciesFiltered,
           webp,
           super.templateDesktopArticle.bind(this),
         )
@@ -69,7 +70,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
           displayTitle,
           html: finalHTML,
           mediaDependencies,
-          moduleDependencies: _moduleDependencies,
+          moduleDependencies: moduleDependenciesFiltered,
           subtitles,
         })
         return result
