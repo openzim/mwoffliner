@@ -93,6 +93,9 @@ describe('saveArticles', () => {
         case 'WikimediaDesktop':
           rendererInstance = new WikimediaDesktopRenderer()
           break
+        case 'WikimediaMobile':
+          rendererInstance = new WikimediaDesktopRenderer()
+          break
         default:
           throw new Error(`Unknown renderer: ${renderer}`)
       }

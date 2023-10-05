@@ -11,22 +11,16 @@ export abstract class MobileRenderer extends Renderer {
     super()
   }
 
-  private genWmMobileOverrideCSSLink(css: string) {
+  private genWikimediaMobileOverrideCSSLink(css: string) {
     return `<link rel="stylesheet" href="../-/${css}.css" />`
   }
 
-  private genWmMobileOverrideScript(js: string) {
+  private genWikimediaMobileOverrideScript(js: string) {
     return `<script src='../-/${js}.js'></script>`
   }
 
   public templateMobileArticle(moduleDependencies: any, articleId: string): Document {
-    const { jsDependenciesList, styleDependenciesList } = moduleDependencies as {
-      jsDependenciesList: string[]
-      styleDependenciesList: string[]
-    }
-
-    const mobileJsModuleDependencies = jsDependenciesList.filter((item) => item.includes('javascript/mobile'))
-    const mobileCssModuleDependencies = styleDependenciesList.filter((item) => item.includes('css/mobile'))
+    const { jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const htmlTemplateString = htmlTemplateCode(articleId)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
@@ -35,18 +29,18 @@ export abstract class MobileRenderer extends Renderer {
       .replace('__ARTICLE_CSS_LIST__', '')
       .replace(
         '__JS_SCRIPTS_MOBILE__',
-        mobileJsModuleDependencies.length !== 0
-          ? mobileJsModuleDependencies.map((oneMobJsDep) => genHeaderScript(config, oneMobJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+        jsDependenciesList.length !== 0
+          ? jsDependenciesList.map((oneMobJsDep: string) => genHeaderScript(config, oneMobJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
           : '',
       )
       .replace(
         '__CSS_LINKS_MOBILE__',
-        mobileCssModuleDependencies.length !== 0
-          ? mobileCssModuleDependencies.map((oneMobCssDep) => genHeaderCSSLink(config, oneMobCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+        styleDependenciesList.length !== 0
+          ? styleDependenciesList.map((oneMobCssDep: string) => genHeaderCSSLink(config, oneMobCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
           : '',
       )
-      .replace('__WM_MOBILE_CSS_OVERRIDE__', this.genWmMobileOverrideCSSLink(config.output.wmMobileCssResources[0]))
-      .replace('__WM_MOBILE_JS_OVERRIDE__', this.genWmMobileOverrideScript(config.output.mwMobileJsResources[0]))
+      .replace('__WM_MOBILE_CSS_OVERRIDE__', this.genWikimediaMobileOverrideCSSLink(config.output.wmMobileCssResources[0]))
+      .replace('__WM_MOBILE_JS_OVERRIDE__', this.genWikimediaMobileOverrideScript(config.output.mwMobileJsResources[0]))
 
     const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
     return htmlTemplateDoc

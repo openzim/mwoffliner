@@ -25,6 +25,21 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       const { data, articleId, webp, _moduleDependencies, dump } = renderOpts
       const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
+      const { jsConfigVars, jsDependenciesList, styleDependenciesList } = _moduleDependencies as {
+        jsConfigVars: string
+        jsDependenciesList: string[]
+        styleDependenciesList: string[]
+      }
+
+      const mobileJsModuleDependencies = jsDependenciesList.filter((item) => item.includes('javascript/mobile'))
+      const mobileCssModuleDependencies = styleDependenciesList.filter((item) => item.includes('css/mobile'))
+
+      const wikimediaMobileModuleDependencies = {
+        jsConfigVars,
+        jsDependenciesList: mobileJsModuleDependencies,
+        styleDependenciesList: mobileCssModuleDependencies,
+      }
+
       const displayTitle = this.getStrippedTitle(renderOpts)
       if (data) {
         let mediaDependenciesVal
@@ -41,7 +56,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
               dump,
               articleId,
               articleDetail,
-              _moduleDependencies,
+              wikimediaMobileModuleDependencies,
               webp,
               super.templateMobileArticle.bind(this),
             )
@@ -58,6 +73,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           displayTitle,
           html: finalHTMLMobile.documentElement.outerHTML,
           mediaDependencies: mediaDependenciesVal,
+          moduleDependencies: wikimediaMobileModuleDependencies,
           subtitles: subtitlesVal,
         })
         return result

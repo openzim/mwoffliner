@@ -298,20 +298,20 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
-          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, subtitles } of rets) {
+          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, subtitles } of rets) {
             if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
             }
 
             curStage += 1
-            for (const dep of _moduleDependencies.jsDependenciesList) {
+            for (const dep of moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
-            for (const dep of _moduleDependencies.styleDependenciesList) {
+            for (const dep of moduleDependencies.styleDependenciesList) {
               cssModuleDependencies.add(dep)
             }
-            jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars
+            jsConfigVars = jsConfigVars || moduleDependencies.jsConfigVars
 
             /*
              * getModuleDependencies and downloader.getArticle are

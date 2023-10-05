@@ -61,6 +61,7 @@ export class WikimediaDesktopRenderer extends DesktopRenderer {
         displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
         html: finalHTML,
         mediaDependencies,
+        moduleDependencies: _moduleDependencies,
         subtitles,
       })
     }

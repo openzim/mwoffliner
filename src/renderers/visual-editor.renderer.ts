@@ -69,6 +69,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
           displayTitle,
           html: finalHTML,
           mediaDependencies,
+          moduleDependencies: _moduleDependencies,
           subtitles,
         })
         return result
