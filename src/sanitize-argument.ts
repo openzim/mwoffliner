@@ -11,6 +11,7 @@ import { isValidEmail } from './util/index.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { parameterDescriptions } from './parameterList.js'
+import { RENDERERS_LIST } from './util/const.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -192,11 +193,10 @@ export function sanitize_customFlavour(customFlavour: string): string {
 }
 
 export function sanitize_forceRender(renderName: string): string {
-  const renderNames = ['VisualEditor', 'WikimediaDesktop', 'WikimediaMobile']
   const checkRenderName = (arr: string[], val: string) => {
     return arr.some((arrVal) => val === arrVal)
   }
-  if (checkRenderName(renderNames, renderName)) {
+  if (checkRenderName(RENDERERS_LIST, renderName)) {
     return renderName
   }
   throw new Error(`Invalid render name: ${renderName}`)

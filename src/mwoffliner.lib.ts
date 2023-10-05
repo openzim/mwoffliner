@@ -220,7 +220,7 @@ async function execute(argv: any) {
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
   const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = RedisStore
-
+  await downloader.setBaseUrls(forceRender)
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
   await mkdirPromise(outputDirectory)
