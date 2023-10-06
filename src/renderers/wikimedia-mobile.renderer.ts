@@ -64,6 +64,8 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           subtitles: subtitlesVal,
         })
         return result
+      } else {
+        throw new Error(`No data received for ${displayTitle}`)
       }
     } catch (err) {
       logger.error(err.message)
