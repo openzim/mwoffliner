@@ -25,16 +25,15 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       const { data, articleId, webp, _moduleDependencies, dump } = renderOpts
       const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
-      const moduleDependenciesFiltered = super.filterWikimediaMobileModules(_moduleDependencies)
-
       const displayTitle = this.getStrippedTitle(renderOpts)
       if (data) {
+        const moduleDependenciesFiltered = super.filterWikimediaMobileModules(_moduleDependencies)
         let mediaDependenciesVal
         let subtitlesVal
         const mobileHTML = domino.createDocument(data)
         const finalHTMLMobile = await this.pipeMobileTransformations(
           mobileHTML,
-          this.convertLazyLoadToImages,
+          this.convertLazyLoadToImages.bind(this),
           this.removeEditContainer,
           this.removeHiddenClass,
           async (doc) => {
@@ -102,16 +101,41 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       // Set the attributes for the img element based on the data attributes in the span
       img.src = protocol + span.getAttribute('data-src')
       img.setAttribute('decoding', 'async')
-      img.setAttribute('data-file-width', span.getAttribute('data-data-file-width'))
-      img.setAttribute('data-file-height', span.getAttribute('data-data-file-height'))
       img.setAttribute('data-file-type', 'bitmap')
       img.width = span.getAttribute('data-width')
       img.height = span.getAttribute('data-height')
-      img.setAttribute('srcset', `${protocol}${span.getAttribute('data-srcset')}`)
       img.className = span.getAttribute('data-class')
 
       // Replace the span with the img element
       span.parentNode.replaceChild(img, span)
+    })
+
+    doc = this.resizeMobileImages(doc)
+
+    return doc
+  }
+
+  private resizeMobileImages(doc: DominoElement) {
+    const mobileImageWidth = 420
+    const imageWidthPattern = /(\.jpg\/|\.png\/|\.svg\/|\.gif\/)(\d+)px/
+
+    // Directly filter images hosted on Commons wiki
+    const imgs: NodeList = doc.querySelectorAll('img[src*="/commons/"]')
+
+    imgs.forEach((img: DominoElement) => {
+      const imgWidth = img.getAttribute('width')
+      const imgHeight = img.getAttribute('height')
+      const imgSrc = img.getAttribute('src')
+      const imageWidthMatchSrc = imgSrc.match(imageWidthPattern)
+
+      if (imgWidth && imgWidth > mobileImageWidth && imageWidthMatchSrc) {
+        const heightScaleFactor = Math.round((imgWidth / imgHeight) * 100) / 100
+        const newImgSrc = imgSrc.replace(imageWidthMatchSrc[2], mobileImageWidth.toString())
+
+        img.setAttribute('src', newImgSrc)
+        img.setAttribute('width', mobileImageWidth.toString())
+        img.setAttribute('height', Math.round(mobileImageWidth / heightScaleFactor).toString())
+      }
     })
 
     return doc

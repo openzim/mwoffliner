@@ -53,9 +53,9 @@ export class VisualEditorRenderer extends DesktopRenderer {
     try {
       const result: RenderOutput = []
       const { articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
-      const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
       const { html, displayTitle } = await this.retrieveHtml(renderOpts)
       if (html) {
+        const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
         const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(
           html,
           dump,

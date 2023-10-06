@@ -28,7 +28,7 @@ await testAllRenders(mwUrl, articleList, format, async (outFiles) => {
   describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
-      expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
+      expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
     test(`test article image integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       const mediaFiles = await zimdump(`list --ns I ${outFiles[0].outFile}`)
