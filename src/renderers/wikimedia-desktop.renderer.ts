@@ -35,6 +35,11 @@ export class WikimediaDesktopRenderer extends DesktopRenderer {
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
     const { data, articleId, articleDetailXId, webp, _moduleDependencies, isMainPage, dump } = renderOpts
+
+    if (!data) {
+      throw new Error(`Cannot render [${data}] into an article`)
+    }
+
     const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
     const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)

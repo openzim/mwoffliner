@@ -64,7 +64,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
         })
         return result
       } else {
-        throw new Error(`No data received for ${displayTitle}`)
+        throw new Error(`Cannot render [${data}] into an article`)
       }
     } catch (err) {
       logger.error(err.message)
