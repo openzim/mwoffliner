@@ -12,8 +12,7 @@ export abstract class MobileRenderer extends Renderer {
   }
 
   public filterWikimediaMobileModules(_moduleDependencies) {
-    const { jsConfigVars, jsDependenciesList, styleDependenciesList } = _moduleDependencies as {
-      jsConfigVars: string
+    const { jsDependenciesList, styleDependenciesList } = _moduleDependencies as {
       jsDependenciesList: string[]
       styleDependenciesList: string[]
     }
@@ -22,7 +21,6 @@ export abstract class MobileRenderer extends Renderer {
     const wikimediaMobileCssModuleDependencies = styleDependenciesList.filter((item) => item.includes('css/mobile'))
 
     const wikimediaMobileModuleDependencies = {
-      jsConfigVars,
       jsDependenciesList: wikimediaMobileJsModuleDependencies,
       styleDependenciesList: wikimediaMobileCssModuleDependencies,
     }

@@ -311,7 +311,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             for (const dep of moduleDependencies.styleDependenciesList) {
               cssModuleDependencies.add(dep)
             }
-            jsConfigVars = jsConfigVars || moduleDependencies.jsConfigVars
+
+            jsConfigVars = moduleDependencies.jsConfigVars || ''
 
             /*
              * getModuleDependencies and downloader.getArticle are
@@ -386,8 +387,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
-  const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
-  zimCreator.addArticle(jsConfigVarArticle)
+  if (jsConfigVars) {
+    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
+    zimCreator.addArticle(jsConfigVarArticle)
+  }
 
   return {
     jsModuleDependencies,
