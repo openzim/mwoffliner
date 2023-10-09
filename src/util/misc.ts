@@ -185,10 +185,12 @@ export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
   return Promise.all([...cssPromises, ...jsPromises])
 }
 
-export function saveStaticWmMobileFiles(config: Config, zimCreator: ZimCreator) {
-  const wmMobileCssPromises = config.output.wmMobileCssResources.map((wmMobileCss) => saveResourceFile(wmMobileCss, 'css', 'wm_mobile/', config, zimCreator)())
-  const wmMobileJsPromises = config.output.mwMobileJsResources.map((wmMobileJs) => saveResourceFile(wmMobileJs, 'js', 'wm_mobile/', config, zimCreator)())
-  return Promise.all([...wmMobileCssPromises, ...wmMobileJsPromises])
+export function saveStaticWikimediaMobileFiles(config: Config, zimCreator: ZimCreator) {
+  const wikimediaMobileCssPromises = config.output.wikimediaMobileCssResources.map((wikimediaMobileCss) =>
+    saveResourceFile(wikimediaMobileCss, 'css', 'wm_mobile/', config, zimCreator)(),
+  )
+  const wikimediaMobileJsPromises = config.output.mwMobileJsResources.map((wikimediaMobileJs) => saveResourceFile(wikimediaMobileJs, 'js', 'wm_mobile/', config, zimCreator)())
+  return Promise.all([...wikimediaMobileCssPromises, ...wikimediaMobileJsPromises])
 }
 
 export function cssPath(css: string, subDirectory = '') {

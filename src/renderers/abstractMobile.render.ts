@@ -43,7 +43,7 @@ export abstract class MobileRenderer extends Renderer {
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', '')
       .replace('__JS_SCRIPTS__', this.genWikimediaMobileOverrideScript(config.output.mwMobileJsResources[0]))
-      .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(config.output.wmMobileCssResources[0]))
+      .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(config.output.wikimediaMobileCssResources[0]))
       .replace(
         '__ARTICLE_JS_LIST__',
         jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',

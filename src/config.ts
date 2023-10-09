@@ -56,7 +56,7 @@ const config = {
     // CSS resources added by Kiwix
     cssResources: ['style', 'content.parsoid', 'inserted_style'],
     mainPageCssResources: ['mobile_main_page'],
-    wmMobileCssResources: ['wm_mobile_override_style'],
+    wikimediaMobileCssResources: ['wm_mobile_override_style'],
 
     jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
     mwMobileJsResources: ['wm_mobile_override_script'],
