@@ -116,8 +116,8 @@ export class WikimediaMobileRenderer extends MobileRenderer {
   }
 
   private resizeMobileImages(doc: DominoElement) {
-    const mobileImageWidth = 420
-    const imageWidthPattern = /(\.jpg\/|\.png\/|\.svg\/|\.gif\/)(\d+)px/
+    const mobileImageWidth = 375
+    const imageWidthPattern = /(\.jpg\/|\.png\/|\.svg\/|\.gif\/)(\d+)px/i
 
     // Directly filter images hosted on Commons wiki
     const imgs: NodeList = doc.querySelectorAll('img[src*="/commons/"]')
