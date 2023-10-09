@@ -101,6 +101,9 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       // Set the attributes for the img element based on the data attributes in the span
       img.src = protocol + span.getAttribute('data-src')
       img.setAttribute('decoding', 'async')
+      img.width = span.getAttribute('data-width')
+      img.height = span.getAttribute('data-height')
+      img.className = span.getAttribute('data-class')
 
       // Replace the span with the img element
       span.parentNode.replaceChild(img, span)
