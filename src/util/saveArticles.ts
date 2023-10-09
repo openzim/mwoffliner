@@ -1,7 +1,9 @@
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
+import { Creator as ZimCreator, StringItem } from '@openzim/libzim'
+import htmlMinifier from 'html-minifier'
+import * as QueryStringParser from 'querystring'
 import RedisStore from '../RedisStore.js'
-import { ZimArticle, ZimCreator } from '@openzim/libzim'
 
 import pmap from 'p-map'
 import * as domino from 'domino'
@@ -38,13 +40,12 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       let isFailed = false
       try {
         if (resp.result && resp.result.content) {
-          const article = new ZimArticle({
-            url: resp.path,
-            data: resp.result.content,
-            ns: resp.namespace || 'I',
-            mimeType: resp.result.responseHeaders['content-type'],
-          })
-          zimCreator.addArticle(article)
+          const url = resp.path
+          const mimeType = resp.result.responseHeaders['content-type']
+          const data = resp.result.content
+          const item = new StringItem(url, mimeType, '', {}, data)
+          await zimCreator.addItem(item)
+
           dump.status.files.success += 1
         } else {
           isFailed = true
@@ -225,16 +226,14 @@ async function saveArticle(
 
     await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
-    const zimArticle = new ZimArticle({
-      url: articleId,
-      data: finalHTML,
-      ns: articleDetail.ns === 14 ? 'U' : 'A',
-      mimeType: 'text/html',
-      title: articleTitle,
-      shouldIndex: true,
-    })
-
-    zimCreator.addArticle(zimArticle)
+    const item = new StringItem(
+      articleId, // path / url
+      'text/html', // mimetype
+      articleTitle, // title
+      { FRONT_ARTICLE: 1 }, // Hints
+      finalHTML, // Content
+    )
+    await zimCreator.addItem(item)
 
     return null
   } catch (err) {
@@ -423,8 +422,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
-  const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
-  zimCreator.addArticle(jsConfigVarArticle)
+  const jsConfigVarItem = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', '', {}, jsConfigVars)
+  await zimCreator.addItem(jsConfigVarItem)
 
   return {
     jsModuleDependencies,
