@@ -11,6 +11,7 @@ import { isValidEmail } from './util/index.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { parameterDescriptions } from './parameterList.js'
+import { RENDERERS_LIST } from './util/const.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -18,7 +19,19 @@ const parametersWithArrayType = ['format']
 
 export async function sanitize_all(argv: any) {
   // extracting all arguments
-  const { articleList, addNamespaces, speed: _speed, adminEmail, mwUrl, customZimFavicon, optimisationCacheUrl, verbose, customZimLongDescription, customZimDescription } = argv
+  const {
+    articleList,
+    addNamespaces,
+    speed: _speed,
+    adminEmail,
+    mwUrl,
+    customZimFavicon,
+    optimisationCacheUrl,
+    verbose,
+    customZimLongDescription,
+    customZimDescription,
+    forceRender,
+  } = argv
 
   sanitizeDoubleUsedParameters(argv)
 
@@ -72,6 +85,11 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail)
+
+  // sanitizing renderer
+  if (forceRender) {
+    sanitize_forceRender(forceRender)
+  }
 
   // Redis client sanitization
   // created a redis client and then closed it.
@@ -131,10 +149,10 @@ export function sanitize_adminEmail(adminEmail: any) {
 }
 
 export async function sanitize_redis(argv: any) {
-  const sanitize_redis = new RedisStore(argv.redis || config.defaults.redisPath)
-  await sanitize_redis.connect(false)
+  RedisStore.setOptions(argv.redis || config.defaults.redisPath)
+  await RedisStore.connect(false)
   logger.log('closing sanitize redis DB')
-  await sanitize_redis.close()
+  await RedisStore.close()
 }
 
 export async function sanitize_customZimFavicon(customZimFavicon: any) {
@@ -172,4 +190,14 @@ export function sanitize_customFlavour(customFlavour: string): string {
       return fs.existsSync(possiblePath)
     }) || null
   )
+}
+
+export function sanitize_forceRender(renderName: string): string {
+  const checkRenderName = (arr: string[], val: string) => {
+    return arr.some((arrVal) => val === arrVal)
+  }
+  if (checkRenderName(RENDERERS_LIST, renderName)) {
+    return renderName
+  }
+  throw new Error(`Invalid render name: ${renderName}`)
 }

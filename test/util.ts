@@ -31,19 +31,19 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
 }
 
 export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '' } = {}) {
-  const mw = new MediaWiki({
-    base: mwUrl,
-  } as any)
+  MediaWiki.base = mwUrl
 
-  const downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+  const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
-  await mw.getMwMetaData(downloader)
-  await downloader.checkCapabilities()
+  await MediaWiki.getMwMetaData(downloader)
+  await MediaWiki.hasCoordinates(downloader)
+  await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasVisualEditorApi()
 
-  const dump = new Dump(format, {} as any, mw.metaData)
+  const dump = new Dump(format, {} as any, MediaWiki.metaData)
 
   return {
-    mw,
+    MediaWiki,
     downloader,
     dump,
   }

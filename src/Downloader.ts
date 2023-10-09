@@ -1,8 +1,9 @@
-import * as path from 'path'
-import * as urlParser from 'url'
-import deepmerge from 'deepmerge'
 import * as backoff from 'backoff'
 import { config } from './config.js'
+import { contains } from './util/index.js'
+import { Readable } from 'stream'
+import deepmerge from 'deepmerge'
+import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
@@ -15,22 +16,13 @@ import sharp from 'sharp'
 import http from 'http'
 import https from 'https'
 
-import {
-  normalizeMwResponse,
-  objToQueryString,
-  DB_ERROR,
-  WEAK_ETAG_REGEX,
-  renderArticle,
-  stripHttpFromUrl,
-  isBitmapImageMimeType,
-  isImageUrl,
-  getMimeType,
-  isWebpCandidateImageMimeType,
-} from './util/index.js'
+import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isImageUrl, getMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import S3 from './S3.js'
-import { Dump } from './Dump.js'
 import * as logger from './Logger.js'
-import MediaWiki from './MediaWiki.js'
+import MediaWiki, { QueryOpts } from './MediaWiki.js'
+import ApiURLDirector from './util/builders/url/api.director.js'
+import basicURLDirector from './util/builders/url/basic.director.js'
+import urlHelper from './util/url.helper.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -53,7 +45,6 @@ imageminOptions.get('webp').set('image/jpeg', {
 })
 
 interface DownloaderOpts {
-  mw: MediaWiki
   uaString: string
   speed: number
   reqTimeout: number
@@ -70,14 +61,6 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void
 }
 
-export interface MWCapabilities {
-  apiAvailable: boolean
-  veApiAvailable: boolean
-  coordinatesAvailable: boolean
-  desktopRestApiAvailable: boolean
-  mobileRestApiAvailable: boolean
-}
-
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
   headers: {
     accept: 'application/octet-stream',
@@ -90,8 +73,10 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
   method: 'GET',
 }
 
+/**
+ * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
+ */
 class Downloader {
-  public readonly mw: MediaWiki
   public loginCookie = ''
   public readonly speed: number
   public baseUrl: string
@@ -99,21 +84,19 @@ class Downloader {
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
-
-  private readonly uaString: string
-  private activeRequests = 0
-  private maxActiveRequests = 1
-  private readonly urlPartCache: KVS<string> = {}
-  private readonly backoffOptions: BackoffOptions
-  private readonly optimisationCacheUrl: string
-  private s3: S3
-  private mwCapabilities: MWCapabilities // todo move to MW
   public arrayBufferRequestOptions: AxiosRequestConfig
   public jsonRequestOptions: AxiosRequestConfig
   public streamRequestOptions: AxiosRequestConfig
 
-  constructor({ mw, uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
-    this.mw = mw
+  private readonly uaString: string
+  private activeRequests = 0
+  private maxActiveRequests = 1
+  private readonly backoffOptions: BackoffOptions
+  private readonly optimisationCacheUrl: string
+  private s3: S3
+  private apiUrlDirector: ApiURLDirector
+
+  constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.uaString = uaString
     this.speed = speed
     this.maxActiveRequests = speed * 10
@@ -122,13 +105,7 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl
     this.webp = webp
     this.s3 = s3
-    this.mwCapabilities = {
-      apiAvailable: false,
-      veApiAvailable: false,
-      coordinatesAvailable: true,
-      desktopRestApiAvailable: false,
-      mobileRestApiAvailable: false,
-    }
+    this.apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -190,84 +167,51 @@ class Downloader {
     }
   }
 
-  public serializeUrl(url: string): string {
-    const { path } = urlParser.parse(url)
-    const cacheablePart = url.replace(path, '')
-    const cacheEntry = Object.entries(this.urlPartCache).find(([, value]) => value === cacheablePart)
-    let cacheKey
-    if (!cacheEntry) {
-      const cacheId = String(Object.keys(this.urlPartCache).length + 1)
-      this.urlPartCache[cacheId] = cacheablePart
-      cacheKey = `_${cacheId}_`
+  public async setBaseUrls(forceRender = null) {
+    if (!forceRender) {
+      //* Objects order in array matters!
+      this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
+        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+      ])
+
+      //* Objects order in array matters!
+      this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
+        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+      ])
     } else {
-      cacheKey = `_${cacheEntry[0]}_`
+      switch (forceRender) {
+        case 'WikimediaDesktop':
+          if (MediaWiki.hasWikimediaDesktopRestApi()) {
+            this.baseUrl = MediaWiki.desktopRestApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.desktopRestApiUrl.href
+            break
+          }
+          break
+        case 'VisualEditor':
+          if (MediaWiki.hasVisualEditorApi()) {
+            this.baseUrl = MediaWiki.visualEditorApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.visualEditorApiUrl.href
+            break
+          }
+          break
+        default:
+          throw new Error('Unable to find specific API end-point to retrieve article HTML')
+      }
     }
-    return `${cacheKey}${path}`
-  }
-
-  public deserializeUrl(url: string): string {
-    if (!url.startsWith('_')) return url
-    const [, cacheId, ...pathParts] = url.split('_')
-    const path = pathParts.join('_')
-    const cachedPart = this.urlPartCache[cacheId]
-    return `${cachedPart}${path}`
-  }
-
-  public async setBaseUrls() {
-    this.baseUrl = this.mwCapabilities.mobileRestApiAvailable
-      ? this.mw.mobileRestApiUrl.href
-      : this.mwCapabilities.desktopRestApiAvailable
-      ? this.mw.desktopRestApiUrl.href
-      : this.mwCapabilities.veApiAvailable
-      ? this.mw.veApiUrl.href
-      : undefined
-
-    this.baseUrlForMainPage = this.mwCapabilities.desktopRestApiAvailable ? this.mw.desktopRestApiUrl.href : this.mwCapabilities.veApiAvailable ? this.mw.veApiUrl.href : undefined
-
     logger.log('Base Url: ', this.baseUrl)
     logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
 
     if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
   }
 
-  public async checkApiAvailabilty(url: string): Promise<boolean> {
-    try {
-      const resp = await axios.get(url, { headers: { cookie: this.loginCookie } })
-      // Check for hostname is for domain name in cases of redirects.
-      return resp.status === 200 && !resp.headers['mediawiki-api-error'] && path.dirname(url) === path.dirname(resp.request.res.responseUrl)
-    } catch (err) {
-      return false
-    }
-  }
-
-  public async checkCapabilities(testArticleId = 'MediaWiki:Sidebar'): Promise<void> {
-    // By default check all API's responses and set the capabilities
-    // accordingly. We need to set a default page (always there because
-    // installed per default) to request the REST API, otherwise it would
-    // fail the check.
-    this.mwCapabilities.mobileRestApiAvailable = await this.checkApiAvailabilty(this.mw.getMobileRestApiArticleUrl(testArticleId))
-    this.mwCapabilities.desktopRestApiAvailable = await this.checkApiAvailabilty(this.mw.getDesktopRestApiArticleUrl(testArticleId))
-    this.mwCapabilities.veApiAvailable = await this.checkApiAvailabilty(this.mw.getVeApiArticleUrl(testArticleId))
-    this.mwCapabilities.apiAvailable = await this.checkApiAvailabilty(this.mw.apiUrl.href)
-
-    // Coordinate fetching
-    const reqOpts = objToQueryString({
-      ...this.getArticleQueryOpts(),
-    })
-    const resp = await this.getJSON<MwApiResponse>(`${this.mw.apiUrl.href}${reqOpts}`)
-    const isCoordinateWarning = resp.warnings && resp.warnings.query && (resp.warnings.query['*'] || '').includes('coordinates')
-    if (isCoordinateWarning) {
-      logger.info('Coordinates not available on this wiki')
-      this.mwCapabilities.coordinatesAvailable = false
-    }
-  }
-
   public removeEtagWeakPrefix(etag: string): string {
     return etag && etag.replace(WEAK_ETAG_REGEX, '')
   }
 
-  public query(query: string): KVS<any> {
-    return this.getJSON(this.mw.getApiQueryUrl(query))
+  public query(): KVS<any> {
+    return this.getJSON(this.apiUrlDirector.buildSiteInfoQueryURL())
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
@@ -276,10 +220,10 @@ class Downloader {
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...this.getArticleQueryOpts(shouldGetThumbnail, true),
+        ...(await this.getArticleQueryOpts(shouldGetThumbnail, true)),
         titles: articleIds.join('|'),
-        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
-        ...(this.mw.getCategories
+        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
+        ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
               clshow: '!hidden',
@@ -287,9 +231,11 @@ class Downloader {
           : {}),
         ...(continuation || {}),
       }
-      const queryString = objToQueryString(queryOpts)
-      const reqUrl = this.mw.getApiQueryUrl(queryString)
+
+      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
+
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
+
       Downloader.handleMWWarningsAndErrors(resp)
 
       let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {}
@@ -297,7 +243,7 @@ class Downloader {
         continuation = resp.continue
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (this.mw.getCategories) {
+        if (MediaWiki.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
         }
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
@@ -312,11 +258,12 @@ class Downloader {
     let queryContinuation: QueryContinueOpts
     let finalProcessedResp: QueryMwRet
     let gCont: string = null
+
     while (true) {
       const queryOpts: KVS<any> = {
-        ...this.getArticleQueryOpts(),
-        ...(this.mwCapabilities.coordinatesAvailable ? { colimit: 'max' } : {}),
-        ...(this.mw.getCategories
+        ...(await this.getArticleQueryOpts()),
+        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
+        ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
               clshow: '!hidden',
@@ -337,8 +284,7 @@ class Downloader {
         queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
       }
 
-      const queryString = objToQueryString(queryOpts)
-      const reqUrl = this.mw.getApiQueryUrl(queryString)
+      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
@@ -354,7 +300,7 @@ class Downloader {
 
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (this.mw.getCategories) {
+        if (MediaWiki.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
         }
 
@@ -369,21 +315,38 @@ class Downloader {
     }
   }
 
-  public async getArticle(articleId: string, dump: Dump, articleDetailXId: RKVS<ArticleDetail>, articleDetail?: ArticleDetail): Promise<RenderedArticle[]> {
-    const isMainPage = dump.isMainPage(articleId)
-    const articleApiUrl = this.getArticleUrl(articleId, isMainPage)
+  public async getArticle(
+    webp: boolean,
+    _moduleDependencies: any,
+    articleId: string,
+    articleDetailXId: RKVS<ArticleDetail>,
+    articleRenderer,
+    articleUrl,
+    dump,
+    articleDetail?: ArticleDetail,
+    isMainPage?: boolean,
+  ): Promise<any> {
+    logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
-    logger.info(`Getting article [${articleId}] from ${articleApiUrl}`)
-
-    const json = await this.getJSON<any>(articleApiUrl)
-    if (json.error) {
-      throw json.error
+    const data = await this.getJSON<any>(articleUrl)
+    if (data.error) {
+      throw data.error
     }
-    return renderArticle(json, articleId, dump, articleDetailXId, this.mwCapabilities, articleDetail)
+
+    return articleRenderer.render({
+      data,
+      webp,
+      _moduleDependencies,
+      articleId,
+      articleDetailXId,
+      articleDetail,
+      isMainPage,
+      dump,
+    })
   }
 
   public async getJSON<T>(_url: string): Promise<T> {
-    const url = this.deserializeUrl(_url)
+    const url = urlHelper.deserializeUrl(_url)
     await this.claimRequest()
     return new Promise<T>((resolve, reject) => {
       this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
@@ -403,7 +366,7 @@ class Downloader {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
-    const url = this.deserializeUrl(_url)
+    const url = urlHelper.deserializeUrl(_url)
 
     await this.claimRequest()
 
@@ -440,26 +403,20 @@ class Downloader {
     }
   }
 
-  private getArticleUrl(articleId: string, isMainPage: boolean): string {
-    return `${isMainPage ? this.baseUrlForMainPage : this.baseUrl}${encodeURIComponent(articleId)}`
-  }
-
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
     if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
     if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`)
     if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
   }
 
-  private getArticleQueryOpts(includePageimages = false, redirects = false) {
-    const validNamespaceIds = this.mw.namespacesToMirror.map((ns) => this.mw.namespaces[ns].num)
+  private async getArticleQueryOpts(includePageimages = false, redirects = false): Promise<QueryOpts> {
+    const validNamespaceIds = MediaWiki.namespacesToMirror.map((ns) => MediaWiki.namespaces[ns].num)
+    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates(this)) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
     return {
-      action: 'query',
-      format: 'json',
-      prop: `redirects|revisions${includePageimages ? '|pageimages' : ''}${this.mwCapabilities.coordinatesAvailable ? '|coordinates' : ''}${
-        this.mw.getCategories ? '|categories' : ''
-      }`,
-      rdlimit: 'max',
+      ...MediaWiki.queryOpts,
+      prop: MediaWiki.queryOpts.prop.concat(prop),
       rdnamespace: validNamespaceIds.join('|'),
+      formatversion: '2',
       redirects: redirects ? true : undefined,
     }
   }
@@ -523,7 +480,7 @@ class Downloader {
           .buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
           .catch(async (err) => {
             if (/Unsupported color conversion request/.test(err.stderr)) {
-              return await (imagemin as any)
+              return (imagemin as any)
                 .buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
                 .catch(() => {
                   return resp.data
@@ -533,7 +490,7 @@ class Downloader {
                   return data
                 })
             } else {
-              return await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
+              return (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
                 return resp.data
               })
             }
@@ -613,7 +570,7 @@ class Downloader {
             }
             handler(null, {
               responseHeaders: headers,
-              content: s3Resp.Body,
+              content: (await this.streamToBuffer(s3Resp.Body as Readable)) as any,
             })
             return
           }
@@ -652,8 +609,11 @@ class Downloader {
   }
 
   private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const { query, continue: cont } = await this.getJSON<any>(this.mw.subCategoriesApiUrl(articleId, continueStr))
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+
+    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
     const items = query.categorymembers.filter((a: any) => a && a.title)
+
     if (cont && cont.cmcontinue) {
       const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)
       return items.concat(nextItems)
@@ -669,6 +629,73 @@ class Downloader {
     call.failAfter(this.backoffOptions.failAfter)
     call.on('backoff', this.backoffOptions.backoffHandler)
     call.start()
+  }
+
+  public async getModuleDependencies(title: string) {
+    const genericJsModules = config.output.mw.js
+    const genericCssModules = config.output.mw.css
+    /* These vars will store the list of js and css dependencies for
+      the article we are downloading. */
+    let jsConfigVars = ''
+    let jsDependenciesList: string[] = []
+    let styleDependenciesList: string[] = []
+
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+
+    const articleApiUrl = apiUrlDirector.buildArticleApiURL(title)
+
+    const articleData = await this.getJSON<any>(articleApiUrl)
+
+    if (articleData.error) {
+      const errorMessage = `Unable to retrieve js/css dependencies for article '${this}': ${articleData.error.code}`
+      logger.error(errorMessage)
+
+      /* If article is missing (for example because it just has been deleted) */
+      if (articleData.error.code === 'missingtitle') {
+        return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+      }
+
+      /* Something went wrong in modules retrieval at app level (no HTTP error) */
+      throw new Error(errorMessage)
+    }
+
+    const {
+      parse: { modules, modulescripts, modulestyles, headhtml },
+    } = articleData
+    jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
+    styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
+    styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
+
+    logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
+    logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
+
+    // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
+    // the script below extracts the config with a regex executed on the page header returned from the api
+    const scriptTags = domino.createDocument(`${headhtml}</body></html>`).getElementsByTagName('script')
+    const regex = /mw\.config\.set\(\{.*?\}\);/gm
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < scriptTags.length; i += 1) {
+      if (scriptTags[i].text.includes('mw.config.set')) {
+        jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
+        jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
+      } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
+        jsConfigVars = scriptTags[i].text
+      }
+    }
+
+    jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
+
+    return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+  }
+
+  // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
+  private async streamToBuffer(stream: Readable): Promise<Buffer> {
+    return await new Promise((resolve, reject) => {
+      const chunks: Uint8Array[] = []
+      stream.on('data', (chunk) => chunks.push(chunk))
+      stream.on('error', reject)
+      stream.on('end', () => resolve(Buffer.concat(chunks)))
+    })
   }
 }
 

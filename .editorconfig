@@ -4,9 +4,13 @@ root = true
 # Unix-style newlines with a newline ending every file
 [*]
 charset = utf-8
-trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
 end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
 insert_final_newline = true
+
 
 # Tab indentation (no size specified)
 [Makefile]
@@ -14,7 +18,4 @@ indent_style = tab
 
 [*.{c,h,cpp,cpp,hpp}]
 indent_size = 4
-
-[*.{js,ts}]
-indent_size = 2
 

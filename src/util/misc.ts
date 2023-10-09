@@ -283,13 +283,24 @@ export function getMediaBase(url: string, escape: boolean) {
   return escape ? encodeURIComponent(filename) : filename
 }
 
+/**
+ * This function extracts the title from an HTML string and returns it stripped of any HTML tags.
+ *
+ * @param {string} html - The `html` parameter is a string that represents an HTML document. The
+ * function extracts the title of the document from this HTML string.
+ *
+ * @returns a string that represents the title of an HTML document with all HTML tags removed. If the
+ * title cannot be found in the input HTML string, an empty string is returned.
+ */
 export function getStrippedTitleFromHtml(html: string) {
   let [, , title = ''] = html.match(/<title( [^>]*)?>(.*)<[/]title>/i) || []
+
   if (!title) {
     const doc = domino.createDocument(html)
     const titleEl = doc.querySelector('title')
     title = titleEl ? titleEl.textContent : ''
   }
+
   return title.replace(/<[^>]*>?/gm, '')
 }
 

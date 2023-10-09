@@ -16,7 +16,8 @@ import urlParser from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import * as QueryStringParser from 'querystring'
-import { Creator as ZimCreator, StringItem, Compression } from '@openzim/libzim'
+import { ZimArticle, ZimCreator } from '@openzim/libzim'
+import { checkApiAvailability } from './util/mw-api.js'
 
 import {
   MAX_CPU_CORES,
@@ -48,11 +49,13 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
-import { getArticleIds } from './util/redirects.js'
+import { getArticleIds } from './util/mw-api.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import { fileURLToPath } from 'url'
+import ApiURLDirector from './util/builders/url/api.director.js'
+import urlHelper from './util/url.helper.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -96,6 +99,7 @@ async function execute(argv: any) {
     customZimFavicon,
     optimisationCacheUrl,
     customFlavour,
+    forceRender,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -104,16 +108,19 @@ async function execute(argv: any) {
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`)
 
+  // TODO: Move it to sanitaze method
   if (articleList) articleList = String(articleList)
   if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
   const publisher = _publisher || config.defaults.publisher
 
+  // TODO: Move it to sanitaze method
   /* HTTP user-agent string */
   // const adminEmail = argv.adminEmail;
   if (!isValidEmail(adminEmail)) {
     throw new Error(`Admin email [${adminEmail}] is not valid`)
   }
 
+  // TODO: Move it to sanitaze method
   /* Number of parallel requests. To secure stability and avoid HTTP
   429 errors, no more than MAX_CPU_CORES can be considered */
   if (_speed && isNaN(_speed)) {
@@ -149,21 +156,18 @@ async function execute(argv: any) {
   const s3 = s3Obj ? s3Obj : {}
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
-  const mw = new MediaWiki({
-    getCategories: !!argv.getCategories,
-    apiPath: mwApiPath,
-    restApiPath: mwRestApiPath,
-    modulePath: mwModulePath,
-    base: mwUrl,
-    domain: mwDomain,
-    password: mwPassword,
-    username: mwUsername,
-    wikiPath: mwWikiPath,
-  })
+  MediaWiki.base = mwUrl
+  MediaWiki.getCategories = !!argv.getCategories
+  MediaWiki.apiPath = mwApiPath
+  MediaWiki.restApiPath = mwRestApiPath
+  MediaWiki.modulePathOpt = mwModulePath
+  MediaWiki.domain = mwDomain
+  MediaWiki.password = mwPassword
+  MediaWiki.username = mwUsername
+  MediaWiki.wikiPath = mwWikiPath
 
   /* Download helpers; TODO: Merge with something else / expand this. */
   const downloader = new Downloader({
-    mw,
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
@@ -173,16 +177,17 @@ async function execute(argv: any) {
   })
 
   /* perform login */
-  await mw.login(downloader)
+  await MediaWiki.login(downloader)
 
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await mw.getMwMetaData(downloader)
+    mwMetaData = await MediaWiki.getMwMetaData(downloader)
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
   }
+
   const metaDataRequiredKeys = {
     Creator: mwMetaData.creator,
     Description: customZimDescription || mwMetaData.subTitle,
@@ -195,21 +200,25 @@ async function execute(argv: any) {
 
   // Sanitizing main page
   let mainPage = articleList ? '' : mwMetaData.mainPage
+
   if (customMainPage) {
     mainPage = customMainPage
-    const mainPageUrl = mw.webUrl + encodeURIComponent(mainPage)
-    if (!(await downloader.checkApiAvailabilty(mainPageUrl))) {
+    const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
+    if (!(await checkApiAvailability(mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
 
-  await downloader.checkCapabilities(mwMetaData.mainPage)
-  await downloader.setBaseUrls()
+  MediaWiki.apiCheckArticleId = mwMetaData.mainPage
+  await MediaWiki.hasCoordinates(downloader)
+  await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasVisualEditorApi()
+  await downloader.setBaseUrls(forceRender)
 
-  const redisStore = new RedisStore(argv.redis || config.defaults.redisPath)
-  await redisStore.connect()
-  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = redisStore
-
+  RedisStore.setOptions(argv.redis || config.defaults.redisPath)
+  await RedisStore.connect()
+  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = RedisStore
+  await downloader.setBaseUrls(forceRender)
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
   await mkdirPromise(outputDirectory)
@@ -227,12 +236,12 @@ async function execute(argv: any) {
 
   process.on('SIGTERM', async () => {
     logger.log('SIGTERM')
-    await redisStore.close()
+    await RedisStore.close()
     process.exit(128 + 15)
   })
   process.on('SIGINT', async () => {
     logger.log('SIGINT')
-    await redisStore.close()
+    await RedisStore.close()
     process.exit(128 + 2)
   })
 
@@ -277,17 +286,17 @@ async function execute(argv: any) {
     }
   }
 
-  await mw.getNamespaces(addNamespaces, downloader)
+  await MediaWiki.getNamespaces(addNamespaces, downloader)
 
   logger.info('Getting article ids')
   let stime = Date.now()
-  await getArticleIds(downloader, redisStore, mw, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  await getArticleIds(downloader, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
-  if (mw.getCategories) {
-    await getCategoriesForArticles(articleDetailXId, downloader, redisStore)
+  if (MediaWiki.getCategories) {
+    await getCategoriesForArticles(articleDetailXId, downloader)
 
-    while ((await trimUnmirroredPages(downloader, redisStore)) > 0) {
+    while ((await trimUnmirroredPages(downloader)) > 0) {
       // Remove unmirrored pages, categories, subCategories
       // trimUnmirroredPages returns number of modified articles
     }
@@ -346,6 +355,7 @@ async function execute(argv: any) {
     } else {
       try {
         await doDump(dump)
+        await filesToDownloadXPath.flush()
       } catch (err) {
         debugger
         throw err
@@ -394,7 +404,7 @@ async function execute(argv: any) {
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
 
     logger.log('Downloading stylesheets and populating media queue')
-    const { finalCss } = await getAndProcessStylesheets(downloader, redisStore, stylesheetsToGet)
+    const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
     const item = new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', '', {}, finalCss)
@@ -408,7 +418,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, redisStore, mw, dump)
+    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
@@ -430,7 +440,7 @@ async function execute(argv: any) {
         return pmap(
           moduleList,
           (oneModule) => {
-            return downloadAndSaveModule(zimCreator, mw, downloader, dump, oneModule, type as any)
+            return downloadAndSaveModule(zimCreator, downloader, dump, oneModule, type as any)
           },
           { concurrency: downloader.speed },
         )
@@ -490,7 +500,11 @@ async function execute(argv: any) {
         throw new Error('Failed to read or process IllustrationMetadata using sharp')
       }
     }
-    const body = await downloader.getJSON<any>(mw.siteInfoUrl())
+
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+
+    const body = await downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
+
     const entries = body.query.general
     if (!entries.logo) {
       throw new Error(
@@ -499,7 +513,7 @@ async function execute(argv: any) {
     }
 
     const parsedUrl = urlParser.parse(entries.logo)
-    const logoUrl = parsedUrl.protocol ? entries.logo : mw.baseUrl.protocol + entries.logo
+    const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
     const { content } = await downloader.downloadContent(logoUrl)
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
@@ -572,32 +586,41 @@ async function execute(argv: any) {
     return mainPage ? createMainPageRedirect() : createMainPage()
   }
 
+  async function fetchArticleDetail(articleId: string) {
+    return await articleDetailXId.get(articleId)
+  }
+
+  async function updateArticleThumbnail(articleDetail: any, articleId: string) {
+    const imageUrl = articleDetail.thumbnail
+    if (!imageUrl) return
+
+    const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
+    const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
+    const { mult, width } = getSizeFromUrl(suitableResUrl)
+    const path = getMediaBase(suitableResUrl, false)
+
+    articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
+
+    await Promise.all([filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width } as FileDetail), articleDetailXId.set(articleId, articleDetail)])
+  }
+
   async function getThumbnailsData(): Promise<void> {
     if (customMainPage || !articleList || articleListLines.length <= MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) return
+
     logger.log('Updating article thumbnails for articles')
+
     let articleIndex = 0
     let articlesWithImages = 0
 
     while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
       const articleId = articleListLines[articleIndex]
       articleIndex++
+
       try {
-        const articleDetail = await articleDetailXId.get(articleId)
+        const articleDetail = await fetchArticleDetail(articleId)
         if (!articleDetail) continue
 
-        const imageUrl = articleDetail.thumbnail
-        if (!imageUrl) continue
-
-        const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
-        const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
-        const { mult, width } = getSizeFromUrl(suitableResUrl)
-        const path = getMediaBase(suitableResUrl, false)
-        articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
-
-        await Promise.all([
-          filesToDownloadXPath.set(path, { url: downloader.serializeUrl(suitableResUrl), mult, width } as FileDetail),
-          articleDetailXId.set(articleId, articleDetail),
-        ])
+        await updateArticleThumbnail(articleDetail, articleId)
         articlesWithImages++
       } catch (err) {
         logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`)
@@ -605,7 +628,8 @@ async function execute(argv: any) {
     }
   }
 
-  redisStore.close()
+  MediaWiki.reset()
+  RedisStore.close()
 
   return dumps
 }

@@ -1,78 +1,199 @@
-import urlParser from 'url'
 import * as pathParser from 'path'
 import * as logger from './Logger.js'
 import * as util from './util/index.js'
 import * as domino from 'domino'
 import type Downloader from './Downloader.js'
-import { ensureTrailingChar, DEFAULT_WIKI_PATH } from './util/index.js'
 import axios from 'axios'
 import qs from 'querystring'
 import semver from 'semver'
+import basicURLDirector from './util/builders/url/basic.director.js'
+import BaseURLDirector from './util/builders/url/base.director.js'
+import ApiURLDirector from './util/builders/url/api.director.js'
+import DesktopURLDirector from './util/builders/url/desktop.director.js'
+import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import { checkApiAvailability } from './util/mw-api.js'
+import { BLACKLISTED_NS } from './util/const.js'
+
+export interface QueryOpts {
+  action: string
+  format: string
+  prop: string
+  rdlimit: string
+  rdnamespace: string | number
+  redirects?: boolean
+  formatversion: string
+}
 
 class MediaWiki {
+  private static instance: MediaWiki
+
+  public static getInstance(): MediaWiki {
+    if (!MediaWiki.instance) {
+      MediaWiki.instance = new MediaWiki()
+    }
+    return MediaWiki.instance
+  }
+
   public metaData: MWMetaData
-  public readonly baseUrl: URL
-  public readonly modulePath: string
-  public readonly webUrl: URL
-  public readonly apiUrl: URL
-  public readonly veApiUrl: URL
-  public readonly restApiUrl: URL
-  public readonly mobileRestApiUrl: URL
-  public readonly desktopRestApiUrl: URL
-  public readonly getCategories: boolean
-  public readonly namespaces: MWNamespaces = {}
-  public readonly namespacesToMirror: string[] = []
+  public baseUrl: URL
+  public getCategories: boolean
+  public namespaces: MWNamespaces = {}
+  public namespacesToMirror: string[] = []
+  public apiCheckArticleId: string
+  public queryOpts: QueryOpts
 
-  private readonly wikiPath: string
-  private readonly username: string
-  private readonly password: string
-  private readonly apiPath: string
-  private readonly domain: string
-  private readonly articleApiUrlBase: string
+  #wikiPath: string
+  #restApiPath: string
+  #username: string
+  #password: string
+  #apiPath: string
+  #domain: string
+  private apiUrlDirector: ApiURLDirector
+  private wikimediaDesktopUrlDirector: DesktopURLDirector
+  private visualEditorURLDirector: VisualEditorURLDirector
 
-  constructor(config: MWConfig) {
-    this.domain = config.domain || ''
-    this.username = config.username
-    this.password = config.password
-    this.getCategories = config.getCategories
+  public visualEditorApiUrl: URL
+  public apiUrl: URL
+  public modulePath: string // only for reading
+  public _modulePathOpt: string // only for whiting to generate modulePath
+  public webUrl: URL
+  public desktopRestApiUrl: URL
 
-    this.baseUrl = new URL(ensureTrailingChar(config.base, '/'))
+  #hasWikimediaDesktopRestApi: boolean | null
+  #hasVisualEditorApi: boolean | null
+  #hasCoordinates: boolean | null
 
-    this.apiPath = config.apiPath ?? 'w/api.php'
-    this.wikiPath = config.wikiPath ?? DEFAULT_WIKI_PATH
+  set username(value: string) {
+    this.#username = value
+  }
 
-    this.webUrl = new URL(this.wikiPath, this.baseUrl)
-    this.apiUrl = new URL(`${this.apiPath}?`, this.baseUrl)
+  set password(value: string) {
+    this.#password = value
+  }
 
-    this.veApiUrl = new URL(`${this.apiUrl.href}action=visualeditor&mobileformat=html&format=json&paction=parse&page=`)
+  set apiPath(value: string) {
+    this.#apiPath = value
+  }
 
-    this.restApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1', this.baseUrl.href).toString(), '/'))
-    this.mobileRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/mobile-sections', this.baseUrl.href).toString(), '/'))
-    this.desktopRestApiUrl = new URL(ensureTrailingChar(new URL(config.restApiPath ?? 'api/rest_v1/page/html', this.baseUrl.href).toString(), '/'))
+  set restApiPath(value: string) {
+    this.#restApiPath = value
+  }
 
-    this.modulePath = `${urlParser.resolve(this.baseUrl.href, config.modulePath ?? 'w/load.php')}?`
-    this.articleApiUrlBase = `${this.apiUrl.href}action=parse&format=json&prop=${encodeURI('modules|jsconfigvars|headhtml')}&page=`
+  set domain(value: string) {
+    this.#domain = value
+  }
+
+  set wikiPath(value: string) {
+    this.#wikiPath = value
+  }
+
+  set base(value: string) {
+    this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
+    this.initMWApis()
+  }
+
+  set modulePathOpt(value: string) {
+    this._modulePathOpt = value
+  }
+
+  private initializeMediaWikiDefaults(): void {
+    this.#domain = ''
+    this.#username = ''
+    this.#password = ''
+    this.getCategories = false
+
+    this.namespaces = {}
+    this.namespacesToMirror = []
+
+    this.#apiPath = 'w/api.php'
+    this.#wikiPath = 'wiki/'
+    this.apiCheckArticleId = 'MediaWiki:Sidebar'
+
+    this.queryOpts = {
+      action: 'query',
+      format: 'json',
+      prop: 'redirects|revisions',
+      rdlimit: 'max',
+      rdnamespace: 0,
+      redirects: false,
+      formatversion: '2',
+    }
+
+    this.#hasWikimediaDesktopRestApi = null
+    this.#hasVisualEditorApi = null
+    this.#hasCoordinates = null
+  }
+
+  private constructor() {
+    this.initializeMediaWikiDefaults()
+  }
+
+  public async hasWikimediaDesktopRestApi(): Promise<boolean> {
+    if (this.#hasWikimediaDesktopRestApi === null) {
+      this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasWikimediaDesktopRestApi
+    }
+    return this.#hasWikimediaDesktopRestApi
+  }
+
+  public async hasVisualEditorApi(): Promise<boolean> {
+    if (this.#hasVisualEditorApi === null) {
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasVisualEditorApi
+    }
+    return this.#hasVisualEditorApi
+  }
+
+  public async hasCoordinates(downloader: Downloader): Promise<boolean> {
+    if (this.#hasCoordinates === null) {
+      const validNamespaceIds = this.namespacesToMirror.map((ns) => this.namespaces[ns].num)
+      const reqOpts = {
+        ...this.queryOpts,
+        rdnamespace: validNamespaceIds,
+      }
+
+      const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
+      const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
+      if (isCoordinateWarning) {
+        logger.info('Coordinates not available on this wiki')
+        return (this.#hasCoordinates = false)
+      }
+      return (this.#hasCoordinates = true)
+    }
+    return this.#hasCoordinates
+  }
+
+  private initMWApis() {
+    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
+    this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
+    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
+    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.#restApiPath)
+    this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
+    this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
+    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
-    if (this.username && this.password) {
-      let url = this.apiUrl.href
+    if (this.#username && this.#password) {
+      let url = this.apiUrl.href + '?'
 
       // Add domain if configured
-      if (this.domain) {
-        url = `${url}lgdomain=${this.domain}&`
+      if (this.#domain) {
+        url = `${url}lgdomain=${this.#domain}&`
       }
 
       // Getting token to login.
-      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json')
+      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2')
 
       // Logging in
       await axios(this.apiUrl.href, {
         data: qs.stringify({
           action: 'login',
           format: 'json',
-          lgname: this.username,
-          lgpassword: this.password,
+          lgname: this.#username,
+          lgpassword: this.#password,
           lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
         }),
         headers: {
@@ -81,7 +202,7 @@ class MediaWiki {
         },
         method: 'POST',
       })
-        .then((resp) => {
+        .then(async (resp) => {
           if (resp.data.login.result !== 'Success') {
             throw new Error('Login Failed')
           }
@@ -94,64 +215,34 @@ class MediaWiki {
     }
   }
 
-  // In all the url methods below:
-  // * encodeURIComponent is mandatory for languages with illegal letters for uri (fa.wikipedia.org)
-  // * encodeURI is mandatory to encode the pipes '|' but the '&' and '=' must not be encoded
-  public siteInfoUrl() {
-    return `${this.apiUrl.href}action=query&meta=siteinfo&format=json`
-  }
-
-  public articleApiUrl(articleId: string): string {
-    return `${this.articleApiUrlBase}${encodeURIComponent(articleId)}`
-  }
-
-  public subCategoriesApiUrl(articleId: string, continueStr = '') {
-    return `${this.apiUrl.href}action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&cmtitle=${encodeURIComponent(articleId)}&cmcontinue=${continueStr}`
-  }
-
-  public getVeApiArticleUrl(articleId: string): string {
-    return `${this.veApiUrl.href}${encodeURIComponent(articleId)}`
-  }
-
-  public getDesktopRestApiArticleUrl(articleId: string): string {
-    return `${this.desktopRestApiUrl.href}${encodeURIComponent(articleId)}`
-  }
-
-  public getMobileRestApiArticleUrl(articleId: string): string {
-    return `${this.mobileRestApiUrl.href}${encodeURIComponent(articleId)}`
-  }
-
-  public getApiQueryUrl(query = ''): string {
-    return `${this.apiUrl.href}${query}`
-  }
-
-  public getWebArticleUrlRaw(articleId: string): string {
-    return `${this.webUrl.href}?title=${encodeURIComponent(articleId)}&action=raw`
-  }
-
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
-    const url = `${this.apiUrl.href}action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json`
+    const url = this.apiUrlDirector.buildNamespacesURL()
+
     const json: any = await downloader.getJSON(url)
     ;['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json.query[type]
       Object.keys(entries).forEach((key) => {
         const entry = entries[key]
-        const name = entry['*']
+        const name = type === 'namespaces' ? entry.name : entry.alias
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
-        const isContent = !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isContent = type === 'namespaces' ? !!(entry.content || util.contains(addNamespaces, num)) : !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isBlacklisted = BLACKLISTED_NS.includes(name)
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
+
         /* Namespaces in local language */
         this.namespaces[util.lcFirst(name)] = details
         this.namespaces[util.ucFirst(name)] = details
+
         /* Namespaces in English (if available) */
         if (canonical) {
           this.namespaces[util.lcFirst(canonical)] = details
           this.namespaces[util.ucFirst(canonical)] = details
         }
+
         /* Is content to mirror */
-        if (isContent) {
+        if (isContent && !isBlacklisted) {
           this.namespacesToMirror.push(name)
         }
       })
@@ -234,8 +325,8 @@ class MediaWiki {
 
   public async getSiteInfo(downloader: Downloader) {
     logger.log('Getting site info...')
-    const query = 'action=query&meta=siteinfo&format=json&siprop=general|namespaces|statistics|variables|category|wikidesc'
-    const body = await downloader.query(query)
+    const body = await downloader.query()
+
     const entries = body.query.general
 
     // Checking mediawiki version
@@ -249,7 +340,10 @@ class MediaWiki {
     const mainPage = decodeURIComponent(entries.base.split('/').pop())
     const siteName = entries.sitename
 
-    const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code))
+    // Gather languages codes (en remove the 'dialect' part)
+    const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
+      return e.replace(/\-.*/, '')
+    })
 
     const [langIso2, langIso3] = await Promise.all(
       langs.map(async (lang: string) => {
@@ -305,10 +399,10 @@ class MediaWiki {
       apiUrl: this.apiUrl.href,
       modulePath: this.modulePath,
       webUrlPath: this.webUrl.pathname,
-      wikiPath: this.wikiPath,
+      wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
-      apiPath: this.apiPath,
-      domain: this.domain,
+      apiPath: this.#apiPath,
+      domain: this.#domain,
 
       textDir: textDir as TextDirection,
       langIso2,
@@ -323,6 +417,11 @@ class MediaWiki {
 
     return mwMetaData
   }
+
+  public reset(): void {
+    this.initializeMediaWikiDefaults()
+  }
 }
 
-export default MediaWiki
+const mw = MediaWiki.getInstance()
+export default mw as MediaWiki

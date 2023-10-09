@@ -1,46 +1,55 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
-import { getArticleIds } from '../../src/util/redirects.js'
+import RedisStore from '../../src/RedisStore.js'
+import { getArticleIds } from '../../src/util/mw-api.js'
 import { getArticlesByNS } from '../../src/util/index.js'
 import { config } from '../../src/config.js'
 import { jest } from '@jest/globals'
 
 jest.setTimeout(10000)
 
-describe('mwApi', () => {
-  beforeAll(startRedis)
-  afterAll(stopRedis)
+beforeAll(async () => {
+  MediaWiki.reset()
+  await startRedis()
+})
+afterAll(stopRedis)
 
-  let mw: MediaWiki
+const initMW = async (downloader: Downloader) => {
+  await MediaWiki.getMwMetaData(downloader)
+  await MediaWiki.hasCoordinates(downloader)
+  await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasVisualEditorApi()
+
+  await MediaWiki.getNamespaces([], downloader)
+}
+
+describe('mwApi', () => {
   let downloader: Downloader
 
   beforeEach(async () => {
-    await redisStore.articleDetailXId.flush()
-    mw = new MediaWiki({
-      base: 'https://en.wikipedia.org',
-      getCategories: true,
-    } as any)
+    await RedisStore.articleDetailXId.flush()
 
-    downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+    MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
-    await mw.getMwMetaData(downloader)
-    await downloader.checkCapabilities()
-
-    await mw.getNamespaces([], downloader)
+    await initMW(downloader)
   })
 
   test('MWApi Article Ids', async () => {
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
-    await getArticleIds(downloader, redisStore, mw, 'Main_Page', aIds)
-    const articlesById = await redisStore.articleDetailXId.getMany(aIds)
+
+    await getArticleIds(downloader, 'Main_Page', aIds)
+
+    const articlesById = await RedisStore.articleDetailXId.getMany(aIds)
     const { United_Kingdom, London } = articlesById
 
     // Article "United_Kingdom" was scraped
     expect(United_Kingdom).toBeDefined()
 
     // Article "United_Kingdom" has categories
-    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(12)
+    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(11)
 
     // Article "United_Kingdom" has thumbnail
     expect(United_Kingdom).toHaveProperty('thumbnail')
@@ -59,9 +68,9 @@ describe('mwApi', () => {
   })
 
   test('MWApi NS', async () => {
-    await getArticlesByNS(0, downloader, redisStore, undefined, 5) // Get 5 continues/pages of NSes
+    await getArticlesByNS(0, downloader, undefined, 5) // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"M"_Circle']
-    const articles = await redisStore.articleDetailXId.getMany(interestingAIds)
+    const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
     const Ladies = articles['"...And_Ladies_of_the_Club"']
     const Circle = articles['"M"_Circle']
 
@@ -81,10 +90,10 @@ describe('mwApi', () => {
     expect(Circle).toHaveProperty('coordinates')
 
     // Got items in namespaces
-    expect(Object.keys(mw.namespaces).length).toBeGreaterThan(0)
+    expect(Object.keys(MediaWiki.namespaces).length).toBeGreaterThan(0)
 
     let keysAreValid = true
-    Object.values(mw.namespaces).forEach((item) => {
+    Object.values(MediaWiki.namespaces).forEach((item) => {
       if (!Object.keys(item).includes('num') || !Object.keys(item).includes('allowedSubpages') || !Object.keys(item).includes('isContent')) keysAreValid = false
     })
     // Namespaces have valid keys
@@ -92,24 +101,46 @@ describe('mwApi', () => {
   })
 
   test('extracting title from href', () => {
-    const titleWithWiki = mw.extractPageTitleFromHref('/wiki/Hades')
+    const titleWithWiki = MediaWiki.extractPageTitleFromHref('/wiki/Hades')
     // Title with hrefs contaning /wiki
     expect(titleWithWiki).toEqual('Hades')
 
-    const titleWithRelativePath = mw.extractPageTitleFromHref('./Damage_Formula')
+    const titleWithRelativePath = MediaWiki.extractPageTitleFromHref('./Damage_Formula')
     // Title with relative path
     expect(titleWithRelativePath).toEqual('Damage_Formula')
 
-    const titleWithTwoDir = mw.extractPageTitleFromHref('../../Mali_Dung')
+    const titleWithTwoDir = MediaWiki.extractPageTitleFromHref('../../Mali_Dung')
     // Title with two dir path
     expect(titleWithTwoDir).toEqual('Mali_Dung')
 
-    const titleWithAnchorJump = mw.extractPageTitleFromHref('./Subarns#Mali')
+    const titleWithAnchorJump = MediaWiki.extractPageTitleFromHref('./Subarns#Mali')
     // Title with Anchor Jump
     expect(titleWithAnchorJump).toEqual('Subarns')
 
-    const interWikiTitle = mw.extractPageTitleFromHref('Maldives')
+    const interWikiTitle = MediaWiki.extractPageTitleFromHref('Maldives')
     // Interwiki title
     expect(interWikiTitle).toBeNull()
+  })
+})
+
+describe('Test blacklisted NSs', () => {
+  let downloader: Downloader
+
+  beforeEach(async () => {
+    await RedisStore.articleDetailXId.flush()
+
+    MediaWiki.base = 'https://id.wikipedia.org'
+    MediaWiki.getCategories = true
+
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+
+    await initMW(downloader)
+  })
+
+  test('Prevent blacklisted namespaces to mirroring', async () => {
+    const aIds = ['Story:Satelit_Oberon', 'London']
+    await getArticleIds(downloader, 'Main_Page', aIds)
+
+    expect(MediaWiki.namespacesToMirror).not.toContain('Story')
   })
 })

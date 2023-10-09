@@ -1,3 +1,21 @@
+1.13.0:
+* FIX: Many akwards scenarios around Redis (@uriesk #1756)
+* FIX: Wrongly downloaded hidden media files (@pavel-karatsiuba #1780 #849)
+* FIX: Incompatibility scenario in hacking the start module (@pavel-karatsiuba #1783)
+* FIX: Bad ordering in Javascript module loading at reading time (@pavel-karatsiuba #1766)
+* FIX: Unpredictive behaviour depending the order of --format (@pavel-karatsiuba #1826)
+* FIX: Broken auto-redirect in a few Wiktionaries (@pavel-karatsiuba #1811)
+* FIX: Mosaic selection welcome page with irrelevant pictures (@pavel-karatsiuba #1794)
+* FIX: Broken logo downloading because of protocol mismatch (@pavel-karatsiuba #1800)
+* UPDATE: Improved container image documentation (@kelson42 #1827)
+* UPDATE: Container image using latest versions of Node.js & Redis (@kelson42 #1814)
+* UPDATE: Container images only pushed to ghcr.io (@rgaudin #1812)
+* UPDATE: Better Axios error reporting (@FledgeXu #1795)
+* NEW: Better checking of command line arguments (@pavel-karatsiuba #1823 #1806)
+* NEW: Introduce option --customZimLanguage (@kelson42 #1841)
+* NEW: Synchronization of UI translations with Translatewiki.net (@kelson42 #116)
+* NEW: Threshold specification to the --verbose option (@pavel-karatsiuba #1785)
+
 1.12.1:
 * FIX: Bad behaviour because of wrong mime-type in S3 (@kelson42 #1772)
 * FIX: Unefficient CI steps (@kelson42 1770)

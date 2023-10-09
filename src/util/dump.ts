@@ -4,6 +4,7 @@ import async from 'async'
 import * as logger from '../Logger.js'
 import axios from 'axios'
 import Downloader from '../Downloader.js'
+import RedisStore from '../RedisStore.js'
 import { getFullUrl, jsPath, cssPath } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
@@ -13,15 +14,16 @@ import fs from 'fs'
 import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
+import urlHelper from './url.helper.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export async function getAndProcessStylesheets(downloader: Downloader, redisStore: RS, links: Array<string | DominoElement>) {
+export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
   let finalCss = ''
-  const { filesToDownloadXPath } = redisStore
+  const { filesToDownloadXPath } = RedisStore
   const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
-    const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), downloader.mw.baseUrl) : link
+    const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), MediaWiki.baseUrl) : link
     const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null
     try {
       /* link might be a 'link' DOM node or an URL */
@@ -45,7 +47,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
         while ((match = cssUrlRegexp.exec(body))) {
           let url = match[1]
 
-          /* Avoid 'data', so no url dependency */
+          /* Avoid 'data', so no URL dependency */
           if (!url.match('^data')) {
             const filePathname = urlParser.parse(url, false, true).pathname
             if (filePathname) {
@@ -61,7 +63,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
               /* Download CSS dependency, but avoid duplicate calls */
               if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
                 downloader.cssDependenceUrls[url] = true
-                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: downloader.serializeUrl(url), namespace: '-' })
+                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), namespace: '-' })
               }
             } else {
               logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
@@ -88,7 +90,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, redisStor
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWiki, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -121,7 +123,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, mw: MediaWik
     apiParameterOnly = 'styles'
   }
 
-  const moduleApiUrl = encodeURI(`${mw.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+  const moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
   const { content } = await downloader.downloadContent(moduleApiUrl)

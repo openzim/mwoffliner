@@ -1,92 +1,131 @@
-import S3File from 'aws-sdk'
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3'
 import * as logger from './Logger.js'
 import { Readable } from 'stream'
 import { publicIpv4 } from 'public-ip'
 
+interface BucketParams {
+  Bucket: string
+  Key: string
+}
 class S3 {
   public url: any
   public params: any
   public s3Handler: any
   public bucketName: string
+  private region: string
 
   constructor(s3Url: any, s3Params: any) {
     this.url = s3Url
     this.params = s3Params
     this.bucketName = s3Params.bucketName
+    this.setRegion()
   }
 
-  public async initialise() {
-    const s3UrlBase: any = new S3File.Endpoint(this.url)
-    this.s3Handler = new S3File.S3({
-      endpoint: s3UrlBase,
-      accessKeyId: this.params.keyId,
-      secretAccessKey: this.params.secretAccessKey,
-      s3ForcePathStyle: s3UrlBase.protocol === 'http:',
-    })
-    try {
-      if ((await this.bucketExists(this.bucketName)) === true) {
-        return true
-      }
-    } catch (err) {
-      throw new Error(`Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
-                            Bucket used: ${this.bucketName}
-                            End point used: ${s3UrlBase.href}
-                            Public IP used: ${await publicIpv4()}`)
+  private setRegion(): void {
+    const url: any = new URL(this.url)
+    const regionRegex = /^s3\.([^.]+)/
+    const match = url.hostname.match(regionRegex)
+
+    if (match && match[1]) {
+      this.region = match[1]
+    } else {
+      throw new Error('Unknown S3 region set')
     }
   }
 
-  public async bucketExists(bucket: string): Promise<any> {
+  public async initialise() {
+    const s3UrlBase: any = new URL(this.url)
+    this.s3Handler = new S3Client({
+      credentials: {
+        accessKeyId: this.params.keyId,
+        secretAccessKey: this.params.secretAccessKey,
+      },
+      endpoint: s3UrlBase.href,
+      forcePathStyle: s3UrlBase.protocol === 'http:',
+      region: this.region,
+    })
+
+    return this.bucketExists(this.bucketName)
+      .then(() => true)
+      .catch(async () => {
+        throw new Error(`
+        Unable to connect to S3, either S3 login credentials are wrong or bucket cannot be found
+                            Bucket used: ${this.bucketName}
+                            End point used: ${s3UrlBase.href}
+                            Public IP used: ${await publicIpv4()}
+        `)
+      })
+  }
+
+  public bucketExists(bucket: string): Promise<any> {
+    const command = new HeadBucketCommand({ Bucket: bucket })
     return new Promise((resolve, reject) => {
-      this.s3Handler.headBucket({ Bucket: bucket }, function (err: any) {
+      this.s3Handler.send(command, (err: any) => {
         return err ? reject(err) : resolve(true)
       })
     })
   }
 
-  public async uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string) {
-    const params = {
+  public uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string): Promise<any> {
+    const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
       Metadata: { etag: eTag, contenttype: contentType, version },
       Body: this.bufferToStream(data),
-    }
+    })
 
-    try {
-      this.s3Handler.upload(params, function (err: any) {
-        if (err) {
-          logger.log(`Not able to upload ${key}: ${err}`)
-        }
-      })
-    } catch (err) {
-      logger.log('S3 error', err)
-    }
+    return new Promise((resolve, reject) => {
+      this.s3Handler
+        .send(command)
+        .then((response: any) => {
+          resolve(response)
+        })
+        .catch((err: any) => {
+          logger.log('S3 error while uploading file', err)
+          reject(err)
+        })
+    })
   }
 
-  public async downloadBlob(key: string, version = '1'): Promise<any> {
+  public downloadBlob(key: string, version = '1'): Promise<any> {
+    const command = new GetObjectCommand({ Bucket: this.bucketName, Key: key })
+
     return new Promise((resolve, reject) => {
-      this.s3Handler.getObject({ Bucket: this.bucketName, Key: key }, async (err: any, val: any) => {
-        if (val) {
-          if (val.Metadata.version !== version) {
-            val.Metadata.etag = undefined
+      this.s3Handler
+        .send(command)
+        .then((response: any) => {
+          if (response) {
+            const { Metadata } = response
+            if (Metadata?.version !== version) {
+              Metadata.etag = undefined
+            }
+            resolve(response)
+          } else reject()
+        })
+        .catch((err: any) => {
+          // For 404 error handle AWS service-specific exception
+          if (err && err.name === 'NoSuchKey') {
+            logger.log(`Error: The specified key ${key} does not exist.`)
+            resolve(null)
+          } else {
+            logger.log(`Error while downloading the file ${err}`)
+            reject(err)
           }
-          resolve(val)
-        } else if (err && err.statusCode === 404) {
-          resolve(null)
-        } else {
-          reject(err)
-        }
-      })
-    }).catch((err) => {
-      return err
+        })
     })
   }
 
   // Only for testing purpose
-  public async deleteBlob(key: any): Promise<any> {
+  public deleteBlob(params: BucketParams): Promise<any> {
+    const command = new DeleteObjectCommand(params)
     return new Promise((resolve, reject) => {
-      this.s3Handler.deleteObject(key, (err: any, val: any) => {
-        return err ? reject(err) : resolve(val)
-      })
+      this.s3Handler
+        .send(command)
+        .then((val: any) => resolve(val))
+        .catch((err: any) => {
+          logger.log('S3 error while uploading file', err)
+          reject(err)
+        })
     })
   }
 

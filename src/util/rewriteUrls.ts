@@ -2,10 +2,11 @@ import * as urlParser from 'url'
 import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc.js'
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
+import RedisStore from '../RedisStore.js'
 import DU from '../DOMUtils.js'
 import * as logger from '../Logger.js'
 
-function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): string {
+function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): string {
   let rel = linkNode.getAttribute('rel')
   let href = linkNode.getAttribute('href') || ''
   let hrefProtocol
@@ -23,9 +24,9 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
     return null
   }
   if (!hrefProtocol && href.slice(0, 2) === '//') {
-    href = `${mw.webUrl.protocol}${href}`
+    href = `${MediaWiki.webUrl.protocol}${href}`
     linkNode.setAttribute('href', href)
-    hrefProtocol = mw.webUrl.protocol
+    hrefProtocol = MediaWiki.webUrl.protocol
   }
   if (!rel && linkNode.getAttribute('resource')) {
     rel = 'mw:MediaLink'
@@ -133,7 +134,7 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
     /* Rewrite external links starting with // */
     if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
       if (href.substring(0, 1) === '/') {
-        linkNode.setAttribute('href', getFullUrl(href, mw.baseUrl))
+        linkNode.setAttribute('href', getFullUrl(href, MediaWiki.baseUrl))
       } else if (href.substring(0, 2) === './') {
         migrateChildren(linkNode, linkNode.parentNode, linkNode)
         linkNode.parentNode.removeChild(linkNode)
@@ -145,7 +146,7 @@ function rewriteUrlNoArticleCheck(articleId: string, mw: MediaWiki, dump: Dump, 
     }
   }
 
-  const title = mw.extractPageTitleFromHref(href)
+  const title = MediaWiki.extractPageTitleFromHref(href)
   if (title) {
     const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'))
     linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title) + localAnchor)
@@ -173,7 +174,7 @@ async function checkIfArticlesMirrored(articleTitles: string[], articleDetailXId
   return [mirrored, unmirrored]
 }
 
-async function rewriteUrls(articleId: string, redisStore: RS, mw: MediaWiki, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
+async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
   const mediaDependencies: string[] = []
 
   /*
@@ -183,7 +184,7 @@ async function rewriteUrls(articleId: string, redisStore: RS, mw: MediaWiki, dum
   const wikilinkMappings: { [title: string]: DominoElement[] } = {}
 
   for (const linkNode of linkNodes) {
-    const articleLink = rewriteUrlNoArticleCheck(articleId, mw, dump, linkNode, mediaDependencies)
+    const articleLink = rewriteUrlNoArticleCheck(articleId, dump, linkNode, mediaDependencies)
 
     if (articleLink) {
       if (Array.isArray(wikilinkMappings[articleLink])) {
@@ -194,10 +195,10 @@ async function rewriteUrls(articleId: string, redisStore: RS, mw: MediaWiki, dum
     }
   }
 
-  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings), redisStore.articleDetailXId)
+  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings), RedisStore.articleDetailXId)
 
   if (unmirroredTitles.length) {
-    const articlesRedirected = await redisStore.redirectsXId.existsMany(unmirroredTitles)
+    const articlesRedirected = await RedisStore.redirectsXId.existsMany(unmirroredTitles)
     for (const articleTitle of unmirroredTitles) {
       const redirect = articlesRedirected[articleTitle]
       if (redirect) {
@@ -230,23 +231,17 @@ async function rewriteUrls(articleId: string, redisStore: RS, mw: MediaWiki, dum
   return { mediaDependencies }
 }
 
-export function rewriteUrl(articleId: string, redisStore: RS, mw: MediaWiki, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
-  return rewriteUrls(articleId, redisStore, mw, dump, [linkNode])
+export function rewriteUrl(articleId: string, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
+  return rewriteUrls(articleId, dump, [linkNode])
 }
 
-export async function rewriteUrlsOfDoc(
-  parsoidDoc: DominoElement,
-  articleId: string,
-  redisStore: RS,
-  mw: MediaWiki,
-  dump: Dump,
-): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
+export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, articleId: string, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
   /* Go through all links */
   const as = parsoidDoc.getElementsByTagName('a')
   const areas = parsoidDoc.getElementsByTagName('area')
   const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas))
 
-  const ret = await rewriteUrls(articleId, redisStore, mw, dump, linkNodes)
+  const ret = await rewriteUrls(articleId, dump, linkNodes)
   return {
     ...ret,
     doc: parsoidDoc,

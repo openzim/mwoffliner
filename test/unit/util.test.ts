@@ -313,7 +313,7 @@ describe('Utils', () => {
 
   test('No title normalisation', async () => {
     const resp = await axios.get<MwApiResponse>(
-      'https://en.wiktionary.org/w/api.php?action=query&format=json&prop=redirects|revisions|pageimages&rdlimit=max&rdnamespace=0&redirects=true&titles=constructor',
+      'https://en.wiktionary.org/w/api.php?action=query&format=json&prop=redirects|revisions|pageimages&rdlimit=max&rdnamespace=0&redirects=true&titles=constructor&formatversion=2',
       { responseType: 'json' },
     )
     const normalizedObject = normalizeMwResponse(resp.data.query)

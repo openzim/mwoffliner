@@ -1,57 +1,66 @@
-import { startRedis, stopRedis, redisStore } from './bootstrap.js'
+import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
+import RedisStore from '../../src/RedisStore.js'
 import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
-import { Dump } from '../../src/Dump'
+import { Dump } from '../../src/Dump.js'
+import { getArticleUrl } from '../../src/util/saveArticles.js'
+import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
 import { jest } from '@jest/globals'
 import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
+import domino from 'domino'
 
 jest.setTimeout(200000)
 
 describe('Downloader class', () => {
-  let mw: MediaWiki
   let downloader: Downloader
 
   beforeAll(startRedis)
   afterAll(stopRedis)
 
   beforeAll(async () => {
-    mw = new MediaWiki({
-      base: 'https://en.wikipedia.org',
-      getCategories: true,
-    } as any)
+    MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
 
-    downloader = new Downloader({ mw, uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
-    await mw.getMwMetaData(downloader)
-    await downloader.checkCapabilities()
+    await MediaWiki.getMwMetaData(downloader)
+    await MediaWiki.hasCoordinates(downloader)
+    await MediaWiki.hasWikimediaDesktopRestApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
   })
 
+  test('Test Action API version 2 response in comparison with version 1', async () => {
+    const actionAPIResV1 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&page=Potato')
+    const actionAPIResV2 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&formatversion=2&page=Potato')
+    expect(actionAPIResV1).not.toEqual(actionAPIResV2)
+  })
+
   test('downloader.query returns valid JSON', async () => {
-    const queryRet = await downloader.query('?action=query&meta=siteinfo&siprop=statistics&format=json')
-    expect(queryRet).toBeDefined()
+    const queryRet = await downloader.query()
+    expect(typeof queryRet).toBe('object')
   })
 
   test('downloader.getJSON returns valid JSON', async () => {
     const JSONRes = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
-    expect(JSONRes).toBeDefined()
+    expect(typeof JSONRes).toBe('object')
   })
 
   test('downloader.canGetUrl returns valid answer (positive)', async () => {
     const urlExists = await downloader.canGetUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
-    expect(urlExists).toBeDefined()
+    expect(urlExists).toBe(true)
   })
 
   test('downloader.canGetUrl returns valid answer (negative)', async () => {
     const urlNotExists = await downloader.canGetUrl('https://en.wikipedia.org/w/thisisa404')
-    expect(urlNotExists).toBeDefined()
+    expect(urlNotExists).toBe(false)
   })
 
   test('getJSON response status for non-existant url is 404', async () => {
@@ -78,14 +87,14 @@ describe('Downloader class', () => {
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
     const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
     const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet)
-    redisStore.articleDetailXId.setMany(articleDetailsRet)
+    RedisStore.articleDetailXId.setMany(articleDetailsRet)
     const { London, Paris, Zürich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
     expect(London).toBeDefined()
     expect(United_Kingdom).toBeDefined()
     expect(Paris).toBeDefined()
     expect(Zürich).toBeDefined()
 
-    expect(THISARTICLEDOESNTEXIST.missing).toBe('')
+    expect(THISARTICLEDOESNTEXIST.missing).toBe(true)
   })
 
   test("getArticleDetailsNS query returns 'gapContinue' or 'multiple articles', ", async () => {
@@ -102,33 +111,101 @@ describe('Downloader class', () => {
   })
 
   test('downloadContent successfully downloaded an image', async () => {
-    const { data: LondonDetail } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/mobile-sections/London')
-    const [imgToGet] = Object.values(LondonDetail.lead.image.urls)
-
-    const LondonImage = await downloader.downloadContent(imgToGet as string)
+    const { data: LondonHtml } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
+    const doc = domino.createDocument(LondonHtml)
+    const imgToGet = Array.from(doc.querySelectorAll('[data-mw-section-id="0"] img'))[0]
+    let imgToGetSrc = ''
+    if (imgToGet.getAttribute('src')) {
+      imgToGetSrc = imgToGet.getAttribute('src')
+    }
+    // This is the downloading of an image
+    const LondonImage = await downloader.downloadContent(imgToGetSrc)
     expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
   })
 
   describe('getArticle method', () => {
     let dump: Dump
+    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
 
     beforeAll(async () => {
-      const mwMetadata = await mw.getMwMetaData(downloader)
+      const mwMetadata = await MediaWiki.getMwMetaData(downloader)
       dump = new Dump('', {} as any, mwMetadata)
     })
 
     test('getArticle of "London" returns one article', async () => {
-      const LondonArticle = await downloader.getArticle('London', dump, redisStore.articleDetailXId)
+      const articleId = 'London'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleDetail = {
+        title: articleId,
+        thumbnail: {
+          width: 50,
+          height: 28,
+          source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_Skyline_%28125508655%29.jpeg/50px-London_Skyline_%28125508655%29.jpeg',
+        },
+        revisionId: 1171340841,
+        timestamp: '2023-08-20T14:54:01Z',
+        coordinates: '51.50722222;-0.1275',
+      }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const LondonArticle = await downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        RedisStore.articleDetailXId,
+        wikimediaDesktopRenderer,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
       expect(LondonArticle).toHaveLength(1)
     })
 
     test('Categories with many subCategories are paginated', async () => {
-      const PaginatedArticle = await downloader.getArticle('Category:Container_categories', dump, redisStore.articleDetailXId)
+      const articleId = 'Category:Container_categories'
+      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
+      const articleDetail = {
+        title: articleId,
+        ns: 14,
+        revisionId: 1168361498,
+        timestamp: '2023-08-02T09:57:11Z',
+      }
+      const articleUrl = getArticleUrl(downloader, dump, articleDetail.title)
+      const PaginatedArticle = await downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        RedisStore.articleDetailXId,
+        wikimediaDesktopRenderer,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
 
     test('getArticle response status for non-existent article id is 404', async () => {
-      await expect(downloader.getArticle('NeverExistingArticle', dump, redisStore.articleDetailXId)).rejects.toThrowError(new Error('Request failed with status code 404'))
+      const articleId = 'NeverExistingArticle'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleDetail = {
+        title: articleId,
+        missing: '',
+      }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      await expect(
+        downloader.getArticle(
+          downloader.webp,
+          _moduleDependencies,
+          'NeverExistingArticle',
+          RedisStore.articleDetailXId,
+          wikimediaDesktopRenderer,
+          articleUrl,
+          dump,
+          articleDetail,
+          dump.isMainPage(articleId),
+        ),
+      ).rejects.toThrowError(new Error('Request failed with status code 404'))
     })
   })
 
@@ -164,7 +241,7 @@ describe('Downloader class', () => {
     })
 
     test('Url is not image type', async () => {
-      const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
+      const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json&formatversion=2')
       expect(isnotImage).not.toBeTruthy()
     })
 
@@ -192,10 +269,8 @@ describe('Downloader class', () => {
     const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true)
 
     beforeAll(async () => {
-      const mw = new MediaWiki({
-        base: 'https://en.wikipedia.org',
-        getCategories: true,
-      } as any)
+      MediaWiki.base = 'https://en.wikipedia.org'
+      MediaWiki.getCategories = true
 
       s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
         bucketName: s3UrlObj.query.bucketName,
@@ -203,7 +278,6 @@ describe('Downloader class', () => {
         secretAccessKey: s3UrlObj.query.secretAccessKey,
       })
       downloader = new Downloader({
-        mw,
         uaString: `${config.userAgent} (contact@kiwix.org)`,
         speed: 1,
         reqTimeout: 1000 * 60,
@@ -225,10 +299,10 @@ describe('Downloader class', () => {
 
       // Strip http(s) from url
       const httpOrHttpsRemoved = stripHttpFromUrl(testImage)
-      expect(httpOrHttpsRemoved).toBeDefined()
+      expect(httpOrHttpsRemoved).toEqual('bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png')
 
       // Delete the image already present in S3
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: httpOrHttpsRemoved })
+      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: httpOrHttpsRemoved })
 
       // Check if image exists after deleting from S3
       const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved)
@@ -239,7 +313,7 @@ describe('Downloader class', () => {
       // Get an image URL to run the test with
       const randomImage = await getRandomImageUrl()
       const imagePath = stripHttpFromUrl(randomImage)
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
+      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
 
       // Download the image (and cache it in S3)
       await downloader.downloadContent(randomImage)
@@ -265,13 +339,13 @@ describe('Downloader class', () => {
       expect(newS3Resp.Metadata.contenttype).toEqual(newContentType)
 
       // Remove Image after test
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName, Key: imagePath })
+      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
     })
   })
 
   async function getRandomImageUrl(): Promise<string> {
     const resp = await Axios(
-      'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json',
+      'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json&formatversion=2',
     )
     const url = resp.data.query.pages[0].imageinfo[0].url
     return isImageUrl(url) ? url : getRandomImageUrl()
