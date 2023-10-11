@@ -34,6 +34,7 @@ describe('Downloader class', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasMediaWikiRESTApi()
     await downloader.setBaseUrlsDirectors()
   })
 

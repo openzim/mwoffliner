@@ -23,6 +23,7 @@ describe('saveArticles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasMediaWikiRESTApi()
     await downloader.setBaseUrlsDirectors('WikimediaDesktop')
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -231,7 +232,12 @@ describe('saveArticles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
+<<<<<<< HEAD
     await downloader.setBaseUrlsDirectors()
+=======
+    await MediaWiki.hasMediaWikiRESTApi()
+    await downloader.setBaseUrls()
+>>>>>>> Implement MediaWiki REST API render (partial impl)
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async shouldKeepArticle(articleId: string, doc: Document) {

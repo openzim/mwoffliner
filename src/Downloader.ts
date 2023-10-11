@@ -231,6 +231,13 @@ class Downloader {
             break
           }
           break
+        case 'MediawikiRESTApi':
+          if (MediaWiki.hasMediaWikiRESTApi()) {
+            this.baseUrl = MediaWiki.mediawikiRESTApiURL.href
+            this.baseUrlForMainPage = MediaWiki.mediawikiRESTApiURL.href
+            break
+          }
+          break
         default:
           throw new Error('Unable to find specific API end-point to retrieve article HTML')
       }

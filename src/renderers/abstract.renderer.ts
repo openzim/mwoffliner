@@ -22,7 +22,7 @@ import {
 } from '../util/misc.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
-type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile'
+type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'MediawikiRESTApi'
 
 interface RendererBuilderOptionsBase {
   renderType: renderType

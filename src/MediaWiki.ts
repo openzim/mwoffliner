@@ -12,6 +12,7 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import MediaWikiRESTApiDirector from './util/builders/url/mediawiki-rest-api.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
 
@@ -52,6 +53,7 @@ class MediaWiki {
 
   public VisualEditorApiUrl: URL
   public apiUrl: URL
+  public mediawikiRESTApiURL: URL
   public modulePath: string // only for reading
   public _modulePathOpt: string // only for whiting to generate modulePath
   public mobileModulePath: string
@@ -66,6 +68,7 @@ class MediaWiki {
   #hasWikimediaDesktopApi: boolean | null
   #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
+  #hasMediaWikiRESTApi: boolean | null
   #hasCoordinates: boolean | null
 
   set username(value: string) {
@@ -90,6 +93,10 @@ class MediaWiki {
 
   set wikiPath(value: string) {
     this.#wikiPath = value
+  }
+
+  set mediawikiRESTAPiPath(value: string) {
+    this.#mediawikiRESTApiPath = value
   }
 
   set base(value: string) {
@@ -127,6 +134,7 @@ class MediaWiki {
     this.#hasWikimediaDesktopApi = null
     this.#hasWikimediaMobileApi = null
     this.#hasVisualEditorApi = null
+    this.#hasMediaWikiRESTApi = null
     this.#hasCoordinates = null
   }
 
@@ -159,6 +167,15 @@ class MediaWiki {
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
+  }
+
+  public async hasMediaWikiRESTApi(): Promise<boolean> {
+    if (this.#hasMediaWikiRESTApi === null) {
+      this.mediaWikiRESTApiDirector = new MediaWikiRESTApiDirector(this.mediawikiRESTApiURL.href)
+      this.#hasMediaWikiRESTApi = await checkApiAvailability(this.mediaWikiRESTApiDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasMediaWikiRESTApi
+    }
+    return this.#hasMediaWikiRESTApi
   }
 
   public async hasCoordinates(downloader: Downloader): Promise<boolean> {
@@ -414,6 +431,7 @@ class MediaWiki {
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
       apiUrl: this.apiUrl.href,
+      mediawikiRESTAPiPath: this.mediawikiRESTAPiPath,
       modulePath: this.modulePath,
       mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,

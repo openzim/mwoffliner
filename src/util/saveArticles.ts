@@ -188,7 +188,7 @@ async function saveArticle(
       })
     }
 
-    if (mediaDependencies && mediaDependencies.length) {
+    if (mediaDependencies?.length) {
       const existingVals = await RedisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
 
       for (const dep of mediaDependencies) {
