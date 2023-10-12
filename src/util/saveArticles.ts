@@ -12,6 +12,7 @@ import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
+import urlBuilder from './builders/url/url.builder.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
 
@@ -222,6 +223,10 @@ async function saveArticle(
   } catch (err) {
     return err
   }
+}
+
+export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
+  return urlBuilder.buildArticleUrl(dump.isMainPage(articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl, articleId)
 }
 
 /*

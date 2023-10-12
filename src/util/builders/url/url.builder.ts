@@ -1,4 +1,5 @@
 import { ensureTrailingChar } from '../../misc.js'
+import { TITLE_PLACEHOLDER } from '../../const.js'
 
 /**
  * Concat the path to the domain and setting query params
@@ -98,6 +99,10 @@ class URLBuilder {
     }
 
     return link
+  }
+
+  buildArticleUrl(renderApiUrl: string, articleId: string) {
+    return `${renderApiUrl.replace(TITLE_PLACEHOLDER, articleId)}`.slice(0, -1)
   }
 }
 

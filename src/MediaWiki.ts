@@ -14,7 +14,7 @@ import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import MediaWikiRESTApiDirector from './util/builders/url/mediawiki-rest-api.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
-import { BLACKLISTED_NS } from './util/const.js'
+import { BLACKLISTED_NS, TITLE_PLACEHOLDER } from './util/const.js'
 
 export interface QueryOpts {
   action: string
@@ -118,6 +118,7 @@ class MediaWiki {
     this.namespacesToMirror = []
 
     this.#apiActionPath = 'w/api.php'
+    this.#apiPath = 'w/api.php'
     this.#wikiPath = 'wiki/'
     this.apiCheckArticleId = 'MediaWiki:Sidebar'
 

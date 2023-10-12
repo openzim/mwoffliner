@@ -57,7 +57,11 @@ describe('ApiURLDirector', () => {
     it('should return base visual editor URL object with default query params', () => {
       const url = apiUrlDirector.buildVisualEditorURL()
 
+<<<<<<< HEAD
       expect(url.href).toBe('https://en.wikipedia.org/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&formatversion=2')
+=======
+      expect(url.href).toBe('https://en.wikipedia.org/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&formatversion=2&page=TITLE_PLACEHOLDER')
+>>>>>>> Switchover to WikimediaDesktop render while using MediawikiRESTApi, add temp workaround with TITLE_PLACEHOLDER for URL builders
     })
   })
 })

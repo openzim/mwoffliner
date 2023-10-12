@@ -9,6 +9,7 @@ import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/inde
 import { jest } from '@jest/globals'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
+import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 
 jest.setTimeout(40000)
@@ -94,6 +95,9 @@ describe('saveArticles', () => {
           rendererInstance = new WikimediaDesktopRenderer()
           break
         case 'WikimediaMobile':
+          rendererInstance = new WikimediaMobileRenderer()
+          break
+        case 'MediawikiRESTApi':
           rendererInstance = new WikimediaDesktopRenderer()
           break
         default:
@@ -232,12 +236,8 @@ describe('saveArticles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-<<<<<<< HEAD
-    await downloader.setBaseUrlsDirectors()
-=======
     await MediaWiki.hasMediaWikiRESTApi()
-    await downloader.setBaseUrls()
->>>>>>> Implement MediaWiki REST API render (partial impl)
+    await downloader.setBaseUrlsDirectors()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async shouldKeepArticle(articleId: string, doc: Document) {

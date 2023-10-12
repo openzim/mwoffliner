@@ -12,6 +12,6 @@ export default class MediaWikiRESTApiURL {
 
   buildArticleURL(articleId: string) {
     const base = urlBuilder.setDomain(this.baseDomain).build()
-    return `${base}${articleId}/with_html`
+    return `${base}${articleId}/html`
   }
 }

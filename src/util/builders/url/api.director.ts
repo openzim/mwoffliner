@@ -1,4 +1,5 @@
 import urlBuilder from './url.builder.js'
+import { TITLE_PLACEHOLDER } from '../../const.js'
 
 /**
  * Interface to build URLs based on MediaWiki API URL
@@ -49,7 +50,14 @@ export default class ApiURLDirector {
   }
 
   buildVisualEditorURL() {
+<<<<<<< HEAD
     return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2' }).build(true)
+=======
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2', page: TITLE_PLACEHOLDER })
+      .build(true)
+>>>>>>> Switchover to WikimediaDesktop render while using MediawikiRESTApi, add temp workaround with TITLE_PLACEHOLDER for URL builders
   }
 
   buildArticleApiURL(articleId: string) {
