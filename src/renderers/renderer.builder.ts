@@ -3,6 +3,7 @@ import { Renderer } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
+import { MediawikiRESTApiRenderer } from './mediawiki-rest-api.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
 
@@ -25,7 +26,7 @@ export class RendererBuilder {
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         } else if (hasMediaWikiRESTApi) {
-          return new WikimediaDesktopRenderer()
+          return new MediawikiRESTApiRenderer()
         } else {
           logger.error('No available desktop renderer.')
           process.exit(1)
@@ -45,7 +46,7 @@ export class RendererBuilder {
         } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         } else if (hasMediaWikiRESTApi) {
-          return new WikimediaDesktopRenderer()
+          return new MediawikiRESTApiRenderer()
         } else {
           logger.error('No render available at all.')
           process.exit(1)
@@ -67,7 +68,7 @@ export class RendererBuilder {
             process.exit(1)
           case 'MediawikiRESTApi':
             if (hasMediaWikiRESTApi) {
-              return new WikimediaDesktopRenderer()
+              return new MediawikiRESTApiRenderer()
             }
             logger.error('Cannot create an instance of MediawikiRESTApi renderer.')
             process.exit(1)

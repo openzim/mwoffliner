@@ -11,6 +11,9 @@ import { jsPath } from './index.js'
 import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
+import DesktopURLDirector from './builders/url/desktop.director.js'
+import VisualEditorURLDirector from './builders/url/visual-editor.director.js'
+import MediaWikiRESTApiDirector from './builders/url/mediawiki-rest-api.director.js'
 import urlHelper from './url.helper.js'
 import urlBuilder from './builders/url/url.builder.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
@@ -225,8 +228,20 @@ async function saveArticle(
   }
 }
 
-export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
-  return urlBuilder.buildArticleUrl(dump.isMainPage(articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl, articleId)
+export function getArticleUrl(renderer, downloader: Downloader, dump: Dump, articleId: string): string {
+  let articleUrl
+  switch (renderer.constructor.name) {
+    case 'WikimediaDesktopRenderer':
+      articleUrl = this.wikimediaDesktopUrlDirector.buildArticleURL(articleId)
+      break
+    case 'VisualEditorRenderer':
+      articleUrl = this.visualEditorURLDirector.buildArticleURL(articleId)
+      break
+    case 'MediawikiRESTApiRenderer':
+      articleUrl = this.mediaWikiRESTApiDirector.buildArticleURL(this.apiCheckArticleId)
+      break
+  }
+  return articleUrl
 }
 
 /*
@@ -296,7 +311,6 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         try {
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? mainPageRenderer : articlesRenderer
-
           const articleUrl = downloader.getArticleUrl(dump, articleId)
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
