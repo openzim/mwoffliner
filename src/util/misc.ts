@@ -162,35 +162,22 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
   return newString
 }
 
-function saveResourceFile(resource: string, type: 'css' | 'js', basePath: string, config: Config, zimCreator: ZimCreator) {
-  return async () => {
-    try {
-      const content = await readFilePromise(pathParser.resolve(__dirname, `../../res/${basePath}${resource}.${type}`))
-      const article = new ZimArticle({
-        url: type === 'css' ? cssPath(resource) : jsPath(resource),
-        data: content,
-        ns: '-',
-      })
+export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: ZimCreator) {
+  try {
+    staticFiles.forEach(async (file) => {
+      const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
+      const article = new ZimArticle({ url: file.endsWith('.css') ? cssPath(file) : jsPath(file), data: staticFilesContent, ns: '-' })
       zimCreator.addArticle(article)
-    } catch (error) {
-      const fileType = type === 'css' ? (basePath.includes('wm_mobile') ? 'style Wikimedia mobile override' : 'style') : 'script'
-      logger.warn(`Could not create ${fileType} ${resource} file : ${error}`)
-    }
+    })
+  } catch (err) {
+    logger.error(err)
   }
 }
 
-export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
-  const cssPromises = config.output.cssResources.concat(config.output.mainPageCssResources).map((css) => saveResourceFile(css, 'css', '', config, zimCreator)())
-  const jsPromises = config.output.jsResources.map((js) => saveResourceFile(js, 'js', '', config, zimCreator)())
-  return Promise.all([...cssPromises, ...jsPromises])
-}
-
-export function saveStaticWikimediaMobileFiles(config: Config, zimCreator: ZimCreator) {
-  const wikimediaMobileCssPromises = config.output.wikimediaMobileCssResources.map((wikimediaMobileCss) =>
-    saveResourceFile(wikimediaMobileCss, 'css', 'wm_mobile/', config, zimCreator)(),
-  )
-  const wikimediaMobileJsPromises = config.output.mwMobileJsResources.map((wikimediaMobileJs) => saveResourceFile(wikimediaMobileJs, 'js', 'wm_mobile/', config, zimCreator)())
-  return Promise.all([...wikimediaMobileCssPromises, ...wikimediaMobileJsPromises])
+export function getStaticFiles(jsStaticFiles: string[], cssStaticFiles: string[]): string[] {
+  jsStaticFiles = jsStaticFiles.map((jsFile) => jsFile.concat('.js'))
+  cssStaticFiles = cssStaticFiles.map((cssFile) => cssFile.concat('.css'))
+  return jsStaticFiles.concat(cssStaticFiles)
 }
 
 export function cssPath(css: string, subDirectory = '') {

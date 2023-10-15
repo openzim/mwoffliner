@@ -56,6 +56,7 @@ export interface RenderSingleOutput {
   html: string
   mediaDependencies: any
   moduleDependencies: any
+  staticFiles: string[]
   subtitles: any
 }
 

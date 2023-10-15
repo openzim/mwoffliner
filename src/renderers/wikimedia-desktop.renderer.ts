@@ -69,6 +69,7 @@ export class WikimediaDesktopRenderer extends DesktopRenderer {
         html: finalHTML,
         mediaDependencies,
         moduleDependencies: moduleDependenciesFiltered,
+        staticFiles: this.staticFilesListDesktop,
         subtitles,
       })
     }

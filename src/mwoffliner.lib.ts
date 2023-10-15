@@ -37,7 +37,6 @@ import {
   mkdirPromise,
   sanitizeString,
   saveStaticFiles,
-  saveStaticWikimediaMobileFiles,
   importPolyfillModules,
   extractArticleList,
   getTmpDirectory,
@@ -400,11 +399,6 @@ async function execute(argv: any) {
     })
     zimCreator.addArticle(scraperArticle)
 
-    logger.info('Copying Static Wikimedia Mobile Override Files')
-    await saveStaticWikimediaMobileFiles(config, zimCreator)
-    logger.info('Copying Static Resource Files')
-    await saveStaticFiles(config, zimCreator)
-
     logger.info('Finding stylesheets to download')
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
@@ -424,11 +418,14 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileApi, forceRender)
+    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileApi, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
     logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
+
+    logger.info('Copying Static Resource Files')
+    await saveStaticFiles(staticFilesList, zimCreator)
 
     const allDependenciesWithType = [
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },

@@ -234,6 +234,7 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
+  const staticFilesList = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
   const { articleDetailXId } = RedisStore
@@ -298,7 +299,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
-          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, subtitles } of rets) {
+          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, staticFiles, subtitles } of rets) {
             if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
@@ -310,6 +311,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
             }
             for (const dep of moduleDependencies.styleDependenciesList) {
               cssModuleDependencies.add(dep)
+            }
+
+            for (const file of staticFiles) {
+              staticFilesList.add(file)
             }
 
             jsConfigVars = moduleDependencies.jsConfigVars || ''
@@ -393,6 +398,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   }
 
   return {
+    staticFilesList,
     jsModuleDependencies,
     cssModuleDependencies,
   }

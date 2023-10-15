@@ -1,5 +1,6 @@
 import * as domino from 'domino'
 import { Renderer } from './abstract.renderer.js'
+import { getStaticFiles } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
@@ -7,8 +8,10 @@ import { htmlWikimediaDesktopTemplateCode } from '../Templates.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink } from '../util/misc.js'
 
 export abstract class DesktopRenderer extends Renderer {
+  public staticFilesListDesktop: string[] = []
   constructor() {
     super()
+    this.staticFilesListDesktop = getStaticFiles(config.output.jsResources, config.output.mainPageCssResources.concat(config.output.cssResources))
   }
 
   public filterWikimediaDesktopModules(_moduleDependencies) {

@@ -71,6 +71,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
           html: finalHTML,
           mediaDependencies,
           moduleDependencies: moduleDependenciesFiltered,
+          staticFiles: this.staticFilesListDesktop,
           subtitles,
         })
         return result

@@ -1,5 +1,6 @@
 import * as domino from 'domino'
 import { Renderer } from './abstract.renderer.js'
+import { getStaticFiles } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
@@ -7,8 +8,10 @@ import { htmlWikimediaMobileTemplateCode } from '../Templates.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink } from '../util/misc.js'
 
 export abstract class MobileRenderer extends Renderer {
+  public staticFilesListMobile: string[] = []
   constructor() {
     super()
+    this.staticFilesListMobile = getStaticFiles(config.output.mwMobileJsResources, config.output.wikimediaMobileCssResources)
   }
 
   public filterWikimediaMobileModules(_moduleDependencies) {

@@ -33,7 +33,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
         const mobileHTML = domino.createDocument(data)
         const finalHTMLMobile = await this.pipeMobileTransformations(
           mobileHTML,
-          this.convertLazyLoadToImages.bind(this),
+          this.convertLazyLoadToImages,
           this.removeEditContainer,
           this.removeHiddenClass,
           async (doc) => {
@@ -60,6 +60,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           html: finalHTMLMobile.documentElement.outerHTML,
           mediaDependencies: mediaDependenciesVal,
           moduleDependencies: moduleDependenciesFiltered,
+          staticFiles: this.staticFilesListMobile,
           subtitles: subtitlesVal,
         })
         return result
@@ -107,34 +108,6 @@ export class WikimediaMobileRenderer extends MobileRenderer {
 
       // Replace the span with the img element
       span.parentNode.replaceChild(img, span)
-    })
-
-    doc = this.resizeMobileImages(doc)
-
-    return doc
-  }
-
-  private resizeMobileImages(doc: DominoElement) {
-    const mobileImageWidth = 375
-    const imageWidthPattern = /(\.jpg\/|\.png\/|\.svg\/|\.gif\/)(\d+)px/i
-
-    // Directly filter images hosted on Commons wiki
-    const imgs: NodeList = doc.querySelectorAll('img[src*="/commons/"]')
-
-    imgs.forEach((img: DominoElement) => {
-      const imgWidth = img.getAttribute('width')
-      const imgHeight = img.getAttribute('height')
-      const imgSrc = img.getAttribute('src')
-      const imageWidthMatchSrc = imgSrc.match(imageWidthPattern)
-
-      if (imgWidth && imgWidth > mobileImageWidth && imageWidthMatchSrc) {
-        const heightScaleFactor = Math.round((imgWidth / imgHeight) * 100) / 100
-        const newImgSrc = imgSrc.replace(imageWidthMatchSrc[2], mobileImageWidth.toString())
-
-        img.setAttribute('src', newImgSrc)
-        img.setAttribute('width', mobileImageWidth.toString())
-        img.setAttribute('height', Math.round(mobileImageWidth / heightScaleFactor).toString())
-      }
     })
 
     return doc
