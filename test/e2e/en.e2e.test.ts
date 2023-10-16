@@ -20,14 +20,16 @@ const verifyImgElements = (imgFilesArr, imgElements) => {
 }
 
 const mwUrl = 'https://en.wikipedia.org'
-const articleList = 'User:Kelson/MWoffliner_CI_reference'
+const articleList = 'BMW'
 const format = ''
 
 await testAllRenders(mwUrl, articleList, format, async (outFiles) => {
   const articleFromDump = await zimdump(`show --url A/${articleList} ${outFiles[0].outFile}`)
-  await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
   describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
+    test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+    })
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
       expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })

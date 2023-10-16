@@ -18,6 +18,7 @@ import {
   isWebpCandidateImageMimeType,
   interpolateTranslationString,
   encodeArticleIdForZimHtmlUrl,
+  getStaticFiles,
 } from '../util/misc.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
@@ -63,6 +64,13 @@ export interface RenderSingleOutput {
 export type RenderOutput = RenderSingleOutput[]
 
 export abstract class Renderer {
+  public staticFilesListCommon: string[] = []
+  constructor() {
+    if (this.staticFilesListCommon.length === 0) {
+      this.staticFilesListCommon = getStaticFiles(config.output.jsResourcesCommon, config.output.cssResourcesCommon)
+    }
+  }
+
   protected async treatVideo(
     dump: Dump,
     srcCache: KVS<boolean>,

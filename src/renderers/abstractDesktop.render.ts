@@ -11,7 +11,7 @@ export abstract class DesktopRenderer extends Renderer {
   public staticFilesListDesktop: string[] = []
   constructor() {
     super()
-    this.staticFilesListDesktop = getStaticFiles(config.output.jsResources, config.output.mainPageCssResources.concat(config.output.cssResources))
+    this.staticFilesListDesktop = this.staticFilesListCommon.concat(getStaticFiles(config.output.jsResources, config.output.cssResources))
   }
 
   public filterWikimediaDesktopModules(_moduleDependencies) {

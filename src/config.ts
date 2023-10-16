@@ -53,12 +53,14 @@ const config = {
   },
 
   output: {
-    // CSS resources added by Kiwix
-    cssResources: ['style', 'content.parsoid', 'inserted_style'],
-    mainPageCssResources: ['mobile_main_page'],
-    wikimediaMobileCssResources: ['wm_mobile_override_style'],
+    // CSS and JS resources added by Kiwix
+    cssResourcesCommon: ['style', 'mobile_main_page'],
+    jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
-    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+    cssResources: ['content.parsoid', 'inserted_style'],
+    jsResources: ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+
+    wikimediaMobileCssResources: ['wm_mobile_override_style'],
     mwMobileJsResources: ['wm_mobile_override_script'],
 
     // JS/CSS resources to be imported from MediaWiki

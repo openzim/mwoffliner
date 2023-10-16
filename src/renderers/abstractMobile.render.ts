@@ -11,7 +11,7 @@ export abstract class MobileRenderer extends Renderer {
   public staticFilesListMobile: string[] = []
   constructor() {
     super()
-    this.staticFilesListMobile = getStaticFiles(config.output.mwMobileJsResources, config.output.wikimediaMobileCssResources)
+    this.staticFilesListMobile = this.staticFilesListCommon.concat(getStaticFiles(config.output.mwMobileJsResources, config.output.wikimediaMobileCssResources))
   }
 
   public filterWikimediaMobileModules(_moduleDependencies) {
