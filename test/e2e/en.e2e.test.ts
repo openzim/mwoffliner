@@ -1,6 +1,6 @@
 import { testAllRenders } from '../testAllRenders.js'
 import domino from 'domino'
-import { zimdump } from '../util.js'
+import { zimdump, zimcheck } from '../util.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'
@@ -25,6 +25,7 @@ const format = ''
 
 await testAllRenders(mwUrl, articleList, format, async (outFiles) => {
   const articleFromDump = await zimdump(`show --url A/${articleList} ${outFiles[0].outFile}`)
+  await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
   describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
