@@ -349,7 +349,7 @@ class Downloader {
     await this.claimRequest()
 
     try {
-      return await new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const cb = (err: any, val: any) => {
           if (err) {
             reject(err)
@@ -688,7 +688,7 @@ class Downloader {
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
   private async streamToBuffer(stream: Readable): Promise<Buffer> {
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const chunks: Uint8Array[] = []
       stream.on('data', (chunk) => chunks.push(chunk))
       stream.on('error', reject)
