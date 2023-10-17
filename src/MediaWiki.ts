@@ -52,9 +52,9 @@ class MediaWiki {
   #domain: string
   private apiUrlDirector: ApiURLDirector
   private baseUrlDirector: BaseURLDirector
-  private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
-  private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  private visualEditorURLDirector: VisualEditorURLDirector
+  public wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
+  public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
+  public visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
   public actionApiUrl: URL

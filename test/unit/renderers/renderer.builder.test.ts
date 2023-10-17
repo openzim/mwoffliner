@@ -84,7 +84,7 @@ describe('RendererBuilder', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls()
+    await MediaWiki.hasVisualEditorApi()
 
     const rendererBuilderOptions = {
       MediaWiki,
