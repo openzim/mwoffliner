@@ -117,13 +117,19 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
   }
 
   let apiParameterOnly
+  let moduleApiUrl: string
   if (type === 'js') {
     apiParameterOnly = 'scripts'
   } else if (type === 'css') {
     apiParameterOnly = 'styles'
   }
 
-  const moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+  if (!module.includes('javascript/mobile') && !module.includes('css/mobile')) {
+    moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+  } else {
+    moduleApiUrl = encodeURI(`https:${module}`)
+  }
+
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
   const { content } = await downloader.downloadContent(moduleApiUrl)
@@ -141,7 +147,16 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
   }
 
   try {
-    const articleId = type === 'js' ? jsPath(module, config.output.dirs.mediawiki) : cssPath(module, config.output.dirs.mediawiki)
+    let articleId
+    const pathFunctions = {
+      js: jsPath,
+      css: cssPath,
+    }
+
+    const pathFunction = pathFunctions[type]
+    if (pathFunction) {
+      articleId = pathFunction(module, config.output.dirs.mediawiki)
+    }
     const article = new ZimArticle({ url: articleId, data: text, ns: '-' })
     zimCreator.addArticle(article)
     logger.info(`Saved module [${module}]`)

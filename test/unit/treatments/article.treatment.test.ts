@@ -56,6 +56,7 @@ describe('ArticleTreatment', () => {
       } as any,
       downloader,
       dump,
+      true,
     )
 
     // Successfully scrapped existent articles

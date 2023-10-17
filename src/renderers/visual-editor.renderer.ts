@@ -1,6 +1,6 @@
-import { DELETED_ARTICLE_ERROR } from '../util/const.js'
 import * as logger from '../Logger.js'
-import { Renderer } from './abstract.renderer.js'
+import { DELETED_ARTICLE_ERROR } from '../util/const.js'
+import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
@@ -9,7 +9,7 @@ Represent 'https://{wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=h
 or
 'https://{3rd-part-wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
 */
-export class VisualEditorRenderer extends Renderer {
+export class VisualEditorRenderer extends DesktopRenderer {
   constructor() {
     super()
   }
@@ -55,12 +55,23 @@ export class VisualEditorRenderer extends Renderer {
       const { articleId, articleDetail, webp, _moduleDependencies, dump } = renderOpts
       const { html, displayTitle } = await this.retrieveHtml(renderOpts)
       if (html) {
-        const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(html, dump, articleId, articleDetail, _moduleDependencies, webp)
+        const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
+        const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(
+          html,
+          dump,
+          articleId,
+          articleDetail,
+          moduleDependenciesFiltered,
+          webp,
+          super.templateDesktopArticle.bind(this),
+        )
         result.push({
           articleId,
           displayTitle,
           html: finalHTML,
           mediaDependencies,
+          moduleDependencies: moduleDependenciesFiltered,
+          staticFiles: this.staticFilesListDesktop,
           subtitles,
         })
         return result

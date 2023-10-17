@@ -21,6 +21,7 @@ describe('en10', () => {
     redis: process.env.REDIS,
     // format: ['nopic', 'novid', 'nopdf', 'nodet'],
     format: ['nopic', 'nopdf'],
+    forceRender: 'WikimediaDesktop',
   }
 
   test('Simple articleList', async () => {

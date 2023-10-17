@@ -1,9 +1,9 @@
 import urlBuilder from './url.builder.js'
 
 /**
- * Interface to build URLs based on Downloader desktop URL
+ * Interface to build URLs based on MediaWiki mobile URL
  */
-export default class WikimediaDesktopURLDirector {
+export default class WikimediaMobileURLDirector {
   baseDomain: string
 
   constructor(baseDomain: string) {

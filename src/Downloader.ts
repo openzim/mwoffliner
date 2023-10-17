@@ -87,6 +87,8 @@ class Downloader {
   public arrayBufferRequestOptions: AxiosRequestConfig
   public jsonRequestOptions: AxiosRequestConfig
   public streamRequestOptions: AxiosRequestConfig
+  public wikimediaMobileJsDependenciesList: string[] = []
+  public wikimediaMobileStyleDependenciesList: string[] = []
 
   private readonly uaString: string
   private activeRequests = 0
@@ -171,21 +173,23 @@ class Downloader {
     if (!forceRender) {
       //* Objects order in array matters!
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
       ])
 
       //* Objects order in array matters!
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaDesktopRestApi(), value: MediaWiki.desktopRestApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
       ])
     } else {
       switch (forceRender) {
         case 'WikimediaDesktop':
-          if (MediaWiki.hasWikimediaDesktopRestApi()) {
-            this.baseUrl = MediaWiki.desktopRestApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.desktopRestApiUrl.href
+          if (MediaWiki.hasWikimediaDesktopApi()) {
+            this.baseUrl = MediaWiki.WikimediaDesktopApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.WikimediaDesktopApiUrl.href
             break
           }
           break
@@ -193,6 +197,13 @@ class Downloader {
           if (MediaWiki.hasVisualEditorApi()) {
             this.baseUrl = MediaWiki.visualEditorApiUrl.href
             this.baseUrlForMainPage = MediaWiki.visualEditorApiUrl.href
+            break
+          }
+          break
+        case 'WikimediaMobile':
+          if (MediaWiki.hasWikimediaMobileApi()) {
+            this.baseUrl = MediaWiki.WikimediaMobileApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.WikimediaMobileApiUrl.href
             break
           }
           break
@@ -685,7 +696,27 @@ class Downloader {
 
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
-    return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+    // Download mobile page dependencies only once
+    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
+      try {
+        // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
+        const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
+        mobileModulesData.forEach((module: string) => {
+          if (module.includes('javascript')) {
+            this.wikimediaMobileJsDependenciesList.push(module)
+          } else if (module.includes('css')) {
+            this.wikimediaMobileStyleDependenciesList.push(module)
+          }
+        })
+      } catch (err) {
+        throw new Error(`Error getting mobile modules ${err.message}`)
+      }
+    }
+    return {
+      jsConfigVars,
+      jsDependenciesList: jsDependenciesList.concat(this.wikimediaMobileJsDependenciesList),
+      styleDependenciesList: styleDependenciesList.concat(this.wikimediaMobileStyleDependenciesList),
+    }
   }
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877

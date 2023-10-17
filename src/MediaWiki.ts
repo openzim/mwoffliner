@@ -9,7 +9,8 @@ import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import DesktopURLDirector from './util/builders/url/desktop.director.js'
+import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
+import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
@@ -43,23 +44,27 @@ class MediaWiki {
   public queryOpts: QueryOpts
 
   #wikiPath: string
-  #restApiPath: string
+  #apiPath: string
   #username: string
   #password: string
-  #apiPath: string
+  #apiActionPath: string
   #domain: string
   private apiUrlDirector: ApiURLDirector
-  private wikimediaDesktopUrlDirector: DesktopURLDirector
-  private visualEditorURLDirector: VisualEditorURLDirector
+  private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
+  private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
+  private VisualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
   public apiUrl: URL
   public modulePath: string // only for reading
   public _modulePathOpt: string // only for whiting to generate modulePath
+  public mobileModulePath: string
   public webUrl: URL
-  public desktopRestApiUrl: URL
+  public WikimediaDesktopApiUrl: URL
+  public WikimediaMobileApiUrl: URL
 
-  #hasWikimediaDesktopRestApi: boolean | null
+  #hasWikimediaDesktopApi: boolean | null
+  #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
   #hasCoordinates: boolean | null
 
@@ -71,12 +76,12 @@ class MediaWiki {
     this.#password = value
   }
 
-  set apiPath(value: string) {
-    this.#apiPath = value
+  set apiActionPath(value: string) {
+    this.#apiActionPath = value
   }
 
-  set restApiPath(value: string) {
-    this.#restApiPath = value
+  set apiPath(value: string) {
+    this.#apiPath = value
   }
 
   set domain(value: string) {
@@ -105,7 +110,7 @@ class MediaWiki {
     this.namespaces = {}
     this.namespacesToMirror = []
 
-    this.#apiPath = 'w/api.php'
+    this.#apiActionPath = 'w/api.php'
     this.#wikiPath = 'wiki/'
     this.apiCheckArticleId = 'MediaWiki:Sidebar'
 
@@ -119,7 +124,8 @@ class MediaWiki {
       formatversion: '2',
     }
 
-    this.#hasWikimediaDesktopRestApi = null
+    this.#hasWikimediaDesktopApi = null
+    this.#hasWikimediaMobileApi = null
     this.#hasVisualEditorApi = null
     this.#hasCoordinates = null
   }
@@ -128,17 +134,25 @@ class MediaWiki {
     this.initializeMediaWikiDefaults()
   }
 
-  public async hasWikimediaDesktopRestApi(): Promise<boolean> {
-    if (this.#hasWikimediaDesktopRestApi === null) {
-      this.#hasWikimediaDesktopRestApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
-      return this.#hasWikimediaDesktopRestApi
+  public async hasWikimediaDesktopApi(): Promise<boolean> {
+    if (this.#hasWikimediaDesktopApi === null) {
+      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasWikimediaDesktopApi
     }
-    return this.#hasWikimediaDesktopRestApi
+    return this.#hasWikimediaDesktopApi
+  }
+
+  public async hasWikimediaMobileApi(): Promise<boolean> {
+    if (this.#hasWikimediaMobileApi === null) {
+      this.#hasWikimediaMobileApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasWikimediaMobileApi
+    }
+    return this.#hasWikimediaMobileApi
   }
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(this.VisualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -166,13 +180,16 @@ class MediaWiki {
   private initMWApis() {
     const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
     this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
-    this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.desktopRestApiUrl = baseUrlDirector.buildDesktopRestApiURL(this.#restApiPath)
+    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
+    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
-    this.wikimediaDesktopUrlDirector = new DesktopURLDirector(this.desktopRestApiUrl.href)
-    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+    this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
+    this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
+    this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
+    this.VisualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
@@ -398,10 +415,11 @@ class MediaWiki {
       webUrl: this.webUrl.href,
       apiUrl: this.apiUrl.href,
       modulePath: this.modulePath,
+      mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
-      apiPath: this.#apiPath,
+      apiActionPath: this.#apiActionPath,
       domain: this.#domain,
 
       textDir: textDir as TextDirection,

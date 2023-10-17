@@ -75,8 +75,8 @@ async function execute(argv: any) {
     keepEmptyParagraphs,
     mwUrl,
     mwWikiPath,
+    mwActionApiPath,
     mwApiPath,
-    mwRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -158,8 +158,8 @@ async function execute(argv: any) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
   MediaWiki.getCategories = !!argv.getCategories
+  MediaWiki.apiActionPath = mwActionApiPath
   MediaWiki.apiPath = mwApiPath
-  MediaWiki.restApiPath = mwRestApiPath
   MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword
@@ -211,14 +211,14 @@ async function execute(argv: any) {
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopRestApi()
+  await MediaWiki.hasWikimediaDesktopApi()
+  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
   await MediaWiki.hasVisualEditorApi()
   await downloader.setBaseUrls(forceRender)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
   const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = RedisStore
-  await downloader.setBaseUrls(forceRender)
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
   await mkdirPromise(outputDirectory)
@@ -398,9 +398,6 @@ async function execute(argv: any) {
     })
     zimCreator.addArticle(scraperArticle)
 
-    logger.info('Copying Static Resource Files')
-    await saveStaticFiles(config, zimCreator)
-
     logger.info('Finding stylesheets to download')
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
@@ -420,11 +417,14 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies } = await saveArticles(zimCreator, downloader, dump, forceRender)
+    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileApi, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
     logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
+
+    logger.info('Copying Static Resource Files')
+    await saveStaticFiles(staticFilesList, zimCreator)
 
     const allDependenciesWithType = [
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },

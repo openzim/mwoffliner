@@ -162,27 +162,22 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
   return newString
 }
 
-export function saveStaticFiles(config: Config, zimCreator: ZimCreator) {
-  const cssPromises = config.output.cssResources.concat(config.output.mainPageCssResources).map(async (css) => {
-    try {
-      const cssCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${css}.css`))
-      const article = new ZimArticle({ url: cssPath(css), data: cssCont, ns: '-' })
+export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: ZimCreator) {
+  try {
+    staticFiles.forEach(async (file) => {
+      const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
+      const article = new ZimArticle({ url: file.endsWith('.css') ? cssPath(file) : jsPath(file), data: staticFilesContent, ns: '-' })
       zimCreator.addArticle(article)
-    } catch (error) {
-      logger.warn(`Could not create ${css} file : ${error}`)
-    }
-  })
+    })
+  } catch (err) {
+    logger.error(err)
+  }
+}
 
-  const jsPromises = config.output.jsResources.map(async (js) => {
-    try {
-      const jsCont = await readFilePromise(pathParser.resolve(__dirname, `../../res/${js}.js`))
-      const article = new ZimArticle({ url: jsPath(js), data: jsCont, ns: '-' })
-      zimCreator.addArticle(article)
-    } catch (error) {
-      logger.warn(`Could not create ${js} file : ${error}`)
-    }
-  })
-  return Promise.all([...cssPromises, ...jsPromises])
+export function getStaticFiles(jsStaticFiles: string[], cssStaticFiles: string[]): string[] {
+  jsStaticFiles = jsStaticFiles.map((jsFile) => jsFile.concat('.js'))
+  cssStaticFiles = cssStaticFiles.map((cssFile) => cssFile.concat('.css'))
+  return jsStaticFiles.concat(cssStaticFiles)
 }
 
 export function cssPath(css: string, subDirectory = '') {

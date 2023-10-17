@@ -14,17 +14,24 @@ export default class BaseURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
   }
 
-  buildRestApiURL(path?: string) {
+  buildWikimediaApiURL(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setPath(path ?? 'api/rest_v1')
       .build(true, '/')
   }
 
-  buildDesktopRestApiURL(path?: string) {
+  buildWikimediaDesktopApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setPath(path ?? 'api/rest_v1/page/html')
+      .build(true, '/')
+  }
+
+  buildWikimediaMobileApiUrl(path?: string) {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setPath(path ?? 'api/rest_v1/page/mobile-html')
       .build(true, '/')
   }
 
@@ -33,5 +40,12 @@ export default class BaseURLDirector {
       .setDomain(this.baseDomain)
       .setPath(path ?? 'w/load.php')
       .build(false, '?')
+  }
+
+  buildMobileModuleURL(path?: string) {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setPath(path ?? 'api/rest_v1/page/mobile-html-offline-resources')
+      .build(false, '/')
   }
 }

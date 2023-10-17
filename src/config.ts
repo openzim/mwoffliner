@@ -53,11 +53,15 @@ const config = {
   },
 
   output: {
-    // CSS resources added by Kiwix
-    cssResources: ['style', 'content.parsoid', 'inserted_style'],
-    mainPageCssResources: ['mobile_main_page'],
+    // CSS and JS resources added by Kiwix
+    cssResourcesCommon: ['style', 'mobile_main_page'],
+    jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
-    jsResources: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min', '../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+    cssResources: ['content.parsoid', 'inserted_style'],
+    jsResources: ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+
+    wikimediaMobileCssResources: ['wm_mobile_override_style'],
+    mwMobileJsResources: ['wm_mobile_override_script'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
@@ -101,7 +105,8 @@ const config = {
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
-      page: './templates/page.html',
+      pageWikimediaDesktop: './templates/pageWikimediaDesktop.html',
+      pageWikimediaMobile: './templates/pageWikimediaMobile.html',
 
       categories: './templates/categories.html',
 

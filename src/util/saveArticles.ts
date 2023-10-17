@@ -12,7 +12,7 @@ import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
-import { RendererBuilderOptions, Renderer } from '../renderers/abstract.renderer.js'
+import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
@@ -129,33 +129,13 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      let rets: any
       try {
         const articleUrl = getArticleUrl(downloader, dump, articleId)
-        let rets: any
-        if (dump.isMainPage) {
-          rets = await downloader.getArticle(
-            downloader.webp,
-            _moduleDependencies,
-            articleId,
-            articleDetailXId,
-            mainPageRenderer,
-            articleUrl,
-            dump,
-            articleDetail,
-            dump.isMainPage(articleId),
-          )
-        }
-        rets = await downloader.getArticle(
-          downloader.webp,
-          _moduleDependencies,
-          articleId,
-          articleDetailXId,
-          articlesRenderer,
-          articleUrl,
-          dump,
-          articleDetail,
-          dump.isMainPage(articleId),
-        )
+        const isMainPage = dump.isMainPage(articleId)
+        const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+
+        rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -202,11 +182,13 @@ async function saveArticle(
   try {
     const filesToDownload: KVS<FileDetail> = {}
 
-    subtitles.forEach((s) => {
-      filesToDownload[s.path] = { url: s.url, namespace: '-' }
-    })
+    if (subtitles?.length > 0) {
+      subtitles.forEach((s) => {
+        filesToDownload[s.path] = { url: s.url, namespace: '-' }
+      })
+    }
 
-    if (mediaDependencies.length) {
+    if (mediaDependencies && mediaDependencies.length) {
       const existingVals = await RedisStore.filesToDownloadXPath.getMany(mediaDependencies.map((dep) => dep.path))
 
       for (const dep of mediaDependencies) {
@@ -249,9 +231,10 @@ export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: str
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, forceRender = null) {
+export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
+  const staticFilesList = new Set<string>()
   let jsConfigVars = ''
   let prevPercentProgress: string
   const { articleDetailXId } = RedisStore
@@ -259,21 +242,22 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   const rendererBuilder = new RendererBuilder()
 
-  let rendererBuilderOptions: RendererBuilderOptions
+  let mainPageRenderer
+  let articlesRenderer
   if (forceRender) {
-    rendererBuilderOptions = {
+    // All articles and main page will use the same renderer if 'forceRender' is specified
+    const renderer = await rendererBuilder.createRenderer({
       renderType: 'specific',
       renderName: forceRender,
-    }
+    })
+    mainPageRenderer = renderer
+    articlesRenderer = renderer
   } else {
-    rendererBuilderOptions = {
-      renderType: 'auto',
-    }
+    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
+    articlesRenderer = await rendererBuilder.createRenderer({
+      renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
+    })
   }
-
-  const mainPageRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
-  // TODO: article renderer will be switched to the mobile mode later
-  const articlesRenderer = await rendererBuilder.createRenderer(rendererBuilderOptions)
 
   if (dump.customProcessor?.shouldKeepArticle) {
     await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
@@ -310,45 +294,30 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         let rets: any
         try {
           const articleUrl = getArticleUrl(downloader, dump, articleId)
-          if (dump.isMainPage) {
-            rets = await downloader.getArticle(
-              downloader.webp,
-              _moduleDependencies,
-              articleId,
-              articleDetailXId,
-              mainPageRenderer,
-              articleUrl,
-              dump,
-              articleDetail,
-              dump.isMainPage(articleId),
-            )
-          }
-          rets = await downloader.getArticle(
-            downloader.webp,
-            _moduleDependencies,
-            articleId,
-            articleDetailXId,
-            articlesRenderer,
-            articleUrl,
-            dump,
-            articleDetail,
-            dump.isMainPage(articleId),
-          )
+          const isMainPage = dump.isMainPage(articleId)
+          const renderer = isMainPage ? mainPageRenderer : articlesRenderer
 
-          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, subtitles } of rets) {
+          rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+
+          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, staticFiles, subtitles } of rets) {
             if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
             }
 
             curStage += 1
-            for (const dep of _moduleDependencies.jsDependenciesList) {
+            for (const dep of moduleDependencies.jsDependenciesList) {
               jsModuleDependencies.add(dep)
             }
-            for (const dep of _moduleDependencies.styleDependenciesList) {
+            for (const dep of moduleDependencies.styleDependenciesList) {
               cssModuleDependencies.add(dep)
             }
-            jsConfigVars = jsConfigVars || _moduleDependencies.jsConfigVars
+
+            for (const file of staticFiles) {
+              staticFilesList.add(file)
+            }
+
+            jsConfigVars = moduleDependencies.jsConfigVars || ''
 
             /*
              * getModuleDependencies and downloader.getArticle are
@@ -423,10 +392,13 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
-  const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
-  zimCreator.addArticle(jsConfigVarArticle)
+  if (jsConfigVars) {
+    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
+    zimCreator.addArticle(jsConfigVarArticle)
+  }
 
   return {
+    staticFilesList,
     jsModuleDependencies,
     cssModuleDependencies,
   }
