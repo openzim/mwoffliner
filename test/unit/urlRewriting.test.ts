@@ -143,7 +143,6 @@ describe('Styles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls('WikimediaDesktop')
 
     await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 

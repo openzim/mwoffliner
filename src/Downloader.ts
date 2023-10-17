@@ -21,7 +21,6 @@ import S3 from './S3.js'
 import * as logger from './Logger.js'
 import MediaWiki, { QueryOpts } from './MediaWiki.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
 
 const imageminOptions = new Map()
@@ -169,52 +168,21 @@ class Downloader {
     }
   }
 
-  public async setBaseUrls(forceRender = null) {
-    if (!forceRender) {
-      //* Objects order in array matters!
-      this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-      ])
-
-      //* Objects order in array matters!
-      this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
-      ])
-    } else {
-      switch (forceRender) {
-        case 'WikimediaDesktop':
-          if (MediaWiki.hasWikimediaDesktopApi()) {
-            this.baseUrl = MediaWiki.WikimediaDesktopApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.WikimediaDesktopApiUrl.href
-            break
-          }
-          break
-        case 'VisualEditor':
-          if (MediaWiki.hasVisualEditorApi()) {
-            this.baseUrl = MediaWiki.visualEditorApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.visualEditorApiUrl.href
-            break
-          }
-          break
-        case 'WikimediaMobile':
-          if (MediaWiki.hasWikimediaMobileApi()) {
-            this.baseUrl = MediaWiki.WikimediaMobileApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.WikimediaMobileApiUrl.href
-            break
-          }
-          break
-        default:
-          throw new Error('Unable to find specific API end-point to retrieve article HTML')
-      }
+  public getArticleUrl(renderer, articleId: string): string {
+    let articleUrl: string
+    // Renders and URL builders are independent so there should be a switch/case scenario here
+    switch (renderer.constructor.name) {
+      case 'WikimediaDesktopRenderer':
+        articleUrl = MediaWiki.wikimediaDesktopUrlDirector.buildArticleURL(articleId)
+        break
+      case 'VisualEditorRenderer':
+        articleUrl = MediaWiki.visualEditorURLDirector.buildArticleURL(articleId)
+        break
+      case 'WikimediaMobileRenderer':
+        articleUrl = MediaWiki.wikimediaMobileUrlDirector.buildArticleURL(articleId)
+        break
     }
-    logger.log('Base Url: ', this.baseUrl)
-    logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
-
-    if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
+    return articleUrl
   }
 
   public removeEtagWeakPrefix(etag: string): string {

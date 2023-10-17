@@ -6,7 +6,6 @@ import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
-import { getArticleUrl } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
@@ -15,6 +14,7 @@ import { jest } from '@jest/globals'
 import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
+import { setupScrapeClasses } from '../util.js'
 
 jest.setTimeout(200000)
 
@@ -35,7 +35,6 @@ describe('Downloader class', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls()
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
@@ -126,16 +125,19 @@ describe('Downloader class', () => {
 
   describe('getArticle method', () => {
     let dump: Dump
+    let renderer
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
 
     beforeAll(async () => {
       const mwMetadata = await MediaWiki.getMwMetaData(downloader)
       dump = new Dump('', {} as any, mwMetadata)
+      const setupScrapeClass = await setupScrapeClasses() // en wikipedia
+      renderer = setupScrapeClass.renderer
     })
 
     test('getArticle of "London" returns one article', async () => {
       const articleId = 'London'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleUrl = downloader.getArticleUrl(renderer, articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -171,7 +173,7 @@ describe('Downloader class', () => {
         revisionId: 1168361498,
         timestamp: '2023-08-02T09:57:11Z',
       }
-      const articleUrl = getArticleUrl(downloader, dump, articleDetail.title)
+      const articleUrl = downloader.getArticleUrl(renderer, articleDetail.title)
       const PaginatedArticle = await downloader.getArticle(
         downloader.webp,
         _moduleDependencies,
@@ -188,7 +190,7 @@ describe('Downloader class', () => {
 
     test('getArticle response status for non-existent article id is 404', async () => {
       const articleId = 'NeverExistingArticle'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleUrl = downloader.getArticleUrl(renderer, articleId)
       const articleDetail = {
         title: articleId,
         missing: '',

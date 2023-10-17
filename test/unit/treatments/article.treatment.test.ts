@@ -6,7 +6,6 @@ import { setupScrapeClasses } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
-import { getArticleUrl } from '../../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 
 jest.setTimeout(10000)
@@ -16,8 +15,7 @@ describe('ArticleTreatment', () => {
   afterAll(stopRedis)
 
   test('Article html processing', async () => {
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
-    await downloader.setBaseUrls()
+    const { downloader, dump, renderer } = await setupScrapeClasses() // en wikipedia
     const title = 'London'
     const _articlesDetail = await downloader.getArticleDetailsIds([title])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -29,7 +27,7 @@ describe('ArticleTreatment', () => {
 
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
-    const articleUrl = getArticleUrl(downloader, dump, articleId)
+    const articleUrl = downloader.getArticleUrl(renderer, articleId)
 
     const _moduleDependencies = await downloader.getModuleDependencies(title)
     const articleDetail = {

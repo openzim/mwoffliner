@@ -50,9 +50,9 @@ class MediaWiki {
   #apiActionPath: string
   #domain: string
   private apiUrlDirector: ApiURLDirector
-  private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
-  private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  private VisualEditorURLDirector: VisualEditorURLDirector
+  public wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
+  public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
+  public visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
   public apiUrl: URL
@@ -152,7 +152,7 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.VisualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -189,7 +189,7 @@ class MediaWiki {
     this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
     this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
     this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
-    this.VisualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
