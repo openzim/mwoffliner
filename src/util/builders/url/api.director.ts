@@ -49,10 +49,7 @@ export default class ApiURLDirector {
   }
 
   buildVisualEditorURL() {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2', page: '' })
-      .build(true)
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2' }).build(true)
   }
 
   buildArticleApiURL(articleId: string) {

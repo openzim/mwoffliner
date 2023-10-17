@@ -6,7 +6,6 @@ import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
-import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -15,6 +14,9 @@ import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
 import { setupScrapeClasses } from '../util.js'
+import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
+import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
+import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 
 jest.setTimeout(200000)
 
@@ -27,7 +29,6 @@ describe('Downloader class', () => {
   beforeAll(async () => {
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-
     downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
     await MediaWiki.getMwMetaData(downloader)
@@ -209,6 +210,25 @@ describe('Downloader class', () => {
           dump.isMainPage(articleId),
         ),
       ).rejects.toThrowError(new Error('Request failed with status code 404'))
+    })
+  })
+
+  describe('getArticleUrl method for en.wikipedia.org', () => {
+    const articleId = 'Canada'
+    test('test article url for WikimediaDesktop renderer', () => {
+      const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+      const articleUrl = downloader.getArticleUrl(wikimediaDesktopRenderer, articleId)
+      expect(articleUrl).toBe('https://en.wikipedia.org/api/rest_v1/page/html/Canada')
+    })
+    test('test article url for WikimediaMobile renderer', () => {
+      const wikimediaMobileRenderer = new WikimediaMobileRenderer()
+      const articleUrl = downloader.getArticleUrl(wikimediaMobileRenderer, articleId)
+      expect(articleUrl).toBe('https://en.wikipedia.org/api/rest_v1/page/mobile-html/Canada')
+    })
+    test('test article url for VisualEditor renderer', () => {
+      const visualEditorRenderer = new VisualEditorRenderer()
+      const articleUrl = downloader.getArticleUrl(visualEditorRenderer, articleId)
+      expect(articleUrl).toBe('https://en.wikipedia.org/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&formatversion=2&page=Canada')
     })
   })
 

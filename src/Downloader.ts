@@ -78,8 +78,6 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
 class Downloader {
   public loginCookie = ''
   public readonly speed: number
-  public baseUrl: string
-  public baseUrlForMainPage: string
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
