@@ -30,7 +30,6 @@ describe('Downloader class', () => {
   beforeAll(async () => {
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-
     downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
     await MediaWiki.getMwMetaData(downloader)
