@@ -1,42 +1,28 @@
-import * as mwoffliner from '../../src/mwoffliner.lib.js'
 import { execa } from 'execa'
+import { testAllRenders } from '../testAllRenders.js'
 import rimraf from 'rimraf'
-import { zimcheckAvailable, zimcheck, zimdumpAvailable, zimdump } from '../util.js'
+import { zimcheck, zimdump } from '../util.js'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
 
 jest.setTimeout(60000)
 
-describe('Multimedia', () => {
-  const now = new Date()
-  const testId = `mwo-test-${+now}`
+const parameters = {
+  mwUrl: 'https://en.m.wikipedia.org',
+  adminEmail: 'test@kiwix.org',
+  articleList: 'User:Kelson/MWoffliner_CI_reference',
+  redis: process.env.REDIS,
+  customZimDescription: 'Example of the description',
+}
 
-  const parameters = {
-    mwUrl: 'https://en.m.wikipedia.org',
-    adminEmail: 'test@kiwix.org',
-    articleList: 'User:Kelson/MWoffliner_CI_reference',
-    outputDirectory: testId,
-    redis: process.env.REDIS,
-    customZimDescription: 'Example of the description',
-    forceRender: 'WikimediaDesktop',
-  }
+await testAllRenders(parameters, async (outFiles) => {
+  describe('Multimedia', () => {
+    test(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
+      await execa('redis-cli flushall', { shell: true })
 
-  test('check multimedia content from wikipedia test page', async () => {
-    await execa('redis-cli flushall', { shell: true })
-
-    const [dump] = await mwoffliner.execute(parameters)
-
-    expect(dump.status.articles.success).toEqual(1)
-    expect(dump.status.articles.fail).toEqual(0)
-
-    if (await zimcheckAvailable()) {
-      await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
-    } else {
-      console.log('Zimcheck not installed, skipping test')
-    }
-
-    if (await zimdumpAvailable()) {
-      const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
+      expect(outFiles[0].status.articles.success).toEqual(1)
+      expect(outFiles[0].status.articles.fail).toEqual(0)
+      const mediaFiles = await zimdump(`list --ns I ${outFiles[0].outFile}`)
 
       expect(mediaFiles.split('\n').sort()).toEqual(
         [
@@ -49,32 +35,26 @@ describe('Multimedia', () => {
           'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
         ].sort(),
       )
-    } else {
-      console.log('Zimcheck not installed, skipping test')
-    }
+    })
 
-    rimraf.sync(`./${testId}`)
-    const redisScan = await execa('redis-cli --scan', { shell: true })
-    // Redis has been cleared
-    expect(redisScan.stdout).toEqual('')
+    afterAll(() => {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    })
   })
+})
 
-  test('check multimedia content from wikipedia test page with different formates', async () => {
-    await execa('redis-cli flushall', { shell: true })
-    const dumps = await mwoffliner.execute({ ...parameters, format: ['nopic', 'novid', 'nopdf', 'nodet'] })
+await testAllRenders({ ...parameters, format: ['nopic', 'novid', 'nopdf', 'nodet'] }, async (outFiles) => {
+  describe('Multimedia for different formats', () => {
+    test(`check multimedia content from wikipedia test page with different formates for ${outFiles[0]?.renderer} renderer`, async () => {
+      await execa('redis-cli flushall', { shell: true })
 
-    expect(dumps).toHaveLength(4)
-    for (const dump of dumps) {
-      expect(dump.status.articles.success).toEqual(1)
-      expect(dump.status.articles.fail).toEqual(0)
+      expect(outFiles).toHaveLength(4)
+      for (const dump of outFiles) {
+        expect(dump.status.articles.success).toEqual(1)
+        expect(dump.status.articles.fail).toEqual(0)
 
-      if (await zimcheckAvailable()) {
         await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
-      } else {
-        console.log('Zimcheck not installed, skipping test')
-      }
 
-      if (await zimdumpAvailable()) {
         const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
         if (dump.nopic) {
           expect(mediaFiles.split('\n').sort()).toEqual(
@@ -113,13 +93,7 @@ describe('Multimedia', () => {
             ].sort(),
           )
         }
-      } else {
-        console.log('Zimcheck not installed, skipping test')
       }
-    }
-    rimraf.sync(`./${testId}`)
-    const redisScan = await execa('redis-cli --scan', { shell: true })
-    // Redis has been cleared
-    expect(redisScan.stdout).toEqual('')
+    })
   })
 })

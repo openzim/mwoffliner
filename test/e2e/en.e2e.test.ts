@@ -19,12 +19,14 @@ const verifyImgElements = (imgFilesArr, imgElements) => {
   return false
 }
 
-const mwUrl = 'https://en.wikipedia.org'
-const articleList = 'BMW'
-const format = ''
+const parameters = {
+  mwUrl: 'https://en.wikipedia.org',
+  articleList: 'BMW',
+  adminEmail: 'test@kiwix.org',
+}
 
-await testAllRenders(mwUrl, articleList, format, async (outFiles) => {
-  const articleFromDump = await zimdump(`show --url A/${articleList} ${outFiles[0].outFile}`)
+await testAllRenders(parameters, async (outFiles) => {
+  const articleFromDump = await zimdump(`show --url A/${parameters.articleList} ${outFiles[0].outFile}`)
   describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
     test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
