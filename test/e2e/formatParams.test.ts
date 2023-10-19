@@ -71,6 +71,7 @@ await testAllRenders({ ...parameters, format: 'nopdf', articleList: 'PDF' }, asy
       const articleFromDump = await zimdump(`show --url A/PDF ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
       // TODO: blocked by issues/1928
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const anchorElements = Array.from(articleDoc.querySelectorAll('a'))
     })
   })

@@ -10,6 +10,7 @@ import { jest } from '@jest/globals'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
+import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 
 jest.setTimeout(40000)
@@ -18,87 +19,77 @@ describe('saveArticles', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
-  test('Article html processing', async () => {
-    const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
-    await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls('WikimediaDesktop')
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = RedisStore
-    await articleDetailXId.flush()
-    await articleDetailXId.setMany(articlesDetail)
-
-    const addedArticles: (typeof ZimArticle)[] = []
-
-    // TODO: use proper spied (like sinon.js)
-    await saveArticles(
-      {
-        addArticle(article: typeof ZimArticle) {
-          if (article.mimeType === 'text/html') {
-            addedArticles.push(article)
-          }
-          return Promise.resolve(null)
-        },
-      } as any,
-      downloader,
-      dump,
-      true,
-      'WikimediaDesktop',
-    )
-
-    // Successfully scrapped existent articles
-    expect(addedArticles).toHaveLength(1)
-    expect(addedArticles[0].aid).toEqual('A/London')
-
-    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
-    const articleId = 'non-existent-article'
-    const articleUrl = getArticleUrl(downloader, dump, articleId)
-    const articleDetail = { title: 'Non-existent-article', missing: '' }
-    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-
-    await expect(
-      downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        wikimediaDesktopRenderer,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      ),
-    ).rejects.toThrowError('')
-
-    const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
-
-    // Successfully scrapped existent articles
-    expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
-    // Geo Position data is correct
-    expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
-    // Check if header exists
-    expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
-  })
-
   for (const renderer of RENDERERS_LIST) {
+    let rendererInstance
+    switch (renderer) {
+      case 'VisualEditor':
+        rendererInstance = new VisualEditorRenderer()
+        break
+      case 'WikimediaDesktop':
+        rendererInstance = new WikimediaDesktopRenderer()
+        break
+      case 'WikimediaMobile':
+        rendererInstance = new WikimediaMobileRenderer()
+        break
+      default:
+        throw new Error(`Unknown renderer: ${renderer}`)
+    }
+
+    test(`Article html processing using ${renderer} renderer`, async () => {
+      const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+      await MediaWiki.hasCoordinates(downloader)
+      await MediaWiki.hasWikimediaDesktopApi()
+      await MediaWiki.hasWikimediaMobileApi()
+      await MediaWiki.hasVisualEditorApi()
+      await downloader.setBaseUrls(renderer)
+      const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
+      const articlesDetail = mwRetToArticleDetail(_articlesDetail)
+      const { articleDetailXId } = RedisStore
+      await articleDetailXId.flush()
+      await articleDetailXId.setMany(articlesDetail)
+
+      const addedArticles: (typeof ZimArticle)[] = []
+
+      // TODO: use proper spied (like sinon.js)
+      await saveArticles(
+        {
+          addArticle(article: typeof ZimArticle) {
+            if (article.mimeType === 'text/html') {
+              addedArticles.push(article)
+            }
+            return Promise.resolve(null)
+          },
+        } as any,
+        downloader,
+        dump,
+        true,
+        renderer,
+      )
+
+      // Successfully scrapped existent articles
+      expect(addedArticles).toHaveLength(1)
+      expect(addedArticles[0].aid).toEqual('A/London')
+
+      const articleId = 'non-existent-article'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleDetail = { title: 'Non-existent-article', missing: '' }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+
+      await expect(
+        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+      ).rejects.toThrowError('')
+
+      const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
+
+      // Successfully scrapped existent articles
+      expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
+      // Geo Position data is correct
+      expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
+      // Check if header exists
+      expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
+    })
+
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
-      let rendererInstance
-      switch (renderer) {
-        case 'VisualEditor':
-          rendererInstance = new VisualEditorRenderer()
-          break
-        case 'WikimediaDesktop':
-          rendererInstance = new WikimediaDesktopRenderer()
-          break
-        case 'WikimediaMobile':
-          rendererInstance = new WikimediaDesktopRenderer()
-          break
-        default:
-          throw new Error(`Unknown renderer: ${renderer}`)
-      }
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
       await downloader.setBaseUrls(renderer)
       const articleId = 'Canada'
@@ -128,35 +119,99 @@ describe('saveArticles', () => {
       expect(sections.length).toEqual(1)
       expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
     })
+    test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
+      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+      await downloader.setBaseUrls(renderer)
+      const articleId = 'Main_Page'
+      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      articleDetailXId.setMany(articlesDetail)
+      const result = await downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        rendererInstance,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
+
+      const articleDoc = domino.createDocument(result[0].html)
+      expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
+    })
+    test(`--customFlavour using ${renderer} renderer`, async () => {
+      const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      await MediaWiki.hasCoordinates(downloader)
+      await MediaWiki.hasWikimediaDesktopApi()
+      await MediaWiki.hasWikimediaMobileApi()
+      await MediaWiki.hasVisualEditorApi()
+      await downloader.setBaseUrls()
+      class CustomFlavour implements CustomProcessor {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        public async shouldKeepArticle(articleId: string, doc: Document) {
+          return articleId !== 'London'
+        }
+        public async preProcessArticle(articleId: string, doc: Document) {
+          if (articleId === 'Paris') {
+            const h2 = doc.createElement('h2')
+            h2.textContent = 'INSERTED_BY_PRE_PROCESSOR'
+            h2.id = 'PRE_PROCESSOR'
+            doc.body.appendChild(h2)
+          }
+          return doc
+        }
+        public async postProcessArticle(articleId: string, doc: Document) {
+          if (articleId === 'Prague') {
+            const h2 = doc.createElement('h2')
+            h2.textContent = 'INSERTED_BY_POST_PROCESSOR'
+            h2.id = 'POST_PROCESSOR'
+            doc.body.appendChild(h2)
+          }
+          return doc
+        }
+      }
+      const customFlavour = new CustomFlavour()
+      dump.customProcessor = customFlavour
+
+      const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
+      const articlesDetail = mwRetToArticleDetail(_articlesDetail)
+      const { articleDetailXId } = RedisStore
+      await articleDetailXId.flush()
+      await articleDetailXId.setMany(articlesDetail)
+
+      const writtenArticles: any = {}
+      await saveArticles(
+        {
+          addArticle(article: typeof ZimArticle) {
+            if (article.mimeType === 'text/html') {
+              writtenArticles[article.title] = article
+            }
+            return Promise.resolve(null)
+          },
+        } as any,
+        downloader,
+        dump,
+        true,
+        renderer,
+      )
+
+      const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)
+      const PragueDocument = domino.createDocument(writtenArticles.Prague.bufferData)
+
+      // London was correctly filtered out by customFlavour
+      expect(writtenArticles.London).toBeUndefined()
+      // Paris was correctly pre-processed
+      expect(ParisDocument.querySelector('#PRE_PROCESSOR')).toBeDefined()
+      // Prague was correctly post-processed
+      expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
+    })
   }
-
-  test('Load main page and check that it is without header', async () => {
-    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
-    const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-    await downloader.setBaseUrls('WikimediaDesktop')
-    const articleId = 'Main_Page'
-    const articleUrl = getArticleUrl(downloader, dump, articleId)
-    const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
-    const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
-    const { articleDetailXId } = RedisStore
-    const articleDetail = { title: articleId }
-    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-    articleDetailXId.setMany(articlesDetail)
-    const result = await downloader.getArticle(
-      downloader.webp,
-      _moduleDependencies,
-      articleId,
-      articleDetailXId,
-      wikimediaDesktopRenderer,
-      articleUrl,
-      dump,
-      articleDetail,
-      dump.isMainPage(articleId),
-    )
-
-    const articleDoc = domino.createDocument(result[0].html)
-    expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
-  })
 
   describe('applyOtherTreatments', () => {
     // TODO: Fix unit tests below once 'keepEmptyParagraphs' option will be modified. See issues/1866
@@ -224,73 +279,6 @@ describe('saveArticles', () => {
       expect(fewestChildren).toBeLessThanOrEqual(1)
     })
     */
-  })
-
-  test('--customFlavour', async () => {
-    const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-    await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls()
-    class CustomFlavour implements CustomProcessor {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      public async shouldKeepArticle(articleId: string, doc: Document) {
-        return articleId !== 'London'
-      }
-      public async preProcessArticle(articleId: string, doc: Document) {
-        if (articleId === 'Paris') {
-          const h2 = doc.createElement('h2')
-          h2.textContent = 'INSERTED_BY_PRE_PROCESSOR'
-          h2.id = 'PRE_PROCESSOR'
-          doc.body.appendChild(h2)
-        }
-        return doc
-      }
-      public async postProcessArticle(articleId: string, doc: Document) {
-        if (articleId === 'Prague') {
-          const h2 = doc.createElement('h2')
-          h2.textContent = 'INSERTED_BY_POST_PROCESSOR'
-          h2.id = 'POST_PROCESSOR'
-          doc.body.appendChild(h2)
-        }
-        return doc
-      }
-    }
-    const customFlavour = new CustomFlavour()
-    dump.customProcessor = customFlavour
-
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = RedisStore
-    await articleDetailXId.flush()
-    await articleDetailXId.setMany(articlesDetail)
-
-    const writtenArticles: any = {}
-    await saveArticles(
-      {
-        addArticle(article: typeof ZimArticle) {
-          if (article.mimeType === 'text/html') {
-            writtenArticles[article.title] = article
-          }
-          return Promise.resolve(null)
-        },
-      } as any,
-      downloader,
-      dump,
-      true,
-      'WikimediaDesktop',
-    )
-
-    const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)
-    const PragueDocument = domino.createDocument(writtenArticles.Prague.bufferData)
-
-    // London was correctly filtered out by customFlavour
-    expect(writtenArticles.London).toBeUndefined()
-    // Paris was correctly pre-processed
-    expect(ParisDocument.querySelector('#PRE_PROCESSOR')).toBeDefined()
-    // Prague was correctly post-processed
-    expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
   })
 
   test('Test deleted article rendering (Visual editor renderer)', async () => {

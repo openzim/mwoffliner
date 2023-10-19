@@ -7,7 +7,6 @@ import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/ut
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
 import { getArticleUrl } from '../../src/util/saveArticles.js'
-import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -15,6 +14,10 @@ import { jest } from '@jest/globals'
 import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
+import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
+import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
+import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
+import { RENDERERS_LIST } from '../../src/util/const.js'
 
 jest.setTimeout(200000)
 
@@ -125,89 +128,103 @@ describe('Downloader class', () => {
   })
 
   describe('getArticle method', () => {
-    let dump: Dump
-    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
-
-    beforeAll(async () => {
-      const mwMetadata = await MediaWiki.getMwMetaData(downloader)
-      dump = new Dump('', {} as any, mwMetadata)
-    })
-
-    test('getArticle of "London" returns one article', async () => {
-      const articleId = 'London'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const articleDetail = {
-        title: articleId,
-        thumbnail: {
-          width: 50,
-          height: 28,
-          source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_Skyline_%28125508655%29.jpeg/50px-London_Skyline_%28125508655%29.jpeg',
-        },
-        revisionId: 1171340841,
-        timestamp: '2023-08-20T14:54:01Z',
-        coordinates: '51.50722222;-0.1275',
+    for (const renderer of RENDERERS_LIST) {
+      let rendererInstance
+      switch (renderer) {
+        case 'VisualEditor':
+          rendererInstance = new VisualEditorRenderer()
+          break
+        case 'WikimediaDesktop':
+          rendererInstance = new WikimediaDesktopRenderer()
+          break
+        case 'WikimediaMobile':
+          rendererInstance = new WikimediaMobileRenderer()
+          break
+        default:
+          throw new Error(`Unknown renderer: ${renderer}`)
       }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-      const LondonArticle = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        RedisStore.articleDetailXId,
-        wikimediaDesktopRenderer,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
-      expect(LondonArticle).toHaveLength(1)
-    })
+      let dump: Dump
+      beforeAll(async () => {
+        const mwMetadata = await MediaWiki.getMwMetaData(downloader)
+        dump = new Dump('', {} as any, mwMetadata)
+      })
 
-    test('Categories with many subCategories are paginated', async () => {
-      const articleId = 'Category:Container_categories'
-      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
-      const articleDetail = {
-        title: articleId,
-        ns: 14,
-        revisionId: 1168361498,
-        timestamp: '2023-08-02T09:57:11Z',
-      }
-      const articleUrl = getArticleUrl(downloader, dump, articleDetail.title)
-      const PaginatedArticle = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        RedisStore.articleDetailXId,
-        wikimediaDesktopRenderer,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
-      expect(PaginatedArticle.length).toBeGreaterThan(100)
-    })
-
-    test('getArticle response status for non-existent article id is 404', async () => {
-      const articleId = 'NeverExistingArticle'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const articleDetail = {
-        title: articleId,
-        missing: '',
-      }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-      await expect(
-        downloader.getArticle(
+      test(`getArticle of "London" returns one article for ${renderer} render`, async () => {
+        const articleId = 'London'
+        const articleUrl = getArticleUrl(downloader, dump, articleId)
+        const articleDetail = {
+          title: articleId,
+          thumbnail: {
+            width: 50,
+            height: 28,
+            source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_Skyline_%28125508655%29.jpeg/50px-London_Skyline_%28125508655%29.jpeg',
+          },
+          revisionId: 1171340841,
+          timestamp: '2023-08-20T14:54:01Z',
+          coordinates: '51.50722222;-0.1275',
+        }
+        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+        const LondonArticle = await downloader.getArticle(
           downloader.webp,
           _moduleDependencies,
-          'NeverExistingArticle',
+          articleId,
           RedisStore.articleDetailXId,
-          wikimediaDesktopRenderer,
+          rendererInstance,
           articleUrl,
           dump,
           articleDetail,
           dump.isMainPage(articleId),
-        ),
-      ).rejects.toThrowError(new Error('Request failed with status code 404'))
-    })
+        )
+        expect(LondonArticle).toHaveLength(1)
+      })
+
+      test(`Categories with many subCategories are paginated for ${renderer} render`, async () => {
+        const articleId = 'Category:Container_categories'
+        const _moduleDependencies = await downloader.getModuleDependencies(articleId)
+        const articleDetail = {
+          title: articleId,
+          ns: 14,
+          revisionId: 1168361498,
+          timestamp: '2023-08-02T09:57:11Z',
+        }
+        const articleUrl = getArticleUrl(downloader, dump, articleDetail.title)
+        const PaginatedArticle = await downloader.getArticle(
+          downloader.webp,
+          _moduleDependencies,
+          articleId,
+          RedisStore.articleDetailXId,
+          rendererInstance,
+          articleUrl,
+          dump,
+          articleDetail,
+          dump.isMainPage(articleId),
+        )
+        expect(PaginatedArticle.length).toBeGreaterThan(100)
+      })
+
+      test(`getArticle response status for non-existent article id is 404 for ${renderer} render`, async () => {
+        const articleId = 'NeverExistingArticle'
+        const articleUrl = getArticleUrl(downloader, dump, articleId)
+        const articleDetail = {
+          title: articleId,
+          missing: '',
+        }
+        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+        await expect(
+          downloader.getArticle(
+            downloader.webp,
+            _moduleDependencies,
+            'NeverExistingArticle',
+            RedisStore.articleDetailXId,
+            rendererInstance,
+            articleUrl,
+            dump,
+            articleDetail,
+            dump.isMainPage(articleId),
+          ),
+        ).rejects.toThrowError(new Error('Request failed with status code 404'))
+      })
+    }
   })
 
   describe('isImageUrl method', () => {
