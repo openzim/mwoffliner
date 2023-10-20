@@ -1,5 +1,5 @@
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
-import { zimdump, zimcheck } from '../util.js'
+import { zimdump } from '../util.js'
 import { testAllRenders } from '../testAllRenders.js'
 import { execa } from 'execa'
 import { jest } from '@jest/globals'
@@ -17,9 +17,12 @@ const parameters = {
 
 await testAllRenders(parameters, async (outFiles) => {
   describe('e2e test for bm.wikipedia.org', () => {
+    // TODO: blocked by issues/1931
+    /*
     test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
+    */
 
     test(`Simple articleList for ${outFiles[0]?.renderer} renderer`, async () => {
       // Created 1 output

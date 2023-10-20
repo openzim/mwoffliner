@@ -35,7 +35,6 @@ Real-time computer graphics`
     outputDirectory: testId,
     redis: process.env.REDIS,
     webp: true,
-    forceRender: 'WikimediaDesktop',
   })
 
   const zimFile = new ZimReader(outFiles[0].outFile)

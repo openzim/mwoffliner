@@ -86,7 +86,7 @@ describe('saveArticles', () => {
       // Geo Position data is correct
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
       // Check if header exists
-      expect(articleDoc.querySelector('h1.article-header')).toBeTruthy()
+      expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
@@ -119,6 +119,7 @@ describe('saveArticles', () => {
       expect(sections.length).toEqual(1)
       expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
     })
+
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
       await downloader.setBaseUrls(renderer)
@@ -127,7 +128,7 @@ describe('saveArticles', () => {
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
-      const articleDetail = { title: articleId }
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
       const result = await downloader.getArticle(
@@ -141,17 +142,17 @@ describe('saveArticles', () => {
         articleDetail,
         dump.isMainPage(articleId),
       )
-
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
+
     test(`--customFlavour using ${renderer} renderer`, async () => {
       const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
       await MediaWiki.hasCoordinates(downloader)
       await MediaWiki.hasWikimediaDesktopApi()
       await MediaWiki.hasWikimediaMobileApi()
       await MediaWiki.hasVisualEditorApi()
-      await downloader.setBaseUrls()
+      await downloader.setBaseUrls(renderer)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
