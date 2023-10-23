@@ -71,7 +71,7 @@ describe('saveArticles', () => {
       expect(addedArticles[0].aid).toEqual('A/London')
 
       const articleId = 'non-existent-article'
-      const articleUrl = downloader.getArticleUrl(renderer, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
@@ -91,8 +91,9 @@ describe('saveArticles', () => {
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      await downloader.setBaseUrlsDirectors(renderer)
       const articleId = 'Canada'
-      const articleUrl = downloader.getArticleUrl(rendererInstance, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -279,6 +280,7 @@ describe('saveArticles', () => {
 
   test('--customFlavour', async () => {
     const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+    await downloader.setBaseUrlsDirectors()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async shouldKeepArticle(articleId: string, doc: Document) {

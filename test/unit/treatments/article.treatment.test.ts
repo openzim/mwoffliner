@@ -43,8 +43,9 @@ describe('ArticleTreatment', () => {
       await articleDetailXId.setMany(articlesDetail)
 
       const addedArticles: (typeof ZimArticle)[] = []
+
       const articleId = 'non-existent-article'
-      const articleUrl = downloader.getArticleUrl(renderer, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
 
       const _moduleDependencies = await downloader.getModuleDependencies(title)
       const articleDetail = {

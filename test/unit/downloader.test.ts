@@ -14,10 +14,9 @@ import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
-import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
+import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
-import { setupScrapeClasses } from '../util.js'
 
 jest.setTimeout(200000)
 
@@ -127,18 +126,16 @@ describe('Downloader class', () => {
 
   describe('getArticle method', () => {
     let dump: Dump
-    let renderer
-    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+    const wikimediaMobileRenderer = new WikimediaMobileRenderer()
+
     beforeAll(async () => {
       const mwMetadata = await MediaWiki.getMwMetaData(downloader)
       dump = new Dump('', {} as any, mwMetadata)
-      const setupScrapeClass = await setupScrapeClasses() // en wikipedia
-      renderer = setupScrapeClass.renderer
     })
 
-    test('getArticle of "London" returns one article for WikimediaDesktop render', async () => {
+    test('getArticle of "London" returns one article for wikimediaMobileRenderer render', async () => {
       const articleId = 'London'
-      const articleUrl = downloader.getArticleUrl(renderer, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -156,7 +153,7 @@ describe('Downloader class', () => {
         _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
-        wikimediaDesktopRenderer,
+        wikimediaMobileRenderer,
         articleUrl,
         dump,
         articleDetail,
@@ -168,13 +165,15 @@ describe('Downloader class', () => {
     test('Categories with many subCategories are paginated for WikimediaDesktop render', async () => {
       const articleId = 'Category:Container_categories'
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
+      const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
       const articleDetail = {
         title: articleId,
         ns: 14,
         revisionId: 1168361498,
         timestamp: '2023-08-02T09:57:11Z',
       }
-      const articleUrl = downloader.getArticleUrl(renderer, articleDetail.title)
+      // Enforce desktop url here as this test desktop API-specific
+      const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
       const PaginatedArticle = await downloader.getArticle(
         downloader.webp,
         _moduleDependencies,
@@ -191,7 +190,7 @@ describe('Downloader class', () => {
 
     test('getArticle response status for non-existent article id is 404 for WikimediaDesktop render', async () => {
       const articleId = 'NeverExistingArticle'
-      const articleUrl = downloader.getArticleUrl(renderer, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const articleDetail = {
         title: articleId,
         missing: '',
@@ -203,7 +202,7 @@ describe('Downloader class', () => {
           _moduleDependencies,
           'NeverExistingArticle',
           RedisStore.articleDetailXId,
-          wikimediaDesktopRenderer,
+          wikimediaMobileRenderer,
           articleUrl,
           dump,
           articleDetail,

@@ -58,12 +58,19 @@ class MediaWiki {
 
   public visualEditorApiUrl: URL
   public actionApiUrl: URL
+
+  public VisualEditorApiUrl: URL
+  public apiUrl: URL
   public modulePath: string // only for reading
   public mobileModulePath: string
   public webUrl: URL
   public WikimediaDesktopApiUrl: URL
   public WikimediaMobileApiUrl: URL
 
+  #apiUrlDirector: ApiURLDirector
+  #wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
+  #wikimediaMobileUrlDirector: WikimediaMobileURLDirector
+  #visualEditorURLDirector: VisualEditorURLDirector
   #hasWikimediaDesktopApi: boolean | null
   #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
@@ -163,7 +170,8 @@ class MediaWiki {
 
   public async hasWikimediaDesktopApi(): Promise<boolean> {
     if (this.#hasWikimediaDesktopApi === null) {
-      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
+      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.#wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaDesktopApi
     }
     return this.#hasWikimediaDesktopApi
@@ -171,7 +179,8 @@ class MediaWiki {
 
   public async hasWikimediaMobileApi(): Promise<boolean> {
     if (this.#hasWikimediaMobileApi === null) {
-      this.#hasWikimediaMobileApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
+      this.#hasWikimediaMobileApi = await checkApiAvailability(this.#wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaMobileApi
     }
     return this.#hasWikimediaMobileApi
@@ -179,7 +188,8 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#visualEditorURLDirector = new VisualEditorURLDirector(this.VisualEditorApiUrl.href)
+      this.#hasVisualEditorApi = await checkApiAvailability(this.#visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -193,7 +203,7 @@ class MediaWiki {
         rdnamespace: validNamespaceIds,
       }
 
-      const resp = await downloader.getJSON<MwApiResponse>(this.apiUrlDirector.buildQueryURL(reqOpts))
+      const resp = await downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
       const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
       if (isCoordinateWarning) {
         logger.info('Coordinates not available on this wiki')
@@ -218,6 +228,15 @@ class MediaWiki {
     this.apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
+    this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
+    this.#apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
+    this.VisualEditorApiUrl = this.#apiUrlDirector.buildVisualEditorURL()
+    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#restApiPath)
+    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
+    this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
+    this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
   }
 
   public async login(downloader: Downloader) {
@@ -261,7 +280,7 @@ class MediaWiki {
   }
 
   public async getNamespaces(addNamespaces: number[], downloader: Downloader) {
-    const url = this.apiUrlDirector.buildNamespacesURL()
+    const url = this.#apiUrlDirector.buildNamespacesURL()
 
     const json: any = await downloader.getJSON(url)
     ;['namespaces', 'namespacealiases'].forEach((type) => {

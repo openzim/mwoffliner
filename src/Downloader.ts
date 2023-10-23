@@ -20,8 +20,14 @@ import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBit
 import S3 from './S3.js'
 import * as logger from './Logger.js'
 import MediaWiki, { QueryOpts } from './MediaWiki.js'
+import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
+import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
+
+import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
+import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
+import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -79,6 +85,8 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
 class Downloader {
   public loginCookie = ''
   public readonly speed: number
+  public baseUrl: string
+  public baseUrlForMainPage: string
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
@@ -87,6 +95,8 @@ class Downloader {
   public streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
+  public articleUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
+  public mainPageUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
 
   private readonly uaString: string
   private activeRequests = 0
@@ -167,21 +177,69 @@ class Downloader {
     }
   }
 
-  public getArticleUrl(renderer, articleId: string): string {
-    let articleUrl: string
-    // Renders and URL builders are independent so there should be a switch/case scenario here
-    switch (renderer.constructor.name) {
-      case 'WikimediaDesktopRenderer':
-        articleUrl = MediaWiki.wikimediaDesktopUrlDirector.buildArticleURL(articleId)
-        break
-      case 'VisualEditorRenderer':
-        articleUrl = MediaWiki.visualEditorURLDirector.buildArticleURL(articleId)
-        break
-      case 'WikimediaMobileRenderer':
-        articleUrl = MediaWiki.wikimediaMobileUrlDirector.buildArticleURL(articleId)
-        break
+  private getUrlDirector(capabilitiesList): WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector {
+    for (const capabilityInfo of capabilitiesList) {
+      if (capabilityInfo.condition) {
+        return new capabilityInfo.Director(capabilityInfo.value)
+      }
     }
-    return articleUrl
+    throw new Error('No suitable URL director found.')
+  }
+
+  public async setBaseUrlsDirectors(forceRender = null) {
+    if (!forceRender) {
+      //* Objects order in array matters!
+      const articlesCapabilitiesList = [
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href, Director: WikimediaMobileURLDirector },
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href, Director: WikimediaDesktopURLDirector },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.VisualEditorApiUrl.href, Director: VisualEditorURLDirector },
+      ]
+
+      this.baseUrl = basicURLDirector.buildDownloaderBaseUrl(articlesCapabilitiesList)
+      this.articleUrlDirector = this.getUrlDirector(articlesCapabilitiesList)
+
+      //* Objects order in array matters!
+      const mainPageCapabilitiesList = [
+        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href, Director: WikimediaDesktopURLDirector },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.VisualEditorApiUrl.href, Director: VisualEditorURLDirector },
+        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href, Director: WikimediaMobileURLDirector },
+      ]
+      this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl(mainPageCapabilitiesList)
+      this.mainPageUrlDirector = this.getUrlDirector(mainPageCapabilitiesList)
+    } else {
+      switch (forceRender) {
+        case 'WikimediaDesktop':
+          if (MediaWiki.hasWikimediaDesktopApi()) {
+            this.baseUrl = MediaWiki.WikimediaDesktopApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.WikimediaDesktopApiUrl.href
+            this.articleUrlDirector = this.mainPageUrlDirector = new WikimediaDesktopURLDirector(MediaWiki.WikimediaDesktopApiUrl.href)
+            break
+          }
+          break
+        case 'VisualEditor':
+          if (MediaWiki.hasVisualEditorApi()) {
+            this.baseUrl = MediaWiki.VisualEditorApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.VisualEditorApiUrl.href
+            this.articleUrlDirector = this.mainPageUrlDirector = new VisualEditorURLDirector(MediaWiki.VisualEditorApiUrl.href)
+            break
+          }
+          break
+        case 'WikimediaMobile':
+          if (MediaWiki.hasWikimediaMobileApi()) {
+            this.baseUrl = MediaWiki.WikimediaMobileApiUrl.href
+            this.baseUrlForMainPage = MediaWiki.WikimediaMobileApiUrl.href
+            this.articleUrlDirector = this.mainPageUrlDirector = new WikimediaMobileURLDirector(MediaWiki.WikimediaMobileApiUrl.href)
+            break
+          }
+          break
+        default:
+          throw new Error('Unable to find specific API end-point to retrieve article HTML')
+      }
+    }
+  }
+
+  public getArticleUrl(dump: Dump, articleId: string): string {
+    return `${dump.isMainPage(articleId) ? this.mainPageUrlDirector.buildArticleURL(articleId) : this.articleUrlDirector.buildArticleURL(articleId)}`
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -300,7 +358,7 @@ class Downloader {
     articleDetailXId: RKVS<ArticleDetail>,
     articleRenderer,
     articleUrl,
-    dump,
+    dump: Dump,
     articleDetail?: ArticleDetail,
     isMainPage?: boolean,
   ): Promise<any> {
