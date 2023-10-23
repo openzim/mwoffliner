@@ -16,7 +16,6 @@ const parameters = {
   articleList: 'Paris',
   format: ['nodet'],
   optimisationCacheUrl: process.env.S3_URL,
-  forceRender: 'WikimediaDesktop',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

@@ -8,6 +8,7 @@ interface Parameters {
   mwUrl: string
   adminEmail: string
   articleList?: string
+  articleListToIgnore?: string
   redis?: string
   format?: string | string[]
   noLocalParserFallback?: boolean

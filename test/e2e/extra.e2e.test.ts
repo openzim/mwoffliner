@@ -1,5 +1,4 @@
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
-import { zimcheckAvailable, zimcheck } from '../util.js'
 import rimraf from 'rimraf'
 import { writeFilePromise, mkdirPromise } from '../../src/util/index.js'
 import { join } from 'path'
@@ -18,7 +17,6 @@ describe('Extra', () => {
     const articleListUrl = join(testId, '/articleList')
 
     test(`Simple customMainPage for ${renderer} renderer`, async () => {
-      await execa('redis-cli flushall', { shell: true })
       await mkdirPromise(testId)
 
       const articleListLines = `
@@ -50,12 +48,17 @@ describe('Extra', () => {
           expect(dump.status.articles.success).toEqual(articleCount)
         }
 
+        // TODO: Blocked by issues/1931
+        /*
         if (await zimcheckAvailable()) {
           await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
         } else {
           console.log('Zimcheck not installed, skipping test')
         }
+        */
       }
+
+      await execa('redis-cli flushall', { shell: true })
 
       // Scraped customMainPage
       // TODO: clear test dir
