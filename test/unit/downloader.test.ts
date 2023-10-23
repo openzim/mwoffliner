@@ -13,9 +13,7 @@ import { jest } from '@jest/globals'
 import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
-import { setupScrapeClasses } from '../util.js'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
-import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 
 jest.setTimeout(200000)
@@ -36,6 +34,7 @@ describe('Downloader class', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
+    await downloader.setBaseUrlsDirectors()
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
@@ -126,19 +125,16 @@ describe('Downloader class', () => {
 
   describe('getArticle method', () => {
     let dump: Dump
-    let renderer
-    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+    const wikimediaMobileRenderer = new WikimediaMobileRenderer()
 
     beforeAll(async () => {
       const mwMetadata = await MediaWiki.getMwMetaData(downloader)
       dump = new Dump('', {} as any, mwMetadata)
-      const setupScrapeClass = await setupScrapeClasses() // en wikipedia
-      renderer = setupScrapeClass.renderer
     })
 
     test('getArticle of "London" returns one article', async () => {
       const articleId = 'London'
-      const articleUrl = downloader.getArticleUrl(renderer, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -156,7 +152,7 @@ describe('Downloader class', () => {
         _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
-        wikimediaDesktopRenderer,
+        wikimediaMobileRenderer,
         articleUrl,
         dump,
         articleDetail,
@@ -168,13 +164,15 @@ describe('Downloader class', () => {
     test('Categories with many subCategories are paginated', async () => {
       const articleId = 'Category:Container_categories'
       const _moduleDependencies = await downloader.getModuleDependencies(articleId)
+      const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
       const articleDetail = {
         title: articleId,
         ns: 14,
         revisionId: 1168361498,
         timestamp: '2023-08-02T09:57:11Z',
       }
-      const articleUrl = downloader.getArticleUrl(renderer, articleDetail.title)
+      // Enforce desktop url here as this test desktop API-specific
+      const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
       const PaginatedArticle = await downloader.getArticle(
         downloader.webp,
         _moduleDependencies,
@@ -191,7 +189,7 @@ describe('Downloader class', () => {
 
     test('getArticle response status for non-existent article id is 404', async () => {
       const articleId = 'NeverExistingArticle'
-      const articleUrl = downloader.getArticleUrl(renderer, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const articleDetail = {
         title: articleId,
         missing: '',
@@ -203,32 +201,13 @@ describe('Downloader class', () => {
           _moduleDependencies,
           'NeverExistingArticle',
           RedisStore.articleDetailXId,
-          wikimediaDesktopRenderer,
+          wikimediaMobileRenderer,
           articleUrl,
           dump,
           articleDetail,
           dump.isMainPage(articleId),
         ),
       ).rejects.toThrowError(new Error('Request failed with status code 404'))
-    })
-  })
-
-  describe('getArticleUrl method for en.wikipedia.org', () => {
-    const articleId = 'Canada'
-    test('test article url for WikimediaDesktop renderer', () => {
-      const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
-      const articleUrl = downloader.getArticleUrl(wikimediaDesktopRenderer, articleId)
-      expect(articleUrl).toBe('https://en.wikipedia.org/api/rest_v1/page/html/Canada')
-    })
-    test('test article url for WikimediaMobile renderer', () => {
-      const wikimediaMobileRenderer = new WikimediaMobileRenderer()
-      const articleUrl = downloader.getArticleUrl(wikimediaMobileRenderer, articleId)
-      expect(articleUrl).toBe('https://en.wikipedia.org/api/rest_v1/page/mobile-html/Canada')
-    })
-    test('test article url for VisualEditor renderer', () => {
-      const visualEditorRenderer = new VisualEditorRenderer()
-      const articleUrl = downloader.getArticleUrl(visualEditorRenderer, articleId)
-      expect(articleUrl).toBe('https://en.wikipedia.org/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&formatversion=2&page=Canada')
     })
   })
 

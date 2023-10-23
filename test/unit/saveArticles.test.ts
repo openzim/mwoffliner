@@ -18,11 +18,12 @@ describe('saveArticles', () => {
   afterAll(stopRedis)
 
   test('Article html processing', async () => {
-    const { renderer, MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
+    await downloader.setBaseUrlsDirectors('WikimediaDesktop')
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
     const { articleDetailXId } = RedisStore
@@ -53,7 +54,7 @@ describe('saveArticles', () => {
 
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const articleId = 'non-existent-article'
-    const articleUrl = downloader.getArticleUrl(renderer, articleId)
+    const articleUrl = downloader.getArticleUrl(dump, articleId)
     const articleDetail = { title: 'Non-existent-article', missing: '' }
     const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
@@ -98,8 +99,9 @@ describe('saveArticles', () => {
           throw new Error(`Unknown renderer: ${renderer}`)
       }
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      await downloader.setBaseUrlsDirectors(renderer)
       const articleId = 'Canada'
-      const articleUrl = downloader.getArticleUrl(rendererInstance, articleId)
+      const articleUrl = downloader.getArticleUrl(dump, articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -130,8 +132,9 @@ describe('saveArticles', () => {
   test('Load main page and check that it is without header', async () => {
     const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
     const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+    await downloader.setBaseUrlsDirectors('WikimediaDesktop')
     const articleId = 'Main_Page'
-    const articleUrl = downloader.getArticleUrl(wikimediaDesktopRenderer, articleId)
+    const articleUrl = downloader.getArticleUrl(dump, articleId)
     const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
     const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
     const { articleDetailXId } = RedisStore
@@ -167,7 +170,7 @@ describe('saveArticles', () => {
       const downloader = classes.downloader
 
       await downloader.setCapabilities()
-      await downloader.setBaseUrls()
+      await downloader.setBaseUrlsDirectors()
       const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = redisStore
@@ -228,6 +231,7 @@ describe('saveArticles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
+    await downloader.setBaseUrlsDirectors()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       public async shouldKeepArticle(articleId: string, doc: Document) {

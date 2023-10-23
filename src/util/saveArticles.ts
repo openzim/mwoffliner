@@ -133,7 +133,7 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
       try {
         const isMainPage = dump.isMainPage(articleId)
         const renderer = isMainPage ? mainPageRenderer : articlesRenderer
-        const articleUrl = downloader.getArticleUrl(renderer, articleId)
+        const articleUrl = downloader.getArticleUrl(dump, articleId)
 
         rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
@@ -292,7 +292,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? mainPageRenderer : articlesRenderer
 
-          const articleUrl = downloader.getArticleUrl(renderer, articleId)
+          const articleUrl = downloader.getArticleUrl(dump, articleId)
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 

@@ -6,7 +6,7 @@ import { setupScrapeClasses } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
-import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
+import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile.renderer.js'
 
 jest.setTimeout(10000)
 
@@ -15,7 +15,8 @@ describe('ArticleTreatment', () => {
   afterAll(stopRedis)
 
   test('Article html processing', async () => {
-    const { downloader, dump, renderer } = await setupScrapeClasses() // en wikipedia
+    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await downloader.setBaseUrlsDirectors()
     const title = 'London'
     const _articlesDetail = await downloader.getArticleDetailsIds([title])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -25,9 +26,9 @@ describe('ArticleTreatment', () => {
 
     const addedArticles: (typeof ZimArticle)[] = []
 
-    const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
+    const wikimediaMobileRenderer = new WikimediaMobileRenderer()
     const articleId = 'non-existent-article'
-    const articleUrl = downloader.getArticleUrl(renderer, articleId)
+    const articleUrl = downloader.getArticleUrl(dump, articleId)
 
     const _moduleDependencies = await downloader.getModuleDependencies(title)
     const articleDetail = {
@@ -67,7 +68,7 @@ describe('ArticleTreatment', () => {
         _moduleDependencies,
         articleId,
         articleDetailXId,
-        wikimediaDesktopRenderer,
+        wikimediaMobileRenderer,
         articleUrl,
         dump,
         articleDetail,

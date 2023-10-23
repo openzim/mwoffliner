@@ -53,12 +53,9 @@ export default class ApiURLDirector {
   }
 
   buildArticleApiURL(articleId: string) {
-    const domain = this.buildBaseArticleURL()
-
-    return urlBuilder.setDomain(domain).setQueryParams({ page: articleId }, '&').build()
-  }
-
-  private buildBaseArticleURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2' }).build()
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId })
+      .build()
   }
 }
