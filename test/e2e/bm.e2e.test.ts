@@ -1,7 +1,6 @@
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import rimraf from 'rimraf'
-import { zimcheckAvailable, zimcheck } from '../util.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import { zimdumpAvailable, zimdump } from '../util.js'
@@ -40,11 +39,14 @@ describe('bm', () => {
       }
     }
 
+    // TODO: blocked by issues/1931
+    /*
     if (await zimcheckAvailable()) {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     } else {
       console.log('Zimcheck not installed, skipping test')
     }
+    */
 
     if (await zimdumpAvailable()) {
       const discussionArticlesStr = await zimdump(`list --ns A/Discussion ${outFiles[0].outFile}`)

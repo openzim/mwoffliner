@@ -11,11 +11,11 @@ export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
-    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasMediaWikiRESTApi] = await Promise.all([
+    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasMediawikiRESTApi] = await Promise.all([
       MediaWiki.hasVisualEditorApi(),
       MediaWiki.hasWikimediaDesktopApi(),
       MediaWiki.hasWikimediaMobileApi(),
-      MediaWiki.hasMediaWikiRESTApi(),
+      MediaWiki.hasMediawikiRESTApi(),
     ])
 
     switch (renderType) {
@@ -25,7 +25,7 @@ export class RendererBuilder {
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
-        } else if (hasMediaWikiRESTApi) {
+        } else if (hasMediawikiRESTApi) {
           return new MediawikiRESTApiRenderer()
         } else {
           logger.error('No available desktop renderer.')
@@ -45,7 +45,7 @@ export class RendererBuilder {
           return new VisualEditorRenderer()
         } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
-        } else if (hasMediaWikiRESTApi) {
+        } else if (hasMediawikiRESTApi) {
           return new MediawikiRESTApiRenderer()
         } else {
           logger.error('No render available at all.')
@@ -67,7 +67,7 @@ export class RendererBuilder {
             logger.error('Cannot create an instance of VisualEditor renderer.')
             process.exit(1)
           case 'MediawikiRESTApi':
-            if (hasMediaWikiRESTApi) {
+            if (hasMediawikiRESTApi) {
               return new MediawikiRESTApiRenderer()
             }
             logger.error('Cannot create an instance of MediawikiRESTApi renderer.')

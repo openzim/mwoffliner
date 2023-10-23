@@ -24,7 +24,7 @@ describe('saveArticles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-    await MediaWiki.hasMediaWikiRESTApi()
+    await MediaWiki.hasMediawikiRESTApi()
     await downloader.setBaseUrlsDirectors('WikimediaDesktop')
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -236,7 +236,7 @@ describe('saveArticles', () => {
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
     await MediaWiki.hasVisualEditorApi()
-    await MediaWiki.hasMediaWikiRESTApi()
+    await MediaWiki.hasMediawikiRESTApi()
     await downloader.setBaseUrlsDirectors()
     class CustomFlavour implements CustomProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

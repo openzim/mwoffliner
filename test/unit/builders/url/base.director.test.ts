@@ -49,7 +49,7 @@ describe('BaseURLDirector', () => {
     it('should return a desktop URL with default path and trailing char', () => {
       const url = baseUrlDirector.buildWikimediaDesktopApiUrl()
 
-      expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v1/page/html/TITLE_PLACEHOLDER/')
+      expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v1/page/html/')
     })
   })
 

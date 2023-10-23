@@ -12,9 +12,9 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import MediaWikiRESTApiDirector from './util/builders/url/mediawiki-rest-api.director.js'
+import MediawikiRESTApiDirector from './util/builders/url/mediawiki-rest-api.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
-import { BLACKLISTED_NS, TITLE_PLACEHOLDER } from './util/const.js'
+import { BLACKLISTED_NS } from './util/const.js'
 
 export interface QueryOpts {
   action: string
@@ -51,24 +51,25 @@ class MediaWiki {
   #apiActionPath: string
   #domain: string
 
-  public VisualEditorApiUrl: URL
   public apiUrl: URL
-  public mediawikiRESTApiURL: URL
   public modulePath: string // only for reading
   public _modulePathOpt: string // only for whiting to generate modulePath
   public mobileModulePath: string
   public webUrl: URL
   public WikimediaDesktopApiUrl: URL
   public WikimediaMobileApiUrl: URL
+  // public MediawikiRESTApiURL: URL
+  public VisualEditorApiUrl: URL
 
   #apiUrlDirector: ApiURLDirector
   #wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   #wikimediaMobileUrlDirector: WikimediaMobileURLDirector
   #visualEditorURLDirector: VisualEditorURLDirector
+  #mediawikiRESTApiDirector: MediawikiRESTApiDirector
   #hasWikimediaDesktopApi: boolean | null
   #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
-  #hasMediaWikiRESTApi: boolean | null
+  #hasMediawikiRESTApi: boolean | null
   #hasCoordinates: boolean | null
 
   set username(value: string) {
@@ -93,10 +94,6 @@ class MediaWiki {
 
   set wikiPath(value: string) {
     this.#wikiPath = value
-  }
-
-  set mediawikiRESTAPiPath(value: string) {
-    this.#mediawikiRESTApiPath = value
   }
 
   set base(value: string) {
@@ -135,7 +132,7 @@ class MediaWiki {
     this.#hasWikimediaDesktopApi = null
     this.#hasWikimediaMobileApi = null
     this.#hasVisualEditorApi = null
-    this.#hasMediaWikiRESTApi = null
+    this.#hasMediawikiRESTApi = null
     this.#hasCoordinates = null
   }
 
@@ -170,13 +167,13 @@ class MediaWiki {
     return this.#hasVisualEditorApi
   }
 
-  public async hasMediaWikiRESTApi(): Promise<boolean> {
-    if (this.#hasMediaWikiRESTApi === null) {
-      this.mediaWikiRESTApiDirector = new MediaWikiRESTApiDirector(this.mediawikiRESTApiURL.href)
-      this.#hasMediaWikiRESTApi = await checkApiAvailability(this.mediaWikiRESTApiDirector.buildArticleURL(this.apiCheckArticleId))
-      return this.#hasMediaWikiRESTApi
+  public async hasMediawikiRESTApi(): Promise<boolean> {
+    if (this.#hasMediawikiRESTApi === null) {
+      this.#mediawikiRESTApiDirector = new MediawikiRESTApiDirector(this.baseUrl.href)
+      this.#hasMediawikiRESTApi = await checkApiAvailability(this.#mediawikiRESTApiDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasMediawikiRESTApi
     }
-    return this.#hasMediaWikiRESTApi
+    return this.#hasMediawikiRESTApi
   }
 
   public async hasCoordinates(downloader: Downloader): Promise<boolean> {
@@ -204,8 +201,8 @@ class MediaWiki {
     this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
     this.#apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.VisualEditorApiUrl = this.#apiUrlDirector.buildVisualEditorURL()
-    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
-    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
+    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl()
+    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl()
     this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
     this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
   }
@@ -432,7 +429,7 @@ class MediaWiki {
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
       apiUrl: this.apiUrl.href,
-      mediawikiRESTAPiPath: this.mediawikiRESTAPiPath,
+      apiPath: this.#apiPath,
       modulePath: this.modulePath,
       mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,

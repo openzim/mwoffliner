@@ -11,11 +11,7 @@ import { jsPath } from './index.js'
 import { config } from '../config.js'
 import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
-import DesktopURLDirector from './builders/url/desktop.director.js'
-import VisualEditorURLDirector from './builders/url/visual-editor.director.js'
-import MediaWikiRESTApiDirector from './builders/url/mediawiki-rest-api.director.js'
 import urlHelper from './url.helper.js'
-import urlBuilder from './builders/url/url.builder.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
 
@@ -238,7 +234,7 @@ export function getArticleUrl(renderer, downloader: Downloader, dump: Dump, arti
       articleUrl = this.visualEditorURLDirector.buildArticleURL(articleId)
       break
     case 'MediawikiRESTApiRenderer':
-      articleUrl = this.mediaWikiRESTApiDirector.buildArticleURL(this.apiCheckArticleId)
+      articleUrl = this.MediawikiRESTApiDirector.buildArticleURL(this.apiCheckArticleId)
       break
   }
   return articleUrl

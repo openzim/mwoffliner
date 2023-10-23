@@ -20,7 +20,7 @@ const initMW = async (downloader: Downloader) => {
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopApi()
   await MediaWiki.hasVisualEditorApi()
-  await MediaWiki.hasMediaWikiRESTApi()
+  await MediaWiki.hasMediawikiRESTApi()
 
   await MediaWiki.getNamespaces([], downloader)
 }

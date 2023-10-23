@@ -28,6 +28,7 @@ import urlHelper from './util/url.helper.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import MediawikiRESTApiURL from './util/builders/url/mediawiki-rest-api.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -66,6 +67,8 @@ interface BackoffOptions {
   backoffHandler: (number: number, delay: number, error?: any) => void
 }
 
+type Director = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | MediawikiRESTApiURL
+
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
   headers: {
     accept: 'application/octet-stream',
@@ -94,8 +97,8 @@ class Downloader {
   public streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
-  public articleUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
-  public mainPageUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
+  public articleUrlDirector: Director
+  public mainPageUrlDirector: Director
 
   private readonly uaString: string
   private activeRequests = 0
@@ -176,7 +179,7 @@ class Downloader {
     }
   }
 
-  private getUrlDirector(capabilitiesList): WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector {
+  private getUrlDirector(capabilitiesList): Director {
     for (const capabilityInfo of capabilitiesList) {
       if (capabilityInfo.condition) {
         return new capabilityInfo.Director(capabilityInfo.value)
@@ -192,6 +195,7 @@ class Downloader {
         { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href, Director: WikimediaMobileURLDirector },
         { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href, Director: WikimediaDesktopURLDirector },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.VisualEditorApiUrl.href, Director: VisualEditorURLDirector },
+        { condition: await MediaWiki.hasMediawikiRESTApi(), value: MediaWiki.baseUrl.href, Director: MediawikiRESTApiURL },
       ]
 
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl(articlesCapabilitiesList)
@@ -201,6 +205,7 @@ class Downloader {
       const mainPageCapabilitiesList = [
         { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href, Director: WikimediaDesktopURLDirector },
         { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.VisualEditorApiUrl.href, Director: VisualEditorURLDirector },
+        { condition: await MediaWiki.hasMediawikiRESTApi(), value: MediaWiki.baseUrl.href, Director: MediawikiRESTApiURL },
         { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href, Director: WikimediaMobileURLDirector },
       ]
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl(mainPageCapabilitiesList)
@@ -232,9 +237,10 @@ class Downloader {
           }
           break
         case 'MediawikiRESTApi':
-          if (MediaWiki.hasMediaWikiRESTApi()) {
-            this.baseUrl = MediaWiki.mediawikiRESTApiURL.href
-            this.baseUrlForMainPage = MediaWiki.mediawikiRESTApiURL.href
+          if (MediaWiki.hasMediawikiRESTApi()) {
+            this.baseUrl = MediaWiki.baseUrl.href
+            this.baseUrlForMainPage = MediaWiki.baseUrl.href
+            this.articleUrlDirector = this.mainPageUrlDirector = new MediawikiRESTApiURL(MediaWiki.baseUrl.href)
             break
           }
           break
