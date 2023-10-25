@@ -608,7 +608,7 @@ async function execute(argv: any) {
   }
 
   async function fetchArticleDetail(articleId: string) {
-    return await articleDetailXId.get(articleId)
+    return articleDetailXId.get(articleId)
   }
 
   async function updateArticleThumbnail(articleDetail: any, articleId: string) {
