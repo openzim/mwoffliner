@@ -317,18 +317,25 @@ describe('saveArticles', () => {
     const { downloader } = await setupScrapeClasses() // en wikipedia
 
     const _moduleDependencies = await downloader.getModuleDependencies('Potato')
-    // next variables declared to avoid "variable is not defined" errors
+
     let RLCONF: any
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let RLSTATE: any
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let RLPAGEMODULES: any
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const document: any = { documentElement: { className: '' }, cookie: '' }
 
-    // eslint-disable-next-line no-eval
-    eval(_moduleDependencies.jsConfigVars)
-    expect(RLCONF).toMatchObject({
+    // Create a new function that sets the values
+    const setJsConfigVars = new Function(`
+        return function(RLCONF, RLSTATE, RLPAGEMODULES, document) {
+            ${_moduleDependencies.jsConfigVars}
+            return { RLCONF, RLSTATE, RLPAGEMODULES };
+        };
+    `)()
+
+    // Execute the created function
+    const { RLCONF: updatedRLCONF } = setJsConfigVars(RLCONF, RLSTATE, RLPAGEMODULES, document)
+
+    expect(updatedRLCONF).toMatchObject({
       wgPageName: 'Potato',
       wgTitle: 'Potato',
       wgPageContentLanguage: 'en',
