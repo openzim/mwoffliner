@@ -138,12 +138,8 @@ describe('Styles', () => {
     const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await RedisStore.redirectsXId.flush()
-    const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
-    await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasVisualEditorApi()
-    await downloader.setBaseUrls('WikimediaDesktop')
+    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    await downloader.setBaseUrls()
 
     await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 

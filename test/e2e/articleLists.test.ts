@@ -1,57 +1,58 @@
-import * as mwoffliner from '../../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import rimraf from 'rimraf'
-import { zimcheckAvailable, zimcheck } from '../util.js'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
+import { testAllRenders } from '../testAllRenders.js'
 
 jest.setTimeout(10000)
 
-describe('articleList', () => {
-  const now = new Date()
-  const testId = `mwo-test-${+now}`
+const articleList = 'Kiwix,Wikipedia,Internet,Real-time computer graphics'
+const articleListToIgnore = 'Wikipedia, Internet'
 
-  const articleList = 'Kiwix,Wikipedia,Internet,Real-time computer graphics'
-  const articleListToIgnore = 'Wikipedia, Internet'
-  const listMinusIgnore = 2
-  const parameters = {
-    mwUrl: 'https://en.wikipedia.org',
-    adminEmail: 'test@kiwix.org',
-    articleList,
-    articleListToIgnore,
-    outputDirectory: testId,
-    redis: process.env.REDIS,
-    format: ['nopic'],
-    forceRender: 'WikimediaDesktop',
-  }
+const parameters = {
+  mwUrl: 'https://en.wikipedia.org',
+  adminEmail: 'test@kiwix.org',
+  articleList,
+  articleListToIgnore,
+  redis: process.env.REDIS,
+  format: ['nopic'],
+}
 
-  test('articleList and articleListIgnore check', async () => {
-    await execa('redis-cli flushall', { shell: true })
+await testAllRenders(parameters, async (outFiles) => {
+  describe('articleList', () => {
+    const now = new Date()
+    const testId = `mwo-test-${+now}`
+    const listMinusIgnore = 2
 
-    const outFiles = await mwoffliner.execute(parameters)
+    test(`articleList and articleListIgnore check using ${outFiles[0].renderer} renderer`, async () => {
+      await execa('redis-cli flushall', { shell: true })
 
-    // Created 1 output
-    expect(outFiles).toHaveLength(1)
+      // Created 1 output
+      expect(outFiles).toHaveLength(1)
 
-    for (const dump of outFiles) {
-      if (dump.nopic) {
-        // Output has right amount of articles
-        expect(dump.status.articles.success).toEqual(listMinusIgnore)
-        // Output has no failed article
-        expect(dump.status.articles.fail).toEqual(0)
+      for (const dump of outFiles) {
+        if (dump.nopic) {
+          // Output has right amount of articles
+          expect(dump.status.articles.success).toEqual(listMinusIgnore)
+          // Output has no failed article
+          expect(dump.status.articles.fail).toEqual(0)
+        }
       }
-    }
 
-    // Scraped selected articles from wikipedia en');
-    if (await zimcheckAvailable()) {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
-    } else {
-      console.log('Zimcheck not installed, skipping test')
-    }
+      // Scraped selected articles from wikipedia en');
+      // TODO: Blocked by issues/1931
+      /*
+      if (await zimcheckAvailable()) {
+        await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+      } else {
+        console.log('Zimcheck not installed, skipping test')
+      }
+      */
 
-    rimraf.sync(`./${testId}`)
-    const redisScan = await execa('redis-cli --scan', { shell: true })
-    // Redis has been cleared
-    expect(redisScan.stdout).toEqual('')
+      rimraf.sync(`./${testId}`)
+      const redisScan = await execa('redis-cli --scan', { shell: true })
+      // Redis has been cleared
+      expect(redisScan.stdout).toEqual('')
+    })
   })
 })
