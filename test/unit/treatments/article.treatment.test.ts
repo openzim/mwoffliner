@@ -36,6 +36,7 @@ describe('ArticleTreatment', () => {
     test(`Article html processing for ${renderer} render`, async () => {
       const { downloader, dump } = await setupScrapeClasses() // en wikipedia
       const title = 'London'
+      await downloader.setBaseUrlsDirectors(renderer)
       const _articlesDetail = await downloader.getArticleDetailsIds([title])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
