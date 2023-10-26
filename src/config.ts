@@ -61,7 +61,7 @@ const config = {
     jsResources: ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 
     wikimediaMobileCssResources: ['wm_mobile_override_style'],
-    mwMobileJsResources: ['wm_mobile_override_script'],
+    wikimediaMobileJsResources: ['wm_mobile_override_script'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {

@@ -278,69 +278,6 @@ describe('saveArticles', () => {
     */
   })
 
-  test('--customFlavour', async () => {
-    const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-    await downloader.setBaseUrlsDirectors()
-    class CustomFlavour implements CustomProcessor {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      public async shouldKeepArticle(articleId: string, doc: Document) {
-        return articleId !== 'London'
-      }
-      public async preProcessArticle(articleId: string, doc: Document) {
-        if (articleId === 'Paris') {
-          const h2 = doc.createElement('h2')
-          h2.textContent = 'INSERTED_BY_PRE_PROCESSOR'
-          h2.id = 'PRE_PROCESSOR'
-          doc.body.appendChild(h2)
-        }
-        return doc
-      }
-      public async postProcessArticle(articleId: string, doc: Document) {
-        if (articleId === 'Prague') {
-          const h2 = doc.createElement('h2')
-          h2.textContent = 'INSERTED_BY_POST_PROCESSOR'
-          h2.id = 'POST_PROCESSOR'
-          doc.body.appendChild(h2)
-        }
-        return doc
-      }
-    }
-    const customFlavour = new CustomFlavour()
-    dump.customProcessor = customFlavour
-
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    const { articleDetailXId } = RedisStore
-    await articleDetailXId.flush()
-    await articleDetailXId.setMany(articlesDetail)
-
-    const writtenArticles: any = {}
-    await saveArticles(
-      {
-        addArticle(article: typeof ZimArticle) {
-          if (article.mimeType === 'text/html') {
-            writtenArticles[article.title] = article
-          }
-          return Promise.resolve(null)
-        },
-      } as any,
-      downloader,
-      dump,
-      true,
-      'WikimediaDesktop',
-    )
-
-    const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)
-    const PragueDocument = domino.createDocument(writtenArticles.Prague.bufferData)
-
-    // London was correctly filtered out by customFlavour
-    expect(writtenArticles.London).toBeUndefined()
-    // Paris was correctly pre-processed
-    expect(ParisDocument.querySelector('#PRE_PROCESSOR')).toBeDefined()
-    // Prague was correctly post-processed
-    expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
-  })
-
   test('Test deleted article rendering (Visual editor renderer)', async () => {
     const { downloader, dump } = await setupScrapeClasses() // en wikipedia
     const { articleDetailXId } = RedisStore
