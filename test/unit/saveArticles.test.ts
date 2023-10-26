@@ -2,7 +2,7 @@ import domino from 'domino'
 
 import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
-import { setupScrapeClasses } from '../util.js'
+import { setupScrapeClasses, sleep } from '../util.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
@@ -87,6 +87,7 @@ describe('saveArticles', () => {
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
       // Check if header exists
       expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
+      await sleep(1000)
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
@@ -118,6 +119,7 @@ describe('saveArticles', () => {
       const leadSection = sections[0]
       expect(sections.length).toEqual(1)
       expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
+      await sleep(1000)
     })
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
@@ -144,6 +146,7 @@ describe('saveArticles', () => {
       )
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
+      await sleep(1000)
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
@@ -207,6 +210,7 @@ describe('saveArticles', () => {
       expect(ParisDocument.querySelector('#PRE_PROCESSOR')).toBeDefined()
       // Prague was correctly post-processed
       expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
+      await sleep(1000)
     })
   }
 

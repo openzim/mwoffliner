@@ -2,7 +2,7 @@ import * as logger from '../src/Logger.js'
 import * as mwoffliner from '../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import { RENDERERS_LIST } from '../src/util/const.js'
-import { zimcheckAvailable, zimdumpAvailable } from './util.js'
+import { zimcheckAvailable, zimdumpAvailable, sleep } from './util.js'
 
 interface Parameters {
   mwUrl: string
@@ -66,7 +66,6 @@ export async function testRenders(parameters: Parameters, callback, renderersLis
       logger.error(err.message)
       return
     }
-  }
 }
 
 export async function testAllRenders(parameters: Parameters, callback) {

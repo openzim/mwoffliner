@@ -6,6 +6,7 @@ import { execa } from 'execa'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import { sleep } from '../util.js'
 
 jest.setTimeout(20000)
 
@@ -67,6 +68,7 @@ describe('Extra', () => {
       const redisScan = await execa('redis-cli --scan', { shell: true })
       // Redis has been cleared
       expect(redisScan.stdout).toEqual('')
+      await sleep(1000)
     })
   }
 })

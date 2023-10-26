@@ -17,6 +17,7 @@ import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import { sleep } from '../util.js'
 
 jest.setTimeout(200000)
 
@@ -255,6 +256,7 @@ describe('Downloader class', () => {
             dump.isMainPage(articleId),
           ),
         ).rejects.toThrowError(new Error('Request failed with status code 404'))
+        await sleep(1000)
       })
     }
   })
