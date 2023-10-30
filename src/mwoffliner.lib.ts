@@ -75,7 +75,6 @@ async function execute(argv: any) {
     keepEmptyParagraphs,
     mwUrl,
     mwWikiPath,
-    mwActionApiPath,
     mwApiPath,
     mwModulePath,
     mwDomain,
@@ -158,7 +157,6 @@ async function execute(argv: any) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
   MediaWiki.getCategories = !!argv.getCategories
-  MediaWiki.apiActionPath = mwActionApiPath
   MediaWiki.apiPath = mwApiPath
   MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain

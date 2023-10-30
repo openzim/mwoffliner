@@ -47,7 +47,6 @@ class MediaWiki {
   #apiPath: string
   #username: string
   #password: string
-  #apiActionPath: string
   #domain: string
   private apiUrlDirector: ApiURLDirector
   private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
@@ -74,10 +73,6 @@ class MediaWiki {
 
   set password(value: string) {
     this.#password = value
-  }
-
-  set apiActionPath(value: string) {
-    this.#apiActionPath = value
   }
 
   set apiPath(value: string) {
@@ -110,7 +105,7 @@ class MediaWiki {
     this.namespaces = {}
     this.namespacesToMirror = []
 
-    this.#apiActionPath = 'w/api.php'
+    this.#apiPath = 'w/api.php'
     this.#wikiPath = 'wiki/'
     this.apiCheckArticleId = 'MediaWiki:Sidebar'
 
@@ -180,7 +175,7 @@ class MediaWiki {
   private initMWApis() {
     const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
     this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
-    this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
+    this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
     this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
@@ -419,7 +414,7 @@ class MediaWiki {
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
-      apiActionPath: this.#apiActionPath,
+      apiPath: this.#apiPath,
       domain: this.#domain,
 
       textDir: textDir as TextDirection,

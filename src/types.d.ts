@@ -159,7 +159,7 @@ interface MWMetaData {
 
   baseUrl: string
   wikiPath: string
-  apiActionPath: string
+  apiPath: string
   domain: string
   webUrl: string
   apiUrl: string
@@ -179,7 +179,6 @@ interface MWNamespaces {
 interface MWConfig {
   base: string
   wikiPath?: string
-  apiActionPath?: string
   apiPath?: string
   domain?: string
   username?: string
