@@ -17,7 +17,8 @@ import domino from 'domino'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
-import { RENDERERS_LIST } from '../../src/util/const.js'
+import { RENDERERS_LIST, RENDER_TEST_DELAY } from '../../src/util/const.js'
+import { sleep } from '../util.js'
 
 jest.setTimeout(200000)
 
@@ -187,29 +188,6 @@ describe('Downloader class', () => {
       )
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
-
-    test('getArticle response status for non-existent article id is 404 for WikimediaDesktop render', async () => {
-      const articleId = 'NeverExistingArticle'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
-      const articleDetail = {
-        title: articleId,
-        missing: '',
-      }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-      await expect(
-        downloader.getArticle(
-          downloader.webp,
-          _moduleDependencies,
-          'NeverExistingArticle',
-          RedisStore.articleDetailXId,
-          wikimediaDesktopRenderer,
-          articleUrl,
-          dump,
-          articleDetail,
-          dump.isMainPage(articleId),
-        ),
-      ).rejects.toThrowError(new Error('Request failed with status code 404'))
-    })
   })
 
   describe('getArticle method', () => {
@@ -255,6 +233,7 @@ describe('Downloader class', () => {
             dump.isMainPage(articleId),
           ),
         ).rejects.toThrowError(new Error('Request failed with status code 404'))
+        await sleep(RENDER_TEST_DELAY)
       })
     }
   })

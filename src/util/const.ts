@@ -21,3 +21,4 @@ export const WEBP_HANDLER_URL = 'https://gist.githubusercontent.com/rgaudin/60bb
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const BLACKLISTED_NS = ['Story'] // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
 export const RENDERERS_LIST = ['WikimediaDesktop', 'VisualEditor', 'WikimediaMobile']
+export const RENDER_TEST_DELAY = 1000

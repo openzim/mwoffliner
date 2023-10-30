@@ -1,8 +1,8 @@
 import * as logger from '../src/Logger.js'
 import * as mwoffliner from '../src/mwoffliner.lib.js'
 import { execa } from 'execa'
-import { RENDERERS_LIST } from '../src/util/const.js'
-import { zimcheckAvailable, zimdumpAvailable } from './util.js'
+import { RENDERERS_LIST, RENDER_TEST_DELAY } from '../src/util/const.js'
+import { zimcheckAvailable, zimdumpAvailable, sleep } from './util.js'
 
 interface Parameters {
   mwUrl: string
@@ -56,5 +56,6 @@ export async function testAllRenders(parameters: Parameters, callback) {
     outFiles[0].testId = testId
     outFiles[0].renderer = renderer
     await callback(outFiles)
+    await sleep(RENDER_TEST_DELAY)
   }
 }

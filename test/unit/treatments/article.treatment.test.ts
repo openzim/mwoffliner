@@ -2,7 +2,7 @@ import domino from 'domino'
 import RedisStore from '../../../src/RedisStore.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../../src/util/mw-api.js'
-import { setupScrapeClasses } from '../../util.js'
+import { setupScrapeClasses, sleep } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
@@ -10,7 +10,7 @@ import { getArticleUrl } from '../../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile.renderer.js'
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
-import { RENDERERS_LIST } from '../../../src/util/const.js'
+import { RENDERERS_LIST, RENDER_TEST_DELAY } from '../../../src/util/const.js'
 
 jest.setTimeout(10000)
 
@@ -91,6 +91,7 @@ describe('ArticleTreatment', () => {
       expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
       // Geo Position data is correct
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
+      await sleep(RENDER_TEST_DELAY)
     })
   }
 })
