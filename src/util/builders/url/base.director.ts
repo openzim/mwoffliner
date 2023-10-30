@@ -10,7 +10,10 @@ export default class BaseURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildURL(path: string) {
+  buildURL(path: string, wikiPath = '') {
+    path = this.stripLeadingSlash(path)
+    wikiPath = this.stripLeadingSlash(wikiPath)
+    path = `${wikiPath}${path}`
     return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
   }
 
@@ -47,5 +50,9 @@ export default class BaseURLDirector {
       .setDomain(this.baseDomain)
       .setPath(path ?? 'api/rest_v1/page/mobile-html-offline-resources')
       .build(false, '/')
+  }
+
+  private stripLeadingSlash(s) {
+    return s?.startsWith('/') ? s.slice(1) : s
   }
 }

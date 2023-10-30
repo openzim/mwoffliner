@@ -49,6 +49,7 @@ class MediaWiki {
   #password: string
   #domain: string
   private apiUrlDirector: ApiURLDirector
+  private baseUrlDirector: BaseURLDirector
   private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
   private VisualEditorURLDirector: VisualEditorURLDirector
@@ -76,7 +77,8 @@ class MediaWiki {
   }
 
   set apiPath(value: string) {
-    this.#apiPath = value
+    this.#apiPath = value || 'w/api.php'
+    this.initApiURLDirector()
   }
 
   set domain(value: string) {
@@ -84,12 +86,15 @@ class MediaWiki {
   }
 
   set wikiPath(value: string) {
-    this.#wikiPath = value
+    this.#wikiPath = value || 'wiki/'
+    this.initApiURLDirector()
   }
 
   set base(value: string) {
     this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
+    this.baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
     this.initMWApis()
+    this.initApiURLDirector()
   }
 
   set modulePathOpt(value: string) {
@@ -97,16 +102,13 @@ class MediaWiki {
   }
 
   private initializeMediaWikiDefaults(): void {
-    this.#domain = ''
-    this.#username = ''
-    this.#password = ''
+    this.domain = ''
+    this.username = ''
+    this.password = ''
     this.getCategories = false
 
     this.namespaces = {}
     this.namespacesToMirror = []
-
-    this.#apiPath = 'w/api.php'
-    this.#wikiPath = 'wiki/'
     this.apiCheckArticleId = 'MediaWiki:Sidebar'
 
     this.queryOpts = {
@@ -173,17 +175,23 @@ class MediaWiki {
   }
 
   private initMWApis() {
-    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
-    this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
-    this.apiUrl = baseUrlDirector.buildURL(this.#apiPath)
-    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
-    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
-    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
-    this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
-    this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
+    this.WikimediaDesktopApiUrl = this.baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
+    this.WikimediaMobileApiUrl = this.baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
+    this.modulePath = this.baseUrlDirector.buildModuleURL(this._modulePathOpt)
+    this.mobileModulePath = this.baseUrlDirector.buildMobileModuleURL()
     this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
     this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
+  }
+
+  /**
+   * What if wikiPath and apiPath set a bit earlier?
+   * No need to initialize this at the beginning of singleton
+   */
+  private initApiURLDirector() {
+    this.webUrl = this.baseUrlDirector.buildURL(this.#wikiPath)
+    this.apiUrl = this.baseUrlDirector.buildURL(this.#apiPath, this.#wikiPath)
+    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
+    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
     this.VisualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
