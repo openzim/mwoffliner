@@ -45,6 +45,7 @@ class MediaWiki {
 
   #wikiPath: string
   #apiPath: string
+  #modulePathOpt: string
   #username: string
   #password: string
   #domain: string
@@ -57,7 +58,6 @@ class MediaWiki {
   public visualEditorApiUrl: URL
   public apiUrl: URL
   public modulePath: string // only for reading
-  public _modulePathOpt: string // only for whiting to generate modulePath
   public mobileModulePath: string
   public webUrl: URL
   public WikimediaDesktopApiUrl: URL
@@ -98,7 +98,12 @@ class MediaWiki {
   }
 
   set modulePathOpt(value: string) {
-    this._modulePathOpt = value
+    this.#modulePathOpt = value || 'w/load.php'
+    if (this.baseUrlDirector) {
+      this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
+    } else {
+      logger.error('Base url director should be specified first')
+    }
   }
 
   private initializeMediaWikiDefaults(): void {
@@ -177,7 +182,6 @@ class MediaWiki {
   private initMWApis() {
     this.WikimediaDesktopApiUrl = this.baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
     this.WikimediaMobileApiUrl = this.baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
-    this.modulePath = this.baseUrlDirector.buildModuleURL(this._modulePathOpt)
     this.mobileModulePath = this.baseUrlDirector.buildMobileModuleURL()
     this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
     this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
