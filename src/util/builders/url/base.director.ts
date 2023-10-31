@@ -13,6 +13,9 @@ export default class BaseURLDirector {
   buildURL(path: string, wikiPath = '') {
     path = this.stripLeadingSlash(path)
     wikiPath = this.stripLeadingSlash(wikiPath)
+    if (wikiPath && !wikiPath.endsWith('/')) {
+      wikiPath += '/'
+    }
     path = `${wikiPath}${path}`
     return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
   }

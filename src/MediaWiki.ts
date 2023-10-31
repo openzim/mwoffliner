@@ -183,10 +183,6 @@ class MediaWiki {
     this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
   }
 
-  /**
-   * What if wikiPath and apiPath set a bit earlier?
-   * No need to initialize this at the beginning of singleton
-   */
   private initApiURLDirector() {
     this.webUrl = this.baseUrlDirector.buildURL(this.#wikiPath)
     this.apiUrl = this.baseUrlDirector.buildURL(this.#apiPath, this.#wikiPath)

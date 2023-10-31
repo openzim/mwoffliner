@@ -9,6 +9,24 @@ describe('BaseURLDirector', () => {
 
       expect(url.href).toBe('https://en.m.wikipedia.com/v1/test/api')
     })
+
+    it('should return URL object with mwApiPath param', () => {
+      const url = baseUrlDirector.buildURL('api.php')
+
+      expect(url.href).toBe('https://en.m.wikipedia.com/api.php')
+    })
+
+    it('should return URL object with mwApiPath ans mwWikiPath params', () => {
+      const url = baseUrlDirector.buildURL('api.php', 'w')
+
+      expect(url.href).toBe('https://en.m.wikipedia.com/w/api.php')
+    })
+
+    it('forward slashes at the beginnig of mwApiPath ans mwWikiPath params should be trimmed', () => {
+      const url = baseUrlDirector.buildURL('/api.php', '/w')
+
+      expect(url.href).toBe('https://en.m.wikipedia.com/w/api.php')
+    })
   })
 
   describe('buildWikimediaApiURL', () => {
