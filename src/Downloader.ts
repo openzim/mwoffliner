@@ -52,6 +52,7 @@ interface DownloaderOpts {
   s3?: S3
   webp: boolean
   backoffOptions?: BackoffOptions
+  mwWikiPath?: string
 }
 
 interface BackoffOptions {
@@ -175,13 +176,13 @@ class Downloader {
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
         { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
         { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        // { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
       ])
 
       //* Objects order in array matters!
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
         { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        // { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
         { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
       ])
     } else {

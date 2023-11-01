@@ -13,6 +13,9 @@ interface Parameters {
   format?: string | string[]
   noLocalParserFallback?: boolean
   forceRender?: string
+  mwApiPath?: string
+  mwRestApiPath?: string
+  mwModulePath?: string
 }
 
 /*
@@ -40,9 +43,9 @@ async function checkZimTools() {
   zimToolsChecked = true
 }
 
-async function getOutFiles(renderName: string, testId: string, parameters: Parameters): Promise<any> {
+async function getOutFiles(renderName: string, parameters: Parameters): Promise<any> {
   await execa('redis-cli flushall', { shell: true })
-  const outFiles = await mwoffliner.execute(parameters)
+  const outFiles = await mwoffliner.execute({ ...parameters, forceRender: renderName })
 
   return outFiles
 }
@@ -50,11 +53,16 @@ async function getOutFiles(renderName: string, testId: string, parameters: Param
 export async function testAllRenders(parameters: Parameters, callback) {
   await checkZimTools()
   for (const renderer of RENDERERS_LIST) {
-    const now = new Date()
-    const testId = `mwo-test-${+now}`
-    const outFiles = await getOutFiles(renderer, testId, parameters)
-    outFiles[0].testId = testId
-    outFiles[0].renderer = renderer
-    await callback(outFiles)
+    try {
+      const now = new Date()
+      const testId = `mwo-test-${+now}`
+      const outFiles = await getOutFiles(renderer, parameters)
+      outFiles[0].testId = testId
+      outFiles[0].renderer = renderer
+      await callback(outFiles)
+    } catch (err) {
+      logger.error(err.message)
+      return
+    }
   }
 }

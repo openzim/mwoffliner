@@ -36,7 +36,7 @@ describe('saveArticles', () => {
     }
 
     test(`Article html processing using ${renderer} renderer`, async () => {
-      const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { MediaWiki, downloader, dump } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
       await MediaWiki.hasCoordinates(downloader)
       await MediaWiki.hasWikimediaDesktopApi()
       await MediaWiki.hasWikimediaMobileApi()
@@ -90,7 +90,7 @@ describe('saveArticles', () => {
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
-      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet', mwWikiPath: '/' }) // en wikipedia
       await downloader.setBaseUrls(renderer)
       const articleId = 'Canada'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
@@ -121,7 +121,7 @@ describe('saveArticles', () => {
     })
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
-      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', mwWikiPath: '/' }) // en wikipedia
       await downloader.setBaseUrls(renderer)
       const articleId = 'Main_Page'
       const articleUrl = getArticleUrl(downloader, dump, articleId)
@@ -147,11 +147,12 @@ describe('saveArticles', () => {
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
-      const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic', mwWikiPath: '/' }) // en wikipedia
       await MediaWiki.hasCoordinates(downloader)
       await MediaWiki.hasWikimediaDesktopApi()
       await MediaWiki.hasWikimediaMobileApi()
-      await MediaWiki.hasVisualEditorApi()
+      // TODO: Enable back once regression Phabricator:T350117 fixed
+      // await MediaWiki.hasVisualEditorApi()
       await downloader.setBaseUrls(renderer)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -283,7 +284,7 @@ describe('saveArticles', () => {
   })
 
   test('Test deleted article rendering (Visual editor renderer)', async () => {
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { downloader, dump } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
     const { articleDetailXId } = RedisStore
     const articleId = 'deletedArticle'
 
@@ -314,7 +315,7 @@ describe('saveArticles', () => {
   })
 
   test('Load inline js from HTML', async () => {
-    const { downloader } = await setupScrapeClasses() // en wikipedia
+    const { downloader } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
 
     const _moduleDependencies = await downloader.getModuleDependencies('Potato')
 

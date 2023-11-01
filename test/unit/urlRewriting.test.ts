@@ -16,7 +16,7 @@ describe('Styles', () => {
   afterAll(stopRedis)
 
   test('Url re-writing', async () => {
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { MediaWiki, downloader, dump } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -87,7 +87,9 @@ describe('Styles', () => {
     // extHttpsNoRel HREF is correct
     expect($extHttpsNoRel.getAttribute('href')).toEqual('https://google.com')
 
+    MediaWiki.wikiPath = '/wiki/'
     await rewriteUrl(parentArticleId, dump, $wikiLink)
+
     // wikiLink is still a link with simple parent id
     expect($wikiLink.nodeName).toEqual('A')
     // wikiLink HREF is correct with simple parent id
@@ -138,7 +140,7 @@ describe('Styles', () => {
     const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await RedisStore.redirectsXId.flush()
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { downloader, dump } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
     await downloader.setBaseUrls()
 
     await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])

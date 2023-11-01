@@ -13,7 +13,7 @@ describe('Styles', () => {
 
   test('Stylesheet downloading', async () => {
     const { articleDetailXId } = RedisStore
-    const { downloader } = await setupScrapeClasses() // en wikipedia
+    const { downloader } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
 
     const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)

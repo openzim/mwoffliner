@@ -13,6 +13,8 @@ const parameters = {
   adminEmail: 'test@kiwix.org',
   redis: process.env.REDIS,
   format: ['nopic'],
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

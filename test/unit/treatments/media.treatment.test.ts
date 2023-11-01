@@ -29,7 +29,7 @@ describe('MediaTreatment', () => {
 
   describe('treatSubtitle', () => {
     test('treat one subtitle', async () => {
-      const { dump } = await setupScrapeClasses({ format: '' })
+      const { dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
 
       // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
       const wikicode =
@@ -47,7 +47,7 @@ describe('MediaTreatment', () => {
 
   describe('treatVideo', () => {
     test('treat multiple subtitles in one video', async () => {
-      const { dump } = await setupScrapeClasses({ format: '' })
+      const { dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
 
       // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
       const wikicode = '[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]'
@@ -70,7 +70,7 @@ describe('MediaTreatment', () => {
     })
 
     test('correct resolution retrieval', async () => {
-      const { dump } = await setupScrapeClasses({ format: '' })
+      const { dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
 
       let htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="300" resource="./File:Gout.webm">
         <source src="//upload.wikimedia.org/wikipedia/commons/3/3d/Gout.webm" type="video/webm; codecs=&quot;vp9, vorbis&quot;" data-file-width="1920" data-file-height="1080" data-title="Original WebM file, 1,920 × 1,080 (735 kbps)" data-shorttitle="WebM source">
@@ -115,7 +115,7 @@ describe('MediaTreatment', () => {
     })
 
     test('Ogg audio retrival', async () => {
-      const { dump } = await setupScrapeClasses({ format: '' })
+      const { dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
       const htmlStr = `<audio controls="" preload="none" height="32" width="200" resource="./File:William_Shakespeare_(Spoken_Article).ogg">
         <source src="//upload.wikimedia.org/wikipedia/commons/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg" type="audio/ogg; codecs=&quot;vorbis&quot;" data-title="Original Ogg file (54 kbps)" data-shorttitle="Ogg source">
         <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg/William_Shakespeare_%28Spoken_Article%29.ogg.mp3" type="audio/mpeg" data-title="MP3" data-shorttitle="MP3">
@@ -132,7 +132,7 @@ describe('MediaTreatment', () => {
     afterAll(stopRedis)
 
     test('treatMedias format=""', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '' }) // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' }) // en wikipedia
 
       const doc = domino.createDocument(html)
 
@@ -156,7 +156,7 @@ describe('MediaTreatment', () => {
     })
 
     test('treatMedias format="nopic"', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses({ format: 'nopic', mwWikiPath: '/' }) // en wikipedia
 
       const doc = domino.createDocument(html)
 
@@ -172,7 +172,7 @@ describe('MediaTreatment', () => {
     })
 
     test('treatMedias format="novid"', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: 'novid' }) // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses({ format: 'novid', mwWikiPath: '/' }) // en wikipedia
 
       const doc = domino.createDocument(html)
 

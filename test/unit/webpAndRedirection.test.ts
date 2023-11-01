@@ -35,6 +35,8 @@ Real-time computer graphics`
     outputDirectory: testId,
     redis: process.env.REDIS,
     webp: true,
+    mwApiPath: 'w/api.php',
+    mwWikiPath: '/',
   })
 
   const zimFile = new ZimReader(outFiles[0].outFile)
@@ -53,7 +55,6 @@ Real-time computer graphics`
   expect(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpg')).toBeTruthy()
   // detecting webp URL having jpeg at last
   expect(isWebpCandidateImageUrl('../I/osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.jpeg')).toBeTruthy()
-
   // passed test for png
   expect(await isWebpPresent('I/Animexample3edit.png.webp', zimFile)).toBeTruthy()
   // passed test for jpg

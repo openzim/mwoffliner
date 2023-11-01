@@ -35,7 +35,7 @@ describe('ArticleTreatment', () => {
     }
 
     test(`Article html processing for ${renderer} render`, async () => {
-      const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
       await downloader.setBaseUrls()
       const title = 'London'
       const _articlesDetail = await downloader.getArticleDetailsIds([title])

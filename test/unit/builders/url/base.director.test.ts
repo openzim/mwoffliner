@@ -44,8 +44,8 @@ describe('BaseURLDirector', () => {
   })
 
   describe('buildWikimediaMobileApiUrl', () => {
-    it('should return mobile rest URL with provided path and trailing char', () => {
-      const url = baseUrlDirector.buildWikimediaMobileApiUrl('api/rest_v2/page/mobile-html')
+    it('should automatically return mobile rest URL with provided api rest path', () => {
+      const url = baseUrlDirector.buildWikimediaMobileApiUrl('api/rest_v2')
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v2/page/mobile-html/')
     })
@@ -58,8 +58,8 @@ describe('BaseURLDirector', () => {
   })
 
   describe('buildWikimediaDesktopApiUrl', () => {
-    it('should return a desktop URL with provided path and trailing char', () => {
-      const url = baseUrlDirector.buildWikimediaDesktopApiUrl('api/rest_v2/page/html')
+    it('should automatically return a desktop URL with provided api rest path', () => {
+      const url = baseUrlDirector.buildWikimediaDesktopApiUrl('api/rest_v2')
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v2/page/html/')
     })

@@ -10,6 +10,8 @@ const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   adminEmail: 'mail@mail.com',
   redis: process.env.REDIS,
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders({ ...parameters, format: 'nopic', articleList: 'BMW' }, async (outFiles) => {

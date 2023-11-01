@@ -23,6 +23,8 @@ const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   articleList: 'BMW',
   adminEmail: 'test@kiwix.org',
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

@@ -30,14 +30,14 @@ export default class BaseURLDirector {
   buildWikimediaDesktopApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setPath(path ?? 'api/rest_v1/page/html')
+      .setPath(path ? `${path}/page/html` : 'api/rest_v1/page/html')
       .build(true, '/')
   }
 
   buildWikimediaMobileApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setPath(path ?? 'api/rest_v1/page/mobile-html')
+      .setPath(path ? `${path}/page/mobile-html` : 'api/rest_v1/page/mobile-html')
       .build(true, '/')
   }
 

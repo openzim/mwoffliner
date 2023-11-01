@@ -17,6 +17,8 @@ const parameters = {
   customZimLongDescription: 'Example of the long description',
   customZimTitle: 'Example of the title',
   publisher: 'Example of the publisher',
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

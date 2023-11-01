@@ -16,6 +16,8 @@ const parameters = {
   articleListToIgnore,
   redis: process.env.REDIS,
   format: ['nopic'],
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

@@ -31,6 +31,7 @@ describe('mwApi', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.wikiPath = '/'
     MediaWiki.getCategories = true
     downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
@@ -101,6 +102,7 @@ describe('mwApi', () => {
   })
 
   test('extracting title from href', () => {
+    MediaWiki.wikiPath = '/wiki/'
     const titleWithWiki = MediaWiki.extractPageTitleFromHref('/wiki/Hades')
     // Title with hrefs contaning /wiki
     expect(titleWithWiki).toEqual('Hades')
@@ -130,6 +132,7 @@ describe('Test blacklisted NSs', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://id.wikipedia.org'
+    MediaWiki.wikiPath = '/'
     MediaWiki.getCategories = true
 
     downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })

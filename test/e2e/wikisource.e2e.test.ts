@@ -12,10 +12,12 @@ const parameters = {
   redis: process.env.REDIS,
   format: ['nopic'],
   noLocalParserFallback: true,
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {
-  describe('vikidia', () => {
+  describe('wikisource', () => {
     test(`Wikisource List for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
 

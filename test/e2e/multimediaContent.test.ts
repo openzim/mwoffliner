@@ -14,6 +14,8 @@ const parameters = {
   redis: process.env.REDIS,
   customZimDescription: 'Example of the description',
   forceRender: 'WikimediaDesktop',
+  mwApiPath: 'w/api.php',
+  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

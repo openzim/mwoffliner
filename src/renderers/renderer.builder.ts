@@ -16,6 +16,7 @@ export class RendererBuilder {
       MediaWiki.hasWikimediaMobileApi(),
     ])
 
+    let errorMessage
     switch (renderType) {
       case 'desktop':
         if (hasWikimediaDesktopApi) {
@@ -24,15 +25,17 @@ export class RendererBuilder {
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         } else {
-          logger.error('No available desktop renderer.')
-          process.exit(1)
+          errorMessage = 'No available desktop renderer.'
+          logger.error(errorMessage)
+          throw new Error(errorMessage)
         }
       case 'mobile':
         if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         }
-        logger.error('No available mobile renderer.')
-        process.exit(1)
+        errorMessage = 'No available mobile renderer.'
+        logger.error(errorMessage)
+        throw new Error(errorMessage)
       case 'auto':
         if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
@@ -42,8 +45,9 @@ export class RendererBuilder {
         } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         } else {
-          logger.error('No render available at all.')
-          process.exit(1)
+          errorMessage = 'No render available at all.'
+          logger.error(errorMessage)
+          throw new Error(errorMessage)
         }
       case 'specific':
         // renderName argument is required for 'specific' mode
@@ -52,20 +56,23 @@ export class RendererBuilder {
             if (hasWikimediaDesktopApi) {
               return new WikimediaDesktopRenderer()
             }
-            logger.error('Cannot create an instance of WikimediaDesktop renderer.')
-            process.exit(1)
+            errorMessage = 'Cannot create an instance of WikimediaDesktop renderer.'
+            logger.error(errorMessage)
+            throw new Error(errorMessage)
           case 'VisualEditor':
             if (hasVisualEditorApi) {
               return new VisualEditorRenderer()
             }
-            logger.error('Cannot create an instance of VisualEditor renderer.')
-            process.exit(1)
+            errorMessage = 'Cannot create an instance of VisualEditor renderer.'
+            logger.error(errorMessage)
+            throw new Error(errorMessage)
           case 'WikimediaMobile':
             if (hasWikimediaMobileApi) {
               return new WikimediaMobileRenderer()
             }
-            logger.error('No available mobile renderer.')
-            process.exit(1)
+            errorMessage = 'No available mobile renderer.'
+            logger.error(errorMessage)
+            throw new Error(errorMessage)
           default:
             throw new Error(`Unknown renderName for specific mode: ${renderName}`)
         }

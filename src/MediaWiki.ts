@@ -45,6 +45,7 @@ class MediaWiki {
 
   #wikiPath: string
   #apiPath: string
+  #restApiPath: string
   #modulePathOpt: string
   #username: string
   #password: string
@@ -53,7 +54,7 @@ class MediaWiki {
   private baseUrlDirector: BaseURLDirector
   private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  private VisualEditorURLDirector: VisualEditorURLDirector
+  private visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
   public apiUrl: URL
@@ -77,7 +78,12 @@ class MediaWiki {
   }
 
   set apiPath(value: string) {
-    this.#apiPath = value || 'w/api.php'
+    this.#apiPath = value
+    this.initApiURLDirector()
+  }
+
+  set restApiPath(value: string) {
+    this.#restApiPath = value
     this.initApiURLDirector()
   }
 
@@ -86,7 +92,7 @@ class MediaWiki {
   }
 
   set wikiPath(value: string) {
-    this.#wikiPath = value || 'wiki/'
+    this.#wikiPath = value
     this.initApiURLDirector()
   }
 
@@ -98,7 +104,7 @@ class MediaWiki {
   }
 
   set modulePathOpt(value: string) {
-    this.#modulePathOpt = value || 'w/load.php'
+    this.#modulePathOpt = value
     if (this.baseUrlDirector) {
       this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
     } else {
@@ -107,10 +113,15 @@ class MediaWiki {
   }
 
   private initializeMediaWikiDefaults(): void {
-    this.domain = ''
-    this.username = ''
-    this.password = ''
+    this.#domain = ''
+    this.#username = ''
+    this.#password = ''
     this.getCategories = false
+
+    this.#apiPath = 'w/api.php'
+    this.#restApiPath = 'api/rest_v1'
+    this.#wikiPath = 'wiki/'
+    this.#modulePathOpt = 'w/load.php'
 
     this.namespaces = {}
     this.namespacesToMirror = []
@@ -154,7 +165,7 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.VisualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -180,19 +191,20 @@ class MediaWiki {
   }
 
   private initMWApis() {
-    this.WikimediaDesktopApiUrl = this.baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
-    this.WikimediaMobileApiUrl = this.baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
+    this.WikimediaDesktopApiUrl = this.baseUrlDirector.buildWikimediaDesktopApiUrl(this.#restApiPath)
+    this.WikimediaMobileApiUrl = this.baseUrlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
     this.mobileModulePath = this.baseUrlDirector.buildMobileModuleURL()
     this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
     this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
   }
 
   private initApiURLDirector() {
-    this.webUrl = this.baseUrlDirector.buildURL(this.#wikiPath)
+    // TODO: this.webUrl probably shouldn't accept hardcoded 'wiki/' param, check test/e2e/extra.e2e.test.ts
+    this.webUrl = this.baseUrlDirector.buildURL('wiki/')
     this.apiUrl = this.baseUrlDirector.buildURL(this.#apiPath, this.#wikiPath)
     this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.VisualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
@@ -423,6 +435,7 @@ class MediaWiki {
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
       apiPath: this.#apiPath,
+      restApiPath: this.#restApiPath,
       domain: this.#domain,
 
       textDir: textDir as TextDirection,
