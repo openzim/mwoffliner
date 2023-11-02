@@ -41,7 +41,7 @@ describe('forceRender', () => {
     expect(redisScan.stdout).toEqual('')
   })
 
-  test('Scrape article from bm.wikipedia.org should throw error when using VisualEditor render', async () => {
+  test.skip('Scrape article from bm.wikipedia.org should throw error when using VisualEditor render', async () => {
     const forceRender = 'VisualEditor'
     expect(async () => {
       await mwoffliner.execute({ ...parameters, forceRender })

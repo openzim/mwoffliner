@@ -17,16 +17,11 @@ const parameters = {
   mwWikiPath: '/',
 }
 
-describe('vikidia', () => {
-  test.todo('right scrapping from vikidia.org')
-})
-
-// TODO: Enable back once regression Phabricator:T350117 fixed
-// vikidia supports only VisualEditor (which is disabled for now) among other renders
-/*
-await testAllRenders(parameters, async (outFiles) => {
-  describe('vikidia', () => {
-    test(`right scrapping from vikidia.org for ${outFiles[0]?.renderer} renderer`, async () => {
+await testAllRenders(
+  parameters,
+  async (outFiles) => {
+    // TODO: Enable back once regression Phabricator:T350117 fixed
+    test.skip(`right scrapping from vikidia.org for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
 
       // Created 1 output
@@ -38,6 +33,7 @@ await testAllRenders(parameters, async (outFiles) => {
     afterAll(() => {
       rimraf.sync(`./${outFiles[0].testId}`)
     })
-  })
-})
-*/
+  },
+  // vikidia supports only VisualEditor (which is disabled for now) among other renders
+  ['VisualEditor'],
+)

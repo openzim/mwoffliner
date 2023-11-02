@@ -7,6 +7,7 @@ import { zimcheckAvailable, zimdumpAvailable } from './util.js'
 interface Parameters {
   mwUrl: string
   adminEmail: string
+  outputDirectory?: string
   articleList?: string
   articleListToIgnore?: string
   redis?: string
@@ -43,20 +44,21 @@ async function checkZimTools() {
   zimToolsChecked = true
 }
 
-async function getOutFiles(renderName: string, parameters: Parameters): Promise<any> {
+async function getOutFiles(renderName: string, testId: string, parameters: Parameters): Promise<any> {
   await execa('redis-cli flushall', { shell: true })
-  const outFiles = await mwoffliner.execute({ ...parameters, forceRender: renderName })
+  const outFiles = await mwoffliner.execute({ ...parameters, outputDirectory: testId, forceRender: renderName })
 
   return outFiles
 }
 
-export async function testAllRenders(parameters: Parameters, callback) {
+export async function testAllRenders(parameters: Parameters, callback, optionalRenderesList?: Array<string>) {
   await checkZimTools()
-  for (const renderer of RENDERERS_LIST) {
+  const renderersList = optionalRenderesList || RENDERERS_LIST
+  for (const renderer of renderersList) {
     try {
       const now = new Date()
       const testId = `mwo-test-${+now}`
-      const outFiles = await getOutFiles(renderer, parameters)
+      const outFiles = await getOutFiles(renderer, testId, parameters)
       outFiles[0].testId = testId
       outFiles[0].renderer = renderer
       await callback(outFiles)
