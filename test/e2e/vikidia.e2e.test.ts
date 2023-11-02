@@ -30,9 +30,7 @@ await testAllRenders(
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
 
-    afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
-    })
+    rimraf.sync(`./${outFiles[0].testId}`)
   },
   // vikidia supports only VisualEditor (which is disabled for now) among other renders
   ['VisualEditor'],

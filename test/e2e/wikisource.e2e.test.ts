@@ -61,10 +61,7 @@ await testAllRenders(
               }
             }
           })
-
-          afterAll(() => {
-            rimraf.sync(`./${outFiles[0].testId}`)
-          })
+          rimraf.sync(`./${outFiles[0].testId}`)
           break
       }
     })

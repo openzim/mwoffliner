@@ -51,10 +51,12 @@ await testAllRenders(parameters, async (outFiles) => {
       }
       */
 
-      rimraf.sync(`./${testId}`)
       const redisScan = await execa('redis-cli --scan', { shell: true })
       // Redis has been cleared
       expect(redisScan.stdout).toEqual('')
+    })
+    afterAll(() => {
+      rimraf.sync(`./${outFiles[0].testId}`)
     })
   })
 })

@@ -8,6 +8,7 @@ interface Parameters {
   mwUrl: string
   adminEmail: string
   outputDirectory?: string
+  addNamespaces?: number
   articleList?: string
   articleListToIgnore?: string
   redis?: string
