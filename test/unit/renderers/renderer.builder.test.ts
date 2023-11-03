@@ -1,7 +1,6 @@
 import { jest } from '@jest/globals'
 import { setupScrapeClasses } from '../../util.js'
 import { RendererBuilder } from '../../../src/renderers/renderer.builder.js'
-import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { RendererBuilderOptions } from '../../../src/renderers/abstract.renderer.js'
 import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 
@@ -44,6 +43,8 @@ describe('RendererBuilder', () => {
     }).rejects.toThrow('Unknown render: unknownMode')
   })
 
+  // TODO: Enable back once regression Phabricator:T350117 fixed
+  /*
   it('should return VisualEditorRenderer for specific mode with RendererAPI as VisualEditor', async () => {
     const { MediaWiki } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
 
@@ -60,6 +61,7 @@ describe('RendererBuilder', () => {
 
     expect(renderer).toBeInstanceOf(VisualEditorRenderer)
   })
+  */
 
   it('should return WikimediaDesktopRenderer for specific mode with RendererAPI as WikimediaDesktop', async () => {
     const { MediaWiki } = await setupScrapeClasses({ mwWikiPath: '/' }) // en wikipedia
