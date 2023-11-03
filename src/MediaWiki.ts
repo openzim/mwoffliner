@@ -78,13 +78,17 @@ class MediaWiki {
   }
 
   set apiPath(value: string) {
-    this.#apiPath = value
-    this.initApiURLDirector()
+    if (value) {
+      this.#apiPath = value
+      this.initApiURLDirector()
+    }
   }
 
   set restApiPath(value: string) {
-    this.#restApiPath = value
-    this.initApiURLDirector()
+    if (value) {
+      this.#restApiPath = value
+      this.initApiURLDirector()
+    }
   }
 
   set domain(value: string) {
@@ -92,23 +96,33 @@ class MediaWiki {
   }
 
   set wikiPath(value: string) {
-    this.#wikiPath = value
-    this.initApiURLDirector()
+    if (value) {
+      this.#wikiPath = value
+      this.initApiURLDirector()
+    }
   }
 
   set base(value: string) {
-    this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
-    this.baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
-    this.initMWApis()
-    this.initApiURLDirector()
+    if (value) {
+      this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
+      this.baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
+      this.initMWApis()
+      this.initApiURLDirector()
+    }
   }
 
   set modulePathOpt(value: string) {
-    this.#modulePathOpt = value
-    if (this.baseUrlDirector) {
-      this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
+    if (value) {
+      this.#modulePathOpt = value
+      if (this.baseUrlDirector) {
+        this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
+      } else {
+        logger.error('Base url director should be specified first')
+      }
     } else {
-      logger.error('Base url director should be specified first')
+      if (this.baseUrlDirector) {
+        this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
+      }
     }
   }
 
