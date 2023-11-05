@@ -39,7 +39,8 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopApi()
   await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasVisualEditorApi()
+  // TODO: Enable back once regression Phabricator:T350117 fixed
+  // await MediaWiki.hasVisualEditorApi()
 
   const dump = new Dump(format, {} as any, MediaWiki.metaData)
 

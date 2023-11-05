@@ -19,7 +19,8 @@ const initMW = async (downloader: Downloader) => {
   await MediaWiki.getMwMetaData(downloader)
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopApi()
-  await MediaWiki.hasVisualEditorApi()
+  // TODO: Enable back once regression Phabricator:T350117 fixed
+  // await MediaWiki.hasVisualEditorApi()
 
   await MediaWiki.getNamespaces([], downloader)
 }
