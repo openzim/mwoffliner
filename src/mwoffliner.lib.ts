@@ -213,7 +213,8 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopApi()
   const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasVisualEditorApi()
+  // TODO: Enable back once regression Phabricator:T350117 fixed
+  // await MediaWiki.hasVisualEditorApi()
   await downloader.setBaseUrls(forceRender)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
