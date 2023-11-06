@@ -108,7 +108,7 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl
     this.webp = webp
     this.s3 = s3
-    this.apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+    this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -176,13 +176,13 @@ class Downloader {
       this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
         { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
         { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        // { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
       ])
 
       //* Objects order in array matters!
       this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
         { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        // { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
+        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
         { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
       ])
     } else {
@@ -621,7 +621,7 @@ class Downloader {
   }
 
   private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
     const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
     const items = query.categorymembers.filter((a: any) => a && a.title)
@@ -652,7 +652,7 @@ class Downloader {
     let jsDependenciesList: string[] = []
     let styleDependenciesList: string[] = []
 
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
     const articleApiUrl = apiUrlDirector.buildArticleApiURL(title)
 

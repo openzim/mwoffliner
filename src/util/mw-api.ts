@@ -260,9 +260,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
 export async function checkApiAvailability(url: string, loginCookie = ''): Promise<boolean> {
   try {
     const resp = await axios.get(decodeURI(url), { maxRedirects: 0, headers: { cookie: loginCookie } })
-    // TODO: Enable back once regression Phabricator:T350117 fixed
-    // return resp.status === 200 && !resp.headers['mediawiki-api-error']
-    return resp.status === 200
+    return resp.status === 200 && !resp.headers['mediawiki-api-error']
   } catch (err) {
     return false
   }

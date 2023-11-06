@@ -14,7 +14,7 @@ const parameters = {
   redis: process.env.REDIS,
   customZimDescription: 'Example of the description',
   forceRender: 'WikimediaDesktop',
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 
@@ -147,7 +147,7 @@ await testAllRenders(
             rimraf.sync(`./${outFiles[0].testId}`)
           })
           break
-        case 'VisaulEditor':
+        case 'VisualEditor':
           // TODO: Enable back once regression Phabricator:T350117 fixed
           test.skip(`check multimedia content from wikipedia test page with different formates for ${outFiles[0]?.renderer} renderer`, async () => {
             await execa('redis-cli flushall', { shell: true })

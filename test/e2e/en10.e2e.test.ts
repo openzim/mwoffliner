@@ -12,7 +12,7 @@ const parameters = {
   redis: process.env.REDIS,
   // format: ['nopic', 'novid', 'nopdf', 'nodet'],
   format: ['nopic', 'nopdf'],
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 

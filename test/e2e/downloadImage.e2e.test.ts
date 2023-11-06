@@ -16,7 +16,7 @@ const parameters = {
   articleList: 'Paris',
   format: ['nodet'],
   optimisationCacheUrl: process.env.S3_URL,
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 

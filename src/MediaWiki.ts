@@ -44,7 +44,7 @@ class MediaWiki {
   public queryOpts: QueryOpts
 
   #wikiPath: string
-  #apiPath: string
+  #actionApiPath: string
   #restApiPath: string
   #modulePathOpt: string
   #username: string
@@ -57,7 +57,7 @@ class MediaWiki {
   private visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
-  public apiUrl: URL
+  public actionApiUrl: URL
   public modulePath: string // only for reading
   public mobileModulePath: string
   public webUrl: URL
@@ -77,9 +77,9 @@ class MediaWiki {
     this.#password = value
   }
 
-  set apiPath(value: string) {
+  set actionApiPath(value: string) {
     if (value) {
-      this.#apiPath = value
+      this.#actionApiPath = value
       this.initApiURLDirector()
     }
   }
@@ -96,7 +96,8 @@ class MediaWiki {
   }
 
   set wikiPath(value: string) {
-    if (value) {
+    // Empty string is a valid parameter for the wikiPath
+    if (value !== null || value !== undefined) {
       this.#wikiPath = value
       this.initApiURLDirector()
     }
@@ -132,7 +133,7 @@ class MediaWiki {
     this.#password = ''
     this.getCategories = false
 
-    this.#apiPath = 'w/api.php'
+    this.#actionApiPath = 'w/api.php'
     this.#restApiPath = 'api/rest_v1'
     this.#wikiPath = 'wiki/'
     this.#modulePathOpt = 'w/load.php'
@@ -215,15 +216,15 @@ class MediaWiki {
   private initApiURLDirector() {
     // TODO: this.webUrl probably shouldn't accept hardcoded 'wiki/' param, check test/e2e/extra.e2e.test.ts
     this.webUrl = this.baseUrlDirector.buildURL('wiki/')
-    this.apiUrl = this.baseUrlDirector.buildURL(this.#apiPath, this.#wikiPath)
-    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
+    this.actionApiUrl = this.baseUrlDirector.buildURL(this.#actionApiPath, this.#wikiPath)
+    this.apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
     if (this.#username && this.#password) {
-      let url = this.apiUrl.href + '?'
+      let url = this.actionApiUrl.href + '?'
 
       // Add domain if configured
       if (this.#domain) {
@@ -234,7 +235,7 @@ class MediaWiki {
       const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2')
 
       // Logging in
-      await axios(this.apiUrl.href, {
+      await axios(this.actionApiUrl.href, {
         data: qs.stringify({
           action: 'login',
           format: 'json',
@@ -442,13 +443,14 @@ class MediaWiki {
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
-      apiUrl: this.apiUrl.href,
+      actionApiUrl: this.actionApiUrl.href,
+      modulePathOpt: this.#modulePathOpt,
       modulePath: this.modulePath,
       mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
-      apiPath: this.#apiPath,
+      actionApiPath: this.#actionApiPath,
       restApiPath: this.#restApiPath,
       domain: this.#domain,
 

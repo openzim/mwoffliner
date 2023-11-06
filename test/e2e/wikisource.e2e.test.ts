@@ -12,7 +12,7 @@ const parameters = {
   redis: process.env.REDIS,
   format: ['nopic'],
   noLocalParserFallback: true,
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 

@@ -12,7 +12,7 @@ const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   adminEmail: 'mail@mail.com',
   redis: process.env.REDIS,
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 

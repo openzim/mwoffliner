@@ -31,6 +31,10 @@ export async function sanitize_all(argv: any) {
     customZimLongDescription,
     customZimDescription,
     forceRender,
+    mwWikiPath,
+    mwActionApiPath,
+    mwRestApiPath,
+    mwModulePath,
   } = argv
 
   sanitizeDoubleUsedParameters(argv)
@@ -78,6 +82,18 @@ export async function sanitize_all(argv: any) {
     throw err
   })
 
+  // sanitizing mwWikiPath
+  sanitizeWikiPath(mwWikiPath)
+
+  // sanitizing mwRestApiPath
+  sanitizeApiPathParam(mwRestApiPath)
+
+  // sanitizing mwActionApiPath
+  sanitizeApiPathParam(mwActionApiPath)
+
+  // sanitizing mwModulePath
+  sanitizeApiPathParam(mwModulePath)
+
   // sanitize Custom Main Page
   if (argv.customMainPage) {
     argv.customMainPage = argv.customMainPage.replace(/ /g, '_')
@@ -101,6 +117,28 @@ export async function sanitize_all(argv: any) {
       throw err
     })
   }
+}
+
+export function sanitizeWikiPath(mwWikiPath = '') {
+  mwWikiPath = sanitizeApiPathParam(mwWikiPath)
+
+  if (mwWikiPath?.endsWith('/')) {
+    mwWikiPath += '/'
+  }
+
+  return mwWikiPath
+}
+
+export function sanitizeApiPathParam(apiPathParam: string) {
+  if (!apiPathParam) {
+    return
+  }
+
+  if (apiPathParam.startsWith('/')) {
+    apiPathParam = apiPathParam.slice(1)
+  }
+
+  return apiPathParam
 }
 
 export function sanitizeStringMaxLength(text: string, key: string, length: number) {

@@ -35,7 +35,7 @@ Real-time computer graphics`
     outputDirectory: testId,
     redis: process.env.REDIS,
     webp: true,
-    mwApiPath: 'w/api.php',
+    mwActionApiPath: 'w/api.php',
     mwWikiPath: '/',
   })
 

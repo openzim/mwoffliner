@@ -13,7 +13,7 @@ const parameters = {
   redis: process.env.REDIS,
   articleList: 'Alaska',
   customZimDescription: 'Alaska article',
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 

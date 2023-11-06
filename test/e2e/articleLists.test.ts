@@ -16,14 +16,12 @@ const parameters = {
   articleListToIgnore,
   redis: process.env.REDIS,
   format: ['nopic'],
-  mwApiPath: 'w/api.php',
+  mwActionApiPath: 'w/api.php',
   mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {
   describe('articleList', () => {
-    const now = new Date()
-    const testId = `mwo-test-${+now}`
     const listMinusIgnore = 2
 
     test(`articleList and articleListIgnore check using ${outFiles[0].renderer} renderer`, async () => {
