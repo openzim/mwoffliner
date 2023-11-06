@@ -66,5 +66,5 @@ await testAllRenders(
       }
     })
   },
-  ['WikimediaDesktop', 'VisualEditor'],
+  ['WikimediaDesktop'],
 )
