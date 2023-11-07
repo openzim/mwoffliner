@@ -22,7 +22,6 @@ import * as logger from './Logger.js'
 import MediaWiki, { QueryOpts } from './MediaWiki.js'
 import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
 
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
@@ -95,8 +94,6 @@ class Downloader {
   public streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
-  public articleUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
-  public mainPageUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
 
   private readonly uaString: string
   private activeRequests = 0
@@ -105,6 +102,8 @@ class Downloader {
   private readonly optimisationCacheUrl: string
   private s3: S3
   private apiUrlDirector: ApiURLDirector
+  private articleUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
+  private mainPageUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
 
   constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.uaString = uaString
@@ -177,69 +176,32 @@ class Downloader {
     }
   }
 
-  private getUrlDirector(capabilitiesList): WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector {
-    for (const capabilityInfo of capabilitiesList) {
-      if (capabilityInfo.condition) {
-        return new capabilityInfo.Director(capabilityInfo.value)
-      }
-    }
-    throw new Error('No suitable URL director found.')
-  }
-
-  public async setBaseUrlsDirectors(forceRender = null) {
-    if (!forceRender) {
-      //* Objects order in array matters!
-      const articlesCapabilitiesList = [
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href, Director: WikimediaMobileURLDirector },
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href, Director: WikimediaDesktopURLDirector },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.VisualEditorApiUrl.href, Director: VisualEditorURLDirector },
-      ]
-
-      this.baseUrl = basicURLDirector.buildDownloaderBaseUrl(articlesCapabilitiesList)
-      this.articleUrlDirector = this.getUrlDirector(articlesCapabilitiesList)
-
-      //* Objects order in array matters!
-      const mainPageCapabilitiesList = [
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href, Director: WikimediaDesktopURLDirector },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.VisualEditorApiUrl.href, Director: VisualEditorURLDirector },
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href, Director: WikimediaMobileURLDirector },
-      ]
-      this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl(mainPageCapabilitiesList)
-      this.mainPageUrlDirector = this.getUrlDirector(mainPageCapabilitiesList)
-    } else {
-      switch (forceRender) {
-        case 'WikimediaDesktop':
-          if (MediaWiki.hasWikimediaDesktopApi()) {
-            this.baseUrl = MediaWiki.WikimediaDesktopApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.WikimediaDesktopApiUrl.href
-            this.articleUrlDirector = this.mainPageUrlDirector = new WikimediaDesktopURLDirector(MediaWiki.WikimediaDesktopApiUrl.href)
-            break
-          }
-          break
-        case 'VisualEditor':
-          if (MediaWiki.hasVisualEditorApi()) {
-            this.baseUrl = MediaWiki.VisualEditorApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.VisualEditorApiUrl.href
-            this.articleUrlDirector = this.mainPageUrlDirector = new VisualEditorURLDirector(MediaWiki.VisualEditorApiUrl.href)
-            break
-          }
-          break
-        case 'WikimediaMobile':
-          if (MediaWiki.hasWikimediaMobileApi()) {
-            this.baseUrl = MediaWiki.WikimediaMobileApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.WikimediaMobileApiUrl.href
-            this.articleUrlDirector = this.mainPageUrlDirector = new WikimediaMobileURLDirector(MediaWiki.WikimediaMobileApiUrl.href)
-            break
-          }
-          break
-        default:
-          throw new Error('Unable to find specific API end-point to retrieve article HTML')
-      }
+  private getUrlDirector(renderer: object) {
+    switch (renderer.constructor.name) {
+      case 'WikimediaDesktopRenderer':
+        return new WikimediaDesktopURLDirector(MediaWiki.WikimediaDesktopApiUrl.href)
+      case 'VisualEditorRenderer':
+        return new VisualEditorURLDirector(MediaWiki.VisualEditorApiUrl.href)
+      case 'WikimediaMobileRenderer':
+        return new WikimediaMobileURLDirector(MediaWiki.WikimediaMobileApiUrl.href)
     }
   }
 
-  public getArticleUrl(dump: Dump, articleId: string): string {
-    return `${dump.isMainPage(articleId) ? this.mainPageUrlDirector.buildArticleURL(articleId) : this.articleUrlDirector.buildArticleURL(articleId)}`
+  public async setUrlsDirectors(mainPageRenderer, articlesRenderer): Promise<void> {
+    if (!this.articleUrlDirector) {
+      this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
+    }
+    if (!this.mainPageUrlDirector) {
+      this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
+    }
+  }
+
+  public getArticleUrl(articleId: string): string {
+    return this.articleUrlDirector.buildArticleURL(articleId)
+  }
+
+  public getMainPageUrl(articleId: string): string {
+    return this.mainPageUrlDirector.buildArticleURL(articleId)
   }
 
   public removeEtagWeakPrefix(etag: string): string {

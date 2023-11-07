@@ -17,7 +17,6 @@ import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
-import { sleep } from '../util.js'
 
 jest.setTimeout(200000)
 
@@ -134,9 +133,10 @@ describe('Downloader class', () => {
       dump = new Dump('', {} as any, mwMetadata)
     })
 
-    test('getArticle of "London" returns one article for wikimediaMobileRenderer render', async () => {
+    test('getArticle of "London" returns one article for WikimediaMobileRenderer render', async () => {
       const articleId = 'London'
-      const articleUrl = downloader.getArticleUrl(dump, articleId)
+      downloader.setUrlsDirectors(wikimediaMobileRenderer, wikimediaMobileRenderer)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -191,7 +191,7 @@ describe('Downloader class', () => {
 
     test('getArticle response status for non-existent article id is 404 for WikimediaDesktop render', async () => {
       const articleId = 'NeverExistingArticle'
-      const articleUrl = downloader.getArticleUrl(dump, articleId)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const articleDetail = {
         title: articleId,
         missing: '',
@@ -237,7 +237,7 @@ describe('Downloader class', () => {
 
       test(`getArticle response status for non-existent article id is 404 for ${renderer} render`, async () => {
         const articleId = 'NeverExistingArticle'
-        const articleUrl = downloader.getArticleUrl(dump, articleId)
+        const articleUrl = downloader.getArticleUrl(articleId)
         const articleDetail = {
           title: articleId,
           missing: '',
@@ -256,7 +256,6 @@ describe('Downloader class', () => {
             dump.isMainPage(articleId),
           ),
         ).rejects.toThrowError(new Error('Request failed with status code 404'))
-        await sleep(1000)
       })
     }
   })

@@ -2,7 +2,7 @@ import * as logger from '../src/Logger.js'
 import * as mwoffliner from '../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import { RENDERERS_LIST } from '../src/util/const.js'
-import { zimcheckAvailable, zimdumpAvailable, sleep } from './util.js'
+import { zimcheckAvailable, zimdumpAvailable } from './util.js'
 
 interface Parameters {
   mwUrl: string

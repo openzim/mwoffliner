@@ -2,7 +2,7 @@ import domino from 'domino'
 import RedisStore from '../../../src/RedisStore.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../../src/util/mw-api.js'
-import { setupScrapeClasses, sleep } from '../../util.js'
+import { setupScrapeClasses } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
@@ -36,7 +36,6 @@ describe('ArticleTreatment', () => {
     test(`Article html processing for ${renderer} render`, async () => {
       const { downloader, dump } = await setupScrapeClasses() // en wikipedia
       const title = 'London'
-      await downloader.setBaseUrlsDirectors(renderer)
       const _articlesDetail = await downloader.getArticleDetailsIds([title])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
@@ -46,7 +45,8 @@ describe('ArticleTreatment', () => {
       const addedArticles: (typeof ZimArticle)[] = []
 
       const articleId = 'non-existent-article'
-      const articleUrl = downloader.getArticleUrl(dump, articleId)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleUrl = downloader.getArticleUrl(articleId)
 
       const _moduleDependencies = await downloader.getModuleDependencies(title)
       const articleDetail = {
@@ -91,8 +91,6 @@ describe('ArticleTreatment', () => {
       expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
       // Geo Position data is correct
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
-
-      await sleep(1000)
     })
   }
 })

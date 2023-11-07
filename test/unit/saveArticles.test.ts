@@ -2,7 +2,7 @@ import domino from 'domino'
 
 import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
-import { setupScrapeClasses, sleep } from '../util.js'
+import { setupScrapeClasses } from '../util.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
@@ -71,7 +71,7 @@ describe('saveArticles', () => {
       expect(addedArticles[0].aid).toEqual('A/London')
 
       const articleId = 'non-existent-article'
-      const articleUrl = downloader.getArticleUrl(dump, articleId)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
@@ -87,14 +87,13 @@ describe('saveArticles', () => {
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
       // Check if header exists
       expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
-      await sleep(1000)
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
-      await downloader.setBaseUrlsDirectors(renderer)
       const articleId = 'Canada'
-      const articleUrl = downloader.getArticleUrl(dump, articleId)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -119,14 +118,13 @@ describe('saveArticles', () => {
       const leadSection = sections[0]
       expect(sections.length).toEqual(1)
       expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
-      await sleep(1000)
     })
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
       await downloader.setBaseUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Main_Page'
-      const articleUrl = downloader.getArticleUrl(dump, articleId)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -146,7 +144,6 @@ describe('saveArticles', () => {
       )
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
-      await sleep(1000)
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
@@ -210,7 +207,6 @@ describe('saveArticles', () => {
       expect(ParisDocument.querySelector('#PRE_PROCESSOR')).toBeDefined()
       // Prague was correctly post-processed
       expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
-      await sleep(1000)
     })
   }
 
@@ -227,7 +223,7 @@ describe('saveArticles', () => {
       const downloader = classes.downloader
 
       await downloader.setCapabilities()
-      await downloader.setBaseUrlsDirectors()
+      await downloader.setUrlsDirectors()
       const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = redisStore
