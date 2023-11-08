@@ -97,7 +97,7 @@ class MediaWiki {
 
   set wikiPath(value: string) {
     // Empty string is a valid parameter for the wikiPath
-    if (value !== null || value !== undefined) {
+    if (value !== null && typeof value !== 'undefined') {
       this.#wikiPath = value
       this.initApiURLDirector()
     }
