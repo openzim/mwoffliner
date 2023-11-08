@@ -84,8 +84,6 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
 class Downloader {
   public loginCookie = ''
   public readonly speed: number
-  public baseUrl: string
-  public baseUrlForMainPage: string
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
@@ -179,15 +177,15 @@ class Downloader {
   private getUrlDirector(renderer: object) {
     switch (renderer.constructor.name) {
       case 'WikimediaDesktopRenderer':
-        return new WikimediaDesktopURLDirector(MediaWiki.WikimediaDesktopApiUrl.href)
+        return new WikimediaDesktopURLDirector(MediaWiki.wikimediaDesktopApiUrl.href)
       case 'VisualEditorRenderer':
-        return new VisualEditorURLDirector(MediaWiki.VisualEditorApiUrl.href)
+        return new VisualEditorURLDirector(MediaWiki.visualEditorApiUrl.href)
       case 'WikimediaMobileRenderer':
-        return new WikimediaMobileURLDirector(MediaWiki.WikimediaMobileApiUrl.href)
+        return new WikimediaMobileURLDirector(MediaWiki.wikimediaMobileApiUrl.href)
     }
   }
 
-  public async setUrlsDirectors(mainPageRenderer, articlesRenderer): Promise<void> {
+  public setUrlsDirectors(mainPageRenderer, articlesRenderer): void {
     if (!this.articleUrlDirector) {
       this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
     }

@@ -42,6 +42,7 @@ class MediaWiki {
   public namespacesToMirror: string[] = []
   public apiCheckArticleId: string
   public queryOpts: QueryOpts
+  public urlDirector: BaseURLDirector
 
   #wikiPath: string
   #actionApiPath: string
@@ -50,22 +51,19 @@ class MediaWiki {
   #username: string
   #password: string
   #domain: string
-  private apiUrlDirector: ApiURLDirector
-  private baseUrlDirector: BaseURLDirector
+
   public wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
   public visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
   public actionApiUrl: URL
+  public webUrl: URL
+  public wikimediaDesktopApiUrl: URL
+  public wikimediaMobileApiUrl: URL
 
-  public VisualEditorApiUrl: URL
-  public apiUrl: URL
   public modulePath: string // only for reading
   public mobileModulePath: string
-  public webUrl: URL
-  public WikimediaDesktopApiUrl: URL
-  public WikimediaMobileApiUrl: URL
 
   #apiUrlDirector: ApiURLDirector
   #wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
@@ -87,14 +85,16 @@ class MediaWiki {
   set actionApiPath(value: string) {
     if (value) {
       this.#actionApiPath = value
-      this.initApiURLDirector()
+      this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
+      this.setVisualEditorURL()
     }
   }
 
   set restApiPath(value: string) {
     if (value) {
       this.#restApiPath = value
-      this.initApiURLDirector()
+      this.setWikimediaDesktopApiUrl()
+      this.setWikimediaMobileApiUrl()
     }
   }
 
@@ -105,31 +105,33 @@ class MediaWiki {
   set wikiPath(value: string) {
     if (value) {
       this.#wikiPath = value
-      this.initApiURLDirector()
+      this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
     }
   }
 
   set base(value: string) {
     if (value) {
       this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
-      this.baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
-      this.initMWApis()
-      this.initApiURLDirector()
+      this.urlDirector = new BaseURLDirector(this.baseUrl.href)
+      this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
+      this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
+      this.setWikimediaDesktopApiUrl()
+      this.setWikimediaMobileApiUrl()
+      this.setVisualEditorURL()
+      this.setModuleURL()
+      this.setMobileModuleUrl()
     }
   }
 
   set modulePathOpt(value: string) {
-    if (value) {
+    if (value !== undefined) {
       this.#modulePathOpt = value
-      if (this.baseUrlDirector) {
-        this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
-      } else {
-        logger.error('Base url director should be specified first')
-      }
-    } else {
-      if (this.baseUrlDirector) {
-        this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
-      }
+    }
+
+    if (this.urlDirector) {
+      this.setModuleURL()
+    } else if (value) {
+      logger.error('Base url director should be specified first')
     }
   }
 
@@ -170,7 +172,7 @@ class MediaWiki {
 
   public async hasWikimediaDesktopApi(): Promise<boolean> {
     if (this.#hasWikimediaDesktopApi === null) {
-      this.#wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
+      this.#wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
       this.#hasWikimediaDesktopApi = await checkApiAvailability(this.#wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaDesktopApi
     }
@@ -179,7 +181,7 @@ class MediaWiki {
 
   public async hasWikimediaMobileApi(): Promise<boolean> {
     if (this.#hasWikimediaMobileApi === null) {
-      this.#wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
+      this.#wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
       this.#hasWikimediaMobileApi = await checkApiAvailability(this.#wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaMobileApi
     }
@@ -188,7 +190,7 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#visualEditorURLDirector = new VisualEditorURLDirector(this.VisualEditorApiUrl.href)
+      this.#visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
       this.#hasVisualEditorApi = await checkApiAvailability(this.#visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
@@ -214,29 +216,25 @@ class MediaWiki {
     return this.#hasCoordinates
   }
 
-  private initMWApis() {
-    this.WikimediaDesktopApiUrl = this.baseUrlDirector.buildWikimediaDesktopApiUrl(this.#restApiPath)
-    this.WikimediaMobileApiUrl = this.baseUrlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
-    this.mobileModulePath = this.baseUrlDirector.buildMobileModuleURL()
-    this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
-    this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
+  private setWikimediaDesktopApiUrl() {
+    this.wikimediaDesktopApiUrl = this.urlDirector.buildWikimediaDesktopApiUrl(this.#restApiPath)
   }
 
-  private initApiURLDirector() {
-    this.webUrl = this.baseUrlDirector.buildURL(this.#wikiPath)
-    this.actionApiUrl = this.baseUrlDirector.buildURL(this.#actionApiPath)
-    this.apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
-    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
-    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
-    this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
-    this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
-    this.#apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
-    this.VisualEditorApiUrl = this.#apiUrlDirector.buildVisualEditorURL()
-    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#restApiPath)
-    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
-    this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
-    this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
+  private setWikimediaMobileApiUrl() {
+    this.wikimediaMobileApiUrl = this.urlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
+  }
+
+  private setVisualEditorURL() {
+    this.#apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
+    this.visualEditorApiUrl = this.#apiUrlDirector.buildVisualEditorURL()
+  }
+
+  private setModuleURL() {
+    this.modulePath = this.urlDirector.buildModuleURL(this.#modulePathOpt)
+  }
+
+  private setMobileModuleUrl() {
+    this.mobileModulePath = this.urlDirector.buildMobileModuleURL()
   }
 
   public async login(downloader: Downloader) {

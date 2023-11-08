@@ -66,6 +66,7 @@ export async function testRenders(parameters: Parameters, callback, renderersLis
       logger.error(err.message)
       return
     }
+  }
 }
 
 export async function testAllRenders(parameters: Parameters, callback) {

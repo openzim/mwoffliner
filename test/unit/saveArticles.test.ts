@@ -122,7 +122,7 @@ describe('saveArticles', () => {
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      await downloader.setBaseUrlsDirectors(rendererInstance, rendererInstance)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Main_Page'
       const articleUrl = downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
@@ -148,7 +148,7 @@ describe('saveArticles', () => {
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-      await downloader.setBaseUrlsDirectors(rendererInstance, rendererInstance)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
