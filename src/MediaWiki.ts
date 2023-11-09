@@ -96,8 +96,7 @@ class MediaWiki {
   }
 
   set wikiPath(value: string) {
-    // Empty string is a valid parameter for the wikiPath
-    if (value !== null && typeof value !== 'undefined') {
+    if (value) {
       this.#wikiPath = value
       this.initApiURLDirector()
     }
@@ -135,7 +134,7 @@ class MediaWiki {
 
     this.#actionApiPath = 'w/api.php'
     this.#restApiPath = 'api/rest_v1'
-    this.#wikiPath = 'wiki/'
+    this.#wikiPath = ''
     this.#modulePathOpt = 'w/load.php'
 
     this.namespaces = {}

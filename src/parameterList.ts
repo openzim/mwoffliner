@@ -16,7 +16,7 @@ export const parameterDescriptions = {
   format:
     'Specify a flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFormat names can also be aliased using a ":"\nExample: "... --format=nopic:mini --format=novid,nopdf"',
   keepEmptyParagraphs: 'Keep all paragraphs, even empty ones.',
-  mwWikiPath: 'Mediawiki wiki base path (per default "/wiki/")',
+  mwWikiPath: 'Mediawiki wiki base path (per default empty string)',
   mwActionApiPath: 'Mediawiki API path (per default "/w/api.php")',
   mwRestApiPath: 'Mediawiki Rest API path (per default "/api/rest_v1")',
   mwModulePath: 'Mediawiki module load path (per default "/w/load.php")',

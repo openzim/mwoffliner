@@ -3,7 +3,7 @@ import { zimcheck } from '../util.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'
-import { sanitizeApiPathParam, sanitizeWikiPath } from '../../src/sanitize-argument.js'
+import { sanitizeApiPathParam } from '../../src/sanitize-argument.js'
 
 jest.setTimeout(60000)
 
@@ -14,7 +14,6 @@ const parameters = {
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
   mwRestApiPath: sanitizeApiPathParam('/api/rest_v1'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
-  mwWikiPath: sanitizeWikiPath('/'),
 }
 
 await testAllRenders(parameters, async (outFiles) => {
@@ -27,7 +26,7 @@ await testAllRenders(parameters, async (outFiles) => {
       expect(outFiles[0].mwMetaData.restApiPath).toBe('api/rest_v1')
     })
 
-    test('Mediawiki wikiPath option', () => {
+    test('Mediawiki default empty wikiPath option', () => {
       expect(outFiles[0].mwMetaData.wikiPath).toBe('')
     })
 

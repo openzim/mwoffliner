@@ -29,7 +29,7 @@ describe('MediaTreatment', () => {
 
   describe('treatSubtitle', () => {
     test('treat one subtitle', async () => {
-      const { dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
+      const { dump } = await setupScrapeClasses({ format: '' })
 
       // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
       const wikicode =

@@ -13,8 +13,6 @@ const parameters = {
   redis: process.env.REDIS,
   articleList: 'Alaska',
   customZimDescription: 'Alaska article',
-  mwActionApiPath: 'w/api.php',
-  mwWikiPath: '/',
 }
 
 await testAllRenders(

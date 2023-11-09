@@ -35,8 +35,6 @@ Real-time computer graphics`
     outputDirectory: testId,
     redis: process.env.REDIS,
     webp: true,
-    mwActionApiPath: 'w/api.php',
-    mwWikiPath: '/',
   })
 
   const zimFile = new ZimReader(outFiles[0].outFile)

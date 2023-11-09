@@ -12,8 +12,6 @@ const parameters = {
   redis: process.env.REDIS,
   format: ['nopic'],
   noLocalParserFallback: true,
-  mwActionApiPath: 'w/api.php',
-  mwWikiPath: '/',
 }
 
 await testAllRenders(

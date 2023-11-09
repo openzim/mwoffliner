@@ -12,8 +12,6 @@ const parameters = {
   adminEmail: 'test@kiwix.org',
   articleList: 'Read_my_lips:_no_new_taxes',
   redis: process.env.REDIS,
-  mwActionApiPath: 'w/api.php',
-  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

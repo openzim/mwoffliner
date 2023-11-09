@@ -122,7 +122,8 @@ export async function sanitize_all(argv: any) {
 export function sanitizeWikiPath(mwWikiPath = '') {
   mwWikiPath = sanitizeApiPathParam(mwWikiPath)
 
-  if (mwWikiPath?.endsWith('/')) {
+  // Make sure wikiPath always has forward slash at the end for the correct URL building
+  if (!mwWikiPath?.endsWith('/')) {
     mwWikiPath += '/'
   }
 
@@ -134,6 +135,7 @@ export function sanitizeApiPathParam(apiPathParam: string) {
     return
   }
 
+  // No api params should start from forward slash
   if (apiPathParam.startsWith('/')) {
     apiPathParam = apiPathParam.slice(1)
   }

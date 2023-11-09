@@ -18,7 +18,6 @@ describe('forceRender', () => {
     format: ['nopic'],
     articleList: 'France',
     mwActionApiPath: 'w/api.php',
-    mwWikiPath: '/',
   }
 
   beforeAll(async () => {

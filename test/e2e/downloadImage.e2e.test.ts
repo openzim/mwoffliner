@@ -16,8 +16,6 @@ const parameters = {
   articleList: 'Paris',
   format: ['nodet'],
   optimisationCacheUrl: process.env.S3_URL,
-  mwActionApiPath: 'w/api.php',
-  mwWikiPath: '/',
 }
 
 await testAllRenders(parameters, async (outFiles) => {

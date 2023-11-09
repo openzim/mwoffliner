@@ -37,10 +37,6 @@ describe('Extra', () => {
         redis: process.env.REDIS,
         format: ['nopic'],
         forceRender: 'WikimediaDesktop',
-        mwActionApiPath: 'w/api.php',
-        mwWikiPath: '/',
-        mwRestApiPath: 'api/rest_v1',
-        mwModulePath: 'w/load.php',
       })
 
       // Created 1 outputs

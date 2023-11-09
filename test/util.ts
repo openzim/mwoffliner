@@ -30,7 +30,7 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
   return $link
 }
 
-export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '', mwWikiPath = '/wiki' } = {}) {
+export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '', mwWikiPath = '' } = {}) {
   MediaWiki.base = mwUrl
   MediaWiki.wikiPath = mwWikiPath
 
