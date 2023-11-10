@@ -20,5 +20,4 @@ export const RULE_TO_REDIRECT = /window\.top !== window\.self/
 export const WEBP_HANDLER_URL = 'https://gist.githubusercontent.com/rgaudin/60bb9cc6f187add506584258028b8ee1/raw/9d575b8e25d67eed2a9c9a91d3e053a0062d2fc7/web-handler.js'
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const BLACKLISTED_NS = ['Story'] // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
-// TODO: Enable back once regression Phabricator:T350117 fixed
-export const RENDERERS_LIST = ['WikimediaDesktop', /* 'VisualEditor',*/ 'WikimediaMobile']
+export const RENDERERS_LIST = ['WikimediaDesktop', 'VisualEditor', 'WikimediaMobile']

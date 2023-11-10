@@ -83,8 +83,7 @@ describe('RendererBuilder', () => {
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
-    // TODO: Enable back once regression Phabricator:T350117 fixed
-    // await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasVisualEditorApi()
     await downloader.setBaseUrls()
 
     const rendererBuilderOptions = {
