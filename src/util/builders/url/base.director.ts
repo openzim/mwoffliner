@@ -10,8 +10,7 @@ export default class BaseURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildURL(path: string, wikiPath = '') {
-    path = `${wikiPath}${path}`
+  buildURL(path: string) {
     return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
   }
 

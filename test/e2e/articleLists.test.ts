@@ -2,7 +2,7 @@ import { execa } from 'execa'
 import rimraf from 'rimraf'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
-import { testAllRenders } from '../testAllRenders.js'
+import { testAllRenders } from '../testRenders.js'
 
 jest.setTimeout(10000)
 

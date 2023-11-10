@@ -1,5 +1,5 @@
 import { execa } from 'execa'
-import { testAllRenders } from '../testAllRenders.js'
+import { testRenders } from '../testRenders.js'
 import rimraf from 'rimraf'
 import { zimdump } from '../util.js'
 import 'dotenv/config'
@@ -16,7 +16,7 @@ const parameters = {
   forceRender: 'WikimediaDesktop',
 }
 
-await testAllRenders(
+await testRenders(
   parameters,
   async (outFiles) => {
     describe('Multimedia', () => {
@@ -49,8 +49,7 @@ await testAllRenders(
           })
           break
         case 'VisualEditor':
-          // TODO: Enable back once regression Phabricator:T350117 fixed
-          test.skip(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
+          test(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles[0].status.articles.success).toEqual(1)
@@ -76,10 +75,10 @@ await testAllRenders(
       }
     })
   },
-  ['WikimediaDesktop'],
+  ['WikimediaDesktop', 'VisualEditor'],
 )
 
-await testAllRenders(
+await testRenders(
   { ...parameters, format: ['nopic', 'novid', 'nopdf', 'nodet'] },
   async (outFiles) => {
     describe('Multimedia for different formats', () => {
@@ -146,8 +145,7 @@ await testAllRenders(
           })
           break
         case 'VisualEditor':
-          // TODO: Enable back once regression Phabricator:T350117 fixed
-          test.skip(`check multimedia content from wikipedia test page with different formates for ${outFiles[0]?.renderer} renderer`, async () => {
+          test(`check multimedia content from wikipedia test page with different formates for ${outFiles[0]?.renderer} renderer`, async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles).toHaveLength(4)
@@ -156,7 +154,7 @@ await testAllRenders(
               expect(dump.status.articles.success).toEqual(1)
               expect(dump.status.articles.fail).toEqual(0)
 
-              // TODO: blocked by issues/1931
+              // TODO: blocked by issues/1931, doesn't work for VE
               // await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
               const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
@@ -206,5 +204,5 @@ await testAllRenders(
       }
     })
   },
-  ['WikimediaDesktop'],
+  ['WikimediaDesktop', 'VisualEditor'],
 )

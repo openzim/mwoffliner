@@ -52,9 +52,8 @@ async function getOutFiles(renderName: string, testId: string, parameters: Param
   return outFiles
 }
 
-export async function testAllRenders(parameters: Parameters, callback, optionalRenderesList?: Array<string>) {
+export async function testRenders(parameters: Parameters, callback, renderersList: Array<string>) {
   await checkZimTools()
-  const renderersList = optionalRenderesList || RENDERERS_LIST
   for (const renderer of renderersList) {
     try {
       const now = new Date()
@@ -68,4 +67,8 @@ export async function testAllRenders(parameters: Parameters, callback, optionalR
       return
     }
   }
+}
+
+export async function testAllRenders(parameters: Parameters, callback) {
+  return testRenders(parameters, callback, RENDERERS_LIST)
 }

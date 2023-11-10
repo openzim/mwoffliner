@@ -1,6 +1,6 @@
 import { execa } from 'execa'
 import rimraf from 'rimraf'
-import { testAllRenders } from '../testAllRenders.js'
+import { testRenders } from '../testRenders.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 
@@ -14,7 +14,7 @@ const parameters = {
   noLocalParserFallback: true,
 }
 
-await testAllRenders(
+await testRenders(
   parameters,
   async (outFiles) => {
     describe('wikisource', () => {
@@ -42,8 +42,7 @@ await testAllRenders(
           })
           break
         case 'VisualEditor':
-          // TODO: Enable back once regression Phabricator:T350117 fixed
-          test.skip(`Wikisource List for ${outFiles[0]?.renderer} renderer`, async () => {
+          test(`Wikisource List for ${outFiles[0]?.renderer} renderer`, async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles).toHaveLength(1)
@@ -64,5 +63,5 @@ await testAllRenders(
       }
     })
   },
-  ['WikimediaDesktop'],
+  ['WikimediaDesktop', 'VisualEditor'],
 )

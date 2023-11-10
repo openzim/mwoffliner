@@ -1,6 +1,6 @@
 import 'dotenv/config.js'
 import domino from 'domino'
-import { testAllRenders } from '../testAllRenders.js'
+import { testAllRenders } from '../testRenders.js'
 import { jest } from '@jest/globals'
 import { zimdump } from '../util.js'
 import rimraf from 'rimraf'
@@ -77,7 +77,7 @@ await testAllRenders({ ...parameters, format: 'novid', articleList: 'English_alp
 
 // TODO: blocked by issues/1928
 /*
-await testAllRenders({ ...parameters, format: 'nopdf', articleList: 'PDF' }, async (outFiles) => {
+await testRenders({ ...parameters, format: 'nopdf', articleList: 'PDF' }, async (outFiles) => {
   describe('format:pdf to check no internal links pdf files', () => {
     test(`Test en.wikipedia.org using format:nopdf for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })

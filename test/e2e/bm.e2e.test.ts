@@ -1,5 +1,5 @@
 import { zimdump } from '../util.js'
-import { testAllRenders } from '../testAllRenders.js'
+import { testAllRenders } from '../testRenders.js'
 import { execa } from 'execa'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'

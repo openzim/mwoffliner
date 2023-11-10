@@ -36,7 +36,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return visualeditor content if the main page flag is true', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
+      const { downloader, dump } = await setupScrapeClasses()
       const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       const result = await visualEditorRenderer.render({
@@ -56,7 +56,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should inject header to the visual editor content if the main page flag is false', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
+      const { downloader, dump } = await setupScrapeClasses()
       const content = '<body class="mw-body-content">consectetur adipiscing elit</body>'
       const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content } })
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
@@ -75,7 +75,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return html body if json contentmodel param is `wikitext`', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
+      const { downloader, dump } = await setupScrapeClasses()
       const htmlBody = '<body>sed do eiusmod tempor incididunt</body>'
       const { data, articleId, articleDetail } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
@@ -96,7 +96,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return html body if it`s presented even if contentmodel param is not equal to wikitext', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
+      const { downloader, dump } = await setupScrapeClasses()
       const htmlBody = '<body>ut labore et dolore magna aliqua. Ut enim ad minim veniam</body>'
       const { data, articleId, articleDetail } = prepareFixtures({ html: { body: htmlBody } })
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
@@ -117,7 +117,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return empty string if there was an error during article retrievement', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '', mwWikiPath: '/' })
+      const { downloader, dump } = await setupScrapeClasses()
       const { data, articleId, articleDetail } = prepareFixtures({ error: 'Unexpected internal error' })
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       const result = await visualEditorRenderer.render({

@@ -1,4 +1,4 @@
-import { testAllRenders } from '../testAllRenders.js'
+import { testAllRenders } from '../testRenders.js'
 import domino from 'domino'
 import { zimdump } from '../util.js'
 import 'dotenv/config.js'

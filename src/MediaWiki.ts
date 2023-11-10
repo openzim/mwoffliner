@@ -134,7 +134,7 @@ class MediaWiki {
 
     this.#actionApiPath = 'w/api.php'
     this.#restApiPath = 'api/rest_v1'
-    this.#wikiPath = ''
+    this.#wikiPath = 'wiki/'
     this.#modulePathOpt = 'w/load.php'
 
     this.namespaces = {}
@@ -213,9 +213,8 @@ class MediaWiki {
   }
 
   private initApiURLDirector() {
-    // TODO: this.webUrl probably shouldn't accept hardcoded 'wiki/' param, check test/e2e/extra.e2e.test.ts
-    this.webUrl = this.baseUrlDirector.buildURL('wiki/')
-    this.actionApiUrl = this.baseUrlDirector.buildURL(this.#actionApiPath, this.#wikiPath)
+    this.webUrl = this.baseUrlDirector.buildURL(this.#wikiPath)
+    this.actionApiUrl = this.baseUrlDirector.buildURL(this.#actionApiPath)
     this.apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
     this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
     this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)

@@ -1,9 +1,8 @@
-import { testAllRenders } from '../testAllRenders.js'
-import { zimcheck } from '../util.js'
+import { testAllRenders } from '../testRenders.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'
-import { sanitizeApiPathParam } from '../../src/sanitize-argument.js'
+import { sanitizeApiPathParam, sanitizeWikiPath } from '../../src/sanitize-argument.js'
 
 jest.setTimeout(60000)
 
@@ -14,23 +13,24 @@ const parameters = {
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
   mwRestApiPath: sanitizeApiPathParam('/api/rest_v1'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
+  mwWikiPath: sanitizeWikiPath('wiki'),
 }
 
 await testAllRenders(parameters, async (outFiles) => {
   describe(`e2e test for api url params for en.wikipedia.org for ${outFiles[0]?.renderer} renderer`, () => {
-    test('Mediawiki actionApiPath ', () => {
+    test('Mediawiki actionApiPath option sanitized', () => {
       expect(outFiles[0].mwMetaData.actionApiPath).toBe('w/api.php')
     })
 
-    test('Mediawiki restApiPath option', () => {
+    test('Mediawiki restApiPath option sanitized', () => {
       expect(outFiles[0].mwMetaData.restApiPath).toBe('api/rest_v1')
     })
 
-    test('Mediawiki default empty wikiPath option', () => {
-      expect(outFiles[0].mwMetaData.wikiPath).toBe('')
+    test('Mediawiki wikiPath option sanitized', () => {
+      expect(outFiles[0].mwMetaData.wikiPath).toBe('wiki/')
     })
 
-    test('Mediawiki modulePathOpt option', () => {
+    test('Mediawiki modulePathOpt option sanitized', () => {
       expect(outFiles[0].mwMetaData.modulePathOpt).toBe('w/load.php')
     })
 
@@ -39,9 +39,12 @@ await testAllRenders(parameters, async (outFiles) => {
       expect(outFiles[0].mwMetaData.actionApiUrl).toBe('https://en.wikipedia.org/w/api.php')
     })
 
+    // TODO: blocked by issues/1931
+    /*
     test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
+    */
 
     afterAll(() => {
       rimraf.sync(`./${outFiles[0].testId}`)

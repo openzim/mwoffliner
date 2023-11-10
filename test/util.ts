@@ -30,11 +30,10 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
   return $link
 }
 
-export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '', mwWikiPath = '' } = {}) {
+export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '' } = {}) {
   MediaWiki.base = mwUrl
-  MediaWiki.wikiPath = mwWikiPath
 
-  const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '', mwWikiPath })
+  const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
 
   await MediaWiki.getMwMetaData(downloader)
   await MediaWiki.hasCoordinates(downloader)
