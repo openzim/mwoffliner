@@ -88,6 +88,7 @@ describe('Styles', () => {
     expect($extHttpsNoRel.getAttribute('href')).toEqual('https://google.com')
 
     await rewriteUrl(parentArticleId, dump, $wikiLink)
+
     // wikiLink is still a link with simple parent id
     expect($wikiLink.nodeName).toEqual('A')
     // wikiLink HREF is correct with simple parent id

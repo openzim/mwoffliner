@@ -47,30 +47,35 @@ export class RendererBuilder {
         }
       case 'specific':
         // renderName argument is required for 'specific' mode
-        switch (renderName) {
-          case 'WikimediaDesktop':
-            if (hasWikimediaDesktopApi) {
-              return new WikimediaDesktopRenderer()
-            }
-            logger.error('Cannot create an instance of WikimediaDesktop renderer.')
-            process.exit(1)
-          case 'VisualEditor':
-            if (hasVisualEditorApi) {
-              return new VisualEditorRenderer()
-            }
-            logger.error('Cannot create an instance of VisualEditor renderer.')
-            process.exit(1)
-          case 'WikimediaMobile':
-            if (hasWikimediaMobileApi) {
-              return new WikimediaMobileRenderer()
-            }
-            logger.error('No available mobile renderer.')
-            process.exit(1)
-          default:
-            throw new Error(`Unknown renderName for specific mode: ${renderName}`)
-        }
+        return this.handleSpecificRender(renderName, hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi)
       default:
         throw new Error(`Unknown render: ${renderType}`)
+    }
+  }
+
+  private handleSpecificRender(renderName: string, hasVisualEditorApi: boolean, hasWikimediaDesktopApi: boolean, hasWikimediaMobileApi: boolean) {
+    // renderName argument is required for 'specific' mode
+    switch (renderName) {
+      case 'WikimediaDesktop':
+        if (hasWikimediaDesktopApi) {
+          return new WikimediaDesktopRenderer()
+        }
+        logger.error('Cannot create an instance of WikimediaDesktop renderer.')
+        process.exit(1)
+      case 'VisualEditor':
+        if (hasVisualEditorApi) {
+          return new VisualEditorRenderer()
+        }
+        logger.error('Cannot create an instance of VisualEditor renderer.')
+        process.exit(1)
+      case 'WikimediaMobile':
+        if (hasWikimediaMobileApi) {
+          return new WikimediaMobileRenderer()
+        }
+        logger.error('No available mobile renderer.')
+        process.exit(1)
+      default:
+        throw new Error(`Unknown renderName for specific mode: ${renderName}`)
     }
   }
 }

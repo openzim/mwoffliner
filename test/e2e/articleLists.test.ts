@@ -2,7 +2,7 @@ import { execa } from 'execa'
 import rimraf from 'rimraf'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
-import { testAllRenders } from '../testAllRenders.js'
+import { testAllRenders } from '../testRenders.js'
 
 jest.setTimeout(10000)
 
@@ -20,8 +20,6 @@ const parameters = {
 
 await testAllRenders(parameters, async (outFiles) => {
   describe('articleList', () => {
-    const now = new Date()
-    const testId = `mwo-test-${+now}`
     const listMinusIgnore = 2
 
     test(`articleList and articleListIgnore check using ${outFiles[0].renderer} renderer`, async () => {
@@ -49,10 +47,12 @@ await testAllRenders(parameters, async (outFiles) => {
       }
       */
 
-      rimraf.sync(`./${testId}`)
       const redisScan = await execa('redis-cli --scan', { shell: true })
       // Redis has been cleared
       expect(redisScan.stdout).toEqual('')
+    })
+    afterAll(() => {
+      rimraf.sync(`./${outFiles[0].testId}`)
     })
   })
 })

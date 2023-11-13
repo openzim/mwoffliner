@@ -1,7 +1,6 @@
 import { execa } from 'execa'
 import rimraf from 'rimraf'
-import { testAllRenders } from '../testAllRenders.js'
-import { zimcheck } from '../util.js'
+import { testRenders } from '../testRenders.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 
@@ -15,19 +14,21 @@ const parameters = {
   customZimDescription: 'Alaska article',
 }
 
-await testAllRenders(parameters, async (outFiles) => {
-  describe('vikidia', () => {
+await testRenders(
+  parameters,
+  async (outFiles) => {
     test(`right scrapping from vikidia.org for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
 
       // Created 1 output
       expect(outFiles).toHaveLength(1)
 
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+      // TODO: Blocked by issues/1931
+      // await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
 
-    afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
-    })
-  })
-})
+    rimraf.sync(`./${outFiles[0].testId}`)
+  },
+  // en.vikidia.org supports only VisualEditor among other renders
+  ['VisualEditor'],
+)

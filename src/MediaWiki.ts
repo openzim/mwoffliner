@@ -44,20 +44,21 @@ class MediaWiki {
   public queryOpts: QueryOpts
 
   #wikiPath: string
-  #apiPath: string
+  #actionApiPath: string
+  #restApiPath: string
+  #modulePathOpt: string
   #username: string
   #password: string
-  #apiActionPath: string
   #domain: string
   private apiUrlDirector: ApiURLDirector
+  private baseUrlDirector: BaseURLDirector
   private wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   private wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  private VisualEditorURLDirector: VisualEditorURLDirector
+  private visualEditorURLDirector: VisualEditorURLDirector
 
   public visualEditorApiUrl: URL
-  public apiUrl: URL
+  public actionApiUrl: URL
   public modulePath: string // only for reading
-  public _modulePathOpt: string // only for whiting to generate modulePath
   public mobileModulePath: string
   public webUrl: URL
   public WikimediaDesktopApiUrl: URL
@@ -76,12 +77,18 @@ class MediaWiki {
     this.#password = value
   }
 
-  set apiActionPath(value: string) {
-    this.#apiActionPath = value
+  set actionApiPath(value: string) {
+    if (value) {
+      this.#actionApiPath = value
+      this.initApiURLDirector()
+    }
   }
 
-  set apiPath(value: string) {
-    this.#apiPath = value
+  set restApiPath(value: string) {
+    if (value) {
+      this.#restApiPath = value
+      this.initApiURLDirector()
+    }
   }
 
   set domain(value: string) {
@@ -89,16 +96,34 @@ class MediaWiki {
   }
 
   set wikiPath(value: string) {
-    this.#wikiPath = value
+    if (value) {
+      this.#wikiPath = value
+      this.initApiURLDirector()
+    }
   }
 
   set base(value: string) {
-    this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
-    this.initMWApis()
+    if (value) {
+      this.baseUrl = basicURLDirector.buildMediawikiBaseURL(value)
+      this.baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
+      this.initMWApis()
+      this.initApiURLDirector()
+    }
   }
 
   set modulePathOpt(value: string) {
-    this._modulePathOpt = value
+    if (value) {
+      this.#modulePathOpt = value
+      if (this.baseUrlDirector) {
+        this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
+      } else {
+        logger.error('Base url director should be specified first')
+      }
+    } else {
+      if (this.baseUrlDirector) {
+        this.modulePath = this.baseUrlDirector.buildModuleURL(this.#modulePathOpt)
+      }
+    }
   }
 
   private initializeMediaWikiDefaults(): void {
@@ -107,11 +132,13 @@ class MediaWiki {
     this.#password = ''
     this.getCategories = false
 
+    this.#actionApiPath = 'w/api.php'
+    this.#restApiPath = 'api/rest_v1'
+    this.#wikiPath = 'wiki/'
+    this.#modulePathOpt = 'w/load.php'
+
     this.namespaces = {}
     this.namespacesToMirror = []
-
-    this.#apiActionPath = 'w/api.php'
-    this.#wikiPath = 'wiki/'
     this.apiCheckArticleId = 'MediaWiki:Sidebar'
 
     this.queryOpts = {
@@ -152,7 +179,7 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#hasVisualEditorApi = await checkApiAvailability(this.VisualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -178,23 +205,24 @@ class MediaWiki {
   }
 
   private initMWApis() {
-    const baseUrlDirector = new BaseURLDirector(this.baseUrl.href)
-    this.webUrl = baseUrlDirector.buildURL(this.#wikiPath)
-    this.apiUrl = baseUrlDirector.buildURL(this.#apiActionPath)
-    this.apiUrlDirector = new ApiURLDirector(this.apiUrl.href)
-    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
-    this.WikimediaDesktopApiUrl = baseUrlDirector.buildWikimediaDesktopApiUrl(this.#apiPath)
-    this.WikimediaMobileApiUrl = baseUrlDirector.buildWikimediaMobileApiUrl(this.#apiPath)
-    this.modulePath = baseUrlDirector.buildModuleURL(this._modulePathOpt)
-    this.mobileModulePath = baseUrlDirector.buildMobileModuleURL()
+    this.WikimediaDesktopApiUrl = this.baseUrlDirector.buildWikimediaDesktopApiUrl(this.#restApiPath)
+    this.WikimediaMobileApiUrl = this.baseUrlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
+    this.mobileModulePath = this.baseUrlDirector.buildMobileModuleURL()
     this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.WikimediaDesktopApiUrl.href)
     this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.WikimediaMobileApiUrl.href)
-    this.VisualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+  }
+
+  private initApiURLDirector() {
+    this.webUrl = this.baseUrlDirector.buildURL(this.#wikiPath)
+    this.actionApiUrl = this.baseUrlDirector.buildURL(this.#actionApiPath)
+    this.apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
+    this.visualEditorApiUrl = this.apiUrlDirector.buildVisualEditorURL()
+    this.visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
   }
 
   public async login(downloader: Downloader) {
     if (this.#username && this.#password) {
-      let url = this.apiUrl.href + '?'
+      let url = this.actionApiUrl.href + '?'
 
       // Add domain if configured
       if (this.#domain) {
@@ -205,7 +233,7 @@ class MediaWiki {
       const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2')
 
       // Logging in
-      await axios(this.apiUrl.href, {
+      await axios(this.actionApiUrl.href, {
         data: qs.stringify({
           action: 'login',
           format: 'json',
@@ -413,13 +441,15 @@ class MediaWiki {
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
-      apiUrl: this.apiUrl.href,
+      actionApiUrl: this.actionApiUrl.href,
+      modulePathOpt: this.#modulePathOpt,
       modulePath: this.modulePath,
       mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
-      apiActionPath: this.#apiActionPath,
+      actionApiPath: this.#actionApiPath,
+      restApiPath: this.#restApiPath,
       domain: this.#domain,
 
       textDir: textDir as TextDirection,

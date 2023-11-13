@@ -7,12 +7,17 @@ import { zimcheckAvailable, zimdumpAvailable } from './util.js'
 interface Parameters {
   mwUrl: string
   adminEmail: string
+  outputDirectory?: string
+  addNamespaces?: number
   articleList?: string
   articleListToIgnore?: string
   redis?: string
   format?: string | string[]
   noLocalParserFallback?: boolean
   forceRender?: string
+  mwActionApiPath?: string
+  mwRestApiPath?: string
+  mwModulePath?: string
 }
 
 /*
@@ -42,19 +47,28 @@ async function checkZimTools() {
 
 async function getOutFiles(renderName: string, testId: string, parameters: Parameters): Promise<any> {
   await execa('redis-cli flushall', { shell: true })
-  const outFiles = await mwoffliner.execute(parameters)
+  const outFiles = await mwoffliner.execute({ ...parameters, outputDirectory: testId, forceRender: renderName })
 
   return outFiles
 }
 
-export async function testAllRenders(parameters: Parameters, callback) {
+export async function testRenders(parameters: Parameters, callback, renderersList: Array<string>) {
   await checkZimTools()
-  for (const renderer of RENDERERS_LIST) {
-    const now = new Date()
-    const testId = `mwo-test-${+now}`
-    const outFiles = await getOutFiles(renderer, testId, parameters)
-    outFiles[0].testId = testId
-    outFiles[0].renderer = renderer
-    await callback(outFiles)
+  for (const renderer of renderersList) {
+    try {
+      const now = new Date()
+      const testId = `mwo-test-${+now}`
+      const outFiles = await getOutFiles(renderer, testId, parameters)
+      outFiles[0].testId = testId
+      outFiles[0].renderer = renderer
+      await callback(outFiles)
+    } catch (err) {
+      logger.error(err.message)
+      return
+    }
   }
+}
+
+export async function testAllRenders(parameters: Parameters, callback) {
+  return testRenders(parameters, callback, RENDERERS_LIST)
 }

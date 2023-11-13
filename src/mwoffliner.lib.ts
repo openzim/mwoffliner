@@ -76,7 +76,7 @@ async function execute(argv: any) {
     mwUrl,
     mwWikiPath,
     mwActionApiPath,
-    mwApiPath,
+    mwRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -158,13 +158,13 @@ async function execute(argv: any) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
   MediaWiki.getCategories = !!argv.getCategories
-  MediaWiki.apiActionPath = mwActionApiPath
-  MediaWiki.apiPath = mwApiPath
+  MediaWiki.wikiPath = mwWikiPath
+  MediaWiki.actionApiPath = mwActionApiPath
+  MediaWiki.restApiPath = mwRestApiPath
   MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword
   MediaWiki.username = mwUsername
-  MediaWiki.wikiPath = mwWikiPath
 
   /* Download helpers; TODO: Merge with something else / expand this. */
   const downloader = new Downloader({
@@ -513,7 +513,7 @@ async function execute(argv: any) {
       }
     }
 
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.apiUrl.href)
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
     const body = await downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
 
