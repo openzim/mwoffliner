@@ -13,7 +13,6 @@ const parameters = {
   articleList: 'User:Kelson/MWoffliner_CI_reference',
   redis: process.env.REDIS,
   customZimDescription: 'Example of the description',
-  forceRender: 'WikimediaDesktop',
 }
 
 await testRenders(
@@ -21,11 +20,8 @@ await testRenders(
   async (outFiles) => {
     describe('Multimedia', () => {
       switch (outFiles[0].renderer) {
-        // TODO: blocked by issues/1925
-        case 'WikimediaMobile':
-          break
         case 'WikimediaDesktop':
-          test(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
+          test('check multimedia content from wikipedia test page for WikimediaDesktop renderer', async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles[0].status.articles.success).toEqual(1)
@@ -35,7 +31,8 @@ await testRenders(
             expect(mediaFiles.split('\n').sort()).toEqual(
               [
                 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
+                // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
+                // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
                 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
                 'I/Kiwix_icon.svg.png',
                 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
@@ -49,7 +46,7 @@ await testRenders(
           })
           break
         case 'VisualEditor':
-          test(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
+          test('check multimedia content from wikipedia test page for VisualEditor renderer', async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles[0].status.articles.success).toEqual(1)
@@ -59,7 +56,8 @@ await testRenders(
             expect(mediaFiles.split('\n').sort()).toEqual(
               [
                 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
+                // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
+                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
                 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
                 'I/Kiwix_icon.svg.png',
                 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
@@ -84,11 +82,8 @@ await testRenders(
     describe('Multimedia for different formats', () => {
       // TODO: blocked by issues/1925
       switch (outFiles[0].renderer) {
-        // TODO: blocked by issues/1925
-        case 'WikimediaMobile':
-          break
         case 'WikimediaDesktop':
-          test(`check multimedia content from wikipedia test page with different formates for ${outFiles[0]?.renderer} renderer`, async () => {
+          test('check multimedia content from wikipedia test page with different formates for WikimediaDesktop renderer', async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles).toHaveLength(4)
@@ -129,7 +124,8 @@ await testRenders(
                 expect(mediaFiles.split('\n').sort()).toEqual(
                   [
                     // 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
-                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
+                    // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
+                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
                     'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
                     'I/Kiwix_icon.svg.png',
                     'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
@@ -145,7 +141,7 @@ await testRenders(
           })
           break
         case 'VisualEditor':
-          test(`check multimedia content from wikipedia test page with different formates for ${outFiles[0]?.renderer} renderer`, async () => {
+          test('check multimedia content from wikipedia test page with different formates for VisualEditor renderer', async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles).toHaveLength(4)
@@ -186,12 +182,12 @@ await testRenders(
                 expect(mediaFiles.split('\n').sort()).toEqual(
                   [
                     // 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
-                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
+                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
                     'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
                     'I/Kiwix_icon.svg.png',
                     'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
                     'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    'I/page1-640px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               }

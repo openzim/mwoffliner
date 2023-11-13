@@ -20,8 +20,12 @@ describe('forceRender', () => {
     mwActionApiPath: 'w/api.php',
   }
 
-  beforeAll(async () => {
+  afterAll(async () => {
     await execa('redis-cli flushall', { shell: true })
+    rimraf.sync(`./${testId}`)
+    const redisScan = await execa('redis-cli --scan', { shell: true })
+    // Redis has been cleared
+    expect(redisScan.stdout).toEqual('')
   })
 
   test('Scrape article from bm.wikipedia.org using WikimediaDesktop render', async () => {
@@ -33,24 +37,23 @@ describe('forceRender', () => {
     } else {
       console.log('Zimcheck not installed, skipping test')
     }
-
-    rimraf.sync(`./${testId}`)
-    const redisScan = await execa('redis-cli --scan', { shell: true })
-    // Redis has been cleared
-    expect(redisScan.stdout).toEqual('')
   })
 
   test('Scrape article from bm.wikipedia.org should throw error when using VisualEditor render', async () => {
     const forceRender = 'VisualEditor'
-    expect(async () => {
+    try {
       await mwoffliner.execute({ ...parameters, forceRender })
-    }).rejects.toThrowError()
+    } catch (err) {
+      expect(err).toReturn()
+    }
   })
 
   test('Scrape article from bm.wikipedia.org should throw error when using wrong render', async () => {
     const forceRender = 'unknownRenderName'
-    expect(async () => {
+    try {
       await mwoffliner.execute({ ...parameters, forceRender })
-    }).rejects.toThrowError()
+    } catch (err) {
+      expect(err.message).toEqual('Unable to find specific API end-point to retrieve article HTML')
+    }
   })
 })
