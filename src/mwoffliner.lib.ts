@@ -213,6 +213,7 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopApi()
   const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
+  await MediaWiki.hasMediawikiRestApi()
   await MediaWiki.hasVisualEditorApi()
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)

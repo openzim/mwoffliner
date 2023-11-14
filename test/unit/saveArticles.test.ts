@@ -10,6 +10,7 @@ import { jest } from '@jest/globals'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
+import { MediawikiRestApiRenderer } from '../../src/renderers/mediawiki-rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 
 jest.setTimeout(40000)
@@ -29,6 +30,9 @@ describe('saveArticles', () => {
         break
       case 'WikimediaMobile':
         rendererInstance = new WikimediaMobileRenderer()
+        break
+      case 'MediawikiRestApi':
+        rendererInstance = new MediawikiRestApiRenderer()
         break
       default:
         throw new Error(`Unknown renderer: ${renderer}`)
