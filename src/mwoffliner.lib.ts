@@ -77,6 +77,7 @@ async function execute(argv: any) {
     mwWikiPath,
     mwActionApiPath,
     mwRestApiPath,
+    mwMediaWikiRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -161,6 +162,7 @@ async function execute(argv: any) {
   MediaWiki.wikiPath = mwWikiPath
   MediaWiki.actionApiPath = mwActionApiPath
   MediaWiki.restApiPath = mwRestApiPath
+  MediaWiki.mediawikiRestApiPath = mwMediaWikiRestApiPath
   MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword

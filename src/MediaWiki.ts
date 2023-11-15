@@ -12,7 +12,7 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import MediawikiRestApiDirector from './util/builders/url/mediawiki-rest-api.director.js'
+import MediawikiRestApiURLDirector from './util/builders/url/mediawiki-rest-api.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
 
@@ -56,8 +56,8 @@ class MediaWiki {
 
   public wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  public visualEditorURLDirector: VisualEditorURLDirector
-  private mediawikiRestApiDirector: MediawikiRestApiDirector
+  public visualEditorUrlDirector: VisualEditorURLDirector
+  public mediawikiRestApiUrlDirector: MediawikiRestApiURLDirector
 
   public visualEditorApiUrl: URL
   public actionApiUrl: URL
@@ -70,9 +70,6 @@ class MediaWiki {
   public mobileModulePath: string
 
   #apiUrlDirector: ApiURLDirector
-  #wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
-  #wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  #visualEditorURLDirector: VisualEditorURLDirector
   #hasWikimediaDesktopApi: boolean | null
   #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
@@ -103,6 +100,13 @@ class MediaWiki {
     }
   }
 
+  set mediawikiRestApiPath(value: string) {
+    if (value) {
+      this.#mediawikiRestApiPath = value
+      this.setMediawikiRestApiURL()
+    }
+  }
+
   set domain(value: string) {
     this.#domain = value
   }
@@ -122,6 +126,7 @@ class MediaWiki {
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
       this.setWikimediaDesktopApiUrl()
       this.setWikimediaMobileApiUrl()
+      this.setMediawikiRestApiURL()
       this.setVisualEditorURL()
       this.setModuleURL()
       this.setMobileModuleUrl()
@@ -148,7 +153,6 @@ class MediaWiki {
 
     this.#actionApiPath = 'w/api.php'
     this.#restApiPath = 'api/rest_v1'
-    // TODO:  there is no CLI param for this api yet
     this.#mediawikiRestApiPath = 'w/rest.php/v1/page/'
     this.#wikiPath = 'wiki/'
     this.#modulePathOpt = 'w/load.php'
@@ -180,8 +184,8 @@ class MediaWiki {
 
   public async hasWikimediaDesktopApi(): Promise<boolean> {
     if (this.#hasWikimediaDesktopApi === null) {
-      this.#wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
-      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.#wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
+      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaDesktopApi
     }
     return this.#hasWikimediaDesktopApi
@@ -189,8 +193,8 @@ class MediaWiki {
 
   public async hasWikimediaMobileApi(): Promise<boolean> {
     if (this.#hasWikimediaMobileApi === null) {
-      this.#wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
-      this.#hasWikimediaMobileApi = await checkApiAvailability(this.#wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
+      this.#hasWikimediaMobileApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasWikimediaMobileApi
     }
     return this.#hasWikimediaMobileApi
@@ -198,8 +202,8 @@ class MediaWiki {
 
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
-      this.#visualEditorURLDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
-      this.#hasVisualEditorApi = await checkApiAvailability(this.#visualEditorURLDirector.buildArticleURL(this.apiCheckArticleId))
+      this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
+      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -207,7 +211,8 @@ class MediaWiki {
 
   public async hasMediawikiRestApi(): Promise<boolean> {
     if (this.#hasMediawikiRestApi === null) {
-      this.#hasMediawikiRestApi = await checkApiAvailability(this.mediawikiRestApiDirector.buildArticleURL(this.apiCheckArticleId))
+      this.mediawikiRestApiUrlDirector = new MediawikiRestApiURLDirector(this.mediawikiRestApiUrl.href)
+      this.#hasMediawikiRestApi = await checkApiAvailability(this.mediawikiRestApiUrlDirector.buildArticleURL(this.apiCheckArticleId))
       return this.#hasMediawikiRestApi
     }
     return this.#hasMediawikiRestApi
@@ -238,6 +243,10 @@ class MediaWiki {
 
   private setWikimediaMobileApiUrl() {
     this.wikimediaMobileApiUrl = this.urlDirector.buildWikimediaMobileApiUrl(this.#restApiPath)
+  }
+
+  private setMediawikiRestApiURL() {
+    this.mediawikiRestApiUrl = this.urlDirector.buildMediawikiRestApiUrl(this.#mediawikiRestApiPath)
   }
 
   private setVisualEditorURL() {
@@ -475,7 +484,7 @@ class MediaWiki {
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
       actionApiUrl: this.actionApiUrl.href,
-      mediawikiRestApiPath: this.mediawikiRestApiUrl.href,
+      mediawikiRestApiUrl: this.mediawikiRestApiUrl.href,
       modulePathOpt: this.#modulePathOpt,
       modulePath: this.modulePath,
       mobileModulePath: this.mobileModulePath,
@@ -483,6 +492,7 @@ class MediaWiki {
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
       actionApiPath: this.#actionApiPath,
+      mediawikiRestApiPath: this.#mediawikiRestApiPath,
       restApiPath: this.#restApiPath,
       domain: this.#domain,
 

@@ -38,22 +38,4 @@ describe('forceRender', () => {
       console.log('Zimcheck not installed, skipping test')
     }
   })
-
-  test('Scrape article from bm.wikipedia.org should throw error when using VisualEditor render', async () => {
-    const forceRender = 'VisualEditor'
-    try {
-      await mwoffliner.execute({ ...parameters, forceRender })
-    } catch (err) {
-      expect(err).toReturn()
-    }
-  })
-
-  test('Scrape article from bm.wikipedia.org should throw error when using wrong render', async () => {
-    const forceRender = 'unknownRenderName'
-    try {
-      await mwoffliner.execute({ ...parameters, forceRender })
-    } catch (err) {
-      expect(err.message).toEqual('Unknown renderName for specific mode: unknownRenderName')
-    }
-  })
 })

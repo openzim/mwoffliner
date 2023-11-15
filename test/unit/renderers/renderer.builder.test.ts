@@ -101,7 +101,7 @@ describe('RendererBuilder', () => {
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasMediawikiRestApi()
     await MediaWiki.hasVisualEditorApi()
 
     const rendererBuilderOptions = {

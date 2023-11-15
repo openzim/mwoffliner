@@ -43,7 +43,7 @@ describe('saveArticles', () => {
       await MediaWiki.hasCoordinates(downloader)
       await MediaWiki.hasWikimediaDesktopApi()
       await MediaWiki.hasWikimediaMobileApi()
-      await MediaWiki.hasVisualEditorApi()
+      await MediaWiki.hasMediawikiRestApi()
       await MediaWiki.hasVisualEditorApi()
 
       const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
