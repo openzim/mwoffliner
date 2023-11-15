@@ -214,7 +214,6 @@ async function execute(argv: any) {
   await MediaWiki.hasWikimediaDesktopApi()
   const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
   await MediaWiki.hasVisualEditorApi()
-  await downloader.setBaseUrls(forceRender)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -608,7 +607,7 @@ async function execute(argv: any) {
   }
 
   async function fetchArticleDetail(articleId: string) {
-    return await articleDetailXId.get(articleId)
+    return articleDetailXId.get(articleId)
   }
 
   async function updateArticleThumbnail(articleDetail: any, articleId: string) {

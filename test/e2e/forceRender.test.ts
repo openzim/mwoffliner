@@ -53,7 +53,7 @@ describe('forceRender', () => {
     try {
       await mwoffliner.execute({ ...parameters, forceRender })
     } catch (err) {
-      expect(err.message).toEqual('Unable to find specific API end-point to retrieve article HTML')
+      expect(err.message).toEqual('Unknown renderName for specific mode: unknownRenderName')
     }
   })
 })

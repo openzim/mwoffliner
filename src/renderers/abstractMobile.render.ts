@@ -11,7 +11,7 @@ export abstract class MobileRenderer extends Renderer {
   public staticFilesListMobile: string[] = []
   constructor() {
     super()
-    this.staticFilesListMobile = this.staticFilesListCommon.concat(getStaticFiles(config.output.mwMobileJsResources, config.output.wikimediaMobileCssResources))
+    this.staticFilesListMobile = this.staticFilesListCommon.concat(getStaticFiles(config.output.wikimediaMobileJsResources, config.output.wikimediaMobileCssResources))
   }
 
   public filterWikimediaMobileModules(_moduleDependencies) {
@@ -45,7 +45,7 @@ export abstract class MobileRenderer extends Renderer {
     const htmlTemplateString = htmlWikimediaMobileTemplateCode()
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', '')
-      .replace('__JS_SCRIPTS__', this.genWikimediaMobileOverrideScript(config.output.mwMobileJsResources[0]))
+      .replace('__JS_SCRIPTS__', this.genWikimediaMobileOverrideScript(config.output.wikimediaMobileJsResources[0]))
       .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(config.output.wikimediaMobileCssResources[0]))
       .replace(
         '__ARTICLE_JS_LIST__',

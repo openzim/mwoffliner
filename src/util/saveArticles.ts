@@ -131,9 +131,9 @@ async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RK
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       let rets: any
       try {
-        const articleUrl = getArticleUrl(downloader, dump, articleId)
         const isMainPage = dump.isMainPage(articleId)
         const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+        const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
 
         rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
@@ -224,10 +224,6 @@ async function saveArticle(
   }
 }
 
-export function getArticleUrl(downloader: Downloader, dump: Dump, articleId: string): string {
-  return `${dump.isMainPage(articleId) ? downloader.baseUrlForMainPage : downloader.baseUrl}${encodeURIComponent(articleId)}`
-}
-
 /*
  * Fetch Articles
  */
@@ -258,6 +254,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
       renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
     })
   }
+  downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
 
   if (dump.customProcessor?.shouldKeepArticle) {
     await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
@@ -293,9 +290,9 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
         let rets: any
         try {
-          const articleUrl = getArticleUrl(downloader, dump, articleId)
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+          const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 

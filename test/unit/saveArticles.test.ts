@@ -7,7 +7,6 @@ import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
-import { getArticleUrl } from '../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
@@ -41,7 +40,8 @@ describe('saveArticles', () => {
       await MediaWiki.hasWikimediaDesktopApi()
       await MediaWiki.hasWikimediaMobileApi()
       await MediaWiki.hasVisualEditorApi()
-      await downloader.setBaseUrls(renderer)
+      await MediaWiki.hasVisualEditorApi()
+
       const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
@@ -71,7 +71,7 @@ describe('saveArticles', () => {
       expect(addedArticles[0].aid).toEqual('A/London')
 
       const articleId = 'non-existent-article'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
@@ -91,9 +91,9 @@ describe('saveArticles', () => {
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
-      await downloader.setBaseUrls(renderer)
       const articleId = 'Canada'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -122,9 +122,9 @@ describe('saveArticles', () => {
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      await downloader.setBaseUrls(renderer)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Main_Page'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      const articleUrl = downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -147,12 +147,8 @@ describe('saveArticles', () => {
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
-      const { MediaWiki, downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-      await MediaWiki.hasCoordinates(downloader)
-      await MediaWiki.hasWikimediaDesktopApi()
-      await MediaWiki.hasWikimediaMobileApi()
-      await MediaWiki.hasVisualEditorApi()
-      await downloader.setBaseUrls(renderer)
+      const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
@@ -227,7 +223,7 @@ describe('saveArticles', () => {
       const downloader = classes.downloader
 
       await downloader.setCapabilities()
-      await downloader.setBaseUrls()
+      await downloader.setUrlsDirectors()
       const _articleDetailsRet = await downloader.getArticleDetailsIds(['Western_Greenland'])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = redisStore

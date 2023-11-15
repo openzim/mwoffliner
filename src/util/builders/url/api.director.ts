@@ -49,19 +49,13 @@ export default class ApiURLDirector {
   }
 
   buildVisualEditorURL() {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2', page: '' })
-      .build(true)
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2' }).build(true)
   }
 
   buildArticleApiURL(articleId: string) {
-    const domain = this.buildBaseArticleURL()
-
-    return urlBuilder.setDomain(domain).setQueryParams({ page: articleId }, '&').build()
-  }
-
-  private buildBaseArticleURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2' }).build()
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId })
+      .build()
   }
 }

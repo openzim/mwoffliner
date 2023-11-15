@@ -11,9 +11,6 @@ export default class VisualEditorURLDirector {
   }
 
   buildArticleURL(articleId: string) {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ page: encodeURIComponent(articleId) }, '&')
-      .build()
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ page: articleId }, '&').build()
   }
 }

@@ -20,9 +20,13 @@ import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBit
 import S3 from './S3.js'
 import * as logger from './Logger.js'
 import MediaWiki, { QueryOpts } from './MediaWiki.js'
+import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import basicURLDirector from './util/builders/url/basic.director.js'
 import urlHelper from './util/url.helper.js'
+
+import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
+import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
+import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -80,8 +84,6 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
 class Downloader {
   public loginCookie = ''
   public readonly speed: number
-  public baseUrl: string
-  public baseUrlForMainPage: string
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
@@ -98,6 +100,8 @@ class Downloader {
   private readonly optimisationCacheUrl: string
   private s3: S3
   private apiUrlDirector: ApiURLDirector
+  private articleUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
+  private mainPageUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
 
   constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.uaString = uaString
@@ -170,52 +174,32 @@ class Downloader {
     }
   }
 
-  public async setBaseUrls(forceRender = null) {
-    if (!forceRender) {
-      //* Objects order in array matters!
-      this.baseUrl = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-      ])
-
-      //* Objects order in array matters!
-      this.baseUrlForMainPage = basicURLDirector.buildDownloaderBaseUrl([
-        { condition: await MediaWiki.hasWikimediaDesktopApi(), value: MediaWiki.WikimediaDesktopApiUrl.href },
-        { condition: await MediaWiki.hasVisualEditorApi(), value: MediaWiki.visualEditorApiUrl.href },
-        { condition: await MediaWiki.hasWikimediaMobileApi(), value: MediaWiki.WikimediaMobileApiUrl.href },
-      ])
-    } else {
-      switch (forceRender) {
-        case 'WikimediaDesktop':
-          if (MediaWiki.hasWikimediaDesktopApi()) {
-            this.baseUrl = MediaWiki.WikimediaDesktopApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.WikimediaDesktopApiUrl.href
-            break
-          }
-          break
-        case 'VisualEditor':
-          if (MediaWiki.hasVisualEditorApi()) {
-            this.baseUrl = MediaWiki.visualEditorApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.visualEditorApiUrl.href
-            break
-          }
-          break
-        case 'WikimediaMobile':
-          if (MediaWiki.hasWikimediaMobileApi()) {
-            this.baseUrl = MediaWiki.WikimediaMobileApiUrl.href
-            this.baseUrlForMainPage = MediaWiki.WikimediaMobileApiUrl.href
-            break
-          }
-          break
-        default:
-          throw new Error('Unable to find specific API end-point to retrieve article HTML')
-      }
+  private getUrlDirector(renderer: object) {
+    switch (renderer.constructor.name) {
+      case 'WikimediaDesktopRenderer':
+        return new WikimediaDesktopURLDirector(MediaWiki.wikimediaDesktopApiUrl.href)
+      case 'VisualEditorRenderer':
+        return new VisualEditorURLDirector(MediaWiki.visualEditorApiUrl.href)
+      case 'WikimediaMobileRenderer':
+        return new WikimediaMobileURLDirector(MediaWiki.wikimediaMobileApiUrl.href)
     }
-    logger.log('Base Url: ', this.baseUrl)
-    logger.log('Base Url for Main Page: ', this.baseUrlForMainPage)
+  }
 
-    if (!this.baseUrl || !this.baseUrlForMainPage) throw new Error('Unable to find appropriate API end-point to retrieve article HTML')
+  public setUrlsDirectors(mainPageRenderer, articlesRenderer): void {
+    if (!this.articleUrlDirector) {
+      this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
+    }
+    if (!this.mainPageUrlDirector) {
+      this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
+    }
+  }
+
+  public getArticleUrl(articleId: string): string {
+    return this.articleUrlDirector.buildArticleURL(articleId)
+  }
+
+  public getMainPageUrl(articleId: string): string {
+    return this.mainPageUrlDirector.buildArticleURL(articleId)
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -334,7 +318,7 @@ class Downloader {
     articleDetailXId: RKVS<ArticleDetail>,
     articleRenderer,
     articleUrl,
-    dump,
+    dump: Dump,
     articleDetail?: ArticleDetail,
     isMainPage?: boolean,
   ): Promise<any> {
@@ -383,7 +367,7 @@ class Downloader {
     await this.claimRequest()
 
     try {
-      return await new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const cb = (err: any, val: any) => {
           if (err) {
             reject(err)
@@ -722,7 +706,7 @@ class Downloader {
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
   private async streamToBuffer(stream: Readable): Promise<Buffer> {
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const chunks: Uint8Array[] = []
       stream.on('data', (chunk) => chunks.push(chunk))
       stream.on('error', reject)

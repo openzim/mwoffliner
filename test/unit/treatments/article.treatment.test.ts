@@ -6,7 +6,6 @@ import { setupScrapeClasses } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
 import { saveArticles } from '../../../src/util/saveArticles.js'
 import { jest } from '@jest/globals'
-import { getArticleUrl } from '../../../src/util/saveArticles.js'
 import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile.renderer.js'
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
@@ -36,7 +35,6 @@ describe('ArticleTreatment', () => {
 
     test(`Article html processing for ${renderer} render`, async () => {
       const { downloader, dump } = await setupScrapeClasses() // en wikipedia
-      await downloader.setBaseUrls()
       const title = 'London'
       const _articlesDetail = await downloader.getArticleDetailsIds([title])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -47,7 +45,8 @@ describe('ArticleTreatment', () => {
       const addedArticles: (typeof ZimArticle)[] = []
 
       const articleId = 'non-existent-article'
-      const articleUrl = getArticleUrl(downloader, dump, articleId)
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleUrl = downloader.getArticleUrl(articleId)
 
       const _moduleDependencies = await downloader.getModuleDependencies(title)
       const articleDetail = {
@@ -75,6 +74,7 @@ describe('ArticleTreatment', () => {
         downloader,
         dump,
         true,
+        renderer,
       )
 
       // Successfully scrapped existent articles
