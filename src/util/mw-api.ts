@@ -6,6 +6,7 @@ import Timer from './Timer.js'
 import axios from 'axios'
 import RedisStore from '../RedisStore.js'
 import MediaWiki from '../MediaWiki.js'
+import { REDIRECT_PAGE_SIGNATURE } from './const.js'
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
   let from = 0
@@ -260,7 +261,11 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
 export async function checkApiAvailability(url: string, loginCookie = ''): Promise<boolean> {
   try {
     const resp = await axios.get(decodeURI(url), { maxRedirects: 0, headers: { cookie: loginCookie } })
-    return resp.status === 200 && !resp.headers['mediawiki-api-error']
+
+    const isRedirectPage = typeof resp.data === 'string' && resp.data.startsWith(REDIRECT_PAGE_SIGNATURE)
+    const isSuccess = resp.status === 200 && !resp.headers['mediawiki-api-error']
+
+    return !isRedirectPage && isSuccess
   } catch (err) {
     return false
   }

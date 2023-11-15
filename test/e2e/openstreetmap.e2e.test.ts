@@ -53,5 +53,5 @@ await testRenders(
       })
     })
   },
-  ['MediawikiRestApi'],
+  ['MediawikiRestApi', 'VisualEditor'],
 )

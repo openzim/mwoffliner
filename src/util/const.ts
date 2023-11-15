@@ -21,3 +21,8 @@ export const WEBP_HANDLER_URL = 'https://gist.githubusercontent.com/rgaudin/60bb
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const BLACKLISTED_NS = ['Story'] // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
 export const RENDERERS_LIST = ['WikimediaDesktop', 'VisualEditor', 'WikimediaMobile', 'MediawikiRestApi']
+/*
+ Handle redirection pages for 3rd party wikis that have 200 response code
+ Check this link: https://pokemon.fandom.com/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&formatversion=2&page=MediaWiki%3ASidebar
+*/
+export const REDIRECT_PAGE_SIGNATURE = 'Moved to'
