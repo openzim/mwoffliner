@@ -1,10 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"Brettchenweber",
 			"IMayBeABitShy"
 		]
 	},
-	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist als ${license} lizensiert. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.",
+	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist als ${license} lizenziert. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.",
 	"LAST_EDITED_ON": "Zuletzt bearbeitet am ${date}",
 	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
 }
