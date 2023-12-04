@@ -27,6 +27,7 @@ import urlHelper from './util/url.helper.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
+import MediawikiRestApiURLDirector from './util/builders/url/mediawiki-rest-api.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -78,6 +79,7 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
   method: 'GET',
 }
 
+type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | MediawikiRestApiURLDirector
 /**
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
  */
@@ -100,8 +102,9 @@ class Downloader {
   private readonly optimisationCacheUrl: string
   private s3: S3
   private apiUrlDirector: ApiURLDirector
-  private articleUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
-  private mainPageUrlDirector: WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector
+
+  private articleUrlDirector: URLDirector
+  private mainPageUrlDirector: URLDirector
 
   constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
     this.uaString = uaString
@@ -177,11 +180,13 @@ class Downloader {
   private getUrlDirector(renderer: object) {
     switch (renderer.constructor.name) {
       case 'WikimediaDesktopRenderer':
-        return new WikimediaDesktopURLDirector(MediaWiki.wikimediaDesktopApiUrl.href)
+        return MediaWiki.wikimediaDesktopUrlDirector
       case 'VisualEditorRenderer':
-        return new VisualEditorURLDirector(MediaWiki.visualEditorApiUrl.href)
+        return MediaWiki.visualEditorUrlDirector
       case 'WikimediaMobileRenderer':
-        return new WikimediaMobileURLDirector(MediaWiki.wikimediaMobileApiUrl.href)
+        return MediaWiki.wikimediaMobileUrlDirector
+      case 'MediawikiRestApiRenderer':
+        return MediaWiki.mediawikiRestApiUrlDirector
     }
   }
 

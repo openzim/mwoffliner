@@ -4,6 +4,7 @@ import { RendererBuilder } from '../../../src/renderers/renderer.builder.js'
 import { RendererBuilderOptions } from '../../../src/renderers/abstract.renderer.js'
 import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
+import { MediawikiRestApiRenderer } from '../../../src/renderers/mediawiki-rest-api.renderer.js'
 
 jest.setTimeout(10000)
 
@@ -78,12 +79,29 @@ describe('RendererBuilder', () => {
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
+  it('should return MediawikiRestApiRenderer for specific mode with RendererAPI as MediawikiRestApi', async () => {
+    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+
+    // Force MediaWiki to have capability for the MediawikiRestApi for test purpose
+    jest.spyOn(MediaWiki, 'hasMediawikiRestApi').mockResolvedValue(true)
+
+    const rendererBuilderOptions = {
+      MediaWiki,
+      renderType: 'specific',
+      renderName: 'MediawikiRestApi',
+    }
+
+    const renderer = await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
+
+    expect(renderer).toBeInstanceOf(MediawikiRestApiRenderer)
+  })
+
   it('should throw an error for unknown RendererAPI in specific mode', async () => {
     const { downloader, MediaWiki } = await setupScrapeClasses() // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasMediawikiRestApi()
     await MediaWiki.hasVisualEditorApi()
 
     const rendererBuilderOptions = {
