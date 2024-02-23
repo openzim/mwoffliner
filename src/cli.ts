@@ -15,14 +15,9 @@ import * as mwofflinerLib from './mwoffliner.lib.js'
 const argv: any = yargs(hideBin(process.argv))
   .help('help')
   .usage(
-    `Create a look-alike HTML - ZIM file based - snapshot of a remote MediaWiki instance.
-  Usage: $0
-  Example, as a system tool:
-  mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
-  Or, as a node script:
-  node mwoffliner.js --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
-  Or, as a npm script: '
-  npm run mwoffliner -- --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net`,
+`Create a look-alike HTML - ZIM file based - snapshot of a remote MediaWiki instance.
+
+Usage: npm run mwoffliner -- --help`,
   )
   .describe(parameterDescriptions)
   .require(requiredParams as any)
