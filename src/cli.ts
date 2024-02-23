@@ -15,7 +15,7 @@ import * as mwofflinerLib from './mwoffliner.lib.js'
 const argv: any = yargs(hideBin(process.argv))
   .help('help')
   .usage(
-    `Create a fancy HTML dump of a Mediawiki instance in a ZIM file
+    `Create a look-alike HTML - ZIM file based - snapshot of a remote MediaWiki instance.
   Usage: $0
   Example, as a system tool:
   mwoffliner --mwUrl=https://en.wikipedia.org/ --adminEmail=foo@bar.net
