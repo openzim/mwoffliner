@@ -2,7 +2,7 @@ const config = {
   userAgent: 'MWOffliner/HEAD',
 
   defaults: {
-    publisher: 'Kiwix',
+    publisher: 'openZIM',
     redisPath: 'redis://127.0.0.1:6379',
     requestTimeout: 120 * 1000,
   },
