@@ -1,7 +1,7 @@
 export const requiredParams = ['mwUrl', 'adminEmail']
 
 export const parameterDescriptions = {
-  mwUrl: 'MediaWiki base URL (all URL paths appending)',
+  mwUrl: 'MediaWiki base URL (any URL paths appending)',
   adminEmail: 'Email of the MWoffliner operator. Will be put in the HTTP user-agent string for information only',
   articleList: 'List of articles to include. Can be a comma separated list of titles or a local path or http(s) URL to a file with one title (in UTF8) per line',
   articleListToIgnore: 'List of articles to ignore. Comma separated list of titles or local path or HTTP(S) URL to a file with one title (in UTF8) per line',
