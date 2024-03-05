@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"IceButBin"
+		]
+	},
+	"DISCLAIMER": "本条目由${creator}发布。该条目基于${license}获得许可。附加条款可能适用于媒体文件。",
+	"LAST_EDITED_ON": "最后编辑于：${date}",
+	"LICENSE_NAME": "知识共享署名-相同方式共享"
+}
