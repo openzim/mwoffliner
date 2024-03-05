@@ -5,9 +5,7 @@ import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 /*
-Represent 'https://{wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
-or
-'https://{3rd-part-wikimedia-wiki}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
+Relies on VisualEditor API typically looking like 'https://{wiki-host}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
 */
 export class VisualEditorRenderer extends DesktopRenderer {
   constructor() {
