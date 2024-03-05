@@ -263,7 +263,8 @@ export async function checkApiAvailability(url: string, loginCookie = ''): Promi
     const resp = await axios.get(decodeURI(url), { maxRedirects: 0, headers: { cookie: loginCookie } })
 
     const isRedirectPage = typeof resp.data === 'string' && resp.data.startsWith(REDIRECT_PAGE_SIGNATURE)
-    const isSuccess = resp.status === 200 && !resp.headers['mediawiki-api-error']
+    const isSuccess = resp.status === 200 && // https://phabricator.wikimedia.org/T359187 to understand the 'mediawiki-api-error' === 'rest-permission-error' exception
+            (!resp.headers['mediawiki-api-error'] || resp.headers['mediawiki-api-error'] === 'rest-permission-error')
 
     return !isRedirectPage && isSuccess
   } catch (err) {
