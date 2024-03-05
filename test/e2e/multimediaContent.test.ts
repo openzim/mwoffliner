@@ -1,7 +1,7 @@
 import { execa } from 'execa'
 import { testRenders } from '../testRenders.js'
 import rimraf from 'rimraf'
-import { zimdump } from '../util.js'
+import { zimdump, zimcheck } from '../util.js'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
 
@@ -32,7 +32,7 @@ await testRenders(
               [
                 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
                 // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
-                // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
+                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
                 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
                 'I/Kiwix_icon.svg.png',
                 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
@@ -83,7 +83,7 @@ await testRenders(
       // TODO: blocked by issues/1925
       switch (outFiles[0].renderer) {
         case 'WikimediaDesktop':
-          test('check multimedia content from wikipedia test page with different formates for WikimediaDesktop renderer', async () => {
+          test('check multimedia content from wikipedia test page with different formats for WikimediaDesktop renderer', async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles).toHaveLength(4)
@@ -92,8 +92,7 @@ await testRenders(
               expect(dump.status.articles.success).toEqual(1)
               expect(dump.status.articles.fail).toEqual(0)
 
-              // TODO: blocked by issues/1931
-              // await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
+              await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
               const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
               if (dump.nopic) {
@@ -124,8 +123,7 @@ await testRenders(
                 expect(mediaFiles.split('\n').sort()).toEqual(
                   [
                     // 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
-                    // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm',
+                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
                     'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
                     'I/Kiwix_icon.svg.png',
                     'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
@@ -141,7 +139,7 @@ await testRenders(
           })
           break
         case 'VisualEditor':
-          test('check multimedia content from wikipedia test page with different formates for VisualEditor renderer', async () => {
+          test('check multimedia content from wikipedia test page with different formats for VisualEditor renderer', async () => {
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles).toHaveLength(4)
@@ -150,8 +148,7 @@ await testRenders(
               expect(dump.status.articles.success).toEqual(1)
               expect(dump.status.articles.fail).toEqual(0)
 
-              // TODO: blocked by issues/1931, doesn't work for VE
-              // await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
+              await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
               const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
               if (dump.nopic) {

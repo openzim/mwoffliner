@@ -325,7 +325,7 @@ describe('Utils', () => {
     const result = {
       name: 'AxiosError',
       message: 'Request failed with status code 403',
-      url: 'https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz',
+      url: 'https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685',
       status: 403,
       responseType: undefined,
       data: {
@@ -333,11 +333,11 @@ describe('Utils', () => {
         title: 'Access to resource denied',
         method: 'get',
         detail: 'Access is restricted for revision 4225685',
-        uri: '/en.wikibooks.org/v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz',
+        uri: '/en.wikibooks.org/v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685',
       },
     }
     try {
-      await axios.get('https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz')
+      await axios.get('https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685')
       fail('it should not reach here')
     } catch (err) {
       const cleanupedError = cleanupAxiosError(err)
