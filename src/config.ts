@@ -22,6 +22,7 @@ const config = {
       'mw-dismissable-notice',
       'navigation-only',
       'listing-sister-icons',
+      'owid-frame',
     ],
 
     /* Additional black list if only intro is dumped */
