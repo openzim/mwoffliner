@@ -35,7 +35,11 @@ export async function sanitize_all(argv: any) {
     mwActionApiPath,
     mwRestApiPath,
     mwModulePath,
+    insecure
   } = argv
+
+  // set insecure to false by default
+  argv.insecure = insecure || false
 
   sanitizeDoubleUsedParameters(argv)
 
