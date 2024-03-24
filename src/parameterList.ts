@@ -39,6 +39,7 @@ export const parameterDescriptions = {
   optimisationCacheUrl: 'Object Storage URL (including credentials and bucket name) to cache optimised media files',
   forceRender:
     'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile ]. More details at https://github.com/openzim/mwoffliner/wiki/API-end-points',
-}
+  insecure: 'Allow insecure server connections when using HTTPS'
+  }
 
 // TODO: Add an interface based on the object above

@@ -58,6 +58,7 @@ interface DownloaderOpts {
   webp: boolean
   backoffOptions?: BackoffOptions
   mwWikiPath?: string
+  insecure?: boolean
 }
 
 interface BackoffOptions {
@@ -106,7 +107,9 @@ class Downloader {
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
 
-  constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions }: DownloaderOpts) {
+  private readonly insecure: boolean
+
+  constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
     this.uaString = uaString
     this.speed = speed
     this.maxActiveRequests = speed * 10
@@ -116,6 +119,7 @@ class Downloader {
     this.webp = webp
     this.s3 = s3
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    this.insecure = insecure
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -130,7 +134,7 @@ class Downloader {
     this.arrayBufferRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true }),
+      httpsAgent: new https.Agent({ keepAlive: true , rejectUnauthorized: !this.insecure}),  // rejectUnauthorized: false disables SSL verification
 
       headers: {
         'cache-control': 'public, max-stale=86400',
@@ -148,7 +152,7 @@ class Downloader {
     this.jsonRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true }),
+      httpsAgent: new https.Agent({ keepAlive: true , rejectUnauthorized: !this.insecure}),
 
       headers: {
         accept: 'application/json',
@@ -166,7 +170,7 @@ class Downloader {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       ...defaultStreamRequestOptions,
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true }),
+      httpsAgent: new https.Agent({ keepAlive: true , rejectUnauthorized: !this.insecure}),
 
       headers: {
         ...defaultStreamRequestOptions.headers,
