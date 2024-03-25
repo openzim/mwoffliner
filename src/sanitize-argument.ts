@@ -35,7 +35,7 @@ export async function sanitize_all(argv: any) {
     mwActionApiPath,
     mwRestApiPath,
     mwModulePath,
-    insecure
+    insecure,
   } = argv
 
   // set insecure to false by default

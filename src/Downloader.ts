@@ -121,7 +121,7 @@ class Downloader {
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
 
-    console.log('Insecure: ',this.insecure)  // printing for testing purpose
+    console.log('Insecure: ', this.insecure) // printing for testing purpose
 
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
@@ -136,7 +136,7 @@ class Downloader {
     this.arrayBufferRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true , rejectUnauthorized: !this.insecure}),  // rejectUnauthorized: false disables SSL verification
+      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables SSL verification
 
       headers: {
         'cache-control': 'public, max-stale=86400',
@@ -154,7 +154,7 @@ class Downloader {
     this.jsonRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true , rejectUnauthorized: !this.insecure}),
+      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }),
 
       headers: {
         accept: 'application/json',
@@ -172,7 +172,7 @@ class Downloader {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       ...defaultStreamRequestOptions,
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true , rejectUnauthorized: !this.insecure}),
+      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }),
 
       headers: {
         ...defaultStreamRequestOptions.headers,
