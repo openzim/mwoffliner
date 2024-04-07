@@ -11,7 +11,7 @@ const parameters = {
   articleList: 'BMW',
   adminEmail: 'test@kiwix.org',
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
-  mwRestApiPath: sanitizeApiPathParam('/api/rest_v1'),
+  mwRestApiPath: sanitizeApiPathParam('/w/rest.php/v1/page/'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
   mwWikiPath: sanitizeWikiPath('wiki'),
 }
@@ -23,7 +23,7 @@ await testAllRenders(parameters, async (outFiles) => {
     })
 
     test('Mediawiki restApiPath option sanitized', () => {
-      expect(outFiles[0].mwMetaData.restApiPath).toBe('api/rest_v1')
+      expect(outFiles[0].mwMetaData.restApiPath).toBe('w/rest.php/v1/page/')
     })
 
     test('Mediawiki wikiPath option sanitized', () => {
