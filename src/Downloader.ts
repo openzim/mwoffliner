@@ -106,8 +106,7 @@ class Downloader {
 
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
-
-  private readonly insecure: boolean
+  private readonly insecure: boolean = false
 
   constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
     this.uaString = uaString
@@ -136,7 +135,7 @@ class Downloader {
     this.arrayBufferRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables SSL verification
+      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
 
       headers: {
         'cache-control': 'public, max-stale=86400',
