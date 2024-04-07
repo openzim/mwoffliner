@@ -63,5 +63,5 @@ await testRenders(
       }
     })
   },
-  ['WikimediaDesktop', 'VisualEditor', 'MediawikiRestApi'],
+  ['WikimediaDesktop', 'VisualEditor', 'RestApi'],
 )

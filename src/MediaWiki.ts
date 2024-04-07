@@ -12,7 +12,7 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import MediawikiRestApiURLDirector from './util/builders/url/mediawiki-rest-api.director.js'
+import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
 
@@ -49,7 +49,7 @@ class MediaWiki {
   #actionApiPath: string
   #wikimediaRestApiPath: string
   #modulePathOpt: string
-  #mediawikiRestApiPath: string
+  #restApiPath: string
   #username: string
   #password: string
   #domain: string
@@ -57,11 +57,11 @@ class MediaWiki {
   public wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
   public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
   public visualEditorUrlDirector: VisualEditorURLDirector
-  public mediawikiRestApiUrlDirector: MediawikiRestApiURLDirector
+  public restApiUrlDirector: RestApiURLDirector
 
   public visualEditorApiUrl: URL
   public actionApiUrl: URL
-  public mediawikiRestApiUrl: URL
+  public restApiUrl: URL
   public webUrl: URL
   public wikimediaDesktopApiUrl: URL
   public wikimediaMobileApiUrl: URL
@@ -73,7 +73,7 @@ class MediaWiki {
   #hasWikimediaDesktopApi: boolean | null
   #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
-  #hasMediawikiRestApi: boolean | null
+  #hasRestApi: boolean | null
   #hasCoordinates: boolean | null
 
   set username(value: string) {
@@ -100,10 +100,10 @@ class MediaWiki {
     }
   }
 
-  set mediawikiRestApiPath(value: string) {
+  set restApiPath(value: string) {
     if (value) {
-      this.#mediawikiRestApiPath = value
-      this.setMediawikiRestApiURL()
+      this.#restApiPath = value
+      this.setRestApiURL()
     }
   }
 
@@ -126,7 +126,7 @@ class MediaWiki {
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
       this.setWikimediaDesktopApiUrl()
       this.setWikimediaMobileApiUrl()
-      this.setMediawikiRestApiURL()
+      this.setRestApiURL()
       this.setVisualEditorURL()
       this.setModuleURL()
       this.setMobileModuleUrl()
@@ -153,7 +153,7 @@ class MediaWiki {
 
     this.#actionApiPath = 'w/api.php'
     this.#wikimediaRestApiPath = 'api/rest_v1'
-    this.#mediawikiRestApiPath = 'w/rest.php/v1/page/'
+    this.#restApiPath = 'w/rest.php/v1/page/'
     this.#wikiPath = 'wiki/'
     this.#modulePathOpt = 'w/load.php'
 
@@ -174,7 +174,7 @@ class MediaWiki {
     this.#hasWikimediaDesktopApi = null
     this.#hasWikimediaMobileApi = null
     this.#hasVisualEditorApi = null
-    this.#hasMediawikiRestApi = null
+    this.#hasRestApi = null
     this.#hasCoordinates = null
   }
 
@@ -209,13 +209,13 @@ class MediaWiki {
     return this.#hasVisualEditorApi
   }
 
-  public async hasMediawikiRestApi(): Promise<boolean> {
-    if (this.#hasMediawikiRestApi === null) {
-      this.mediawikiRestApiUrlDirector = new MediawikiRestApiURLDirector(this.mediawikiRestApiUrl.href)
-      this.#hasMediawikiRestApi = await checkApiAvailability(this.mediawikiRestApiUrlDirector.buildArticleURL(this.apiCheckArticleId))
-      return this.#hasMediawikiRestApi
+  public async hasRestApi(): Promise<boolean> {
+    if (this.#hasRestApi === null) {
+      this.restApiUrlDirector = new RestApiURLDirector(this.restApiUrl.href)
+      this.#hasRestApi = await checkApiAvailability(this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      return this.#hasRestApi
     }
-    return this.#hasMediawikiRestApi
+    return this.#hasRestApi
   }
 
   public async hasCoordinates(downloader: Downloader): Promise<boolean> {
@@ -245,8 +245,8 @@ class MediaWiki {
     this.wikimediaMobileApiUrl = this.urlDirector.buildWikimediaMobileApiUrl(this.#wikimediaRestApiPath)
   }
 
-  private setMediawikiRestApiURL() {
-    this.mediawikiRestApiUrl = this.urlDirector.buildMediawikiRestApiUrl(this.#mediawikiRestApiPath)
+  private setRestApiURL() {
+    this.restApiUrl = this.urlDirector.buildRestApiUrl(this.#restApiPath)
   }
 
   private setVisualEditorURL() {
@@ -484,7 +484,7 @@ class MediaWiki {
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
       actionApiUrl: this.actionApiUrl.href,
-      mediawikiRestApiUrl: this.mediawikiRestApiUrl.href,
+      restApiUrl: this.restApiUrl.href,
       modulePathOpt: this.#modulePathOpt,
       modulePath: this.modulePath,
       mobileModulePath: this.mobileModulePath,
@@ -492,7 +492,7 @@ class MediaWiki {
       wikiPath: this.#wikiPath,
       baseUrl: this.baseUrl.href,
       actionApiPath: this.#actionApiPath,
-      mediawikiRestApiPath: this.#mediawikiRestApiPath,
+      restApiPath: this.#restApiPath,
       wikimediaRestApiPath: this.#wikimediaRestApiPath,
       domain: this.#domain,
 

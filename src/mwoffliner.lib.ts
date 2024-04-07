@@ -77,7 +77,7 @@ async function execute(argv: any) {
     mwWikiPath,
     mwActionApiPath,
     mwWikimediaRestApiPath,
-    mwMediaWikiRestApiPath,
+    mwRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -162,7 +162,7 @@ async function execute(argv: any) {
   MediaWiki.wikiPath = mwWikiPath
   MediaWiki.actionApiPath = mwActionApiPath
   MediaWiki.wikimediaRestApiPath = mwWikimediaRestApiPath
-  MediaWiki.mediawikiRestApiPath = mwMediaWikiRestApiPath
+  MediaWiki.restApiPath = mwRestApiPath
   MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword
@@ -215,7 +215,7 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates(downloader)
   await MediaWiki.hasWikimediaDesktopApi()
   const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasMediawikiRestApi()
+  await MediaWiki.hasRestApi()
   await MediaWiki.hasVisualEditorApi()
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)

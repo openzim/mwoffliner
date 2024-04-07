@@ -42,7 +42,7 @@ export default class BaseURLDirector {
       .build(false, '/')
   }
 
-  buildMediawikiRestApiUrl(path?: string) {
+  buildRestApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setPath(path ?? 'w/rest.php/v1/page/')

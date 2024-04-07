@@ -19,7 +19,7 @@ export const parameterDescriptions = {
   mwWikiPath: 'MediaWiki wiki base path (by default "/wiki/")',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
   mwWikimediaRestApiPath: 'Wikimedia REST API path (by default "/api/rest_v1/")',
-  mwMediaWikiRestApiPath: 'MediaWiki REST API path (by default "/w/rest.php")',
+  mwRestApiPath: 'MediaWiki REST API path (by default "/w/rest.php/v1/page/")',
   mwModulePath: 'MediaWiki module load path (by default "/w/load.php")',
   mwDomain: 'MediaWiki user domain (thought for private wikis)',
   mwUsername: 'MediaWiki username (thought for private wikis)',

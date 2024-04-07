@@ -1,6 +1,6 @@
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 
-export class MediawikiRestApiRenderer extends WikimediaDesktopRenderer {
+export class RestApiRenderer extends WikimediaDesktopRenderer {
   constructor() {
     super()
   }

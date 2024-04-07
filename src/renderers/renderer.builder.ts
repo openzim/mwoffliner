@@ -3,7 +3,7 @@ import { Renderer } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
-import { MediawikiRestApiRenderer } from './mediawiki-rest-api.renderer.js'
+import { RestApiRenderer } from './rest-api.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
 
@@ -11,11 +11,11 @@ export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
-    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasMediawikiRestApi] = await Promise.all([
+    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi] = await Promise.all([
       MediaWiki.hasVisualEditorApi(),
       MediaWiki.hasWikimediaDesktopApi(),
       MediaWiki.hasWikimediaMobileApi(),
-      MediaWiki.hasMediawikiRestApi(),
+      MediaWiki.hasRestApi(),
     ])
 
     switch (renderType) {
@@ -25,8 +25,8 @@ export class RendererBuilder {
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
-        } else if (hasMediawikiRestApi) {
-          return new MediawikiRestApiRenderer()
+        } else if (hasRestApi) {
+          return new RestApiRenderer()
         } else {
           logger.error('No available desktop renderer.')
           process.exit(1)
@@ -43,8 +43,8 @@ export class RendererBuilder {
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
-        } else if (hasMediawikiRestApi) {
-          return new MediawikiRestApiRenderer()
+        } else if (hasRestApi) {
+          return new RestApiRenderer()
         } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         } else {
@@ -53,13 +53,13 @@ export class RendererBuilder {
         }
       case 'specific':
         // renderName argument is required for 'specific' mode
-        return this.handleSpecificRender(renderName, hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasMediawikiRestApi)
+        return this.handleSpecificRender(renderName, hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi)
       default:
         throw new Error(`Unknown render: ${renderType}`)
     }
   }
 
-  private handleSpecificRender(renderName: string, hasVisualEditorApi: boolean, hasWikimediaDesktopApi: boolean, hasWikimediaMobileApi: boolean, hasMediawikiRestApi: boolean) {
+  private handleSpecificRender(renderName: string, hasVisualEditorApi: boolean, hasWikimediaDesktopApi: boolean, hasWikimediaMobileApi: boolean, hasRestApi: boolean) {
     // renderName argument is required for 'specific' mode
     switch (renderName) {
       case 'WikimediaDesktop':
@@ -80,11 +80,11 @@ export class RendererBuilder {
         }
         logger.error('No available mobile renderer.')
         process.exit(1)
-      case 'MediawikiRestApi':
-        if (hasMediawikiRestApi) {
-          return new MediawikiRestApiRenderer()
+      case 'RestApi':
+        if (hasRestApi) {
+          return new RestApiRenderer()
         }
-        logger.error('Cannot create an instance of MediawikiRestApi renderer.')
+        logger.error('Cannot create an instance of RestApi renderer.')
         process.exit(1)
       default:
         throw new Error(`Unknown renderName for specific mode: ${renderName}`)
