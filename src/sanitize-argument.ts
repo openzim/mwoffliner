@@ -33,7 +33,7 @@ export async function sanitize_all(argv: any) {
     forceRender,
     mwWikiPath,
     mwActionApiPath,
-    mwWikimediaRestApiPath,
+    mwRestApiPath,
     mwModulePath,
   } = argv
 
@@ -86,7 +86,7 @@ export async function sanitize_all(argv: any) {
   sanitizeWikiPath(mwWikiPath)
 
   // sanitizing mwRestApiPath
-  sanitizeApiPathParam(mwWikimediaRestApiPath)
+  sanitizeApiPathParam(mwRestApiPath)
 
   // sanitizing mwActionApiPath
   sanitizeApiPathParam(mwActionApiPath)

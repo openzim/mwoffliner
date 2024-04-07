@@ -3,7 +3,7 @@ import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 
-// Represent 'https://{wikimedia-wiki}/api/rest_v1/page/html/'
+// Represent 'https://{wikimedia-wiki}/api/rest.php/v1/page/html/'
 export class RestApiRenderer extends DesktopRenderer {
   constructor() {
     super()

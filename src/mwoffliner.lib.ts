@@ -76,7 +76,6 @@ async function execute(argv: any) {
     mwUrl,
     mwWikiPath,
     mwActionApiPath,
-    mwWikimediaRestApiPath,
     mwRestApiPath,
     mwModulePath,
     mwDomain,
@@ -161,7 +160,6 @@ async function execute(argv: any) {
   MediaWiki.getCategories = !!argv.getCategories
   MediaWiki.wikiPath = mwWikiPath
   MediaWiki.actionApiPath = mwActionApiPath
-  MediaWiki.wikimediaRestApiPath = mwWikimediaRestApiPath
   MediaWiki.restApiPath = mwRestApiPath
   MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain

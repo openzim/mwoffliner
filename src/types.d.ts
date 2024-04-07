@@ -161,7 +161,6 @@ interface MWMetaData {
   wikiPath: string
   actionApiPath: string
   restApiPath: string
-  wikimediaRestApiPath: string
   domain: string
   webUrl: string
   actionApiUrl: string

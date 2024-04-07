@@ -47,7 +47,6 @@ class MediaWiki {
 
   #wikiPath: string
   #actionApiPath: string
-  #wikimediaRestApiPath: string
   #modulePathOpt: string
   #restApiPath: string
   #username: string
@@ -89,14 +88,6 @@ class MediaWiki {
       this.#actionApiPath = value
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
       this.setVisualEditorURL()
-    }
-  }
-
-  set wikimediaRestApiPath(value: string) {
-    if (value) {
-      this.#wikimediaRestApiPath = value
-      this.setWikimediaDesktopApiUrl()
-      this.setWikimediaMobileApiUrl()
     }
   }
 
@@ -152,7 +143,6 @@ class MediaWiki {
     this.getCategories = false
 
     this.#actionApiPath = 'w/api.php'
-    this.#wikimediaRestApiPath = 'api/rest_v1'
     this.#restApiPath = 'w/rest.php/v1/page/'
     this.#wikiPath = 'wiki/'
     this.#modulePathOpt = 'w/load.php'
@@ -238,11 +228,11 @@ class MediaWiki {
   }
 
   private setWikimediaDesktopApiUrl() {
-    this.wikimediaDesktopApiUrl = this.urlDirector.buildWikimediaDesktopApiUrl(this.#wikimediaRestApiPath)
+    this.wikimediaDesktopApiUrl = this.urlDirector.buildWikimediaDesktopApiUrl()
   }
 
   private setWikimediaMobileApiUrl() {
-    this.wikimediaMobileApiUrl = this.urlDirector.buildWikimediaMobileApiUrl(this.#wikimediaRestApiPath)
+    this.wikimediaMobileApiUrl = this.urlDirector.buildWikimediaMobileApiUrl()
   }
 
   private setRestApiURL() {
@@ -493,7 +483,6 @@ class MediaWiki {
       baseUrl: this.baseUrl.href,
       actionApiPath: this.#actionApiPath,
       restApiPath: this.#restApiPath,
-      wikimediaRestApiPath: this.#wikimediaRestApiPath,
       domain: this.#domain,
 
       textDir: textDir as TextDirection,
