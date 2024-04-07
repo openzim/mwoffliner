@@ -3,6 +3,7 @@ import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'
 import { sanitizeApiPathParam, sanitizeWikiPath } from '../../src/sanitize-argument.js'
+import { zimcheck } from '../util.js'
 
 jest.setTimeout(60000)
 
@@ -39,12 +40,9 @@ await testAllRenders(parameters, async (outFiles) => {
       expect(outFiles[0].mwMetaData.actionApiUrl).toBe('https://en.wikipedia.org/w/api.php')
     })
 
-    // TODO: blocked by issues/1931
-    /*
     test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
-    */
 
     afterAll(() => {
       rimraf.sync(`./${outFiles[0].testId}`)

@@ -3,6 +3,7 @@ import { testAllRenders } from '../testRenders.js'
 import { execa } from 'execa'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'
+import { zimcheck } from '../util.js'
 import 'dotenv/config.js'
 
 jest.setTimeout(200000)
@@ -15,12 +16,9 @@ const parameters = {
 }
 
 await testAllRenders(parameters, async (outFiles) => {
-  // TODO: blocked by issues/1931
-  /*
-    test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
-    })
-  */
+  test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+    await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+  })
 
   test(`Simple articleList for ${outFiles[0]?.renderer} renderer for bm.wikipedia.org`, async () => {
     await execa('redis-cli flushall', { shell: true })
