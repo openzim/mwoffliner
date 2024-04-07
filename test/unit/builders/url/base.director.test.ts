@@ -17,20 +17,6 @@ describe('BaseURLDirector', () => {
     })
   })
 
-  describe('buildWikimediaApiURL', () => {
-    it('should return rest URL with provided path and trailing char at the end', () => {
-      const url = baseUrlDirector.buildWikimediaApiURL('api/rest_v2')
-
-      expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v2/')
-    })
-
-    it('should return rest URL with default path and trailing char at the end', () => {
-      const url = baseUrlDirector.buildWikimediaApiURL()
-
-      expect(url.href).toBe('https://en.m.wikipedia.com/api/rest_v1/')
-    })
-  })
-
   describe('buildWikimediaMobileApiUrl', () => {
     it('should automatically return mobile rest URL with provided api rest path', () => {
       const url = baseUrlDirector.buildWikimediaMobileApiUrl('api/rest_v2')

@@ -14,13 +14,6 @@ export default class BaseURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
   }
 
-  buildWikimediaApiURL(path?: string) {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setPath(path ?? 'api/rest_v1')
-      .build(true, '/')
-  }
-
   buildWikimediaDesktopApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
