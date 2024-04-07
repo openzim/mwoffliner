@@ -160,12 +160,11 @@ interface MWMetaData {
   baseUrl: string
   wikiPath: string
   actionApiPath: string
-  mediawikiRestApiPath: string
   restApiPath: string
   domain: string
   webUrl: string
   actionApiUrl: string
-  mediawikiRestApiUrl: string
+  restApiUrl: string
   webUrlPath: string
   modulePath: string
   modulePathOpt: string

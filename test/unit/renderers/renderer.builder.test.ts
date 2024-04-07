@@ -4,7 +4,7 @@ import { RendererBuilder } from '../../../src/renderers/renderer.builder.js'
 import { RendererBuilderOptions } from '../../../src/renderers/abstract.renderer.js'
 import { WikimediaDesktopRenderer } from '../../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
-import { MediawikiRestApiRenderer } from '../../../src/renderers/mediawiki-rest-api.renderer.js'
+import { RestApiRenderer } from '../../../src/renderers/rest-api.renderer.js'
 
 jest.setTimeout(10000)
 
@@ -79,21 +79,21 @@ describe('RendererBuilder', () => {
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
-  it('should return MediawikiRestApiRenderer for specific mode with RendererAPI as MediawikiRestApi', async () => {
+  it('should return RestApiRenderer for specific mode with RendererAPI as RestApi', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
-    // Force MediaWiki to have capability for the MediawikiRestApi for test purpose
-    jest.spyOn(MediaWiki, 'hasMediawikiRestApi').mockResolvedValue(true)
+    // Force MediaWiki to have capability for the RestApi for test purpose
+    jest.spyOn(MediaWiki, 'hasRestApi').mockResolvedValue(true)
 
     const rendererBuilderOptions = {
       MediaWiki,
       renderType: 'specific',
-      renderName: 'MediawikiRestApi',
+      renderName: 'RestApi',
     }
 
     const renderer = await rendererBuilder.createRenderer(rendererBuilderOptions as RendererBuilderOptions)
 
-    expect(renderer).toBeInstanceOf(MediawikiRestApiRenderer)
+    expect(renderer).toBeInstanceOf(RestApiRenderer)
   })
 
   it('should throw an error for unknown RendererAPI in specific mode', async () => {
@@ -101,7 +101,7 @@ describe('RendererBuilder', () => {
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopApi()
     await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasMediawikiRestApi()
+    await MediaWiki.hasRestApi()
     await MediaWiki.hasVisualEditorApi()
 
     const rendererBuilderOptions = {

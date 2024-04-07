@@ -3,6 +3,7 @@ import rimraf from 'rimraf'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
 import { testAllRenders } from '../testRenders.js'
+import { zimcheckAvailable, zimcheck } from '../util.js'
 
 jest.setTimeout(10000)
 
@@ -38,14 +39,11 @@ await testAllRenders(parameters, async (outFiles) => {
       }
 
       // Scraped selected articles from wikipedia en');
-      // TODO: Blocked by issues/1931
-      /*
       if (await zimcheckAvailable()) {
         await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
       } else {
         console.log('Zimcheck not installed, skipping test')
       }
-      */
 
       const redisScan = await execa('redis-cli --scan', { shell: true })
       // Redis has been cleared

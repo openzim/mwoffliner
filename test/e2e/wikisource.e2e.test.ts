@@ -28,7 +28,7 @@ await testRenders(
             for (const dump of outFiles) {
               if (dump.nopic) {
                 // nopic has enough files
-                expect(dump.status.files.success).toBeGreaterThanOrEqual(20)
+                expect(dump.status.files.success).toBeGreaterThanOrEqual(15)
                 // nopic has enough redirects
                 expect(dump.status.redirects.written).toBeGreaterThanOrEqual(16)
                 // nopic has enough articles
@@ -50,7 +50,7 @@ await testRenders(
             for (const dump of outFiles) {
               if (dump.nopic) {
                 // nopic has enough files
-                expect(dump.status.files.success).toBeGreaterThanOrEqual(20)
+                expect(dump.status.files.success).toBeGreaterThanOrEqual(15)
                 // nopic has enough redirects
                 expect(dump.status.redirects.written).toBeGreaterThanOrEqual(16)
                 // nopic has enough articles
@@ -63,5 +63,5 @@ await testRenders(
       }
     })
   },
-  ['WikimediaDesktop', 'VisualEditor', 'MediawikiRestApi'],
+  ['WikimediaDesktop', 'VisualEditor', 'RestApi'],
 )

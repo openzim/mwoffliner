@@ -6,6 +6,7 @@ import { execa } from 'execa'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import { zimcheckAvailable, zimcheck } from '../util.js'
 
 jest.setTimeout(20000)
 
@@ -48,14 +49,11 @@ describe('Extra', () => {
           expect(dump.status.articles.success).toEqual(articleCount)
         }
 
-        // TODO: Blocked by issues/1931
-        /*
         if (await zimcheckAvailable()) {
           await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
         } else {
           console.log('Zimcheck not installed, skipping test')
         }
-        */
       }
 
       await execa('redis-cli flushall', { shell: true })

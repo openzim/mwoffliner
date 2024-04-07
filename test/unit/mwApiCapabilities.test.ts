@@ -13,7 +13,7 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.base = 'https://en.wikipedia.org'
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(true)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(true)
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(true)
+    expect(await MediaWiki.hasRestApi()).toBe(true)
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
@@ -22,7 +22,7 @@ describe('Checking Mediawiki capabilities', () => {
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(true)
+    expect(await MediaWiki.hasRestApi()).toBe(true)
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
@@ -31,7 +31,7 @@ describe('Checking Mediawiki capabilities', () => {
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(true)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(true)
+    expect(await MediaWiki.hasRestApi()).toBe(true)
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
@@ -42,7 +42,7 @@ describe('Checking Mediawiki capabilities', () => {
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(false)
+    expect(await MediaWiki.hasRestApi()).toBe(false)
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
@@ -53,7 +53,7 @@ describe('Checking Mediawiki capabilities', () => {
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(false)
+    expect(await MediaWiki.hasRestApi()).toBe(false)
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
@@ -62,14 +62,14 @@ describe('Checking Mediawiki capabilities', () => {
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(false)
+    expect(await MediaWiki.hasRestApi()).toBe(false)
     expect(await MediaWiki.hasVisualEditorApi()).toBe(false)
   })
 
-  test('test capabilities of pokemon.fandom.com with MediawikiRestApi receipt', async () => {
+  test('test capabilities of pokemon.fandom.com with RestApi receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
-    MediaWiki.mediawikiRestApiPath = 'rest.php/v1/page/'
+    MediaWiki.restApiPath = 'rest.php'
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
@@ -80,6 +80,6 @@ describe('Checking Mediawiki capabilities', () => {
       See: https://pokemon.fandom.com/rest.php/v1/page/MediaWiki%3ASidebar/html
     */
     MediaWiki.apiCheckArticleId = 'Volcarona'
-    expect(await MediaWiki.hasMediawikiRestApi()).toBe(true)
+    expect(await MediaWiki.hasRestApi()).toBe(true)
   })
 })

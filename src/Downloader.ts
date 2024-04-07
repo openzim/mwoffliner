@@ -27,7 +27,7 @@ import urlHelper from './util/url.helper.js'
 import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import MediawikiRestApiURLDirector from './util/builders/url/mediawiki-rest-api.director.js'
+import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -79,7 +79,7 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
   method: 'GET',
 }
 
-type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | MediawikiRestApiURLDirector
+type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | RestApiURLDirector
 /**
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
  */
@@ -185,8 +185,8 @@ class Downloader {
         return MediaWiki.visualEditorUrlDirector
       case 'WikimediaMobileRenderer':
         return MediaWiki.wikimediaMobileUrlDirector
-      case 'MediawikiRestApiRenderer':
-        return MediaWiki.mediawikiRestApiUrlDirector
+      case 'RestApiRenderer':
+        return MediaWiki.restApiUrlDirector
     }
   }
 

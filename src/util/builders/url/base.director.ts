@@ -1,4 +1,5 @@
 import urlBuilder from './url.builder.js'
+import { WIKIMEDIA_REST_API_PATH } from '../../const.js'
 
 /**
  * Interface to build URLs based on base URL
@@ -14,24 +15,17 @@ export default class BaseURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
   }
 
-  buildWikimediaApiURL(path?: string) {
+  buildWikimediaDesktopApiUrl() {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setPath(path ?? 'api/rest_v1')
+      .setPath(WIKIMEDIA_REST_API_PATH + 'page/html')
       .build(true, '/')
   }
 
-  buildWikimediaDesktopApiUrl(path?: string) {
+  buildWikimediaMobileApiUrl() {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setPath(path ? `${path}/page/html` : 'api/rest_v1/page/html')
-      .build(true, '/')
-  }
-
-  buildWikimediaMobileApiUrl(path?: string) {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setPath(path ? `${path}/page/mobile-html` : 'api/rest_v1/page/mobile-html')
+      .setPath(WIKIMEDIA_REST_API_PATH + 'page/mobile-html')
       .build(true, '/')
   }
 
@@ -49,10 +43,10 @@ export default class BaseURLDirector {
       .build(false, '/')
   }
 
-  buildMediawikiRestApiUrl(path?: string) {
+  buildRestApiUrl(path?: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setPath(path ?? 'w/rest.php/v1/page/')
+      .setPath(path ?? 'w/rest.php')
       .build(true, '/')
   }
 }

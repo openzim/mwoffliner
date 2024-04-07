@@ -3,7 +3,7 @@ import urlBuilder from './url.builder.js'
 /**
  * Interface to build URLs based on MediaWiki REST API URL
  */
-export default class MediawikiRestApiURLDirector {
+export default class RestApiURLDirector {
   baseDomain: string
 
   constructor(baseDomain: string) {
@@ -11,7 +11,9 @@ export default class MediawikiRestApiURLDirector {
   }
 
   buildArticleURL(articleId: string) {
-    const base = urlBuilder.setDomain(this.baseDomain).build()
-    return `${base}${articleId}/html`
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setPath('v1/page/' + encodeURIComponent(articleId) + '/html')
+      .build()
   }
 }

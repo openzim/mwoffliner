@@ -3,6 +3,7 @@ import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 import rimraf from 'rimraf'
 import { sanitizeApiPathParam, sanitizeWikiPath } from '../../src/sanitize-argument.js'
+import { zimcheck } from '../util.js'
 
 jest.setTimeout(60000)
 
@@ -11,7 +12,7 @@ const parameters = {
   articleList: 'BMW',
   adminEmail: 'test@kiwix.org',
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
-  mwRestApiPath: sanitizeApiPathParam('/api/rest_v1'),
+  mwRestApiPath: sanitizeApiPathParam('/w/rest.php'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
   mwWikiPath: sanitizeWikiPath('wiki'),
 }
@@ -23,7 +24,7 @@ await testAllRenders(parameters, async (outFiles) => {
     })
 
     test('Mediawiki restApiPath option sanitized', () => {
-      expect(outFiles[0].mwMetaData.restApiPath).toBe('api/rest_v1')
+      expect(outFiles[0].mwMetaData.restApiPath).toBe('w/rest.php')
     })
 
     test('Mediawiki wikiPath option sanitized', () => {
@@ -39,12 +40,9 @@ await testAllRenders(parameters, async (outFiles) => {
       expect(outFiles[0].mwMetaData.actionApiUrl).toBe('https://en.wikipedia.org/w/api.php')
     })
 
-    // TODO: blocked by issues/1931
-    /*
     test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
-    */
 
     afterAll(() => {
       rimraf.sync(`./${outFiles[0].testId}`)
