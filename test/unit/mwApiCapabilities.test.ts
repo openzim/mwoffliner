@@ -69,7 +69,7 @@ describe('Checking Mediawiki capabilities', () => {
   test('test capabilities of pokemon.fandom.com with RestApi receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
-    MediaWiki.restApiPath = 'rest.php/v1/page/'
+    MediaWiki.restApiPath = 'rest.php'
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)

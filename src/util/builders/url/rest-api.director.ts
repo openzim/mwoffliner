@@ -11,7 +11,9 @@ export default class RestApiURLDirector {
   }
 
   buildArticleURL(articleId: string) {
-    const base = urlBuilder.setDomain(this.baseDomain).build()
-    return `${base}${articleId}/html`
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setPath('v1/page/' + encodeURIComponent(articleId) + '/html')
+      .build()
   }
 }

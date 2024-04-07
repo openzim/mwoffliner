@@ -18,7 +18,7 @@ export const parameterDescriptions = {
   keepEmptyParagraphs: 'Keep all paragraphs, even empty ones.',
   mwWikiPath: 'MediaWiki wiki base path (by default "/wiki/")',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
-  mwRestApiPath: 'MediaWiki REST API path (by default "/w/rest.php/v1/page/")',
+  mwRestApiPath: 'MediaWiki REST API path (by default "/w/rest.php")',
   mwModulePath: 'MediaWiki module load path (by default "/w/load.php")',
   mwDomain: 'MediaWiki user domain (thought for private wikis)',
   mwUsername: 'MediaWiki username (thought for private wikis)',

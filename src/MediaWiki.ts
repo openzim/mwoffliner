@@ -143,7 +143,7 @@ class MediaWiki {
     this.getCategories = false
 
     this.#actionApiPath = 'w/api.php'
-    this.#restApiPath = 'w/rest.php/v1/page/'
+    this.#restApiPath = 'w/rest.php'
     this.#wikiPath = 'wiki/'
     this.#modulePathOpt = 'w/load.php'
 
