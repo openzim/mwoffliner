@@ -120,8 +120,6 @@ class Downloader {
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
 
-    console.log('Insecure: ', this.insecure) // printing for testing purpose
-
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
