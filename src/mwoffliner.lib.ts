@@ -174,6 +174,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     s3,
     webp,
+    insecure: argv.insecure,
   })
 
   /* perform login */
