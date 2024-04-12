@@ -1,5 +1,5 @@
 # MWoffliner
-
+65;6800;1c
 MWoffliner is a tool for making a local offline HTML snapshot of any
 online [MediaWiki](https://mediawiki.org) instance. It goes through
 all online articles (or a selection if specified) and create the
@@ -11,6 +11,9 @@ any recent MediaWiki.
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) to know more about
 MWoffliner development.
+
+User Help is available in the for a a
+[FAQ](https://github.com/openzim/mwoffliner/wiki/Frequently-Asked-Questions).
 
 [![NPM](https://nodei.co/npm/mwoffliner.png)](https://www.npmjs.com/package/mwoffliner)
 
