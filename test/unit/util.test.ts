@@ -422,7 +422,7 @@ describe('Utils', () => {
       Description: 'test Description',
       Language: 'eng,ita',
       Publisher: 'test Publisher',
-      Title: 'test Title',
+      Title: 'विकी मेड मेडिकल इनसाइक्लोपीडिया हिंदी मेंfविविविमे',
       'Illustration_48x48@1': pngImage,
     }
 
@@ -459,15 +459,15 @@ describe('Utils', () => {
         ...minimumValidMetadata,
         Description: 'test Description test Description test Description test Description test Description test Description ',
       }
-      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must NOT have more than 80 characters')
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Description: must NOT have more than 80 graphemes')
     })
 
     test('validate long Title', () => {
       const metaData = {
         ...minimumValidMetadata,
-        Title: 'test Title test Title test Title',
+        Title: 'विकी मेड मेडिकल इनसाइक्लोपीडिया हिंदी मेंfविविविमेविमेवि',
       }
-      expect(() => validateMetadata(metaData)).toThrow('MetaData Title: must NOT have more than 30 characters')
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Title: must NOT have more than 30 graphemes')
     })
 
     test('validate string with line brake', () => {

@@ -1,4 +1,6 @@
 import AjvModule from 'ajv'
+import type { KeywordCxt } from 'ajv'
+import { byGrapheme } from 'split-by-grapheme'
 
 const Ajv = AjvModule.default
 const ajv = new Ajv({ allErrors: true })
@@ -18,18 +20,31 @@ ajv.addKeyword({
   },
 })
 
+ajv.addKeyword({
+  keyword: 'uMaxLength',
+  type: 'string',
+  validate: (max_length: number, value) => {
+    return value.split(byGrapheme).length <= max_length
+  },
+  error: {
+    message: (cxt: KeywordCxt): string => {
+      return `must NOT have more than ${cxt.schemaValue} graphemes`
+    },
+  },
+})
+
 const schema = {
   type: 'object',
   properties: {
     Name: { type: 'string', minLength: 1 },
     Creator: { type: 'string', minLength: 1 },
-    Description: { type: 'string', maxLength: 80, minLength: 1 },
+    Description: { type: 'string', uMaxLength: 80, minLength: 1 },
     Language: { type: 'string', minLength: 1, pattern: '^\\w{3}(,\\w{3})*$' },
     Publisher: { type: 'string', minLength: 1 },
-    Title: { type: 'string', maxLength: 30, minLength: 1 },
+    Title: { type: 'string', uMaxLength: 30, minLength: 1 },
     Date: { type: 'string', maxLength: 10, minLength: 10 },
     'Illustration_48x48@1': { checkRegexFromBuffer: '^\x89\x50\x4e\x47\x0d\x0a\x1a\x0a.+' },
-    LongDescription: { type: 'string', maxLength: 4000 },
+    LongDescription: { type: 'string', uMaxLength: 4000 },
     License: { type: 'string' },
     Tags: { type: 'string' },
     Relation: { type: 'string' },
