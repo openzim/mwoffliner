@@ -418,7 +418,7 @@ class MediaWiki {
     }
 
     // Base will contain the default encoded article id for the wiki.
-    const mainPage = decodeURIComponent(entries.base.split('/').pop())
+    const mainPage = entries.mainpage
     const siteName = entries.sitename
 
     // Gather languages codes (en remove the 'dialect' part)
