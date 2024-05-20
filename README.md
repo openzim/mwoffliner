@@ -78,6 +78,79 @@ this:
 --optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket&keyId=my-key-id&secretAccessKey=my-sac"
 ```
 
+### Local (non-root) Installs
+
+To update the NPM and Node versions in your local home directory, you can do the following.
+This was tested on Ubuntu 18.04 LTS and Ubuntu 22.04 LTS.
+
+1. Install NVM Locally
+
+See https://github.com/nvm-sh/nvm for details.
+
+```
+git clone https://github.com/nvm-sh/nvm.git ~/.nvm
+cd ~/.nvm
+git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+```
+
+2. Upgrade Node Locally
+
+```
+. ~/.nvm/nvm.sh
+nvm install 18
+```
+
+Note: for Ubuntu 18.04 LTS use `nvm install 16` instead.
+
+3. Update NPM Locally
+
+This assumes that the system NPM is already installed using apt-get or similar.
+
+```
+. ~/.nvm/nvm.sh
+npm install npm@latest
+```
+
+Note: for Ubuntu 18.04 LTS use `npm install npm@8` instead.
+
+4. Compile and Test
+
+See above for more details.
+
+```
+. ~/.nvm/nvm.sh
+cd mwoffliner-1.13.0 # or whatever version you downloaded
+npm i
+npm run mwoffliner -- --help
+```
+### Local (non-root) Redis Install
+
+You may wish to install the prerequesit Redis locally in order to run the tool.  See https://github.com/redis/redis/tree/unstable and https://redis.io/docs/getting-started/installation/install-redis-from-source/ for more details.
+
+1. Get and unzip Redis Locally
+
+```
+wget https://download.redis.io/redis-stable.tar.gz
+tar xvfz redis-stable.tar.gz
+```
+
+2. Build Redis Locally
+
+```
+cd redis-stable/src
+make PREFIX=$HOME USE_JEMALLOC=no
+```
+
+3. Run Redis Locally
+
+You'll need to do this in a separate window or run it in the background.
+
+```
+cd redis-stable/src
+./redis-server
+```
+
+
 ## API
 
 MWoffliner provides also an API and therefore can be used as a NodeJS
