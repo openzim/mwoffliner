@@ -32,4 +32,11 @@ ENV REDIS /dev/shm/redis.sock
 RUN printf '#!/bin/bash\n/usr/local/bin/mwoffliner --redis=$REDIS "$@"' > /usr/local/sbin/mwoffliner
 RUN chmod +x /usr/local/sbin/mwoffliner
 
+RUN useradd scraper
+RUN usermod -u 4242 scraper
+RUN mkdir -p /data
+WORKDIR /data
+RUN chown scraper /data
+USER scraper
+
 CMD mwoffliner
