@@ -27,8 +27,10 @@ await testAllRenders(parameters, async (outFiles) => {
 
     for (const dump of outFiles) {
       if (dump.nopic) {
-        // nopic has enough files
-        expect(dump.status.files.success).toBeGreaterThan(14)
+        // nopic has enough files (this is just an estimate and can change
+        // with time, as new Mediwiki versions are released).
+        expect(dump.status.files.success).toBeGreaterThan(13)
+        expect(dump.status.files.success).toBeLessThan(22)
         // nopic has enough redirects
         expect(dump.status.redirects.written).toBeGreaterThan(170)
         // nopic has enough articles
