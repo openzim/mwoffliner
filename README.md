@@ -1,5 +1,5 @@
 # MWoffliner
-65;6800;1c
+
 MWoffliner is a tool for making a local offline HTML snapshot of any
 online [MediaWiki](https://mediawiki.org) instance. It goes through
 all online articles (or a selection if specified) and create the
@@ -81,9 +81,10 @@ this:
 ## API
 
 MWoffliner provides also an API and therefore can be used as a NodeJS
-library. Here a stub example:
+library. Here a stub example that could go in your index.mjs file:
 ```javascript
-const mwoffliner = require('mwoffliner');
+import * as mwoffliner from 'mwoffliner';
+
 const parameters = {
     mwUrl: "https://es.wikipedia.org",
     adminEmail: "foo@bar.net",
