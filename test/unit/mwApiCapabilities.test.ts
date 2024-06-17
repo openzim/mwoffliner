@@ -57,7 +57,8 @@ describe('Checking Mediawiki capabilities', () => {
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
-  test('test capabilities of pokemon.fandom.com with default receipt', async () => {
+  // https://github.com/openzim/mwoffliner/issues/2035
+  test.skip('test capabilities of pokemon.fandom.com with default receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
@@ -66,7 +67,8 @@ describe('Checking Mediawiki capabilities', () => {
     expect(await MediaWiki.hasVisualEditorApi()).toBe(false)
   })
 
-  test('test capabilities of pokemon.fandom.com with RestApi receipt', async () => {
+  // https://github.com/openzim/mwoffliner/issues/2035
+  test.skip('test capabilities of pokemon.fandom.com with RestApi receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
     MediaWiki.restApiPath = 'rest.php'
