@@ -260,6 +260,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
 
 /**
  * Check for API availability at the given URL.
+ *
  * @param url The URL to check.
  * @param loginCookie A string representing a cookie for login, if necessary.
  * @param allowedMimeTypes An array of allowed mime types for the response. If this is set, the check is only considered a
