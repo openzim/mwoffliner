@@ -258,7 +258,15 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
   return ret
 }
 
-export async function checkApiAvailability(url: string, loginCookie = ''): Promise<boolean> {
+/**
+ * Check for API availability at the given URL.
+ * @param url The URL to check.
+ * @param loginCookie A string representing a cookie for login, if necessary.
+ * @param allowedMimeTypes An array of allowed mime types for the response. If this is set, the check is only considered a
+ * success if the response has a mime type in this array. Set to null to disable this filter.
+ * @returns Promise resolving to true if the API is available.
+ */
+export async function checkApiAvailability(url: string, loginCookie = '', allowedMimeTypes = null): Promise<boolean> {
   try {
     const resp = await axios.get(decodeURI(url), { maxRedirects: 0, headers: { cookie: loginCookie } })
 
@@ -268,7 +276,20 @@ export async function checkApiAvailability(url: string, loginCookie = ''): Promi
     // the 'mediawiki-api-error' === 'rest-permission-error' exception
     const isSuccess = resp.status === 200 && (!resp.headers['mediawiki-api-error'] || resp.headers['mediawiki-api-error'] === 'rest-permission-error')
 
-    return !isRedirectPage && isSuccess
+    let validMimeType = false
+    if (!allowedMimeTypes) {
+      // No MIME types to check, so consider the check passed.
+      validMimeType = true
+    } else {
+      for (const mimeType of allowedMimeTypes) {
+        if (resp.headers['content-type'].includes(mimeType)) {
+          validMimeType = true
+          break
+        }
+      }
+    }
+
+    return !isRedirectPage && isSuccess && validMimeType
   } catch (err) {
     return false
   }

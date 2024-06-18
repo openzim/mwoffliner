@@ -193,7 +193,11 @@ class MediaWiki {
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
       this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
-      this.#hasVisualEditorApi = await checkApiAvailability(this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      this.#hasVisualEditorApi = await checkApiAvailability(
+        this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId),
+        '' /* empty login cookie */,
+        this.visualEditorUrlDirector.validMimeTypes,
+      )
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
