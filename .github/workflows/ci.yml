@@ -18,7 +18,7 @@ jobs:
     steps:
 
     - name: Installing Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
 
@@ -28,7 +28,7 @@ jobs:
         redis-version: '6.x'
 
     - name: Downloading code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Installing other dependencies
       run: |
@@ -49,7 +49,7 @@ jobs:
         ZIMDUMP_PATH: $( find .. -name zimdump )
 
     - name: Uploading Codecov stats
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       if: ${{ matrix.node-version == '18.x' }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
