@@ -8,7 +8,7 @@ import mime from 'mime-types'
 import mkdirp from 'mkdirp'
 import os from 'os'
 import pathParser from 'path'
-import { ZimCreator, ZimArticle } from '@openzim/libzim'
+import { Creator, StringItem } from '@openzim/libzim'
 import { Config, config } from '../config.js'
 import * as logger from '../Logger.js'
 import {
@@ -168,12 +168,23 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
   return newString
 }
 
-export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: ZimCreator) {
+export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Creator) {
   try {
     staticFiles.forEach(async (file) => {
       const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
-      const article = new ZimArticle({ url: file.endsWith('.css') ? cssPath(file) : jsPath(file), data: staticFilesContent, ns: '-' })
-      zimCreator.addArticle(article)
+
+      let url: string
+      let mimetype: string
+      if (file.endsWith('.css')) {
+        url = cssPath(file)
+        mimetype = 'text/css'
+      } else {
+        url = jsPath(file)
+        mimetype = 'application/javascript'
+      }
+
+      const article = new StringItem(url, mimetype, null, {}, staticFilesContent)
+      zimCreator.addItem(article)
     })
   } catch (err) {
     logger.error(err)

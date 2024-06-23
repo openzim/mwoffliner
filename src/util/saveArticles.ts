@@ -1,7 +1,7 @@
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import RedisStore from '../RedisStore.js'
-import { ZimArticle, ZimCreator } from '@openzim/libzim'
+import { Creator, StringItem } from '@openzim/libzim'
 
 import pmap from 'p-map'
 import * as domino from 'domino'
@@ -15,7 +15,7 @@ import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
 
-export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: ZimCreator, dump: Dump, downloader: Downloader, retryCounter = 0) {
+export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
   const filesForAttempt = await fileStore.len()
   const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail
@@ -38,13 +38,8 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       let isFailed = false
       try {
         if (resp.result && resp.result.content) {
-          const article = new ZimArticle({
-            url: resp.path,
-            data: resp.result.content,
-            ns: resp.namespace || 'I',
-            mimeType: resp.result.responseHeaders['content-type'],
-          })
-          zimCreator.addArticle(article)
+          const item = new StringItem(resp.path, resp.result.responseHeaders['content-type'], '', {}, resp.result.content)
+          zimCreator.addItem(item)
           dump.status.files.success += 1
         } else {
           isFailed = true
@@ -171,7 +166,7 @@ function flattenPromises(promisArr: [string, Promise<Error>][]): [string, Promis
  * and dependencies and save in Zim
  */
 async function saveArticle(
-  zimCreator: ZimCreator,
+  zimCreator: Creator,
   finalHTML: string,
   mediaDependencies: any,
   subtitles: any,
@@ -207,16 +202,8 @@ async function saveArticle(
 
     await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
-    const zimArticle = new ZimArticle({
-      url: articleId,
-      data: finalHTML,
-      ns: articleDetail.ns === 14 ? 'U' : 'A',
-      mimeType: 'text/html',
-      title: articleTitle,
-      shouldIndex: true,
-    })
-
-    zimCreator.addArticle(zimArticle)
+    const zimArticle = new StringItem(articleId, 'text/html', articleTitle, {}, finalHTML)
+    zimCreator.addItem(zimArticle)
 
     return null
   } catch (err) {
@@ -227,7 +214,7 @@ async function saveArticle(
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
+export async function saveArticles(zimCreator: Creator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   const staticFilesList = new Set<string>()
@@ -392,8 +379,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
   if (jsConfigVars) {
-    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
-    zimCreator.addArticle(jsConfigVarArticle)
+    const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', '', {}, jsConfigVars)
+    zimCreator.addItem(jsConfigVarArticle)
   }
 
   return {
