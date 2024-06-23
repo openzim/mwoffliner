@@ -96,5 +96,34 @@ describe('mobile renderer', () => {
       expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Bamako_et_fleuve_Niger.jpg/250px-Bamako_et_fleuve_Niger.jpg')
       expect(imgs[1].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Bamako_bridge2.jpg/250px-Bamako_bridge2.jpg')
     })
+
+    test('it uses the data-src when data-data-file-original-src is not available', async () => {
+      const test_window = domino.createWindow(
+        `
+        <span
+          class="mw-file-element gallery-img pcs-widen-image-override pcs-lazy-load-placeholder pcs-lazy-load-placeholder-pending"
+          style="width: 150px"
+          data-class="mw-file-element gallery-img pcs-widen-image-override"
+          data-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/150px-BMW.svg.png"
+          data-srcset="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/225px-BMW.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/300px-BMW.svg.png 2x"
+          data-width="150"
+          data-height="150"
+          data-alt="Logo used in vehicles since 1997"
+          data-data-file-width="1015"
+          data-data-file-height="1015"
+          ><span style="padding-top: 100%">
+        `,
+        'http://en.wikipedia.org/api/rest_v1/page/mobile-html/BMW',
+      )
+      const mobileRenderer = new WikimediaMobileRenderer()
+
+      const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(test_window.document)
+      const spans = actual.querySelectorAll('.pcs-lazy-load-placeholder')
+      const imgs = actual.querySelectorAll('img')
+
+      expect(spans.length).toBe(0)
+      expect(imgs.length).toBe(1)
+      expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/150px-BMW.svg.png')
+    })
   })
 })
