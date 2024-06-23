@@ -16,7 +16,7 @@ import urlParser from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import * as QueryStringParser from 'querystring'
-import { ZimArticle, ZimCreator } from '@openzim/libzim'
+import { Creator, StringItem } from '@openzim/libzim'
 import { checkApiAvailability } from './util/mw-api.js'
 
 import {
@@ -383,21 +383,14 @@ async function execute(argv: any) {
     }
     validateMetadata(metadata)
 
-    const zimCreator = new ZimCreator(
-      {
-        fileName: outZim,
-        fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-        welcome: dump.opts.mainPage ? dump.opts.mainPage : 'index',
-        compression: 'zstd',
-      },
-      metadata as any,
-    )
-    const scraperArticle = new ZimArticle({
-      ns: 'M',
-      data: `mwoffliner ${packageJSON.version}`,
-      url: 'Scraper',
-    })
-    zimCreator.addArticle(scraperArticle)
+    const zimCreator = new Creator().configNbWorkers(1).configClusterSize(2048)
+    if (!dump.opts.withoutZimFullTextIndex) {
+      zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
+    }
+    zimCreator.startZimCreation(outZim)
+    zimCreator.setMainPath(dump.opts.mainPage ? dump.opts.mainPage : 'index')
+
+    zimCreator.addItem(new StringItem('Scraper', 'text/plain', 'Scraper', {}, `mwoffliner ${packageJSON.version}`))
 
     logger.info('Finding stylesheets to download')
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
@@ -407,8 +400,7 @@ async function execute(argv: any) {
     const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
-    const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' })
-    zimCreator.addArticle(article)
+    zimCreator.addItem(new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', 'style.css', {}, finalCss))
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     await getThumbnailsData()
@@ -456,7 +448,7 @@ async function execute(argv: any) {
     await writeArticleRedirects(downloader, dump, zimCreator)
 
     logger.log('Finishing Zim Creation')
-    await zimCreator.finalise()
+    await zimCreator.finishZimCreation()
 
     logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
   }
@@ -465,23 +457,17 @@ async function execute(argv: any) {
   /* FUNCTIONS *********************** */
   /* ********************************* */
 
-  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
+  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: Creator) {
     await redirectsXId.iterateItems(downloader.speed, async (redirects) => {
       for (const [redirectId, { targetId }] of Object.entries(redirects)) {
         if (redirectId !== targetId) {
-          const redirectArticle = new ZimArticle({
-            url: redirectId,
-            shouldIndex: true,
-            data: '',
-            ns: 'A',
-            mimeType: 'text/html',
-
+          zimCreator.addRedirection(
+            redirectId,
             // We fake a title, by just removing the underscores
-            title: String(redirectId).replace(/_/g, ' '),
+            String(redirectId).replace(/_/g, ' '),
+            targetId,
+          )
 
-            redirectUrl: targetId,
-          })
-          zimCreator.addArticle(redirectArticle)
           dump.status.redirects.written += 1
         }
       }
@@ -531,17 +517,16 @@ async function execute(argv: any) {
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
 
-  async function saveFavicon(zimCreator: ZimCreator, data: Buffer): Promise<any> {
+  async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
     logger.log('Saving favicon.png...')
     try {
-      const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' })
-      return zimCreator.addArticle(article)
+      return zimCreator.addItem(new StringItem('favicon', 'image/png', '', {}, data))
     } catch (e) {
       throw new Error('Failed to save favicon')
     }
   }
 
-  function getMainPage(dump: Dump, zimCreator: ZimCreator, downloader: Downloader) {
+  function getMainPage(dump: Dump, zimCreator: Creator, downloader: Downloader) {
     async function createMainPage() {
       logger.log('Creating main page...')
       const doc = domino.createDocument(
@@ -587,22 +572,13 @@ async function execute(argv: any) {
       }
 
       /* Write the static html file */
-      const article = new ZimArticle({ url: 'index', data: doc.documentElement.outerHTML, ns: 'A', mimeType: 'text/html', title: 'Main Page' })
-      return zimCreator.addArticle(article)
+      const item = new StringItem('index', 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
+      return zimCreator.addItem(item)
     }
 
     function createMainPageRedirect() {
       logger.log(`Create main page redirection from [index] to [${'A/' + mainPage}]`)
-      const article = new ZimArticle({
-        url: 'index',
-        shouldIndex: true,
-        data: '',
-        ns: 'A',
-        mimeType: 'text/html',
-        title: mainPage,
-        redirectUrl: mainPage,
-      })
-      return zimCreator.addArticle(article)
+      zimCreator.addRedirection('index', '', mainPage)
     }
 
     return mainPage ? createMainPageRedirect() : createMainPage()
