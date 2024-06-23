@@ -1,4 +1,5 @@
 import * as domino from 'domino'
+import urlJoin from 'url-join'
 import * as logger from '../Logger.js'
 import { MobileRenderer } from './abstractMobile.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
@@ -33,7 +34,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
         const mobileHTML = domino.createDocument(data)
         const finalHTMLMobile = await this.pipeMobileTransformations(
           mobileHTML,
-          this.convertLazyLoadToImages,
+          this.INTERNAL.convertLazyLoadToImages,
           this.removeEditContainer,
           this.removeHiddenClass,
           async (doc) => {
@@ -91,7 +92,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
     return doc
   }
 
-  private convertLazyLoadToImages(doc: DominoElement) {
+  private convertLazyLoadToImagesImpl(doc: DominoElement) {
     const protocol = 'https://'
     const spans = doc.querySelectorAll('.pcs-lazy-load-placeholder')
 
@@ -100,7 +101,14 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       const img = doc.createElement('img') as DominoElement
 
       // Set the attributes for the img element based on the data attributes in the span
-      img.src = protocol + span.getAttribute('data-src')
+
+      // The data-data-file-original-src attribute is the URL of the image that was used in the original article.
+      // It is preferred over the data-src attribute, which is a "mobile" image that may be scaled up to 320px
+      // or 640px in order to be "full width" on mobile devices. However, if the mobile API didn't scale the
+      // image up, then the data-data-file-original-src attribute will be missing, and we should use the data-src.
+      // See https://github.com/openzim/mwoffliner/issues/1925.
+      const imgSrc = span.getAttribute('data-data-file-original-src') || span.getAttribute('data-src')
+      img.src = urlJoin(protocol, imgSrc)
       img.setAttribute('decoding', 'async')
       img.width = span.getAttribute('data-width')
       img.height = span.getAttribute('data-height')
@@ -147,5 +155,9 @@ export class WikimediaMobileRenderer extends MobileRenderer {
     })
 
     return doc
+  }
+
+  public readonly INTERNAL = {
+    convertLazyLoadToImages: this.convertLazyLoadToImagesImpl,
   }
 }
