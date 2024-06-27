@@ -4,7 +4,7 @@ import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
 import { setupScrapeClasses } from '../util.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
-import { ZimArticle } from '@openzim/libzim'
+import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
@@ -52,14 +52,14 @@ describe('saveArticles', () => {
       await articleDetailXId.flush()
       await articleDetailXId.setMany(articlesDetail)
 
-      const addedArticles: (typeof ZimArticle)[] = []
+      const addedArticles: StringItem[] = []
 
       // TODO: use proper spied (like sinon.js)
       await saveArticles(
         {
-          addArticle(article: typeof ZimArticle) {
-            if (article.mimeType === 'text/html') {
-              addedArticles.push(article)
+          addItem(item: StringItem) {
+            if (item.mimeType === 'text/html') {
+              addedArticles.push(item)
             }
             return Promise.resolve(null)
           },
@@ -72,7 +72,7 @@ describe('saveArticles', () => {
 
       // Successfully scrapped existent articles
       expect(addedArticles).toHaveLength(1)
-      expect(addedArticles[0].aid).toEqual('A/London')
+      expect(addedArticles[0].path).toEqual('A/London')
 
       const articleId = 'non-existent-article'
       const articleUrl = downloader.getArticleUrl(articleId)
@@ -83,7 +83,7 @@ describe('saveArticles', () => {
         downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError('')
 
-      const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
+      const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
 
       // Successfully scrapped existent articles
       expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
@@ -189,9 +189,9 @@ describe('saveArticles', () => {
       const writtenArticles: any = {}
       await saveArticles(
         {
-          addArticle(article: typeof ZimArticle) {
-            if (article.mimeType === 'text/html') {
-              writtenArticles[article.title] = article
+          addArticle(item: StringItem) {
+            if (item.mimeType === 'text/html') {
+              writtenArticles[item.title] = item
             }
             return Promise.resolve(null)
           },
@@ -202,8 +202,8 @@ describe('saveArticles', () => {
         renderer,
       )
 
-      const ParisDocument = domino.createDocument(writtenArticles.Paris.bufferData)
-      const PragueDocument = domino.createDocument(writtenArticles.Prague.bufferData)
+      const ParisDocument = domino.createDocument(writtenArticles.Paris.getContentProvider().feed().toString())
+      const PragueDocument = domino.createDocument(writtenArticles.Prague.getContentProvider().feed().toString())
 
       // London was correctly filtered out by customFlavour
       expect(writtenArticles.London).toBeUndefined()

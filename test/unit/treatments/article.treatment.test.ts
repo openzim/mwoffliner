@@ -1,6 +1,6 @@
 import domino from 'domino'
 import RedisStore from '../../../src/RedisStore.js'
-import { ZimArticle } from '@openzim/libzim'
+import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../../src/util/mw-api.js'
 import { setupScrapeClasses } from '../../util.js'
 import { startRedis, stopRedis } from '../bootstrap.js'
@@ -46,7 +46,7 @@ describe('ArticleTreatment', () => {
       await articleDetailXId.flush()
       await articleDetailXId.setMany(articlesDetail)
 
-      const addedArticles: (typeof ZimArticle)[] = []
+      const addedArticles: StringItem[] = []
 
       const articleId = 'non-existent-article'
       downloader.setUrlsDirectors(rendererInstance, rendererInstance)
@@ -68,9 +68,9 @@ describe('ArticleTreatment', () => {
       // TODO: use proper spied (like sinon.js)
       await saveArticles(
         {
-          addArticle(article: typeof ZimArticle) {
-            if (article.mimeType === 'text/html') {
-              addedArticles.push(article)
+          addArticle(item: StringItem) {
+            if (item.mimeType === 'text/html') {
+              addedArticles.push(item)
             }
             return Promise.resolve(null)
           },
@@ -83,13 +83,13 @@ describe('ArticleTreatment', () => {
 
       // Successfully scrapped existent articles
       expect(addedArticles).toHaveLength(1)
-      expect(addedArticles[0].aid).toEqual('A/London')
+      expect(addedArticles[0].path).toEqual('A/London')
 
       await expect(
         downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError('')
 
-      const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
+      const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
 
       // Successfully scrapped existent articles
       expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()

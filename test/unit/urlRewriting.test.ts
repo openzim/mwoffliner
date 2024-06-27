@@ -5,7 +5,7 @@ import { rewriteUrl } from '../../src/util/rewriteUrls.js'
 import { makeLink, setupScrapeClasses } from '../util.js'
 import { getArticleIds } from '../../src/util/mw-api.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
-import { ZimArticle } from '@openzim/libzim'
+import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 
@@ -143,13 +143,13 @@ describe('Styles', () => {
 
     await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
-    let LondonArticle: typeof ZimArticle
+    let LondonArticle: StringItem
 
     await saveArticles(
       {
-        addArticle(article: typeof ZimArticle) {
-          if (article.title === 'London') {
-            LondonArticle = article
+        addArticle(item: StringItem) {
+          if (item.title === 'London') {
+            LondonArticle = item
           }
           return Promise.resolve(null)
         },
@@ -159,7 +159,7 @@ describe('Styles', () => {
       true,
     )
 
-    const html = LondonArticle.bufferData.toString()
+    const html = LondonArticle.getContentProvider().feed().toString()
     const doc = domino.createDocument(html)
 
     const relevantAs = Array.from(doc.querySelectorAll('a')).filter((a) => !a.hash && !a.className.includes('external') && !a.host && a.getAttribute('href'))
