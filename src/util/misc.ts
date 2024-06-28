@@ -145,11 +145,17 @@ export function migrateChildren(from: any, to: any, beforeNode: any) {
 
 export function getStringsForLang(language: string, fallbackLanguage = 'en') {
   let strings: { [id: string]: string } = {}
-  try {
-    strings = JSON.parse(fs.readFileSync(path.join(__dirname, `../../translation/${language}.json`)).toString())
-  } catch (err) {
-    logger.warn(`Couldn't find strings file for [${language}], falling back to [${fallbackLanguage}]`)
-    strings = JSON.parse(fs.readFileSync(path.join(__dirname, `../../translation/${fallbackLanguage}.json`)).toString())
+  // Read fallbackLanguage first, so it initially populates the strings. Then, read the primary language file,
+  // overridding default strings with the values from the primary language.
+  for (const lang of [fallbackLanguage, language]) {
+    try {
+      const fileContents = fs.readFileSync(path.join(__dirname, `../../translation/${lang}.json`)).toString()
+      const langStrings = JSON.parse(fileContents)
+      delete langStrings['@metadata']
+      strings = { ...strings, ...langStrings }
+    } catch (err) {
+      logger.warn(`Couldn't find strings file for [${lang}]`)
+    }
   }
   return strings
 }
