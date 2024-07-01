@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ignatgg"
+		]
+	},
+	"DISCLAIMER": "Цю статтю видає ${creator}. Текст ліцензовано за ${license}. До мультимедійних файлів можуть застосовуватися додаткові умови.",
+	"LAST_EDITED_ON": "Останнє редагування на ${date}",
+	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
+}
