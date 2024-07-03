@@ -54,7 +54,12 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       } finally {
         if (isFailed) {
           if (doRetry && resp.status !== 404) {
-            await retryStore.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width })
+            await retryStore.set(resp.path, {
+              url: resp.url,
+              namespace: resp.namespace,
+              mult: resp.mult,
+              width: resp.width,
+            })
           } else {
             logger.warn(`Error downloading file [${urlHelper.deserializeUrl(resp.url)}], skipping`)
             dump.status.files.fail += 1
@@ -245,14 +250,14 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
     const renderer = await rendererBuilder.createRenderer({
       renderType: 'specific',
       renderName: forceRender,
-    })
+    }, downloader.loginCookie)
     mainPageRenderer = renderer
     articlesRenderer = renderer
   } else {
-    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
+    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' }, downloader.loginCookie)
     articlesRenderer = await rendererBuilder.createRenderer({
       renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-    })
+    }, downloader.loginCookie)
   }
   downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
 
@@ -296,7 +301,15 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
-          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, staticFiles, subtitles } of rets) {
+          for (const {
+            articleId,
+            displayTitle: articleTitle,
+            html: finalHTML,
+            mediaDependencies,
+            moduleDependencies,
+            staticFiles,
+            subtitles
+          } of rets) {
             if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
@@ -390,7 +403,11 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
   if (jsConfigVars) {
-    const jsConfigVarArticle = new ZimArticle({ url: jsPath('jsConfigVars', config.output.dirs.mediawiki), data: jsConfigVars, ns: '-' })
+    const jsConfigVarArticle = new ZimArticle({
+      url: jsPath('jsConfigVars', config.output.dirs.mediawiki),
+      data: jsConfigVars,
+      ns: '-',
+    })
     zimCreator.addArticle(jsConfigVarArticle)
   }
 

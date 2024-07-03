@@ -8,14 +8,14 @@ import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
 
 export class RendererBuilder {
-  public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
+  public async createRenderer(options: RendererBuilderOptions, loginCookie: String): Promise<Renderer> {
     const { renderType, renderName } = options
 
     const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi] = await Promise.all([
-      MediaWiki.hasVisualEditorApi(),
-      MediaWiki.hasWikimediaDesktopApi(),
-      MediaWiki.hasWikimediaMobileApi(),
-      MediaWiki.hasRestApi(),
+      MediaWiki.hasVisualEditorApi(loginCookie),
+      MediaWiki.hasWikimediaDesktopApi(loginCookie),
+      MediaWiki.hasWikimediaMobileApi(loginCookie),
+      MediaWiki.hasRestApi(loginCookie),
     ])
 
     switch (renderType) {
