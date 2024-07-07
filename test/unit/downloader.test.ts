@@ -88,14 +88,14 @@ describe('Downloader class', () => {
   })
 
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
-    const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
+    const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
     const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet)
     RedisStore.articleDetailXId.setMany(articleDetailsRet)
-    const { London, Paris, Zürich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
+    const { London, Paris, Zurich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
     expect(London).toBeDefined()
     expect(United_Kingdom).toBeDefined()
     expect(Paris).toBeDefined()
-    expect(Zürich).toBeDefined()
+    expect(Zurich).toBeDefined()
 
     expect(THISARTICLEDOESNTEXIST.missing).toBe(true)
   })
