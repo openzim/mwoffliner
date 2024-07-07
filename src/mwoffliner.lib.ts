@@ -434,7 +434,7 @@ async function execute(argv: any) {
 
     if (downloader.webp) {
       logger.log('Downloading polyfill module')
-      importPolyfillModules(zimCreator)
+      await importPolyfillModules(zimCreator)
     }
 
     logger.log('Downloading module dependencies')
