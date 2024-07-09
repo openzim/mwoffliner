@@ -8,7 +8,7 @@ import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
 
 export class RendererBuilder {
-  public async createRenderer(options: RendererBuilderOptions, loginCookie: String): Promise<Renderer> {
+  public async createRenderer(options: RendererBuilderOptions, loginCookie: string): Promise<Renderer> {
     const { renderType, renderName } = options
 
     const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi] = await Promise.all([

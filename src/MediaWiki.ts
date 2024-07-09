@@ -172,7 +172,7 @@ class MediaWiki {
     this.initializeMediaWikiDefaults()
   }
 
-  public async hasWikimediaDesktopApi(loginCookie: String): Promise<boolean> {
+  public async hasWikimediaDesktopApi(loginCookie: string): Promise<boolean> {
     if (this.#hasWikimediaDesktopApi === null) {
       this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
       this.#hasWikimediaDesktopApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId), loginCookie)
@@ -181,7 +181,7 @@ class MediaWiki {
     return this.#hasWikimediaDesktopApi
   }
 
-  public async hasWikimediaMobileApi(loginCookie: String): Promise<boolean> {
+  public async hasWikimediaMobileApi(loginCookie: string): Promise<boolean> {
     if (this.#hasWikimediaMobileApi === null) {
       this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
       this.#hasWikimediaMobileApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId), loginCookie)
@@ -190,7 +190,7 @@ class MediaWiki {
     return this.#hasWikimediaMobileApi
   }
 
-  public async hasVisualEditorApi(loginCookie: String): Promise<boolean> {
+  public async hasVisualEditorApi(loginCookie: string): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
       this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
       this.#hasVisualEditorApi = await checkApiAvailability(
@@ -203,7 +203,7 @@ class MediaWiki {
     return this.#hasVisualEditorApi
   }
 
-  public async hasRestApi(loginCookie: String): Promise<boolean> {
+  public async hasRestApi(loginCookie: string): Promise<boolean> {
     if (this.#hasRestApi === null) {
       this.restApiUrlDirector = new RestApiURLDirector(this.restApiUrl.href)
       this.#hasRestApi = await checkApiAvailability(this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId), loginCookie)
