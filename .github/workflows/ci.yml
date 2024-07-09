@@ -5,10 +5,17 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '17 12 * * *' # Run every day at 12:17 UTC
+
+env:
+  REDIS: 'redis://127.0.0.1:6379'
+  S3_URL: ${{ secrets.S3_URL }}
+  ZIMCHECK_PATH: $( find .. -name zimcheck )
+  ZIMDUMP_PATH: $( find .. -name zimdump )
 
 jobs:
-  build:
-
+  ci-test:
     runs-on: ubuntu-22.04
 
     strategy:
@@ -16,40 +23,39 @@ jobs:
         node-version: [18.x]
 
     steps:
+      - name: Installing Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: Installing Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
+      - name: Installing Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: '6.x'
 
-    - name: Installing Redis
-      uses: shogo82148/actions-setup-redis@v1
-      with:
-        redis-version: '6.x'
+      - name: Downloading code
+        uses: actions/checkout@v4
 
-    - name: Downloading code
-      uses: actions/checkout@v4
+      - name: Installing other dependencies
+        run: |
+          npm install
+          npm i -g eslint
+          npm i -g codecov
+          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
 
-    - name: Installing other dependencies
-      run: |
-        npm install
-        npm i -g eslint
-        npm i -g codecov
-        wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+      - name: Running ESLint
+        run: npm run lint
 
-    - name: Running ESLint
-      run: npm run lint
+      - name: Running all tests (w/coverage)
+        if: ${{ github.event_name != 'schedule' }}
+        run: npm run codecov
 
-    - name: Running tests
-      run: npm run codecov
-      env:
-        REDIS: 'redis://127.0.0.1:6379'
-        S3_URL: ${{ secrets.S3_URL }}
-        ZIMCHECK_PATH: $( find .. -name zimcheck )
-        ZIMDUMP_PATH: $( find .. -name zimdump )
+      - name: Running scheduled all tests (no coverage)
+        if: ${{ github.event_name == 'schedule' }}
+        run: npm run test-without-coverage
 
-    - name: Uploading Codecov stats
-      uses: codecov/codecov-action@v4
-      if: ${{ matrix.node-version == '18.x' }}
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Uploading Codecov stats
+        uses: codecov/codecov-action@v4
+        if: ${{ matrix.node-version == '18.x' }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
