@@ -18,20 +18,26 @@ describe('RendererBuilder', () => {
   it('should create a WikimediaDesktopRenderer for desktop mode', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
-    const renderer = await rendererBuilder.createRenderer({
-      MediaWiki,
-      renderType: 'desktop',
-    } as RendererBuilderOptions, '')
+    const renderer = await rendererBuilder.createRenderer(
+      {
+        MediaWiki,
+        renderType: 'desktop',
+      } as RendererBuilderOptions,
+      '',
+    )
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
   it('should create a WikimediaDesktopRenderer for auto mode for en wikipedia', async () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
-    const renderer = await rendererBuilder.createRenderer({
-      MediaWiki,
-      renderType: 'auto',
-    } as RendererBuilderOptions, '')
+    const renderer = await rendererBuilder.createRenderer(
+      {
+        MediaWiki,
+        renderType: 'auto',
+      } as RendererBuilderOptions,
+      '',
+    )
     expect(renderer).toBeInstanceOf(WikimediaDesktopRenderer)
   })
 
@@ -39,10 +45,13 @@ describe('RendererBuilder', () => {
     const { MediaWiki } = await setupScrapeClasses() // en wikipedia
 
     expect(async () => {
-      await rendererBuilder.createRenderer({
-        MediaWiki,
-        renderType: 'unknownMode' as any,
-      } as RendererBuilderOptions, '')
+      await rendererBuilder.createRenderer(
+        {
+          MediaWiki,
+          renderType: 'unknownMode' as any,
+        } as RendererBuilderOptions,
+        '',
+      )
     }).rejects.toThrow('Unknown render: unknownMode')
   })
 

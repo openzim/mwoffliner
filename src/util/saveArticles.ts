@@ -247,17 +247,23 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
   let articlesRenderer
   if (forceRender) {
     // All articles and main page will use the same renderer if 'forceRender' is specified
-    const renderer = await rendererBuilder.createRenderer({
-      renderType: 'specific',
-      renderName: forceRender,
-    }, downloader.loginCookie)
+    const renderer = await rendererBuilder.createRenderer(
+      {
+        renderType: 'specific',
+        renderName: forceRender,
+      },
+      downloader.loginCookie,
+    )
     mainPageRenderer = renderer
     articlesRenderer = renderer
   } else {
     mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' }, downloader.loginCookie)
-    articlesRenderer = await rendererBuilder.createRenderer({
-      renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-    }, downloader.loginCookie)
+    articlesRenderer = await rendererBuilder.createRenderer(
+      {
+        renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
+      },
+      downloader.loginCookie,
+    )
   }
   downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
 
@@ -301,15 +307,7 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
-          for (const {
-            articleId,
-            displayTitle: articleTitle,
-            html: finalHTML,
-            mediaDependencies,
-            moduleDependencies,
-            staticFiles,
-            subtitles
-          } of rets) {
+          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, staticFiles, subtitles } of rets) {
             if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
