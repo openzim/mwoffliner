@@ -34,7 +34,13 @@ imageminOptions.set('default', new Map())
 imageminOptions.set('webp', new Map())
 
 imageminOptions.get('default').set('image/png', {
-  plugins: [(imageminPngquant as any)({ speed: 3, strip: true, dithering: 0 }), imageminAdvPng({ optimizationLevel: 4, iterations: 5 })],
+  plugins: [
+    (imageminPngquant as any)({ speed: 3, strip: true, dithering: 0 }),
+    imageminAdvPng({
+      optimizationLevel: 4,
+      iterations: 5,
+    }),
+  ],
 })
 imageminOptions.get('default').set('image/jpeg', {
   plugins: [imageminJpegoptim({ max: 60, stripAll: true })],
@@ -81,6 +87,7 @@ export const defaultStreamRequestOptions: AxiosRequestConfig = {
 }
 
 type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | RestApiURLDirector
+
 /**
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
  */
@@ -258,7 +265,13 @@ class Downloader {
     return finalProcessedResp
   }
 
-  public async getArticleDetailsNS(ns: number, gapcontinue = ''): Promise<{ gapContinue: string; articleDetails: QueryMwRet }> {
+  public async getArticleDetailsNS(
+    ns: number,
+    gapcontinue = '',
+  ): Promise<{
+    gapContinue: string
+    articleDetails: QueryMwRet
+  }> {
     let queryContinuation: QueryContinueOpts
     let finalProcessedResp: QueryMwRet
     let gCont: string = null
@@ -366,7 +379,13 @@ class Downloader {
     })
   }
 
-  public async downloadContent(_url: string, retry = true): Promise<{ content: Buffer | string; responseHeaders: any }> {
+  public async downloadContent(
+    _url: string,
+    retry = true,
+  ): Promise<{
+    content: Buffer | string
+    responseHeaders: any
+  }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
@@ -616,7 +635,16 @@ class Downloader {
     handler(err)
   }
 
-  private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
+  private async getSubCategories(
+    articleId: string,
+    continueStr = '',
+  ): Promise<
+    Array<{
+      pageid: number
+      ns: number
+      title: string
+    }>
+  > {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
     const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
@@ -694,7 +722,11 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi(this.loginCookie)) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
+    if (
+      (await MediaWiki.hasWikimediaMobileApi(this.loginCookie)) &&
+      this.wikimediaMobileJsDependenciesList.length === 0 &&
+      this.wikimediaMobileStyleDependenciesList.length === 0
+    ) {
       try {
         // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
