@@ -417,8 +417,7 @@ class MediaWiki {
       throw new Error(`Mediawiki version ${mwVersion} not supported should be >=${mwMinimalVersion}`)
     }
 
-    // Base will contain the default encoded article id for the wiki.
-    const mainPage = decodeURIComponent(entries.base.split('/').pop())
+    const mainPage = entries.mainpage.replace(/ /g, '_')
     const siteName = entries.sitename
 
     // Gather languages codes (en remove the 'dialect' part)
