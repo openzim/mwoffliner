@@ -547,7 +547,6 @@ class Downloader {
 
         // Handling the cache response and act accordingly
         .then(async (s3Resp) => {
-
           // 'Versioning' of image is made via HTTP ETag. We should
           // check if we have the proper version by requestion proper
           // ETag to upstream MediaWiki.
