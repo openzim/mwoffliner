@@ -81,7 +81,7 @@ class S3 {
           resolve(response)
         })
         .catch((err: any) => {
-          logger.log('S3 error while uploading file', err)
+          logger.error('Cache error while uploading object:', err)
           reject(err)
         })
     })
