@@ -105,10 +105,10 @@ class S3 {
         .catch((err: any) => {
           // For 404 error handle AWS service-specific exception
           if (err && err.name === 'NoSuchKey') {
-            logger.log(`Error: The specified key ${key} does not exist.`)
+            logger.log(`The specified key '${key}' does not exist in the cache.`)
             resolve(null)
           } else {
-            logger.log(`Error while downloading the file ${err}`)
+            logger.error(`Error (${err}) while downloading the object '${key}' from the cache.`)
             reject(err)
           }
         })
@@ -123,7 +123,7 @@ class S3 {
         .send(command)
         .then((val: any) => resolve(val))
         .catch((err: any) => {
-          logger.log('S3 error while uploading file', err)
+          logger.error('Error while deleting object in the cache', err)
           reject(err)
         })
     })
