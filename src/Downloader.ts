@@ -520,7 +520,9 @@ class Downloader {
       if (this.optimisationCacheUrl && isImageUrl(url)) {
         this.downloadImage(url, handler)
       } else {
-        const resp = await axios(url, this.arrayBufferRequestOptions)
+        // The 'Referer' header is set to get around WMF domain origin restrictions.
+        // See: https://github.com/openzim/mwoffliner/issues/2061
+        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: 'https://localhost/' } })
         await this.getCompressedBody(resp)
         handler(null, {
           responseHeaders: resp.headers,
@@ -544,7 +546,9 @@ class Downloader {
           if (s3Resp?.Metadata?.etag) {
             this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
-          const mwResp = await axios(url, this.arrayBufferRequestOptions)
+          // The 'Referer' header is set to get around WMF domain origin restrictions.
+          // See: https://github.com/openzim/mwoffliner/issues/2061
+          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: 'https://localhost/' } })
 
           /* TODO: Code to remove in a few months (February 2023). For
           some reason, it seems a few pictures have 'image/webp'

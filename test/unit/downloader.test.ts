@@ -126,6 +126,19 @@ describe('Downloader class', () => {
     expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
   })
 
+  test('downloadContent successfully downloads a map image', async () => {
+    const { data: LondonHtml } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
+    const doc = domino.createDocument(LondonHtml)
+    const imgToGet = Array.from(doc.querySelectorAll('.mw-kartographer-map img'))[0]
+    let imgToGetSrc = ''
+    if (imgToGet.getAttribute('src')) {
+      imgToGetSrc = imgToGet.getAttribute('src')
+    }
+    // This is the downloading of an image
+    const LondonImage = await downloader.downloadContent(imgToGetSrc)
+    expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
+  })
+
   describe('getArticle method', () => {
     let dump: Dump
     const wikimediaMobileRenderer = new WikimediaMobileRenderer()
