@@ -545,11 +545,11 @@ class Downloader {
         // Check first if we have an entry in the (object storage) cache for this URL
         .downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1')
 
-        // Handling the cache response and act accordingly
+        // Handle the cache response and act accordingly
         .then(async (s3Resp) => {
           // 'Versioning' of image is made via HTTP ETag. We should
-          // check if we have the proper version by requestion proper
-          // ETag to upstream MediaWiki.
+          // check if we have the proper version by requesting proper
+          // ETag from upstream MediaWiki.
           if (s3Resp?.Metadata?.etag) {
             this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
@@ -560,14 +560,14 @@ class Downloader {
           // HTTP response content-type can not really be trusted (at least if 304)
           mwResp.headers['content-type'] = getMimeType(url, s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'])
 
-          // Most of the images, after been uploaded once to the
+          // Most of the images, after having been uploaded once to the
           // cache, will always have 304 status, until modified. If cache
-          // is up2date proceed.
+          // is up to date, return cached image.
           if (mwResp.status === 304) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const headers = (({ Body, ...o }) => o)(s3Resp)
 
-            // If candidate to a WEPB convertion
+            // If image is a webp conversion candidate
             if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
               headers.path_postfix = '.webp'
               headers['content-type'] = 'image/webp'
@@ -579,11 +579,10 @@ class Downloader {
               content: (await this.streamToBuffer(s3Resp.Body as Readable)) as any,
             })
 
-            // Don´t pursue
             return
           }
 
-          // Compress content in case image blob comes from upstream MediaWiki
+          // Compress content because image blob comes from upstream MediaWiki
           await this.getCompressedBody(mwResp)
 
           // Check for the ETag and upload to cache
