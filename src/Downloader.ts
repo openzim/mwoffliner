@@ -541,8 +541,15 @@ class Downloader {
   private async downloadImage(url: string, handler: any) {
     try {
       this.s3
+
+        // Check first if we have an entry in the (object storage) cache for this URL
         .downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1')
+
+        // Handle the cache response and act accordingly
         .then(async (s3Resp) => {
+          // 'Versioning' of image is made via HTTP ETag. We should
+          // check if we have the proper version by requesting proper
+          // ETag from upstream MediaWiki.
           if (s3Resp?.Metadata?.etag) {
             this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
@@ -550,48 +557,41 @@ class Downloader {
           // See: https://github.com/openzim/mwoffliner/issues/2061
           const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: 'https://localhost/' } })
 
-          /* TODO: Code to remove in a few months (February 2023). For
-          some reason, it seems a few pictures have 'image/webp'
-          mime-type in S3 although they are png, ... This leads to
-          having the following code not assuming they should be
-          converted to wepb. To avoid this, as a temporary solution,
-          such scneario are ignored and mime-type definition relies
-          only on url and Mediawiki header. */
-          if (s3Resp?.Metadata?.contenttype === 'image/webp') {
-            s3Resp.Metadata.contenttype = undefined
-          }
-
-          // sanitize Content-Type
+          // HTTP response content-type can not really be trusted (at least if 304)
           mwResp.headers['content-type'] = getMimeType(url, s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'])
 
-          // Most of the images after uploading once will always have
-          // 304 status, until modified.
-          // 304 does not have to answer with content-type, we have to get it
-          // via S3 metadata or extension
+          // Most of the images, after having been uploaded once to the
+          // cache, will always have 304 status, until modified. If cache
+          // is up to date, return cached image.
           if (mwResp.status === 304) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const headers = (({ Body, ...o }) => o)(s3Resp)
 
+            // If image is a webp conversion candidate
             if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
               headers.path_postfix = '.webp'
               headers['content-type'] = 'image/webp'
             }
+
+            // Proceed with image
             handler(null, {
               responseHeaders: headers,
               content: (await this.streamToBuffer(s3Resp.Body as Readable)) as any,
             })
+
             return
           }
 
-          // Compress content
+          // Compress content because image blob comes from upstream MediaWiki
           await this.getCompressedBody(mwResp)
 
-          // Check for the etag and upload
+          // Check for the ETag and upload to cache
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
           if (etag) {
             this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, mwResp.headers['content-type'], this.webp ? 'webp' : '1')
           }
 
+          // Proceed with image
           handler(null, {
             responseHeaders: mwResp.headers,
             content: mwResp.data,
