@@ -520,9 +520,9 @@ class Downloader {
       if (this.optimisationCacheUrl && isImageUrl(url)) {
         this.downloadImage(url, handler)
       } else {
-        // The 'Referer' header is set to get around WMF domain origin restrictions.
-        // See: https://github.com/openzim/mwoffliner/issues/2061
-        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: 'https://localhost/' } })
+        // Use the base domain of the wiki being scraped as the Referer header, so that we can
+        // successfully scrap WMF map tiles.
+        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: MediaWiki.baseUrl.href } })
         await this.getCompressedBody(resp)
         handler(null, {
           responseHeaders: resp.headers,
@@ -553,9 +553,9 @@ class Downloader {
           if (s3Resp?.Metadata?.etag) {
             this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
-          // The 'Referer' header is set to get around WMF domain origin restrictions.
-          // See: https://github.com/openzim/mwoffliner/issues/2061
-          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: 'https://localhost/' } })
+          // Use the base domain of the wiki being scraped as the Referer header, so that we can
+          // successfully scrap WMF map tiles.
+          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: MediaWiki.baseUrl.href } })
 
           // HTTP response content-type can not really be trusted (at least if 304)
           mwResp.headers['content-type'] = getMimeType(url, s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'])
