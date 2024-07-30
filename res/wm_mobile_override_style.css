@@ -18,3 +18,8 @@ span.noviewer {
   width: auto !important;
     max-width: 100% !important;
 }
+
+/* Unfold collapsible tables */
+.client-js .collapsible:not(.mw-made-collapsible).collapsed > tbody > tr:not(:first-child) {
+  display: block !important;
+}

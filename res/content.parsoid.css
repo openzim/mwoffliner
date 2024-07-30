@@ -194,3 +194,8 @@ figure[typeof~='mw:Video']>figcaption,
 figure[typeof~='mw:Audio']>figcaption {
     display: none;
 }
+
+/* Unfold collapsible tables */
+.client-js .collapsible:not(.mw-made-collapsible).collapsed > tbody > tr:not(:first-child) {
+  display: block !important;
+}
