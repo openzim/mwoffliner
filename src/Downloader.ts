@@ -655,7 +655,7 @@ class Downloader {
     const articleData = await this.getJSON<any>(articleApiUrl)
 
     if (articleData.error) {
-      const errorMessage = `Unable to retrieve js/css dependencies for article '${this}': ${articleData.error.code}`
+      const errorMessage = `Unable to retrieve js/css dependencies for article '${title}': ${articleData.error.code}`
       logger.error(errorMessage)
 
       /* If article is missing (for example because it just has been deleted) */
