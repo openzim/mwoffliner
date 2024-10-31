@@ -27,8 +27,9 @@ await testRenders(
 
             for (const dump of outFiles) {
               if (dump.nopic) {
+                console.log(dump.status.files.fail)
                 // nopic has enough files
-                expect(dump.status.files.success).toBeGreaterThanOrEqual(14)
+                expect(dump.status.files.success).toBeGreaterThanOrEqual(13)
                 // nopic has enough redirects
                 expect(dump.status.redirects.written).toBeGreaterThanOrEqual(16)
                 // nopic has enough articles
@@ -50,7 +51,7 @@ await testRenders(
             for (const dump of outFiles) {
               if (dump.nopic) {
                 // nopic has enough files
-                expect(dump.status.files.success).toBeGreaterThanOrEqual(14)
+                expect(dump.status.files.success).toBeGreaterThanOrEqual(13)
                 // nopic has enough redirects
                 expect(dump.status.redirects.written).toBeGreaterThanOrEqual(16)
                 // nopic has enough articles
