@@ -3,6 +3,9 @@ import * as logger from './Logger.js'
 import { Readable } from 'stream'
 import { publicIpv4 } from 'public-ip'
 
+import * as https from 'https'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
+
 interface BucketParams {
   Bucket: string
   Key: string
@@ -34,6 +37,11 @@ class S3 {
   }
 
   public async initialise() {
+    const requestHandler = new NodeHttpHandler({
+      httpsAgent: new https.Agent({
+        maxSockets: 250,
+      }),
+    })
     const s3UrlBase: any = new URL(this.url)
     this.s3Handler = new S3Client({
       credentials: {
@@ -43,6 +51,7 @@ class S3 {
       endpoint: s3UrlBase.href,
       forcePathStyle: s3UrlBase.protocol === 'http:',
       region: this.region,
+      requestHandler,
     })
 
     return this.bucketExists(this.bucketName)
