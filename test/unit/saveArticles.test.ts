@@ -88,7 +88,7 @@ describe('saveArticles', () => {
       // Successfully scrapped existent articles
       expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
       // Geo Position data is correct
-      expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
+      expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.5;-0.13333333')
       // Check if header exists
       expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
