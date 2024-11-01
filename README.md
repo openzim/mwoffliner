@@ -19,7 +19,7 @@ User Help is available in the for a a
 
 [![npm](https://img.shields.io/npm/v/mwoffliner.svg)](https://www.npmjs.com/package/mwoffliner)
 [![node](https://img.shields.io/node/v/mwoffliner.svg)](https://www.npmjs.com/package/mwoffliner)
-[![Docker](https://ghcr-badge.deta.dev/openzim/mwoffliner/latest_tag?label=container)](https://ghcr.io/openzim/mwoffliner)
+[![Docker](https://ghcr-badge.egpl.dev/openzim/mwoffliner/latest_tag?label=container)](https://ghcr.io/openzim/mwoffliner)
 [![Build Status](https://github.com/openzim/mwoffliner/workflows/CI/badge.svg?query=branch%3Amain)](https://github.com/openzim/mwoffliner/actions/workflows/ci.yml?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/main/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
