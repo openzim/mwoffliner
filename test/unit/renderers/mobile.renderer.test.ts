@@ -5,6 +5,45 @@ import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile
 describe('mobile renderer', () => {
   let window
 
+  describe('unhiding sections', () => {
+    beforeEach(() => {
+      // Snippet of an article with nested hidden sections.
+      window = domino.createWindow(
+        `
+        <section data-mw-section-id="3" style="display: none;">
+        <div class="pcs-edit-section-header v2">
+          <h2 id="Dugu_kilatogo" class="pcs-edit-section-title">Dugu kilatogo</h2>
+          <span class="pcs-edit-section-link-container">
+            <a href="/w/index.php?title=Mali&amp;action=edit&amp;section=3" data-id="3" data-action="edit_section" aria-labelledby="pcs-edit-section-aria-normal" class="pcs-edit-section-link"></a>
+          </span>
+        </div>
+        <p>Mali kila ...</p>
+
+        <section data-mw-section-id="4" style="display: none;"><h3 id="Nafasɔrɔsira"><span id="Nafas.C9.94r.C9.94sira"></span>Nafasɔrɔsira</h3>
+          <figure class="mw-halign-right pcs-widen-image-ancestor" typeof="mw:File/Thumb">
+          <ul><li>Bagan kumaba là millions mugan ni fila dɛ fɛrɛ san kɔnɔ.</li>
+              <li>Sanu bɛ Mali la fa ni dɛ diɔyɔrɔ filana dɛ farifina diɔrɔ ka ni cory ni mangoro yɛ u ka fin fɛrɛ ta yɛ Mali kɔnɔ.</li></ul>
+        </section>
+
+        <p>Mali</p>
+        </section>
+        `,
+        'https://bm.wikipedia.org/api/rest_v1/page/mobile-html/Mali',
+      )
+    })
+
+    test('it removes the hidden class from sections', async () => {
+      const mobileRenderer = new WikimediaMobileRenderer()
+
+      const actual = mobileRenderer.INTERNAL.unhideSections(window.document)
+      const sections = actual.querySelectorAll('section')
+
+      expect(sections.length).toBe(2)
+      expect(sections[0].style.display).toBe('')
+      expect(sections[1].style.display).toBe('')
+    })
+  })
+
   describe('image converter', () => {
     beforeEach(() => {
       window = domino.createWindow(
