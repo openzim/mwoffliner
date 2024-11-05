@@ -37,6 +37,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           this.INTERNAL.convertLazyLoadToImages,
           this.removeEditContainer,
           this.removeHiddenClass,
+          this.INTERNAL.unhideSections,
           async (doc) => {
             const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(
               doc.documentElement.outerHTML,
@@ -130,6 +131,16 @@ export class WikimediaMobileRenderer extends MobileRenderer {
     return doc
   }
 
+  private unhideSectionsImpl(doc: DominoElement) {
+    const sections = doc.querySelectorAll('section')
+    Array.from(sections).forEach((section: DominoElement) => {
+      // Domino doesn't allow us to easily manipulate specific styles. Rather than trying to parse
+      // the style attribute and remove display: none, we just clobber the whole thing.
+      section.style = ''
+    })
+    return doc
+  }
+
   private restoreLinkDefaults(doc: DominoElement) {
     const supElements = doc.querySelectorAll('sup')
 
@@ -159,5 +170,6 @@ export class WikimediaMobileRenderer extends MobileRenderer {
 
   public readonly INTERNAL = {
     convertLazyLoadToImages: this.convertLazyLoadToImagesImpl,
+    unhideSections: this.unhideSectionsImpl,
   }
 }
