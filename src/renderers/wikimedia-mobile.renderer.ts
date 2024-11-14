@@ -129,7 +129,6 @@ export class WikimediaMobileRenderer extends MobileRenderer {
 
       let imgSrc = preparedSrc
       let width = preparedWidth
-      let height: number
       if (originalWidth && match && originalWidth < preparedWidth) {
         // There was a match on the originalSrc, and it is an image that is smaller than the prepared image.
         width = originalWidth
@@ -150,7 +149,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       }
       // If the above ifs didn't execute, we're using the prepared image.
       // This is a no-op if width == preparedWidth.
-      height = Math.round((preparedHeight * width) / preparedWidth)
+      const height = Math.round((preparedHeight * width) / preparedWidth)
 
       img.src = urlJoin(protocol, imgSrc)
       img.setAttribute('decoding', 'async')
