@@ -1,14 +1,14 @@
 import * as domino from 'domino'
 
 import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile.renderer'
+import exp from 'constants'
 
 describe('mobile renderer', () => {
-  let window
-
   describe('unhiding sections', () => {
+    let test_window
     beforeEach(() => {
       // Snippet of an article with nested hidden sections.
-      window = domino.createWindow(
+      test_window = domino.createWindow(
         `
         <section data-mw-section-id="3" style="display: none;">
         <div class="pcs-edit-section-header v2">
@@ -35,7 +35,7 @@ describe('mobile renderer', () => {
     test('it removes the hidden class from sections', async () => {
       const mobileRenderer = new WikimediaMobileRenderer()
 
-      const actual = mobileRenderer.INTERNAL.unhideSections(window.document)
+      const actual = mobileRenderer.INTERNAL.unhideSections(test_window.document)
       const sections = actual.querySelectorAll('section')
 
       expect(sections.length).toBe(2)
@@ -45,8 +45,8 @@ describe('mobile renderer', () => {
   })
 
   describe('image converter', () => {
-    beforeEach(() => {
-      window = domino.createWindow(
+    test('it converts lazy load to images with the proper sizes', async () => {
+      const test_window = domino.createWindow(
         `
         <figure typeof="mw:File/Thumb" class="pcs-widen-image-ancestor">
           <a href="./Fichier:Bamako_et_fleuve_Niger.jpg" class="mw-file-description pcs-widen-image-ancestor">
@@ -94,22 +94,6 @@ describe('mobile renderer', () => {
           <li>Bamakɔ Kura</li>
           <li>Jikoroni</li>
           <li>Bakɔ jikɔrɔni (= derrière le fleuve)</li>
-          <li>Misira</li>
-          <li>Medina Kura</li>
-          <li>Bankɔni</li>
-          <li>Maɲambugu</li>
-          <li>Dravela</li>
-          <li>Jɛlibugu</li>
-          <li>Bolibana</li>
-          <li>Wɔlɔfɔbugu</li>
-          <li>Bajalan I,II,III</li>
-          <li>ɲarela</li>
-          <li>Bagadaji</li>
-          <li>Bozola</li>
-          <li>Falaje</li>
-          <li>ɲamakoro</li>
-          <li>Sɛbenikɔrɔ</li>
-          <li>Quinzanbugu</li>
           <li>Kinsanbugu</li>
           <li>Amdalayɛ</li>
           <li>Sabalibugu</li>
@@ -121,35 +105,68 @@ describe('mobile renderer', () => {
         </ul>`,
         'http://bm.wikipedia.org/api/rest_v1/page/mobile-html/BamakBamakɔ',
       )
-    })
 
-    test('it converts lazy load to images with the proper size', async () => {
       const mobileRenderer = new WikimediaMobileRenderer()
 
-      const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(window.document)
+      const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(test_window.document)
       const spans = actual.querySelectorAll('.pcs-lazy-load-placeholder')
       const imgs = actual.querySelectorAll('img')
 
       expect(spans.length).toBe(0)
       expect(imgs.length).toBe(2)
       expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Bamako_et_fleuve_Niger.jpg/250px-Bamako_et_fleuve_Niger.jpg')
+      expect(imgs[0].width).toEqual(250)
+      expect(imgs[0].height).toEqual(188)
       expect(imgs[1].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Bamako_bridge2.jpg/250px-Bamako_bridge2.jpg')
+      expect(imgs[1].width).toEqual(250)
+      expect(imgs[1].height).toEqual(167)
     })
 
-    test('it uses the data-src when data-data-file-original-src is not available', async () => {
+    test('uses max width of 320 when src and data-data-file-original-src are both bigger', async () => {
       const test_window = domino.createWindow(
         `
         <span
           class="mw-file-element gallery-img pcs-widen-image-override pcs-lazy-load-placeholder pcs-lazy-load-placeholder-pending"
-          style="width: 150px"
+          style="width: 1500px"
+          data-class="mw-file-element gallery-img pcs-widen-image-override"
+          data-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/1500px-BMW.svg.png"
+          data-width="1500"
+          data-height="1500"
+          data-alt="Logo used in vehicles since 1997"
+          data-data-file-width="1815"
+          data-data-file-height="1815"
+          data-data-file-original-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/800px-BMW.svg.png"
+          ><span style="padding-top: 100%">
+        `,
+        'http://en.wikipedia.org/api/rest_v1/page/mobile-html/BMW',
+      )
+      const mobileRenderer = new WikimediaMobileRenderer()
+
+      const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(test_window.document)
+      const spans = actual.querySelectorAll('.pcs-lazy-load-placeholder')
+      const imgs = actual.querySelectorAll('img')
+
+      expect(spans.length).toBe(0)
+      expect(imgs.length).toBe(1)
+      expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png')
+      expect(imgs[0].width).toEqual(320)
+      expect(imgs[0].height).toEqual(320)
+    })
+
+    test('uses original src width when it is the smallest', async () => {
+      const test_window = domino.createWindow(
+        `
+        <span
+          class="mw-file-element gallery-img pcs-widen-image-override pcs-lazy-load-placeholder pcs-lazy-load-placeholder-pending"
+          style="width: 1500px"
           data-class="mw-file-element gallery-img pcs-widen-image-override"
           data-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/150px-BMW.svg.png"
-          data-srcset="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/225px-BMW.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/300px-BMW.svg.png 2x"
           data-width="150"
           data-height="150"
           data-alt="Logo used in vehicles since 1997"
-          data-data-file-width="1015"
-          data-data-file-height="1015"
+          data-data-file-width="1815"
+          data-data-file-height="1815"
+          data-data-file-original-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/800px-BMW.svg.png"
           ><span style="padding-top: 100%">
         `,
         'http://en.wikipedia.org/api/rest_v1/page/mobile-html/BMW',
@@ -163,6 +180,37 @@ describe('mobile renderer', () => {
       expect(spans.length).toBe(0)
       expect(imgs.length).toBe(1)
       expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/150px-BMW.svg.png')
+      expect(imgs[0].width).toEqual(150)
+      expect(imgs[0].height).toEqual(150)
+    })
+    test('uses prepared src when there is no original src, and no way to URL hack', async () => {
+      const test_window = domino.createWindow(
+        `
+        <span
+          class="mw-file-element gallery-img pcs-widen-image-override pcs-lazy-load-placeholder pcs-lazy-load-placeholder-pending"
+          style="width: 1500px"
+          data-class="mw-file-element gallery-img pcs-widen-image-override"
+          data-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/BMW.svg.png"
+          data-width="800"
+          data-height="800"
+          data-alt="Logo used in vehicles since 1997"
+          data-data-file-width="1815"
+          data-data-file-height="1815"
+          ><span style="padding-top: 100%">
+        `,
+        'http://en.wikipedia.org/api/rest_v1/page/mobile-html/BMW',
+      )
+      const mobileRenderer = new WikimediaMobileRenderer()
+
+      const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(test_window.document)
+      const spans = actual.querySelectorAll('.pcs-lazy-load-placeholder')
+      const imgs = actual.querySelectorAll('img')
+
+      expect(spans.length).toBe(0)
+      expect(imgs.length).toBe(1)
+      expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/BMW.svg.png')
+      expect(imgs[0].width).toEqual(800)
+      expect(imgs[0].height).toEqual(800)
     })
   })
 })
