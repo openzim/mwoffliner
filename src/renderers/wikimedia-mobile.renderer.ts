@@ -134,7 +134,9 @@ export class WikimediaMobileRenderer extends MobileRenderer {
         width = originalWidth
         imgSrc = originalSrc
       }
-      if (THUMB_MAX_WIDTH < originalWidth && THUMB_MAX_WIDTH < preparedWidth) {
+      if (THUMB_MAX_WIDTH < originalWidth || (!originalWidth && THUMB_MAX_WIDTH < preparedWidth)) {
+        // If both srcs are too big, try to either use the original URL hacking, or URL hacking on the
+        // "prepared" src, to get an image of the right size.
         let srcToReplace = originalSrc
         if (!match) {
           // Try to match against the prepared URL, it might have sizing information.

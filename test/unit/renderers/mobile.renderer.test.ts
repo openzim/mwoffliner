@@ -152,7 +152,35 @@ describe('mobile renderer', () => {
       expect(imgs[0].width).toEqual(320)
       expect(imgs[0].height).toEqual(320)
     })
+    test('uses max width of 320 when there is no original src and the prepared src is too big', async () => {
+      const test_window = domino.createWindow(
+        `
+        <span
+          class="mw-file-element gallery-img pcs-widen-image-override pcs-lazy-load-placeholder pcs-lazy-load-placeholder-pending"
+          style="width: 1500px"
+          data-class="mw-file-element gallery-img pcs-widen-image-override"
+          data-src="//upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/1000px-BMW.svg.png"
+          data-width="1000"
+          data-height="1000"
+          data-alt="Logo used in vehicles since 1997"
+          data-data-file-width="1815"
+          data-data-file-height="1815"
+          ><span style="padding-top: 100%">
+        `,
+        'http://en.wikipedia.org/api/rest_v1/page/mobile-html/BMW',
+      )
+      const mobileRenderer = new WikimediaMobileRenderer()
 
+      const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(test_window.document)
+      const spans = actual.querySelectorAll('.pcs-lazy-load-placeholder')
+      const imgs = actual.querySelectorAll('img')
+
+      expect(spans.length).toBe(0)
+      expect(imgs.length).toBe(1)
+      expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png')
+      expect(imgs[0].width).toEqual(320)
+      expect(imgs[0].height).toEqual(320)
+    })
     test('uses original src width when it is the smallest', async () => {
       const test_window = domino.createWindow(
         `
