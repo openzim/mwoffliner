@@ -112,7 +112,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
 
     // Calculate the ratio so we know if we're scaling down in the width or height dimension.
     const widthHeightRatio = preparedData.width / preparedData.height
-    let scaleUsingHeight = widthHeightRatio > 1.0
+    const scaleUsingHeight = widthHeightRatio > 1.0
 
     // The data-data-file-original-src attribute is the URL of the image that was used in the original article.
     // It is preferred over the data-src attribute, which is a "mobile" image that may be scaled up in order to
