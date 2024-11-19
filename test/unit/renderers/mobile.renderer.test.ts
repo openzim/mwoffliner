@@ -122,8 +122,8 @@ describe('mobile renderer', () => {
       expect(imgs[1].height).toEqual(167)
     })
 
-    describe('when the image needs to be scaled in the width dimension', () => {
-      test('uses max width of 320 when src and data-data-file-original-src are both bigger', async () => {
+    describe('when the image width is greater than the height', () => {
+      test('uses max height of 320 when src and data-data-file-original-src are both bigger', async () => {
         const test_window = domino.createWindow(
           `
           <span
@@ -149,11 +149,11 @@ describe('mobile renderer', () => {
 
         expect(spans.length).toBe(0)
         expect(imgs.length).toBe(1)
-        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png')
-        expect(imgs[0].width).toEqual(320)
-        expect(imgs[0].height).toEqual(256)
+        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/400px-BMW.svg.png')
+        expect(imgs[0].width).toEqual(400)
+        expect(imgs[0].height).toEqual(320)
       })
-      test('uses max width of 320 when there is no original src and the prepared src is too big', async () => {
+      test('uses max height of 320 when there is no original src and the prepared src is too big', async () => {
         const test_window = domino.createWindow(
           `
           <span
@@ -178,9 +178,9 @@ describe('mobile renderer', () => {
 
         expect(spans.length).toBe(0)
         expect(imgs.length).toBe(1)
-        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png')
-        expect(imgs[0].width).toEqual(320)
-        expect(imgs[0].height).toEqual(256)
+        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/400px-BMW.svg.png')
+        expect(imgs[0].width).toEqual(400)
+        expect(imgs[0].height).toEqual(320)
       })
       test('uses the prepared src width when it is the smallest', async () => {
         const test_window = domino.createWindow(
@@ -243,7 +243,7 @@ describe('mobile renderer', () => {
       })
     })
 
-    describe('when the image needs to be scaled in the height dimension', () => {
+    describe('when the image height is greater than the width', () => {
       test('uses max height of 320 when src and data-data-file-original-src are both bigger', async () => {
         const test_window = domino.createWindow(
           `
@@ -270,9 +270,9 @@ describe('mobile renderer', () => {
 
         expect(spans.length).toBe(0)
         expect(imgs.length).toBe(1)
-        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/256px-BMW.svg.png')
-        expect(imgs[0].width).toEqual(256)
-        expect(imgs[0].height).toEqual(320)
+        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png')
+        expect(imgs[0].width).toEqual(320)
+        expect(imgs[0].height).toEqual(400)
       })
       test('uses max height of 320 when there is no original src and the prepared src is too big', async () => {
         const test_window = domino.createWindow(
@@ -299,9 +299,9 @@ describe('mobile renderer', () => {
 
         expect(spans.length).toBe(0)
         expect(imgs.length).toBe(1)
-        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/256px-BMW.svg.png')
-        expect(imgs[0].width).toEqual(256)
-        expect(imgs[0].height).toEqual(320)
+        expect(imgs[0].src).toEqual('https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/BMW.svg/320px-BMW.svg.png')
+        expect(imgs[0].width).toEqual(320)
+        expect(imgs[0].height).toEqual(400)
       })
       test('uses the prepared src width when it is the smallest', async () => {
         const test_window = domino.createWindow(
