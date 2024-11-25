@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Akmaie Ajam"
+		]
+	},
+	"DISCLAIMER": "Artikel ini diterbitkan oleh ${creator}. Teks ini dilisensikan berdasarkan ${license}. Ketentuan tambahan mungkin berlaku untuk berkas media.",
+	"LAST_EDITED_ON": "Terakhir diubah pada ${date}",
+	"LICENSE_NAME": "Creative Commons - Atribusi - Serupa"
+}
