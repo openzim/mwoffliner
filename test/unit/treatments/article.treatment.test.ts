@@ -94,7 +94,7 @@ describe('ArticleTreatment', () => {
       // Successfully scrapped existent articles
       expect(articleDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
       // Geo Position data is correct
-      expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.5;-0.13333333')
+      expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
     })
   }
 })
