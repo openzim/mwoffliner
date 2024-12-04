@@ -9,7 +9,7 @@ import DU from '../DOMUtils.js'
 import { config } from '../config.js'
 import { Dump } from '../Dump.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
-import { footerTemplate } from '../Templates.js'
+import { footerTemplate, inlineJsToHeadWrapperTemplate } from '../Templates.js'
 import {
   getFullUrl,
   getMediaBase,
@@ -334,7 +334,12 @@ export abstract class Renderer {
     )
   }
 
-  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean) {
+  protected async treatMedias(
+    parsoidDoc: DominoElement,
+    dump: Dump,
+    articleId: string,
+    webp: boolean,
+  ): Promise<{ doc: DominoElement; mediaDependencies: string[]; subtitles: string[] }> {
     let mediaDependencies: string[] = []
     let subtitles: string[] = []
     /* Clean/rewrite image tags */
@@ -394,7 +399,15 @@ export abstract class Renderer {
   }
 
   // TODO: The first part of this method is common for all renders
-  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean, callback) {
+  public async processHtml(
+    html: string,
+    dump: Dump,
+    articleId: string,
+    articleDetail: any,
+    _moduleDependencies: any,
+    webp: boolean,
+    callback: (moduleDependencies: any, articleId: string, collectedInlineJs: string) => Document,
+  ) {
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
@@ -414,6 +427,8 @@ export abstract class Renderer {
     const tmRet = await this.treatMedias(doc, dump, articleId, webp)
 
     doc = tmRet.doc
+
+    const collectedInlineJs = this.ABSTRACT_INTERNAL.collectInlineJs(doc)
 
     mediaDependencies = mediaDependencies.concat(
       tmRet.mediaDependencies
@@ -438,7 +453,7 @@ export abstract class Renderer {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
-    let templatedDoc = callback(_moduleDependencies, articleId)
+    let templatedDoc = callback(_moduleDependencies, articleId, collectedInlineJs)
     templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
@@ -670,6 +685,28 @@ export abstract class Renderer {
     }
   }
 
+  /**
+   * Because of CSP, some ZIM reader environments do not allow inline JS. Create a new JS script by combining
+   * all of the inline scripts. Not sure if the JS will still work, but it's better than just deleting it. See
+   * https://github.com/openzim/mwoffliner/issues/2096
+   * @param parsoidDoc
+   */
+  private collectInlineJsImpl(parsoidDoc: DominoElement): string {
+    const scripts = Array.from(parsoidDoc.getElementsByTagName('script')) as DominoElement[]
+    let collectedJs = []
+    for (const script of scripts) {
+      if (script.innerHTML) {
+        collectedJs.push(script.innerHTML)
+      }
+      script.parentNode.removeChild(script)
+    }
+    if (!collectedJs.length) {
+      return ''
+    }
+
+    return collectedJs.join('\n')
+  }
+
   private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
     const filtersConfig = config.filters
     this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
@@ -749,5 +786,13 @@ export abstract class Renderer {
     return doc.documentElement.outerHTML
   }
 
+  protected genWikimediaMobileOverrideInlineScript(js: string) {
+    return inlineJsToHeadWrapperTemplate({ jsContent: js })
+  }
+
   abstract render(renderOpts: RenderOpts): Promise<any>
+
+  public readonly ABSTRACT_INTERNAL = {
+    collectInlineJs: this.collectInlineJsImpl.bind(this),
+  }
 }

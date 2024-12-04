@@ -12,6 +12,7 @@ import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import { MobileRenderer } from 'src/renderers/abstractMobile.render.js'
 
 jest.setTimeout(40000)
 
@@ -211,6 +212,43 @@ describe('saveArticles', () => {
       expect(ParisDocument.querySelector('#PRE_PROCESSOR')).toBeDefined()
       // Prague was correctly post-processed
       expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
+    })
+
+    test('Relocate inline js to <head>', async () => {
+      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleId = 'Potato'
+      const articleUrl = downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      articleDetailXId.setMany(articlesDetail)
+      const result = await downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        rendererInstance,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
+
+      const articleDoc = domino.createDocument(result[0].html)
+
+      let foundInlineJsScript = false
+      for (const scriptTag of Array.from(articleDoc.querySelectorAll('head > script'))) {
+        if (scriptTag.textContent.includes('// Scripts taken')) {
+          expect(scriptTag.textContent.includes('onBodyStart')).toBe(true)
+        }
+      }
+
+      // Body has scripts that we added, but shouldn't have any with a `src`.
+      const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('body script:not([src])'))
+      expect(remainingInlineScripts.length).toBe(0)
     })
   }
 

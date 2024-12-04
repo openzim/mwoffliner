@@ -103,6 +103,7 @@ const config = {
     templates: {
       /* In these files, the following replacements will occur:
        * __ARTICLE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
+       * __RELOCATED_INLINE_JS__ ==> inline js code that was moved to the head
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
@@ -128,6 +129,9 @@ const config = {
 
       /* Template for wrapping subsections */
       subsection_wrapper: './templates/subsection_wrapper.html',
+
+      /** HTML snippet used when moving inline JS to a head <script> tag */
+      inlineJsToHeadWrapper: './templates/inline_js_to_head_wrapper.html',
     },
   },
 }

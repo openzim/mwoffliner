@@ -20,6 +20,7 @@ const subSectionTemplate = swig.compile(readTemplate(config.output.templates.sub
 const categoriesTemplate = swig.compile(readTemplate(config.output.templates.categories))
 const subCategoriesTemplate = swig.compile(readTemplate(config.output.templates.subCategories))
 const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPages))
+const inlineJsToHeadWrapperTemplate = swig.compile(readTemplate(config.output.templates.inlineJsToHeadWrapper))
 
 const htmlWikimediaMobileTemplateCode = () => {
   return readTemplate(config.output.templates.pageWikimediaMobile)
@@ -42,4 +43,5 @@ export {
   categoriesTemplate,
   subCategoriesTemplate,
   subPagesTemplate,
+  inlineJsToHeadWrapperTemplate,
 }

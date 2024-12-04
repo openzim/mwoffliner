@@ -33,7 +33,7 @@ export abstract class DesktopRenderer extends Renderer {
     return wikimediaDesktopModuleDependencies
   }
 
-  public templateDesktopArticle(moduleDependencies: any, articleId: string): Document {
+  public templateDesktopArticle(moduleDependencies: any, articleId: string, collectedInlineJs: string): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
       jsConfigVars
       jsDependenciesList: string[]
@@ -62,6 +62,7 @@ export abstract class DesktopRenderer extends Renderer {
         '__ARTICLE_JS_LIST__',
         jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
       )
+      .replace('__RELOCATED_INLINE_JS__', collectedInlineJs ? this.genWikimediaMobileOverrideInlineScript(collectedInlineJs) : '')
       .replace(
         '__ARTICLE_CSS_LIST__',
         styleDependenciesList.length !== 0 ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',

@@ -40,6 +40,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
         const moduleDependenciesFiltered = super.filterWikimediaMobileModules(_moduleDependencies)
         let mediaDependenciesVal
         let subtitlesVal
+        let inlineJsScriptTagVal
         const mobileHTML = domino.createDocument(data)
         const finalHTMLMobile = await this.pipeMobileTransformations(
           mobileHTML,
@@ -225,9 +226,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
   private unhideSectionsImpl(doc: DominoElement) {
     const sections = doc.querySelectorAll('section')
     Array.from(sections).forEach((section: DominoElement) => {
-      // Domino doesn't allow us to easily manipulate specific styles. Rather than trying to parse
-      // the style attribute and remove display: none, we just clobber the whole thing.
-      section.style = ''
+      section.style.removeProperty('display')
     })
     return doc
   }

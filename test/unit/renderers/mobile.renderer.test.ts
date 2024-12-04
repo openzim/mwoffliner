@@ -1,7 +1,6 @@
 import * as domino from 'domino'
 
 import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile.renderer'
-import exp from 'constants'
 
 describe('mobile renderer', () => {
   describe('unhiding sections', () => {

@@ -39,7 +39,7 @@ export abstract class MobileRenderer extends Renderer {
     return `<script src='../-/${js}.js'></script>`
   }
 
-  public templateMobileArticle(moduleDependencies: any, articleId: string): Document {
+  public templateMobileArticle(moduleDependencies: any, articleId: string, collectedInlineJs: string): Document {
     const { jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const htmlTemplateString = htmlWikimediaMobileTemplateCode()
@@ -51,6 +51,7 @@ export abstract class MobileRenderer extends Renderer {
         '__ARTICLE_JS_LIST__',
         jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
       )
+      .replace('__RELOCATED_INLINE_JS__', collectedInlineJs ? this.genWikimediaMobileOverrideInlineScript(collectedInlineJs) : '')
       .replace(
         '__ARTICLE_CSS_LIST__',
         styleDependenciesList.length !== 0
