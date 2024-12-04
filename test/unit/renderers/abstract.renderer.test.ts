@@ -40,7 +40,7 @@ describe('Abstract Renderer', () => {
       )
     })
     it('should collect all inline scripts in the article', () => {
-      const actual = renderer.INTERNAL.collectInlineJs(test_window.document)
+      const actual = renderer.ABSTRACT_INTERNAL.collectInlineJs(test_window.document)
       expect(actual).toEqual("console.log('This is a script tag')\nconsole.log('This is another script tag')\nconsole.log('Final script tag')")
     })
   })
