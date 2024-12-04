@@ -3,7 +3,7 @@ import * as domino from 'domino'
 import { Renderer } from '../../../src/renderers/abstract.renderer'
 
 class ConcreteRenderer extends Renderer {
-  public async render(renderOpts: any): Promise<any> {
+  public async render(): Promise<any> {
     return Promise.resolve(null)
   }
 }

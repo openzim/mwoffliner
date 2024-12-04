@@ -40,7 +40,6 @@ export class WikimediaMobileRenderer extends MobileRenderer {
         const moduleDependenciesFiltered = super.filterWikimediaMobileModules(_moduleDependencies)
         let mediaDependenciesVal
         let subtitlesVal
-        let inlineJsScriptTagVal
         const mobileHTML = domino.createDocument(data)
         const finalHTMLMobile = await this.pipeMobileTransformations(
           mobileHTML,

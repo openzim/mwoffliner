@@ -12,7 +12,6 @@ import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
-import { MobileRenderer } from 'src/renderers/abstractMobile.render.js'
 
 jest.setTimeout(40000)
 
@@ -239,7 +238,6 @@ describe('saveArticles', () => {
 
       const articleDoc = domino.createDocument(result[0].html)
 
-      let foundInlineJsScript = false
       for (const scriptTag of Array.from(articleDoc.querySelectorAll('head > script'))) {
         if (scriptTag.textContent.includes('// Scripts taken')) {
           expect(scriptTag.textContent.includes('onBodyStart')).toBe(true)

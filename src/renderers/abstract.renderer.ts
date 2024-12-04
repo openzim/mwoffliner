@@ -689,11 +689,12 @@ export abstract class Renderer {
    * Because of CSP, some ZIM reader environments do not allow inline JS. Create a new JS script by combining
    * all of the inline scripts. Not sure if the JS will still work, but it's better than just deleting it. See
    * https://github.com/openzim/mwoffliner/issues/2096
+   *
    * @param parsoidDoc
    */
   private collectInlineJsImpl(parsoidDoc: DominoElement): string {
     const scripts = Array.from(parsoidDoc.getElementsByTagName('script')) as DominoElement[]
-    let collectedJs = []
+    const collectedJs = []
     for (const script of scripts) {
       if (script.innerHTML) {
         collectedJs.push(script.innerHTML)
