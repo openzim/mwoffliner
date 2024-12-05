@@ -212,6 +212,36 @@ describe('saveArticles', () => {
       // Prague was correctly post-processed
       expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
     })
+
+    test('Removes inline JS', async () => {
+      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleId = 'Potato'
+      const articleUrl = downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      articleDetailXId.setMany(articlesDetail)
+      const result = await downloader.getArticle(
+        downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        rendererInstance,
+        articleUrl,
+        dump,
+        articleDetail,
+        dump.isMainPage(articleId),
+      )
+
+      const articleDoc = domino.createDocument(result[0].html)
+
+      // Document has scripts that we added, but shouldn't have any with a `src`.
+      const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('script:not([src])'))
+      expect(remainingInlineScripts.length).toBe(0)
+    })
   }
 
   describe('applyOtherTreatments', () => {
@@ -280,37 +310,37 @@ describe('saveArticles', () => {
       expect(fewestChildren).toBeLessThanOrEqual(1)
     })
     */
-  })
 
-  test('Test deleted article rendering (Visual editor renderer)', async () => {
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
-    const { articleDetailXId } = RedisStore
-    const articleId = 'deletedArticle'
+    test('Test deleted article rendering (Visual editor renderer)', async () => {
+      const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { articleDetailXId } = RedisStore
+      const articleId = 'deletedArticle'
 
-    const articleJsonObject = {
-      visualeditor: { oldid: 0 },
-    }
+      const articleJsonObject = {
+        visualeditor: { oldid: 0 },
+      }
 
-    const articleDetail = { title: articleId, missing: '' }
-    const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const articleDetail = { title: articleId, missing: '' }
+      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
-    const visualEditorRenderer = new VisualEditorRenderer()
+      const visualEditorRenderer = new VisualEditorRenderer()
 
-    const renderOpts = {
-      data: articleJsonObject,
-      RedisStore,
-      webp: downloader.webp,
-      _moduleDependencies,
-      articleId,
-      articleDetailXId,
-      articleDetail,
-      isMainPage: dump.isMainPage(articleId),
-      dump,
-    }
+      const renderOpts = {
+        data: articleJsonObject,
+        RedisStore,
+        webp: downloader.webp,
+        _moduleDependencies,
+        articleId,
+        articleDetailXId,
+        articleDetail,
+        isMainPage: dump.isMainPage(articleId),
+        dump,
+      }
 
-    expect(async () => {
-      await visualEditorRenderer.render(renderOpts)
-    }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
+      expect(async () => {
+        await visualEditorRenderer.render(renderOpts)
+      }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
+    })
   })
 
   test('Load inline js from HTML', async () => {
