@@ -1,8 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
+			"Suleiman the Magnificent Television",
 			"Ykhwong"
 		]
 	},
+	"DISCLAIMER": "이 기사는 ${creator}에서 발행되었다. 본문은 ${license}에 따라 허가되어 있습니다. 미디어 파일에는 추가 조건이 적용될 수 있습니다.",
 	"LAST_EDITED_ON": "마지막 편집일: ${date}"
 }
