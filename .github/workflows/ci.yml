@@ -54,6 +54,16 @@ jobs:
         if: ${{ github.event_name == 'schedule' }}
         run: npm run test-without-coverage
 
+      - name: Mailgun Action
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: vineetchoudhary/mailgun-action@v1.1
+        with:
+          api-key: ${{ secrets.MAILGUN_API_KEY }}
+          domain: ${{ secrets.MAILGUN_DOMAIN }}
+          from: 'mwoffliner-github-alert'
+          to: ${{ secrets.CI_SCHEDULED_FAIL_EMAIL_TO }}
+          subject: 'mwoffliner scheduled CI run FAILED (silent)'
+
       - name: Uploading Codecov stats
         uses: codecov/codecov-action@v4
         if: ${{ matrix.node-version == '18.x' }}
