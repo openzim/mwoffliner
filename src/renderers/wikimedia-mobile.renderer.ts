@@ -80,7 +80,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       }
     } catch (err) {
       logger.error(err.message)
-      throw new Error(err.message)
+      throw err
     }
   }
 
@@ -108,6 +108,10 @@ export class WikimediaMobileRenderer extends MobileRenderer {
       src: span.getAttribute('data-src'),
       width: parseInt(span.getAttribute('data-width') || '0', 10),
       height: parseInt(span.getAttribute('data-height') || '0', 10),
+    }
+
+    if (preparedData.width === 0 || preparedData.height === 0) {
+      return { preparedData: null, originalData: null, maxData: null }
     }
 
     // Calculate the ratio so we know if we're scaling down in the width or height dimension.
@@ -161,50 +165,57 @@ export class WikimediaMobileRenderer extends MobileRenderer {
     const spans = doc.querySelectorAll('.pcs-lazy-load-placeholder')
 
     spans.forEach((span: DominoElement) => {
+      // Create a new img element that will replace the placeholder span.
+      const img = doc.createElement('img') as DominoElement
       const { preparedData, originalData, maxData } = this.calculateImageDimensions(span)
 
-      const widthToData = {
-        [preparedData.width]: preparedData,
-        [maxData.width]: maxData,
-        [originalData?.width || 0]: originalData,
-      }
+      if (preparedData === null) {
+        // The metadata for the lazy-loading span is something that we don't understand. Just copy the
+        // data-src attribute to the img element and hope for the best.
+        img.src = urlJoin(protocol, span.getAttribute('data-src'))
+        img.setAttribute('decoding', 'async')
+        img.className = span.getAttribute('data-class')
+      } else {
+        const widthToData = {
+          [preparedData.width]: preparedData,
+          [maxData.width]: maxData,
+          [originalData?.width || 0]: originalData,
+        }
 
-      const minWidth = originalData ? Math.min(preparedData.width, maxData.width, originalData?.width) : Math.min(preparedData.width, maxData.width)
-      let selectedData = widthToData[minWidth]
-
-      if (selectedData === maxData) {
-        // We've decided to scale down the image. Use URL hacking to create an image that scales to the size we want.
-        if (originalData) {
-          const match = THUMB_WIDTH_REGEX.exec(originalData.src)
-          if (match) {
-            selectedData.src = originalData.src.replace(`${match[1]}px`, `${selectedData.width}px`)
-          }
-        } else {
-          // No original src, or original src cannot be URL hacked.
-          const match = THUMB_WIDTH_REGEX.exec(preparedData.src)
-          if (match) {
-            selectedData.src = preparedData.src.replace(`${match[1]}px`, `${selectedData.width}px`)
+        const minWidth = originalData ? Math.min(preparedData.width, maxData.width, originalData?.width) : Math.min(preparedData.width, maxData.width)
+        let selectedData = widthToData[minWidth]
+        if (selectedData === maxData) {
+          // We've decided to scale down the image. Use URL hacking to create an image that scales to the size we want.
+          if (originalData) {
+            const match = THUMB_WIDTH_REGEX.exec(originalData.src)
+            if (match) {
+              selectedData.src = originalData.src.replace(`${match[1]}px`, `${selectedData.width}px`)
+            }
+          } else {
+            // No original src, or original src cannot be URL hacked.
+            const match = THUMB_WIDTH_REGEX.exec(preparedData.src)
+            if (match) {
+              selectedData.src = preparedData.src.replace(`${match[1]}px`, `${selectedData.width}px`)
+            }
           }
         }
-      }
 
-      if (selectedData.src === null) {
-        // We couldn't find a URL to hack, so use the smaller of the original or prepared data.
-        if (!originalData) {
-          selectedData = preparedData
-        } else {
-          const newMinWidth = Math.min(preparedData.width, originalData.width)
-          selectedData = widthToData[newMinWidth]
+        if (selectedData.src === null) {
+          // We couldn't find a URL to hack, so use the smaller of the original or prepared data.
+          if (!originalData) {
+            selectedData = preparedData
+          } else {
+            const newMinWidth = Math.min(preparedData.width, originalData.width)
+            selectedData = widthToData[newMinWidth]
+          }
         }
-      }
 
-      // Create a new img element
-      const img = doc.createElement('img') as DominoElement
-      img.src = urlJoin(protocol, selectedData.src)
-      img.setAttribute('decoding', 'async')
-      img.width = selectedData.width
-      img.height = selectedData.height
-      img.className = span.getAttribute('data-class')
+        img.src = urlJoin(protocol, selectedData.src)
+        img.setAttribute('decoding', 'async')
+        img.width = selectedData.width
+        img.height = selectedData.height
+        img.className = span.getAttribute('data-class')
+      }
 
       // Replace the span with the img element
       span.parentNode.replaceChild(img, span)
