@@ -362,6 +362,33 @@ describe('mobile renderer', () => {
         expect(imgs[0].width).toEqual(1200)
         expect(imgs[0].height).toEqual(1500)
       })
+      test('falls back to the data-src if the other data-* attributes are missing', async () => {
+        const test_window = domino.createWindow(
+          `
+          <span
+          class="mwe-math-fallback-image-inline mw-invert skin-invert gallery-img pcs-widen-image-override pcs-lazy-load-placeholder pcs-lazy-load-placeholder-pending"
+          style="width: 5.651ex;"
+          data-class="mwe-math-fallback-image-inline mw-invert skin-invert gallery-img pcs-widen-image-override"
+          data-style="vertical-align: -0.338ex; width:5.651ex; height:2.176ex;"
+          data-src="//wikimedia.org/api/rest_v1/media/math/render/svg/a5081dab37c84a998483d8066240c9542d311de7"
+          data-alt="{\displaystyle {\ce {LiOH}}}">
+            <span style="padding-top: 38.50645903379933%;"></span>
+          </span>
+          `,
+          'http://en.wikipedia.org/api/rest_v1/page/mobile-html/BMW',
+        )
+        const mobileRenderer = new WikimediaMobileRenderer()
+
+        const actual = mobileRenderer.INTERNAL.convertLazyLoadToImages(test_window.document)
+        const spans = actual.querySelectorAll('.pcs-lazy-load-placeholder')
+        const imgs = actual.querySelectorAll('img')
+
+        expect(spans.length).toBe(0)
+        expect(imgs.length).toBe(1)
+        expect(imgs[0].src).toEqual('https://wikimedia.org/api/rest_v1/media/math/render/svg/a5081dab37c84a998483d8066240c9542d311de7')
+        expect(imgs[0].width).toBe(0)
+        expect(imgs[0].height).toBe(0)
+      })
     })
   })
 })
