@@ -238,7 +238,7 @@ describe('saveArticles', () => {
 
       const articleDoc = domino.createDocument(result[0].html)
 
-      // Document has scripts that we added, but shouldn't have any with a `src`.
+      // Document has scripts that we added, but shouldn't have any without a `src` (inline).
       const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('script:not([src])'))
       expect(remainingInlineScripts.length).toBe(0)
     })
