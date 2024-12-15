@@ -698,6 +698,14 @@ export abstract class Renderer {
       }
     })
 
+    /*
+     * Because of CSP, some ZIM reader environments do not allow inline JS. See issues/2096.
+     */
+    const scripts = Array.from(parsoidDoc.getElementsByTagName('script')) as DominoElement[]
+    for (const script of scripts) {
+      script.parentNode.removeChild(script)
+    }
+
     /* Force display of element with that CSS class */
     filtersConfig.cssClassDisplayList.map((classname: string) => {
       const nodes: DominoElement[] = Array.from(parsoidDoc.getElementsByClassName(classname))
