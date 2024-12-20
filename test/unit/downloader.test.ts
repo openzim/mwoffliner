@@ -34,10 +34,10 @@ describe('Downloader class', () => {
 
     await MediaWiki.getMwMetaData(downloader)
     await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasRestApi()
-    await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasWikimediaDesktopApi(downloader.loginCookie)
+    await MediaWiki.hasWikimediaMobileApi(downloader.loginCookie)
+    await MediaWiki.hasRestApi(downloader.loginCookie)
+    await MediaWiki.hasVisualEditorApi(downloader.loginCookie)
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {

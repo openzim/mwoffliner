@@ -212,10 +212,10 @@ async function execute(argv: any) {
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi()
-  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasRestApi()
-  await MediaWiki.hasVisualEditorApi()
+  await MediaWiki.hasWikimediaDesktopApi(downloader.loginCookie)
+  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi(downloader.loginCookie)
+  await MediaWiki.hasRestApi(downloader.loginCookie)
+  await MediaWiki.hasVisualEditorApi(downloader.loginCookie)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
