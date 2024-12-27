@@ -103,7 +103,7 @@ async function execute(argv: any) {
 
   let { articleList, articleListToIgnore } = argv
 
-  if (verbose) logger.setVerboseLevel(verbose)
+  logger.setVerboseLevel(verbose ? verbose : 'log') // Default log level is 'log'
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`)
 
