@@ -175,7 +175,9 @@ class MediaWiki {
   public async hasWikimediaDesktopApi(): Promise<boolean> {
     if (this.#hasWikimediaDesktopApi === null) {
       this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
-      this.#hasWikimediaDesktopApi = await checkApiAvailability(this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      const checkUrl = this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId)
+      this.#hasWikimediaDesktopApi = await checkApiAvailability(checkUrl)
+      logger.log('Checking for WikimediaDesktopApi at', checkUrl, '-- result is: ', this.#hasWikimediaDesktopApi)
       return this.#hasWikimediaDesktopApi
     }
     return this.#hasWikimediaDesktopApi
@@ -184,7 +186,9 @@ class MediaWiki {
   public async hasWikimediaMobileApi(): Promise<boolean> {
     if (this.#hasWikimediaMobileApi === null) {
       this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
-      this.#hasWikimediaMobileApi = await checkApiAvailability(this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      const checkUrl = this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId)
+      this.#hasWikimediaMobileApi = await checkApiAvailability(checkUrl)
+      logger.log('Checking for WikimediaMobileApi at', checkUrl, '-- result is: ', this.#hasWikimediaMobileApi)
       return this.#hasWikimediaMobileApi
     }
     return this.#hasWikimediaMobileApi
@@ -193,11 +197,9 @@ class MediaWiki {
   public async hasVisualEditorApi(): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
       this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
-      this.#hasVisualEditorApi = await checkApiAvailability(
-        this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId),
-        '' /* empty login cookie */,
-        this.visualEditorUrlDirector.validMimeTypes,
-      )
+      const checkUrl = this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId)
+      this.#hasVisualEditorApi = await checkApiAvailability(checkUrl, '' /* empty login cookie */, this.visualEditorUrlDirector.validMimeTypes)
+      logger.log('Checking for VisualEditorApi at', checkUrl, '-- result is: ', this.#hasVisualEditorApi)
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -206,7 +208,9 @@ class MediaWiki {
   public async hasRestApi(): Promise<boolean> {
     if (this.#hasRestApi === null) {
       this.restApiUrlDirector = new RestApiURLDirector(this.restApiUrl.href)
-      this.#hasRestApi = await checkApiAvailability(this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId))
+      const checkUrl = this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId)
+      this.#hasRestApi = await checkApiAvailability(checkUrl)
+      logger.log('Checking for RestApi at', checkUrl, '-- result is: ', this.#hasRestApi)
       return this.#hasRestApi
     }
     return this.#hasRestApi
