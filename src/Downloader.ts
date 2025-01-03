@@ -588,7 +588,7 @@ class Downloader {
           // Check for the ETag and upload to cache
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
           if (etag) {
-            this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, mwResp.headers['content-type'], this.webp ? 'webp' : '1')
+            await this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, mwResp.headers['content-type'], this.webp ? 'webp' : '1')
           }
 
           // Proceed with image
