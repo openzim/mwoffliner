@@ -254,6 +254,8 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
       renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
     })
   }
+  logger.log(`Using ${mainPageRenderer.constructor.name} for main page renderer`)
+  logger.log(`Using ${articlesRenderer.constructor.name} for articles renderer`)
   downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
 
   if (dump.customProcessor?.shouldKeepArticle) {
