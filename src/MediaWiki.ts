@@ -177,7 +177,7 @@ class MediaWiki {
       this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
       const checkUrl = this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasWikimediaDesktopApi = await checkApiAvailability(checkUrl)
-      logger.log('Checking for WikimediaDesktopApi at', checkUrl, '-- result is: ', this.#hasWikimediaDesktopApi)
+      logger.log('Checked for WikimediaDesktopApi at', checkUrl, '-- result is: ', this.#hasWikimediaDesktopApi)
       return this.#hasWikimediaDesktopApi
     }
     return this.#hasWikimediaDesktopApi
@@ -188,7 +188,7 @@ class MediaWiki {
       this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
       const checkUrl = this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasWikimediaMobileApi = await checkApiAvailability(checkUrl)
-      logger.log('Checking for WikimediaMobileApi at', checkUrl, '-- result is: ', this.#hasWikimediaMobileApi)
+      logger.log('Checked for WikimediaMobileApi at', checkUrl, '-- result is: ', this.#hasWikimediaMobileApi)
       return this.#hasWikimediaMobileApi
     }
     return this.#hasWikimediaMobileApi
@@ -199,7 +199,7 @@ class MediaWiki {
       this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
       const checkUrl = this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasVisualEditorApi = await checkApiAvailability(checkUrl, '' /* empty login cookie */, this.visualEditorUrlDirector.validMimeTypes)
-      logger.log('Checking for VisualEditorApi at', checkUrl, '-- result is: ', this.#hasVisualEditorApi)
+      logger.log('Checked for VisualEditorApi at', checkUrl, '-- result is: ', this.#hasVisualEditorApi)
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
@@ -210,7 +210,7 @@ class MediaWiki {
       this.restApiUrlDirector = new RestApiURLDirector(this.restApiUrl.href)
       const checkUrl = this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasRestApi = await checkApiAvailability(checkUrl)
-      logger.log('Checking for RestApi at', checkUrl, '-- result is: ', this.#hasRestApi)
+      logger.log('Checked for RestApi at', checkUrl, '-- result is: ', this.#hasRestApi)
       return this.#hasRestApi
     }
     return this.#hasRestApi
