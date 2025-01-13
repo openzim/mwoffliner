@@ -4,24 +4,21 @@ on:
   push:
     branches:
       - main
-    tags:
-      - v*
 
 jobs:
   build-and-push:
-    name: Deploy Docker Image
+    name: Deploy Docker Dev Image
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build and push
+      - name: Build and push Docker Dev Image
         uses: openzim/docker-publish-action@v10
         with:
           image-name: openzim/mwoffliner
           on-master: dev
-          tag-pattern: /^v([0-9.]+)$/
-          latest-on-tag: true
+          latest-on-tag: false
           restrict-to: openzim/mwoffliner
           registries: ghcr.io
           credentials: |

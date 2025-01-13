@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    environment: release
 
     steps:
       - name: Checkout code
@@ -21,4 +22,18 @@ jobs:
 
       - run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}      
+          
+      - name: Build and push Docker image
+        uses: openzim/docker-publish-action@v10
+        with:
+          image-name: openzim/mwoffliner
+          tag-pattern: /^v([0-9.]+)$/
+          latest-on-tag: true
+          restrict-to: openzim/mwoffliner
+          registries: ghcr.io
+          credentials: |
+            GHCRIO_USERNAME=${{ secrets.GHCR_USERNAME }}
+            GHCRIO_TOKEN=${{ secrets.GHCR_TOKEN }}
+          repo_description: auto
+          repo_overview: auto
