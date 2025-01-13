@@ -1,4 +1,4 @@
-name: Publish to npmjs.com
+name: Publish to npmjs.com and ghcr.io
 
 on:
   release:
