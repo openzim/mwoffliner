@@ -39,7 +39,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       try {
         if (resp.result && resp.result.content) {
           const item = new StringItem(resp.path, resp.result.responseHeaders['content-type'], '', {}, resp.result.content)
-          zimCreator.addItem(item)
+          await zimCreator.addItem(item)
           dump.status.files.success += 1
         } else {
           isFailed = true
@@ -203,7 +203,7 @@ async function saveArticle(
     await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const zimArticle = new StringItem(articleId, 'text/html', articleTitle, {}, finalHTML)
-    zimCreator.addItem(zimArticle)
+    await zimCreator.addItem(zimArticle)
 
     return null
   } catch (err) {
@@ -380,7 +380,7 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
 
   if (jsConfigVars) {
     const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', '', {}, jsConfigVars)
-    zimCreator.addItem(jsConfigVarArticle)
+    await zimCreator.addItem(jsConfigVarArticle)
   }
 
   return {

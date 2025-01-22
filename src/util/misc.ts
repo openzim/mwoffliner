@@ -184,7 +184,7 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
       }
 
       const article = new StringItem(url, mimetype, null, {}, staticFilesContent)
-      zimCreator.addItem(article)
+      await zimCreator.addItem(article)
     })
   } catch (err) {
     logger.error(err)

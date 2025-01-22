@@ -385,12 +385,12 @@ async function execute(argv: any) {
 
     const zimCreator = new Creator().configNbWorkers(1).configClusterSize(2048)
     if (!dump.opts.withoutZimFullTextIndex) {
-      zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
+      await zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
     }
-    zimCreator.startZimCreation(outZim)
-    zimCreator.setMainPath(dump.opts.mainPage ? dump.opts.mainPage : 'index')
+    await zimCreator.startZimCreation(outZim)
+    await zimCreator.setMainPath(dump.opts.mainPage ? dump.opts.mainPage : 'index')
 
-    zimCreator.addItem(new StringItem('Scraper', 'text/plain', 'Scraper', {}, `mwoffliner ${packageJSON.version}`))
+    await zimCreator.addItem(new StringItem('Scraper', 'text/plain', 'Scraper', {}, `mwoffliner ${packageJSON.version}`))
 
     logger.info('Finding stylesheets to download')
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
@@ -400,7 +400,7 @@ async function execute(argv: any) {
     const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
-    zimCreator.addItem(new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', 'style.css', {}, finalCss))
+    await zimCreator.addItem(new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', 'style.css', {}, finalCss))
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     await getThumbnailsData()
@@ -461,7 +461,7 @@ async function execute(argv: any) {
     await redirectsXId.iterateItems(downloader.speed, async (redirects) => {
       for (const [redirectId, { targetId }] of Object.entries(redirects)) {
         if (redirectId !== targetId) {
-          zimCreator.addRedirection(
+          await zimCreator.addRedirection(
             redirectId,
             // We fake a title, by just removing the underscores
             String(redirectId).replace(/_/g, ' '),
@@ -526,7 +526,7 @@ async function execute(argv: any) {
     }
   }
 
-  function getMainPage(dump: Dump, zimCreator: Creator, downloader: Downloader) {
+  async function getMainPage(dump: Dump, zimCreator: Creator, downloader: Downloader) {
     async function createMainPage() {
       logger.log('Creating main page...')
       const doc = domino.createDocument(
@@ -576,9 +576,9 @@ async function execute(argv: any) {
       return zimCreator.addItem(item)
     }
 
-    function createMainPageRedirect() {
+    async function createMainPageRedirect() {
       logger.log(`Create main page redirection from [index] to [${'A/' + mainPage}]`)
-      zimCreator.addRedirection('index', '', mainPage)
+      await zimCreator.addRedirection('index', '', mainPage)
     }
 
     return mainPage ? createMainPageRedirect() : createMainPage()
