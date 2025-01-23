@@ -329,11 +329,17 @@ describe('Utils', () => {
       status: 403,
       responseType: undefined,
       data: {
-        type: 'https://mediawiki.org/wiki/HyperSwitch/errors/access_denied#revision',
-        title: 'Access to resource denied',
+        errorKey: 'rest-permission-denied-revision',
+        httpCode: 403,
+        httpReason: 'Forbidden',
+        messageTranslations: {
+          en: "User doesn't have access to the requested revision (4225685).",
+        },
+        type: 'MediaWikiError/Forbidden',
+        title: 'rest-permission-denied-revision',
         method: 'get',
-        detail: 'Access is restricted for revision 4225685',
-        uri: '/en.wikibooks.org/v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685',
+        detail: "User doesn't have access to the requested revision (4225685).",
+        uri: '/w/rest.php/v1/revision/4225685/html',
       },
     }
     try {
