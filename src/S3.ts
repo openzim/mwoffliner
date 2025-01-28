@@ -65,11 +65,11 @@ class S3 {
     })
   }
 
-  public uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string): Promise<any> {
+  public uploadBlob(key: string, data: any, eTag: string, version: string): Promise<any> {
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
-      Metadata: { etag: eTag, contenttype: contentType, version },
+      Metadata: { etag: eTag, version },
       Body: data,
     })
 

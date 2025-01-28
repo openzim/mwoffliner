@@ -1,6 +1,10 @@
 Unreleased:
 * FIX: Ensure AWS SDK has access to object size when issuing an upload (@benoit #2117)
 * FIX: Change log level of S3 missing keys message (@benoit #2144)
+* FIX: Logic to set .webp path prefix on reencoded images is skewed (@benoit74 #2140)
+* FIX: S3 cached images are missing (@benoit74 #2136)
+* FIX: Do not rely on URL filename extension to detect images (@benoit74 #2088)
+* FIX: S3 cached image are never used (@benoit74 #2138)
 
 1.14.0:
 * FIX: Remove S3 upload concurrency to avoid 'RequestTimeTooSkewed' errors (@benoi74 #2118)

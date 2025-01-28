@@ -15,8 +15,9 @@ import imageminWebp from 'imagemin-webp'
 import sharp from 'sharp'
 import http from 'http'
 import https from 'https'
+import { fileTypeFromBuffer } from 'file-type'
 
-import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isImageUrl, getMimeType, isWebpCandidateImageMimeType } from './util/index.js'
+import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import S3 from './S3.js'
 import * as logger from './Logger.js'
 import MediaWiki, { QueryOpts } from './MediaWiki.js'
@@ -66,6 +67,10 @@ interface BackoffOptions {
   failAfter: number
   retryIf: (error?: any) => boolean
   backoffHandler: (number: number, delay: number, error?: any) => void
+}
+
+interface CompressionData {
+  data: any
 }
 
 export const defaultStreamRequestOptions: AxiosRequestConfig = {
@@ -353,7 +358,7 @@ class Downloader {
     const url = urlHelper.deserializeUrl(_url)
     await this.claimRequest()
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, url, (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, url, 'json', (err: any, val: any) => {
         this.releaseRequest()
         if (err) {
           const httpStatus = err.response && err.response.status
@@ -366,7 +371,7 @@ class Downloader {
     })
   }
 
-  public async downloadContent(_url: string, retry = true): Promise<{ content: Buffer | string; responseHeaders: any }> {
+  public async downloadContent(_url: string, kind: string, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
@@ -384,9 +389,9 @@ class Downloader {
           }
         }
         if (retry) {
-          this.backoffCall(this.getContentCb, url, cb)
+          this.backoffCall(this.getContentCb, url, kind, cb)
         } else {
-          this.getContentCb(url, cb)
+          this.getContentCb(url, kind, cb)
         }
       })
     } catch (err) {
@@ -454,7 +459,7 @@ class Downloader {
     return null
   }
 
-  private getJSONCb = <T>(url: string, handler: (...args: any[]) => any): void => {
+  private getJSONCb = <T>(url: string, kind: string, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
     axios
       .get<T>(url, this.jsonRequestOptions)
@@ -466,7 +471,7 @@ class Downloader {
             const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1)
             logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`)
             this.maxActiveRequests = newMaxActiveRequests
-            return this.getJSONCb(url, handler)
+            return this.getJSONCb(url, kind, handler)
           } else if (err.response && err.response.status === 404) {
             handler(err)
           }
@@ -477,56 +482,68 @@ class Downloader {
       })
   }
 
-  private async getCompressedBody(resp: any): Promise<any> {
-    if (isBitmapImageMimeType(resp.headers['content-type'])) {
-      if (isWebpCandidateImageMimeType(this.webp, resp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(resp.config.url)) {
-        resp.data = await (imagemin as any)
-          .buffer(resp.data, imageminOptions.get('webp').get(resp.headers['content-type']))
-          .catch(async (err) => {
-            if (/Unsupported color conversion request/.test(err.stderr)) {
-              return (imagemin as any)
-                .buffer(await sharp(resp.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(resp.headers['content-type']))
-                .catch(() => {
-                  return resp.data
-                })
-                .then((data) => {
-                  resp.headers['content-type'] = 'image/webp'
-                  return data
-                })
-            } else {
-              return (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
-                return resp.data
-              })
-            }
-          })
-          .then((data) => {
-            resp.headers['content-type'] = 'image/webp'
-            return data
-          })
-        resp.headers.path_postfix = '.webp'
-      } else {
-        resp.data = await (imagemin as any).buffer(resp.data, imageminOptions.get('default').get(resp.headers['content-type'])).catch(() => {
-          return resp.data
-        })
-      }
-      return true
-    }
-    return false
+  private async getImageMimeType(data: any): Promise<string | null> {
+    const fileType = await fileTypeFromBuffer(data)
+    return fileType ? fileType.mime : null
   }
 
-  private getContentCb = async (url: string, handler: any): Promise<void> => {
+  private async getCompressedBody(input: CompressionData): Promise<CompressionData> {
+    const contentType = await this.getImageMimeType(input.data)
+    if (isBitmapImageMimeType(contentType)) {
+      if (this.webp && isWebpCandidateImageMimeType(contentType)) {
+        return {
+          data: await (imagemin as any)
+            .buffer(input.data, imageminOptions.get('webp').get(contentType))
+            .catch(async (err) => {
+              if (/Unsupported color conversion request/.test(err.stderr)) {
+                return (imagemin as any)
+                  .buffer(await sharp(input.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(contentType))
+                  .catch(() => {
+                    return input.data
+                  })
+                  .then((data) => {
+                    return data
+                  })
+              } else {
+                return (imagemin as any).buffer(input.data, imageminOptions.get('default').get(contentType)).catch(() => {
+                  return input.data
+                })
+              }
+            })
+            .then((data) => {
+              return data
+            }),
+        }
+      } else {
+        return {
+          data: await (imagemin as any).buffer(input.data, imageminOptions.get('default').get(contentType)).catch(() => {
+            return input.data
+          }),
+        }
+      }
+    }
+    return {
+      data: input.data,
+    }
+  }
+
+  private getContentCb = async (url: string, kind: string, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`)
     try {
-      if (this.optimisationCacheUrl && isImageUrl(url)) {
+      if (this.optimisationCacheUrl && kind === 'image') {
         this.downloadImage(url, handler)
       } else {
         // Use the base domain of the wiki being scraped as the Referer header, so that we can
         // successfully scrap WMF map tiles.
-        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: MediaWiki.baseUrl.href } })
-        await this.getCompressedBody(resp)
+        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { ...this.arrayBufferRequestOptions.headers, Referer: MediaWiki.baseUrl.href } })
+        // If content is an image, we might benefit from compressing it
+        const content = kind === 'image' ? (await this.getCompressedBody({ data: resp.data })).data : resp.data
+        // compute content-type from content, since getCompressedBody might have modified it
+        const contentType = kind === 'image' ? (await this.getImageMimeType(content)) || resp.headers['content-type'] : resp.headers['content-type']
         handler(null, {
-          responseHeaders: resp.headers,
-          content: resp.data,
+          contentType,
+          content,
+          setCookie: resp.headers['set-cookie'] ? resp.headers['set-cookie'].join(';') : null,
         })
       }
     } catch (err) {
@@ -555,46 +572,44 @@ class Downloader {
           }
           // Use the base domain of the wiki being scraped as the Referer header, so that we can
           // successfully scrap WMF map tiles.
-          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { Referer: MediaWiki.baseUrl.href } })
-
-          // HTTP response content-type can not really be trusted (at least if 304)
-          mwResp.headers['content-type'] = getMimeType(url, s3Resp?.Metadata?.contenttype || mwResp.headers['content-type'])
+          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { ...this.arrayBufferRequestOptions.headers, Referer: MediaWiki.baseUrl.href } })
 
           // Most of the images, after having been uploaded once to the
           // cache, will always have 304 status, until modified. If cache
           // is up to date, return cached image.
           if (mwResp.status === 304) {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const headers = (({ Body, ...o }) => o)(s3Resp)
-
-            // If image is a webp conversion candidate
-            if (isWebpCandidateImageMimeType(this.webp, mwResp.headers['content-type']) && !this.cssDependenceUrls.hasOwnProperty(mwResp.config.url)) {
-              headers.path_postfix = '.webp'
-              headers['content-type'] = 'image/webp'
-            }
-
             // Proceed with image
+            const data = (await this.streamToBuffer(s3Resp.Body as Readable)) as any
+            const contentType = await this.getImageMimeType(data)
+            logger.info(`Using S3-cached image for ${url} (contentType: ${contentType})`)
             handler(null, {
-              responseHeaders: headers,
-              content: (await this.streamToBuffer(s3Resp.Body as Readable)) as any,
+              contentType,
+              content: data,
             })
-
             return
           }
 
           // Compress content because image blob comes from upstream MediaWiki
-          await this.getCompressedBody(mwResp)
+          const compressedData = (await this.getCompressedBody({ data: mwResp.data })).data
 
           // Check for the ETag and upload to cache
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
           if (etag) {
-            await this.s3.uploadBlob(stripHttpFromUrl(url), mwResp.data, etag, mwResp.headers['content-type'], this.webp ? 'webp' : '1')
+            await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, this.webp ? 'webp' : '1')
+          }
+
+          // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
+          const contentType = (await this.getImageMimeType(compressedData)) || mwResp.headers['content-type']
+          if (s3Resp) {
+            logger.info(`Using image downloaded from upstream for ${url} (S3-cached image is outdated, contentType: ${contentType})`)
+          } else {
+            logger.info(`Using image downloaded from upstream for ${url} (no S3-cached image found, contentType: ${contentType})`)
           }
 
           // Proceed with image
           handler(null, {
-            responseHeaders: mwResp.headers,
-            content: mwResp.data,
+            contentType,
+            content: compressedData,
           })
         })
         .catch((err) => {
@@ -630,8 +645,8 @@ class Downloader {
     }
   }
 
-  private backoffCall(handler: (...args: any[]) => void, url: string, callback: (...args: any[]) => void | Promise<void>): void {
-    const call = backoff.call(handler, url, callback)
+  private backoffCall(handler: (...args: any[]) => void, url: string, kind: string, callback: (...args: any[]) => void | Promise<void>): void {
+    const call = backoff.call(handler, url, kind, callback)
     call.setStrategy(this.backoffOptions.strategy)
     call.retryIf(this.backoffOptions.retryIf)
     call.failAfter(this.backoffOptions.failAfter)

@@ -34,7 +34,7 @@ export class RestApiRenderer extends DesktopRenderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleDetailXId, webp, _moduleDependencies, isMainPage, dump } = renderOpts
+    const { data, articleId, articleDetailXId, _moduleDependencies, isMainPage, dump } = renderOpts
 
     if (!data) {
       throw new Error(`Cannot render [${data}] into an article`)
@@ -53,13 +53,12 @@ export class RestApiRenderer extends DesktopRenderer {
       if (!isMainPage) {
         dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)
       }
-      const { finalHTML, mediaDependencies, subtitles } = await super.processHtml(
+      const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
         dataWithHeader || data,
         dump,
         articleId,
         articleDetail,
         moduleDependenciesFiltered,
-        webp,
         super.templateDesktopArticle.bind(this),
       )
 
@@ -68,6 +67,8 @@ export class RestApiRenderer extends DesktopRenderer {
         displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')) + (i === 0 ? '' : `/${i}`),
         html: finalHTML,
         mediaDependencies,
+        videoDependencies,
+        imageDependencies,
         moduleDependencies: moduleDependenciesFiltered,
         staticFiles: this.staticFilesListDesktop,
         subtitles,

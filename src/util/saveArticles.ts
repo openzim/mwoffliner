@@ -29,20 +29,20 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
 
     // todo align fileDownloadPairs and listOfArguments
     const listOfArguments = []
-    for (const [path, { url, namespace, mult, width }] of Object.entries(fileDownloadPairs)) {
-      listOfArguments.push({ path, url, namespace, mult, width })
+    for (const [path, { url, namespace, mult, width, kind }] of Object.entries(fileDownloadPairs)) {
+      listOfArguments.push({ path, url, namespace, mult, width, kind })
     }
 
     const responses = await downloadBulk(listOfArguments, downloader)
     for (const resp of responses) {
       let isFailed = false
       try {
-        if (resp.result && resp.result.content) {
+        if (resp.result && resp.result.content && resp.result.contentType) {
           const article = new ZimArticle({
             url: resp.path,
             data: resp.result.content,
             ns: resp.namespace || 'I',
-            mimeType: resp.result.responseHeaders['content-type'],
+            mimeType: resp.result.contentType,
           })
           zimCreator.addArticle(article)
           dump.status.files.success += 1
@@ -54,7 +54,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       } finally {
         if (isFailed) {
           if (doRetry && resp.status !== 404) {
-            await retryStore.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width })
+            await retryStore.set(resp.path, { url: resp.url, namespace: resp.namespace, mult: resp.mult, width: resp.width, kind: resp.kind })
           } else {
             logger.warn(`Error downloading file [${urlHelper.deserializeUrl(resp.url)}], skipping`)
             dump.status.files.fail += 1
@@ -105,12 +105,12 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
         resp.namespace = arg.val.namespace
         resp.mult = arg.val.mult
         resp.width = arg.val.width
+        resp.kind = arg.val.kind
 
         return downloader
-          .downloadContent(arg.val.url, false)
+          .downloadContent(arg.val.url, arg.val.kind, false)
           .then((r) => {
             resp.result = r
-            resp.path += resp.result.responseHeaders.path_postfix || ''
             return resp
           })
           .catch((err) => {
@@ -174,6 +174,8 @@ async function saveArticle(
   zimCreator: ZimCreator,
   finalHTML: string,
   mediaDependencies: any,
+  imageDependencies: any,
+  videoDependencies: any,
   subtitles: any,
   articleId: string,
   articleTitle: string,
@@ -184,7 +186,7 @@ async function saveArticle(
 
     if (subtitles?.length > 0) {
       subtitles.forEach((s) => {
-        filesToDownload[s.path] = { url: s.url, namespace: '-' }
+        filesToDownload[s.path] = { url: s.url, namespace: '-', kind: 'subtitle' }
       })
     }
 
@@ -198,6 +200,43 @@ async function saveArticle(
         if (currentDepIsHigherRes) {
           filesToDownload[dep.path] = {
             url: urlHelper.serializeUrl(dep.url),
+            kind: 'media',
+            mult,
+            width,
+          }
+        }
+      }
+    }
+
+    if (imageDependencies && imageDependencies.length) {
+      const existingVals = await RedisStore.filesToDownloadXPath.getMany(imageDependencies.map((dep) => dep.path))
+
+      for (const dep of imageDependencies) {
+        const { mult, width } = getSizeFromUrl(dep.url)
+        const existingVal = existingVals[dep.path]
+        const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
+        if (currentDepIsHigherRes) {
+          filesToDownload[dep.path] = {
+            url: urlHelper.serializeUrl(dep.url),
+            kind: 'image',
+            mult,
+            width,
+          }
+        }
+      }
+    }
+
+    if (videoDependencies && videoDependencies.length) {
+      const existingVals = await RedisStore.filesToDownloadXPath.getMany(videoDependencies.map((dep) => dep.path))
+
+      for (const dep of videoDependencies) {
+        const { mult, width } = getSizeFromUrl(dep.url)
+        const existingVal = existingVals[dep.path]
+        const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
+        if (currentDepIsHigherRes) {
+          filesToDownload[dep.path] = {
+            url: urlHelper.serializeUrl(dep.url),
+            kind: 'video',
             mult,
             width,
           }
@@ -298,7 +337,17 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
 
           rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
-          for (const { articleId, displayTitle: articleTitle, html: finalHTML, mediaDependencies, moduleDependencies, staticFiles, subtitles } of rets) {
+          for (const {
+            articleId,
+            displayTitle: articleTitle,
+            html: finalHTML,
+            mediaDependencies,
+            imageDependencies,
+            videoDependencies,
+            moduleDependencies,
+            staticFiles,
+            subtitles,
+          } of rets) {
             if (!finalHTML) {
               logger.warn(`No HTML returned for article [${articleId}], skipping`)
               continue
@@ -324,7 +373,10 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
              * To parse and download simultaniously, we don't await on save,
              * but instead cache the promise in a queue and check it later
              */
-            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, subtitles, articleId, articleTitle, articleDetail)])
+            promises.push([
+              articleId,
+              saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle, articleDetail),
+            ])
           }
         } catch (err) {
           dump.status.articles.fail += 1

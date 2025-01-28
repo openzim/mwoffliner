@@ -32,7 +32,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
         const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi')
 
         logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`)
-        const { content } = await downloader.downloadContent(cssUrl)
+        const { content } = await downloader.downloadContent(cssUrl, 'css')
         const body = content.toString()
 
         let rewrittenCss = `\n/* start ${cssUrl} */\n\n`
@@ -63,7 +63,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
               /* Download CSS dependency, but avoid duplicate calls */
               if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
                 downloader.cssDependenceUrls[url] = true
-                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), namespace: '-' })
+                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), namespace: '-', kind: 'media' })
               }
             } else {
               logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
@@ -132,7 +132,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
 
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
-  const { content } = await downloader.downloadContent(moduleApiUrl)
+  const { content } = await downloader.downloadContent(moduleApiUrl, 'module')
   let text = content.toString()
 
   if (type === 'js') {

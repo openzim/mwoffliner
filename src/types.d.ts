@@ -42,6 +42,7 @@ type FileDetail = {
   namespace?: string
   mult?: number
   width?: number
+  kind: string
 }
 
 type ArticleRedirect = {

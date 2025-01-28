@@ -414,7 +414,7 @@ async function execute(argv: any) {
     await getThumbnailsData()
 
     logger.log('Getting Main Page')
-    await getMainPage(dump, zimCreator, downloader)
+    await getMainPage(dump, zimCreator)
 
     logger.log('Getting articles')
     stime = Date.now()
@@ -527,7 +527,7 @@ async function execute(argv: any) {
 
     const parsedUrl = urlParser.parse(entries.logo)
     const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
-    const { content } = await downloader.downloadContent(logoUrl)
+    const { content } = await downloader.downloadContent(logoUrl, 'image')
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
 
@@ -541,7 +541,7 @@ async function execute(argv: any) {
     }
   }
 
-  function getMainPage(dump: Dump, zimCreator: ZimCreator, downloader: Downloader) {
+  function getMainPage(dump: Dump, zimCreator: ZimCreator) {
     async function createMainPage() {
       logger.log('Creating main page...')
       const doc = domino.createDocument(
@@ -579,7 +579,7 @@ async function execute(argv: any) {
       }
 
       if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article, downloader.webp)).join('\n')
+        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
         doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
       } else {
         const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
@@ -623,7 +623,10 @@ async function execute(argv: any) {
 
     articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
 
-    await Promise.all([filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width } as FileDetail), articleDetailXId.set(articleId, articleDetail)])
+    await Promise.all([
+      filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),
+      articleDetailXId.set(articleId, articleDetail),
+    ])
   }
 
   async function getThumbnailsData(): Promise<void> {
