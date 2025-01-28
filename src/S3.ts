@@ -1,6 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3'
 import * as logger from './Logger.js'
-import { Readable } from 'stream'
 import { publicIpv4 } from 'public-ip'
 
 interface BucketParams {
@@ -71,7 +70,7 @@ class S3 {
       Bucket: this.bucketName,
       Key: key,
       Metadata: { etag: eTag, contenttype: contentType, version },
-      Body: this.bufferToStream(data),
+      Body: data,
     })
 
     return new Promise((resolve, reject) => {
@@ -126,15 +125,6 @@ class S3 {
           logger.error('Error while deleting object in the cache', err)
           reject(err)
         })
-    })
-  }
-
-  private bufferToStream(binary: Buffer) {
-    return new Readable({
-      read() {
-        this.push(binary)
-        this.push(null)
-      },
     })
   }
 }
