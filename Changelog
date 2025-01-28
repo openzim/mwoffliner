@@ -1,5 +1,6 @@
 Unreleased:
 * FIX: Ensure AWS SDK has access to object size when issuing an upload (@benoit #2117)
+* FIX: Change log level of S3 missing keys message (@benoit #2144)
 
 1.14.0:
 * FIX: Remove S3 upload concurrency to avoid 'RequestTimeTooSkewed' errors (@benoi74 #2118)
