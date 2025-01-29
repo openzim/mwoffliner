@@ -104,7 +104,7 @@ class S3 {
         .catch((err: any) => {
           // For 404 error handle AWS service-specific exception
           if (err && err.name === 'NoSuchKey') {
-            logger.log(`The specified key '${key}' does not exist in the cache.`)
+            logger.info(`The specified key '${key}' does not exist in the cache.`)
             resolve(null)
           } else {
             logger.error(`Error (${err}) while downloading the object '${key}' from the cache.`)
