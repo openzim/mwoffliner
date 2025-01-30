@@ -576,7 +576,9 @@ class Downloader {
 
           // Most of the images, after having been uploaded once to the
           // cache, will always have 304 status, until modified. If cache
-          // is up to date, return cached image.
+          // is up to date, return cached image. We always have an s3
+          // response when mwResp is 304, since this can only happen
+          // when we have an eTag coming from s3.
           if (mwResp.status === 304) {
             // Proceed with image
             const data = (await this.streamToBuffer(s3Resp.Body as Readable)) as any
@@ -587,6 +589,11 @@ class Downloader {
               content: data,
             })
             return
+          }
+
+          // Destroy the Readable so that socket is freed and returned to the pool
+          if (s3Resp?.Body) {
+            s3Resp.Body.destroy()
           }
 
           // Compress content because image blob comes from upstream MediaWiki
