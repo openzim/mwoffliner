@@ -274,6 +274,7 @@ class MediaWiki {
 
       // Logging in
       await axios(this.actionApiUrl.href, {
+        ...downloader.arrayBufferRequestOptions,
         data: qs.stringify({
           action: 'login',
           format: 'json',

@@ -49,6 +49,7 @@ class S3 {
       forcePathStyle: s3UrlBase.protocol === 'http:',
       region: this.region,
       requestHandler: new NodeHttpHandler({
+        connectionTimeout: this.reqTimeout,
         requestTimeout: this.reqTimeout,
         httpAgent: new Agent({ keepAlive: true }),
         httpsAgent: new Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS

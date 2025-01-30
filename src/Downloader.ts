@@ -73,18 +73,6 @@ interface CompressionData {
   data: any
 }
 
-export const defaultStreamRequestOptions: AxiosRequestConfig = {
-  headers: {
-    accept: 'application/octet-stream',
-    'cache-control': 'public, max-stale=86400',
-    'accept-encoding': 'gzip, deflate',
-    'user-agent': config.userAgent,
-  },
-  responseType: 'stream',
-  timeout: config.defaults.requestTimeout,
-  method: 'GET',
-}
-
 type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | RestApiURLDirector
 /**
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
@@ -95,9 +83,11 @@ class Downloader {
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
-  public arrayBufferRequestOptions: AxiosRequestConfig
-  public jsonRequestOptions: AxiosRequestConfig
-  public streamRequestOptions: AxiosRequestConfig
+  public readonly abortSignal: AbortSignal
+  public readonly basicRequestOptions: AxiosRequestConfig
+  public readonly arrayBufferRequestOptions: AxiosRequestConfig
+  public readonly jsonRequestOptions: AxiosRequestConfig
+  public readonly streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
@@ -125,6 +115,8 @@ class Downloader {
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
 
+    this.abortSignal = AbortSignal.timeout(this.requestTimeout)
+
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
@@ -135,53 +127,48 @@ class Downloader {
       ...backoffOptions,
     }
 
-    this.arrayBufferRequestOptions = {
+    this.basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
-
+      timeout: this.requestTimeout,
+      signal: this.abortSignal,
       headers: {
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
         cookie: this.loginCookie,
       },
-      responseType: 'arraybuffer',
-      timeout: this.requestTimeout,
-      method: 'GET',
       validateStatus(status) {
         return (status >= 200 && status < 300) || status === 304
       },
     }
 
-    this.jsonRequestOptions = {
-      // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-      httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }),
+    this.arrayBufferRequestOptions = {
+      ...this.basicRequestOptions,
+      responseType: 'arraybuffer',
+      method: 'GET',
+    }
 
+    this.jsonRequestOptions = {
+      ...this.basicRequestOptions,
       headers: {
+        ...this.basicRequestOptions.headers,
         accept: 'application/json',
-        'cache-control': 'public, max-stale=86400',
         'accept-encoding': 'gzip, deflate',
-        'user-agent': this.uaString,
-        cookie: this.loginCookie,
       },
       responseType: 'json',
-      timeout: this.requestTimeout,
       method: 'GET',
     }
 
     this.streamRequestOptions = {
-      // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-      ...defaultStreamRequestOptions,
-      httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }),
-
+      ...this.basicRequestOptions,
       headers: {
-        ...defaultStreamRequestOptions.headers,
-        'user-agent': this.uaString,
-        cookie: this.loginCookie,
+        ...this.basicRequestOptions.headers,
+        accept: 'application/octet-stream',
+        'accept-encoding': 'gzip, deflate',
       },
-      timeout: this.requestTimeout,
+      responseType: 'stream',
+      method: 'GET',
     }
   }
 
@@ -405,7 +392,7 @@ class Downloader {
 
   public async canGetUrl(url: string): Promise<boolean> {
     try {
-      await axios.get(url)
+      await axios.get(url, this.arrayBufferRequestOptions)
       return true
     } catch (err) {
       return false

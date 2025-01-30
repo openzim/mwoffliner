@@ -22,6 +22,9 @@ import { fileURLToPath } from 'url'
 import { jest } from '@jest/globals'
 import fs from 'fs'
 import rimraf from 'rimraf'
+import Downloader from '../../src/Downloader.js'
+import MediaWiki from '../../src/MediaWiki.js'
+import { config } from '../../src/config.js'
 
 jest.setTimeout(10000)
 
@@ -29,6 +32,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 describe('Utils', () => {
+  let downloader: Downloader
+
+  MediaWiki.base = 'https://en.wikipedia.org' // Mandatory setting for proper downloader initialization
+  beforeAll(async () => {
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
+  })
+
   test('util -> interpolateTranslationString', async () => {
     expect(interpolateTranslationString('Hello world', {})).toEqual('Hello world')
     expect(interpolateTranslationString('Hello ${name}', { name: 'John' })).toEqual('Hello John')
@@ -283,22 +293,22 @@ describe('Utils', () => {
     })
 
     test('One string as parameter', async () => {
-      const result: string[] = await extractArticleList('testString')
+      const result: string[] = await extractArticleList('testString', downloader)
       expect(result).toEqual(['testString'])
     })
 
     test('Comma separated strings as parameter', async () => {
-      const result: string[] = await extractArticleList(argumentsList.join(','))
+      const result: string[] = await extractArticleList(argumentsList.join(','), downloader)
       expect(result).toEqual(argumentsList)
     })
 
     test('Filename string as parameter', async () => {
-      const result: string[] = await extractArticleList(filePath)
+      const result: string[] = await extractArticleList(filePath, downloader)
       expect(result).toEqual(argumentsList)
     })
 
     test('Comma separated filenames string as parameter', async () => {
-      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`)
+      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`, downloader)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
@@ -306,7 +316,7 @@ describe('Utils', () => {
       jest.spyOn(axios, 'get').mockResolvedValue({
         data: fs.createReadStream(filePath),
       })
-      const result: string[] = await extractArticleList('http://test.com/strings')
+      const result: string[] = await extractArticleList('http://test.com/strings', downloader)
       expect(result).toEqual(argumentsList)
     })
 
@@ -317,18 +327,18 @@ describe('Utils', () => {
       jest.spyOn(axios, 'get').mockResolvedValueOnce({
         data: fs.createReadStream(anotherFilePath),
       })
-      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings')
+      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings', downloader)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
     test('The parameter starts from HTTP but it is not the URL', async () => {
-      const result: string[] = await extractArticleList('http-test')
+      const result: string[] = await extractArticleList('http-test', downloader)
       expect(result).toEqual(['http-test'])
     })
 
     test('Error if trying to get articleList from wrong URL ', async () => {
       jest.spyOn(axios, 'get').mockRejectedValue({})
-      await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+      await expect(extractArticleList('http://valid-wrong-url.com/', downloader)).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
     })
   })
 

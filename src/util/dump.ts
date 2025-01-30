@@ -167,7 +167,7 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.
-export async function importPolyfillModules(zimCreator: ZimCreator) {
+export async function importPolyfillModules(downloader: Downloader, zimCreator: ZimCreator) {
   ;[
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
@@ -181,13 +181,7 @@ export async function importPolyfillModules(zimCreator: ZimCreator) {
   })
 
   const content = await axios
-    .get(WEBP_HANDLER_URL, {
-      responseType: 'arraybuffer',
-      timeout: 60000,
-      validateStatus(status) {
-        return [200, 302, 304].indexOf(status) > -1
-      },
-    })
+    .get(WEBP_HANDLER_URL, downloader.arrayBufferRequestOptions)
     .then((a) => a.data)
     .catch((err) => {
       throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)

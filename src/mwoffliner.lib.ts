@@ -265,7 +265,7 @@ async function execute(argv: any) {
   let articleListToIgnoreLines: string[]
   if (articleListToIgnore) {
     try {
-      articleListToIgnoreLines = await extractArticleList(articleListToIgnore)
+      articleListToIgnoreLines = await extractArticleList(articleListToIgnore, downloader)
       logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
@@ -276,7 +276,7 @@ async function execute(argv: any) {
   let articleListLines: string[]
   if (articleList) {
     try {
-      articleListLines = await extractArticleList(articleList)
+      articleListLines = await extractArticleList(articleList, downloader)
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }
@@ -434,7 +434,7 @@ async function execute(argv: any) {
 
     if (downloader.webp) {
       logger.log('Downloading polyfill module')
-      await importPolyfillModules(zimCreator)
+      await importPolyfillModules(downloader, zimCreator)
     }
 
     logger.log('Downloading module dependencies')
