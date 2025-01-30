@@ -1,6 +1,8 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3'
 import * as logger from './Logger.js'
 import { publicIpv4 } from 'public-ip'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
+import { Agent } from 'https'
 
 interface BucketParams {
   Bucket: string
@@ -12,11 +14,15 @@ class S3 {
   public s3Handler: any
   public bucketName: string
   private region: string
+  private reqTimeout: number
+  private insecure: boolean
 
-  constructor(s3Url: any, s3Params: any) {
+  constructor(s3Url: any, s3Params: any, reqTimeout: number, insecure: boolean) {
     this.url = s3Url
     this.params = s3Params
     this.bucketName = s3Params.bucketName
+    this.reqTimeout = reqTimeout
+    this.insecure = insecure
     this.setRegion()
   }
 
@@ -42,6 +48,11 @@ class S3 {
       endpoint: s3UrlBase.href,
       forcePathStyle: s3UrlBase.protocol === 'http:',
       region: this.region,
+      requestHandler: new NodeHttpHandler({
+        requestTimeout: this.reqTimeout,
+        httpAgent: new Agent({ keepAlive: true }),
+        httpsAgent: new Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
+      }),
     })
 
     return this.bucketExists(this.bucketName)

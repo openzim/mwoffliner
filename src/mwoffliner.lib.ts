@@ -146,7 +146,7 @@ async function execute(argv: any) {
     const s3UrlObj = urlParser.parse(optimisationCacheUrl)
     const queryReader = QueryStringParser.parse(s3UrlObj.query)
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-    s3Obj = new S3(s3Url, queryReader)
+    s3Obj = new S3(s3Url, queryReader, requestTimeout * 1000 || config.defaults.requestTimeout, argv.insecure)
     await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3')
     })
