@@ -313,19 +313,31 @@ describe('Utils', () => {
     })
 
     test('URL as parameter', async () => {
-      jest.spyOn(axios, 'get').mockResolvedValue({
+      jest.spyOn(downloader, 'request').mockResolvedValue({
         data: fs.createReadStream(filePath),
+        status: 200,
+        statusText: 'OK',
+        headers: null,
+        config: null,
       })
       const result: string[] = await extractArticleList('http://test.com/strings', downloader)
       expect(result).toEqual(argumentsList)
     })
 
     test("Comma separated URL's as parameter", async () => {
-      jest.spyOn(axios, 'get').mockResolvedValueOnce({
+      jest.spyOn(downloader, 'request').mockResolvedValueOnce({
         data: fs.createReadStream(filePath),
+        status: 200,
+        statusText: 'OK',
+        headers: null,
+        config: null,
       })
-      jest.spyOn(axios, 'get').mockResolvedValueOnce({
+      jest.spyOn(downloader, 'request').mockResolvedValueOnce({
         data: fs.createReadStream(anotherFilePath),
+        status: 200,
+        statusText: 'OK',
+        headers: null,
+        config: null,
       })
       const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings', downloader)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
@@ -337,7 +349,7 @@ describe('Utils', () => {
     })
 
     test('Error if trying to get articleList from wrong URL ', async () => {
-      jest.spyOn(axios, 'get').mockRejectedValue({})
+      jest.spyOn(downloader, 'request').mockRejectedValue({})
       await expect(extractArticleList('http://valid-wrong-url.com/', downloader)).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
     })
   })

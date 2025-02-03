@@ -21,7 +21,7 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
-import axios, { AxiosError } from 'axios'
+import { AxiosError } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -386,7 +386,7 @@ export function cleanupAxiosError(err: AxiosError) {
 
 async function downloadListByUrl(url: string, downloader: Downloader): Promise<string> {
   const fileName = url.split('/').slice(-1)[0]
-  const { data: contentStream } = await axios.get(url, downloader.streamRequestOptions)
+  const { data: contentStream } = await downloader.request({ url, method: 'GET', ...downloader.streamRequestOptions })
   const filePath = path.join(await getTmpDirectory(), fileName)
   const writeStream = fs.createWriteStream(filePath)
   await new Promise((resolve, reject) => {

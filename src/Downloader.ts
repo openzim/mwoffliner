@@ -7,7 +7,7 @@ import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
-import axios, { AxiosRequestConfig } from 'axios'
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { default as imageminPngquant } from 'imagemin-pngquant'
 import imageminGifsicle from 'imagemin-gifsicle'
 import imageminJpegoptim from 'imagemin-jpegoptim'
@@ -83,7 +83,6 @@ class Downloader {
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
-  public readonly abortSignal: AbortSignal
   public readonly basicRequestOptions: AxiosRequestConfig
   public readonly arrayBufferRequestOptions: AxiosRequestConfig
   public readonly jsonRequestOptions: AxiosRequestConfig
@@ -115,8 +114,6 @@ class Downloader {
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
 
-    this.abortSignal = AbortSignal.timeout(this.requestTimeout)
-
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
@@ -132,11 +129,9 @@ class Downloader {
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
       timeout: this.requestTimeout,
-      signal: this.abortSignal,
       headers: {
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
-        cookie: this.loginCookie,
       },
       validateStatus(status) {
         return (status >= 200 && status < 300) || status === 304
@@ -358,6 +353,29 @@ class Downloader {
     })
   }
 
+  public async request<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): Promise<R> {
+    return axios
+      .request<T, R, D>({
+        ...config,
+        headers: {
+          // Use the base domain of the wiki being scraped as the Referer header, so that we can
+          // successfully scrap WMF map tiles.
+          Referer: MediaWiki.baseUrl.href,
+          // Set loginCookie if present (might be dynamic, so we need to override it at every call)
+          cookie: this.loginCookie,
+          ...config.headers,
+        },
+        signal: AbortSignal.timeout(this.requestTimeout),
+      })
+      .then(async (resp) => {
+        // Store cookie if needed, so that we can pass it to next requests
+        if (resp.headers['set-cookie']) {
+          this.loginCookie = resp.headers['set-cookie'].join(';')
+        }
+        return resp
+      })
+  }
+
   public async downloadContent(_url: string, kind: DonwloadKind, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
@@ -392,7 +410,7 @@ class Downloader {
 
   public async canGetUrl(url: string): Promise<boolean> {
     try {
-      await axios.get(url, this.arrayBufferRequestOptions)
+      await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
       return true
     } catch (err) {
       return false
@@ -448,8 +466,7 @@ class Downloader {
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
-    axios
-      .get<T>(url, this.jsonRequestOptions)
+    this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
@@ -520,9 +537,7 @@ class Downloader {
       if (this.optimisationCacheUrl && kind === 'image') {
         this.downloadImage(url, handler)
       } else {
-        // Use the base domain of the wiki being scraped as the Referer header, so that we can
-        // successfully scrap WMF map tiles.
-        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { ...this.arrayBufferRequestOptions.headers, Referer: MediaWiki.baseUrl.href } })
+        const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
         // If content is an image, we might benefit from compressing it
         const content = kind === 'image' ? (await this.getCompressedBody({ data: resp.data })).data : resp.data
         // compute content-type from content, since getCompressedBody might have modified it
@@ -530,7 +545,6 @@ class Downloader {
         handler(null, {
           contentType,
           content,
-          setCookie: resp.headers['set-cookie'] ? resp.headers['set-cookie'].join(';') : null,
         })
       }
     } catch (err) {
@@ -559,7 +573,7 @@ class Downloader {
           }
           // Use the base domain of the wiki being scraped as the Referer header, so that we can
           // successfully scrap WMF map tiles.
-          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { ...this.arrayBufferRequestOptions.headers, Referer: MediaWiki.baseUrl.href } })
+          const mwResp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
 
           // Most of the images, after having been uploaded once to the
           // cache, will always have 304 status, until modified. If cache
@@ -703,7 +717,7 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
+    if ((await MediaWiki.hasWikimediaMobileApi(this)) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
       try {
         // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)

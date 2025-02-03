@@ -41,10 +41,10 @@ describe('saveArticles', () => {
     test(`Article html processing using ${renderer} renderer`, async () => {
       const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
       await MediaWiki.hasCoordinates(downloader)
-      await MediaWiki.hasWikimediaDesktopApi()
-      await MediaWiki.hasWikimediaMobileApi()
-      await MediaWiki.hasRestApi()
-      await MediaWiki.hasVisualEditorApi()
+      await MediaWiki.hasWikimediaDesktopApi(downloader)
+      await MediaWiki.hasWikimediaMobileApi(downloader)
+      await MediaWiki.hasRestApi(downloader)
+      await MediaWiki.hasVisualEditorApi(downloader)
 
       const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)

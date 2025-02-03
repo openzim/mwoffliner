@@ -8,7 +8,6 @@
 import fs, { readFileSync } from 'fs'
 import os from 'os'
 import pmap from 'p-map'
-import axios from 'axios'
 import sharp from 'sharp'
 import domino from 'domino'
 import rimraf from 'rimraf'
@@ -195,7 +194,7 @@ async function execute(argv: any) {
     Language: customZimLanguage || mwMetaData.langIso3,
     Publisher: publisher,
     Title: customZimTitle || mwMetaData.title,
-    'Illustration_48x48@1': await getIllustrationMetadata(),
+    'Illustration_48x48@1': await getIllustrationMetadata(downloader),
   }
   validateMetadata(metaDataRequiredKeys)
 
@@ -205,17 +204,17 @@ async function execute(argv: any) {
   if (customMainPage) {
     mainPage = customMainPage
     const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
-    if (!(await checkApiAvailability(mainPageUrl))) {
+    if (!(await checkApiAvailability(downloader, mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi()
-  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasRestApi()
-  await MediaWiki.hasVisualEditorApi()
+  await MediaWiki.hasWikimediaDesktopApi(downloader)
+  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi(downloader)
+  await MediaWiki.hasRestApi(downloader)
+  await MediaWiki.hasVisualEditorApi(downloader)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -488,14 +487,14 @@ async function execute(argv: any) {
     })
   }
 
-  async function getIllustrationMetadata(): Promise<Buffer> {
+  async function getIllustrationMetadata(downloader: Downloader): Promise<Buffer> {
     if (customZimFavicon) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
       if (faviconIsRemote) {
         logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`)
-        content = await axios
-          .get(customZimFavicon, downloader.arrayBufferRequestOptions)
+        content = await downloader
+          .request({ url: customZimFavicon, method: 'GET', ...downloader.arrayBufferRequestOptions })
           .then((a) => a.data)
           .catch(() => {
             throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
