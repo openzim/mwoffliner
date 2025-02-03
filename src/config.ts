@@ -1,5 +1,5 @@
 const config = {
-  userAgent: 'MWOffliner/HEAD',
+  userAgent: 'MWOffliner/dev',
 
   defaults: {
     publisher: 'openZIM',
