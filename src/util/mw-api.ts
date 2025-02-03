@@ -6,6 +6,7 @@ import Timer from './Timer.js'
 import RedisStore from '../RedisStore.js'
 import MediaWiki from '../MediaWiki.js'
 import { REDIRECT_PAGE_SIGNATURE } from './const.js'
+import { cleanupAxiosError } from './misc.js'
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
   let from = 0
@@ -292,6 +293,7 @@ export async function checkApiAvailability(downloader: Downloader, url: string, 
 
     return !isRedirectPage && isSuccess && validMimeType
   } catch (err) {
+    logger.info(cleanupAxiosError(err))
     return false
   }
 }
