@@ -32,13 +32,15 @@ export class WikimediaMobileRenderer extends MobileRenderer {
   public async render(renderOpts: RenderOpts): Promise<any> {
     try {
       const result: RenderOutput = []
-      const { data, articleId, webp, _moduleDependencies, dump } = renderOpts
+      const { data, articleId, _moduleDependencies, dump } = renderOpts
       const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
       const displayTitle = this.getStrippedTitle(renderOpts)
       if (data) {
         const moduleDependenciesFiltered = super.filterWikimediaMobileModules(_moduleDependencies)
         let mediaDependenciesVal
+        let videoDependenciesVal
+        let imageDependenciesVal
         let subtitlesVal
         const mobileHTML = domino.createDocument(data)
         const finalHTMLMobile = await this.pipeMobileTransformations(
@@ -48,17 +50,18 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           this.removeHiddenClass,
           this.INTERNAL.unhideSections,
           async (doc) => {
-            const { finalHTML, subtitles, mediaDependencies } = await super.processHtml(
+            const { finalHTML, subtitles, mediaDependencies, videoDependencies, imageDependencies } = await super.processHtml(
               doc.documentElement.outerHTML,
               dump,
               articleId,
               articleDetail,
               moduleDependenciesFiltered,
-              webp,
               super.templateMobileArticle.bind(this),
             )
 
             mediaDependenciesVal = mediaDependencies
+            imageDependenciesVal = imageDependencies
+            videoDependenciesVal = videoDependencies
             subtitlesVal = subtitles
             return domino.createDocument(finalHTML)
           },
@@ -70,6 +73,8 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           displayTitle,
           html: finalHTMLMobile.documentElement.outerHTML,
           mediaDependencies: mediaDependenciesVal,
+          videoDependencies: videoDependenciesVal,
+          imageDependencies: imageDependenciesVal,
           moduleDependencies: moduleDependenciesFiltered,
           staticFiles: this.staticFilesListMobile,
           subtitles: subtitlesVal,

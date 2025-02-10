@@ -270,7 +270,7 @@ class MediaWiki {
       }
 
       // Getting token to login.
-      const { content, responseHeaders } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2')
+      const { content, setCookie } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2', 'data')
 
       // Logging in
       await axios(this.actionApiUrl.href, {
@@ -282,7 +282,7 @@ class MediaWiki {
           lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
         }),
         headers: {
-          Cookie: responseHeaders['set-cookie'].join(';'),
+          Cookie: setCookie,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         method: 'POST',
@@ -388,7 +388,7 @@ class MediaWiki {
 
   public async getTextDirection(downloader: Downloader): Promise<TextDirection> {
     logger.log('Getting text direction...')
-    const { content } = await downloader.downloadContent(this.webUrl.href)
+    const { content } = await downloader.downloadContent(this.webUrl.href, 'data')
     const body = content.toString()
     const doc = domino.createDocument(body)
     const contentNode = doc.getElementById('mw-content-text')
@@ -458,7 +458,7 @@ class MediaWiki {
 
   public async getSubTitle(downloader: Downloader) {
     logger.log('Getting sub-title...')
-    const { content } = await downloader.downloadContent(this.webUrl.href)
+    const { content } = await downloader.downloadContent(this.webUrl.href, 'data')
     const html = content.toString()
     const doc = domino.createDocument(html)
     const subTitleNode = doc.getElementById('siteSub')

@@ -9,14 +9,14 @@ describe('MediaTreatment', () => {
     public render(): any {
       return null
     }
-    public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement, webp: boolean) {
-      return this.treatVideo(dump, srcCache, articleId, videoEl, webp)
+    public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement) {
+      return this.treatVideo(dump, srcCache, articleId, videoEl)
     }
     public async testTreatSubtitle(trackEle: DominoElement, articleId: string) {
       return this.treatSubtitle(trackEle, articleId)
     }
-    public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean) {
-      return this.treatMedias(parsoidDoc, dump, articleId, webp)
+    public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+      return this.treatMedias(parsoidDoc, dump, articleId)
     }
   }
 
@@ -54,7 +54,7 @@ describe('MediaTreatment', () => {
       const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl)
 
       const htmlDoc = domino.createDocument(htmlStr.data)
-      const contentRes = await testableRenderer.testTreatVideo(dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'), false)
+      const contentRes = await testableRenderer.testTreatVideo(dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'))
       // Converted wikicode to HTML for multiple subtitle
       testHtmlRewritingE2e(wikicode, htmlStr.data)
       // Video multiple subtitles rewriting matches
@@ -90,9 +90,10 @@ describe('MediaTreatment', () => {
         <track kind="subtitles" type="text/x-srt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=srt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl">
         <track kind="subtitles" type="text/vtt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=vtt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl"></video>`
       let htmlDoc = domino.createDocument(htmlStr)
-      let ret = await testableRenderer.testTreatVideo(dump, {}, 'Gout', htmlDoc.querySelector('video'), false)
+      let ret = await testableRenderer.testTreatVideo(dump, {}, 'Gout', htmlDoc.querySelector('video'))
       // Correct video resolution for width greater than videoEl
-      expect(ret.mediaDependencies[1]).toEqual('https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm')
+      expect(ret.videoDependencies).toEqual(['https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.180p.vp9.webm'])
+      expect(ret.imageDependencies).toEqual(['https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg'])
 
       htmlStr = `<video poster="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg" controls="" preload="none" height="169" width="800" resource="./File:Gout.webm">
     <source src="//upload.wikimedia.org/wikipedia/commons/3/3d/Gout.webm" type="video/webm; codecs=&quot;vp9, vorbis&quot;" data-file-width="700" data-file-height="1080" data-title="Original WebM file, 1,920 × 1,080 (735 kbps)" data-shorttitle="WebM source">
@@ -102,16 +103,18 @@ describe('MediaTreatment', () => {
     <track kind="subtitles" type="text/x-srt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=srt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl">
     <track kind="subtitles" type="text/vtt" src="//commons.wikimedia.org/w/api.php?action=timedtext&amp;title=File%3AGout.webm&amp;lang=ar&amp;trackformat=vtt&amp;origin=%2A" srclang="ar" label="العربية (ar)" data-mwtitle="" data-dir="rtl"></video>`
       htmlDoc = domino.createDocument(htmlStr)
-      ret = await testableRenderer.testTreatVideo(dump, {}, 'Gout', htmlDoc.querySelector('video'), false)
+      ret = await testableRenderer.testTreatVideo(dump, {}, 'Gout', htmlDoc.querySelector('video'))
       // Correct video resolution for all widths less than videoEl
-      expect(ret.mediaDependencies[1]).toEqual('https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.780p.webm')
+      expect(ret.videoDependencies).toEqual(['https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Gout.webm/Gout.webm.780p.webm'])
+      expect(ret.imageDependencies).toEqual(['https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Gout.webm/300px--Gout.webm.jpg'])
 
       htmlStr = `<video poster="//upload.wikimedia.org/wikipedia/commons/thumb/2/23/Apollo_13_Houston%2C_We%27ve_Got_a_Problem.ogv/220px--Apollo_13_Houston%2C_We%27ve_Got_a_Problem.ogv.jpg" preload="none" height="165" width="220" resource="./File:Apollo_13_Houston,_We've_Got_a_Problem.ogv" controls="40">
     <source src="//upload.wikimedia.org/wikipedia/commons/2/23/Apollo_13_Houston%2C_We%27ve_Got_a_Problem.ogv" type="video/ogg; codecs=&quot;theora, vorbis&quot;" data-file-width="400" data-file-height="300" data-title="Original Ogg file, 400 × 300 (616 kbps)" data-shorttitle="Ogg source"></video>`
       htmlDoc = domino.createDocument(htmlStr)
-      ret = await testableRenderer.testTreatVideo(dump, {}, 'Appolo_13', htmlDoc.querySelector('video'), false)
+      ret = await testableRenderer.testTreatVideo(dump, {}, 'Appolo_13', htmlDoc.querySelector('video'))
       // Remove video if no appropriate video/audio source
-      expect(ret.mediaDependencies).toHaveLength(0)
+      expect(ret.videoDependencies).toHaveLength(0)
+      expect(ret.imageDependencies).toHaveLength(0)
     })
 
     test('Ogg audio retrival', async () => {
@@ -121,9 +124,10 @@ describe('MediaTreatment', () => {
         <source src="//upload.wikimedia.org/wikipedia/commons/transcoded/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg/William_Shakespeare_%28Spoken_Article%29.ogg.mp3" type="audio/mpeg" data-title="MP3" data-shorttitle="MP3">
         </audio>`
       const htmlDoc = domino.createDocument(htmlStr)
-      const ret = await testableRenderer.testTreatVideo(dump, {}, 'Michael_Jackson', htmlDoc.querySelector('audio'), false)
+      const ret = await testableRenderer.testTreatVideo(dump, {}, 'Michael_Jackson', htmlDoc.querySelector('audio'))
       // Correct audio file
-      expect(ret.mediaDependencies[0]).toEqual('https://upload.wikimedia.org/wikipedia/commons/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg')
+      expect(ret.videoDependencies).toEqual(['https://upload.wikimedia.org/wikipedia/commons/a/a1/William_Shakespeare_%28Spoken_Article%29.ogg'])
+      expect(ret.imageDependencies).toHaveLength(0)
     })
   })
 
@@ -132,11 +136,18 @@ describe('MediaTreatment', () => {
     afterAll(stopRedis)
 
     test('treatMedias format=""', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: '' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ format: '' }) // en wikipedia
 
       const doc = domino.createDocument(html)
 
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell')
+      expect(ret.imageDependencies).toEqual([
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg',
+      ])
+      expect(ret.videoDependencies).toEqual([
+        'https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm',
+      ])
 
       const videoEl = ret.doc.querySelector('video')
       const videoPosterUrl = videoEl.getAttribute('poster')
@@ -156,11 +167,11 @@ describe('MediaTreatment', () => {
     })
 
     test('treatMedias format="nopic"', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
 
       const doc = domino.createDocument(html)
 
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell')
 
       const videoEl = ret.doc.querySelector('video')
       const imgEl = ret.doc.querySelector('img')
@@ -172,11 +183,11 @@ describe('MediaTreatment', () => {
     })
 
     test('treatMedias format="novid"', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: 'novid' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ format: 'novid' }) // en wikipedia
 
       const doc = domino.createDocument(html)
 
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell', downloader.webp)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Dendritic_cell')
 
       const videoEl = ret.doc.querySelector('video')
       const imgEl = ret.doc.querySelector('img')

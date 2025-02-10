@@ -202,7 +202,7 @@ export class Dump {
     const sheetUrls: Array<string | DominoElement> = []
 
     /* Load main page to see which CSS files are needed */
-    const { content } = await downloader.downloadContent(this.mwMetaData.webUrl)
+    const { content } = await downloader.downloadContent(this.mwMetaData.webUrl, 'data')
     const html = content.toString()
     const doc = domino.createDocument(html)
     const links = Array.from(doc.getElementsByTagName('link'))
