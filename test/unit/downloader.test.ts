@@ -34,10 +34,10 @@ describe('Downloader class', () => {
 
     await MediaWiki.getMwMetaData(downloader)
     await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasRestApi()
-    await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasWikimediaDesktopApi(downloader)
+    await MediaWiki.hasWikimediaMobileApi(downloader)
+    await MediaWiki.hasRestApi(downloader)
+    await MediaWiki.hasVisualEditorApi(downloader)
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
@@ -289,11 +289,16 @@ describe('Downloader class', () => {
       MediaWiki.base = 'https://en.wikipedia.org'
       MediaWiki.getCategories = true
 
-      s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
-        bucketName: s3UrlObj.query.bucketName,
-        keyId: s3UrlObj.query.keyId,
-        secretAccessKey: s3UrlObj.query.secretAccessKey,
-      })
+      s3 = new S3(
+        `${s3UrlObj.protocol}//${s3UrlObj.host}/`,
+        {
+          bucketName: s3UrlObj.query.bucketName,
+          keyId: s3UrlObj.query.keyId,
+          secretAccessKey: s3UrlObj.query.secretAccessKey,
+        },
+        1000 * 60,
+        false,
+      )
       downloader = new Downloader({
         uaString: `${config.userAgent} (contact@kiwix.org)`,
         speed: 1,

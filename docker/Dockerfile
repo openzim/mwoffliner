@@ -12,6 +12,7 @@ RUN apt-get update && \
 WORKDIR /tmp/mwoffliner
 COPY *.json ./
 COPY dev dev
+RUN mkdir src
 RUN npm --global config set user root
 RUN npm config set unsafe-perm true
 RUN npm i

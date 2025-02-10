@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import domino from 'domino'
-import { defaultStreamRequestOptions } from '../Downloader.js'
+import Downloader from '../Downloader.js'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
@@ -21,7 +21,7 @@ import {
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
-import axios, { AxiosError } from 'axios'
+import { AxiosError } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -384,9 +384,9 @@ export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
 }
 
-async function downloadListByUrl(url: string): Promise<string> {
+async function downloadListByUrl(url: string, downloader: Downloader): Promise<string> {
   const fileName = url.split('/').slice(-1)[0]
-  const { data: contentStream } = await axios.get(url, defaultStreamRequestOptions)
+  const { data: contentStream } = await downloader.request({ url, method: 'GET', ...downloader.streamRequestOptions })
   const filePath = path.join(await getTmpDirectory(), fileName)
   const writeStream = fs.createWriteStream(filePath)
   await new Promise((resolve, reject) => {
@@ -398,7 +398,7 @@ async function downloadListByUrl(url: string): Promise<string> {
   return filePath
 }
 
-export async function extractArticleList(articleList: string): Promise<string[]> {
+export async function extractArticleList(articleList: string, downloader: Downloader): Promise<string[]> {
   const list = await Promise.all(
     articleList
       .split(',')
@@ -414,7 +414,7 @@ export async function extractArticleList(articleList: string): Promise<string[]>
           }
           if (url && url.href) {
             try {
-              item = await downloadListByUrl(url.href)
+              item = await downloadListByUrl(url.href, downloader)
             } catch (e) {
               throw new Error(`Failed to read articleList from URL: ${url.href}`)
             }

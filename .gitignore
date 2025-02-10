@@ -17,3 +17,4 @@ mwo-test-*
 .vscode
 .tool-versions
 output/
+src/version.ts

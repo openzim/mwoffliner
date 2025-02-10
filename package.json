@@ -24,6 +24,7 @@
     "lint": "eslint -c .eslintrc.cjs --ext .ts .",
     "lint-fix": "eslint -c .eslintrc.cjs --ext .ts --fix .",
     "format": "prettier --write './**/*.ts'",
+    "prebuild": "node -p \"'export const LIB_VERSION = \\'' + require('./package.json').version + '\\''\" > src/version.ts",
     "build": "./dev/build.sh",
     "watch": "./dev/watch.sh",
     "prepublish": "npm run build",

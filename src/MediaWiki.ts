@@ -2,8 +2,7 @@ import * as pathParser from 'path'
 import * as logger from './Logger.js'
 import * as util from './util/index.js'
 import * as domino from 'domino'
-import type Downloader from './Downloader.js'
-import axios from 'axios'
+import Downloader from './Downloader.js'
 import qs from 'querystring'
 import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
@@ -172,44 +171,44 @@ class MediaWiki {
     this.initializeMediaWikiDefaults()
   }
 
-  public async hasWikimediaDesktopApi(): Promise<boolean> {
+  public async hasWikimediaDesktopApi(downloader: Downloader): Promise<boolean> {
     if (this.#hasWikimediaDesktopApi === null) {
       this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
       const checkUrl = this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasWikimediaDesktopApi = await checkApiAvailability(checkUrl)
+      this.#hasWikimediaDesktopApi = await checkApiAvailability(downloader, checkUrl)
       logger.log('Checked for WikimediaDesktopApi at', checkUrl, '-- result is: ', this.#hasWikimediaDesktopApi)
       return this.#hasWikimediaDesktopApi
     }
     return this.#hasWikimediaDesktopApi
   }
 
-  public async hasWikimediaMobileApi(): Promise<boolean> {
+  public async hasWikimediaMobileApi(downloader: Downloader): Promise<boolean> {
     if (this.#hasWikimediaMobileApi === null) {
       this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
       const checkUrl = this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasWikimediaMobileApi = await checkApiAvailability(checkUrl)
+      this.#hasWikimediaMobileApi = await checkApiAvailability(downloader, checkUrl)
       logger.log('Checked for WikimediaMobileApi at', checkUrl, '-- result is: ', this.#hasWikimediaMobileApi)
       return this.#hasWikimediaMobileApi
     }
     return this.#hasWikimediaMobileApi
   }
 
-  public async hasVisualEditorApi(): Promise<boolean> {
+  public async hasVisualEditorApi(downloader: Downloader): Promise<boolean> {
     if (this.#hasVisualEditorApi === null) {
       this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
       const checkUrl = this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasVisualEditorApi = await checkApiAvailability(checkUrl, '' /* empty login cookie */, this.visualEditorUrlDirector.validMimeTypes)
+      this.#hasVisualEditorApi = await checkApiAvailability(downloader, checkUrl, this.visualEditorUrlDirector.validMimeTypes)
       logger.log('Checked for VisualEditorApi at', checkUrl, '-- result is: ', this.#hasVisualEditorApi)
       return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
   }
 
-  public async hasRestApi(): Promise<boolean> {
+  public async hasRestApi(downloader: Downloader): Promise<boolean> {
     if (this.#hasRestApi === null) {
       this.restApiUrlDirector = new RestApiURLDirector(this.restApiUrl.href)
       const checkUrl = this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasRestApi = await checkApiAvailability(checkUrl)
+      this.#hasRestApi = await checkApiAvailability(downloader, checkUrl)
       logger.log('Checked for RestApi at', checkUrl, '-- result is: ', this.#hasRestApi)
       return this.#hasRestApi
     }
@@ -270,23 +269,25 @@ class MediaWiki {
       }
 
       // Getting token to login.
-      const { content, setCookie } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2', 'data')
+      const { content } = await downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2', 'data')
 
       // Logging in
-      await axios(this.actionApiUrl.href, {
-        data: qs.stringify({
-          action: 'login',
-          format: 'json',
-          lgname: this.#username,
-          lgpassword: this.#password,
-          lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
-        }),
-        headers: {
-          Cookie: setCookie,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      })
+      await downloader
+        .request({
+          url: this.actionApiUrl.href,
+          ...downloader.arrayBufferRequestOptions,
+          data: qs.stringify({
+            action: 'login',
+            format: 'json',
+            lgname: this.#username,
+            lgpassword: this.#password,
+            lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
+          }),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          method: 'POST',
+        })
         .then(async (resp) => {
           if (resp.data.login.result !== 'Success') {
             throw new Error('Login Failed')

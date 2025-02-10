@@ -7,7 +7,7 @@ import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
-import axios, { AxiosRequestConfig } from 'axios'
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { default as imageminPngquant } from 'imagemin-pngquant'
 import imageminGifsicle from 'imagemin-gifsicle'
 import imageminJpegoptim from 'imagemin-jpegoptim'
@@ -73,18 +73,6 @@ interface CompressionData {
   data: any
 }
 
-export const defaultStreamRequestOptions: AxiosRequestConfig = {
-  headers: {
-    accept: 'application/octet-stream',
-    'cache-control': 'public, max-stale=86400',
-    'accept-encoding': 'gzip, deflate',
-    'user-agent': config.userAgent,
-  },
-  responseType: 'stream',
-  timeout: config.defaults.requestTimeout,
-  method: 'GET',
-}
-
 type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | RestApiURLDirector
 /**
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
@@ -95,9 +83,10 @@ class Downloader {
   public cssDependenceUrls: KVS<boolean> = {}
   public readonly webp: boolean = false
   public readonly requestTimeout: number
-  public arrayBufferRequestOptions: AxiosRequestConfig
-  public jsonRequestOptions: AxiosRequestConfig
-  public streamRequestOptions: AxiosRequestConfig
+  public readonly basicRequestOptions: AxiosRequestConfig
+  public readonly arrayBufferRequestOptions: AxiosRequestConfig
+  public readonly jsonRequestOptions: AxiosRequestConfig
+  public readonly streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
@@ -135,53 +124,46 @@ class Downloader {
       ...backoffOptions,
     }
 
-    this.arrayBufferRequestOptions = {
+    this.basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
-
+      timeout: this.requestTimeout,
       headers: {
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
-        cookie: this.loginCookie,
       },
-      responseType: 'arraybuffer',
-      timeout: this.requestTimeout,
-      method: 'GET',
       validateStatus(status) {
         return (status >= 200 && status < 300) || status === 304
       },
     }
 
-    this.jsonRequestOptions = {
-      // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-      httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }),
+    this.arrayBufferRequestOptions = {
+      ...this.basicRequestOptions,
+      responseType: 'arraybuffer',
+      method: 'GET',
+    }
 
+    this.jsonRequestOptions = {
+      ...this.basicRequestOptions,
       headers: {
+        ...this.basicRequestOptions.headers,
         accept: 'application/json',
-        'cache-control': 'public, max-stale=86400',
         'accept-encoding': 'gzip, deflate',
-        'user-agent': this.uaString,
-        cookie: this.loginCookie,
       },
       responseType: 'json',
-      timeout: this.requestTimeout,
       method: 'GET',
     }
 
     this.streamRequestOptions = {
-      // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-      ...defaultStreamRequestOptions,
-      httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }),
-
+      ...this.basicRequestOptions,
       headers: {
-        ...defaultStreamRequestOptions.headers,
-        'user-agent': this.uaString,
-        cookie: this.loginCookie,
+        ...this.basicRequestOptions.headers,
+        accept: 'application/octet-stream',
+        'accept-encoding': 'gzip, deflate',
       },
-      timeout: this.requestTimeout,
+      responseType: 'stream',
+      method: 'GET',
     }
   }
 
@@ -371,6 +353,29 @@ class Downloader {
     })
   }
 
+  public async request<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): Promise<R> {
+    return axios
+      .request<T, R, D>({
+        ...config,
+        headers: {
+          // Use the base domain of the wiki being scraped as the Referer header, so that we can
+          // successfully scrap WMF map tiles.
+          Referer: MediaWiki.baseUrl.href,
+          // Set loginCookie if present (might be dynamic, so we need to override it at every call)
+          cookie: this.loginCookie,
+          ...config.headers,
+        },
+        signal: AbortSignal.timeout(this.requestTimeout),
+      })
+      .then(async (resp) => {
+        // Store cookie if needed, so that we can pass it to next requests
+        if (resp.headers['set-cookie']) {
+          this.loginCookie = resp.headers['set-cookie'].join(';')
+        }
+        return resp
+      })
+  }
+
   public async downloadContent(_url: string, kind: DonwloadKind, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
@@ -405,7 +410,7 @@ class Downloader {
 
   public async canGetUrl(url: string): Promise<boolean> {
     try {
-      await axios.get(url)
+      await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
       return true
     } catch (err) {
       return false
@@ -461,8 +466,7 @@ class Downloader {
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
-    axios
-      .get<T>(url, this.jsonRequestOptions)
+    this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
@@ -533,9 +537,7 @@ class Downloader {
       if (this.optimisationCacheUrl && kind === 'image') {
         this.downloadImage(url, handler)
       } else {
-        // Use the base domain of the wiki being scraped as the Referer header, so that we can
-        // successfully scrap WMF map tiles.
-        const resp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { ...this.arrayBufferRequestOptions.headers, Referer: MediaWiki.baseUrl.href } })
+        const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
         // If content is an image, we might benefit from compressing it
         const content = kind === 'image' ? (await this.getCompressedBody({ data: resp.data })).data : resp.data
         // compute content-type from content, since getCompressedBody might have modified it
@@ -543,7 +545,6 @@ class Downloader {
         handler(null, {
           contentType,
           content,
-          setCookie: resp.headers['set-cookie'] ? resp.headers['set-cookie'].join(';') : null,
         })
       }
     } catch (err) {
@@ -572,11 +573,13 @@ class Downloader {
           }
           // Use the base domain of the wiki being scraped as the Referer header, so that we can
           // successfully scrap WMF map tiles.
-          const mwResp = await axios(url, { ...this.arrayBufferRequestOptions, headers: { ...this.arrayBufferRequestOptions.headers, Referer: MediaWiki.baseUrl.href } })
+          const mwResp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
 
           // Most of the images, after having been uploaded once to the
           // cache, will always have 304 status, until modified. If cache
-          // is up to date, return cached image.
+          // is up to date, return cached image. We always have an s3
+          // response when mwResp is 304, since this can only happen
+          // when we have an eTag coming from s3.
           if (mwResp.status === 304) {
             // Proceed with image
             const data = (await this.streamToBuffer(s3Resp.Body as Readable)) as any
@@ -587,6 +590,11 @@ class Downloader {
               content: data,
             })
             return
+          }
+
+          // Destroy the Readable so that socket is freed and returned to the pool
+          if (s3Resp?.Body) {
+            s3Resp.Body.destroy()
           }
 
           // Compress content because image blob comes from upstream MediaWiki
@@ -709,7 +717,7 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
+    if ((await MediaWiki.hasWikimediaMobileApi(this)) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
       try {
         // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)

@@ -10,11 +10,16 @@ describeIf('S3', () => {
   test('S3 checks', async () => {
     const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true)
 
-    const s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
-      bucketName: s3UrlObj.query.bucketName,
-      keyId: s3UrlObj.query.keyId,
-      secretAccessKey: s3UrlObj.query.secretAccessKey,
-    })
+    const s3 = new S3(
+      `${s3UrlObj.protocol}//${s3UrlObj.host}/`,
+      {
+        bucketName: s3UrlObj.query.bucketName,
+        keyId: s3UrlObj.query.keyId,
+        secretAccessKey: s3UrlObj.query.secretAccessKey,
+      },
+      1000 * 60,
+      false,
+    )
 
     const credentialExists = await s3.initialise()
     // Credentials on S3 exists
@@ -48,11 +53,16 @@ describeIf('S3', () => {
 
     expect(
       () =>
-        new S3(`${wrongS3UrlObj.protocol}//${wrongS3UrlObj.host}/`, {
-          bucketName: wrongS3UrlObj.query.bucketName,
-          keyId: wrongS3UrlObj.query.keyId,
-          secretAccessKey: wrongS3UrlObj.query.secretAccessKey,
-        }),
+        new S3(
+          `${wrongS3UrlObj.protocol}//${wrongS3UrlObj.host}/`,
+          {
+            bucketName: wrongS3UrlObj.query.bucketName,
+            keyId: wrongS3UrlObj.query.keyId,
+            secretAccessKey: wrongS3UrlObj.query.secretAccessKey,
+          },
+          1000 * 60,
+          false,
+        ),
     ).toThrow('Unknown S3 region set')
   })
 })
