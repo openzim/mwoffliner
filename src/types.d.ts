@@ -14,6 +14,8 @@ declare module 'imagemin-webp'
 
 type DominoElement = any
 
+type DonwloadKind = 'image' | 'json' | 'media' | 'video' | 'subtitle' | 'module' | 'css' | 'data'
+
 type Callback = (err?: any, data?: any, extra?: any) => void
 interface KVS<T> {
   [key: string]: T
@@ -42,7 +44,7 @@ type FileDetail = {
   namespace?: string
   mult?: number
   width?: number
-  kind: string
+  kind: DonwloadKind
 }
 
 type ArticleRedirect = {

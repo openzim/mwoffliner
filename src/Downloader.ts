@@ -371,7 +371,7 @@ class Downloader {
     })
   }
 
-  public async downloadContent(_url: string, kind: string, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
+  public async downloadContent(_url: string, kind: DonwloadKind, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
@@ -459,7 +459,7 @@ class Downloader {
     return null
   }
 
-  private getJSONCb = <T>(url: string, kind: string, handler: (...args: any[]) => any): void => {
+  private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
     axios
       .get<T>(url, this.jsonRequestOptions)
@@ -527,7 +527,7 @@ class Downloader {
     }
   }
 
-  private getContentCb = async (url: string, kind: string, handler: any): Promise<void> => {
+  private getContentCb = async (url: string, kind: DonwloadKind, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`)
     try {
       if (this.optimisationCacheUrl && kind === 'image') {
@@ -645,7 +645,7 @@ class Downloader {
     }
   }
 
-  private backoffCall(handler: (...args: any[]) => void, url: string, kind: string, callback: (...args: any[]) => void | Promise<void>): void {
+  private backoffCall(handler: (...args: any[]) => void, url: string, kind: DonwloadKind, callback: (...args: any[]) => void | Promise<void>): void {
     const call = backoff.call(handler, url, kind, callback)
     call.setStrategy(this.backoffOptions.strategy)
     call.retryIf(this.backoffOptions.retryIf)
