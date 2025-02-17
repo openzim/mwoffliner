@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"MSClaudiu"
+		]
+	},
+	"DISCLAIMER": "Acest articol este emis de la ${creator}. Textul este licențiat sub ${license}. Se pot aplica termeni suplimentari pentru fișierele media.",
+	"LAST_EDITED_ON": "Ultima editare pe ${date}",
+	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
+}
