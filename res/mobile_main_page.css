@@ -95,6 +95,7 @@ h2 {
     font-weight: bold;
     transition: all 0.3s;
     transform: scale(1);
+    overflow: auto;
 }
 
 /* .item:hover figcaption {
