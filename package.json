@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "1.14.1-dev0",
+  "version": "1.14.2-dev0",
   "description": "MediaWiki ZIM scraper",
   "main": "lib/mwoffliner.lib.js",
   "license": "GPL-3.0",
@@ -24,6 +24,7 @@
     "lint": "eslint -c .eslintrc.cjs --ext .ts .",
     "lint-fix": "eslint -c .eslintrc.cjs --ext .ts --fix .",
     "format": "prettier --write './**/*.ts'",
+    "prebuild": "node -p \"'export const LIB_VERSION = \\'' + require('./package.json').version + '\\''\" > src/version.ts",
     "build": "./dev/build.sh",
     "watch": "./dev/watch.sh",
     "prepublish": "npm run build",
@@ -94,7 +95,6 @@
     "imagemin-webp": "^7.0.0",
     "md5": "^2.3.0",
     "merge": "^2.1.1",
-    "mime-type": "^4.0.0",
     "mkdirp": "^2.1.6",
     "mocha": "^10.2.0",
     "p-map": "^5.5.0",

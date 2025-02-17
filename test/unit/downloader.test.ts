@@ -3,7 +3,7 @@ import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
 import RedisStore from '../../src/RedisStore.js'
 import Axios from 'axios'
-import { mwRetToArticleDetail, stripHttpFromUrl, isImageUrl } from '../../src/util/index.js'
+import { mwRetToArticleDetail, stripHttpFromUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
 import { config } from '../../src/config.js'
@@ -34,10 +34,10 @@ describe('Downloader class', () => {
 
     await MediaWiki.getMwMetaData(downloader)
     await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasRestApi()
-    await MediaWiki.hasVisualEditorApi()
+    await MediaWiki.hasWikimediaDesktopApi(downloader)
+    await MediaWiki.hasWikimediaMobileApi(downloader)
+    await MediaWiki.hasRestApi(downloader)
+    await MediaWiki.hasVisualEditorApi(downloader)
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
@@ -71,18 +71,18 @@ describe('Downloader class', () => {
   })
 
   test('downloader.downloadContent returns', async () => {
-    const contentRes = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg')
-    expect(contentRes.responseHeaders).toBeDefined()
+    const contentRes = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg', 'image')
+    expect(contentRes.contentType).toBeDefined()
   })
 
   test('Webp compression working for cmyk color-space images', async () => {
-    const { content } = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg')
+    const { content } = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg', 'image')
     const fileType = await FileType.fileTypeFromBuffer(Buffer.from(content))
     expect(fileType?.mime).toEqual('image/webp')
   })
 
   test('downloader.downloadContent throws on non-existant url', async () => {
-    await expect(downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg')).rejects.toThrowError(
+    await expect(downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg', 'image')).rejects.toThrowError(
       new Error('Request failed with status code 404'),
     )
   })
@@ -110,7 +110,7 @@ describe('Downloader class', () => {
   })
 
   test('downloadContent throws when empty string is passed', async () => {
-    await expect(downloader.downloadContent('')).rejects.toThrowError()
+    await expect(downloader.downloadContent('', 'image')).rejects.toThrowError()
   })
 
   test('downloadContent successfully downloaded an image', async () => {
@@ -122,8 +122,8 @@ describe('Downloader class', () => {
       imgToGetSrc = imgToGet.getAttribute('src')
     }
     // This is the downloading of an image
-    const LondonImage = await downloader.downloadContent(imgToGetSrc)
-    expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
+    const LondonImage = await downloader.downloadContent(imgToGetSrc, 'image')
+    expect(LondonImage.contentType).toMatch(/image\//i)
   })
 
   test('downloadContent successfully downloads a map image', async () => {
@@ -135,8 +135,8 @@ describe('Downloader class', () => {
       imgToGetSrc = imgToGet.getAttribute('src')
     }
     // This is the downloading of an image
-    const LondonImage = await downloader.downloadContent(imgToGetSrc)
-    expect(LondonImage.responseHeaders['content-type']).toMatch(/image\//i)
+    const LondonImage = await downloader.downloadContent(imgToGetSrc, 'image')
+    expect(LondonImage.contentType).toMatch(/image\//i)
   })
 
   describe('getArticle method', () => {
@@ -278,58 +278,6 @@ describe('Downloader class', () => {
     }
   })
 
-  describe('isImageUrl method', () => {
-    test('Checked Image type: png', async () => {
-      const isPngFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg.png')
-      expect(isPngFile).toBeTruthy()
-    })
-
-    test('Checked Image type: jpg', async () => {
-      const isJpgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPG')
-      expect(isJpgFile).toBeTruthy()
-    })
-
-    test('Checked Image type: svg', async () => {
-      const isSvgFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.svg')
-      expect(isSvgFile).toBeTruthy()
-    })
-
-    test('Checked Image type: jpeg', async () => {
-      const isJpegFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.JPEG')
-      expect(isJpegFile).toBeTruthy()
-    })
-
-    test('Checked Image type: gif', async () => {
-      const isgifFile = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif')
-      expect(isgifFile).toBeTruthy()
-    })
-
-    test('Checked Image URL with arguments', async () => {
-      const isgifFileWithArgs = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x.gif?foo=bar')
-      expect(isgifFileWithArgs).toBeTruthy()
-    })
-
-    test('Url is not image type', async () => {
-      const isnotImage = isImageUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json&formatversion=2')
-      expect(isnotImage).not.toBeTruthy()
-    })
-
-    test('Url is empty string', async () => {
-      const isEmptyString = isImageUrl('')
-      expect(isEmptyString).not.toBeTruthy()
-    })
-
-    test('Image Url has no extension', async () => {
-      const imageHasNoExtension = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/bmwiki-2x')
-      expect(imageHasNoExtension).not.toBeTruthy()
-    })
-
-    test('Image Url extension is undefined', async () => {
-      const extensionIsUndefined = isImageUrl('https://bm.wikipedia.org/static/images/project-logos/undefined')
-      expect(extensionIsUndefined).not.toBeTruthy()
-    })
-  })
-
   const describeIf = process.env.S3_URL ? describe : describe.skip
 
   describeIf('Downloader class with optimisation', () => {
@@ -341,11 +289,16 @@ describe('Downloader class', () => {
       MediaWiki.base = 'https://en.wikipedia.org'
       MediaWiki.getCategories = true
 
-      s3 = new S3(`${s3UrlObj.protocol}//${s3UrlObj.host}/`, {
-        bucketName: s3UrlObj.query.bucketName,
-        keyId: s3UrlObj.query.keyId,
-        secretAccessKey: s3UrlObj.query.secretAccessKey,
-      })
+      s3 = new S3(
+        `${s3UrlObj.protocol}//${s3UrlObj.host}/`,
+        {
+          bucketName: s3UrlObj.query.bucketName,
+          keyId: s3UrlObj.query.keyId,
+          secretAccessKey: s3UrlObj.query.secretAccessKey,
+        },
+        1000 * 60,
+        false,
+      )
       downloader = new Downloader({
         uaString: `${config.userAgent} (contact@kiwix.org)`,
         speed: 1,
@@ -356,11 +309,6 @@ describe('Downloader class', () => {
       })
 
       await s3.initialise()
-    })
-
-    test('Etag Not Present', async () => {
-      const etagNotPresent = await downloader.downloadContent('https://en.wikipedia.org/w/extensions/WikimediaBadges/resources/images/badge-silver-star.png?70a8c')
-      expect(etagNotPresent.responseHeaders.etag).toBeUndefined()
     })
 
     test('Delete image from S3', async () => {
@@ -385,7 +333,7 @@ describe('Downloader class', () => {
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
 
       // Download the image (and cache it in S3)
-      await downloader.downloadContent(randomImage)
+      await downloader.downloadContent(randomImage, 'image')
 
       // Async downloadContent(), waiting this is done
       await setTimeout(5000)
@@ -394,18 +342,15 @@ describe('Downloader class', () => {
       const upstreamResp = await Axios(randomImage)
       const s3Resp = await s3.downloadBlob(imagePath)
       expect(downloader.removeEtagWeakPrefix(`${upstreamResp.headers.etag}`)).toEqual(s3Resp.Metadata.etag)
-      expect(upstreamResp.headers['content-type']).toEqual(s3Resp.Metadata.contenttype)
 
       // Overwrite Image with new Etag to S3
       const newEtag = '686897696a7c876b7e'
-      const newContentType = 'application/octet-stream'
-      await s3.uploadBlob(imagePath, upstreamResp.data, newEtag, newContentType, '1')
+      await s3.uploadBlob(imagePath, upstreamResp.data, newEtag, '1')
       await setTimeout(10000)
 
       // Download again to check the Etag has been overwritten properly
       const newS3Resp = await s3.downloadBlob(imagePath)
       expect(newS3Resp.Metadata.etag).toEqual(newEtag)
-      expect(newS3Resp.Metadata.contenttype).toEqual(newContentType)
 
       // Remove Image after test
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
@@ -416,7 +361,6 @@ describe('Downloader class', () => {
     const resp = await Axios(
       'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json&formatversion=2',
     )
-    const url = resp.data.query.pages[0].imageinfo[0].url
-    return isImageUrl(url) ? url : getRandomImageUrl()
+    return resp.data.query.pages[0].imageinfo[0].url
   }
 })

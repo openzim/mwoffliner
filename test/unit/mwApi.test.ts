@@ -18,9 +18,9 @@ afterAll(stopRedis)
 const initMW = async (downloader: Downloader) => {
   await MediaWiki.getMwMetaData(downloader)
   await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi()
-  await MediaWiki.hasRestApi()
-  await MediaWiki.hasVisualEditorApi()
+  await MediaWiki.hasWikimediaDesktopApi(downloader)
+  await MediaWiki.hasRestApi(downloader)
+  await MediaWiki.hasVisualEditorApi(downloader)
 
   await MediaWiki.getNamespaces([], downloader)
 }

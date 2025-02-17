@@ -147,7 +147,7 @@ describe('Styles', () => {
 
     await saveArticles(
       {
-        addArticle(item: StringItem) {
+        addItem(item: StringItem) {
           if (item.title === 'London') {
             LondonArticle = item
           }

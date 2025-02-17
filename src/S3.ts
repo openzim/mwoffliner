@@ -1,7 +1,8 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadBucketCommand } from '@aws-sdk/client-s3'
 import * as logger from './Logger.js'
-import { Readable } from 'stream'
 import { publicIpv4 } from 'public-ip'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
+import { Agent } from 'https'
 
 interface BucketParams {
   Bucket: string
@@ -13,11 +14,15 @@ class S3 {
   public s3Handler: any
   public bucketName: string
   private region: string
+  private reqTimeout: number
+  private insecure: boolean
 
-  constructor(s3Url: any, s3Params: any) {
+  constructor(s3Url: any, s3Params: any, reqTimeout: number, insecure: boolean) {
     this.url = s3Url
     this.params = s3Params
     this.bucketName = s3Params.bucketName
+    this.reqTimeout = reqTimeout
+    this.insecure = insecure
     this.setRegion()
   }
 
@@ -43,6 +48,12 @@ class S3 {
       endpoint: s3UrlBase.href,
       forcePathStyle: s3UrlBase.protocol === 'http:',
       region: this.region,
+      requestHandler: new NodeHttpHandler({
+        connectionTimeout: this.reqTimeout,
+        requestTimeout: this.reqTimeout,
+        httpAgent: new Agent({ keepAlive: true }),
+        httpsAgent: new Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
+      }),
     })
 
     return this.bucketExists(this.bucketName)
@@ -66,12 +77,12 @@ class S3 {
     })
   }
 
-  public uploadBlob(key: string, data: any, eTag: string, contentType: string, version: string): Promise<any> {
+  public uploadBlob(key: string, data: any, eTag: string, version: string): Promise<any> {
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
-      Metadata: { etag: eTag, contenttype: contentType, version },
-      Body: this.bufferToStream(data),
+      Metadata: { etag: eTag, version },
+      Body: data,
     })
 
     return new Promise((resolve, reject) => {
@@ -105,7 +116,7 @@ class S3 {
         .catch((err: any) => {
           // For 404 error handle AWS service-specific exception
           if (err && err.name === 'NoSuchKey') {
-            logger.log(`The specified key '${key}' does not exist in the cache.`)
+            logger.info(`The specified key '${key}' does not exist in the cache.`)
             resolve(null)
           } else {
             logger.error(`Error (${err}) while downloading the object '${key}' from the cache.`)
@@ -126,15 +137,6 @@ class S3 {
           logger.error('Error while deleting object in the cache', err)
           reject(err)
         })
-    })
-  }
-
-  private bufferToStream(binary: Buffer) {
-    return new Readable({
-      read() {
-        this.push(binary)
-        this.push(null)
-      },
     })
   }
 }

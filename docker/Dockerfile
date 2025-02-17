@@ -11,14 +11,16 @@ RUN apt-get update && \
 # Install mwoffliner
 WORKDIR /tmp/mwoffliner
 COPY *.json ./
+COPY dev dev
+RUN mkdir src
+RUN npm --global config set user root
+RUN npm config set unsafe-perm true
+RUN npm i
 COPY src src
 COPY res res
 COPY translation translation
 COPY extensions extensions
 COPY index.js .
-COPY dev dev
-RUN npm --global config set user root
-RUN npm config set unsafe-perm true
 RUN npm i
 RUN npm i -g .
 

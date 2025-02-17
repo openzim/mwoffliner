@@ -68,7 +68,7 @@ describe('ArticleTreatment', () => {
       // TODO: use proper spied (like sinon.js)
       await saveArticles(
         {
-          addArticle(item: StringItem) {
+          addItem(item: StringItem) {
             if (item.mimeType === 'text/html') {
               addedArticles.push(item)
             }

@@ -1,10 +1,9 @@
 import crypto from 'crypto'
 import domino from 'domino'
-import { defaultStreamRequestOptions } from '../Downloader.js'
+import Downloader from '../Downloader.js'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
-import mime from 'mime-types'
 import mkdirp from 'mkdirp'
 import os from 'os'
 import pathParser from 'path'
@@ -17,13 +16,12 @@ import {
   WIKIHIERO_IMAGE_URL_REGEX,
   IMAGE_THUMB_URL_REGEX,
   FIND_HTTP_REGEX,
-  IMAGE_URL_REGEX,
   BITMAP_IMAGE_MIME_REGEX,
   IMAGE_MIME_REGEX,
   WEBP_CANDIDATE_IMAGE_MIME_TYPE,
 } from './const.js'
 import { fileURLToPath } from 'url'
-import axios, { AxiosError } from 'axios'
+import { AxiosError } from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -381,10 +379,6 @@ export function stripHttpFromUrl(url: string): string {
   return url.replace(FIND_HTTP_REGEX, '')
 }
 
-export function isImageUrl(url: string): boolean {
-  return IMAGE_URL_REGEX.test(url)
-}
-
 export function isImageMimeType(mimeType: string): boolean {
   return IMAGE_MIME_REGEX.test(mimeType)
 }
@@ -393,64 +387,17 @@ export function isBitmapImageMimeType(mimeType: string): boolean {
   return BITMAP_IMAGE_MIME_REGEX.test(mimeType)
 }
 
-export function isWebpCandidateImageMimeType(webp: boolean, content_type: string) {
-  return webp && WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type)
-}
-
-/*
- * Get best fitting MIME type from contentType or pathname
- * Preference:
- *   1. content-type if one of preferedDiscreteTypes
- *   2. mime-type from extension if in preferedDiscreteTypes
- *   3. any other content-type
- *   4. any other mime-type from extension
- *   5. null
- */
-export function getMimeType(url: string, contentType?: string): string {
-  const preferedDiscreteTypes = ['image', 'audio', 'video']
-
-  let cMimeType: string
-  if (contentType) {
-    // i.e. "application/json; charset=utf-8"
-    cMimeType = contentType.indexOf(';') === -1 ? contentType : contentType.slice(0, contentType.indexOf(';'))
-    cMimeType = cMimeType.trim()
-
-    const discreteType = cMimeType.slice(0, cMimeType.indexOf('/'))
-    if (preferedDiscreteTypes.includes(discreteType)) {
-      return cMimeType
-    }
-  }
-
-  let pMimeType: string
-  if (url) {
-    // provide a bas url for parsing relative paths
-    let { pathname } = new URL(url, 'http://large.com/path/to/strip/here')
-
-    // Fandom has an URL scheme that attaches /revision/... to the path
-    const parts = FANDOM_IMAGE_URL_REGEX.exec(pathname)
-    if (parts !== null) {
-      pathname = parts[1]
-    }
-
-    pMimeType = mime.lookup(pathname)
-    if (pMimeType) {
-      const discreteType = pMimeType.slice(0, pMimeType.indexOf('/'))
-      if (preferedDiscreteTypes.includes(discreteType)) {
-        return pMimeType
-      }
-    }
-  }
-
-  return cMimeType || pMimeType || null
+export function isWebpCandidateImageMimeType(content_type: string) {
+  return WEBP_CANDIDATE_IMAGE_MIME_TYPE.test(content_type)
 }
 
 export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
 }
 
-async function downloadListByUrl(url: string): Promise<string> {
+async function downloadListByUrl(url: string, downloader: Downloader): Promise<string> {
   const fileName = url.split('/').slice(-1)[0]
-  const { data: contentStream } = await axios.get(url, defaultStreamRequestOptions)
+  const { data: contentStream } = await downloader.request({ url, method: 'GET', ...downloader.streamRequestOptions })
   const filePath = path.join(await getTmpDirectory(), fileName)
   const writeStream = fs.createWriteStream(filePath)
   await new Promise((resolve, reject) => {
@@ -462,7 +409,7 @@ async function downloadListByUrl(url: string): Promise<string> {
   return filePath
 }
 
-export async function extractArticleList(articleList: string): Promise<string[]> {
+export async function extractArticleList(articleList: string, downloader: Downloader): Promise<string[]> {
   const list = await Promise.all(
     articleList
       .split(',')
@@ -478,7 +425,7 @@ export async function extractArticleList(articleList: string): Promise<string[]>
           }
           if (url && url.href) {
             try {
-              item = await downloadListByUrl(url.href)
+              item = await downloadListByUrl(url.href, downloader)
             } catch (e) {
               throw new Error(`Failed to read articleList from URL: ${url.href}`)
             }

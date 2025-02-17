@@ -3,10 +3,10 @@ import deepmerge from 'deepmerge'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
-import axios from 'axios'
 import RedisStore from '../RedisStore.js'
 import MediaWiki from '../MediaWiki.js'
 import { REDIRECT_PAGE_SIGNATURE } from './const.js'
+import { cleanupAxiosError } from './misc.js'
 
 export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
   let from = 0
@@ -261,15 +261,16 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
 /**
  * Check for API availability at the given URL.
  *
+ * @param downloader Downloader class handling web requests
  * @param url The URL to check.
  * @param loginCookie A string representing a cookie for login, if necessary.
  * @param allowedMimeTypes An array of allowed mime types for the response. If this is set, the check is only considered a
  * success if the response has a mime type in this array. Set to null to disable this filter.
  * @returns Promise resolving to true if the API is available.
  */
-export async function checkApiAvailability(url: string, loginCookie = '', allowedMimeTypes = null): Promise<boolean> {
+export async function checkApiAvailability(downloader: Downloader, url: string, allowedMimeTypes = null): Promise<boolean> {
   try {
-    const resp = await axios.get(decodeURI(url), { maxRedirects: 0, headers: { cookie: loginCookie } })
+    const resp = await downloader.request({ url: decodeURI(url), method: 'GET', maxRedirects: 0, ...downloader.basicRequestOptions })
 
     const isRedirectPage = typeof resp.data === 'string' && resp.data.startsWith(REDIRECT_PAGE_SIGNATURE)
 
@@ -292,6 +293,7 @@ export async function checkApiAvailability(url: string, loginCookie = '', allowe
 
     return !isRedirectPage && isSuccess && validMimeType
   } catch (err) {
+    logger.info(cleanupAxiosError(err))
     return false
   }
 }

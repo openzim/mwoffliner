@@ -41,10 +41,10 @@ describe('saveArticles', () => {
     test(`Article html processing using ${renderer} renderer`, async () => {
       const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
       await MediaWiki.hasCoordinates(downloader)
-      await MediaWiki.hasWikimediaDesktopApi()
-      await MediaWiki.hasWikimediaMobileApi()
-      await MediaWiki.hasRestApi()
-      await MediaWiki.hasVisualEditorApi()
+      await MediaWiki.hasWikimediaDesktopApi(downloader)
+      await MediaWiki.hasWikimediaMobileApi(downloader)
+      await MediaWiki.hasRestApi(downloader)
+      await MediaWiki.hasVisualEditorApi(downloader)
 
       const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -72,7 +72,7 @@ describe('saveArticles', () => {
 
       // Successfully scrapped existent articles
       expect(addedArticles).toHaveLength(1)
-      expect(addedArticles[0].path).toEqual('A/London')
+      expect(addedArticles[0].path).toEqual('London')
 
       const articleId = 'non-existent-article'
       const articleUrl = downloader.getArticleUrl(articleId)
@@ -189,7 +189,7 @@ describe('saveArticles', () => {
       const writtenArticles: any = {}
       await saveArticles(
         {
-          addArticle(item: StringItem) {
+          addItem(item: StringItem) {
             if (item.mimeType === 'text/html') {
               writtenArticles[item.title] = item
             }

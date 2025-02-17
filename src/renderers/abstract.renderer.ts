@@ -10,16 +10,7 @@ import { config } from '../config.js'
 import { Dump } from '../Dump.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
-import {
-  getFullUrl,
-  getMediaBase,
-  getMimeType,
-  getRelativeFilePath,
-  isWebpCandidateImageMimeType,
-  interpolateTranslationString,
-  encodeArticleIdForZimHtmlUrl,
-  getStaticFiles,
-} from '../util/misc.js'
+import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi'
@@ -42,7 +33,6 @@ export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuil
 
 export interface RenderOpts {
   data?: any
-  webp: boolean
   _moduleDependencies: any
   articleId?: string
   articleDetailXId?: RKVS<ArticleDetail>
@@ -55,6 +45,8 @@ export interface RenderSingleOutput {
   articleId: string
   displayTitle: string
   html: string
+  imageDependencies: any
+  videoDependencies: any
   mediaDependencies: any
   moduleDependencies: any
   staticFiles: string[]
@@ -76,14 +68,14 @@ export abstract class Renderer {
     srcCache: KVS<boolean>,
     articleId: string,
     videoEl: DominoElement,
-    webp: boolean,
-  ): Promise<{ mediaDependencies: string[]; subtitles: string[] }> {
-    const mediaDependencies: string[] = []
+  ): Promise<{ imageDependencies: string[]; videoDependencies: string[]; subtitles: string[] }> {
+    const imageDependencies: string[] = []
+    const videoDependencies: string[] = []
     const subtitles: string[] = []
 
     if (dump.nopic || dump.novid || dump.nodet) {
       DOMUtils.deleteNode(videoEl)
-      return { mediaDependencies, subtitles }
+      return { imageDependencies, videoDependencies, subtitles }
     }
 
     this.adjustVideoElementAttributes(videoEl)
@@ -93,18 +85,18 @@ export abstract class Renderer {
     if (!chosenVideoSourceEl) {
       logger.warn(`Unable to find an appropriate video/audio source for an media element in article '${articleId}'`)
       DOMUtils.deleteNode(videoEl)
-      return { mediaDependencies, subtitles }
+      return { imageDependencies, videoDependencies, subtitles }
     }
 
-    this.handleVideoPoster(videoEl, articleId, webp, mediaDependencies, srcCache)
-    this.updateVideoSrc(chosenVideoSourceEl, articleId, srcCache, mediaDependencies)
+    this.handleVideoPoster(videoEl, articleId, imageDependencies, srcCache)
+    this.updateVideoSrc(chosenVideoSourceEl, articleId, srcCache, videoDependencies)
 
     const trackElements = Array.from(videoEl.querySelectorAll('track'))
     for (const track of trackElements) {
       subtitles.push(await this.treatSubtitle(track, articleId))
     }
 
-    return { mediaDependencies, subtitles }
+    return { imageDependencies, videoDependencies, subtitles }
   }
 
   private adjustVideoElementAttributes(videoEl: DominoElement): void {
@@ -187,30 +179,30 @@ export abstract class Renderer {
     return chosenVideoSourceEl
   }
 
-  private handleVideoPoster(videoEl: DominoElement, articleId: string, webp: boolean, mediaDependencies: string[], srcCache: KVS<boolean>): void {
+  private handleVideoPoster(videoEl: DominoElement, articleId: string, imageDependencies: string[], srcCache: KVS<boolean>): void {
     const posterUrl = videoEl.getAttribute('poster')
     if (posterUrl) {
       const videoPosterUrl = getFullUrl(posterUrl, MediaWiki.baseUrl)
       const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I')
 
       if (posterUrl) {
-        videoEl.setAttribute('poster', isWebpCandidateImageMimeType(webp, getMimeType(newVideoPosterUrl)) ? newVideoPosterUrl + '.webp' : newVideoPosterUrl)
+        videoEl.setAttribute('poster', newVideoPosterUrl)
       }
       videoEl.removeAttribute('resource')
 
       if (!srcCache.hasOwnProperty(videoPosterUrl)) {
         srcCache[videoPosterUrl] = true
-        mediaDependencies.push(videoPosterUrl)
+        imageDependencies.push(videoPosterUrl)
       }
     }
   }
 
-  private updateVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, mediaDependencies: string[]): void {
+  private updateVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, videoDependencies: string[]): void {
     /* Download content, but avoid duplicate calls */
     const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), MediaWiki.baseUrl)
     if (!srcCache.hasOwnProperty(sourceUrl)) {
       srcCache[sourceUrl] = true
-      mediaDependencies.push(sourceUrl)
+      videoDependencies.push(sourceUrl)
     }
 
     /* Set new URL for the video element */
@@ -261,12 +253,12 @@ export abstract class Renderer {
     imageNode.parentNode.replaceChild(thumbDiv, imageNode)
   }
 
-  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement, webp: boolean): Promise<{ mediaDependencies: string[] }> {
-    const mediaDependencies: string[] = []
+  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ imageDependencies: string[] }> {
+    const imageDependencies: string[] = []
 
     if (!this.shouldKeepImage(dump, img)) {
       DOMUtils.deleteNode(img)
-      return { mediaDependencies }
+      return { imageDependencies }
     }
 
     /* Remove image link */
@@ -287,7 +279,7 @@ export abstract class Renderer {
           linkNode.parentNode.replaceChild(img, linkNode)
         } else {
           DOMUtils.deleteNode(img)
-          return { mediaDependencies }
+          return { imageDependencies }
         }
       }
     }
@@ -303,11 +295,11 @@ export abstract class Renderer {
       /* Download image, but avoid duplicate calls */
       if (!srcCache.hasOwnProperty(src)) {
         srcCache[src] = true
-        mediaDependencies.push(src)
+        imageDependencies.push(src)
       }
 
       /* Change image source attribute to point to the local image */
-      img.setAttribute('src', isWebpCandidateImageMimeType(webp, getMimeType(src)) ? newSrc + '.webp' : newSrc)
+      img.setAttribute('src', newSrc)
 
       /* Remove useless 'resource' attribute */
       img.removeAttribute('resource')
@@ -321,7 +313,7 @@ export abstract class Renderer {
     /* Add lazy loading */
     img.setAttribute('loading', 'lazy')
 
-    return { mediaDependencies }
+    return { imageDependencies }
   }
 
   private shouldKeepImage(dump: Dump, img: DominoElement) {
@@ -334,8 +326,9 @@ export abstract class Renderer {
     )
   }
 
-  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string, webp: boolean) {
-    let mediaDependencies: string[] = []
+  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+    let imageDependencies: string[] = []
+    let videoDependencies: string[] = []
     let subtitles: string[] = []
     /* Clean/rewrite image tags */
     const imgs = Array.from(parsoidDoc.getElementsByTagName('img'))
@@ -344,14 +337,15 @@ export abstract class Renderer {
 
     for (const videoEl of videos) {
       // <video /> and <audio />
-      const ret = await this.treatVideo(dump, srcCache, articleId, videoEl, webp)
-      mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
+      const ret = await this.treatVideo(dump, srcCache, articleId, videoEl)
+      imageDependencies = imageDependencies.concat(ret.imageDependencies)
+      videoDependencies = videoDependencies.concat(ret.videoDependencies)
       subtitles = subtitles.concat(ret.subtitles)
     }
 
     for (const imgEl of imgs) {
-      const ret = await this.treatImage(dump, srcCache, articleId, imgEl, webp)
-      mediaDependencies = mediaDependencies.concat(ret.mediaDependencies)
+      const ret = await this.treatImage(dump, srcCache, articleId, imgEl)
+      imageDependencies = imageDependencies.concat(ret.imageDependencies)
     }
 
     /* Improve image frames */
@@ -362,7 +356,7 @@ export abstract class Renderer {
       this.treatImageFrames(dump, parsoidDoc, imageNode)
     }
 
-    return { doc: parsoidDoc, mediaDependencies, subtitles }
+    return { doc: parsoidDoc, imageDependencies, videoDependencies, subtitles }
   }
 
   private isStillLinked(image: DominoElement) {
@@ -394,7 +388,9 @@ export abstract class Renderer {
   }
 
   // TODO: The first part of this method is common for all renders
-  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, webp: boolean, callback) {
+  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, callback) {
+    let imageDependencies: Array<{ url: string; path: string }> = []
+    let videoDependencies: Array<{ url: string; path: string }> = []
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
@@ -411,12 +407,21 @@ export abstract class Renderer {
     )
     doc = this.applyOtherTreatments(doc, dump)
 
-    const tmRet = await this.treatMedias(doc, dump, articleId, webp)
+    const tmRet = await this.treatMedias(doc, dump, articleId)
 
     doc = tmRet.doc
 
-    mediaDependencies = mediaDependencies.concat(
-      tmRet.mediaDependencies
+    videoDependencies = videoDependencies.concat(
+      tmRet.videoDependencies
+        .filter((a) => a)
+        .map((url) => {
+          const path = getMediaBase(url, false)
+          return { url, path }
+        }),
+    )
+
+    imageDependencies = imageDependencies.concat(
+      tmRet.imageDependencies
         .filter((a) => a)
         .map((url) => {
           const path = getMediaBase(url, false)
@@ -463,6 +468,8 @@ export abstract class Renderer {
     return {
       finalHTML,
       mediaDependencies,
+      imageDependencies,
+      videoDependencies,
       subtitles,
     }
   }

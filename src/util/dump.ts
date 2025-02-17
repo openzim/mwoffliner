@@ -2,7 +2,6 @@ import urlParser from 'url'
 import * as pathParser from 'path'
 import async from 'async'
 import * as logger from '../Logger.js'
-import axios from 'axios'
 import Downloader from '../Downloader.js'
 import RedisStore from '../RedisStore.js'
 import { getFullUrl, jsPath, cssPath } from './index.js'
@@ -32,7 +31,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
         const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi')
 
         logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`)
-        const { content } = await downloader.downloadContent(cssUrl)
+        const { content } = await downloader.downloadContent(cssUrl, 'css')
         const body = content.toString()
 
         let rewrittenCss = `\n/* start ${cssUrl} */\n\n`
@@ -63,7 +62,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
               /* Download CSS dependency, but avoid duplicate calls */
               if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
                 downloader.cssDependenceUrls[url] = true
-                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), namespace: '-' })
+                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), namespace: '-', kind: 'media' })
               }
             } else {
               logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
@@ -132,7 +131,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
 
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
-  const { content } = await downloader.downloadContent(moduleApiUrl)
+  const { content } = await downloader.downloadContent(moduleApiUrl, 'module')
   let text = content.toString()
 
   if (type === 'js') {
@@ -167,7 +166,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.
-export async function importPolyfillModules(zimCreator: Creator) {
+export async function importPolyfillModules(zimCreator: Creator, downloader: Downloader) {
   ;[
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
@@ -176,14 +175,8 @@ export async function importPolyfillModules(zimCreator: Creator) {
     await zimCreator.addItem(item)
   })
 
-  const content = await axios
-    .get(WEBP_HANDLER_URL, {
-      responseType: 'arraybuffer',
-      timeout: 60000,
-      validateStatus(status) {
-        return [200, 302, 304].indexOf(status) > -1
-      },
-    })
+  const content = await downloader
+    .request({ url: WEBP_HANDLER_URL, method: 'GET', ...downloader.arrayBufferRequestOptions })
     .then((a) => a.data)
     .catch((err) => {
       throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)

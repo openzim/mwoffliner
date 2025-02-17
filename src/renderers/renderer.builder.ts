@@ -6,16 +6,17 @@ import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from './rest-api.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
+import Downloader from 'src/Downloader.js'
 
 export class RendererBuilder {
-  public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
+  public async createRenderer(downloader: Downloader, options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
     const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi] = await Promise.all([
-      MediaWiki.hasVisualEditorApi(),
-      MediaWiki.hasWikimediaDesktopApi(),
-      MediaWiki.hasWikimediaMobileApi(),
-      MediaWiki.hasRestApi(),
+      MediaWiki.hasVisualEditorApi(downloader),
+      MediaWiki.hasWikimediaDesktopApi(downloader),
+      MediaWiki.hasWikimediaMobileApi(downloader),
+      MediaWiki.hasRestApi(downloader),
     ])
 
     switch (renderType) {

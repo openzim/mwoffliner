@@ -8,7 +8,6 @@
 import fs, { readFileSync } from 'fs'
 import os from 'os'
 import pmap from 'p-map'
-import axios from 'axios'
 import sharp from 'sharp'
 import domino from 'domino'
 import rimraf from 'rimraf'
@@ -146,7 +145,7 @@ async function execute(argv: any) {
     const s3UrlObj = urlParser.parse(optimisationCacheUrl)
     const queryReader = QueryStringParser.parse(s3UrlObj.query)
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-    s3Obj = new S3(s3Url, queryReader)
+    s3Obj = new S3(s3Url, queryReader, requestTimeout * 1000 || config.defaults.requestTimeout, argv.insecure)
     await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3')
     })
@@ -195,7 +194,7 @@ async function execute(argv: any) {
     Language: customZimLanguage || mwMetaData.langIso3,
     Publisher: publisher,
     Title: customZimTitle || mwMetaData.title,
-    'Illustration_48x48@1': await getIllustrationMetadata(),
+    'Illustration_48x48@1': await getIllustrationMetadata(downloader),
   }
   validateMetadata(metaDataRequiredKeys)
 
@@ -205,17 +204,17 @@ async function execute(argv: any) {
   if (customMainPage) {
     mainPage = customMainPage
     const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
-    if (!(await checkApiAvailability(mainPageUrl))) {
+    if (!(await checkApiAvailability(downloader, mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi()
-  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasRestApi()
-  await MediaWiki.hasVisualEditorApi()
+  await MediaWiki.hasWikimediaDesktopApi(downloader)
+  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi(downloader)
+  await MediaWiki.hasRestApi(downloader)
+  await MediaWiki.hasVisualEditorApi(downloader)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -265,7 +264,7 @@ async function execute(argv: any) {
   let articleListToIgnoreLines: string[]
   if (articleListToIgnore) {
     try {
-      articleListToIgnoreLines = await extractArticleList(articleListToIgnore)
+      articleListToIgnoreLines = await extractArticleList(articleListToIgnore, downloader)
       logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
@@ -276,7 +275,7 @@ async function execute(argv: any) {
   let articleListLines: string[]
   if (articleList) {
     try {
-      articleListLines = await extractArticleList(articleList)
+      articleListLines = await extractArticleList(articleList, downloader)
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }
@@ -406,7 +405,7 @@ async function execute(argv: any) {
     await getThumbnailsData()
 
     logger.log('Getting Main Page')
-    await getMainPage(dump, zimCreator, downloader)
+    await getMainPage(dump, zimCreator)
 
     logger.log('Getting articles')
     stime = Date.now()
@@ -426,7 +425,7 @@ async function execute(argv: any) {
 
     if (downloader.webp) {
       logger.log('Downloading polyfill module')
-      await importPolyfillModules(zimCreator)
+      await importPolyfillModules(zimCreator, downloader)
     }
 
     logger.log('Downloading module dependencies')
@@ -474,14 +473,14 @@ async function execute(argv: any) {
     })
   }
 
-  async function getIllustrationMetadata(): Promise<Buffer> {
+  async function getIllustrationMetadata(downloader: Downloader): Promise<Buffer> {
     if (customZimFavicon) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
       if (faviconIsRemote) {
         logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`)
-        content = await axios
-          .get(customZimFavicon, downloader.arrayBufferRequestOptions)
+        content = await downloader
+          .request({ url: customZimFavicon, method: 'GET', ...downloader.arrayBufferRequestOptions })
           .then((a) => a.data)
           .catch(() => {
             throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
@@ -513,7 +512,7 @@ async function execute(argv: any) {
 
     const parsedUrl = urlParser.parse(entries.logo)
     const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
-    const { content } = await downloader.downloadContent(logoUrl)
+    const { content } = await downloader.downloadContent(logoUrl, 'image')
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
 
@@ -526,7 +525,7 @@ async function execute(argv: any) {
     }
   }
 
-  async function getMainPage(dump: Dump, zimCreator: Creator, downloader: Downloader) {
+  async function getMainPage(dump: Dump, zimCreator: Creator) {
     async function createMainPage() {
       logger.log('Creating main page...')
       const doc = domino.createDocument(
@@ -564,7 +563,7 @@ async function execute(argv: any) {
       }
 
       if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article, downloader.webp)).join('\n')
+        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
         doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
       } else {
         const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
@@ -599,7 +598,10 @@ async function execute(argv: any) {
 
     articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
 
-    await Promise.all([filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width } as FileDetail), articleDetailXId.set(articleId, articleDetail)])
+    await Promise.all([
+      filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),
+      articleDetailXId.set(articleId, articleDetail),
+    ])
   }
 
   async function getThumbnailsData(): Promise<void> {

@@ -8,7 +8,6 @@ import {
   getFullUrl,
   getMediaBase,
   normalizeMwResponse,
-  getMimeType,
   isWebpCandidateImageMimeType,
   cleanupAxiosError,
   extractArticleList,
@@ -23,6 +22,9 @@ import { fileURLToPath } from 'url'
 import { jest } from '@jest/globals'
 import fs from 'fs'
 import rimraf from 'rimraf'
+import Downloader from '../../src/Downloader.js'
+import MediaWiki from '../../src/MediaWiki.js'
+import { config } from '../../src/config.js'
 
 jest.setTimeout(10000)
 
@@ -30,6 +32,13 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 describe('Utils', () => {
+  let downloader: Downloader
+
+  MediaWiki.base = 'https://en.wikipedia.org' // Mandatory setting for proper downloader initialization
+  beforeAll(async () => {
+    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
+  })
+
   test('util -> interpolateTranslationString', async () => {
     expect(interpolateTranslationString('Hello world', {})).toEqual('Hello world')
     expect(interpolateTranslationString('Hello ${name}', { name: 'John' })).toEqual('Hello John')
@@ -215,100 +224,13 @@ describe('Utils', () => {
     ).toEqual('589fd4e3821c15d4fcebcedf2effd5b0.png')
   })
 
-  test('MIME Type parsing from content-type and url', async () => {
-    // upper-case url, no content-type
-    let mimeType = getMimeType('https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Peloneustes_philarchus_Tubingen.JPG/250px-Peloneustes_philarchus_Tubingen.JPG')
-    expect(mimeType).toEqual('image/jpeg')
-    // conflicting types -> prefer content-type
-    mimeType = getMimeType('https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Peloneustes_philarchus_Tubingen.JPG/250px-Peloneustes_philarchus_Tubingen.JPG', 'video/mp4')
-    expect(mimeType).toEqual('video/mp4')
-    // invalid url, no content-type
-    mimeType = getMimeType('http://example.com')
-    expect(mimeType).toEqual(null)
-    // fandom url
-    mimeType = getMimeType('https://static.wikia.nocookie.net/minecraft_gamepedia/images/f/fc/Monolith_small.png/revision/latest/scale-to-width-down/250?cb=20191227051944')
-    expect(mimeType).toEqual('image/png')
-    // content-type with charset and space on weird position, url without extension
-    mimeType = getMimeType('https://en.wikipedia.org/wiki/Peloneustes', 'text/plain ; charset=UTF-8')
-    expect(mimeType).toEqual('text/plain')
-    // content-type none-prefered type, but url is
-    mimeType = getMimeType(
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Peloneustes_Skeletal_Mount_from_Andrews_%281910%29.png/357px-Peloneustes_Skeletal_Mount_from_Andrews_%281910%29.png',
-      'application/octet-stream',
-    )
-    expect(mimeType).toEqual('image/png')
-    // both none-prefered but conflicting types
-    mimeType = getMimeType('https://script.wikia.nocookie.net/fandom-ae-assets/platforms/v127.0.0/ucp-desktop/main.bundle.js', 'text/html')
-    expect(mimeType).toEqual('text/html')
-    // with query
-    mimeType = getMimeType('http://esample.com/test.svg?asdfa=asfas&328=x')
-    expect(mimeType).toEqual('image/svg+xml')
-  })
-
-  test('isWebpCandidate by image Url mime type', async () => {
-    const isWebpCandidateImageUrl = (url) => {
-      return isWebpCandidateImageMimeType(true, getMimeType(url))
-    }
-    // Thumbs
-    // Thumb 1
-    expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg')).toBeTruthy()
-    // No thumb'
-    expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg')).toBeTruthy()
-    // SVG
-    expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg')).toBeFalsy()
-    // SVG PNG thumb
-    expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png')).toBeTruthy()
-    // Video poster
-    expect(
-      isWebpCandidateImageUrl(
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg',
-      ),
-    ).toBeTruthy()
-    // OGG file
-    expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg')).toBeFalsy()
-    // Long thumb
-    expect(
-      isWebpCandidateImageUrl(
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_%28CVN_76%29_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.jpg/169px-thumbnail.jpg',
-      ),
-    ).toBeTruthy()
-    // Long thumb with SVG PNG
-    expect(
-      isWebpCandidateImageUrl(
-        'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_%28CVN_76%29_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.svg/169px-thumbnail.svg.png',
-      ),
-    ).toBeTruthy()
-
-    // Latex (equations)
-    expect(isWebpCandidateImageUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606')).toBeFalsy()
-
-    // WikiHiero (hieroglyphs)
-    // WikiHiero png with URL args
-    expect(isWebpCandidateImageUrl('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556')).toBeTruthy()
-    // WikiHiero png without URL args
-    expect(isWebpCandidateImageUrl('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png')).toBeTruthy()
-
-    // Score - is default behaviour
-    expect(isWebpCandidateImageUrl('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png')).toBeTruthy()
-
-    // Graphoid (charts) - is default behaviour
-    expect(
-      isWebpCandidateImageUrl('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png'),
-    ).toBeTruthy()
-
-    // Fandom
-    expect(
-      isWebpCandidateImageUrl(
-        'https://static.wikia.nocookie.net/minecraft_de_gamepedia/images/e/ee/Diamantschwert_%28Dungeons%29.png/revision/latest/scale-to-width-down/60?cb=20200409173531',
-      ),
-    ).toBeTruthy()
-
-    // Default behaviour
-    expect(
-      isWebpCandidateImageUrl(
-        'https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe',
-      ),
-    ).toBeTruthy()
+  test('isWebpCandidate by mime type', async () => {
+    expect(isWebpCandidateImageMimeType('image/jpeg')).toBeTruthy()
+    expect(isWebpCandidateImageMimeType('image/png')).toBeTruthy()
+    expect(isWebpCandidateImageMimeType('image/gif')).toBeFalsy()
+    expect(isWebpCandidateImageMimeType('application/json')).toBeFalsy()
+    expect(isWebpCandidateImageMimeType('image/svg+xml')).toBeFalsy()
+    expect(isWebpCandidateImageMimeType('image/svg')).toBeFalsy()
   })
 
   test('No title normalisation', async () => {
@@ -329,11 +251,17 @@ describe('Utils', () => {
       status: 403,
       responseType: undefined,
       data: {
-        type: 'https://mediawiki.org/wiki/HyperSwitch/errors/access_denied#revision',
-        title: 'Access to resource denied',
+        errorKey: 'rest-permission-denied-revision',
+        httpCode: 403,
+        httpReason: 'Forbidden',
+        messageTranslations: {
+          en: "User doesn't have access to the requested revision (4225685).",
+        },
+        type: 'MediaWikiError/Forbidden',
+        title: 'rest-permission-denied-revision',
         method: 'get',
-        detail: 'Access is restricted for revision 4225685',
-        uri: '/en.wikibooks.org/v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685',
+        detail: "User doesn't have access to the requested revision (4225685).",
+        uri: '/w/rest.php/v1/revision/4225685/html',
       },
     }
     try {
@@ -365,52 +293,64 @@ describe('Utils', () => {
     })
 
     test('One string as parameter', async () => {
-      const result: string[] = await extractArticleList('testString')
+      const result: string[] = await extractArticleList('testString', downloader)
       expect(result).toEqual(['testString'])
     })
 
     test('Comma separated strings as parameter', async () => {
-      const result: string[] = await extractArticleList(argumentsList.join(','))
+      const result: string[] = await extractArticleList(argumentsList.join(','), downloader)
       expect(result).toEqual(argumentsList)
     })
 
     test('Filename string as parameter', async () => {
-      const result: string[] = await extractArticleList(filePath)
+      const result: string[] = await extractArticleList(filePath, downloader)
       expect(result).toEqual(argumentsList)
     })
 
     test('Comma separated filenames string as parameter', async () => {
-      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`)
+      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`, downloader)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
     test('URL as parameter', async () => {
-      jest.spyOn(axios, 'get').mockResolvedValue({
+      jest.spyOn(downloader, 'request').mockResolvedValue({
         data: fs.createReadStream(filePath),
+        status: 200,
+        statusText: 'OK',
+        headers: null,
+        config: null,
       })
-      const result: string[] = await extractArticleList('http://test.com/strings')
+      const result: string[] = await extractArticleList('http://test.com/strings', downloader)
       expect(result).toEqual(argumentsList)
     })
 
     test("Comma separated URL's as parameter", async () => {
-      jest.spyOn(axios, 'get').mockResolvedValueOnce({
+      jest.spyOn(downloader, 'request').mockResolvedValueOnce({
         data: fs.createReadStream(filePath),
+        status: 200,
+        statusText: 'OK',
+        headers: null,
+        config: null,
       })
-      jest.spyOn(axios, 'get').mockResolvedValueOnce({
+      jest.spyOn(downloader, 'request').mockResolvedValueOnce({
         data: fs.createReadStream(anotherFilePath),
+        status: 200,
+        statusText: 'OK',
+        headers: null,
+        config: null,
       })
-      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings')
+      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings', downloader)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
     test('The parameter starts from HTTP but it is not the URL', async () => {
-      const result: string[] = await extractArticleList('http-test')
+      const result: string[] = await extractArticleList('http-test', downloader)
       expect(result).toEqual(['http-test'])
     })
 
     test('Error if trying to get articleList from wrong URL ', async () => {
-      jest.spyOn(axios, 'get').mockRejectedValue({})
-      await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+      jest.spyOn(downloader, 'request').mockRejectedValue({})
+      await expect(extractArticleList('http://valid-wrong-url.com/', downloader)).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
     })
   })
 

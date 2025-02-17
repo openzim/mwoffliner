@@ -1,5 +1,7 @@
+import { LIB_VERSION } from './version.js'
+
 const config = {
-  userAgent: 'MWOffliner/HEAD',
+  userAgent: `MWOffliner/${LIB_VERSION}`,
 
   defaults: {
     publisher: 'openZIM',
