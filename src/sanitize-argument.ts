@@ -135,9 +135,9 @@ export function sanitizeApiPathParam(apiPathParam: string) {
     return
   }
 
-  // No api params should start from forward slash
-  if (apiPathParam.startsWith('/')) {
-    apiPathParam = apiPathParam.slice(1)
+  // All API path must start with a forward slash
+  if (!apiPathParam?.startsWith('/')) {
+    apiPathParam = '/' + apiPathParam
   }
 
   return apiPathParam

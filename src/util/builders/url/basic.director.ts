@@ -7,7 +7,7 @@ type DownloaderBaseUrlConditions = Array<{ condition: boolean; value: string }>
  */
 class BasicURLDirector {
   buildMediawikiBaseURL(domain: string) {
-    return urlBuilder.setDomain(domain).build(true, '/')
+    return urlBuilder.setDomain(domain).build(true, '')
   }
 
   buildDownloaderBaseUrl(conditions: DownloaderBaseUrlConditions): string | undefined {

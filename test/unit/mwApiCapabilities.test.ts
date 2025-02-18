@@ -46,7 +46,7 @@ describe('Checking Mediawiki capabilities', () => {
   test('test capabilities of minecraft.wiki with correct VisualEditor receipt', async () => {
     MediaWiki.base = 'https://minecraft.wiki'
     MediaWiki.wikiPath = '/'
-    MediaWiki.actionApiPath = 'api.php'
+    MediaWiki.actionApiPath = '/api.php'
     const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
     expect(await MediaWiki.hasWikimediaDesktopApi(downloader)).toBe(false)
@@ -58,7 +58,7 @@ describe('Checking Mediawiki capabilities', () => {
   test('test capabilities of pokemon.fandom.com with correct VisualEditor receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
-    MediaWiki.actionApiPath = 'api.php'
+    MediaWiki.actionApiPath = '/api.php'
     const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
     expect(await MediaWiki.hasWikimediaDesktopApi(downloader)).toBe(false)
@@ -80,7 +80,7 @@ describe('Checking Mediawiki capabilities', () => {
   test('test capabilities of pokemon.fandom.com with RestApi receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
-    MediaWiki.restApiPath = 'rest.php'
+    MediaWiki.restApiPath = '/rest.php'
     const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
     expect(await MediaWiki.hasWikimediaDesktopApi(downloader)).toBe(false)

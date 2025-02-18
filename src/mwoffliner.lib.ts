@@ -203,7 +203,11 @@ async function execute(argv: any) {
 
   if (customMainPage) {
     mainPage = customMainPage
+    logger.log(`webURL: ${MediaWiki.webUrl}`)
+    logger.log(`mainPage: ${mainPage}`)
+    logger.log(`encodeURIComponent: ${encodeURIComponent(mainPage)}`)
     const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
+    logger.log(`mainPageUrl: ${mainPageUrl}`)
     if (!(await checkApiAvailability(downloader, mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
