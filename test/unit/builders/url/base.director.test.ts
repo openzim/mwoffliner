@@ -5,13 +5,13 @@ describe('BaseURLDirector', () => {
 
   describe('buildURL', () => {
     it('should return URL object with path', () => {
-      const url = baseUrlDirector.buildURL('v1/test/api')
+      const url = baseUrlDirector.buildURL('/v1/test/api')
 
       expect(url.href).toBe('https://en.m.wikipedia.com/v1/test/api')
     })
 
     it('should return URL object with mwActionApiPath param', () => {
-      const url = baseUrlDirector.buildURL('api.php')
+      const url = baseUrlDirector.buildURL('/api.php')
 
       expect(url.href).toBe('https://en.m.wikipedia.com/api.php')
     })
@@ -35,7 +35,7 @@ describe('BaseURLDirector', () => {
 
   describe('buildModuleURL', () => {
     it('should return a module URL with provided path and question mark as a trailing char', () => {
-      const url = baseUrlDirector.buildModuleURL('w/reload.php')
+      const url = baseUrlDirector.buildModuleURL('/w/reload.php')
 
       expect(url).toBe('https://en.m.wikipedia.com/w/reload.php?')
     })

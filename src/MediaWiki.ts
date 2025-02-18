@@ -141,10 +141,10 @@ class MediaWiki {
     this.#password = ''
     this.getCategories = false
 
-    this.#actionApiPath = 'w/api.php'
-    this.#restApiPath = 'w/rest.php'
-    this.#wikiPath = 'wiki/'
-    this.#modulePathOpt = 'w/load.php'
+    this.#actionApiPath = '/w/api.php'
+    this.#restApiPath = '/w/rest.php'
+    this.#wikiPath = '/wiki/'
+    this.#modulePathOpt = '/w/load.php'
 
     this.namespaces = {}
     this.namespacesToMirror = []

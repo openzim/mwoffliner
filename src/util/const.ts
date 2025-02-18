@@ -20,7 +20,7 @@ export const WEBP_HANDLER_URL = 'https://gist.githubusercontent.com/rgaudin/60bb
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const BLACKLISTED_NS = ['Story'] // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
 export const RENDERERS_LIST = ['WikimediaDesktop', 'VisualEditor', 'WikimediaMobile', 'RestApi']
-export const WIKIMEDIA_REST_API_PATH = 'api/rest_v1/'
+export const WIKIMEDIA_REST_API_PATH = '/api/rest_v1/'
 
 /*
  Handle redirection pages for 3rd party wikis that have 200 response code
