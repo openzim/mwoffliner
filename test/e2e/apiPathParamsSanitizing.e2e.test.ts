@@ -14,25 +14,25 @@ const parameters = {
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
   mwRestApiPath: sanitizeApiPathParam('/w/rest.php'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
-  mwWikiPath: sanitizeWikiPath('wiki'),
+  mwWikiPath: sanitizeWikiPath('/wiki'),
 }
 
 await testAllRenders(parameters, async (outFiles) => {
   describe(`e2e test for api url params for en.wikipedia.org for ${outFiles[0]?.renderer} renderer`, () => {
     test('Mediawiki actionApiPath option sanitized', () => {
-      expect(outFiles[0].mwMetaData.actionApiPath).toBe('w/api.php')
+      expect(outFiles[0].mwMetaData.actionApiPath).toBe('/w/api.php')
     })
 
     test('Mediawiki restApiPath option sanitized', () => {
-      expect(outFiles[0].mwMetaData.restApiPath).toBe('w/rest.php')
+      expect(outFiles[0].mwMetaData.restApiPath).toBe('/w/rest.php')
     })
 
     test('Mediawiki wikiPath option sanitized', () => {
-      expect(outFiles[0].mwMetaData.wikiPath).toBe('wiki/')
+      expect(outFiles[0].mwMetaData.wikiPath).toBe('/wiki/')
     })
 
     test('Mediawiki modulePathOpt option sanitized', () => {
-      expect(outFiles[0].mwMetaData.modulePathOpt).toBe('w/load.php')
+      expect(outFiles[0].mwMetaData.modulePathOpt).toBe('/w/load.php')
     })
 
     test('Mediawiki modulePath and actionApiUrl options', () => {
