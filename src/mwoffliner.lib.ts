@@ -568,7 +568,7 @@ async function execute(argv: any) {
         const articleDetail = await articleDetailXId.get(articleId)
         if (articleDetail) {
           allArticles.push(articleDetail)
-          if (articleDetail.thumbnail) {
+          if (articleDetail.thumbnail && articleDetail.internalThumbnailUrl) {
             articlesWithImages.push(articleDetail)
             if (articlesWithImages.length >= 100) {
               break
@@ -613,7 +613,6 @@ async function execute(argv: any) {
 
   async function updateArticleThumbnail(articleDetail: any, articleId: string) {
     const imageUrl = articleDetail.thumbnail
-    if (!imageUrl) return
 
     const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
     const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
@@ -636,13 +635,13 @@ async function execute(argv: any) {
     let articleIndex = 0
     let articlesWithImages = 0
 
-    while (articleIndex < articleListLines.length && articlesWithImages <= 100) {
+    while (articleIndex < articleListLines.length && articlesWithImages < 100) {
       const articleId = articleListLines[articleIndex]
       articleIndex++
 
       try {
         const articleDetail = await fetchArticleDetail(articleId)
-        if (!articleDetail) continue
+        if (!articleDetail || !articleDetail.thumbnail) continue
 
         await updateArticleThumbnail(articleDetail, articleId)
         articlesWithImages++
