@@ -220,15 +220,17 @@ class MediaWiki {
       const validNamespaceIds = this.namespacesToMirror.map((ns) => this.namespaces[ns].num)
       const reqOpts = {
         ...this.queryOpts,
+        prop: this.queryOpts.prop + '|coordinates', // add coordinates for this call to get proper warning if not supported
         rdnamespace: validNamespaceIds,
       }
 
       const resp = await downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
       const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
       if (isCoordinateWarning) {
-        logger.info('Coordinates not available on this wiki')
+        logger.log('Coordinates not available on this wiki')
         return (this.#hasCoordinates = false)
       }
+      logger.log('Coordinates available on this wiki')
       return (this.#hasCoordinates = true)
     }
     return this.#hasCoordinates
