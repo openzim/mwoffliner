@@ -17,7 +17,7 @@ describe('forceRender', () => {
     redis: process.env.REDIS,
     format: ['nopic'],
     articleList: 'France',
-    mwActionApiPath: 'w/api.php',
+    mwActionApiPath: '/w/api.php',
   }
 
   afterAll(async () => {
