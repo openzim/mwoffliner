@@ -87,7 +87,7 @@ h2 {
 .item figcaption {
     position: absolute;
     bottom: 0;
-    width: 100%;
+    width: calc(100% - 1.2em); /* remove left/right padding */
     vertical-align: bottom;
     background: rgba(48, 48, 48, 0.5);
     color: white;
@@ -95,6 +95,8 @@ h2 {
     font-weight: bold;
     transition: all 0.3s;
     transform: scale(1);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* .item:hover figcaption {
