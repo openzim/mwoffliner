@@ -95,6 +95,8 @@ h2 {
     font-weight: bold;
     transition: all 0.3s;
     transform: scale(1);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* .item:hover figcaption {
