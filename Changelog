@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Ignore pages without a single revision / revid (#2091)
 
 1.14.1:
 * FIX: Ensure AWS SDK has access to object size when issuing an upload (@benoit #2117)
