@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Ignore pages without a single revision / revid (#2091)
 
 * CHANGED: Set default log level to `log` to sufficiently verbose logs by default (@benoit #2121)
 

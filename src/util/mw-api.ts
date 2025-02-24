@@ -45,13 +45,23 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
         }
 
         // Retrieve the details and save them in Redis
-        const _articleDetails = await downloader.getArticleDetailsIds(articleIdsBatch, numThumbnails < 100)
-        const articlesWithThumbnail = Object.values(_articleDetails).filter((a) => !!a.thumbnail)
+        const allArticleDetails = await downloader.getArticleDetailsIds(articleIdsBatch, numThumbnails < 100)
+
+        // Filter articles without revisions (#2091)
+        const articlesIgnored = Object.values(allArticleDetails)
+          .filter((a) => !a.revisions)
+          .map((article) => article.title)
+        if (articlesIgnored.length > 0) {
+          logger.warn(`Ignoring articles without revisions: ${articlesIgnored.join(', ')}`)
+        }
+        const mwArticleDetails = Object.fromEntries(Object.entries(allArticleDetails).filter(([_, articleDetail]) => !articlesIgnored.includes(articleDetail.title)))
+
+        const articlesWithThumbnail = Object.values(mwArticleDetails).filter((a) => !!a.thumbnail)
         numThumbnails += articlesWithThumbnail.length
 
-        const articleDetails = mwRetToArticleDetail(_articleDetails)
+        const articleDetails = mwRetToArticleDetail(mwArticleDetails)
 
-        for (const [articleId, articleDetail] of Object.entries(_articleDetails)) {
+        for (const [articleId, articleDetail] of Object.entries(mwArticleDetails)) {
           if (articleDetail.redirects && articleDetail.redirects.length) {
             await redirectsXId.setMany(
               articleDetail.redirects.reduce((acc, redirect) => {
