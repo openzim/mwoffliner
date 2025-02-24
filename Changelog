@@ -1,11 +1,14 @@
-Unreleased:
-* FIX: Ignore pages without a single revision / revid (#2091)
-
-* CHANGED: Set default log level to `log` to sufficiently verbose logs by default (@benoit #2121)
+1.14.2:
+* FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
+* CHANGED: Set default log level to `log` to sufficiently verbose logs by default (@benoit74 #2121)
+* FIX: Custom home page thumbnails caption are getting overflowed (@benoit74 #1972)
+* CHANGED: Allow to process wikis with mwWikiPath=/ (@benoit74 #2163)
+* FIX: Some images of custom home page thumbnails are missing (@benoit74 #2158)
+* FIX: Enhance robustness of coordinates API detection (@benoit74 #2167)
 
 1.14.1:
-* FIX: Ensure AWS SDK has access to object size when issuing an upload (@benoit #2117)
-* FIX: Change log level of S3 missing keys message (@benoit #2144)
+* FIX: Ensure AWS SDK has access to object size when issuing an upload (@benoit74 #2117)
+* FIX: Change log level of S3 missing keys message (@benoit74 #2144)
 * FIX: Logic to set .webp path prefix on reencoded images is skewed (@benoit74 #2140)
 * FIX: S3 cached images are missing (@benoit74 #2136)
 * FIX: Do not rely on URL filename extension to detect images (@benoit74 #2088)
@@ -13,10 +16,10 @@ Unreleased:
 * FIX: RequestTimeTooSkewed error while downloading from cache (@benoit74 #2137)
 * FIX: Axios timeouts are not properly handled (@benoit74 #2139)
 * FIX: Many tasks are hanging forever (@benoit74 #2141)
-* CHANGED: Pre-install all Node.JS dependencies in Docker build (@benoit #2148)
+* CHANGED: Pre-install all Node.JS dependencies in Docker build (@benoit74 #2148)
 
 1.14.0:
-* FIX: Remove S3 upload concurrency to avoid 'RequestTimeTooSkewed' errors (@benoi74 #2118)
+* FIX: Remove S3 upload concurrency to avoid 'RequestTimeTooSkewed' errors (@benoit74 #2118)
 * FIX: Strip HTML tags from <title> HTML nodes (@pavel-karatsiuba #1801)
 * FIX: Remove inline JS to comply with restrictive CSPs (@audiodude #2111)
 * FIX: Properly download maps by fixing MWoffliner user-agent (@audiodude #2068 #2062)
