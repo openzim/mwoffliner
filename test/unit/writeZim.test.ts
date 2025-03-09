@@ -1,14 +1,38 @@
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { Creator, StringItem } from '@openzim/libzim'
 import { jest } from '@jest/globals'
 import domino from 'domino'
 import fs from 'fs'
 import pmap from 'p-map'
+import pathParser from 'path'
 
 jest.setTimeout(30000)
 
 const now = new Date()
 const testId = join(process.cwd(), `mwo-test-${+now}`)
+
+function readFilePromise(path: string, encoding: fs.EncodingOption = 'utf8'): Promise<string | Buffer> {
+  return new Promise<string | Buffer>((resolve, reject) => {
+    fs.readFile(path, encoding, (err, content) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(content)
+      }
+    })
+  })
+}
+
+function cssPath(css: string, subDirectory = '') {
+  return `${subDirectory ? `${subDirectory}/` : ''}${css.replace(/(\.css)?$/, '')}.css`
+}
+
+function jsPath(js: string, subDirectory = '') {
+  const path = js.startsWith('../node_module') ? js.replace('../node_modules', 'node_module') : js
+  const prefix = subDirectory ? `${testId}` : ''
+  const ext = path.replace(/(\.js)?$/, '')
+  return `${prefix}${ext}.js`
+}
 
 describe('Writing ZIM', () => {
   const mainPageHtml = domino.createDocument('<html><body><h1>Test Write ZIM Main Page</h1></body></html>').documentElement.outerHTML
@@ -115,14 +139,57 @@ describe('Writing ZIM', () => {
       return new StringItem(`cssModule ${i}`, 'text/css', '', {}, cssModule)
     })
 
-    const articleItems = [new StringItem('article1', 'text/html', 'Article 1', {}, article1), new StringItem('article2', 'text/html', 'Article 2', {}, article2)]
+    const articleItems = []
+    for (let i = 0; i < 20; i++) {
+      articleItems.push(new StringItem(`article${i}`, 'text/html', `Article ${i}`, {}, `<h1>Article ${i}</h1>`.repeat(1000)))
+    }
 
     const allItems = [jsItems, cssItems, articleItems]
-
-    await Promise.all(allItems.map(async (items) => pmap(items, async (item) => zimCreator.addItem(item), { concurrency: 8 })))
+    for (const items of allItems) {
+      await pmap(
+        items,
+        async (item) => {
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000))
+          await zimCreator.addItem(item)
+        },
+        { concurrency: 8 },
+      )
+    }
 
     await zimCreator.addRedirection('Article_Two', 'ArticleTwo', 'article2')
     await zimCreator.setMainPath('index')
+    await zimCreator.finishZimCreation()
+  })
+
+  test('Write ZIM static file test', async () => {
+    const promises = []
+    const staticFiles = [
+      'script.js',
+      'masonry.min.js',
+      'article_list_home.js',
+      'images_loaded.min.js',
+      'style.css',
+      'mobile_main_page.css',
+      'wm_mobile_override_script.js',
+      'wm_mobile_override_style.css',
+    ]
+
+    for (const file of staticFiles) {
+      let url: string
+      let mimetype: string
+      if (file.endsWith('.css')) {
+        url = cssPath(file)
+        mimetype = 'text/css'
+      } else {
+        url = jsPath(file)
+        mimetype = 'application/javascript'
+      }
+      promises.push(readFilePromise(pathParser.resolve(`res/${file}`)).then((staticFilesContent) => zimCreator.addItem(new StringItem(url, mimetype, '', {}, staticFilesContent))))
+    }
+
+    await Promise.all(promises)
+    await zimCreator.addRedirection('Article_Two', 'ArticleTwo', 'article2')
+
     await zimCreator.finishZimCreation()
   })
 
