@@ -78,93 +78,195 @@ type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | Vi
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
  */
 class Downloader {
+  private static instance: Downloader
+
+  public static getInstance(): Downloader {
+    if (!Downloader.instance) {
+      Downloader.instance = new Downloader()
+    }
+    return Downloader.instance
+  }
+
   public loginCookie = ''
-  public readonly speed: number
+  // public readonly speed: number
   public cssDependenceUrls: KVS<boolean> = {}
-  public readonly webp: boolean = false
-  public readonly requestTimeout: number
-  public readonly basicRequestOptions: AxiosRequestConfig
-  public readonly arrayBufferRequestOptions: AxiosRequestConfig
-  public readonly jsonRequestOptions: AxiosRequestConfig
-  public readonly streamRequestOptions: AxiosRequestConfig
+  // public readonly webp: boolean = false
+  // public readonly requestTimeout: number
+  #basicRequestOptions: AxiosRequestConfig
+  #arrayBufferRequestOptions: AxiosRequestConfig
+  #jsonRequestOptions: AxiosRequestConfig
+  #streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
-  private readonly uaString: string
+  // private readonly uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  private readonly backoffOptions: BackoffOptions
-  private readonly optimisationCacheUrl: string
-  private s3: S3
+  #backoffOptions: BackoffOptions
+  // private readonly optimisationCacheUrl: string
+  // private s3: S3
   private apiUrlDirector: ApiURLDirector
 
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
-  private readonly insecure: boolean = false
+  // private readonly insecure: boolean = false
 
-  constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
-    this.uaString = uaString
-    this.speed = speed
-    this.maxActiveRequests = speed * 10
-    this.requestTimeout = reqTimeout
-    this.loginCookie = ''
-    this.optimisationCacheUrl = optimisationCacheUrl
-    this.webp = webp
-    this.s3 = s3
-    this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-    this.insecure = insecure
+  #options: DownloaderOpts
 
-    this.backoffOptions = {
+  private get uaString() {
+    return this.#options.uaString
+  }
+  private get s3() {
+    return this.#options.s3
+  }
+  get speed() {
+    return this.#options.speed
+  }
+  get webp() {
+    return this.#options.webp
+  }
+  get requestTimeout() {
+    return this.#options.reqTimeout
+  }
+  private get optimisationCacheUrl() {
+    return this.#options.optimisationCacheUrl
+  }
+  get basicRequestOptions() {
+    return this.#basicRequestOptions
+  }
+  get arrayBufferRequestOptions() {
+    return this.#arrayBufferRequestOptions
+  }
+  get jsonRequestOptions() {
+    return this.#jsonRequestOptions
+  }
+  get streamRequestOptions() {
+    return this.#streamRequestOptions
+  }
+  private get insecure() {
+    return this.#options.insecure
+  }
+  private get backoffOptions() {
+    return this.#backoffOptions
+  }
+
+  set options(opts: DownloaderOpts) {
+    this.#options = opts
+    this.maxActiveRequests = this.#options.speed * 10
+    this.#backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
       retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`)
       },
-      ...backoffOptions,
+      ...this.#options.backoffOptions,
     }
-
-    this.basicRequestOptions = {
+    this.#basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
-      timeout: this.requestTimeout,
+      timeout: this.#options.reqTimeout,
       headers: {
         'cache-control': 'public, max-stale=86400',
-        'user-agent': this.uaString,
+        'user-agent': this.#options.uaString,
       },
       validateStatus(status) {
         return (status >= 200 && status < 300) || status === 304
       },
     }
-
-    this.arrayBufferRequestOptions = {
-      ...this.basicRequestOptions,
+    this.#arrayBufferRequestOptions = {
+      ...this.#basicRequestOptions,
       responseType: 'arraybuffer',
       method: 'GET',
     }
-
-    this.jsonRequestOptions = {
-      ...this.basicRequestOptions,
+    this.#jsonRequestOptions = {
+      ...this.#basicRequestOptions,
       headers: {
-        ...this.basicRequestOptions.headers,
+        ...this.#basicRequestOptions.headers,
         accept: 'application/json',
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'json',
       method: 'GET',
     }
-
-    this.streamRequestOptions = {
-      ...this.basicRequestOptions,
+    this.#streamRequestOptions = {
+      ...this.#basicRequestOptions,
       headers: {
-        ...this.basicRequestOptions.headers,
+        ...this.#basicRequestOptions.headers,
         accept: 'application/octet-stream',
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'stream',
       method: 'GET',
     }
+    this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+  }
+
+  constructor() {
+    this.#options = { insecure: false, ...this.#options }
+    // this.uaString = uaString
+    // this.speed = speed
+    // this.maxActiveRequests = speed * 10
+    // this.requestTimeout = reqTimeout
+    this.loginCookie = ''
+    // this.optimisationCacheUrl = optimisationCacheUrl
+    // this.webp = webp
+    // this.s3 = s3
+    // this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    // this.insecure = insecure
+
+    // this.backoffOptions = {
+    //   strategy: new backoff.ExponentialStrategy(),
+    //   failAfter: 7,
+    //   retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
+    //   backoffHandler: (number: number, delay: number) => {
+    //     logger.info(`[backoff] #${number} after ${delay} ms`)
+    //   },
+    //   ...backoffOptions,
+    // }
+
+    // this.basicRequestOptions = {
+    //   // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
+    //   httpAgent: new http.Agent({ keepAlive: true }),
+    //   httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
+    //   timeout: this.requestTimeout,
+    //   headers: {
+    //     'cache-control': 'public, max-stale=86400',
+    //     'user-agent': this.uaString,
+    //   },
+    //   validateStatus(status) {
+    //     return (status >= 200 && status < 300) || status === 304
+    //   },
+    // }
+
+    // this.arrayBufferRequestOptions = {
+    //   ...this.basicRequestOptions,
+    //   responseType: 'arraybuffer',
+    //   method: 'GET',
+    // }
+
+    // this.jsonRequestOptions = {
+    //   ...this.basicRequestOptions,
+    //   headers: {
+    //     ...this.basicRequestOptions.headers,
+    //     accept: 'application/json',
+    //     'accept-encoding': 'gzip, deflate',
+    //   },
+    //   responseType: 'json',
+    //   method: 'GET',
+    // }
+
+    // this.streamRequestOptions = {
+    //   ...this.basicRequestOptions,
+    //   headers: {
+    //     ...this.basicRequestOptions.headers,
+    //     accept: 'application/octet-stream',
+    //     'accept-encoding': 'gzip, deflate',
+    //   },
+    //   responseType: 'stream',
+    //   method: 'GET',
+    // }
   }
 
   private getUrlDirector(renderer: object) {
@@ -213,7 +315,7 @@ class Downloader {
       const queryOpts: KVS<any> = {
         ...(await this.getArticleQueryOpts(shouldGetThumbnail, true)),
         titles: articleIds.join('|'),
-        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
+        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
@@ -253,7 +355,7 @@ class Downloader {
     while (true) {
       const queryOpts: KVS<any> = {
         ...(await this.getArticleQueryOpts()),
-        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
+        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
@@ -425,7 +527,7 @@ class Downloader {
 
   private async getArticleQueryOpts(includePageimages = false, redirects = false): Promise<QueryOpts> {
     const validNamespaceIds = MediaWiki.namespacesToMirror.map((ns) => MediaWiki.namespaces[ns].num)
-    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates(this)) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
+    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
     return {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
@@ -717,7 +819,7 @@ class Downloader {
     jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
 
     // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi(this)) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
+    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
       try {
         // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
@@ -750,4 +852,5 @@ class Downloader {
   }
 }
 
-export default Downloader
+const dl = Downloader.getInstance()
+export default dl as Downloader

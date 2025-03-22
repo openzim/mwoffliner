@@ -166,7 +166,7 @@ async function execute(argv: any) {
   MediaWiki.username = mwUsername
 
   /* Download helpers; TODO: Merge with something else / expand this. */
-  const downloader = new Downloader({
+  Downloader.options = {
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
@@ -174,15 +174,15 @@ async function execute(argv: any) {
     s3,
     webp,
     insecure: argv.insecure,
-  })
+  }
 
   /* perform login */
-  await MediaWiki.login(downloader)
+  await MediaWiki.login()
 
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData(downloader)
+    mwMetaData = await MediaWiki.getMwMetaData()
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -194,7 +194,7 @@ async function execute(argv: any) {
     Language: customZimLanguage || mwMetaData.langIso3,
     Publisher: publisher,
     Title: customZimTitle || mwMetaData.title,
-    'Illustration_48x48@1': await getIllustrationMetadata(downloader),
+    'Illustration_48x48@1': await getIllustrationMetadata(),
   }
   validateMetadata(metaDataRequiredKeys)
 
@@ -204,17 +204,17 @@ async function execute(argv: any) {
   if (customMainPage) {
     mainPage = customMainPage
     const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
-    if (!(await checkApiAvailability(downloader, mainPageUrl))) {
+    if (!(await checkApiAvailability(mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
-  await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi(downloader)
-  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi(downloader)
-  await MediaWiki.hasRestApi(downloader)
-  await MediaWiki.hasVisualEditorApi(downloader)
+  await MediaWiki.hasCoordinates()
+  await MediaWiki.hasWikimediaDesktopApi()
+  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
+  await MediaWiki.hasRestApi()
+  await MediaWiki.hasVisualEditorApi()
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -264,7 +264,7 @@ async function execute(argv: any) {
   let articleListToIgnoreLines: string[]
   if (articleListToIgnore) {
     try {
-      articleListToIgnoreLines = await extractArticleList(articleListToIgnore, downloader)
+      articleListToIgnoreLines = await extractArticleList(articleListToIgnore)
       logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
@@ -275,7 +275,7 @@ async function execute(argv: any) {
   let articleListLines: string[]
   if (articleList) {
     try {
-      articleListLines = await extractArticleList(articleList, downloader)
+      articleListLines = await extractArticleList(articleList)
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }
@@ -286,17 +286,17 @@ async function execute(argv: any) {
     }
   }
 
-  await MediaWiki.getNamespaces(addNamespaces, downloader)
+  await MediaWiki.getNamespaces(addNamespaces)
 
   logger.info('Getting article ids')
   let stime = Date.now()
-  await getArticleIds(downloader, mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
   if (MediaWiki.getCategories) {
-    await getCategoriesForArticles(articleDetailXId, downloader)
+    await getCategoriesForArticles(articleDetailXId)
 
-    while ((await trimUnmirroredPages(downloader)) > 0) {
+    while ((await trimUnmirroredPages()) > 0) {
       // Remove unmirrored pages, categories, subCategories
       // trimUnmirroredPages returns number of modified articles
     }
@@ -399,11 +399,11 @@ async function execute(argv: any) {
     zimCreator.addArticle(scraperArticle)
 
     logger.info('Finding stylesheets to download')
-    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
+    const stylesheetsToGet = await dump.getRelevantStylesheetUrls()
     logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
 
     logger.log('Downloading stylesheets and populating media queue')
-    const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
+    const { finalCss } = await getAndProcessStylesheets(stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
     const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' })
@@ -417,7 +417,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, downloader, dump, hasWikimediaMobileApi, forceRender)
+    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump, hasWikimediaMobileApi, forceRender)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
@@ -431,9 +431,9 @@ async function execute(argv: any) {
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ]
 
-    if (downloader.webp) {
+    if (Downloader.webp) {
       logger.log('Downloading polyfill module')
-      await importPolyfillModules(downloader, zimCreator)
+      await importPolyfillModules(zimCreator)
     }
 
     logger.log('Downloading module dependencies')
@@ -442,17 +442,17 @@ async function execute(argv: any) {
         return pmap(
           moduleList,
           (oneModule) => {
-            return downloadAndSaveModule(zimCreator, downloader, dump, oneModule, type as any)
+            return downloadAndSaveModule(zimCreator, dump, oneModule, type as any)
           },
-          { concurrency: downloader.speed },
+          { concurrency: Downloader.speed },
         )
       }),
     )
 
-    await downloadFiles(filesToDownloadXPath, filesToRetryXPath, zimCreator, dump, downloader)
+    await downloadFiles(filesToDownloadXPath, filesToRetryXPath, zimCreator, dump)
 
     logger.log('Writing Article Redirects')
-    await writeArticleRedirects(downloader, dump, zimCreator)
+    await writeArticleRedirects(dump, zimCreator)
 
     logger.log('Finishing Zim Creation')
     await zimCreator.finalise()
@@ -464,8 +464,8 @@ async function execute(argv: any) {
   /* FUNCTIONS *********************** */
   /* ********************************* */
 
-  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
-    await redirectsXId.iterateItems(downloader.speed, async (redirects) => {
+  async function writeArticleRedirects(dump: Dump, zimCreator: ZimCreator) {
+    await redirectsXId.iterateItems(Downloader.speed, async (redirects) => {
       for (const [redirectId, { targetId }] of Object.entries(redirects)) {
         if (redirectId !== targetId) {
           const redirectArticle = new ZimArticle({
@@ -487,14 +487,13 @@ async function execute(argv: any) {
     })
   }
 
-  async function getIllustrationMetadata(downloader: Downloader): Promise<Buffer> {
+  async function getIllustrationMetadata(): Promise<Buffer> {
     if (customZimFavicon) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
       if (faviconIsRemote) {
         logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`)
-        content = await downloader
-          .request({ url: customZimFavicon, method: 'GET', ...downloader.arrayBufferRequestOptions })
+        content = await Downloader.request({ url: customZimFavicon, method: 'GET', ...Downloader.arrayBufferRequestOptions })
           .then((a) => a.data)
           .catch(() => {
             throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
@@ -515,7 +514,7 @@ async function execute(argv: any) {
 
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
-    const body = await downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
+    const body = await Downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
 
     const entries = body.query.general
     if (!entries.logo) {
@@ -526,7 +525,7 @@ async function execute(argv: any) {
 
     const parsedUrl = urlParser.parse(entries.logo)
     const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
-    const { content } = await downloader.downloadContent(logoUrl, 'image')
+    const { content } = await Downloader.downloadContent(logoUrl, 'image')
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
 
