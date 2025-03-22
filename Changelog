@@ -1,4 +1,5 @@
 Unreleased:
+* UPDATE: Singleton downloader (@arjitcodes #2154)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
