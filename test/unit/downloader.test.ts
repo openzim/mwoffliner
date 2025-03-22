@@ -22,73 +22,71 @@ import { RENDERERS_LIST } from '../../src/util/const.js'
 jest.setTimeout(200000)
 
 describe('Downloader class', () => {
-  let downloader: Downloader
-
   beforeAll(startRedis)
   afterAll(stopRedis)
 
   beforeAll(async () => {
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
+    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
-    await MediaWiki.getMwMetaData(downloader)
-    await MediaWiki.hasCoordinates(downloader)
-    await MediaWiki.hasWikimediaDesktopApi(downloader)
-    await MediaWiki.hasWikimediaMobileApi(downloader)
-    await MediaWiki.hasRestApi(downloader)
-    await MediaWiki.hasVisualEditorApi(downloader)
+    await MediaWiki.getMwMetaData()
+    await MediaWiki.hasCoordinates()
+    await MediaWiki.hasWikimediaDesktopApi()
+    await MediaWiki.hasWikimediaMobileApi()
+    await MediaWiki.hasRestApi()
+    await MediaWiki.hasVisualEditorApi()
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
-    const actionAPIResV1 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&page=Potato')
-    const actionAPIResV2 = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&formatversion=2&page=Potato')
+    const actionAPIResV1 = await Downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&page=Potato')
+    const actionAPIResV2 = await Downloader.getJSON('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml&formatversion=2&page=Potato')
     expect(actionAPIResV1).not.toEqual(actionAPIResV2)
   })
 
-  test('downloader.query returns valid JSON', async () => {
-    const queryRet = await downloader.query()
+  test('Downloader.query returns valid JSON', async () => {
+    const queryRet = await Downloader.query()
     expect(typeof queryRet).toBe('object')
   })
 
-  test('downloader.getJSON returns valid JSON', async () => {
-    const JSONRes = await downloader.getJSON('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
+  test('Downloader.getJSON returns valid JSON', async () => {
+    const JSONRes = await Downloader.getJSON('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
     expect(typeof JSONRes).toBe('object')
   })
 
-  test('downloader.canGetUrl returns valid answer (positive)', async () => {
-    const urlExists = await downloader.canGetUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
+  test('Downloader.canGetUrl returns valid answer (positive)', async () => {
+    const urlExists = await Downloader.canGetUrl('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json')
     expect(urlExists).toBe(true)
   })
 
-  test('downloader.canGetUrl returns valid answer (negative)', async () => {
-    const urlNotExists = await downloader.canGetUrl('https://en.wikipedia.org/w/thisisa404')
+  test('Downloader.canGetUrl returns valid answer (negative)', async () => {
+    const urlNotExists = await Downloader.canGetUrl('https://en.wikipedia.org/w/thisisa404')
     expect(urlNotExists).toBe(false)
   })
 
   test('getJSON response status for non-existant url is 404', async () => {
-    await expect(downloader.getJSON('https://en.wikipedia.org/w/thisisa404')).rejects.toThrowError(new Error('Request failed with status code 404'))
+    await expect(Downloader.getJSON('https://en.wikipedia.org/w/thisisa404')).rejects.toThrowError(new Error('Request failed with status code 404'))
   })
 
-  test('downloader.downloadContent returns', async () => {
-    const contentRes = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg', 'image')
+  test('Downloader.downloadContent returns', async () => {
+    const contentRes = await Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg', 'image')
     expect(contentRes.contentType).toBeDefined()
   })
 
   test('Webp compression working for cmyk color-space images', async () => {
-    const { content } = await downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg', 'image')
+    const { content } = await Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg', 'image')
     const fileType = await FileType.fileTypeFromBuffer(Buffer.from(content))
     expect(fileType?.mime).toEqual('image/webp')
   })
 
-  test('downloader.downloadContent throws on non-existant url', async () => {
-    await expect(downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg', 'image')).rejects.toThrowError(
+  test('Downloader.downloadContent throws on non-existant url', async () => {
+    await expect(Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg', 'image')).rejects.toThrowError(
       new Error('Request failed with status code 404'),
     )
   })
 
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
-    const _articleDetailsRet = await downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
+    const _articleDetailsRet = await Downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
     const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet)
     RedisStore.articleDetailXId.setMany(articleDetailsRet)
     const { London, Paris, Zurich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
@@ -101,16 +99,16 @@ describe('Downloader class', () => {
   })
 
   test("getArticleDetailsNS query returns 'gapContinue' or 'multiple articles', ", async () => {
-    const { gapContinue, articleDetails } = await downloader.getArticleDetailsNS(0)
+    const { gapContinue, articleDetails } = await Downloader.getArticleDetailsNS(0)
     expect(gapContinue).toBeDefined()
     expect(Object.keys(articleDetails).length).toBeGreaterThan(10)
 
-    const secondNsRet = await downloader.getArticleDetailsNS(0, gapContinue)
+    const secondNsRet = await Downloader.getArticleDetailsNS(0, gapContinue)
     expect(secondNsRet.gapContinue).toBeDefined()
   })
 
   test('downloadContent throws when empty string is passed', async () => {
-    await expect(downloader.downloadContent('', 'image')).rejects.toThrowError()
+    await expect(Downloader.downloadContent('', 'image')).rejects.toThrowError()
   })
 
   test('downloadContent successfully downloaded an image', async () => {
@@ -122,7 +120,7 @@ describe('Downloader class', () => {
       imgToGetSrc = imgToGet.getAttribute('src')
     }
     // This is the downloading of an image
-    const LondonImage = await downloader.downloadContent(imgToGetSrc, 'image')
+    const LondonImage = await Downloader.downloadContent(imgToGetSrc, 'image')
     expect(LondonImage.contentType).toMatch(/image\//i)
   })
 
@@ -135,7 +133,7 @@ describe('Downloader class', () => {
       imgToGetSrc = imgToGet.getAttribute('src')
     }
     // This is the downloading of an image
-    const LondonImage = await downloader.downloadContent(imgToGetSrc, 'image')
+    const LondonImage = await Downloader.downloadContent(imgToGetSrc, 'image')
     expect(LondonImage.contentType).toMatch(/image\//i)
   })
 
@@ -144,14 +142,14 @@ describe('Downloader class', () => {
     const wikimediaMobileRenderer = new WikimediaMobileRenderer()
 
     beforeAll(async () => {
-      const mwMetadata = await MediaWiki.getMwMetaData(downloader)
+      const mwMetadata = await MediaWiki.getMwMetaData()
       dump = new Dump('', {} as any, mwMetadata)
     })
 
     test('getArticle of "London" returns one article for WikimediaMobileRenderer render', async () => {
       const articleId = 'London'
-      downloader.setUrlsDirectors(wikimediaMobileRenderer, wikimediaMobileRenderer)
-      const articleUrl = downloader.getArticleUrl(articleId)
+      Downloader.setUrlsDirectors(wikimediaMobileRenderer, wikimediaMobileRenderer)
+      const articleUrl = Downloader.getArticleUrl(articleId)
       const articleDetail = {
         title: articleId,
         thumbnail: {
@@ -163,9 +161,9 @@ describe('Downloader class', () => {
         timestamp: '2023-08-20T14:54:01Z',
         coordinates: '51.50722222;-0.1275',
       }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-      const LondonArticle = await downloader.getArticle(
-        downloader.webp,
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
+      const LondonArticle = await Downloader.getArticle(
+        Downloader.webp,
         _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
@@ -180,7 +178,7 @@ describe('Downloader class', () => {
 
     test('Categories with many subCategories are paginated for WikimediaDesktop render', async () => {
       const articleId = 'Category:Container_categories'
-      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleId)
       const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
       const articleDetail = {
         title: articleId,
@@ -190,8 +188,8 @@ describe('Downloader class', () => {
       }
       // Enforce desktop url here as this test desktop API-specific
       const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
-      const PaginatedArticle = await downloader.getArticle(
-        downloader.webp,
+      const PaginatedArticle = await Downloader.getArticle(
+        Downloader.webp,
         _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
@@ -206,15 +204,15 @@ describe('Downloader class', () => {
 
     test('getArticle response status for non-existent article id is 404 for WikimediaDesktop render', async () => {
       const articleId = 'NeverExistingArticle'
-      const articleUrl = downloader.getArticleUrl(articleId)
+      const articleUrl = Downloader.getArticleUrl(articleId)
       const articleDetail = {
         title: articleId,
         missing: '',
       }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
       await expect(
-        downloader.getArticle(
-          downloader.webp,
+        Downloader.getArticle(
+          Downloader.webp,
           _moduleDependencies,
           'NeverExistingArticle',
           RedisStore.articleDetailXId,
@@ -249,21 +247,21 @@ describe('Downloader class', () => {
       }
       let dump: Dump
       beforeAll(async () => {
-        const mwMetadata = await MediaWiki.getMwMetaData(downloader)
+        const mwMetadata = await MediaWiki.getMwMetaData()
         dump = new Dump('', {} as any, mwMetadata)
       })
 
       test(`getArticle response status for non-existent article id is 404 for ${renderer} render`, async () => {
         const articleId = 'NeverExistingArticle'
-        const articleUrl = downloader.getArticleUrl(articleId)
+        const articleUrl = Downloader.getArticleUrl(articleId)
         const articleDetail = {
           title: articleId,
           missing: '',
         }
-        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+        const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
         await expect(
-          downloader.getArticle(
-            downloader.webp,
+          Downloader.getArticle(
+            Downloader.webp,
             _moduleDependencies,
             'NeverExistingArticle',
             RedisStore.articleDetailXId,
@@ -281,7 +279,6 @@ describe('Downloader class', () => {
   const describeIf = process.env.S3_URL ? describe : describe.skip
 
   describeIf('Downloader class with optimisation', () => {
-    let downloader: Downloader
     let s3: S3
     const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true)
 
@@ -299,14 +296,14 @@ describe('Downloader class', () => {
         1000 * 60,
         false,
       )
-      downloader = new Downloader({
+      Downloader.options = {
         uaString: `${config.userAgent} (contact@kiwix.org)`,
         speed: 1,
         reqTimeout: 1000 * 60,
         webp: false,
         optimisationCacheUrl: 'random-string',
         s3,
-      })
+      }
 
       await s3.initialise()
     })
@@ -333,7 +330,7 @@ describe('Downloader class', () => {
       await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
 
       // Download the image (and cache it in S3)
-      await downloader.downloadContent(randomImage, 'image')
+      await Downloader.downloadContent(randomImage, 'image')
 
       // Async downloadContent(), waiting this is done
       await setTimeout(5000)
@@ -341,7 +338,7 @@ describe('Downloader class', () => {
       // Check if S3 Etag is like online Etag
       const upstreamResp = await Axios(randomImage)
       const s3Resp = await s3.downloadBlob(imagePath)
-      expect(downloader.removeEtagWeakPrefix(`${upstreamResp.headers.etag}`)).toEqual(s3Resp.Metadata.etag)
+      expect(Downloader.removeEtagWeakPrefix(`${upstreamResp.headers.etag}`)).toEqual(s3Resp.Metadata.etag)
 
       // Overwrite Image with new Etag to S3
       const newEtag = '686897696a7c876b7e'

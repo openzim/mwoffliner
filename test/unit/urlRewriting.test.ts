@@ -16,9 +16,9 @@ describe('Styles', () => {
   afterAll(stopRedis)
 
   test('Url re-writing', async () => {
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { Downloader, dump } = await setupScrapeClasses() // en wikipedia
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
+    const _articlesDetail = await Downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
     await RedisStore.articleDetailXId.flush()
     await RedisStore.articleDetailXId.setMany(articlesDetail)
@@ -139,9 +139,9 @@ describe('Styles', () => {
     const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await RedisStore.redirectsXId.flush()
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { dump } = await setupScrapeClasses() // en wikipedia
 
-    await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
+    await getArticleIds('', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
     let LondonArticle: typeof ZimArticle
 
@@ -154,7 +154,6 @@ describe('Styles', () => {
           return Promise.resolve(null)
         },
       } as any,
-      downloader,
       dump,
       true,
     )

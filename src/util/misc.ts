@@ -384,9 +384,9 @@ export function cleanupAxiosError(err: AxiosError) {
   return { name: err.name, message: err.message, url: err.config?.url, status: err.response?.status, responseType: err.config?.responseType, data: err.response?.data }
 }
 
-async function downloadListByUrl(url: string, downloader: Downloader): Promise<string> {
+async function downloadListByUrl(url: string): Promise<string> {
   const fileName = url.split('/').slice(-1)[0]
-  const { data: contentStream } = await downloader.request({ url, method: 'GET', ...downloader.streamRequestOptions })
+  const { data: contentStream } = await Downloader.request({ url, method: 'GET', ...Downloader.streamRequestOptions })
   const filePath = path.join(await getTmpDirectory(), fileName)
   const writeStream = fs.createWriteStream(filePath)
   await new Promise((resolve, reject) => {
@@ -398,7 +398,7 @@ async function downloadListByUrl(url: string, downloader: Downloader): Promise<s
   return filePath
 }
 
-export async function extractArticleList(articleList: string, downloader: Downloader): Promise<string[]> {
+export async function extractArticleList(articleList: string): Promise<string[]> {
   const list = await Promise.all(
     articleList
       .split(',')
@@ -414,7 +414,7 @@ export async function extractArticleList(articleList: string, downloader: Downlo
           }
           if (url && url.href) {
             try {
-              item = await downloadListByUrl(url.href, downloader)
+              item = await downloadListByUrl(url.href)
             } catch (e) {
               throw new Error(`Failed to read articleList from URL: ${url.href}`)
             }
