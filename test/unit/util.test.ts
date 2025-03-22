@@ -32,11 +32,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 describe('Utils', () => {
-  let downloader: Downloader
-
   MediaWiki.base = 'https://en.wikipedia.org' // Mandatory setting for proper downloader initialization
   beforeAll(async () => {
-    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
   })
 
   test('util -> interpolateTranslationString', async () => {
@@ -293,64 +291,64 @@ describe('Utils', () => {
     })
 
     test('One string as parameter', async () => {
-      const result: string[] = await extractArticleList('testString', downloader)
+      const result: string[] = await extractArticleList('testString')
       expect(result).toEqual(['testString'])
     })
 
     test('Comma separated strings as parameter', async () => {
-      const result: string[] = await extractArticleList(argumentsList.join(','), downloader)
+      const result: string[] = await extractArticleList(argumentsList.join(','))
       expect(result).toEqual(argumentsList)
     })
 
     test('Filename string as parameter', async () => {
-      const result: string[] = await extractArticleList(filePath, downloader)
+      const result: string[] = await extractArticleList(filePath)
       expect(result).toEqual(argumentsList)
     })
 
     test('Comma separated filenames string as parameter', async () => {
-      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`, downloader)
+      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
     test('URL as parameter', async () => {
-      jest.spyOn(downloader, 'request').mockResolvedValue({
+      jest.spyOn(Downloader, 'request').mockResolvedValue({
         data: fs.createReadStream(filePath),
         status: 200,
         statusText: 'OK',
         headers: null,
         config: null,
       })
-      const result: string[] = await extractArticleList('http://test.com/strings', downloader)
+      const result: string[] = await extractArticleList('http://test.com/strings')
       expect(result).toEqual(argumentsList)
     })
 
     test("Comma separated URL's as parameter", async () => {
-      jest.spyOn(downloader, 'request').mockResolvedValueOnce({
+      jest.spyOn(Downloader, 'request').mockResolvedValueOnce({
         data: fs.createReadStream(filePath),
         status: 200,
         statusText: 'OK',
         headers: null,
         config: null,
       })
-      jest.spyOn(downloader, 'request').mockResolvedValueOnce({
+      jest.spyOn(Downloader, 'request').mockResolvedValueOnce({
         data: fs.createReadStream(anotherFilePath),
         status: 200,
         statusText: 'OK',
         headers: null,
         config: null,
       })
-      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings', downloader)
+      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings')
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
     test('The parameter starts from HTTP but it is not the URL', async () => {
-      const result: string[] = await extractArticleList('http-test', downloader)
+      const result: string[] = await extractArticleList('http-test')
       expect(result).toEqual(['http-test'])
     })
 
     test('Error if trying to get articleList from wrong URL ', async () => {
-      jest.spyOn(downloader, 'request').mockRejectedValue({})
-      await expect(extractArticleList('http://valid-wrong-url.com/', downloader)).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+      jest.spyOn(Downloader, 'request').mockRejectedValue({})
+      await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
     })
   })
 

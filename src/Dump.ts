@@ -197,12 +197,12 @@ export class Dump {
     return zimRootPath
   }
 
-  public async getRelevantStylesheetUrls(downloader: Downloader) {
+  public async getRelevantStylesheetUrls() {
     // TODO: consider moving to Downloader
     const sheetUrls: Array<string | DominoElement> = []
 
     /* Load main page to see which CSS files are needed */
-    const { content } = await downloader.downloadContent(this.mwMetaData.webUrl, 'data')
+    const { content } = await Downloader.downloadContent(this.mwMetaData.webUrl, 'data')
     const html = content.toString()
     const doc = domino.createDocument(html)
     const links = Array.from(doc.getElementsByTagName('link'))
@@ -220,7 +220,7 @@ export class Dump {
 
     const offlineCssUrl = webUrlDirector.buildArticleRawURL('Mediawiki:offline.css')
 
-    if (await downloader.canGetUrl(offlineCssUrl)) {
+    if (await Downloader.canGetUrl(offlineCssUrl)) {
       sheetUrls.push(offlineCssUrl)
     }
 

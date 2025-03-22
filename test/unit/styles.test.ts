@@ -4,6 +4,7 @@ import { setupScrapeClasses } from '../util.js'
 import { getAndProcessStylesheets, mwRetToArticleDetail } from '../../src/util/index.js'
 import Axios from 'axios'
 import { jest } from '@jest/globals'
+import Downloader from '../../src/Downloader.js'
 
 jest.setTimeout(10000)
 
@@ -13,9 +14,9 @@ describe('Styles', () => {
 
   test('Stylesheet downloading', async () => {
     const { articleDetailXId } = RedisStore
-    const { downloader } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
+    const _articlesDetail = await Downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
     await articleDetailXId.flush()
     await articleDetailXId.setMany(articlesDetail)
@@ -26,7 +27,7 @@ describe('Styles', () => {
     const { data: offlineCSSContent } = await Axios.get(offlineCSSUrl)
     const { data: siteStylesContent } = await Axios.get(siteStylesUrl)
 
-    const { finalCss } = await getAndProcessStylesheets(downloader, [offlineCSSUrl, siteStylesUrl])
+    const { finalCss } = await getAndProcessStylesheets([offlineCSSUrl, siteStylesUrl])
 
     // Contains offline CSS url
     expect(finalCss.includes(offlineCSSUrl)).toBeDefined()

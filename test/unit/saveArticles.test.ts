@@ -12,6 +12,7 @@ import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import Downloader from '../../src/Downloader.js'
 
 jest.setTimeout(40000)
 
@@ -39,14 +40,14 @@ describe('saveArticles', () => {
     }
 
     test(`Article html processing using ${renderer} renderer`, async () => {
-      const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
-      await MediaWiki.hasCoordinates(downloader)
-      await MediaWiki.hasWikimediaDesktopApi(downloader)
-      await MediaWiki.hasWikimediaMobileApi(downloader)
-      await MediaWiki.hasRestApi(downloader)
-      await MediaWiki.hasVisualEditorApi(downloader)
+      const { MediaWiki, dump } = await setupScrapeClasses() // en wikipedia
+      await MediaWiki.hasCoordinates()
+      await MediaWiki.hasWikimediaDesktopApi()
+      await MediaWiki.hasWikimediaMobileApi()
+      await MediaWiki.hasRestApi()
+      await MediaWiki.hasVisualEditorApi()
 
-      const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
+      const _articlesDetail = await Downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
       await articleDetailXId.flush()
@@ -64,7 +65,6 @@ describe('saveArticles', () => {
             return Promise.resolve(null)
           },
         } as any,
-        downloader,
         dump,
         true,
         renderer,
@@ -75,12 +75,12 @@ describe('saveArticles', () => {
       expect(addedArticles[0].title).toEqual('London')
 
       const articleId = 'non-existent-article'
-      const articleUrl = downloader.getArticleUrl(articleId)
+      const articleUrl = Downloader.getArticleUrl(articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
 
       await expect(
-        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+        Downloader.getArticle(Downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
@@ -94,18 +94,18 @@ describe('saveArticles', () => {
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
-      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
       const articleId = 'Canada'
-      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
-      const articleUrl = downloader.getArticleUrl(articleId)
-      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
+      const result = await Downloader.getArticle(
+        Downloader.webp,
         _moduleDependencies,
         articleId,
         articleDetailXId,
@@ -125,18 +125,18 @@ describe('saveArticles', () => {
     })
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
-      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Main_Page'
-      const articleUrl = downloader.getArticleUrl(articleId)
-      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
+      const result = await Downloader.getArticle(
+        Downloader.webp,
         _moduleDependencies,
         articleId,
         articleDetailXId,
@@ -151,8 +151,8 @@ describe('saveArticles', () => {
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
-      const { downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
@@ -180,7 +180,7 @@ describe('saveArticles', () => {
       const customFlavour = new CustomFlavour()
       dump.customProcessor = customFlavour
 
-      const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
+      const _articlesDetail = await Downloader.getArticleDetailsIds(['London', 'Paris', 'Prague'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
       await articleDetailXId.flush()
@@ -196,7 +196,6 @@ describe('saveArticles', () => {
             return Promise.resolve(null)
           },
         } as any,
-        downloader,
         dump,
         true,
         renderer,
@@ -217,18 +216,18 @@ describe('saveArticles', () => {
     })
 
     test('Removes inline JS', async () => {
-      const { downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
-      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
+      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Potato'
-      const articleUrl = downloader.getArticleUrl(articleId)
-      const _articleDetailsRet = await downloader.getArticleDetailsIds([articleId])
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
+      const result = await Downloader.getArticle(
+        Downloader.webp,
         _moduleDependencies,
         articleId,
         articleDetailXId,
@@ -315,7 +314,7 @@ describe('saveArticles', () => {
     */
 
     test('Test deleted article rendering (Visual editor renderer)', async () => {
-      const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { dump } = await setupScrapeClasses() // en wikipedia
       const { articleDetailXId } = RedisStore
       const articleId = 'deletedArticle'
 
@@ -324,14 +323,14 @@ describe('saveArticles', () => {
       }
 
       const articleDetail = { title: articleId, missing: '' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
 
       const visualEditorRenderer = new VisualEditorRenderer()
 
       const renderOpts = {
         data: articleJsonObject,
         RedisStore,
-        webp: downloader.webp,
+        webp: Downloader.webp,
         _moduleDependencies,
         articleId,
         articleDetailXId,
@@ -347,9 +346,9 @@ describe('saveArticles', () => {
   })
 
   test('Load inline js from HTML', async () => {
-    const { downloader } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
-    const _moduleDependencies = await downloader.getModuleDependencies('Potato')
+    const _moduleDependencies = await Downloader.getModuleDependencies('Potato')
 
     let RLCONF: any
     let RLSTATE: any

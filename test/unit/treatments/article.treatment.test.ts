@@ -11,6 +11,7 @@ import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { RestApiRenderer } from '../../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../../src/util/const.js'
+import Downloader from '../../../src/Downloader.js'
 
 jest.setTimeout(10000)
 
@@ -38,9 +39,9 @@ describe('ArticleTreatment', () => {
     }
 
     test(`Article html processing for ${renderer} render`, async () => {
-      const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { dump } = await setupScrapeClasses() // en wikipedia
       const title = 'London'
-      const _articlesDetail = await downloader.getArticleDetailsIds([title])
+      const _articlesDetail = await Downloader.getArticleDetailsIds([title])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
       await articleDetailXId.flush()
@@ -49,10 +50,10 @@ describe('ArticleTreatment', () => {
       const addedArticles: StringItem[] = []
 
       const articleId = 'non-existent-article'
-      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
-      const articleUrl = downloader.getArticleUrl(articleId)
+      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      const articleUrl = Downloader.getArticleUrl(articleId)
 
-      const _moduleDependencies = await downloader.getModuleDependencies(title)
+      const _moduleDependencies = await Downloader.getModuleDependencies(title)
       const articleDetail = {
         title,
         thumbnail: {
@@ -75,7 +76,6 @@ describe('ArticleTreatment', () => {
             return Promise.resolve(null)
           },
         } as any,
-        downloader,
         dump,
         true,
         renderer,
@@ -86,7 +86,7 @@ describe('ArticleTreatment', () => {
       expect(addedArticles[0].title).toEqual('London')
 
       await expect(
-        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+        Downloader.getArticle(Downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())

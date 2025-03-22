@@ -19,7 +19,7 @@ import { zimCreatorMutex } from '../mutex.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
+export async function getAndProcessStylesheets(links: Array<string | DominoElement>) {
   let finalCss = ''
   const { filesToDownloadXPath } = RedisStore
   const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
@@ -32,7 +32,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
         const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi')
 
         logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`)
-        const { content } = await downloader.downloadContent(cssUrl, 'css')
+        const { content } = await Downloader.downloadContent(cssUrl, 'css')
         const body = content.toString()
 
         let rewrittenCss = `\n/* start ${cssUrl} */\n\n`
@@ -61,8 +61,8 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
               url = url.indexOf('%') < 0 ? encodeURI(url) : url
 
               /* Download CSS dependency, but avoid duplicate calls */
-              if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
-                downloader.cssDependenceUrls[url] = true
+              if (!Downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
+                Downloader.cssDependenceUrls[url] = true
                 filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), kind: 'media' })
               }
             } else {
@@ -77,7 +77,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
       logger.warn(`Failed to get CSS from [${cssUrl}]`)
       finished()
     }
-  }, Number(downloader.speed))
+  }, Number(Downloader.speed))
 
   stylesheetQueue.push(links)
 
@@ -90,7 +90,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: Creator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: Creator, dump: Dump, module: string, type: 'js' | 'css') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -132,7 +132,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
 
   logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
 
-  const { content } = await downloader.downloadContent(moduleApiUrl, 'module')
+  const { content } = await Downloader.downloadContent(moduleApiUrl, 'module')
   let text = content.toString()
 
   if (type === 'js') {
@@ -172,7 +172,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.
-export async function importPolyfillModules(downloader: Downloader, zimCreator: Creator) {
+export async function importPolyfillModules(zimCreator: Creator) {
   ;[
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
@@ -181,8 +181,7 @@ export async function importPolyfillModules(downloader: Downloader, zimCreator: 
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
   })
 
-  const content = await downloader
-    .request({ url: WEBP_HANDLER_URL, method: 'GET', ...downloader.arrayBufferRequestOptions })
+  const content = await Downloader.request({ url: WEBP_HANDLER_URL, method: 'GET', ...Downloader.arrayBufferRequestOptions })
     .then((a) => a.data)
     .catch((err) => {
       throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)
