@@ -157,8 +157,8 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
       articleId = pathFunction(module, config.output.dirs.mediawiki)
     }
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
-    await zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text))
-    logger.info(`Saved module [${module}]`)
+    logger.info(`Saving module [${module}]...`)
+    return zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text))
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
     throw e
