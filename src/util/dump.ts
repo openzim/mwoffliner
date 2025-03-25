@@ -14,6 +14,7 @@ import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import urlHelper from './url.helper.js'
+import { zimCreatorMutex } from '../mutex.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -162,7 +163,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
       articleId = pathFunction(module, config.output.dirs.mediawiki)
     }
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
-    zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text))
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text)))
     logger.info(`Saved module [${module}]`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
@@ -175,9 +176,9 @@ export async function importPolyfillModules(downloader: Downloader, zimCreator: 
   ;[
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
-  ].forEach(({ name, path }) => {
+  ].forEach(async ({ name, path }) => {
     const item = new StringItem(jsPath(name), 'text/javascript', '', {}, fs.readFileSync(path, 'utf8').toString())
-    zimCreator.addItem(item)
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
   })
 
   const content = await downloader
@@ -188,5 +189,5 @@ export async function importPolyfillModules(downloader: Downloader, zimCreator: 
     })
 
   const item = new StringItem(jsPath('webpHandler'), 'text/javascript', '', {}, content)
-  zimCreator.addItem(item)
+  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
 }

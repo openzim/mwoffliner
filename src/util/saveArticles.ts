@@ -14,6 +14,7 @@ import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } f
 import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
+import { zimCreatorMutex } from '../mutex.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, downloader: Downloader, retryCounter = 0) {
   await retryStore.flush()
@@ -39,7 +40,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       try {
         if (resp.result && resp.result.content && resp.result.contentType) {
           const item = new StringItem(resp.path, resp.result.contentType, '', {}, resp.result.content)
-          zimCreator.addItem(item)
+          await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
           dump.status.files.success += 1
         } else {
           isFailed = true
@@ -241,7 +242,7 @@ async function saveArticle(
     await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
     const zimArticle = new StringItem(articleId, 'text/html', articleTitle, {}, finalHTML)
-    zimCreator.addItem(zimArticle)
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(zimArticle))
 
     return null
   } catch (err) {
@@ -431,7 +432,7 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
 
   if (jsConfigVars) {
     const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', '', {}, jsConfigVars)
-    zimCreator.addItem(jsConfigVarArticle)
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(jsConfigVarArticle))
   }
 
   return {
