@@ -22,6 +22,7 @@ import {
 } from './const.js'
 import { fileURLToPath } from 'url'
 import { AxiosError } from 'axios'
+import { zimCreatorMutex } from '../mutex.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -182,7 +183,7 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
       }
 
       const article = new StringItem(url, mimetype, null, {}, staticFilesContent)
-      zimCreator.addItem(article)
+      await zimCreatorMutex.runExclusive(() => zimCreator.addItem(article))
     })
   } catch (err) {
     logger.error(err)
