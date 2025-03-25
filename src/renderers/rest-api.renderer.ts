@@ -1,7 +1,7 @@
 import domino from 'domino'
 import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
-import { RenderOpts, RenderOutput } from './abstract.renderer.js'
+import { DownloadOpts, DownloadRes, RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest.php/v1/page/html/'
 export class RestApiRenderer extends DesktopRenderer {
@@ -32,17 +32,28 @@ export class RestApiRenderer extends DesktopRenderer {
     return { strippedTitle, _articleId }
   }
 
+  public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
+    const { downloader, articleUrl, articleDetail } = downloadOpts
+
+    const moduleDependencies = super.filterWikimediaDesktopModules(await downloader.getModuleDependencies(articleDetail.title))
+
+    const data = await downloader.getJSON<any>(articleUrl)
+    if (data.error) {
+      throw data.error
+    }
+
+    return { data, moduleDependencies }
+  }
+
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleDetailXId, _moduleDependencies, isMainPage, dump } = renderOpts
+    const { data, articleId, articleDetailXId, moduleDependencies, isMainPage, dump } = renderOpts
 
     if (!data) {
       throw new Error(`Cannot render [${data}] into an article`)
     }
 
     const articleDetail = await renderOpts.articleDetailXId.get(articleId)
-
-    const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
 
     // Paginate when there are more than 200 subCategories
     const numberOfPagesToSplitInto = Math.max(Math.ceil((articleDetail.subCategories || []).length / 200), 1)
@@ -58,7 +69,7 @@ export class RestApiRenderer extends DesktopRenderer {
         dump,
         articleId,
         articleDetail,
-        moduleDependenciesFiltered,
+        moduleDependencies,
         super.templateDesktopArticle.bind(this),
       )
 
@@ -69,7 +80,7 @@ export class RestApiRenderer extends DesktopRenderer {
         mediaDependencies,
         videoDependencies,
         imageDependencies,
-        moduleDependencies: moduleDependenciesFiltered,
+        moduleDependencies,
         staticFiles: this.staticFilesListDesktop,
         subtitles,
       })

@@ -7,21 +7,25 @@ import { RestApiRenderer } from './rest-api.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
 import Downloader from 'src/Downloader.js'
+import { ActionParseRenderer } from './action-parse.renderer.js'
 
 export class RendererBuilder {
   public async createRenderer(downloader: Downloader, options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
-    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi] = await Promise.all([
+    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi, hasActionParseApi] = await Promise.all([
       MediaWiki.hasVisualEditorApi(downloader),
       MediaWiki.hasWikimediaDesktopApi(downloader),
       MediaWiki.hasWikimediaMobileApi(downloader),
       MediaWiki.hasRestApi(downloader),
+      MediaWiki.hasActionParseApi(downloader),
     ])
 
     switch (renderType) {
       case 'desktop':
-        if (hasWikimediaDesktopApi) {
+        if (hasActionParseApi) {
+          return new ActionParseRenderer()
+        } else if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
@@ -39,7 +43,9 @@ export class RendererBuilder {
         logger.error('No available mobile renderer.')
         process.exit(1)
       case 'auto':
-        if (hasWikimediaDesktopApi) {
+        if (hasActionParseApi) {
+          return new ActionParseRenderer()
+        } else if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
@@ -54,15 +60,28 @@ export class RendererBuilder {
         }
       case 'specific':
         // renderName argument is required for 'specific' mode
-        return this.handleSpecificRender(renderName, hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi)
+        return this.handleSpecificRender(renderName, hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi, hasActionParseApi)
       default:
         throw new Error(`Unknown render: ${renderType}`)
     }
   }
 
-  private handleSpecificRender(renderName: string, hasVisualEditorApi: boolean, hasWikimediaDesktopApi: boolean, hasWikimediaMobileApi: boolean, hasRestApi: boolean) {
+  private handleSpecificRender(
+    renderName: string,
+    hasVisualEditorApi: boolean,
+    hasWikimediaDesktopApi: boolean,
+    hasWikimediaMobileApi: boolean,
+    hasRestApi: boolean,
+    hasActionParseApi: boolean,
+  ) {
     // renderName argument is required for 'specific' mode
     switch (renderName) {
+      case 'ActionParse':
+        if (hasActionParseApi) {
+          return new ActionParseRenderer()
+        }
+        logger.error('Cannot create an instance of ActionParse renderer.')
+        process.exit(1)
       case 'WikimediaDesktop':
         if (hasWikimediaDesktopApi) {
           return new WikimediaDesktopRenderer()

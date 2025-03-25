@@ -165,7 +165,6 @@ describe('Downloader class', () => {
       }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       const LondonArticle = await downloader.getArticle(
-        downloader.webp,
         _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
@@ -191,7 +190,6 @@ describe('Downloader class', () => {
       // Enforce desktop url here as this test desktop API-specific
       const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
       const PaginatedArticle = await downloader.getArticle(
-        downloader.webp,
         _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
@@ -214,7 +212,6 @@ describe('Downloader class', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       await expect(
         downloader.getArticle(
-          downloader.webp,
           _moduleDependencies,
           'NeverExistingArticle',
           RedisStore.articleDetailXId,
@@ -263,7 +260,6 @@ describe('Downloader class', () => {
         const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
         await expect(
           downloader.getArticle(
-            downloader.webp,
             _moduleDependencies,
             'NeverExistingArticle',
             RedisStore.articleDetailXId,

@@ -29,6 +29,7 @@ import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
+import { Renderer } from './renderers/abstract.renderer.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -177,6 +178,10 @@ class Downloader {
         return MediaWiki.wikimediaMobileUrlDirector
       case 'RestApiRenderer':
         return MediaWiki.restApiUrlDirector
+      case 'ActionParseRenderer':
+        return MediaWiki.actionParseUrlDirector
+      default:
+        throw new Error(`Unknown renderer ${renderer.constructor.name}`)
     }
   }
 
@@ -224,6 +229,7 @@ class Downloader {
       }
 
       const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
+      logger.warn(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
 
@@ -307,11 +313,9 @@ class Downloader {
   }
 
   public async getArticle(
-    webp: boolean,
-    _moduleDependencies: any,
     articleId: string,
     articleDetailXId: RKVS<ArticleDetail>,
-    articleRenderer,
+    articleRenderer: Renderer,
     articleUrl,
     dump: Dump,
     articleDetail?: ArticleDetail,
@@ -319,15 +323,15 @@ class Downloader {
   ): Promise<any> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
-    const data = await this.getJSON<any>(articleUrl)
-    if (data.error) {
-      throw data.error
-    }
+    const { data, moduleDependencies } = await articleRenderer.download({
+      downloader: this,
+      articleUrl,
+      articleDetail,
+    })
 
     return articleRenderer.render({
       data,
-      webp,
-      _moduleDependencies,
+      moduleDependencies,
       articleId,
       articleDetailXId,
       articleDetail,

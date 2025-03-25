@@ -57,11 +57,11 @@ const config = {
 
   output: {
     // CSS and JS resources added by Kiwix
-    cssResourcesCommon: ['style', 'mobile_main_page'],
-    jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
+    cssResourcesCommon: [], // ['style', 'mobile_main_page'],
+    jsResourcesCommon: [], // ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
-    cssResources: ['content.parsoid', 'inserted_style'],
-    jsResources: ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
+    cssResources: [], // ['content.parsoid', 'inserted_style'],
+    jsResources: [], // ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
 
     wikimediaMobileCssResources: ['wm_mobile_override_style'],
     wikimediaMobileJsResources: ['wm_mobile_override_script'],
@@ -70,6 +70,8 @@ const config = {
     mw: {
       css: [
         [
+          'ext.gadget.infobox,wikiMenuStyles',
+          /*
           'skins.minerva.base.reset',
           'skins.minerva.content.styles',
           'ext.cite.style',
@@ -77,22 +79,25 @@ const config = {
           'mobile.app.pagestyles.android',
           'mediawiki.page.gallery.styles',
           'mediawiki.skinning.content.parsoid',
+          */
         ].join('|'),
       ],
       js: [
         'startup',
-        'jquery,mediawiki',
+        // 'jquery,mediawiki',
         'mediawiki.base',
-        'mediawiki.util',
-        'site',
-        'mediawiki.page.ready',
+        // 'mediawiki.util',
+        // 'site',
+        // 'mediawiki.page.ready',
 
+        /*
         // Gadget resources are not shared by Parsoid API https://phabricator.wikimedia.org/T161278
         'jquery.cookie',
         'mediawiki.cookie',
         'mediawiki.storage',
         'ext.gadget.VisibilityToggles',
         'ext.gadget.defaultVisibilityToggles',
+        */
       ],
     },
 

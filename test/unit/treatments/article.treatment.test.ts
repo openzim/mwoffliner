@@ -86,7 +86,7 @@ describe('ArticleTreatment', () => {
       expect(addedArticles[0].aid).toEqual('A/London')
 
       await expect(
-        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+        downloader.getArticle(_moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())

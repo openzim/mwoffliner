@@ -106,7 +106,6 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
         resp.mult = arg.val.mult
         resp.width = arg.val.width
         resp.kind = arg.val.kind
-
         return downloader
           .downloadContent(arg.val.url, arg.val.kind, false)
           .then((r) => {
@@ -128,14 +127,13 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       let rets: any
       try {
         const isMainPage = dump.isMainPage(articleId)
         const renderer = isMainPage ? mainPageRenderer : articlesRenderer
         const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
 
-        rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+        rets = await downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -327,15 +325,13 @@ export async function saveArticles(zimCreator: ZimCreator, downloader: Downloade
         curArticle = articleId
         const promises: [string, Promise<Error>][] = []
 
-        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-
         let rets: any
         try {
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? mainPageRenderer : articlesRenderer
           const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
 
-          rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+          rets = await downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
           for (const {
             articleId,

@@ -2,7 +2,7 @@ import * as logger from '../Logger.js'
 import { DELETED_ARTICLE_ERROR } from '../util/const.js'
 import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
-import { RenderOpts, RenderOutput } from './abstract.renderer.js'
+import { DownloadOpts, DownloadRes, RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 /*
 Relies on VisualEditor API typically looking like 'https://{wiki-host}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
@@ -47,19 +47,31 @@ export class VisualEditorRenderer extends DesktopRenderer {
     return ''
   }
 
+  public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
+    const { downloader, articleUrl, articleDetail } = downloadOpts
+
+    const moduleDependencies = super.filterWikimediaDesktopModules(await downloader.getModuleDependencies(articleDetail.title))
+
+    const data = await downloader.getJSON<any>(articleUrl)
+    if (data.error) {
+      throw data.error
+    }
+
+    return { data, moduleDependencies }
+  }
+
   public async render(renderOpts: RenderOpts): Promise<any> {
     try {
       const result: RenderOutput = []
-      const { articleId, articleDetail, _moduleDependencies, dump } = renderOpts
+      const { articleId, articleDetail, moduleDependencies, dump } = renderOpts
       const { html, displayTitle } = await this.retrieveHtml(renderOpts)
       if (html) {
-        const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
         const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
           html,
           dump,
           articleId,
           articleDetail,
-          moduleDependenciesFiltered,
+          moduleDependencies,
           super.templateDesktopArticle.bind(this),
         )
         result.push({
@@ -69,7 +81,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
           mediaDependencies,
           videoDependencies,
           imageDependencies,
-          moduleDependencies: moduleDependenciesFiltered,
+          moduleDependencies,
           staticFiles: this.staticFilesListDesktop,
           subtitles,
         })

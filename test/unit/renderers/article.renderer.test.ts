@@ -42,7 +42,7 @@ describe('ArticleRenderer', () => {
       const result = await visualEditorRenderer.render({
         data,
         webp: downloader.webp,
-        _moduleDependencies,
+        moduleDependencies: _moduleDependencies,
         articleId,
         articleDetail,
         isMainPage: true,
@@ -63,7 +63,7 @@ describe('ArticleRenderer', () => {
       const result = await visualEditorRenderer.render({
         data,
         webp: downloader.webp,
-        _moduleDependencies,
+        moduleDependencies: _moduleDependencies,
         articleId,
         articleDetail: { title: 'consectetur adipiscing elit', timestamp: '2023-08-24T02:19:04Z' },
         isMainPage: false,
@@ -82,7 +82,7 @@ describe('ArticleRenderer', () => {
       const result = await visualEditorRenderer.render({
         data,
         webp: downloader.webp,
-        _moduleDependencies,
+        moduleDependencies: _moduleDependencies,
         articleId,
         articleDetail,
         isMainPage: false,
@@ -103,7 +103,7 @@ describe('ArticleRenderer', () => {
       const result = await visualEditorRenderer.render({
         data,
         webp: downloader.webp,
-        _moduleDependencies,
+        moduleDependencies: _moduleDependencies,
         articleId,
         articleDetail,
         isMainPage: false,
@@ -123,7 +123,7 @@ describe('ArticleRenderer', () => {
       const result = await visualEditorRenderer.render({
         data,
         webp: downloader.webp,
-        _moduleDependencies,
+        moduleDependencies: _moduleDependencies,
         articleId,
         articleDetail,
         isMainPage: false,

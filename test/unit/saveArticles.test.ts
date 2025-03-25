@@ -80,7 +80,7 @@ describe('saveArticles', () => {
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
       await expect(
-        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+        downloader.getArticle(_moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().bufferData.toString())
@@ -104,17 +104,7 @@ describe('saveArticles', () => {
       const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        rendererInstance,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const result = await downloader.getArticle(_moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -135,17 +125,7 @@ describe('saveArticles', () => {
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        rendererInstance,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const result = await downloader.getArticle(_moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
@@ -224,17 +204,7 @@ describe('saveArticles', () => {
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        rendererInstance,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const result = await downloader.getArticle(_moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
 
       const articleDoc = domino.createDocument(result[0].html)
 
