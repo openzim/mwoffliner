@@ -15,7 +15,7 @@ const parameters = {
   format: ['nopic'],
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('bm-wikipedia', parameters, async (outFiles) => {
   test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
     await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
   })
@@ -40,11 +40,13 @@ await testAllRenders(parameters, async (outFiles) => {
   })
 
   afterAll(() => {
-    rimraf.sync(`./${outFiles[0].testId}`)
+    if (!process.env.KEEP_ZIMS) {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    }
   })
 })
 
-await testAllRenders({ ...parameters, addNamespaces: 1 }, async (outFiles) => {
+await testAllRenders('bm-wikipedia-with-ns-1', { ...parameters, addNamespaces: 1 }, async (outFiles) => {
   test(`Articles with "Discussion" namespace for ${outFiles[0]?.renderer} renderer for bm.wikipedia.org`, async () => {
     await execa('redis-cli flushall', { shell: true })
 
@@ -55,6 +57,8 @@ await testAllRenders({ ...parameters, addNamespaces: 1 }, async (outFiles) => {
     expect(discussionArticlesList.length).toBeGreaterThan(30)
   })
   afterAll(() => {
-    rimraf.sync(`./${outFiles[0].testId}`)
+    if (!process.env.KEEP_ZIMS) {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    }
   })
 })

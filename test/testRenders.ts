@@ -52,12 +52,12 @@ async function getOutFiles(renderName: string, testId: string, parameters: Param
   return outFiles
 }
 
-export async function testRenders(parameters: Parameters, callback, renderersList: Array<string>) {
+export async function testRenders(testName: string, parameters: Parameters, callback, renderersList: Array<string>) {
   await checkZimTools()
   for (const renderer of renderersList) {
     try {
       const now = new Date()
-      const testId = `mwo-test-${+now}`
+      const testId = `mwo-test-${testName}-${renderer}-${+now}`
       const outFiles = await getOutFiles(renderer, testId, parameters)
       outFiles[0].testId = testId
       outFiles[0].renderer = renderer
@@ -69,6 +69,6 @@ export async function testRenders(parameters: Parameters, callback, renderersLis
   }
 }
 
-export async function testAllRenders(parameters: Parameters, callback) {
-  return testRenders(parameters, callback, RENDERERS_LIST)
+export async function testAllRenders(testName: string, parameters: Parameters, callback) {
+  return testRenders(testName, parameters, callback, RENDERERS_LIST)
 }

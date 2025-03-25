@@ -19,7 +19,7 @@ const parameters = {
   format: ['nopic'],
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('article-lists', parameters, async (outFiles) => {
   describe('articleList', () => {
     const listMinusIgnore = 2
 
@@ -50,7 +50,9 @@ await testAllRenders(parameters, async (outFiles) => {
       expect(redisScan.stdout).toEqual('')
     })
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })

@@ -19,7 +19,7 @@ const parameters = {
   publisher: 'Example of the publisher',
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('zim-metadata', parameters, async (outFiles) => {
   describe('zimMetadata', () => {
     test(`check all zim metadata using zimdump for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
@@ -46,7 +46,9 @@ await testAllRenders(parameters, async (outFiles) => {
     })
 
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })

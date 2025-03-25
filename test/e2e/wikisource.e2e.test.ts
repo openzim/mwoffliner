@@ -15,6 +15,7 @@ const parameters = {
 }
 
 await testRenders(
+  'wikisource',
   parameters,
   async (outFiles) => {
     describe('wikisource', () => {
@@ -39,7 +40,9 @@ await testRenders(
           })
 
           afterAll(() => {
-            rimraf.sync(`./${outFiles[0].testId}`)
+            if (!process.env.KEEP_ZIMS) {
+              rimraf.sync(`./${outFiles[0].testId}`)
+            }
           })
           break
         case 'VisualEditor':
@@ -59,7 +62,9 @@ await testRenders(
               }
             }
           })
-          rimraf.sync(`./${outFiles[0].testId}`)
+          if (!process.env.KEEP_ZIMS) {
+            rimraf.sync(`./${outFiles[0].testId}`)
+          }
           break
       }
     })

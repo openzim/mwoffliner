@@ -14,7 +14,7 @@ const parameters = {
   format: ['nopic', 'nopdf'],
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
   describe('en10', () => {
     test(`Simple articleList for ${outFiles[0]?.renderer} renderer`, async () => {
       // Created 2 outputs
@@ -63,7 +63,9 @@ await testAllRenders(parameters, async (outFiles) => {
     })
 
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })
