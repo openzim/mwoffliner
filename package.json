@@ -31,7 +31,7 @@
     "redis:start": "docker run -p 6379:6379 --name redis-mwoffliner -d redis",
     "redis:kill": "docker rm -f redis-mwoffliner || :",
     "redis": "npm run redis:kill && npm run redis:start",
-    "start": "node --loader ts-node/esm ./src/cli.ts"
+    "start": "./node_modules/.bin/ts-node-esm ./src/cli.ts"
   },
   "nyc": {
     "extension": [
