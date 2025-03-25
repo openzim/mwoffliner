@@ -166,7 +166,7 @@ async function execute(argv: any) {
   MediaWiki.username = mwUsername
 
   /* Download helpers; TODO: Merge with something else / expand this. */
-  Downloader.options = {
+  Downloader.init = {
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,

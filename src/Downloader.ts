@@ -88,185 +88,119 @@ class Downloader {
   }
 
   public loginCookie = ''
-  // public readonly speed: number
+  private _speed: number
   public cssDependenceUrls: KVS<boolean> = {}
-  // public readonly webp: boolean = false
-  // public readonly requestTimeout: number
-  #basicRequestOptions: AxiosRequestConfig
-  #arrayBufferRequestOptions: AxiosRequestConfig
-  #jsonRequestOptions: AxiosRequestConfig
-  #streamRequestOptions: AxiosRequestConfig
+  private _webp = false
+  private _requestTimeout: number
+  private _basicRequestOptions: AxiosRequestConfig
+  private _arrayBufferRequestOptions: AxiosRequestConfig
+  private _jsonRequestOptions: AxiosRequestConfig
+  private _streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
-  // private readonly uaString: string
+  private uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  #backoffOptions: BackoffOptions
-  // private readonly optimisationCacheUrl: string
-  // private s3: S3
+  private _backoffOptions: BackoffOptions
+  private _optimisationCacheUrl: string
+  private s3: S3
   private apiUrlDirector: ApiURLDirector
 
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
-  // private readonly insecure: boolean = false
+  private _insecure = false
 
-  #options: DownloaderOpts
-
-  private get uaString() {
-    return this.#options.uaString
-  }
-  private get s3() {
-    return this.#options.s3
-  }
   get speed() {
-    return this.#options.speed
+    return this._speed
   }
   get webp() {
-    return this.#options.webp
+    return this._webp
   }
   get requestTimeout() {
-    return this.#options.reqTimeout
+    return this._requestTimeout
   }
   private get optimisationCacheUrl() {
-    return this.#options.optimisationCacheUrl
+    return this._optimisationCacheUrl
   }
   get basicRequestOptions() {
-    return this.#basicRequestOptions
+    return this._basicRequestOptions
   }
   get arrayBufferRequestOptions() {
-    return this.#arrayBufferRequestOptions
+    return this._arrayBufferRequestOptions
   }
   get jsonRequestOptions() {
-    return this.#jsonRequestOptions
+    return this._jsonRequestOptions
   }
   get streamRequestOptions() {
-    return this.#streamRequestOptions
+    return this._streamRequestOptions
   }
   private get insecure() {
-    return this.#options.insecure
+    return this._insecure
   }
   private get backoffOptions() {
-    return this.#backoffOptions
+    return this._backoffOptions
   }
 
-  set options(opts: DownloaderOpts) {
-    this.#options = opts
-    this.maxActiveRequests = this.#options.speed * 10
-    this.#backoffOptions = {
+  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
+    this.loginCookie = ''
+    this.uaString = uaString
+    this._speed = speed
+    this.maxActiveRequests = speed * 10
+    this._requestTimeout = reqTimeout
+    this._optimisationCacheUrl = optimisationCacheUrl
+    this._webp = webp
+    this.s3 = s3
+    this._insecure = insecure
+    this.maxActiveRequests = this.speed * 10
+    this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    this._backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
       retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`)
       },
-      ...this.#options.backoffOptions,
+      ...this.backoffOptions,
     }
-    this.#basicRequestOptions = {
+    this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
-      timeout: this.#options.reqTimeout,
+      timeout: this.requestTimeout,
       headers: {
         'cache-control': 'public, max-stale=86400',
-        'user-agent': this.#options.uaString,
+        'user-agent': this.uaString,
       },
       validateStatus(status) {
         return (status >= 200 && status < 300) || status === 304
       },
     }
-    this.#arrayBufferRequestOptions = {
-      ...this.#basicRequestOptions,
+    this._arrayBufferRequestOptions = {
+      ...this._basicRequestOptions,
       responseType: 'arraybuffer',
       method: 'GET',
     }
-    this.#jsonRequestOptions = {
-      ...this.#basicRequestOptions,
+    this._jsonRequestOptions = {
+      ...this._basicRequestOptions,
       headers: {
-        ...this.#basicRequestOptions.headers,
+        ...this._basicRequestOptions.headers,
         accept: 'application/json',
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'json',
       method: 'GET',
     }
-    this.#streamRequestOptions = {
-      ...this.#basicRequestOptions,
+    this._streamRequestOptions = {
+      ...this._basicRequestOptions,
       headers: {
-        ...this.#basicRequestOptions.headers,
+        ...this._basicRequestOptions.headers,
         accept: 'application/octet-stream',
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'stream',
       method: 'GET',
     }
-    this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-  }
-
-  constructor() {
-    this.#options = { insecure: false, ...this.#options }
-    // this.uaString = uaString
-    // this.speed = speed
-    // this.maxActiveRequests = speed * 10
-    // this.requestTimeout = reqTimeout
-    this.loginCookie = ''
-    // this.optimisationCacheUrl = optimisationCacheUrl
-    // this.webp = webp
-    // this.s3 = s3
-    // this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-    // this.insecure = insecure
-
-    // this.backoffOptions = {
-    //   strategy: new backoff.ExponentialStrategy(),
-    //   failAfter: 7,
-    //   retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
-    //   backoffHandler: (number: number, delay: number) => {
-    //     logger.info(`[backoff] #${number} after ${delay} ms`)
-    //   },
-    //   ...backoffOptions,
-    // }
-
-    // this.basicRequestOptions = {
-    //   // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-    //   httpAgent: new http.Agent({ keepAlive: true }),
-    //   httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
-    //   timeout: this.requestTimeout,
-    //   headers: {
-    //     'cache-control': 'public, max-stale=86400',
-    //     'user-agent': this.uaString,
-    //   },
-    //   validateStatus(status) {
-    //     return (status >= 200 && status < 300) || status === 304
-    //   },
-    // }
-
-    // this.arrayBufferRequestOptions = {
-    //   ...this.basicRequestOptions,
-    //   responseType: 'arraybuffer',
-    //   method: 'GET',
-    // }
-
-    // this.jsonRequestOptions = {
-    //   ...this.basicRequestOptions,
-    //   headers: {
-    //     ...this.basicRequestOptions.headers,
-    //     accept: 'application/json',
-    //     'accept-encoding': 'gzip, deflate',
-    //   },
-    //   responseType: 'json',
-    //   method: 'GET',
-    // }
-
-    // this.streamRequestOptions = {
-    //   ...this.basicRequestOptions,
-    //   headers: {
-    //     ...this.basicRequestOptions.headers,
-    //     accept: 'application/octet-stream',
-    //     'accept-encoding': 'gzip, deflate',
-    //   },
-    //   responseType: 'stream',
-    //   method: 'GET',
-    // }
   }
 
   private getUrlDirector(renderer: object) {
@@ -568,7 +502,7 @@ class Downloader {
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
-    this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
+    this.request<T>({ url, method: 'GET', ...this._jsonRequestOptions })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {

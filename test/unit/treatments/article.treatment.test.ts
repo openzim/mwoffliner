@@ -11,6 +11,7 @@ import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { RestApiRenderer } from '../../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../../src/util/const.js'
+import Downloader from 'src/Downloader.js'
 
 jest.setTimeout(10000)
 
@@ -38,7 +39,7 @@ describe('ArticleTreatment', () => {
     }
 
     test(`Article html processing for ${renderer} render`, async () => {
-      const { Downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { dump } = await setupScrapeClasses() // en wikipedia
       const title = 'London'
       const _articlesDetail = await Downloader.getArticleDetailsIds([title])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)

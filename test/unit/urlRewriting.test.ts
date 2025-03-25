@@ -8,6 +8,7 @@ import { saveArticles } from '../../src/util/saveArticles.js'
 import { ZimArticle } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
+import Downloader from '../../src/Downloader.js'
 
 jest.setTimeout(20000)
 
@@ -16,7 +17,7 @@ describe('Styles', () => {
   afterAll(stopRedis)
 
   test('Url re-writing', async () => {
-    const { Downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { dump } = await setupScrapeClasses() // en wikipedia
 
     const _articlesDetail = await Downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)

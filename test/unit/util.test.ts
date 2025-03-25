@@ -34,7 +34,7 @@ const __dirname = path.dirname(__filename)
 describe('Utils', () => {
   MediaWiki.base = 'https://en.wikipedia.org' // Mandatory setting for proper downloader initialization
   beforeAll(async () => {
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
   })
 
   test('util -> interpolateTranslationString', async () => {

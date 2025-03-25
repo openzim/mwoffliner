@@ -12,6 +12,7 @@ import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import Downloader from '../../src/Downloader.js'
 
 jest.setTimeout(40000)
 
@@ -39,7 +40,7 @@ describe('saveArticles', () => {
     }
 
     test(`Article html processing using ${renderer} renderer`, async () => {
-      const { MediaWiki, Downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { MediaWiki, dump } = await setupScrapeClasses() // en wikipedia
       await MediaWiki.hasCoordinates()
       await MediaWiki.hasWikimediaDesktopApi()
       await MediaWiki.hasWikimediaMobileApi()
@@ -93,7 +94,7 @@ describe('saveArticles', () => {
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
-      const { Downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
       const articleId = 'Canada'
       Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleUrl = Downloader.getArticleUrl(articleId)
@@ -124,7 +125,7 @@ describe('saveArticles', () => {
     })
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
-      const { Downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
       Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Main_Page'
       const articleUrl = Downloader.getArticleUrl(articleId)
@@ -150,7 +151,7 @@ describe('saveArticles', () => {
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
-      const { Downloader, dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
       Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -212,7 +213,7 @@ describe('saveArticles', () => {
     })
 
     test('Removes inline JS', async () => {
-      const { Downloader, dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
       Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleId = 'Potato'
       const articleUrl = Downloader.getArticleUrl(articleId)
@@ -310,7 +311,7 @@ describe('saveArticles', () => {
     */
 
     test('Test deleted article rendering (Visual editor renderer)', async () => {
-      const { Downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { dump } = await setupScrapeClasses() // en wikipedia
       const { articleDetailXId } = RedisStore
       const articleId = 'deletedArticle'
 
@@ -342,7 +343,7 @@ describe('saveArticles', () => {
   })
 
   test('Load inline js from HTML', async () => {
-    const { Downloader } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     const _moduleDependencies = await Downloader.getModuleDependencies('Potato')
 

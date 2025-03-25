@@ -16,7 +16,7 @@ describe('Checking Mediawiki capabilities', () => {
 
   test('test capabilities of en.wikipedia.org', async () => {
     MediaWiki.base = 'https://en.wikipedia.org'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(true)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(true)
     expect(await MediaWiki.hasRestApi()).toBe(true)
@@ -25,7 +25,7 @@ describe('Checking Mediawiki capabilities', () => {
 
   test('test capabilities of wiki.openstreetmap.org', async () => {
     MediaWiki.base = 'https://wiki.openstreetmap.org'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
@@ -35,7 +35,7 @@ describe('Checking Mediawiki capabilities', () => {
 
   test('test capabilities of fo.wikisource.org', async () => {
     MediaWiki.base = 'https://fo.wikisource.org'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(true)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
@@ -47,7 +47,7 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.base = 'https://minecraft.wiki'
     MediaWiki.wikiPath = '/'
     MediaWiki.actionApiPath = '/api.php'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
@@ -59,7 +59,7 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
     MediaWiki.actionApiPath = '/api.php'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
@@ -69,7 +69,7 @@ describe('Checking Mediawiki capabilities', () => {
 
   test('test capabilities of pokemon.fandom.com with default receipt', async () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)
@@ -81,7 +81,7 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.base = 'https://pokemon.fandom.com/'
     MediaWiki.wikiPath = '/'
     MediaWiki.restApiPath = '/rest.php'
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     expect(await MediaWiki.hasWikimediaDesktopApi()).toBe(false)
     expect(await MediaWiki.hasWikimediaMobileApi()).toBe(false)

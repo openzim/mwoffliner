@@ -6,7 +6,6 @@ import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from './rest-api.renderer.js'
 import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
-// import Downloader from 'src/Downloader.js'
 
 export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {

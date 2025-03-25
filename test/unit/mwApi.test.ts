@@ -31,7 +31,7 @@ describe('mwApi', () => {
 
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
   })
@@ -129,7 +129,7 @@ describe('Test blacklisted NSs', () => {
     MediaWiki.base = 'https://id.wikipedia.org'
     MediaWiki.getCategories = true
 
-    Downloader.options = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
   })

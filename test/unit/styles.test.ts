@@ -4,6 +4,7 @@ import { setupScrapeClasses } from '../util.js'
 import { getAndProcessStylesheets, mwRetToArticleDetail } from '../../src/util/index.js'
 import Axios from 'axios'
 import { jest } from '@jest/globals'
+import Downloader from '../../src/Downloader.js'
 
 jest.setTimeout(10000)
 
@@ -13,7 +14,7 @@ describe('Styles', () => {
 
   test('Stylesheet downloading', async () => {
     const { articleDetailXId } = RedisStore
-    const { Downloader } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     const _articlesDetail = await Downloader.getArticleDetailsIds(['London'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)

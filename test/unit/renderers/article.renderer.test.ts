@@ -4,6 +4,7 @@ import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { setupScrapeClasses } from '../../util.js'
 import { RenderOpts } from 'src/renderers/abstract.renderer.js'
+import Downloader from 'src/Downloader.js'
 
 jest.setTimeout(10000)
 
@@ -36,7 +37,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return visualeditor content if the main page flag is true', async () => {
-      const { Downloader, dump } = await setupScrapeClasses()
+      const { dump } = await setupScrapeClasses()
       const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
       const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
       const result = await visualEditorRenderer.render({
@@ -56,7 +57,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should inject header to the visual editor content if the main page flag is false', async () => {
-      const { Downloader, dump } = await setupScrapeClasses()
+      const { dump } = await setupScrapeClasses()
       const content = '<body class="mw-body-content">consectetur adipiscing elit</body>'
       const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content } })
       const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
@@ -75,7 +76,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return html body if json contentmodel param is `wikitext`', async () => {
-      const { Downloader, dump } = await setupScrapeClasses()
+      const { dump } = await setupScrapeClasses()
       const htmlBody = '<body>sed do eiusmod tempor incididunt</body>'
       const { data, articleId, articleDetail } = prepareFixtures({ html: { body: htmlBody }, contentmodel: 'wikitext' })
       const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
@@ -96,7 +97,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return html body if it`s presented even if contentmodel param is not equal to wikitext', async () => {
-      const { Downloader, dump } = await setupScrapeClasses()
+      const { dump } = await setupScrapeClasses()
       const htmlBody = '<body>ut labore et dolore magna aliqua. Ut enim ad minim veniam</body>'
       const { data, articleId, articleDetail } = prepareFixtures({ html: { body: htmlBody } })
       const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
@@ -117,7 +118,7 @@ describe('ArticleRenderer', () => {
     })
 
     it('should return empty string if there was an error during article retrievement', async () => {
-      const { Downloader, dump } = await setupScrapeClasses()
+      const { dump } = await setupScrapeClasses()
       const { data, articleId, articleDetail } = prepareFixtures({ error: 'Unexpected internal error' })
       const _moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
       const result = await visualEditorRenderer.render({
