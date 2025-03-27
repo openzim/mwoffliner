@@ -7,7 +7,7 @@ import RedisStore from '../RedisStore.js'
 import { getFullUrl, jsPath, cssPath } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
-import { ZimCreator, ZimArticle } from '@openzim/libzim'
+import { Creator, StringItem } from '@openzim/libzim'
 import { Dump } from '../Dump.js'
 import fs from 'fs'
 import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
@@ -62,7 +62,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
               /* Download CSS dependency, but avoid duplicate calls */
               if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
                 downloader.cssDependenceUrls[url] = true
-                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), namespace: '-', kind: 'media' })
+                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), kind: 'media' })
               }
             } else {
               logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
@@ -89,7 +89,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export async function downloadAndSaveModule(zimCreator: Creator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -145,6 +145,11 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
     }
   }
 
+  // Zimcheck complains about empty files, and it is too late to decide to not create this file
+  // since it has been referenced in all articles HTML, hence creating broken links if we do not
+  // include this file in the ZIM, so let's create a minimal file content
+  text = text || '/* Empty file */'
+
   try {
     let articleId
     const pathFunctions = {
@@ -156,8 +161,8 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
     if (pathFunction) {
       articleId = pathFunction(module, config.output.dirs.mediawiki)
     }
-    const article = new ZimArticle({ url: articleId, data: text, ns: '-' })
-    zimCreator.addArticle(article)
+    const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
+    zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text))
     logger.info(`Saved module [${module}]`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
@@ -166,17 +171,13 @@ export async function downloadAndSaveModule(zimCreator: ZimCreator, downloader: 
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.
-export async function importPolyfillModules(downloader: Downloader, zimCreator: ZimCreator) {
+export async function importPolyfillModules(downloader: Downloader, zimCreator: Creator) {
   ;[
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
   ].forEach(({ name, path }) => {
-    const article = new ZimArticle({
-      url: jsPath(name),
-      data: fs.readFileSync(path, 'utf8').toString(),
-      ns: '-',
-    })
-    zimCreator.addArticle(article)
+    const item = new StringItem(jsPath(name), 'text/javascript', '', {}, fs.readFileSync(path, 'utf8').toString())
+    zimCreator.addItem(item)
   })
 
   const content = await downloader
@@ -186,10 +187,6 @@ export async function importPolyfillModules(downloader: Downloader, zimCreator: 
       throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)
     })
 
-  const article = new ZimArticle({
-    url: jsPath('webpHandler'),
-    data: content,
-    ns: '-',
-  })
-  zimCreator.addArticle(article)
+  const item = new StringItem(jsPath('webpHandler'), 'text/javascript', '', {}, content)
+  zimCreator.addItem(item)
 }

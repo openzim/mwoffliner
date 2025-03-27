@@ -20,7 +20,7 @@ await testAllRenders('treat-media', parameters, async (outFiles) => {
 
     // Created 1 output
     expect(outFiles).toHaveLength(1)
-    await expect(zimdump(`list --url "I/George_Bush_1988_No_New_Taxes.ogg" ${outFiles[0].outFile}`)).rejects.toThrow('Entry not found')
+    await expect(zimdump(`list --url "George_Bush_1988_No_New_Taxes.ogg" ${outFiles[0].outFile}`)).rejects.toThrow('Entry not found')
   })
 
   afterAll(() => {

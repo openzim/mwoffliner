@@ -32,11 +32,11 @@ export abstract class MobileRenderer extends Renderer {
   }
 
   private genWikimediaMobileOverrideCSSLink(css: string) {
-    return `<link rel="stylesheet" href="../-/${css}.css" />`
+    return `<link rel="stylesheet" href="./${css}.css" />`
   }
 
   private genWikimediaMobileOverrideScript(js: string) {
-    return `<script src='../-/${js}.js'></script>`
+    return `<script src='./${js}.js'></script>`
   }
 
   public templateMobileArticle(moduleDependencies: any, articleId: string): Document {
