@@ -30,7 +30,7 @@ await testRenders(
   'openstreetmap',
   parameters,
   async (outFiles) => {
-    const articleFromDump = await zimdump(`show --url A/${parameters.articleList} ${outFiles[0].outFile}`)
+    const articleFromDump = await zimdump(`show --url ${parameters.articleList} ${outFiles[0].outFile}`)
     describe('e2e test for wiki.openstreetmap.org', () => {
       const articleDoc = domino.createDocument(articleFromDump)
 
@@ -42,9 +42,9 @@ await testRenders(
         expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
       })
       test(`test article image integrity for ${outFiles[0]?.renderer} renderer`, async () => {
-        const mediaFiles = await zimdump(`list --ns I ${outFiles[0].outFile}`)
-        const mediaFilesArr = mediaFiles.split('\n')
-        const imgFilesArr = mediaFilesArr.filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg'))
+        const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
+        const allFilesArr = allFiles.split('\n')
+        const imgFilesArr = allFilesArr.filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg'))
         const imgElements = Array.from(articleDoc.querySelectorAll('img'))
         expect(verifyImgElements(imgFilesArr, imgElements)).toBe(true)
       })

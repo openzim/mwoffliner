@@ -111,13 +111,11 @@ class RedisStore implements RS {
   private async populateStores() {
     this.#filesToDownloadXPath = new RedisKvs(this.#client, `${Date.now()}-media`, {
       u: 'url',
-      n: 'namespace',
       m: 'mult',
       w: 'width',
     })
     this.#filesToRetryXPath = new RedisKvs(this.#client, `${Date.now()}-media-retry`, {
       u: 'url',
-      n: 'namespace',
       m: 'mult',
       w: 'width',
     })

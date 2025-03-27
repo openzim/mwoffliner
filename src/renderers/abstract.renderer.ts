@@ -183,7 +183,7 @@ export abstract class Renderer {
     const posterUrl = videoEl.getAttribute('poster')
     if (posterUrl) {
       const videoPosterUrl = getFullUrl(posterUrl, MediaWiki.baseUrl)
-      const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true), 'I')
+      const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true))
 
       if (posterUrl) {
         videoEl.setAttribute('poster', newVideoPosterUrl)
@@ -207,7 +207,7 @@ export abstract class Renderer {
 
     /* Set new URL for the video element */
     const fileBase = getMediaBase(sourceUrl, true)
-    chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase, 'I'))
+    chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase))
   }
 
   protected async treatSubtitle(trackEle: DominoElement, articleId: string): Promise<string> {
@@ -216,7 +216,7 @@ export abstract class Renderer {
     // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl = new URL(subtitleSourceUrl)
     vttFormatUrl.searchParams.set('trackformat', 'vtt')
-    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title, '-')}-${lang}.vtt`)
+    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title)}-${lang}.vtt`)
     return vttFormatUrl.href
   }
 
@@ -288,10 +288,9 @@ export abstract class Renderer {
     const src = getFullUrl(img.getAttribute('src'), MediaWiki.baseUrl)
     let newSrc: string
     try {
-      const resourceNamespace = 'I'
       const slashesInUrl = articleId.split('/').length - 1
-      const upStr = '../'.repeat(slashesInUrl + 1)
-      newSrc = `${upStr}${resourceNamespace}/` + getMediaBase(src, true)
+      const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
+      newSrc = upStr + getMediaBase(src, true)
       /* Download image, but avoid duplicate calls */
       if (!srcCache.hasOwnProperty(src)) {
         srcCache[src] = true

@@ -27,18 +27,21 @@ await testRenders(
 
             expect(outFiles[0].status.articles.success).toEqual(1)
             expect(outFiles[0].status.articles.fail).toEqual(0)
-            const mediaFiles = await zimdump(`list --ns I ${outFiles[0].outFile}`)
+            const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
+            const allFilesArr = allFiles.split('\n')
+            const mediaFiles = allFilesArr
+              .filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg') || elem.endsWith('webm') || elem.endsWith('ogg'))
+              .sort()
 
-            expect(mediaFiles.split('\n').sort()).toEqual(
+            expect(mediaFiles).toEqual(
               [
-                'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
-                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
-                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                'I/Kiwix_icon.svg.png',
-                'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                'Kiwix_-_WikiArabia_Cairo_2017.pdf',
+                'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
+                'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                'Kiwix_icon.svg.png',
+                'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
               ].sort(),
             )
           })
@@ -54,18 +57,21 @@ await testRenders(
 
             expect(outFiles[0].status.articles.success).toEqual(1)
             expect(outFiles[0].status.articles.fail).toEqual(0)
-            const mediaFiles = await zimdump(`list --ns I ${outFiles[0].outFile}`)
+            const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
+            const allFilesArr = allFiles.split('\n')
+            const mediaFiles = allFilesArr
+              .filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg') || elem.endsWith('webm') || elem.endsWith('ogg'))
+              .sort()
 
-            expect(mediaFiles.split('\n').sort()).toEqual(
+            expect(mediaFiles).toEqual(
               [
-                'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                // TODO: This file is no longer write into image namespace, see issues/1943. Probably, it shouldn't be there earlier
-                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
-                'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                'I/Kiwix_icon.svg.png',
-                'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                'Kiwix_-_WikiArabia_Cairo_2017.pdf',
+                'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
+                'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                'Kiwix_icon.svg.png',
+                'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
               ].sort(),
             )
           })
@@ -100,41 +106,45 @@ await testRenders(
 
               await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
-              const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
+              const allFiles = await zimdump(`list ${dump.outFile}`)
+              const allFilesArr = allFiles.split('\n')
+              const mediaFiles = allFilesArr
+                .filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg') || elem.endsWith('webm') || elem.endsWith('ogg'))
+                .sort()
               if (dump.nopic) {
-                expect(mediaFiles.split('\n').sort()).toEqual(
+                expect(mediaFiles).toEqual(
                   [
-                    'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by nopic parameter
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                    // 'I/Kiwix_icon.svg.png',
-                    // 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                    // 'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    // 'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'Kiwix_-_WikiArabia_Cairo_2017.pdf',
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by nopic parameter
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                    // 'Kiwix_icon.svg.png',
+                    // 'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                    // 'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    // 'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               } else if (dump.novid) {
-                expect(mediaFiles.split('\n').sort()).toEqual(
+                expect(mediaFiles).toEqual(
                   [
-                    'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by novid parameter
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                    'I/Kiwix_icon.svg.png',
-                    // 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                    'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'Kiwix_-_WikiArabia_Cairo_2017.pdf',
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by novid parameter
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                    'Kiwix_icon.svg.png',
+                    // 'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                    'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               } else if (dump.nopdf) {
-                expect(mediaFiles.split('\n').sort()).toEqual(
+                expect(mediaFiles).toEqual(
                   [
-                    // 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
-                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
-                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                    'I/Kiwix_icon.svg.png',
-                    'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                    'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    // 'Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
+                    'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
+                    'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                    'Kiwix_icon.svg.png',
+                    'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                    'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               }
@@ -158,41 +168,45 @@ await testRenders(
 
               await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
-              const mediaFiles = await zimdump(`list --ns I ${dump.outFile}`)
+              const allFiles = await zimdump(`list ${dump.outFile}`)
+              const allFilesArr = allFiles.split('\n')
+              const mediaFiles = allFilesArr
+                .filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg') || elem.endsWith('webm') || elem.endsWith('ogg'))
+                .sort()
               if (dump.nopic) {
-                expect(mediaFiles.split('\n').sort()).toEqual(
+                expect(mediaFiles).toEqual(
                   [
-                    'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by nopic parameter
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                    // 'I/Kiwix_icon.svg.png',
-                    // 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                    // 'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    // 'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'Kiwix_-_WikiArabia_Cairo_2017.pdf',
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by nopic parameter
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                    // 'Kiwix_icon.svg.png',
+                    // 'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                    // 'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    // 'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               } else if (dump.novid) {
-                expect(mediaFiles.split('\n').sort()).toEqual(
+                expect(mediaFiles).toEqual(
                   [
-                    'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by novid parameter
-                    // 'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                    'I/Kiwix_icon.svg.png',
-                    // 'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                    'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'Kiwix_-_WikiArabia_Cairo_2017.pdf',
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.120p.vp9.webm', // these files were omitted by novid parameter
+                    // 'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                    'Kiwix_icon.svg.png',
+                    // 'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                    'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               } else if (dump.nopdf) {
-                expect(mediaFiles.split('\n').sort()).toEqual(
+                expect(mediaFiles).toEqual(
                   [
-                    // 'I/Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
-                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
-                    'I/Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
-                    'I/Kiwix_icon.svg.png',
-                    'I/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
-                    'I/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-                    'I/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    // 'Kiwix_-_WikiArabia_Cairo_2017.pdf',  // this file was omitted by nopdf parameter
+                    'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.240p.vp9.webm',
+                    'Kiwix_Hackathon_2017_Florence_WikiFundi.webm.jpg',
+                    'Kiwix_icon.svg.png',
+                    'Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
+                    'page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+                    'page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
                   ].sort(),
                 )
               }
