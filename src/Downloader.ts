@@ -79,6 +79,7 @@ type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | Vi
  */
 class Downloader {
   private static instance: Downloader
+  private isInit = false
 
   public static getInstance(): Downloader {
     if (!Downloader.instance) {
@@ -102,14 +103,14 @@ class Downloader {
   private uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  private _backoffOptions: BackoffOptions
-  private _optimisationCacheUrl: string
+  private backoffOptions: BackoffOptions
+  private optimisationCacheUrl: string
   private s3: S3
   private apiUrlDirector: ApiURLDirector
 
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
-  private _insecure = false
+  private insecure = false
 
   get speed() {
     return this._speed
@@ -119,9 +120,6 @@ class Downloader {
   }
   get requestTimeout() {
     return this._requestTimeout
-  }
-  private get optimisationCacheUrl() {
-    return this._optimisationCacheUrl
   }
   get basicRequestOptions() {
     return this._basicRequestOptions
@@ -135,26 +133,25 @@ class Downloader {
   get streamRequestOptions() {
     return this._streamRequestOptions
   }
-  private get insecure() {
-    return this._insecure
-  }
-  private get backoffOptions() {
-    return this._backoffOptions
-  }
 
   set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
+    if (this.isInit) {
+      logger.warn('Downloader alreaady initialized.')
+      return
+    }
+    this.isInit = true
     this.loginCookie = ''
     this.uaString = uaString
     this._speed = speed
     this.maxActiveRequests = speed * 10
     this._requestTimeout = reqTimeout
-    this._optimisationCacheUrl = optimisationCacheUrl
+    this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
     this.s3 = s3
-    this._insecure = insecure
+    this.insecure = insecure
     this.maxActiveRequests = this.speed * 10
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-    this._backoffOptions = {
+    this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
       retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),

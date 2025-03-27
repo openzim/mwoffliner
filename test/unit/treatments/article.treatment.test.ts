@@ -11,7 +11,7 @@ import { WikimediaMobileRenderer } from '../../../src/renderers/wikimedia-mobile
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { RestApiRenderer } from '../../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../../src/util/const.js'
-import Downloader from 'src/Downloader.js'
+import Downloader from '../../../src/Downloader.js'
 
 jest.setTimeout(10000)
 
