@@ -16,6 +16,7 @@ const parameters = {
 }
 
 await testRenders(
+  'multimedia-content',
   parameters,
   async (outFiles) => {
     describe('Multimedia', () => {
@@ -42,7 +43,9 @@ await testRenders(
             )
           })
           afterAll(() => {
-            rimraf.sync(`./${outFiles[0].testId}`)
+            if (!process.env.KEEP_ZIMS) {
+              rimraf.sync(`./${outFiles[0].testId}`)
+            }
           })
           break
         case 'VisualEditor':
@@ -67,7 +70,9 @@ await testRenders(
             )
           })
           afterAll(() => {
-            rimraf.sync(`./${outFiles[0].testId}`)
+            if (!process.env.KEEP_ZIMS) {
+              rimraf.sync(`./${outFiles[0].testId}`)
+            }
           })
           break
       }
@@ -77,6 +82,7 @@ await testRenders(
 )
 
 await testRenders(
+  'multimedia-content',
   { ...parameters, format: ['nopic', 'novid', 'nopdf', 'nodet'] },
   async (outFiles) => {
     describe('Multimedia for different formats', () => {
@@ -135,7 +141,9 @@ await testRenders(
             }
           })
           afterAll(() => {
-            rimraf.sync(`./${outFiles[0].testId}`)
+            if (!process.env.KEEP_ZIMS) {
+              rimraf.sync(`./${outFiles[0].testId}`)
+            }
           })
           break
         case 'VisualEditor':
@@ -191,7 +199,9 @@ await testRenders(
             }
           })
           afterAll(() => {
-            rimraf.sync(`./${outFiles[0].testId}`)
+            if (!process.env.KEEP_ZIMS) {
+              rimraf.sync(`./${outFiles[0].testId}`)
+            }
           })
           break
       }

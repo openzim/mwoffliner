@@ -27,6 +27,7 @@ const parameters = {
 }
 
 await testRenders(
+  'openstreetmap',
   parameters,
   async (outFiles) => {
     const articleFromDump = await zimdump(`show --url A/${parameters.articleList} ${outFiles[0].outFile}`)
@@ -49,7 +50,9 @@ await testRenders(
       })
 
       afterAll(() => {
-        rimraf.sync(`./${outFiles[0].testId}`)
+        if (!process.env.KEEP_ZIMS) {
+          rimraf.sync(`./${outFiles[0].testId}`)
+        }
       })
     })
   },

@@ -26,7 +26,7 @@ const parameters = {
   adminEmail: 'test@kiwix.org',
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
   const articleFromDump = await zimdump(`show --url A/${parameters.articleList} ${outFiles[0].outFile}`)
   describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
@@ -47,7 +47,9 @@ await testAllRenders(parameters, async (outFiles) => {
     })
 
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })
