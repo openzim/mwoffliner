@@ -41,7 +41,6 @@ type ArticleDetail = PageInfo & {
 
 type FileDetail = {
   url: string
-  namespace?: string
   mult?: number
   width?: number
   kind: DonwloadKind

@@ -102,7 +102,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
 
       if (shouldScrape) {
         try {
-          const newHref = getRelativeFilePath(articleId, getMediaBase(href, true), 'I')
+          const newHref = getRelativeFilePath(articleId, getMediaBase(href, true))
           linkNode.setAttribute('href', newHref)
           if (mediaDependencies) {
             mediaDependencies.push(href)
@@ -217,13 +217,12 @@ async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoEleme
   }
 
   if (articleId.includes('/')) {
-    const resourceNamespace = 'A'
     const slashesInUrl = articleId.split('/').length - 1
-    const upStr = '../'.repeat(slashesInUrl + 1)
+    const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
     Object.values(wikilinkMappings).forEach((linkNodes: DominoElement[]) => {
       for (const linkNode of linkNodes) {
         const href = linkNode.getAttribute('href')
-        linkNode.setAttribute('href', `${upStr}${resourceNamespace}/${href}`)
+        linkNode.setAttribute('href', `${upStr}${href}`)
       }
     })
   }

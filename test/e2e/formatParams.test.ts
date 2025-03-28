@@ -18,7 +18,7 @@ await testAllRenders('format-params-nopic', { ...parameters, format: 'nopic', ar
   describe('format:nopic', () => {
     test(`Test en.wikipedia.org using format:nopic for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url A/BMW ${outFiles[0].outFile}`)
+      const articleFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
 
       const imgElements = Array.from(articleDoc.querySelectorAll('img'))
@@ -35,7 +35,7 @@ await testAllRenders('format-params-nodet', { ...parameters, format: 'nodet', ar
   describe('format:nodet', () => {
     test(`Test en.wikipedia.org using format:nodet for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url A/BMW ${outFiles[0].outFile}`)
+      const articleFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
 
       const sectionsElements = Array.from(articleDoc.querySelectorAll('section'))
@@ -53,7 +53,7 @@ await testAllRenders('format-params-novid-1', { ...parameters, format: 'novid', 
   describe('format:novid to check no video tags', () => {
     test(`Test en.wikipedia.org using format:novid for ${outFiles[0]?.renderer} renderer (no video)`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url A/Animation ${outFiles[0].outFile}`)
+      const articleFromDump = await zimdump(`show --url Animation ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
 
       const audioElements = Array.from(articleDoc.querySelectorAll('audio'))
@@ -70,7 +70,7 @@ await testAllRenders('format-params-novid-2', { ...parameters, format: 'novid', 
   describe('format:novid to check no audio tags', () => {
     test(`Test en.wikipedia.org using format:novid for ${outFiles[0]?.renderer} renderer (no audio)`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url A/English_alphabet ${outFiles[0].outFile}`)
+      const articleFromDump = await zimdump(`show --url English_alphabet ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
 
       const videoElements = Array.from(articleDoc.querySelectorAll('video'))
@@ -89,7 +89,7 @@ await testRenders({ ...parameters, format: 'nopdf', articleList: 'PDF' }, async 
   describe('format:pdf to check no internal links pdf files', () => {
     test(`Test en.wikipedia.org using format:nopdf for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url A/PDF ${outFiles[0].outFile}`)
+      const articleFromDump = await zimdump(`show --url PDF ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const anchorElements = Array.from(articleDoc.querySelectorAll('a'))

@@ -5,7 +5,7 @@ import { rewriteUrl } from '../../src/util/rewriteUrls.js'
 import { makeLink, setupScrapeClasses } from '../util.js'
 import { getArticleIds } from '../../src/util/mw-api.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
-import { ZimArticle } from '@openzim/libzim'
+import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 
@@ -98,13 +98,13 @@ describe('Styles', () => {
     // wikiLink is still a link with complex parent id
     expect($wikiLink2.nodeName).toEqual('A')
     // wikiLink HREF is correct with complex parent id
-    expect($wikiLink2.getAttribute('href')).toEqual('../../A/British_Museum')
+    expect($wikiLink2.getAttribute('href')).toEqual('../British_Museum')
 
     await rewriteUrl(complexParentArticleId, dump, $wikiLinkWithSlash)
     // wikiLinkWithSlash is still a link
     expect($wikiLinkWithSlash.nodeName).toEqual('A')
     // wikiLinkWithSlash HREF is correct
-    expect($wikiLinkWithSlash.getAttribute('href')).toEqual('../../A/Farnborough/Aldershot_built-up_area')
+    expect($wikiLinkWithSlash.getAttribute('href')).toEqual('../Farnborough/Aldershot_built-up_area')
 
     await rewriteUrl(complexParentArticleId, dump, $specialMap)
     // specialMap is still a link
@@ -126,13 +126,13 @@ describe('Styles', () => {
     // resourceLink is still a link
     expect($resourceLink.nodeName).toEqual('A')
     // resourceLink has been re-written
-    expect($resourceLink.getAttribute('href')).toEqual('../../I/De-Z%C3%BCrich.ogg')
+    expect($resourceLink.getAttribute('href')).toEqual('../De-Z%C3%BCrich.ogg')
 
     await rewriteUrl(complexParentArticleId, dump, $ogaResourceLink)
     // ogaResourceLink is still a link
     expect($ogaResourceLink.nodeName).toEqual('A')
     // ogaResourceLink has been re-written
-    expect($ogaResourceLink.getAttribute('href')).toEqual('../../I/Fr-Laissez-faire.oga')
+    expect($ogaResourceLink.getAttribute('href')).toEqual('../Fr-Laissez-faire.oga')
   })
 
   test('e2e url rewriting', async () => {
@@ -143,11 +143,11 @@ describe('Styles', () => {
 
     await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
-    let LondonArticle: typeof ZimArticle
+    let LondonArticle: StringItem
 
     await saveArticles(
       {
-        addArticle(article: typeof ZimArticle) {
+        addItem(article: StringItem) {
           if (article.title === 'London') {
             LondonArticle = article
           }
@@ -159,7 +159,7 @@ describe('Styles', () => {
       true,
     )
 
-    const html = LondonArticle.bufferData.toString()
+    const html = LondonArticle.getContentProvider().feed().toString()
     const doc = domino.createDocument(html)
 
     const relevantAs = Array.from(doc.querySelectorAll('a')).filter((a) => !a.hash && !a.className.includes('external') && !a.host && a.getAttribute('href'))

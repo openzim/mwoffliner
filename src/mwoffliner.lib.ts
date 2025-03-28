@@ -10,12 +10,12 @@ import os from 'os'
 import pmap from 'p-map'
 import sharp from 'sharp'
 import domino from 'domino'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import urlParser from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import * as QueryStringParser from 'querystring'
-import { ZimArticle, ZimCreator } from '@openzim/libzim'
+import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
 import { checkApiAvailability } from './util/mw-api.js'
 
 import {
@@ -194,6 +194,7 @@ async function execute(argv: any) {
     Language: customZimLanguage || mwMetaData.langIso3,
     Publisher: publisher,
     Title: customZimTitle || mwMetaData.title,
+    Date: new Date().toISOString().split('T')[0],
     'Illustration_48x48@1': await getIllustrationMetadata(downloader),
   }
   validateMetadata(metaDataRequiredKeys)
@@ -378,25 +379,37 @@ async function execute(argv: any) {
       Tags: dump.computeZimTags(),
       Name: dump.computeFilenameRadical(false, true, true),
       Flavour: dump.computeFlavour(),
+      Scraper: `mwoffliner ${packageJSON.version}`,
+      Source: MediaWiki.webUrl.hostname,
       ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
     }
     validateMetadata(metadata)
 
-    const zimCreator = new ZimCreator(
-      {
-        fileName: outZim,
-        fullTextIndexLanguage: dump.opts.withoutZimFullTextIndex ? '' : dump.mwMetaData.langIso3,
-        welcome: dump.opts.mainPage ? dump.opts.mainPage : 'index',
-        compression: 'zstd',
-      },
-      metadata as any,
-    )
-    const scraperArticle = new ZimArticle({
-      ns: 'M',
-      data: `mwoffliner ${packageJSON.version}`,
-      url: 'Scraper',
+    const zimCreator = new Creator().configCompression(Compression.Zstd)
+    if (!dump.opts.withoutZimFullTextIndex) {
+      zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
+    }
+    zimCreator.startZimCreation(outZim)
+    zimCreator.setMainPath(dump.opts.mainPage ? dump.opts.mainPage : 'index')
+
+    // Helper function to transform a Buffer into a libzim ContentProvider
+    const createBufferContentProvider = (buffer: Buffer): ContentProvider => {
+      let dataSent = false
+      return {
+        size: buffer.length,
+        feed: () => {
+          if (!dataSent) {
+            dataSent = true
+            return new Blob(buffer)
+          }
+          return new Blob()
+        },
+      }
+    }
+
+    Object.entries(metadata).forEach(([key, value]) => {
+      zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value)
     })
-    zimCreator.addArticle(scraperArticle)
 
     logger.info('Finding stylesheets to download')
     const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
@@ -406,8 +419,7 @@ async function execute(argv: any) {
     const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
     logger.log('Downloaded stylesheets')
 
-    const article = new ZimArticle({ url: `${config.output.dirs.mediawiki}/style.css`, data: finalCss, ns: '-' })
-    zimCreator.addArticle(article)
+    zimCreator.addItem(new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', 'style.css', {}, finalCss))
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     await getThumbnailsData()
@@ -455,7 +467,7 @@ async function execute(argv: any) {
     await writeArticleRedirects(downloader, dump, zimCreator)
 
     logger.log('Finishing Zim Creation')
-    await zimCreator.finalise()
+    await zimCreator.finishZimCreation()
 
     logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
   }
@@ -464,23 +476,17 @@ async function execute(argv: any) {
   /* FUNCTIONS *********************** */
   /* ********************************* */
 
-  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: ZimCreator) {
+  async function writeArticleRedirects(downloader: Downloader, dump: Dump, zimCreator: Creator) {
     await redirectsXId.iterateItems(downloader.speed, async (redirects) => {
       for (const [redirectId, { targetId }] of Object.entries(redirects)) {
         if (redirectId !== targetId) {
-          const redirectArticle = new ZimArticle({
-            url: redirectId,
-            shouldIndex: true,
-            data: '',
-            ns: 'A',
-            mimeType: 'text/html',
-
+          zimCreator.addRedirection(
+            redirectId,
             // We fake a title, by just removing the underscores
-            title: String(redirectId).replace(/_/g, ' '),
+            String(redirectId).replace(/_/g, ' '),
+            targetId,
+          )
 
-            redirectUrl: targetId,
-          })
-          zimCreator.addArticle(redirectArticle)
           dump.status.redirects.written += 1
         }
       }
@@ -530,17 +536,16 @@ async function execute(argv: any) {
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
 
-  async function saveFavicon(zimCreator: ZimCreator, data: Buffer): Promise<any> {
+  async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
     logger.log('Saving favicon.png...')
     try {
-      const article = new ZimArticle({ url: 'favicon', mimeType: 'image/png', data, ns: '-' })
-      return zimCreator.addArticle(article)
+      return zimCreator.addItem(new StringItem('favicon', 'image/png', '', {}, data))
     } catch (e) {
       throw new Error('Failed to save favicon')
     }
   }
 
-  function getMainPage(dump: Dump, zimCreator: ZimCreator) {
+  function getMainPage(dump: Dump, zimCreator: Creator) {
     async function createMainPage() {
       logger.log('Creating main page...')
       const doc = domino.createDocument(
@@ -586,22 +591,13 @@ async function execute(argv: any) {
       }
 
       /* Write the static html file */
-      const article = new ZimArticle({ url: 'index', data: doc.documentElement.outerHTML, ns: 'A', mimeType: 'text/html', title: 'Main Page' })
-      return zimCreator.addArticle(article)
+      const item = new StringItem('index', 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
+      return zimCreator.addItem(item)
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to [${'A/' + mainPage}]`)
-      const article = new ZimArticle({
-        url: 'index',
-        shouldIndex: true,
-        data: '',
-        ns: 'A',
-        mimeType: 'text/html',
-        title: mainPage,
-        redirectUrl: mainPage,
-      })
-      return zimCreator.addArticle(article)
+      logger.log(`Create main page redirection from [index] to [${mainPage}]`)
+      zimCreator.addRedirection('index', '', mainPage)
     }
 
     return mainPage ? createMainPageRedirect() : createMainPage()
@@ -619,7 +615,7 @@ async function execute(argv: any) {
     const { mult, width } = getSizeFromUrl(suitableResUrl)
     const path = getMediaBase(suitableResUrl, false)
 
-    articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true), 'I')
+    articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true))
 
     await Promise.all([
       filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),

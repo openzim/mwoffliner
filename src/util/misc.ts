@@ -7,7 +7,7 @@ import path from 'path'
 import mkdirp from 'mkdirp'
 import os from 'os'
 import pathParser from 'path'
-import { ZimCreator, ZimArticle } from '@openzim/libzim'
+import { Creator, StringItem } from '@openzim/libzim'
 import { Config, config } from '../config.js'
 import * as logger from '../Logger.js'
 import {
@@ -22,6 +22,7 @@ import {
 } from './const.js'
 import { fileURLToPath } from 'url'
 import { AxiosError } from 'axios'
+import { zimCreatorMutex } from '../mutex.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -166,12 +167,23 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
   return newString
 }
 
-export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: ZimCreator) {
+export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Creator) {
   try {
     staticFiles.forEach(async (file) => {
       const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
-      const article = new ZimArticle({ url: file.endsWith('.css') ? cssPath(file) : jsPath(file), data: staticFilesContent, ns: '-' })
-      zimCreator.addArticle(article)
+
+      let url: string
+      let mimetype: string
+      if (file.endsWith('.css')) {
+        url = cssPath(file)
+        mimetype = 'text/css'
+      } else {
+        url = jsPath(file)
+        mimetype = 'application/javascript'
+      }
+
+      const article = new StringItem(url, mimetype, null, {}, staticFilesContent)
+      await zimCreatorMutex.runExclusive(() => zimCreator.addItem(article))
     })
   } catch (err) {
     logger.error(err)
@@ -192,17 +204,15 @@ export function jsPath(js: string, subDirectory = '') {
   return `${subDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '') {
-  const resourceNamespace = '-'
   const slashesInUrl = articleId.split('/').length - 1
-  const upStr = '../'.repeat(slashesInUrl + 1)
-  return `<link href="${upStr}${resourceNamespace}/${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`
+  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
+  return `<link href="${upStr}${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`
 }
 export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory = '', attributes = '') {
-  const resourceNamespace = '-'
   const slashesInUrl = articleId.split('/').length - 1
-  const upStr = '../'.repeat(slashesInUrl + 1)
+  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
   const path = isNodeModule(js) ? normalizeModule(js) : js
-  return `<script ${attributes} src="${upStr}${resourceNamespace}/${jsPath(path, subDirectory)}"></script>`
+  return `<script ${attributes} src="${upStr}${jsPath(path, subDirectory)}"></script>`
 }
 export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`
@@ -323,11 +333,10 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   })
 }
 
-export function getRelativeFilePath(parentArticleId: string, fileBase: string, resourceNamespace: 'I' | 'A' | 'M' | '-') {
+export function getRelativeFilePath(parentArticleId: string, fileBase: string) {
   const slashesInUrl = parentArticleId.split('/').length - 1
-  const upStr = '../'.repeat(slashesInUrl + 1)
-  const newUrl = `${upStr}${resourceNamespace}/` + fileBase
-  return newUrl
+  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
+  return upStr + fileBase
 }
 
 export function normalizeModule(path: string) {

@@ -52,7 +52,7 @@ await testAllRenders('bm-wikipedia-with-ns-1', { ...parameters, addNamespaces: 1
 
     // Created 1 output
     expect(outFiles).toHaveLength(1)
-    const discussionArticlesStr = await zimdump(`list --ns A/Discussion ${outFiles[0].outFile}`)
+    const discussionArticlesStr = await zimdump(`list ${outFiles[0].outFile}`)
     const discussionArticlesList = discussionArticlesStr.match(/Discussion:/g)
     expect(discussionArticlesList.length).toBeGreaterThan(30)
   })
