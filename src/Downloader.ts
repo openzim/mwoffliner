@@ -158,7 +158,7 @@ class Downloader {
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`)
       },
-      ...this.backoffOptions,
+      ...backoffOptions,
     }
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
