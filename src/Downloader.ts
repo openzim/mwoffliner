@@ -143,7 +143,6 @@ class Downloader {
     this.loginCookie = ''
     this.uaString = uaString
     this._speed = speed
-    this.maxActiveRequests = speed * 10
     this._requestTimeout = reqTimeout
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
@@ -160,6 +159,7 @@ class Downloader {
       },
       ...backoffOptions,
     }
+
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
@@ -173,31 +173,61 @@ class Downloader {
         return (status >= 200 && status < 300) || status === 304
       },
     }
+
     this._arrayBufferRequestOptions = {
-      ...this._basicRequestOptions,
+      ...this.basicRequestOptions,
       responseType: 'arraybuffer',
       method: 'GET',
     }
+
     this._jsonRequestOptions = {
-      ...this._basicRequestOptions,
+      ...this.basicRequestOptions,
       headers: {
-        ...this._basicRequestOptions.headers,
+        ...this.basicRequestOptions.headers,
         accept: 'application/json',
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'json',
       method: 'GET',
     }
+
     this._streamRequestOptions = {
-      ...this._basicRequestOptions,
+      ...this.basicRequestOptions,
       headers: {
-        ...this._basicRequestOptions.headers,
+        ...this.basicRequestOptions.headers,
         accept: 'application/octet-stream',
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'stream',
       method: 'GET',
     }
+  }
+
+  public reset() {
+    this.isInit = false
+    this.uaString = undefined
+    this._speed = undefined
+    this.activeRequests = 0
+    this.maxActiveRequests = 1
+    this._requestTimeout = undefined
+    this.loginCookie = ''
+    this.optimisationCacheUrl = undefined
+    this._webp = false
+    this.s3 = undefined
+    this.insecure = false
+    this.apiUrlDirector = undefined
+    this.backoffOptions = undefined
+    this._basicRequestOptions = undefined
+    this._arrayBufferRequestOptions = undefined
+    this._jsonRequestOptions = undefined
+    this._streamRequestOptions = undefined
+
+    this.articleUrlDirector = undefined
+    this.mainPageUrlDirector = undefined
+
+    this.cssDependenceUrls = {}
+    this.wikimediaMobileJsDependenciesList = []
+    this.wikimediaMobileStyleDependenciesList = []
   }
 
   private getUrlDirector(renderer: object) {
@@ -499,7 +529,7 @@ class Downloader {
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
-    this.request<T>({ url, method: 'GET', ...this._jsonRequestOptions })
+    this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
@@ -784,4 +814,4 @@ class Downloader {
 }
 
 const dl = Downloader.getInstance()
-export default dl as Downloader
+export default dl

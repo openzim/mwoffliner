@@ -37,6 +37,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
 
   Object.defineProperty(renderer.constructor, 'name', { value: 'WikimediaDesktopRenderer' })
 
+  Downloader.reset()
   Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
   await MediaWiki.getMwMetaData()
