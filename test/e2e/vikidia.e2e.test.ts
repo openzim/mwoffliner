@@ -34,7 +34,9 @@ await testRenders(
     })
 
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   },
   // en.vikidia.org supports only VisualEditor among other renders
