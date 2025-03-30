@@ -17,7 +17,7 @@ const parameters = {
   mwWikiPath: sanitizeWikiPath('/wiki'),
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('api-path-params', parameters, async (outFiles) => {
   describe(`e2e test for api url params for en.wikipedia.org for ${outFiles[0]?.renderer} renderer`, () => {
     test('Mediawiki actionApiPath option sanitized', () => {
       expect(outFiles[0].mwMetaData.actionApiPath).toBe('/w/api.php')
@@ -45,7 +45,9 @@ await testAllRenders(parameters, async (outFiles) => {
     })
 
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })

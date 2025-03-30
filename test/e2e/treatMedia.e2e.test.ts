@@ -14,7 +14,7 @@ const parameters = {
   redis: process.env.REDIS,
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('treat-media', parameters, async (outFiles) => {
   test('media file from hidden element should not be downloaded', async () => {
     await execa('redis-cli flushall', { shell: true })
 
@@ -24,6 +24,8 @@ await testAllRenders(parameters, async (outFiles) => {
   })
 
   afterAll(() => {
-    rimraf.sync(`./${outFiles[0].testId}`)
+    if (!process.env.KEEP_ZIMS) {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    }
   })
 })

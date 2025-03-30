@@ -18,7 +18,7 @@ const parameters = {
   optimisationCacheUrl: process.env.S3_URL,
 }
 
-await testAllRenders(parameters, async (outFiles) => {
+await testAllRenders('download-image', parameters, async (outFiles) => {
   describeIf('Check image downloading from S3 using optimisationCacheUrl parameter', () => {
     test(`right scrapping from fr.wikipedia.org with optimisationCacheUrl parameter for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
@@ -28,7 +28,9 @@ await testAllRenders(parameters, async (outFiles) => {
       expect(redisScan.stdout).toEqual('')
     })
     afterAll(() => {
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })

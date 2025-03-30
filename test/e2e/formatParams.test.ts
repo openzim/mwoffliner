@@ -14,7 +14,7 @@ const parameters = {
   redis: process.env.REDIS,
 }
 
-await testAllRenders({ ...parameters, format: 'nopic', articleList: 'BMW' }, async (outFiles) => {
+await testAllRenders('format-params-nopic', { ...parameters, format: 'nopic', articleList: 'BMW' }, async (outFiles) => {
   describe('format:nopic', () => {
     test(`Test en.wikipedia.org using format:nopic for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
@@ -24,12 +24,14 @@ await testAllRenders({ ...parameters, format: 'nopic', articleList: 'BMW' }, asy
       const imgElements = Array.from(articleDoc.querySelectorAll('img'))
 
       expect(imgElements).toHaveLength(0)
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })
 
-await testAllRenders({ ...parameters, format: 'nodet', articleList: 'BMW' }, async (outFiles) => {
+await testAllRenders('format-params-nodet', { ...parameters, format: 'nodet', articleList: 'BMW' }, async (outFiles) => {
   describe('format:nodet', () => {
     test(`Test en.wikipedia.org using format:nodet for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
@@ -40,12 +42,14 @@ await testAllRenders({ ...parameters, format: 'nodet', articleList: 'BMW' }, asy
 
       expect(sectionsElements).toHaveLength(1)
       expect(sectionsElements[0].getAttribute('data-mw-section-id')).toEqual('0')
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })
 
-await testAllRenders({ ...parameters, format: 'novid', articleList: 'Animation' }, async (outFiles) => {
+await testAllRenders('format-params-novid-1', { ...parameters, format: 'novid', articleList: 'Animation' }, async (outFiles) => {
   describe('format:novid to check no video tags', () => {
     test(`Test en.wikipedia.org using format:novid for ${outFiles[0]?.renderer} renderer (no video)`, async () => {
       await execa('redis-cli flushall', { shell: true })
@@ -55,12 +59,14 @@ await testAllRenders({ ...parameters, format: 'novid', articleList: 'Animation' 
       const audioElements = Array.from(articleDoc.querySelectorAll('audio'))
 
       expect(audioElements).toHaveLength(0)
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })
 
-await testAllRenders({ ...parameters, format: 'novid', articleList: 'English_alphabet' }, async (outFiles) => {
+await testAllRenders('format-params-novid-2', { ...parameters, format: 'novid', articleList: 'English_alphabet' }, async (outFiles) => {
   describe('format:novid to check no audio tags', () => {
     test(`Test en.wikipedia.org using format:novid for ${outFiles[0]?.renderer} renderer (no audio)`, async () => {
       await execa('redis-cli flushall', { shell: true })
@@ -70,7 +76,9 @@ await testAllRenders({ ...parameters, format: 'novid', articleList: 'English_alp
       const videoElements = Array.from(articleDoc.querySelectorAll('video'))
 
       expect(videoElements).toHaveLength(0)
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })
@@ -85,7 +93,9 @@ await testRenders({ ...parameters, format: 'nopdf', articleList: 'PDF' }, async 
       const articleDoc = domino.createDocument(articleFromDump)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const anchorElements = Array.from(articleDoc.querySelectorAll('a'))
-      rimraf.sync(`./${outFiles[0].testId}`)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
     })
   })
 })

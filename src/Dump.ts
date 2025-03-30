@@ -118,7 +118,7 @@ export class Dump {
           .basename(this.opts.articleList)
           .toLowerCase()
           .replace(/\.\w{3}$/, '')
-          .replace(/[\,\s]/g, '_')
+          .replace(/[^a-z0-9-]+/g, '-')
         if (filenamePostfix.length > 50) {
           filenamePostfix = filenamePostfix.slice(0, 50)
         }
