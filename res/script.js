@@ -30,9 +30,9 @@ window.onload = function () {
 }
 
 /* WebP Polyfill */
-var webpScripts = ['../-/webpHeroPolyfill.js',
-                   '../-/webpHeroBundle.js',
-                   '../-/webpHandler.js'];
+var webpScripts = ['./webpHeroPolyfill.js',
+                   './webpHeroBundle.js',
+                   './webpHandler.js'];
 webpScripts = webpScripts.map(function(scriptUrl) {
     const articleId = document.getElementById('script-js').dataset.articleId;
 

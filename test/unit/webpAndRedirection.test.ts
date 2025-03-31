@@ -2,7 +2,7 @@ import { execa } from 'execa'
 import { join } from 'path'
 import * as MwOffliner from '../../src/mwoffliner.lib.js'
 import { writeFilePromise, mkdirPromise } from '../../src/util/index.js'
-import { ZimReader } from '@openzim/libzim'
+import { Archive } from '@openzim/libzim'
 import * as FileType from 'file-type'
 import rimraf from 'rimraf'
 import { jest } from '@jest/globals'
@@ -33,30 +33,21 @@ Real-time computer graphics`
     webp: true,
   })
 
-  const zimFile = new ZimReader(outFiles[0].outFile)
+  const zimFile = new Archive(outFiles[0].outFile)
 
   // passed test for png
-  expect(await isWebpPresent('I/Animexample3edit.png', zimFile)).toBeTruthy()
+  expect(await isWebpPresent('Animexample3edit.png', zimFile)).toBeTruthy()
   // passed test for jpg
-  expect(await isWebpPresent('I/Claychick.jpg', zimFile)).toBeTruthy()
+  expect(await isWebpPresent('Claychick.jpg', zimFile)).toBeTruthy()
   // redirection check successful
   expect(await isRedirectionPresent('href="Real-time_rendering"', zimFile)).toBeTruthy()
   rimraf.sync(testId)
 })
 
-async function isWebpPresent(path: string, zimFile: ZimReader) {
-  return zimFile
-    .getArticleByUrl(path)
-    .then(async (result) => {
-      return (await FileType.fileTypeFromBuffer(result.data))?.mime === 'image/webp'
-    })
-    .catch(() => {
-      return false
-    })
+async function isWebpPresent(path: string, zimFile: Archive) {
+  return (await FileType.fileTypeFromBuffer(zimFile.getEntryByPath(path).getItem().data.data))?.mime === 'image/webp'
 }
 
-async function isRedirectionPresent(path: string, zimFile: ZimReader) {
-  return zimFile.getArticleByUrl('A/Animation').then((result) => {
-    return result.data.toString().includes(path)
-  })
+async function isRedirectionPresent(path: string, zimFile: Archive) {
+  return zimFile.getEntryByPath('Animation').getItem().data.data.includes(path)
 }
