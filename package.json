@@ -11,7 +11,7 @@
     "url": "https://kiwix.org/"
   },
   "scripts": {
-    "mwoffliner": "node ./lib/cli.js",
+    "mwoffliner": "node --enable-source-maps ./lib/cli.js",
     "test:pattern": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit --detectOpenHandles",
     "test:e2e": "npm run test:pattern 'test/e2e'",
     "test:unit": "npm run test:pattern 'test/unit'",

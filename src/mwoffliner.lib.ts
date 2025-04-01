@@ -358,7 +358,6 @@ async function execute(argv: any) {
         await doDump(dump)
         await filesToDownloadXPath.flush()
       } catch (err) {
-        debugger
         throw err
       }
       logger.log('Finished dump')

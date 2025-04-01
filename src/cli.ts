@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --max-old-space-size=9000 --stack-size=42000
+#!/usr/bin/env -S node --max-old-space-size=9000 --stack-size=42000 --enable-source-maps
 
 'use strict'
 
@@ -6,6 +6,8 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { parameterDescriptions, requiredParams } from './parameterList.js'
 import * as logger from './Logger.js'
+import { AxiosError } from 'axios'
+import { cleanupAxiosError } from './util/misc.js'
 
 import * as mwofflinerLib from './mwoffliner.lib.js'
 
@@ -90,15 +92,9 @@ if (!('toJSON' in Error.prototype)) {
 }
 
 function errorHandler(err: any) {
-  let loggableErr = err
-  try {
-    loggableErr = JSON.stringify(err, null, '\t')
-  } catch (err) {
-    /* NOOP */
+  if (err instanceof AxiosError) {
+    err = cleanupAxiosError(err)
   }
-  logger.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:`, loggableErr)
-  if (err && err.message) {
-    logger.error(`\n\n**********\n\n${err.message}\n\n**********\n\n`)
-  }
+  logger.error(`Failed to run mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]:\n`, err)
   process.exit(2)
 }
