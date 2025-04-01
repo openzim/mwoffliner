@@ -149,7 +149,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
   // Zimcheck complains about empty files, and it is too late to decide to not create this file
   // since it has been referenced in all articles HTML, hence creating broken links if we do not
   // include this file in the ZIM, so let's create a minimal file content
-  text = text || '/* Empty file */'
+  text = text || `/* ${module} is an empty file */`
 
   try {
     let articleId
