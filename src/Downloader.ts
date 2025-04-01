@@ -177,6 +177,8 @@ class Downloader {
         return MediaWiki.wikimediaMobileUrlDirector
       case 'RestApiRenderer':
         return MediaWiki.restApiUrlDirector
+      case 'ActionParseRenderer':
+        return MediaWiki.actionParseUrlDirector
       /* istanbul ignore next */
       default:
         throw new Error(`Unknown renderer ${renderer.constructor.name}`)

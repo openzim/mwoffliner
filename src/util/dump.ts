@@ -125,7 +125,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
   }
 
   if (!module.includes('javascript/mobile') && !module.includes('css/mobile')) {
-    moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=vector&version=&*`)
+    moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=${MediaWiki.skin}&version=&*`)
   } else {
     moduleApiUrl = encodeURI(`https:${module}`)
   }

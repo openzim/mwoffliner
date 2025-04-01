@@ -11,6 +11,7 @@ import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
+import { ActionParseRenderer } from '../../src/renderers/action-parse.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 import { RenderOpts } from 'src/renderers/abstract.renderer.js'
 import MediaWiki from '../../src/MediaWiki.js'
@@ -36,6 +37,9 @@ describe('saveArticles', () => {
       case 'RestApi':
         rendererInstance = new RestApiRenderer()
         break
+      case 'ActionParse':
+        rendererInstance = new ActionParseRenderer()
+        break
       default:
         throw new Error(`Unknown renderer: ${renderer}`)
     }
@@ -47,6 +51,8 @@ describe('saveArticles', () => {
       await MediaWiki.hasWikimediaMobileApi(downloader)
       await MediaWiki.hasRestApi(downloader)
       await MediaWiki.hasVisualEditorApi(downloader)
+
+      downloader.setUrlsDirectors(rendererInstance, rendererInstance)
 
       const _articlesDetail = await downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -79,7 +85,6 @@ describe('saveArticles', () => {
       const articleId = 'non-existent-article'
       const articleUrl = downloader.getArticleUrl(articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
-
       await expect(downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
@@ -89,7 +94,7 @@ describe('saveArticles', () => {
       // Geo Position data is correct
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
       // Check if header exists
-      expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
+      expect(articleDoc.querySelector('h1.firstHeading > span#openzim-page-title, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
@@ -124,7 +129,7 @@ describe('saveArticles', () => {
       articleDetailXId.setMany(articlesDetail)
       const result = await downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
       const articleDoc = domino.createDocument(result[0].html)
-      expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
+      expect(articleDoc.querySelector('h1.firstHeading > span#openzim-page-title, h1.article-header, h1.pcs-edit-section-title')).toBeFalsy()
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {

@@ -19,9 +19,8 @@ export abstract class DesktopRenderer extends Renderer {
     const moduleDependencies = this.filterWikimediaDesktopModules(await downloader.getModuleDependencies(articleDetail.title))
 
     const data = await downloader.getJSON<any>(articleUrl)
-    /* istanbul ignore if */
     if (data.error) {
-      throw data.error
+      throw new Error(data.error)
     }
 
     return { data, moduleDependencies }
