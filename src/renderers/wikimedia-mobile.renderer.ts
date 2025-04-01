@@ -3,7 +3,7 @@ import urlJoin from 'url-join'
 import * as logger from '../Logger.js'
 import { MobileRenderer } from './abstractMobile.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
-import { RenderOpts, RenderOutput } from './abstract.renderer.js'
+import { DownloadOpts, DownloadRes, RenderOpts, RenderOutput } from './abstract.renderer.js'
 
 type PipeFunction = (value: DominoElement) => DominoElement | Promise<DominoElement>
 
@@ -29,15 +29,29 @@ export class WikimediaMobileRenderer extends MobileRenderer {
     return strippedTitle || articleId.replace('_', ' ')
   }
 
+  public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
+    const { downloader, articleUrl, articleDetail } = downloadOpts
+
+    const moduleDependencies = super.filterWikimediaMobileModules(await downloader.getModuleDependencies(articleDetail.title))
+
+    const data = await downloader.getJSON<any>(articleUrl)
+    /* istanbul ignore if */
+    if (data.error) {
+      throw data.error
+    }
+
+    return { data, moduleDependencies }
+  }
+
   public async render(renderOpts: RenderOpts): Promise<any> {
     try {
       const result: RenderOutput = []
-      const { data, articleId, _moduleDependencies, dump } = renderOpts
+      const { data, articleId, moduleDependencies, dump } = renderOpts
       const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
       const displayTitle = this.getStrippedTitle(renderOpts)
+      /* istanbul ignore else */
       if (data) {
-        const moduleDependenciesFiltered = super.filterWikimediaMobileModules(_moduleDependencies)
         let mediaDependenciesVal
         let videoDependenciesVal
         let imageDependenciesVal
@@ -55,7 +69,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
               dump,
               articleId,
               articleDetail,
-              moduleDependenciesFiltered,
+              moduleDependencies,
               super.templateMobileArticle.bind(this),
             )
 
@@ -75,7 +89,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           mediaDependencies: mediaDependenciesVal,
           videoDependencies: videoDependenciesVal,
           imageDependencies: imageDependenciesVal,
-          moduleDependencies: moduleDependenciesFiltered,
+          moduleDependencies,
           staticFiles: this.staticFilesListMobile,
           subtitles: subtitlesVal,
         })

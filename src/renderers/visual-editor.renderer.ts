@@ -15,6 +15,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
   private async retrieveHtml(renderOpts: RenderOpts): Promise<any> {
     const { data, articleId, articleDetail, isMainPage } = renderOpts
 
+    /* istanbul ignore if */
     if (!data) {
       throw new Error(`Cannot render [${data}] into an article`)
     }
@@ -50,16 +51,15 @@ export class VisualEditorRenderer extends DesktopRenderer {
   public async render(renderOpts: RenderOpts): Promise<any> {
     try {
       const result: RenderOutput = []
-      const { articleId, articleDetail, _moduleDependencies, dump } = renderOpts
+      const { articleId, articleDetail, moduleDependencies, dump } = renderOpts
       const { html, displayTitle } = await this.retrieveHtml(renderOpts)
       if (html) {
-        const moduleDependenciesFiltered = super.filterWikimediaDesktopModules(_moduleDependencies)
         const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
           html,
           dump,
           articleId,
           articleDetail,
-          moduleDependenciesFiltered,
+          moduleDependencies,
           super.templateDesktopArticle.bind(this),
         )
         result.push({
@@ -69,7 +69,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
           mediaDependencies,
           videoDependencies,
           imageDependencies,
-          moduleDependencies: moduleDependenciesFiltered,
+          moduleDependencies,
           staticFiles: this.staticFilesListDesktop,
           subtitles,
         })

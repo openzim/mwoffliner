@@ -29,6 +29,7 @@ import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
+import { Renderer } from './renderers/abstract.renderer.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -177,6 +178,9 @@ class Downloader {
         return MediaWiki.wikimediaMobileUrlDirector
       case 'RestApiRenderer':
         return MediaWiki.restApiUrlDirector
+      /* istanbul ignore next */
+      default:
+        throw new Error(`Unknown renderer ${renderer.constructor.name}`)
     }
   }
 
@@ -220,7 +224,7 @@ class Downloader {
               clshow: '!hidden',
             }
           : {}),
-        ...(continuation || {}),
+        ...continuation,
       }
 
       const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
@@ -307,11 +311,9 @@ class Downloader {
   }
 
   public async getArticle(
-    webp: boolean,
-    _moduleDependencies: any,
     articleId: string,
     articleDetailXId: RKVS<ArticleDetail>,
-    articleRenderer,
+    articleRenderer: Renderer,
     articleUrl,
     dump: Dump,
     articleDetail?: ArticleDetail,
@@ -319,15 +321,15 @@ class Downloader {
   ): Promise<any> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
-    const data = await this.getJSON<any>(articleUrl)
-    if (data.error) {
-      throw data.error
-    }
+    const { data, moduleDependencies } = await articleRenderer.download({
+      downloader: this,
+      articleUrl,
+      articleDetail,
+    })
 
     return articleRenderer.render({
       data,
-      webp,
-      _moduleDependencies,
+      moduleDependencies,
       articleId,
       articleDetailXId,
       articleDetail,
@@ -665,11 +667,6 @@ class Downloader {
   public async getModuleDependencies(title: string) {
     const genericJsModules = config.output.mw.js
     const genericCssModules = config.output.mw.css
-    /* These vars will store the list of js and css dependencies for
-      the article we are downloading. */
-    let jsConfigVars = ''
-    let jsDependenciesList: string[] = []
-    let styleDependenciesList: string[] = []
 
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
@@ -683,7 +680,7 @@ class Downloader {
 
       /* If article is missing (for example because it just has been deleted) */
       if (articleData.error.code === 'missingtitle') {
-        return { jsConfigVars, jsDependenciesList, styleDependenciesList }
+        return { jsConfigVars: '', jsDependenciesList: [], styleDependenciesList: [] }
       }
 
       /* Something went wrong in modules retrieval at app level (no HTTP error) */
@@ -693,28 +690,18 @@ class Downloader {
     const {
       parse: { modules, modulescripts, modulestyles, headhtml },
     } = articleData
-    jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
-    styleDependenciesList = [].concat(modules, modulestyles, genericCssModules).filter((a) => a)
-    styleDependenciesList = styleDependenciesList.filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
+
+    const jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
+
+    const styleDependenciesList = []
+      .concat(modules, modulestyles, genericCssModules)
+      .filter((a) => a)
+      .filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
 
     logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
     logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
 
-    // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
-    // the script below extracts the config with a regex executed on the page header returned from the api
-    const scriptTags = domino.createDocument(`${headhtml}</body></html>`).getElementsByTagName('script')
-    const regex = /mw\.config\.set\(\{.*?\}\);/gm
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    for (let i = 0; i < scriptTags.length; i += 1) {
-      if (scriptTags[i].text.includes('mw.config.set')) {
-        jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
-        jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
-      } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
-        jsConfigVars = scriptTags[i].text
-      }
-    }
-
-    jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
+    const jsConfigVars = Downloader.extractJsConfigVars(headhtml)
 
     // Download mobile page dependencies only once
     if ((await MediaWiki.hasWikimediaMobileApi(this)) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
@@ -747,6 +734,28 @@ class Downloader {
       stream.on('error', reject)
       stream.on('end', () => resolve(Buffer.concat(chunks)))
     })
+  }
+
+  public static extractJsConfigVars(headhtml: string) {
+    let jsConfigVars = ''
+
+    // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
+    // the script below extracts the config with a regex executed on the page header returned from the api
+    const scriptTags = domino.createDocument(`${headhtml}</body></html>`).getElementsByTagName('script')
+    const regex = /mw\.config\.set\(\{.*?\}\);/gm
+    // eslint-disable-next-line @typescript-eslint/prefer-for-of
+    for (let i = 0; i < scriptTags.length; i += 1) {
+      if (scriptTags[i].text.includes('mw.config.set')) {
+        jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
+        jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
+      } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
+        jsConfigVars = scriptTags[i].text
+      }
+    }
+
+    jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
+
+    return jsConfigVars
   }
 }
 

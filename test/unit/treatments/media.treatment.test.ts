@@ -6,6 +6,9 @@ import { startRedis, stopRedis } from '../bootstrap.js'
 
 describe('MediaTreatment', () => {
   class TestableRenderer extends Renderer {
+    public download(): any {
+      return null
+    }
     public render(): any {
       return null
     }

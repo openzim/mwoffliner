@@ -12,6 +12,7 @@ import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import { RenderOpts } from 'src/renderers/abstract.renderer.js'
 
 jest.setTimeout(40000)
 
@@ -77,11 +78,8 @@ describe('saveArticles', () => {
       const articleId = 'non-existent-article'
       const articleUrl = downloader.getArticleUrl(articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
-      await expect(
-        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
-      ).rejects.toThrowError('')
+      await expect(downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
 
@@ -102,19 +100,8 @@ describe('saveArticles', () => {
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        rendererInstance,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const result = await downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -133,19 +120,8 @@ describe('saveArticles', () => {
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        rendererInstance,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const result = await downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
@@ -225,19 +201,8 @@ describe('saveArticles', () => {
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       articleDetailXId.setMany(articlesDetail)
-      const result = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
-        articleId,
-        articleDetailXId,
-        rendererInstance,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const result = await downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -324,15 +289,13 @@ describe('saveArticles', () => {
       }
 
       const articleDetail = { title: articleId, missing: '' }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
+      const moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
 
       const visualEditorRenderer = new VisualEditorRenderer()
 
-      const renderOpts = {
+      const renderOpts: RenderOpts = {
         data: articleJsonObject,
-        RedisStore,
-        webp: downloader.webp,
-        _moduleDependencies,
+        moduleDependencies,
         articleId,
         articleDetailXId,
         articleDetail,
