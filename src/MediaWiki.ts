@@ -12,6 +12,7 @@ import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js
 import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
+import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
 
@@ -43,6 +44,7 @@ class MediaWiki {
   public apiCheckArticleId: string
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
+  public skin = 'vector' // Default fallback
 
   #wikiPath: string
   #actionApiPath: string
@@ -56,6 +58,7 @@ class MediaWiki {
   public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
   public visualEditorUrlDirector: VisualEditorURLDirector
   public restApiUrlDirector: RestApiURLDirector
+  public actionParseUrlDirector: ActionParseURLDirector
 
   public visualEditorApiUrl: URL
   public actionApiUrl: URL
@@ -72,6 +75,7 @@ class MediaWiki {
   #hasWikimediaMobileApi: boolean | null
   #hasVisualEditorApi: boolean | null
   #hasRestApi: boolean | null
+  #hasActionParseApi: boolean | null
   #hasCoordinates: boolean | null
 
   set username(value: string) {
@@ -164,6 +168,7 @@ class MediaWiki {
     this.#hasWikimediaMobileApi = null
     this.#hasVisualEditorApi = null
     this.#hasRestApi = null
+    this.#hasActionParseApi = null
     this.#hasCoordinates = null
   }
 
@@ -213,6 +218,23 @@ class MediaWiki {
       return this.#hasRestApi
     }
     return this.#hasRestApi
+  }
+
+  public async hasActionParseApi(downloader: Downloader): Promise<boolean> {
+    if (this.#hasActionParseApi === null) {
+      for (const skin of ['vector-2022', 'vector']) {
+        this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, skin)
+        const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
+        this.#hasActionParseApi = await checkApiAvailability(downloader, checkUrl)
+        logger.log(`Checked for ActionParseApi with skin ${skin} at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
+        if (this.#hasActionParseApi) {
+          this.skin = skin
+          break
+        }
+      }
+      return this.#hasActionParseApi
+    }
+    return this.#hasActionParseApi
   }
 
   public async hasCoordinates(downloader: Downloader): Promise<boolean> {

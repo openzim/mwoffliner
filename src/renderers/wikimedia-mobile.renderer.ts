@@ -35,10 +35,6 @@ export class WikimediaMobileRenderer extends MobileRenderer {
     const moduleDependencies = super.filterWikimediaMobileModules(await downloader.getModuleDependencies(articleDetail.title))
 
     const data = await downloader.getJSON<any>(articleUrl)
-    /* istanbul ignore if */
-    if (data.error) {
-      throw data.error
-    }
 
     return { data, moduleDependencies }
   }

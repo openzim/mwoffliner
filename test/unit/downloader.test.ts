@@ -17,6 +17,7 @@ import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
+import { ActionParseRenderer } from '../../src/renderers/action-parse.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 
 jest.setTimeout(200000)
@@ -226,6 +227,9 @@ describe('Downloader class', () => {
           break
         case 'RestApi':
           rendererInstance = new RestApiRenderer()
+          break
+        case 'ActionParse':
+          rendererInstance = new ActionParseRenderer()
           break
         default:
           throw new Error(`Unknown renderer: ${renderer}`)

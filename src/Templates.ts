@@ -29,6 +29,14 @@ const htmlWikimediaDesktopTemplateCode = () => {
   return readTemplate(config.output.templates.pageWikimediaDesktop)
 }
 
+const htmlVectorLegacyTemplateCode = () => {
+  return readTemplate(config.output.templates.pageVectorLegacy)
+}
+
+const htmlVector2022TemplateCode = () => {
+  return readTemplate(config.output.templates.pageVector2022)
+}
+
 const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate)
 
 export {
@@ -38,6 +46,8 @@ export {
   subSectionTemplate,
   htmlWikimediaMobileTemplateCode,
   htmlWikimediaDesktopTemplateCode,
+  htmlVectorLegacyTemplateCode,
+  htmlVector2022TemplateCode,
   articleListHomeTemplate,
   categoriesTemplate,
   subCategoriesTemplate,
