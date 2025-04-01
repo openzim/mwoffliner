@@ -57,7 +57,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
           }
         }
       }
-      if ((dump.status.files.success + dump.status.files.fail) % 10 === 0) {
+      if ((dump.status.files.success + dump.status.files.fail) % (10 * downloader.speed) === 0) {
         const percentProgress = (((dump.status.files.success + dump.status.files.fail) / filesTotal) * 100).toFixed(1)
         if (percentProgress !== prevPercentProgress) {
           prevPercentProgress = percentProgress
