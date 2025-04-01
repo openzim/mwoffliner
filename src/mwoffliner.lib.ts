@@ -485,6 +485,7 @@ async function execute(argv: any) {
             // We fake a title, by just removing the underscores
             String(redirectId).replace(/_/g, ' '),
             targetId,
+            { FRONT_ARTICLE: 1 },
           )
 
           dump.status.redirects.written += 1
@@ -597,7 +598,7 @@ async function execute(argv: any) {
 
     function createMainPageRedirect() {
       logger.log(`Create main page redirection from [index] to [${mainPage}]`)
-      zimCreator.addRedirection('index', '', mainPage)
+      zimCreator.addRedirection('index', '', mainPage, { FRONT_ARTICLE: 1 })
     }
 
     return mainPage ? createMainPageRedirect() : createMainPage()
