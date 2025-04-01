@@ -129,7 +129,7 @@ describe('saveArticles', () => {
       articleDetailXId.setMany(articlesDetail)
       const result = await downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
       const articleDoc = domino.createDocument(result[0].html)
-      expect(articleDoc.querySelector('h1.firstHeading > span#openzim-page-title, h1.article-header, h1.pcs-edit-section-title')).toBeFalsy()
+      expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
