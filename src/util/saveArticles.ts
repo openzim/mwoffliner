@@ -241,7 +241,7 @@ async function saveArticle(
 
     await RedisStore.filesToDownloadXPath.setMany(filesToDownload)
 
-    const zimArticle = new StringItem(articleId, 'text/html', articleTitle, {}, finalHTML)
+    const zimArticle = new StringItem(articleId, 'text/html', articleTitle, { FRONT_ARTICLE: 1 }, finalHTML)
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(zimArticle))
 
     return null
