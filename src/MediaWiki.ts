@@ -297,9 +297,6 @@ class MediaWiki {
 
           downloader.loginCookie = resp.headers['set-cookie'].join(';')
         })
-        .catch((err) => {
-          throw err
-        })
     }
   }
 

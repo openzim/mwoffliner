@@ -9,7 +9,7 @@ import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
 import { jsPath } from './index.js'
 import { config } from '../config.js'
-import { getSizeFromUrl, cleanupAxiosError } from './misc.js'
+import { getSizeFromUrl } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
@@ -369,7 +369,7 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
           dump.status.articles.fail += 1
           logger.error(`Error downloading article ${articleId}`)
           if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-            reject(cleanupAxiosError(err))
+            reject(err)
             return
           }
         }

@@ -303,7 +303,7 @@ export async function checkApiAvailability(downloader: Downloader, url: string, 
 
     return !isRedirectPage && isSuccess && validMimeType
   } catch (err) {
-    logger.info(cleanupAxiosError(err))
+    logger.info('checkApiAvailability failed: ', cleanupAxiosError(err))
     return false
   }
 }

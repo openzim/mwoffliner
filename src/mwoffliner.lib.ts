@@ -354,13 +354,8 @@ async function execute(argv: any) {
     if (shouldSkip) {
       logger.log('Skipping dump')
     } else {
-      try {
-        await doDump(dump)
-        await filesToDownloadXPath.flush()
-      } catch (err) {
-        debugger
-        throw err
-      }
+      await doDump(dump)
+      await filesToDownloadXPath.flush()
       logger.log('Finished dump')
     }
   }

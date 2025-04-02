@@ -62,25 +62,19 @@ export async function sanitize_all(argv: any) {
   }
 
   // sanitizing S3
-  try {
-    if (optimisationCacheUrl) {
-      // Decompose the url with path and other S3 creds
-      const s3UrlObj = urlParser.parse(optimisationCacheUrl)
-      const queryReader = QueryStringParser.parse(s3UrlObj.query)
-      const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-      const s3Obj = new S3(s3Url, queryReader, 1000 * 60, argv.insecure)
-      await s3Obj.initialise().then(() => {
-        logger.log('Successfully logged in S3')
-      })
-    }
-  } catch (err) {
-    throw err
+  if (optimisationCacheUrl) {
+    // Decompose the url with path and other S3 creds
+    const s3UrlObj = urlParser.parse(optimisationCacheUrl)
+    const queryReader = QueryStringParser.parse(s3UrlObj.query)
+    const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
+    const s3Obj = new S3(s3Url, queryReader, 1000 * 60, argv.insecure)
+    await s3Obj.initialise().then(() => {
+      logger.log('Successfully logged in S3')
+    })
   }
 
   // sanitizing mwUrl
-  await sanitize_mwUrl(mwUrl).catch((err) => {
-    throw err
-  })
+  await sanitize_mwUrl(mwUrl)
 
   // sanitizing mwWikiPath
   sanitizeWikiPath(mwWikiPath)
@@ -113,9 +107,7 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing custom zim favicon
   if (customZimFavicon) {
-    await sanitize_customZimFavicon(customZimFavicon).catch((err) => {
-      throw err
-    })
+    await sanitize_customZimFavicon(customZimFavicon)
   }
 }
 
@@ -203,11 +195,7 @@ export async function sanitize_customZimFavicon(customZimFavicon: any) {
       throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
     })
   } else {
-    try {
-      fs.readFileSync(customZimFavicon)
-    } catch (err) {
-      throw err
-    }
+    fs.readFileSync(customZimFavicon)
   }
 }
 
