@@ -4,7 +4,7 @@ import * as MwOffliner from '../../src/mwoffliner.lib.js'
 import { writeFilePromise, mkdirPromise } from '../../src/util/index.js'
 import { Archive } from '@openzim/libzim'
 import * as FileType from 'file-type'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { jest } from '@jest/globals'
 
 jest.setTimeout(30000)

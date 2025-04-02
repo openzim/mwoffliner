@@ -1,10 +1,9 @@
 import { testRenders } from '../testRenders.js'
 import domino from 'domino'
-import { zimdump } from '../util.js'
+import { zimdump, zimcheck } from '../util.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
-import { zimcheck } from '../util.js'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 
 jest.setTimeout(60000)
 

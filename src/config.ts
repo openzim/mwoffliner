@@ -136,4 +136,4 @@ const config = {
 
 type Config = typeof config
 
-export { config, Config }
+export { config, type Config }

@@ -13,7 +13,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
 
   try {
     hrefProtocol = urlParser.parse(href).protocol
-  } catch (e) {
+  } catch {
     return null
   }
   if (hrefProtocol && !hrefProtocol.includes('http')) {

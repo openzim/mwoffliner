@@ -51,6 +51,8 @@ Run `mwoffliner --help` to get all the possible options.
 
 ## Usage
 
+We support only one single Node.JS version (Node.JS 22 currently).
+
 To install MWoffliner globally:
 ```bash
 npm i -g mwoffliner

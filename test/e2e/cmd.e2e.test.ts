@@ -1,4 +1,4 @@
-// tslint:disable-next-line: no-reference
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../src/types.d.ts" />
 
 import packageJSON from '../../package.json'
@@ -26,7 +26,7 @@ describe('Exec Command With Bash', () => {
 
     test('Exec Command With --verbose option', async () => {
       await expect(execa(`${mwo} --verbose=anyString --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test"`, { shell: true })).rejects.toThrow(
-        /\"anyString\" is not a valid value for option verbose. It should be empty or one of \[info, log, warn, error, quiet\]/,
+        /"anyString" is not a valid value for option verbose. It should be empty or one of \[info, log, warn, error, quiet\]/,
       )
     })
   })

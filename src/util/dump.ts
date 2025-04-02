@@ -1,4 +1,4 @@
-import urlParser from 'url'
+import urlParser, { fileURLToPath } from 'url'
 import * as pathParser from 'path'
 import async from 'async'
 import * as logger from '../Logger.js'
@@ -12,7 +12,6 @@ import { Dump } from '../Dump.js'
 import fs from 'fs'
 import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
 import * as path from 'path'
-import { fileURLToPath } from 'url'
 import urlHelper from './url.helper.js'
 import { zimCreatorMutex } from '../mutex.js'
 
@@ -61,6 +60,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
               url = url.indexOf('%') < 0 ? encodeURI(url) : url
 
               /* Download CSS dependency, but avoid duplicate calls */
+              // eslint-disable-next-line no-prototype-builtins
               if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
                 downloader.cssDependenceUrls[url] = true
                 filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), kind: 'media' })
@@ -73,7 +73,7 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
         finalCss += rewrittenCss
         finished()
       }
-    } catch (err) {
+    } catch {
       logger.warn(`Failed to get CSS from [${cssUrl}]`)
       finished()
     }

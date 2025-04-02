@@ -1,5 +1,5 @@
 import { execa } from 'execa'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import 'dotenv/config'
 import { jest } from '@jest/globals'
 import { testAllRenders } from '../testRenders.js'

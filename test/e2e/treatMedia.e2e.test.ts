@@ -1,5 +1,5 @@
 import { execa } from 'execa'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { testAllRenders } from '../testRenders.js'
 import { zimdump } from '../util.js'
 import 'dotenv/config'

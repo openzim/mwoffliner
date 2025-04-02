@@ -1,4 +1,4 @@
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { testAllRenders } from '../testRenders.js'
 import { jest } from '@jest/globals'
 import 'dotenv/config.js'

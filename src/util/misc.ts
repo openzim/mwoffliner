@@ -4,7 +4,7 @@ import Downloader from '../Downloader.js'
 import countryLanguage from '@ladjs/country-language'
 import fs from 'fs'
 import path from 'path'
-import mkdirp from 'mkdirp'
+import { mkdirp } from 'mkdirp'
 import os from 'os'
 import pathParser from 'path'
 import { Creator, StringItem } from '@openzim/libzim'
@@ -71,7 +71,7 @@ export function getFullUrl(url: string, baseUrl: URL | string) {
 export function getSizeFromUrl(url: string) {
   let mult
   let width
-  const widthMatch = url.match(/[\/-]([0-9]+)px-/)
+  const widthMatch = url.match(/[/-]([0-9]+)px-/)
   if (widthMatch) {
     width = Number(widthMatch[1])
   } else {
@@ -152,7 +152,7 @@ export function getStringsForLang(language: string, fallbackLanguage = 'en') {
       const langStrings = JSON.parse(fileContents)
       delete langStrings['@metadata']
       strings = { ...strings, ...langStrings }
-    } catch (err) {
+    } catch {
       logger.warn(`Couldn't find strings file for [${lang}]`)
     }
   }
@@ -350,6 +350,7 @@ export function isNodeModule(path: string) {
 export function objToQueryString(obj: KVS<any>): string {
   const str = []
   for (const p in obj) {
+    // eslint-disable-next-line no-prototype-builtins
     if (obj.hasOwnProperty(p) && typeof obj[p] !== 'undefined') {
       str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]))
     }
@@ -418,13 +419,13 @@ export async function extractArticleList(articleList: string, downloader: Downlo
           let url: URL
           try {
             url = new URL(item)
-          } catch (e) {
+          } catch {
             // URL is not valid. Continue processing
           }
           if (url && url.href) {
             try {
               item = await downloadListByUrl(url.href, downloader)
-            } catch (e) {
+            } catch {
               throw new Error(`Failed to read articleList from URL: ${url.href}`)
             }
           }

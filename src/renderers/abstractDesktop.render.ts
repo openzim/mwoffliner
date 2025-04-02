@@ -1,11 +1,10 @@
 import * as domino from 'domino'
 import { DownloadOpts, DownloadRes, Renderer } from './abstract.renderer.js'
-import { getStaticFiles } from '../util/misc.js'
+import { getStaticFiles, genCanonicalLink, genHeaderScript, genHeaderCSSLink } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
 import { htmlWikimediaDesktopTemplateCode } from '../Templates.js'
-import { genCanonicalLink, genHeaderScript, genHeaderCSSLink } from '../util/misc.js'
 
 export abstract class DesktopRenderer extends Renderer {
   public staticFilesListDesktop: string[] = []

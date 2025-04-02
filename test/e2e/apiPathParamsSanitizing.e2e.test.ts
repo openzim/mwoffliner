@@ -1,7 +1,7 @@
 import { testAllRenders } from '../testRenders.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { sanitizeApiPathParam, sanitizeWikiPath } from '../../src/sanitize-argument.js'
 import { zimcheck } from '../util.js'
 

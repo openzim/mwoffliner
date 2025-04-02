@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [22.x]
 
     steps:
       - name: Installing Node.js ${{ matrix.node-version }}
@@ -76,6 +76,6 @@ jobs:
 
       - name: Uploading Codecov stats
         uses: codecov/codecov-action@v4
-        if: ${{ matrix.node-version == '18.x' }}
+        if: ${{ matrix.node-version == '22.x' }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

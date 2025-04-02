@@ -13,6 +13,7 @@ import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.re
 import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 import { RenderOpts } from 'src/renderers/abstract.renderer.js'
+import MediaWiki from '../../src/MediaWiki.js'
 
 jest.setTimeout(40000)
 
@@ -40,7 +41,7 @@ describe('saveArticles', () => {
     }
 
     test(`Article html processing using ${renderer} renderer`, async () => {
-      const { MediaWiki, downloader, dump } = await setupScrapeClasses() // en wikipedia
+      const { downloader, dump } = await setupScrapeClasses() // en wikipedia
       await MediaWiki.hasCoordinates(downloader)
       await MediaWiki.hasWikimediaDesktopApi(downloader)
       await MediaWiki.hasWikimediaMobileApi(downloader)
@@ -162,7 +163,7 @@ describe('saveArticles', () => {
       await articleDetailXId.flush()
       await articleDetailXId.setMany(articlesDetail)
 
-      const writtenArticles: any = {}
+      const writtenArticles: { [key: string]: StringItem } = {}
       await saveArticles(
         {
           addItem(article: StringItem) {

@@ -24,12 +24,11 @@ export class MockRedis {
   private data: KVS<string> = {}
   private nextCursor: number
 
-  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async hLen(dbName: string): Promise<number> {
     return Object.keys(this.data).length
   }
 
-  // eslint-disable-next-line no-unused-vars
   async hSet(dbName: string, newData: KVS<string> | string, value?: any): Promise<number> {
     if (typeof newData === 'object') {
       this.data = {
@@ -42,7 +41,6 @@ export class MockRedis {
     return 1
   }
 
-  // eslint-disable-next-line no-unused-vars
   async hScan(dbName: string, cursor: number): Promise<{ cursor: number; tuples: { field: string; value: string }[] }> {
     let amount = 9 + Math.floor(Math.random() * 3)
     const maxLength = await this.hLen('')

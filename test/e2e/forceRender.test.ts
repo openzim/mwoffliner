@@ -1,6 +1,6 @@
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
 import { execa } from 'execa'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { jest } from '@jest/globals'
 import { zimcheckAvailable, zimcheck } from '../util.js'
 

@@ -370,7 +370,7 @@ describe('mobile renderer', () => {
           data-class="mwe-math-fallback-image-inline mw-invert skin-invert gallery-img pcs-widen-image-override"
           data-style="vertical-align: -0.338ex; width:5.651ex; height:2.176ex;"
           data-src="//wikimedia.org/api/rest_v1/media/math/render/svg/a5081dab37c84a998483d8066240c9542d311de7"
-          data-alt="{\displaystyle {\ce {LiOH}}}">
+          data-alt="{\\displaystyle {\\ce {LiOH}}}">
             <span style="padding-top: 38.50645903379933%;"></span>
           </span>
           `,

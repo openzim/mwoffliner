@@ -5,7 +5,7 @@ test('skipped vikidia test', () => {
 /*
 // https://github.com/openzim/mwoffliner/issues/2039
 import { execa } from 'execa'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { testRenders } from '../testRenders.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
