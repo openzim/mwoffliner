@@ -8,7 +8,7 @@ import MediaWiki from '../MediaWiki.js'
 import { REDIRECT_PAGE_SIGNATURE } from './const.js'
 import { cleanupAxiosError } from './misc.js'
 
-export async function getArticlesByIds(articleIds: string[], downloader: Downloader, log = true): Promise<void> {
+export async function getArticlesByIds(articleIds: string[], log = true): Promise<void> {
   let from = 0
   let numThumbnails = 0
   const MAX_BATCH_SIZE = 50
@@ -19,7 +19,7 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
   // using async iterator to spawn workers
   await pmap(
     ','
-      .repeat(downloader.speed)
+      .repeat(Downloader.speed)
       .split(',')
       .map((_, i) => i),
     async (workerId: number) => {
@@ -45,7 +45,7 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
         }
 
         // Retrieve the details and save them in Redis
-        const allArticleDetails = await downloader.getArticleDetailsIds(articleIdsBatch, numThumbnails < 100)
+        const allArticleDetails = await Downloader.getArticleDetailsIds(articleIdsBatch, numThumbnails < 100)
 
         // Filter articles without revisions (#2091)
         const articlesIgnored = Object.values(allArticleDetails)
@@ -78,7 +78,7 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
         await articleDetailXId.setMany(deepmerge(existingArticleDetails, articleDetails))
       }
     },
-    { concurrency: downloader.speed },
+    { concurrency: Downloader.speed },
   )
 }
 
@@ -96,7 +96,7 @@ async function saveToStore(
   }
 }
 
-export function getArticlesByNS(ns: number, downloader: Downloader, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
+export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
   return new Promise(async (resolve, reject) => {
     let totalArticles = 0
     let chunk: { articleDetails: QueryMwRet; gapContinue: string }
@@ -110,7 +110,7 @@ export function getArticlesByNS(ns: number, downloader: Downloader, articleIdsTo
      */
     const stages = ['Download ArticleDetails', 'Check Redirects', 'Store ArticleDetails in Redis', 'Clean Up left Promises']
     let curStage = 0
-    const timeout = Math.max(downloader.requestTimeout * 2, 10 * 60 * 1000)
+    const timeout = Math.max(Downloader.requestTimeout * 2, 10 * 60 * 1000)
     const timer = new Timer(() => {
       const errorMessage = `Worker timed out at ${stages[curStage]}`
       logger.error(errorMessage)
@@ -124,7 +124,7 @@ export function getArticlesByNS(ns: number, downloader: Downloader, articleIdsTo
       do {
         timer.reset()
         curStage = 0
-        chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
+        chunk = await Downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
 
         if (articleIdsToIgnore) {
           Object.keys(chunk.articleDetails).forEach((articleId) => {
@@ -278,9 +278,9 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
  * success if the response has a mime type in this array. Set to null to disable this filter.
  * @returns Promise resolving to true if the API is available.
  */
-export async function checkApiAvailability(downloader: Downloader, url: string, allowedMimeTypes = null): Promise<boolean> {
+export async function checkApiAvailability(url: string, allowedMimeTypes = null): Promise<boolean> {
   try {
-    const resp = await downloader.request({ url: decodeURI(url), method: 'GET', maxRedirects: 0, ...downloader.basicRequestOptions })
+    const resp = await Downloader.request({ url: decodeURI(url), method: 'GET', maxRedirects: 0, ...Downloader.basicRequestOptions })
 
     const isRedirectPage = typeof resp.data === 'string' && resp.data.startsWith(REDIRECT_PAGE_SIGNATURE)
 
@@ -308,20 +308,20 @@ export async function checkApiAvailability(downloader: Downloader, url: string, 
   }
 }
 
-export async function getArticleIds(downloader: Downloader, mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
+export async function getArticleIds(mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
   if (mainPage) {
-    await getArticlesByIds([mainPage], downloader)
+    await getArticlesByIds([mainPage])
   }
 
   if (articleIds) {
-    await getArticlesByIds(articleIds, downloader)
+    await getArticlesByIds(articleIds)
   } else {
     await pmap(
       MediaWiki.namespacesToMirror,
       (namespace: string) => {
-        return getArticlesByNS(MediaWiki.namespaces[namespace].num, downloader, articleIdsToIgnore)
+        return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore)
       },
-      { concurrency: downloader.speed },
+      { concurrency: Downloader.speed },
     )
   }
 }
