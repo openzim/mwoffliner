@@ -23,7 +23,7 @@
       "./src/"
     ],
     "lib": [
-      "dom"
+      "ES2022.Intl", "DOM"
     ],
     "plugins": [
       {
