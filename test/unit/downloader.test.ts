@@ -163,10 +163,7 @@ describe('Downloader class', () => {
         timestamp: '2023-08-20T14:54:01Z',
         coordinates: '51.50722222;-0.1275',
       }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       const LondonArticle = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
         wikimediaMobileRenderer,
@@ -180,7 +177,6 @@ describe('Downloader class', () => {
 
     test('Categories with many subCategories are paginated for WikimediaDesktop render', async () => {
       const articleId = 'Category:Container_categories'
-      const _moduleDependencies = await downloader.getModuleDependencies(articleId)
       const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
       const articleDetail = {
         title: articleId,
@@ -191,8 +187,6 @@ describe('Downloader class', () => {
       // Enforce desktop url here as this test desktop API-specific
       const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
       const PaginatedArticle = await downloader.getArticle(
-        downloader.webp,
-        _moduleDependencies,
         articleId,
         RedisStore.articleDetailXId,
         wikimediaDesktopRenderer,
@@ -211,19 +205,8 @@ describe('Downloader class', () => {
         title: articleId,
         missing: '',
       }
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       await expect(
-        downloader.getArticle(
-          downloader.webp,
-          _moduleDependencies,
-          'NeverExistingArticle',
-          RedisStore.articleDetailXId,
-          wikimediaMobileRenderer,
-          articleUrl,
-          dump,
-          articleDetail,
-          dump.isMainPage(articleId),
-        ),
+        downloader.getArticle('NeverExistingArticle', RedisStore.articleDetailXId, wikimediaMobileRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
       ).rejects.toThrowError(new Error('Request failed with status code 404'))
     })
   })
@@ -260,19 +243,8 @@ describe('Downloader class', () => {
           title: articleId,
           missing: '',
         }
-        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
         await expect(
-          downloader.getArticle(
-            downloader.webp,
-            _moduleDependencies,
-            'NeverExistingArticle',
-            RedisStore.articleDetailXId,
-            rendererInstance,
-            articleUrl,
-            dump,
-            articleDetail,
-            dump.isMainPage(articleId),
-          ),
+          downloader.getArticle('NeverExistingArticle', RedisStore.articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
         ).rejects.toThrowError(new Error('Request failed with status code 404'))
       })
     }

@@ -52,7 +52,6 @@ describe('ArticleTreatment', () => {
       downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleUrl = downloader.getArticleUrl(articleId)
 
-      const _moduleDependencies = await downloader.getModuleDependencies(title)
       const articleDetail = {
         title,
         thumbnail: {
@@ -85,9 +84,7 @@ describe('ArticleTreatment', () => {
       expect(addedArticles).toHaveLength(1)
       expect(addedArticles[0].title).toEqual('London')
 
-      await expect(
-        downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
-      ).rejects.toThrowError('')
+      await expect(downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
 

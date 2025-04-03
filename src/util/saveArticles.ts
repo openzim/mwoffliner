@@ -123,14 +123,13 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
 async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
       let rets: any
       try {
         const isMainPage = dump.isMainPage(articleId)
         const renderer = isMainPage ? mainPageRenderer : articlesRenderer
         const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
 
-        rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+        rets = await downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -174,7 +173,6 @@ async function saveArticle(
   subtitles: any,
   articleId: string,
   articleTitle: string,
-  articleDetail: any,
 ): Promise<Error> {
   try {
     const filesToDownload: KVS<FileDetail> = {}
@@ -314,15 +312,13 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
         curArticle = articleId
         const promises: [string, Promise<Error>][] = []
 
-        const _moduleDependencies = await downloader.getModuleDependencies(articleDetail.title)
-
         let rets: any
         try {
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? mainPageRenderer : articlesRenderer
           const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
 
-          rets = await downloader.getArticle(downloader.webp, _moduleDependencies, articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+          rets = await downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
           for (const {
             articleId,
@@ -360,10 +356,7 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
              * To parse and download simultaniously, we don't await on save,
              * but instead cache the promise in a queue and check it later
              */
-            promises.push([
-              articleId,
-              saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle, articleDetail),
-            ])
+            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle)])
           }
         } catch (err) {
           dump.status.articles.fail += 1

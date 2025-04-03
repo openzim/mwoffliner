@@ -1,5 +1,5 @@
 import * as domino from 'domino'
-import { Renderer } from './abstract.renderer.js'
+import { DownloadOpts, DownloadRes, Renderer } from './abstract.renderer.js'
 import { getStaticFiles } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
@@ -12,6 +12,20 @@ export abstract class DesktopRenderer extends Renderer {
   constructor() {
     super()
     this.staticFilesListDesktop = this.staticFilesListCommon.concat(getStaticFiles(config.output.jsResources, config.output.cssResources))
+  }
+
+  public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
+    const { downloader, articleUrl, articleDetail } = downloadOpts
+
+    const moduleDependencies = this.filterWikimediaDesktopModules(await downloader.getModuleDependencies(articleDetail.title))
+
+    const data = await downloader.getJSON<any>(articleUrl)
+    /* istanbul ignore if */
+    if (data.error) {
+      throw data.error
+    }
+
+    return { data, moduleDependencies }
   }
 
   public filterWikimediaDesktopModules(_moduleDependencies) {
