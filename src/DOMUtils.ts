@@ -1,5 +1,8 @@
 const DOMUtils = {
   deleteNode(node: DominoElement) {
+    if (!node) {
+      return
+    }
     if (node.parentNode) {
       node.parentNode.removeChild(node)
     } else {
