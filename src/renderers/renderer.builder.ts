@@ -84,6 +84,7 @@ export class RendererBuilder {
         }
         logger.error('Cannot create an instance of ActionParse renderer.')
         process.exit(1)
+        break // prettier-ignore
       case 'WikimediaDesktop':
         if (hasWikimediaDesktopApi) {
           return new WikimediaDesktopRenderer()

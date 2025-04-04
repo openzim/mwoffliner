@@ -748,7 +748,6 @@ class Downloader {
     // the script below extracts the config with a regex executed on the page header returned from the api
     const scriptTags = domino.createDocument(`${headhtml}</body></html>`).getElementsByTagName('script')
     const regex = /mw\.config\.set\(\{.*?\}\);/gm
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < scriptTags.length; i += 1) {
       if (scriptTags[i].text.includes('mw.config.set')) {
         jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
