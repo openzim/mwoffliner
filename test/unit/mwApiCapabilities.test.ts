@@ -23,7 +23,7 @@ describe('Checking Mediawiki capabilities', () => {
     expect(await MediaWiki.hasVisualEditorApi(downloader)).toBe(true)
   })
 
-  xtest('test capabilities of wiki.openstreetmap.org', async () => {
+  test('test capabilities of wiki.openstreetmap.org', async () => {
     MediaWiki.base = 'https://wiki.openstreetmap.org'
     const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' })
 
