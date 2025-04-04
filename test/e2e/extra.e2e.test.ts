@@ -1,5 +1,5 @@
 import * as mwoffliner from '../../src/mwoffliner.lib.js'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { writeFilePromise, mkdirPromise } from '../../src/util/index.js'
 import { join } from 'path'
 import { execa } from 'execa'

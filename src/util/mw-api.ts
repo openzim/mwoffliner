@@ -54,7 +54,7 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
         if (articlesIgnored.length > 0) {
           logger.warn(`Ignoring articles without revisions: ${articlesIgnored.join(', ')}`)
         }
-        const mwArticleDetails = Object.fromEntries(Object.entries(allArticleDetails).filter(([_, articleDetail]) => !articlesIgnored.includes(articleDetail.title)))
+        const mwArticleDetails = Object.fromEntries(Object.entries(allArticleDetails).filter(([, articleDetail]) => !articlesIgnored.includes(articleDetail.title)))
 
         const articlesWithThumbnail = Object.values(mwArticleDetails).filter((a) => !!a.thumbnail)
         numThumbnails += articlesWithThumbnail.length
@@ -97,6 +97,7 @@ async function saveToStore(
 }
 
 export function getArticlesByNS(ns: number, downloader: Downloader, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
+  // eslint-disable-next-line no-async-promise-executor
   return new Promise(async (resolve, reject) => {
     let totalArticles = 0
     let chunk: { articleDetails: QueryMwRet; gapContinue: string }
@@ -214,7 +215,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
   }, {})
 
   return Object.values(pages).reduce((acc, page) => {
-    const id = (normalized.hasOwnProperty(page.title) && normalized[page.title]) || page.title || ''
+    const id = normalized.hasOwnProperty(page.title) ? normalized[page.title] : page.title || '' // eslint-disable-line no-prototype-builtins
     if (typeof id !== 'string' || !id) {
       logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`)
     }

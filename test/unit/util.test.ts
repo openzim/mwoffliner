@@ -1,4 +1,4 @@
-import { URL } from 'url'
+import { URL, fileURLToPath } from 'url'
 import tmp from 'tmp'
 import pathParser from 'path'
 import { sanitize_customFlavour } from '../../src/sanitize-argument.js'
@@ -18,10 +18,9 @@ import {
 import { testHtmlRewritingE2e } from '../util.js'
 import axios from 'axios'
 import * as path from 'path'
-import { fileURLToPath } from 'url'
 import { jest } from '@jest/globals'
 import fs from 'fs'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
 import { config } from '../../src/config.js'
@@ -473,13 +472,13 @@ describe('Utils', () => {
         ...minimumValidMetadata,
         Language: 'en',
       }
-      expect(() => validateMetadata(metaDataLangTest)).toThrow('MetaData Language: must match pattern \"^\\w{3}(,\\w{3})*$\"') // prettier-ignore
+      expect(() => validateMetadata(metaDataLangTest)).toThrow('MetaData Language: must match pattern "^\\w{3}(,\\w{3})*$"')
 
       const metaData = {
         ...minimumValidMetadata,
         Language: 'en,it',
       }
-      expect(() => validateMetadata(metaData)).toThrow('MetaData Language: must match pattern \"^\\w{3}(,\\w{3})*$\"') // prettier-ignore
+      expect(() => validateMetadata(metaData)).toThrow('MetaData Language: must match pattern "^\\w{3}(,\\w{3})*$"')
     })
 
     test('validate wrong illustration', () => {

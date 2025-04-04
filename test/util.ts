@@ -49,7 +49,6 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   const dump = new Dump(format, {} as any, MediaWiki.metaData)
 
   return {
-    MediaWiki,
     downloader,
     dump,
     renderer,
@@ -67,7 +66,7 @@ export async function zimcheckAvailable() {
   try {
     await execa(`which ${zimcheckPath}`, { shell: true })
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }
@@ -81,7 +80,7 @@ export async function zimdumpAvailable(): Promise<boolean> {
   try {
     await execa(`which ${zimdumpPath}`, { shell: true })
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }

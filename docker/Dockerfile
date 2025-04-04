@@ -1,5 +1,22 @@
-FROM ghcr.io/openzim/node-redis:18-7
-LABEL org.opencontainers.image.source https://github.com/openzim/mwoffliner
+FROM redis:7 AS redis
+
+FROM node:22-bookworm
+LABEL org.opencontainers.image.source=https://github.com/openzim/mwoffliner
+
+COPY --from=redis /usr/local/bin/redis-* /usr/local/bin/
+RUN redis-cli --version
+RUN redis-server --version
+
+COPY docker/node_redis-entrypoint.sh /usr/local/bin/
+
+# Configure launch environment
+WORKDIR /
+RUN mv /root/.bashrc /root/.old-bashrc
+COPY docker/.custom-bashrc /root/.bashrc
+
+ENV REDIS=/dev/shm/redis.sock
+RUN printf '#!/bin/bash\n/usr/local/bin/mwoffliner --redis=$REDIS "$@"' > /usr/local/sbin/mwoffliner
+RUN chmod +x /usr/local/sbin/mwoffliner
 
 # Install dependences
 RUN apt-get update && \
@@ -13,8 +30,6 @@ WORKDIR /tmp/mwoffliner
 COPY *.json ./
 COPY dev dev
 RUN mkdir src
-RUN npm --global config set user root
-RUN npm config set unsafe-perm true
 RUN npm i
 COPY src src
 COPY res res
@@ -30,8 +45,6 @@ WORKDIR /
 RUN mv /root/.bashrc /root/.old-bashrc
 COPY docker/.custom-bashrc /root/.bashrc
 
-ENV REDIS /dev/shm/redis.sock
-RUN printf '#!/bin/bash\n/usr/local/bin/mwoffliner --redis=$REDIS "$@"' > /usr/local/sbin/mwoffliner
-RUN chmod +x /usr/local/sbin/mwoffliner
+ENTRYPOINT ["node_redis-entrypoint.sh"]
 
-CMD mwoffliner
+CMD ["mwoffliner"]

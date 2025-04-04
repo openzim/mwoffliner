@@ -1,4 +1,4 @@
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { execa } from 'execa'
 import { testAllRenders } from '../testRenders.js'
 import { zimdump } from '../util.js'

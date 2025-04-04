@@ -22,7 +22,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should create a WikimediaDesktopRenderer for desktop mode', async () => {
-    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     const renderer = await rendererBuilder.createRenderer(downloader, {
       MediaWiki,
@@ -32,7 +32,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should create a WikimediaDesktopRenderer for auto mode for en wikipedia', async () => {
-    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     const renderer = await rendererBuilder.createRenderer(downloader, {
       MediaWiki,
@@ -42,7 +42,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should throw error for unknown render mode', async () => {
-    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     expect(async () => {
       await rendererBuilder.createRenderer(downloader, {
@@ -53,7 +53,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should return VisualEditorRenderer for specific mode with RendererAPI as VisualEditor', async () => {
-    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     // Force MediaWiki to have capability for the VisualEditor for test purpose
     jest.spyOn(MediaWiki, 'hasVisualEditorApi').mockResolvedValue(true)
@@ -70,7 +70,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should return WikimediaDesktopRenderer for specific mode with RendererAPI as WikimediaDesktop', async () => {
-    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     // Force MediaWiki to have capability for the WikimediaDesktop for test purpose
     jest.spyOn(MediaWiki, 'hasWikimediaDesktopApi').mockResolvedValue(true)
@@ -87,7 +87,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should return RestApiRenderer for specific mode with RendererAPI as RestApi', async () => {
-    const { MediaWiki } = await setupScrapeClasses() // en wikipedia
+    await setupScrapeClasses() // en wikipedia
 
     // Force MediaWiki to have capability for the RestApi for test purpose
     jest.spyOn(MediaWiki, 'hasRestApi').mockResolvedValue(true)
@@ -104,7 +104,7 @@ describe('RendererBuilder', () => {
   })
 
   it('should throw an error for unknown RendererAPI in specific mode', async () => {
-    const { downloader, MediaWiki } = await setupScrapeClasses() // en wikipedia
+    const { downloader } = await setupScrapeClasses() // en wikipedia
     await MediaWiki.hasCoordinates(downloader)
     await MediaWiki.hasWikimediaDesktopApi(downloader)
     await MediaWiki.hasWikimediaMobileApi(downloader)

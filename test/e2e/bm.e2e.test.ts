@@ -1,9 +1,8 @@
-import { zimdump } from '../util.js'
+import { zimdump, zimcheck } from '../util.js'
 import { testAllRenders } from '../testRenders.js'
 import { execa } from 'execa'
 import { jest } from '@jest/globals'
-import rimraf from 'rimraf'
-import { zimcheck } from '../util.js'
+import { rimraf } from 'rimraf'
 import 'dotenv/config.js'
 
 jest.setTimeout(200000)

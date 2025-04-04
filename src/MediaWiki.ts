@@ -360,7 +360,7 @@ class MediaWiki {
       }
 
       return null /* Interwiki link? -- return null */
-    } catch (error) {
+    } catch {
       logger.warn(`Unable to parse href ${href}`)
       return null
     }
@@ -426,7 +426,7 @@ class MediaWiki {
 
     // Gather languages codes (en remove the 'dialect' part)
     const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
-      return e.replace(/\-.*/, '')
+      return e.replace(/-.*/, '')
     })
 
     const [langIso2, langIso3] = await Promise.all(
@@ -434,12 +434,12 @@ class MediaWiki {
         let langIso3
         try {
           langIso3 = await util.getIso3(lang)
-        } catch (err) {
+        } catch {
           langIso3 = lang
         }
         try {
           return [lang, langIso3]
-        } catch (err) {
+        } catch {
           return false
         }
       }),

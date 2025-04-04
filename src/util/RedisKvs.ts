@@ -80,6 +80,7 @@ export default class RedisKvs<T> implements RKVS<T> {
   }
 
   public iterateItems(numWorkers: number, func: (items: KVS<T>, runningWorkers: number) => Promise<void>): Promise<void> {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       let runningWorkers = 0
       let isScanning = false

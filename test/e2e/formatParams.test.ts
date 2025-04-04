@@ -3,7 +3,7 @@ import domino from 'domino'
 import { testAllRenders } from '../testRenders.js'
 import { jest } from '@jest/globals'
 import { zimdump } from '../util.js'
-import rimraf from 'rimraf'
+import { rimraf } from 'rimraf'
 import { execa } from 'execa'
 
 jest.setTimeout(200000)

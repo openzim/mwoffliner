@@ -1,6 +1,6 @@
 import * as backoff from 'backoff'
 import { config } from './config.js'
-import { contains } from './util/index.js'
+import { contains, normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import { Readable } from 'stream'
 import deepmerge from 'deepmerge'
 import * as domino from 'domino'
@@ -17,7 +17,6 @@ import http from 'http'
 import https from 'https'
 import { fileTypeFromBuffer } from 'file-type'
 
-import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import S3 from './S3.js'
 import * as logger from './Logger.js'
 import MediaWiki, { QueryOpts } from './MediaWiki.js'
@@ -382,7 +381,11 @@ class Downloader {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
-    const url = urlHelper.deserializeUrl(_url)
+
+    let url = urlHelper.deserializeUrl(_url)
+    if (url.startsWith('//')) {
+      url = `${MediaWiki.baseUrl.protocol}${url}`
+    }
 
     await this.claimRequest()
 
@@ -414,7 +417,7 @@ class Downloader {
     try {
       await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
       return true
-    } catch (err) {
+    } catch {
       return false
     }
   }
@@ -481,7 +484,7 @@ class Downloader {
           } else if (err.response && err.response.status === 404) {
             handler(err)
           }
-        } catch (a) {
+        } catch {
           logger.log('ERR', err)
           handler(err)
         }
@@ -552,7 +555,7 @@ class Downloader {
     } catch (err) {
       try {
         this.errHandler(err, url, handler)
-      } catch (a) {
+      } catch {
         handler(err)
       }
     }

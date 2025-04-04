@@ -45,7 +45,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
         } else {
           isFailed = true
         }
-      } catch (err) {
+      } catch {
         isFailed = true
       } finally {
         if (isFailed) {
@@ -290,6 +290,7 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
   const timeout = Math.max(downloader.requestTimeout * 2, 10 * 60 * 1000)
 
   await articleDetailXId.iterateItems(downloader.speed, (articleKeyValuePairs, workerId) => {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       /*
        * timer to detect freezes

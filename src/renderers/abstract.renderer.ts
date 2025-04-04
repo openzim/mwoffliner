@@ -202,6 +202,7 @@ export abstract class Renderer {
       }
       videoEl.removeAttribute('resource')
 
+      // eslint-disable-next-line no-prototype-builtins
       if (!srcCache.hasOwnProperty(videoPosterUrl)) {
         srcCache[videoPosterUrl] = true
         imageDependencies.push(videoPosterUrl)
@@ -212,6 +213,7 @@ export abstract class Renderer {
   private updateVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, videoDependencies: string[]): void {
     /* Download content, but avoid duplicate calls */
     const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), MediaWiki.baseUrl)
+    // eslint-disable-next-line no-prototype-builtins
     if (!srcCache.hasOwnProperty(sourceUrl)) {
       srcCache[sourceUrl] = true
       videoDependencies.push(sourceUrl)
@@ -304,6 +306,7 @@ export abstract class Renderer {
       const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
       newSrc = upStr + getMediaBase(src, true)
       /* Download image, but avoid duplicate calls */
+      // eslint-disable-next-line no-prototype-builtins
       if (!srcCache.hasOwnProperty(src)) {
         srcCache[src] = true
         imageDependencies.push(src)
@@ -317,7 +320,7 @@ export abstract class Renderer {
 
       /* Remove srcset */
       img.removeAttribute('srcset')
-    } catch (err) {
+    } catch {
       DOMUtils.deleteNode(img)
     }
 

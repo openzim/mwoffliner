@@ -1,10 +1,9 @@
 import MediaWiki from './../MediaWiki.js'
-import { Renderer } from './abstract.renderer.js'
+import { Renderer, RendererBuilderOptions } from './abstract.renderer.js'
 import { VisualEditorRenderer } from './visual-editor.renderer.js'
 import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from './rest-api.renderer.js'
-import { RendererBuilderOptions } from './abstract.renderer.js'
 import * as logger from './../Logger.js'
 import Downloader from 'src/Downloader.js'
 
@@ -32,12 +31,14 @@ export class RendererBuilder {
           logger.error('No available desktop renderer.')
           process.exit(1)
         }
+        break // prettier-ignore
       case 'mobile':
         if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         }
         logger.error('No available mobile renderer.')
         process.exit(1)
+        break // prettier-ignore
       case 'auto':
         if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
@@ -52,6 +53,7 @@ export class RendererBuilder {
           logger.error('No render available at all.')
           process.exit(1)
         }
+        break // prettier-ignore
       case 'specific':
         // renderName argument is required for 'specific' mode
         return this.handleSpecificRender(renderName, hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi)
@@ -69,24 +71,28 @@ export class RendererBuilder {
         }
         logger.error('Cannot create an instance of WikimediaDesktop renderer.')
         process.exit(1)
+        break // prettier-ignore
       case 'VisualEditor':
         if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         }
         logger.error('Cannot create an instance of VisualEditor renderer.')
         process.exit(1)
+        break // prettier-ignore
       case 'WikimediaMobile':
         if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         }
         logger.error('No available mobile renderer.')
         process.exit(1)
+        break // prettier-ignore
       case 'RestApi':
         if (hasRestApi) {
           return new RestApiRenderer()
         }
         logger.error('Cannot create an instance of RestApi renderer.')
         process.exit(1)
+        break // prettier-ignore
       default:
         throw new Error(`Unknown renderName for specific mode: ${renderName}`)
     }

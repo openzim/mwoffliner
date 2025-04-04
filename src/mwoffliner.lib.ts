@@ -1,4 +1,4 @@
-// tslint:disable-next-line: no-reference
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./types.d.ts" />
 
 /* ********************************** */
@@ -11,12 +11,12 @@ import pmap from 'p-map'
 import sharp from 'sharp'
 import domino from 'domino'
 import { rimraf } from 'rimraf'
-import urlParser from 'url'
+import urlParser, { fileURLToPath } from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import * as QueryStringParser from 'querystring'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
-import { checkApiAvailability } from './util/mw-api.js'
+import { checkApiAvailability, getArticleIds } from './util/mw-api.js'
 
 import {
   MAX_CPU_CORES,
@@ -48,11 +48,9 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
-import { getArticleIds } from './util/mw-api.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
-import { fileURLToPath } from 'url'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
 
@@ -347,7 +345,7 @@ async function execute(argv: any) {
     let shouldSkip = false
     try {
       dump.checkResume()
-    } catch (err) {
+    } catch {
       shouldSkip = true
     }
 
@@ -504,13 +502,13 @@ async function execute(argv: any) {
       } else {
         try {
           content = fs.readFileSync(customZimFavicon)
-        } catch (err) {
+        } catch {
           throw new Error(`Failed to read custom zim favicon from [${customZimFavicon}]`)
         }
       }
       try {
         return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
-      } catch (e) {
+      } catch {
         throw new Error('Failed to read or process IllustrationMetadata using sharp')
       }
     }
@@ -536,7 +534,7 @@ async function execute(argv: any) {
     logger.log('Saving favicon.png...')
     try {
       return zimCreator.addItem(new StringItem('favicon', 'image/png', '', {}, data))
-    } catch (e) {
+    } catch {
       throw new Error('Failed to save favicon')
     }
   }
@@ -637,7 +635,7 @@ async function execute(argv: any) {
 
         await updateArticleThumbnail(articleDetail, articleId)
         articlesWithImages++
-      } catch (err) {
+      } catch {
         logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`)
       }
     }
