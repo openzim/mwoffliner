@@ -18,7 +18,7 @@ ENV REDIS=/dev/shm/redis.sock
 RUN printf '#!/bin/bash\n/usr/local/bin/mwoffliner --redis=$REDIS "$@"' > /usr/local/sbin/mwoffliner
 RUN chmod +x /usr/local/sbin/mwoffliner
 
-# Install dependences
+# Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     make g++ curl git && \
@@ -29,7 +29,9 @@ RUN apt-get update && \
 WORKDIR /tmp/mwoffliner
 COPY *.json ./
 COPY dev dev
-RUN mkdir src
+RUN mkdir src && \
+    # create fake cli.ts so that install can complete
+    printf '#!/usr/bin/env -S node' > src/cli.ts
 RUN npm i
 COPY src src
 COPY res res
