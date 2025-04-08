@@ -64,11 +64,10 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
         for (const [articleId, articleDetail] of Object.entries(mwArticleDetails)) {
           if (articleDetail.redirects && articleDetail.redirects.length) {
             await redirectsXId.setMany(
-              Object.fromEntries(
-                articleDetail.redirects.reduce((acc, redirect) => {
-                  return acc.set(redirect.title, { targetId: articleId, title: redirect.title })
-                }, new Map()),
-              ),
+              articleDetail.redirects.reduce((acc, redirect) => {
+                acc[redirect.title] = { targetId: articleId, title: redirect.title }
+                return acc
+              }, {}),
             )
           }
         }

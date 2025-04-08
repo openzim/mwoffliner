@@ -39,11 +39,8 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
         }
 
         const parentCategories = (detail.categories || []).reduce((acc, info) => {
-          const articleId = info.title
-          return {
-            ...acc,
-            [articleId]: info,
-          }
+          acc[info.title] = info
+          return acc
         }, {})
 
         await nextCategoriesBatch.setMany(parentCategories)
