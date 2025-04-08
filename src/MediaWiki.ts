@@ -182,7 +182,6 @@ class MediaWiki {
       const checkUrl = this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasWikimediaDesktopApi = await checkApiAvailability(downloader, checkUrl)
       logger.log('Checked for WikimediaDesktopApi at', checkUrl, '-- result is: ', this.#hasWikimediaDesktopApi)
-      return this.#hasWikimediaDesktopApi
     }
     return this.#hasWikimediaDesktopApi
   }
@@ -193,7 +192,6 @@ class MediaWiki {
       const checkUrl = this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasWikimediaMobileApi = await checkApiAvailability(downloader, checkUrl)
       logger.log('Checked for WikimediaMobileApi at', checkUrl, '-- result is: ', this.#hasWikimediaMobileApi)
-      return this.#hasWikimediaMobileApi
     }
     return this.#hasWikimediaMobileApi
   }
@@ -204,7 +202,6 @@ class MediaWiki {
       const checkUrl = this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasVisualEditorApi = await checkApiAvailability(downloader, checkUrl, this.visualEditorUrlDirector.validMimeTypes)
       logger.log('Checked for VisualEditorApi at', checkUrl, '-- result is: ', this.#hasVisualEditorApi)
-      return this.#hasVisualEditorApi
     }
     return this.#hasVisualEditorApi
   }
@@ -215,7 +212,6 @@ class MediaWiki {
       const checkUrl = this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasRestApi = await checkApiAvailability(downloader, checkUrl)
       logger.log('Checked for RestApi at', checkUrl, '-- result is: ', this.#hasRestApi)
-      return this.#hasRestApi
     }
     return this.#hasRestApi
   }
@@ -232,7 +228,6 @@ class MediaWiki {
           break
         }
       }
-      return this.#hasActionParseApi
     }
     return this.#hasActionParseApi
   }

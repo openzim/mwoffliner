@@ -41,23 +41,21 @@ export abstract class MobileRenderer extends Renderer {
   public templateMobileArticle(moduleDependencies: any, articleId: string): Document {
     const { jsDependenciesList, styleDependenciesList } = moduleDependencies
 
+    const articleJsList =
+      jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+    const articleCssList =
+      styleDependenciesList.length === 0
+        ? ''
+        : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+
     const htmlTemplateString = htmlWikimediaMobileTemplateCode()
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', '')
       .replace('__JS_SCRIPTS__', this.genWikimediaMobileOverrideScript(config.output.wikimediaMobileJsResources[0]))
       .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(config.output.wikimediaMobileCssResources[0]))
-      .replace(
-        '__ARTICLE_JS_LIST__',
-        jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
-      .replace(
-        '__ARTICLE_CSS_LIST__',
-        styleDependenciesList.length !== 0
-          ? styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
-          : '',
-      )
+      .replace('__ARTICLE_JS_LIST__', articleJsList)
+      .replace('__ARTICLE_CSS_LIST__', articleCssList)
 
-    const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
-    return htmlTemplateDoc
+    return domino.createDocument(htmlTemplateString)
   }
 }

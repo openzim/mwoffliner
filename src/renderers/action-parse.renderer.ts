@@ -29,22 +29,22 @@ export class ActionParseRenderer extends Renderer {
     if (!htmlTemplateCode) {
       throw new Error(`Skin ${MediaWiki.skin} is not supported by ActionParse renderer`)
     }
-    const htmlTemplateString = htmlTemplateCode()
-      .replace('__CSS_LINKS__', '') // Unused with ActionParse
-      .replace('__JS_SCRIPTS__', '') // Unused with ActionParse
-      .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
-      .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
-      .replace(
-        '__ARTICLE_JS_LIST__',
-        jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
-      .replace(
-        '__ARTICLE_CSS_LIST__',
-        styleDependenciesList.length !== 0 ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
 
-    const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
-    return htmlTemplateDoc
+    const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
+    const articleJsList =
+      jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+    const articleCssList =
+      styleDependenciesList.length === 0
+        ? ''
+        : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+
+    const htmlTemplateString = htmlTemplateCode()
+      .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
+      .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
+      .replace('__ARTICLE_JS_LIST__', articleJsList)
+      .replace('__ARTICLE_CSS_LIST__', articleCssList)
+
+    return domino.createDocument(htmlTemplateString)
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
