@@ -108,33 +108,6 @@ Complementary information about MWoffliner:
 * MediaWiki includes a parser for WikiText into HTML, and this
   parser creates the HTML pages displayed in your browser.
 
-### GNU/Linux - Debian based distributions
-
-Install NodeJS:
-Read https://nodejs.org/en/download/current/
-
-Install Redis:
-```bash
-sudo apt-get install redis-server
-```
-
-## Troubleshooting
-
-Older GNU/Linux distributions and/or versions of Node.js might be
-shipped with a deprecated version of `npm`. Older versions of `npm`
-have incompatbilities with certain versions of Node.js and might
-simply fail to install `mwoffliner` package.
-
-We recommend to use a recent version of `npm`. Recent versions can
-perfectly deal with older Node.js 10. Do install the packaged
-version of `npm` and then use it to install a newer version like:
-
-```bash
-sudo npm install --unsafe-perm -g npm
-```
-
-Don't forget to remove the packaged version of `npm` afterward.
-
 License
 -------
 
