@@ -19,9 +19,8 @@ export abstract class DesktopRenderer extends Renderer {
     const moduleDependencies = this.filterWikimediaDesktopModules(await downloader.getModuleDependencies(articleDetail.title))
 
     const data = await downloader.getJSON<any>(articleUrl)
-    /* istanbul ignore if */
     if (data.error) {
-      throw data.error
+      throw new Error(data.error)
     }
 
     return { data, moduleDependencies }
@@ -66,21 +65,22 @@ export abstract class DesktopRenderer extends Renderer {
       )
     }, '')
 
+    const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
+    const articleJsList =
+      jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+    const articleCssList =
+      styleDependenciesList.length === 0
+        ? ''
+        : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+
     const htmlTemplateString = htmlWikimediaDesktopTemplateCode()
       .replace('__CSS_LINKS__', cssLinks)
       .replace('__JS_SCRIPTS__', jsScripts)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
-      .replace('__ARTICLE_CONFIGVARS_LIST__', jsConfigVars !== '' ? genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki) : '')
-      .replace(
-        '__ARTICLE_JS_LIST__',
-        jsDependenciesList.length !== 0 ? jsDependenciesList.map((oneJsDep) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
-      .replace(
-        '__ARTICLE_CSS_LIST__',
-        styleDependenciesList.length !== 0 ? styleDependenciesList.map((oneCssDep) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n') : '',
-      )
+      .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
+      .replace('__ARTICLE_JS_LIST__', articleJsList)
+      .replace('__ARTICLE_CSS_LIST__', articleCssList)
 
-    const htmlTemplateDoc = domino.createDocument(htmlTemplateString)
-    return htmlTemplateDoc
+    return domino.createDocument(htmlTemplateString)
   }
 }

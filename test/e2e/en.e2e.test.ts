@@ -35,7 +35,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
     })
 
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
-      expect(articleDoc.querySelector('h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
+      expect(articleDoc.querySelector('h1.firstHeading > span#openzim-page-title, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
     test(`test article image integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       const allFiles = await zimdump(`list ${outFiles[0].outFile}`)

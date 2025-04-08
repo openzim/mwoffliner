@@ -501,9 +501,13 @@ export abstract class Renderer {
     htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML
 
     /* Title */
-    htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTemplateDoc.getElementById('title_0')
-      ? htmlTemplateDoc.getElementById('title_0').textContent
-      : articleId.replace(/_/g, ' ')
+    const articleTitle = htmlTemplateDoc.getElementById('title_0') ? htmlTemplateDoc.getElementById('title_0').textContent : articleId.replace(/_/g, ' ')
+    htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = articleTitle
+    // Set inline page title when missing
+    const inlineTitle = htmlTemplateDoc.getElementById('openzim-page-title')
+    if (inlineTitle && !inlineTitle.innerHTML) {
+      inlineTitle.innerHTML = articleTitle
+    }
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 
     /* Subpage */

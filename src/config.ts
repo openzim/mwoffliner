@@ -94,6 +94,14 @@ const config = {
         'ext.gadget.VisibilityToggles',
         'ext.gadget.defaultVisibilityToggles',
       ],
+      css_simplified: [
+        // infobox styles needed at least on hu.wikipedia.org
+        'ext.gadget.infobox,wikiMenuStyles',
+      ],
+      js_simplified: [
+        // base JS scripts always needed / never returned on API calls
+        'startup',
+      ],
     },
 
     // Output directories for storing mw related js and css resources
@@ -110,6 +118,8 @@ const config = {
        */
       pageWikimediaDesktop: './templates/pageWikimediaDesktop.html',
       pageWikimediaMobile: './templates/pageWikimediaMobile.html',
+      pageVectorLegacy: './templates/pageVectorLegacy.html',
+      pageVector2022: './templates/pageVector2022.html',
 
       categories: './templates/categories.html',
 

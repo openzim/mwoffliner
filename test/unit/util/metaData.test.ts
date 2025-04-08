@@ -13,6 +13,5 @@ describe('Test metadata utilities', () => {
     test('multiletter graphemes', async () => {
       expect('विकी मेड मेडिकल इनसाइक्लोपीडिया हिंदी में'.split(byGrapheme).length).toBe(24)
     })
-
   })
 })
