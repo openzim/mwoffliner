@@ -65,11 +65,8 @@ export async function getArticlesByIds(articleIds: string[], downloader: Downloa
           if (articleDetail.redirects && articleDetail.redirects.length) {
             await redirectsXId.setMany(
               articleDetail.redirects.reduce((acc, redirect) => {
-                const rId = redirect.title
-                return {
-                  ...acc,
-                  [rId]: { targetId: articleId, title: redirect.title },
-                }
+                acc[redirect.title] = { targetId: articleId, title: redirect.title }
+                return acc
               }, {}),
             )
           }
