@@ -41,7 +41,7 @@ Run `mwoffliner --help` to get all the possible options.
 
 - *NIX Operating System (GNU/Linux, macOS, ...)
 - [Redis](https://redis.io/)
-- [NodeJS](https://nodejs.org/en/) version 16 or greater
+- [NodeJS](https://nodejs.org/en/) version 22 (we support only one single Node.JS version, other versions might work or not)
 - [Libzim](https://github.com/openzim/libzim) (On GNU/Linux & macOS we automatically download it)
 - Various build tools which are probably already installed on your
   machine (packages `libjpeg-dev`, `libglu1`, `autoconf`, `automake`, `gcc` on
@@ -50,8 +50,6 @@ Run `mwoffliner --help` to get all the possible options.
 ... and an online MediaWiki with its API available.
 
 ## Usage
-
-We support only one single Node.JS version (Node.JS 22 currently).
 
 To install MWoffliner globally:
 ```bash
@@ -109,33 +107,6 @@ Complementary information about MWoffliner:
 * Wikitext is the name of the markup language that MediaWiki uses.
 * MediaWiki includes a parser for WikiText into HTML, and this
   parser creates the HTML pages displayed in your browser.
-
-### GNU/Linux - Debian based distributions
-
-Install NodeJS:
-Read https://nodejs.org/en/download/current/
-
-Install Redis:
-```bash
-sudo apt-get install redis-server
-```
-
-## Troubleshooting
-
-Older GNU/Linux distributions and/or versions of Node.js might be
-shipped with a deprecated version of `npm`. Older versions of `npm`
-have incompatbilities with certain versions of Node.js and might
-simply fail to install `mwoffliner` package.
-
-We recommend to use a recent version of `npm`. Recent versions can
-perfectly deal with older Node.js 10. Do install the packaged
-version of `npm` and then use it to install a newer version like:
-
-```bash
-sudo npm install --unsafe-perm -g npm
-```
-
-Don't forget to remove the packaged version of `npm` afterward.
 
 License
 -------
