@@ -17,7 +17,7 @@ env:
 
 jobs:
   ci-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -79,3 +79,16 @@ jobs:
         if: ${{ matrix.node-version == '22.x' }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  build_docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure we can build the Docker image
+        run: |
+          docker build -t local-mwoffliner .
+
+      - name: Ensure we can start the Docker image and display help
+        run: |
+          docker run --rm local-mwoffliner mwoffliner --help
