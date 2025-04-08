@@ -41,7 +41,7 @@ Run `mwoffliner --help` to get all the possible options.
 
 - *NIX Operating System (GNU/Linux, macOS, ...)
 - [Redis](https://redis.io/)
-- [NodeJS](https://nodejs.org/en/) version 16 or greater
+- [NodeJS](https://nodejs.org/en/) version 22 (we support only one single Node.JS version, other versions might work or not)
 - [Libzim](https://github.com/openzim/libzim) (On GNU/Linux & macOS we automatically download it)
 - Various build tools which are probably already installed on your
   machine (packages `libjpeg-dev`, `libglu1`, `autoconf`, `automake`, `gcc` on
@@ -50,8 +50,6 @@ Run `mwoffliner --help` to get all the possible options.
 ... and an online MediaWiki with its API available.
 
 ## Usage
-
-We support only one single Node.JS version (Node.JS 22 currently).
 
 To install MWoffliner globally:
 ```bash

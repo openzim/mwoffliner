@@ -55,9 +55,6 @@
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
-  "engine-strict": {
-    "node": ">=22.0.0 <23.0.0"
-  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.779.0",
     "@ladjs/country-language": "^1.0.3",
