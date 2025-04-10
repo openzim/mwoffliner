@@ -82,11 +82,6 @@ describe('saveArticles', () => {
       expect(addedArticles).toHaveLength(1)
       expect(addedArticles[0].title).toEqual('London')
 
-      const articleId = 'non-existent-article'
-      const articleUrl = downloader.getArticleUrl(articleId)
-      const articleDetail = { title: 'Non-existent-article', missing: '' }
-      await expect(downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))).rejects.toThrowError('')
-
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
 
       // Successfully scrapped existent articles
@@ -309,9 +304,7 @@ describe('saveArticles', () => {
         dump,
       }
 
-      expect(async () => {
-        await visualEditorRenderer.render(renderOpts)
-      }).rejects.toThrow(new Error(DELETED_ARTICLE_ERROR))
+      expect(visualEditorRenderer.render(renderOpts)).rejects.toThrow(DELETED_ARTICLE_ERROR)
     })
   })
 

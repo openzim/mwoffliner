@@ -66,6 +66,8 @@ const config = {
     wikimediaMobileCssResources: ['wm_mobile_override_style'],
     wikimediaMobileJsResources: ['wm_mobile_override_script'],
 
+    downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
+
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: [
@@ -140,6 +142,9 @@ const config = {
 
       /* Template for wrapping subsections */
       subsection_wrapper: './templates/subsection_wrapper.html',
+
+      /* Template for article download error */
+      downloadErrorPlaceholder: './templates/download_error_placeholder.html',
     },
   },
 }

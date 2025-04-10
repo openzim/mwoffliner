@@ -1,5 +1,6 @@
 Unreleased:
 
+* CHANGED: Handle bad errors while downloading an article and replace with placeholder (@benoit74 #2185)
 * FIX: Avoid reducing redirects directly to an Object to avoid memory issue (@benoit74 #2142)
 
 1.14.2:
