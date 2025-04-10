@@ -4,12 +4,12 @@ import * as logger from '../Logger.js'
 import { getArticlesByIds } from './mw-api.js'
 import { deDup } from './misc.js'
 
-export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>, downloader: Downloader, deleteArticleStore = false): Promise<void> {
+export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>, deleteArticleStore = false): Promise<void> {
   const { articleDetailXId } = RedisStore
   const nextCategoriesBatch: RKVS<ArticleDetail> = RedisStore.createRedisKvs(`${Date.now()}-request`)
   logger.log(`Fetching categories for [${await articleStore.len()}] articles`)
 
-  await articleStore.iterateItems(downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, workerId: number) => {
+  await articleStore.iterateItems(Downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, workerId: number) => {
     const articleKeys = Object.keys(articleKeyValuePairs)
     logger.log(`Worker [${workerId}] getting categories for articles ${logger.logifyArray(articleKeys)}`)
 
@@ -28,7 +28,7 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
         .filter(([, detail]) => !detail)
         .map(([id]) => id)
       if (categoriesToGet.length) {
-        await getArticlesByIds(categoriesToGet, downloader, false)
+        await getArticlesByIds(categoriesToGet, false)
       }
 
       const catDetails: KVS<ArticleDetail> = await articleDetailXId.getMany(foundCategoryIds)
@@ -58,13 +58,13 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
 
   const nextBatchSize = await nextCategoriesBatch.len()
   if (nextBatchSize) {
-    return getCategoriesForArticles(nextCategoriesBatch, downloader, true)
+    return getCategoriesForArticles(nextCategoriesBatch, true)
   } else {
     return null
   }
 }
 
-export async function trimUnmirroredPages(downloader: Downloader) {
+export async function trimUnmirroredPages() {
   const { articleDetailXId } = RedisStore
   logger.log(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`)
   const numKeys = await articleDetailXId.len()
@@ -72,7 +72,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
   let processedArticles = 0
   let modifiedArticles = 0
 
-  await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
+  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       processedArticles += 1
       if (typeof (articleDetail as any).missing === 'string') {
@@ -150,7 +150,7 @@ export async function trimUnmirroredPages(downloader: Downloader) {
   return modifiedArticles
 }
 
-export async function simplifyGraph(downloader: Downloader) {
+export async function simplifyGraph() {
   logger.log('Simplifying graph (removing empty categories)')
   const { articleDetailXId } = RedisStore
   const numKeys = await articleDetailXId.len()
@@ -158,7 +158,7 @@ export async function simplifyGraph(downloader: Downloader) {
   let processedArticles = 0
   let deletedNodes = 0
 
-  await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
+  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       processedArticles += 1
 
