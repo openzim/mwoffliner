@@ -391,7 +391,6 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     const { data, moduleDependencies } = await articleRenderer.download({
-      downloader: this,
       articleUrl,
       articleDetail,
     })
