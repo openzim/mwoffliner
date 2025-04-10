@@ -4,7 +4,7 @@ import * as logger from '../Logger.js'
 import { MobileRenderer } from './abstractMobile.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { DownloadOpts, DownloadRes, RenderOpts, RenderOutput } from './abstract.renderer.js'
-import Downloader from '../../src/Downloader.js'
+import Downloader from '../Downloader.js'
 
 type PipeFunction = (value: DominoElement) => DominoElement | Promise<DominoElement>
 

@@ -5,7 +5,7 @@ import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
 import { htmlWikimediaDesktopTemplateCode } from '../Templates.js'
-import Downloader from '../../src/Downloader.js'
+import Downloader from '../Downloader.js'
 
 export abstract class DesktopRenderer extends Renderer {
   public staticFilesListDesktop: string[] = []
