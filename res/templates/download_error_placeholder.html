@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title></title>
+    <link type="text/css" href="{{ relative_file_path }}download_error_placeholder.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+        <img src="{{ relative_file_path }}article_not_found.svg"
+             alt="oops image"
+             aria-label="oops image"
+             title="oops image">
+    </header>
+    <section class="intro">
+      <h1>{{heading}}</h1>
+      <p>{{message}}</p>
+    </section>
+    <section class="advice">
+      <p>{{advice_line1}}</p>
+      <p>{{advice_line2}}</p>
+      {% if display_third_line %}<p>{{advice_line3}}</p>{% endif %}
+    </section>
+  </body>
+</html>
