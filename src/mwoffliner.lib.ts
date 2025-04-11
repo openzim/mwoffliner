@@ -402,7 +402,7 @@ async function execute(argv: any) {
     }
 
     Object.entries(metadata).forEach(([key, value]) => {
-      zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value)
+      zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value, key.startsWith('Illustration_') ? 'image/png' : undefined)
     })
 
     logger.info('Finding stylesheets to download')
