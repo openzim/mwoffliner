@@ -4,6 +4,7 @@ import * as logger from '../Logger.js'
 import { MobileRenderer } from './abstractMobile.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { DownloadOpts, DownloadRes, RenderOpts, RenderOutput } from './abstract.renderer.js'
+import Downloader from '../Downloader.js'
 
 type PipeFunction = (value: DominoElement) => DominoElement | Promise<DominoElement>
 
@@ -30,11 +31,11 @@ export class WikimediaMobileRenderer extends MobileRenderer {
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
-    const { downloader, articleUrl, articleDetail } = downloadOpts
+    const { articleUrl, articleDetail } = downloadOpts
 
-    const moduleDependencies = super.filterWikimediaMobileModules(await downloader.getModuleDependencies(articleDetail.title))
+    const moduleDependencies = super.filterWikimediaMobileModules(await Downloader.getModuleDependencies(articleDetail.title))
 
-    const data = await downloader.getJSON<any>(articleUrl)
+    const data = await Downloader.getJSON<any>(articleUrl)
 
     return { data, moduleDependencies }
   }

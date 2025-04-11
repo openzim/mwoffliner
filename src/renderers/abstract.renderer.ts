@@ -11,7 +11,6 @@ import { Dump } from '../Dump.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
-import Downloader from 'src/Downloader.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi'
@@ -33,7 +32,6 @@ interface RendererBuilderOptionsSpecific extends RendererBuilderOptionsBase {
 export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuilderOptionsSpecific
 
 export interface DownloadOpts {
-  downloader: Downloader
   articleUrl: string
   articleDetail: ArticleDetail
 }
