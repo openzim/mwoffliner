@@ -204,6 +204,10 @@ class Downloader {
  }
 
   public reset() {
+    if(!this.isInit){
+      logger.log('Downloader not initialized already')
+      return
+    }
     this.isInit = false
     this.uaString = undefined
     this._speed = undefined
