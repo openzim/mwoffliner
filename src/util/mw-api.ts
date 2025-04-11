@@ -124,6 +124,18 @@ export function getArticlesByNS(ns: number, downloader: Downloader, articleIdsTo
         curStage = 0
         chunk = await downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
 
+        // Filter articles without revisions (#2238)
+        const newArticlesToIgnore = Object.values(chunk.articleDetails)
+          .filter((a) => !a.revisions)
+          .map((article) => article.title)
+        if (newArticlesToIgnore.length > 0) {
+          logger.warn(`Ignoring articles without revisions: ${newArticlesToIgnore.join(', ')}`)
+          if (!articleIdsToIgnore) {
+            articleIdsToIgnore = []
+          }
+          articleIdsToIgnore.push(...newArticlesToIgnore)
+        }
+
         if (articleIdsToIgnore) {
           Object.keys(chunk.articleDetails).forEach((articleId) => {
             const articleTitle = chunk.articleDetails[articleId].title

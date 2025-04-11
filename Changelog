@@ -1,5 +1,6 @@
 Unreleased:
 
+* FIX: Ignore pages without a single revision / revid - continued (@benoit74 #2234)
 * FIX: Avoid reducing redirects directly to an Object to avoid memory issue (@benoit74 #2142)
 
 1.14.2:
