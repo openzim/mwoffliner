@@ -8,7 +8,6 @@ import { getFullUrl, jsPath, cssPath } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
-import { Dump } from '../Dump.js'
 import fs from 'fs'
 import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
 import * as path from 'path'
@@ -20,7 +19,6 @@ const __dirname = path.dirname(__filename)
 
 export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
   let finalCss = ''
-  const { filesToDownloadXPath } = RedisStore
   const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
     const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), MediaWiki.baseUrl) : link
     const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null
@@ -28,49 +26,9 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
       /* link might be a 'link' DOM node or an URL */
 
       if (cssUrl && !cssUrl.match('^data')) {
-        const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi')
-
         logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`)
         const { content } = await downloader.downloadContent(cssUrl, 'css')
-        const body = content.toString()
-
-        let rewrittenCss = `\n/* start ${cssUrl} */\n\n`
-        rewrittenCss += linkMedia ? `@media ${linkMedia}  {\n` : '\n'
-        rewrittenCss += `${body}\n`
-        rewrittenCss += linkMedia ? `} /* @media ${linkMedia} */\n` : '\n'
-        rewrittenCss += `\n/* end   ${cssUrl} */\n`
-
-        /* Downloading CSS dependencies */
-        let match
-        // tslint:disable-next-line:no-conditional-assignment
-        while ((match = cssUrlRegexp.exec(body))) {
-          let url = match[1]
-
-          /* Avoid 'data', so no URL dependency */
-          if (!url.match('^data')) {
-            const filePathname = urlParser.parse(url, false, true).pathname
-            if (filePathname) {
-              const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
-
-              /* Rewrite the CSS */
-              rewrittenCss = rewrittenCss.replace(url, filename)
-
-              /* Need a rewrite if url doesn't include protocol */
-              url = getFullUrl(url, cssUrl)
-              url = url.indexOf('%') < 0 ? encodeURI(url) : url
-
-              /* Download CSS dependency, but avoid duplicate calls */
-              // eslint-disable-next-line no-prototype-builtins
-              if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
-                downloader.cssDependenceUrls[url] = true
-                filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), kind: 'media' })
-              }
-            } else {
-              logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
-            }
-          }
-        }
-        finalCss += rewrittenCss
+        finalCss += processStylesheetContent(downloader, cssUrl, linkMedia, content.toString())
         finished()
       }
     } catch {
@@ -90,7 +48,51 @@ export async function getAndProcessStylesheets(downloader: Downloader, links: Ar
   })
 }
 
-export async function downloadAndSaveModule(zimCreator: Creator, downloader: Downloader, dump: Dump, module: string, type: 'js' | 'css') {
+export function processStylesheetContent(downloader: Downloader, cssUrl: string, linkMedia: string, body: string) {
+  const { filesToDownloadXPath } = RedisStore
+  const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi')
+
+  let rewrittenCss = `\n/* start ${cssUrl} */\n\n`
+  rewrittenCss += linkMedia ? `@media ${linkMedia}  {\n` : '\n'
+  rewrittenCss += `${body}\n`
+  rewrittenCss += linkMedia ? `} /* @media ${linkMedia} */\n` : '\n'
+  rewrittenCss += `\n/* end   ${cssUrl} */\n`
+
+  /* Downloading CSS dependencies */
+  let match: any
+  // tslint:disable-next-line:no-conditional-assignment
+  while ((match = cssUrlRegexp.exec(body))) {
+    let url = match[1]
+
+    /* Avoid 'data', so no URL dependency */
+    if (!url.match('^data')) {
+      const filePathname = urlParser.parse(url, false, true).pathname
+      if (filePathname) {
+        const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
+
+        /* Rewrite the CSS */
+        rewrittenCss = rewrittenCss.replace(url, filename)
+
+        /* Need a rewrite if url doesn't include protocol */
+        url = getFullUrl(url, cssUrl)
+        url = url.indexOf('%') < 0 ? encodeURI(url) : url
+
+        /* Download CSS dependency, but avoid duplicate calls */
+        // eslint-disable-next-line no-prototype-builtins
+        if (!downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
+          downloader.cssDependenceUrls[url] = true
+          filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), kind: 'media' })
+        }
+      } else {
+        logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
+      }
+    }
+  }
+
+  return rewrittenCss
+}
+
+export async function downloadModule(downloader: Downloader, module: string, type: 'js' | 'css') {
   const replaceCodeByRegex = (sourceText, replaceMap: Map<RegExp, string>) => {
     let text: string
     replaceMap.forEach((textToReplace, regEx) => {
@@ -146,10 +148,20 @@ export async function downloadAndSaveModule(zimCreator: Creator, downloader: Dow
     }
   }
 
+  if (type === 'css') {
+    text = processStylesheetContent(downloader, moduleApiUrl, '', text)
+  }
+
   // Zimcheck complains about empty files, and it is too late to decide to not create this file
   // since it has been referenced in all articles HTML, hence creating broken links if we do not
   // include this file in the ZIM, so let's create a minimal file content
   text = text || `/* ${module} is an empty file */`
+
+  return { text, moduleApiUrl }
+}
+
+export async function downloadAndSaveModule(zimCreator: Creator, downloader: Downloader, module: string, type: 'js' | 'css') {
+  const { text, moduleApiUrl } = await downloadModule(downloader, module, type)
 
   try {
     let articleId
