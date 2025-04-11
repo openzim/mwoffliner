@@ -448,7 +448,7 @@ async function execute(argv: any) {
         return pmap(
           moduleList,
           (oneModule) => {
-            return downloadAndSaveModule(zimCreator, downloader, dump, oneModule, type as any)
+            return downloadAndSaveModule(zimCreator, downloader, oneModule, type as any)
           },
           { concurrency: downloader.speed },
         )
