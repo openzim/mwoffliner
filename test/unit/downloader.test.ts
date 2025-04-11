@@ -198,18 +198,6 @@ describe('Downloader class', () => {
       )
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
-
-    test('getArticle response status for non-existent article id is 404 for WikimediaDesktop render', async () => {
-      const articleId = 'NeverExistingArticle'
-      const articleUrl = downloader.getArticleUrl(articleId)
-      const articleDetail = {
-        title: articleId,
-        missing: '',
-      }
-      await expect(
-        downloader.getArticle('NeverExistingArticle', RedisStore.articleDetailXId, wikimediaMobileRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
-      ).rejects.toThrowError(new Error('Request failed with status code 404'))
-    })
   })
 
   describe('getArticle method', () => {
@@ -240,16 +228,19 @@ describe('Downloader class', () => {
         dump = new Dump('', {} as any, mwMetadata)
       })
 
-      test(`getArticle response status for non-existent article id is 404 for ${renderer} render`, async () => {
+      test(`getArticle response content for non-existent article id is placeholder for ${renderer} render`, async () => {
         const articleId = 'NeverExistingArticle'
+        downloader.setUrlsDirectors(rendererInstance, rendererInstance)
         const articleUrl = downloader.getArticleUrl(articleId)
         const articleDetail = {
           title: articleId,
           missing: '',
         }
-        await expect(
-          downloader.getArticle('NeverExistingArticle', RedisStore.articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
-        ).rejects.toThrowError(new Error('Request failed with status code 404'))
+        const neverExistingArticleResult = await downloader.getArticle('NeverExistingArticle', RedisStore.articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+        expect(neverExistingArticleResult).toHaveLength(1)
+        expect(neverExistingArticleResult[0].articleId).toBe('NeverExistingArticle')
+        expect(neverExistingArticleResult[0].html).toContain('Oops. Article not found.')
+
       })
     }
   })
