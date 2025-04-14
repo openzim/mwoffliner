@@ -51,27 +51,19 @@ Run `mwoffliner --help` to get all the possible options.
 
 ## Usage
 
-To install MWoffliner globally:
+To install latest released MWoffliner version from NPM repo (use `-g` to install globally, not only in current folder):
 ```bash
 npm i -g mwoffliner
 ```
 
-You might need to run this command with the `sudo` command, depending
-how your `npm` is configured.
+> [!WARNING] 
+> Note that you might need to run this command with the `sudo` command, depending
+how your `npm` / OS is configured. `npm` permission checking can be a bit annoying for a
+newcomer. Please read the documentation carefully if you hit problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
 
-`npm` permission checking can be a bit annoying for a
-newcomer. Please read the documentation carefully if you hit
-problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
-
-Then to run it:
+Then you can run the scraper:
 ```bash
 mwoffliner --help
-```
-
-To install and run it locally:
-```bash
-npm i
-npm run mwoffliner -- --help
 ```
 
 To use MWoffliner with a S3 cache, you should provide a S3 URL like
@@ -79,6 +71,17 @@ this:
 ```bash
 --optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket&keyId=my-key-id&secretAccessKey=my-sac"
 ```
+
+## Contribute
+
+If you've retrieved mwoffliner source code (e.g. with a git clone of our repo), you can then install and run it locally (including with your local modifications):
+
+```bash
+npm i
+npm run mwoffliner -- --help
+```
+
+Detailed [contribution documentation and guidelines](CONTRIBUTING.md) are available.
 
 ## API
 
@@ -107,6 +110,7 @@ Complementary information about MWoffliner:
 * Wikitext is the name of the markup language that MediaWiki uses.
 * MediaWiki includes a parser for WikiText into HTML, and this
   parser creates the HTML pages displayed in your browser.
+* Have a look at the scraper [functional architecture](docs/functional_architecture.md)
 
 License
 -------
