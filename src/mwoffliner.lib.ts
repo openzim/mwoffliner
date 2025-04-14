@@ -25,7 +25,6 @@ import {
   genCanonicalLink,
   genHeaderCSSLink,
   genHeaderScript,
-  getAndProcessStylesheets,
   getDumps,
   getMediaBase,
   getRelativeFilePath,
@@ -405,15 +404,6 @@ async function execute(argv: any) {
       zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value, key.startsWith('Illustration_') ? 'image/png' : undefined)
     })
 
-    logger.info('Finding stylesheets to download')
-    const stylesheetsToGet = await dump.getRelevantStylesheetUrls(downloader)
-    logger.log(`Found [${stylesheetsToGet.length}] stylesheets to download`)
-
-    logger.log('Downloading stylesheets and populating media queue')
-    const { finalCss } = await getAndProcessStylesheets(downloader, stylesheetsToGet)
-    logger.log('Downloaded stylesheets')
-
-    zimCreator.addItem(new StringItem(`${config.output.dirs.mediawiki}/style.css`, 'text/css', 'style.css', {}, finalCss))
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     await getThumbnailsData()
