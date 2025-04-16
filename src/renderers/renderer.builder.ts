@@ -5,19 +5,18 @@ import { WikimediaDesktopRenderer } from './wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from './wikimedia-mobile.renderer.js'
 import { RestApiRenderer } from './rest-api.renderer.js'
 import * as logger from './../Logger.js'
-import Downloader from 'src/Downloader.js'
 import { ActionParseRenderer } from './action-parse.renderer.js'
 
 export class RendererBuilder {
-  public async createRenderer(downloader: Downloader, options: RendererBuilderOptions): Promise<Renderer> {
+  public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
     const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi, hasActionParseApi] = await Promise.all([
-      MediaWiki.hasVisualEditorApi(downloader),
-      MediaWiki.hasWikimediaDesktopApi(downloader),
-      MediaWiki.hasWikimediaMobileApi(downloader),
-      MediaWiki.hasRestApi(downloader),
-      MediaWiki.hasActionParseApi(downloader),
+      MediaWiki.hasVisualEditorApi(),
+      MediaWiki.hasWikimediaDesktopApi(),
+      MediaWiki.hasWikimediaMobileApi(),
+      MediaWiki.hasRestApi(),
+      MediaWiki.hasActionParseApi(),
     ])
 
     switch (renderType) {

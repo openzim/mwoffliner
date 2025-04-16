@@ -78,38 +78,69 @@ type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | Vi
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
  */
 class Downloader {
+  private static instance: Downloader
+  public static getInstance() {
+    if (!Downloader.instance) {
+      Downloader.instance = new Downloader()
+    }
+    return Downloader.instance
+  }
   public loginCookie = ''
-  public readonly speed: number
+  private _speed: number
   public cssDependenceUrls: KVS<boolean> = {}
-  public readonly webp: boolean = false
-  public readonly requestTimeout: number
-  public readonly basicRequestOptions: AxiosRequestConfig
-  public readonly arrayBufferRequestOptions: AxiosRequestConfig
-  public readonly jsonRequestOptions: AxiosRequestConfig
-  public readonly streamRequestOptions: AxiosRequestConfig
+  private _webp: boolean = false
+  private _requestTimeout: number
+  private _basicRequestOptions: AxiosRequestConfig
+  private _arrayBufferRequestOptions: AxiosRequestConfig
+  private _jsonRequestOptions: AxiosRequestConfig
+  private _streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
-  private readonly uaString: string
+  private uaString: string
   private activeRequests = 0
   private maxActiveRequests = 1
-  private readonly backoffOptions: BackoffOptions
-  private readonly optimisationCacheUrl: string
+  private backoffOptions: BackoffOptions
+  private optimisationCacheUrl: string
   private s3: S3
   private apiUrlDirector: ApiURLDirector
 
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
-  private readonly insecure: boolean = false
+  private insecure: boolean = false
 
-  constructor({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
+  get speed() {
+    return this._speed
+  }
+
+  get webp() {
+    return this._webp
+  }
+  get requestTimeout() {
+    return this._requestTimeout
+  }
+  get basicRequestOptions() {
+    return this._basicRequestOptions
+  }
+  get arrayBufferRequestOptions() {
+    return this._arrayBufferRequestOptions
+  }
+  get jsonRequestOptions() {
+    return this._jsonRequestOptions
+  }
+  get streamRequestOptions() {
+    return this._streamRequestOptions
+  }
+
+  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
+    this.reset()
     this.uaString = uaString
-    this.speed = speed
+    this._speed = speed
     this.maxActiveRequests = speed * 10
-    this.requestTimeout = reqTimeout
+    this._requestTimeout = reqTimeout
     this.loginCookie = ''
     this.optimisationCacheUrl = optimisationCacheUrl
-    this.webp = webp
+    this._webp = webp
     this.s3 = s3
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
@@ -124,7 +155,7 @@ class Downloader {
       ...backoffOptions,
     }
 
-    this.basicRequestOptions = {
+    this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       httpAgent: new http.Agent({ keepAlive: true }),
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
@@ -138,13 +169,13 @@ class Downloader {
       },
     }
 
-    this.arrayBufferRequestOptions = {
+    this._arrayBufferRequestOptions = {
       ...this.basicRequestOptions,
       responseType: 'arraybuffer',
       method: 'GET',
     }
 
-    this.jsonRequestOptions = {
+    this._jsonRequestOptions = {
       ...this.basicRequestOptions,
       headers: {
         ...this.basicRequestOptions.headers,
@@ -155,7 +186,7 @@ class Downloader {
       method: 'GET',
     }
 
-    this.streamRequestOptions = {
+    this._streamRequestOptions = {
       ...this.basicRequestOptions,
       headers: {
         ...this.basicRequestOptions.headers,
@@ -165,6 +196,36 @@ class Downloader {
       responseType: 'stream',
       method: 'GET',
     }
+  }
+
+  private reset() {
+    this.uaString = undefined
+    this._speed = undefined
+    this.maxActiveRequests = undefined
+    this._requestTimeout = undefined
+    this.loginCookie = ''
+    this.optimisationCacheUrl = undefined
+    this._webp = false
+    this.s3 = undefined
+    this.apiUrlDirector = undefined
+    this.insecure = false
+
+    this.backoffOptions = undefined
+    this._basicRequestOptions = undefined
+    this._arrayBufferRequestOptions = undefined
+    this._jsonRequestOptions = undefined
+    this._streamRequestOptions = undefined
+
+    this.cssDependenceUrls = {}
+
+    this.wikimediaMobileJsDependenciesList = []
+    this.wikimediaMobileStyleDependenciesList = []
+
+    this.activeRequests = 0
+    this.maxActiveRequests = 1
+
+    this.articleUrlDirector = undefined
+    this.mainPageUrlDirector = undefined
   }
 
   private getUrlDirector(renderer: object) {
@@ -218,7 +279,7 @@ class Downloader {
       const queryOpts: KVS<any> = {
         ...(await this.getArticleQueryOpts(shouldGetThumbnail, true)),
         titles: articleIds.join('|'),
-        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
+        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
@@ -258,7 +319,7 @@ class Downloader {
     while (true) {
       const queryOpts: KVS<any> = {
         ...(await this.getArticleQueryOpts()),
-        ...((await MediaWiki.hasCoordinates(this)) ? { colimit: 'max' } : {}),
+        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
               cllimit: 'max',
@@ -323,7 +384,6 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     const { data, moduleDependencies } = await articleRenderer.download({
-      downloader: this,
       articleUrl,
       articleDetail,
     })
@@ -432,7 +492,7 @@ class Downloader {
 
   private async getArticleQueryOpts(includePageimages = false, redirects = false): Promise<QueryOpts> {
     const validNamespaceIds = MediaWiki.namespacesToMirror.map((ns) => MediaWiki.namespaces[ns].num)
-    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates(this)) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
+    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
     return {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
@@ -709,7 +769,7 @@ class Downloader {
     const jsConfigVars = Downloader.extractJsConfigVars(headhtml)
 
     // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi(this)) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
+    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
       try {
         // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
         const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
@@ -763,4 +823,7 @@ class Downloader {
   }
 }
 
-export default Downloader
+export { Downloader as DownloaderClass }
+
+const dl = Downloader.getInstance()
+export default dl as Downloader

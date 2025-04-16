@@ -37,19 +37,18 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
 
   Object.defineProperty(renderer.constructor, 'name', { value: 'WikimediaDesktopRenderer' })
 
-  const downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+  Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
-  await MediaWiki.getMwMetaData(downloader)
-  await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi(downloader)
-  await MediaWiki.hasWikimediaMobileApi(downloader)
-  await MediaWiki.hasRestApi(downloader)
-  await MediaWiki.hasVisualEditorApi(downloader)
+  await MediaWiki.getMwMetaData()
+  await MediaWiki.hasCoordinates()
+  await MediaWiki.hasWikimediaDesktopApi()
+  await MediaWiki.hasWikimediaMobileApi()
+  await MediaWiki.hasRestApi()
+  await MediaWiki.hasVisualEditorApi()
 
   const dump = new Dump(format, {} as any, MediaWiki.metaData)
 
   return {
-    downloader,
     dump,
     renderer,
   }

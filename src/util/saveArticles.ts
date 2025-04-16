@@ -16,7 +16,7 @@ import { Renderer } from '../renderers/abstract.renderer.js'
 import { RendererBuilder } from '../renderers/renderer.builder.js'
 import { zimCreatorMutex } from '../mutex.js'
 
-export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, downloader: Downloader, retryCounter = 0) {
+export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, retryCounter = 0) {
   await retryStore.flush()
   const filesForAttempt = await fileStore.len()
   const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail
@@ -25,7 +25,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
   logger.log(`${retryCounter ? 'RE-' : ''}Downloading a total of [${retryCounter ? filesForAttempt : filesTotal}] files...`)
   let prevPercentProgress: string
 
-  await fileStore.iterateItems(downloader.speed, async (fileDownloadPairs, workerId) => {
+  await fileStore.iterateItems(Downloader.speed, async (fileDownloadPairs, workerId) => {
     logger.info(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`)
 
     // todo align fileDownloadPairs and listOfArguments
@@ -34,7 +34,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       listOfArguments.push({ path, url, mult, width, kind })
     }
 
-    const responses = await downloadBulk(listOfArguments, downloader)
+    const responses = await downloadBulk(listOfArguments)
     for (const resp of responses) {
       let isFailed = false
       try {
@@ -57,7 +57,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
           }
         }
       }
-      if ((dump.status.files.success + dump.status.files.fail) % (10 * downloader.speed) === 0) {
+      if ((dump.status.files.success + dump.status.files.fail) % (10 * Downloader.speed) === 0) {
         const percentProgress = (((dump.status.files.success + dump.status.files.fail) / filesTotal) * 100).toFixed(1)
         if (percentProgress !== prevPercentProgress) {
           prevPercentProgress = percentProgress
@@ -75,14 +75,14 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       const ts = (retryCounter + 1) * 10
       logger.log(`Waiting ${ts} seconds before retrying ${amountToRetry} files`)
       await new Promise((res) => setTimeout(res, ts * 1000))
-      await downloadFiles(retryStore, fileStore, zimCreator, dump, downloader, retryCounter + 1)
+      await downloadFiles(retryStore, fileStore, zimCreator, dump, retryCounter + 1)
     } else {
       logger.log('No files to retry')
     }
   }
 }
 
-async function downloadBulk(listOfArguments: any[], downloader: Downloader): Promise<any> {
+async function downloadBulk(listOfArguments: any[]): Promise<any> {
   try {
     // Enhance arguments array to have an index of the argument at hand
     const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })))
@@ -102,8 +102,7 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
         resp.width = arg.val.width
         resp.kind = arg.val.kind
 
-        return downloader
-          .downloadContent(arg.val.url, arg.val.kind, false)
+        return Downloader.downloadContent(arg.val.url, arg.val.kind, false)
           .then((r) => {
             resp.result = r
             return resp
@@ -120,16 +119,16 @@ async function downloadBulk(listOfArguments: any[], downloader: Downloader): Pro
   }
 }
 
-async function getAllArticlesToKeep(downloader: Downloader, articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
-  await articleDetailXId.iterateItems(downloader.speed, async (articleKeyValuePairs) => {
+async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
+  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       let rets: any
       try {
         const isMainPage = dump.isMainPage(articleId)
         const renderer = isMainPage ? mainPageRenderer : articlesRenderer
-        const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
+        const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId)
 
-        rets = await downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+        rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -251,7 +250,7 @@ async function saveArticle(
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: Creator, downloader: Downloader, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
+export async function saveArticles(zimCreator: Creator, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   const staticFilesList = new Set<string>()
@@ -266,30 +265,30 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
   let articlesRenderer
   if (forceRender) {
     // All articles and main page will use the same renderer if 'forceRender' is specified
-    const renderer = await rendererBuilder.createRenderer(downloader, {
+    const renderer = await rendererBuilder.createRenderer({
       renderType: 'specific',
       renderName: forceRender,
     })
     mainPageRenderer = renderer
     articlesRenderer = renderer
   } else {
-    mainPageRenderer = await rendererBuilder.createRenderer(downloader, { renderType: 'desktop' })
-    articlesRenderer = await rendererBuilder.createRenderer(downloader, {
+    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
+    articlesRenderer = await rendererBuilder.createRenderer({
       renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
     })
   }
   logger.log(`Using ${mainPageRenderer.constructor.name} for main page renderer`)
   logger.log(`Using ${articlesRenderer.constructor.name} for articles renderer`)
-  downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
+  Downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(downloader, articleDetailXId, dump, mainPageRenderer, articlesRenderer)
+    await getAllArticlesToKeep(articleDetailXId, dump, mainPageRenderer, articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
-  const timeout = Math.max(downloader.requestTimeout * 2, 10 * 60 * 1000)
+  const timeout = Math.max(Downloader.requestTimeout * 2, 10 * 60 * 1000)
 
-  await articleDetailXId.iterateItems(downloader.speed, (articleKeyValuePairs, workerId) => {
+  await articleDetailXId.iterateItems(Downloader.speed, (articleKeyValuePairs, workerId) => {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       /*
@@ -317,9 +316,9 @@ export async function saveArticles(zimCreator: Creator, downloader: Downloader, 
         try {
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? mainPageRenderer : articlesRenderer
-          const articleUrl = isMainPage ? downloader.getMainPageUrl(articleId) : downloader.getArticleUrl(articleId)
+          const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId)
 
-          rets = await downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+          rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
           for (const {
             articleId,
