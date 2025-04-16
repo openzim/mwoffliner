@@ -1,13 +1,8 @@
 import * as pathParser from 'path'
 import * as urlParser from 'url'
-import { AsyncQueue } from 'async'
 import { existsSync } from 'fs'
-import * as domino from 'domino'
 import * as logger from './Logger.js'
-import Downloader from './Downloader.js'
 import { getStringsForLang } from './util/index.js'
-import WebURLDirector from './util/builders/url/web.director.js'
-import MediaWiki from './MediaWiki.js'
 
 interface DumpOpts {
   tmpDir: string
@@ -41,7 +36,6 @@ export class Dump {
   public strings: KVS<string>
   public mwMetaData: MWMetaData
   public outFile: string
-  public mediaQueue: AsyncQueue<string>
   public isMainPage = (articleId: string): boolean => {
     return this.mwMetaData.mainPage === articleId ? true : false
   }
@@ -195,35 +189,5 @@ export class Dump {
     let zimRootPath = this.opts.outputDirectory[0] === '/' ? this.opts.outputDirectory : `${pathParser.resolve(process.cwd(), this.opts.outputDirectory)}/`
     zimRootPath += `${this.computeFilenameRadical()}.zim`
     return zimRootPath
-  }
-
-  public async getRelevantStylesheetUrls(downloader: Downloader) {
-    // TODO: consider moving to Downloader
-    const sheetUrls: Array<string | DominoElement> = []
-
-    /* Load main page to see which CSS files are needed */
-    const { content } = await downloader.downloadContent(this.mwMetaData.webUrl, 'data')
-    const html = content.toString()
-    const doc = domino.createDocument(html)
-    const links = Array.from(doc.getElementsByTagName('link'))
-
-    /* Go through all CSS links */
-    for (const link of links) {
-      if (link.getAttribute('rel') === 'stylesheet' && link.getAttribute('href') && !link.getAttribute('href').match('^data')) {
-        sheetUrls.push(link)
-      }
-    }
-
-    /* Push Mediawiki:Offline.css (at the end) */
-    // TODO: Weak URL (might fail in a number of cases where the wiki path is not like on Wikipedia)
-    const webUrlDirector = new WebURLDirector(MediaWiki.webUrl.href)
-
-    const offlineCssUrl = webUrlDirector.buildArticleRawURL('Mediawiki:offline.css')
-
-    if (await downloader.canGetUrl(offlineCssUrl)) {
-      sheetUrls.push(offlineCssUrl)
-    }
-
-    return sheetUrls.filter((a) => a)
   }
 }

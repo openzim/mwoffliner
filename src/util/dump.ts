@@ -1,6 +1,5 @@
 import urlParser, { fileURLToPath } from 'url'
 import * as pathParser from 'path'
-import async from 'async'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import RedisStore from '../RedisStore.js'
@@ -16,37 +15,6 @@ import { zimCreatorMutex } from '../mutex.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-export async function getAndProcessStylesheets(downloader: Downloader, links: Array<string | DominoElement>) {
-  let finalCss = ''
-  const stylesheetQueue = async.queue(async (link: string | DominoElement, finished) => {
-    const cssUrl = typeof link === 'object' ? getFullUrl(link.getAttribute('href'), MediaWiki.baseUrl) : link
-    const linkMedia = typeof link === 'object' ? link.getAttribute('media') : null
-    try {
-      /* link might be a 'link' DOM node or an URL */
-
-      if (cssUrl && !cssUrl.match('^data')) {
-        logger.info(`Downloading CSS from ${decodeURI(cssUrl)}`)
-        const { content } = await downloader.downloadContent(cssUrl, 'css')
-        finalCss += processStylesheetContent(downloader, cssUrl, linkMedia, content.toString())
-        finished()
-      }
-    } catch {
-      logger.warn(`Failed to get CSS from [${cssUrl}]`)
-      finished()
-    }
-  }, Number(downloader.speed))
-
-  stylesheetQueue.push(links)
-
-  return new Promise((resolve: any) => {
-    stylesheetQueue.drain(resolve)
-  }).then(() => {
-    return {
-      finalCss,
-    }
-  })
-}
 
 export function processStylesheetContent(downloader: Downloader, cssUrl: string, linkMedia: string, body: string) {
   const { filesToDownloadXPath } = RedisStore
