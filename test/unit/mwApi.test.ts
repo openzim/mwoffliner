@@ -15,33 +15,31 @@ beforeAll(async () => {
 })
 afterAll(stopRedis)
 
-const initMW = async (downloader: Downloader) => {
-  await MediaWiki.getMwMetaData(downloader)
-  await MediaWiki.hasCoordinates(downloader)
-  await MediaWiki.hasWikimediaDesktopApi(downloader)
-  await MediaWiki.hasRestApi(downloader)
-  await MediaWiki.hasVisualEditorApi(downloader)
+const initMW = async () => {
+  await MediaWiki.getMwMetaData()
+  await MediaWiki.hasCoordinates()
+  await MediaWiki.hasWikimediaDesktopApi()
+  await MediaWiki.hasRestApi()
+  await MediaWiki.hasVisualEditorApi()
 
-  await MediaWiki.getNamespaces([], downloader)
+  await MediaWiki.getNamespaces([])
 }
 
 describe('mwApi', () => {
-  let downloader: Downloader
-
   beforeEach(async () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
-    await initMW(downloader)
+    await initMW()
   })
 
   test('MWApi Article Ids', async () => {
     const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
 
-    await getArticleIds(downloader, 'Main_Page', aIds)
+    await getArticleIds('Main_Page', aIds)
 
     const articlesById = await RedisStore.articleDetailXId.getMany(aIds)
     const { United_Kingdom, London } = articlesById
@@ -69,7 +67,7 @@ describe('mwApi', () => {
   })
 
   test('MWApi NS', async () => {
-    await getArticlesByNS(0, downloader, undefined, 5) // Get 5 continues/pages of NSes
+    await getArticlesByNS(0, undefined, 5) // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"M"_Circle']
     const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
     const Ladies = articles['"...And_Ladies_of_the_Club"']
@@ -125,22 +123,20 @@ describe('mwApi', () => {
 })
 
 describe('Test blacklisted NSs', () => {
-  let downloader: Downloader
-
   beforeEach(async () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://id.wikipedia.org'
     MediaWiki.getCategories = true
 
-    downloader = new Downloader({ uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' })
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
-    await initMW(downloader)
+    await initMW()
   })
 
   test('Prevent blacklisted namespaces to mirroring', async () => {
     const aIds = ['Story:Satelit_Oberon', 'London']
-    await getArticleIds(downloader, 'Main_Page', aIds)
+    await getArticleIds('Main_Page', aIds)
 
     expect(MediaWiki.namespacesToMirror).not.toContain('Story')
   })

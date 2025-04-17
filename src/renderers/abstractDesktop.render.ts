@@ -5,6 +5,7 @@ import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
 import { htmlWikimediaDesktopTemplateCode } from '../Templates.js'
+import Downloader from '../Downloader.js'
 
 export abstract class DesktopRenderer extends Renderer {
   public staticFilesListDesktop: string[] = []
@@ -14,11 +15,11 @@ export abstract class DesktopRenderer extends Renderer {
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
-    const { downloader, articleUrl, articleDetail } = downloadOpts
+    const { articleUrl, articleDetail } = downloadOpts
 
-    const moduleDependencies = this.filterWikimediaDesktopModules(await downloader.getModuleDependencies(articleDetail.title))
+    const moduleDependencies = this.filterWikimediaDesktopModules(await Downloader.getModuleDependencies(articleDetail.title))
 
-    const data = await downloader.getJSON<any>(articleUrl)
+    const data = await Downloader.getJSON<any>(articleUrl)
     if (data.error) {
       throw new Error(data.error)
     }

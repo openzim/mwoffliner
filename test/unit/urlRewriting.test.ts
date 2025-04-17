@@ -8,6 +8,7 @@ import { saveArticles } from '../../src/util/saveArticles.js'
 import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
+import Downloader from '../../src/Downloader.js'
 
 jest.setTimeout(20000)
 
@@ -16,9 +17,9 @@ describe('Styles', () => {
   afterAll(stopRedis)
 
   test('Url re-writing', async () => {
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { dump } = await setupScrapeClasses() // en wikipedia
 
-    const _articlesDetail = await downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
+    const _articlesDetail = await Downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
     const articlesDetail = mwRetToArticleDetail(_articlesDetail)
     await RedisStore.articleDetailXId.flush()
     await RedisStore.articleDetailXId.setMany(articlesDetail)
@@ -139,9 +140,9 @@ describe('Styles', () => {
     const { articleDetailXId } = RedisStore
     await articleDetailXId.flush()
     await RedisStore.redirectsXId.flush()
-    const { downloader, dump } = await setupScrapeClasses() // en wikipedia
+    const { dump } = await setupScrapeClasses() // en wikipedia
 
-    await getArticleIds(downloader, '', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
+    await getArticleIds('', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
     let LondonArticle: StringItem
 
@@ -154,7 +155,6 @@ describe('Styles', () => {
           return Promise.resolve(null)
         },
       } as any,
-      downloader,
       dump,
       true,
     )
