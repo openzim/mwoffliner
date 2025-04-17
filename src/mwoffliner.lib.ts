@@ -39,6 +39,7 @@ import {
   extractArticleList,
   getTmpDirectory,
   validateMetadata,
+  downloadModule,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -195,6 +196,16 @@ async function execute(argv: any) {
     'Illustration_48x48@1': await getIllustrationMetadata(),
   }
   validateMetadata(metaDataRequiredKeys)
+
+  // Try to download startup module which is supposed to be available on all wikis
+  // in order to ensure as early as possible that load.php URL is properly configured
+  // and available
+  try {
+    await downloadModule('startup', 'js')
+  } catch (err) {
+    logger.error('Impossible to reach module API load.php')
+    throw err
+  }
 
   // Sanitizing main page
   let mainPage = articleList ? '' : mwMetaData.mainPage
