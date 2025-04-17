@@ -58,7 +58,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.779.0",
     "@ladjs/country-language": "^1.0.3",
-    "@openzim/libzim": "^3.2.3",
+    "@openzim/libzim": "^3.3.0",
     "@types/async": "^3.2.24",
     "@types/backoff": "^2.5.5",
     "@types/bluebird": "^3.5.42",
