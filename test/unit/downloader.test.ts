@@ -15,10 +15,9 @@ import { setTimeout } from 'timers/promises'
 import domino from 'domino'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
-import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
-import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
-import { ActionParseRenderer } from '../../src/renderers/action-parse.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
+import RenderingContext from '../../src/renderers/rendering.context.js'
+import { renderName } from 'src/renderers/abstract.renderer.js'
 
 jest.setTimeout(200000)
 
@@ -149,6 +148,8 @@ describe('Downloader class', () => {
 
     test('getArticle of "London" returns one article for WikimediaMobileRenderer render', async () => {
       const articleId = 'London'
+      RenderingContext.articlesRenderer = wikimediaMobileRenderer
+      RenderingContext.mainPageRenderer = wikimediaMobileRenderer
       Downloader.setUrlsDirectors(wikimediaMobileRenderer, wikimediaMobileRenderer)
       const articleUrl = Downloader.getArticleUrl(articleId)
       const articleDetail = {
@@ -212,30 +213,11 @@ describe('Downloader class', () => {
 
   describe('getArticle method', () => {
     for (const renderer of RENDERERS_LIST) {
-      let rendererInstance
-      switch (renderer) {
-        case 'VisualEditor':
-          rendererInstance = new VisualEditorRenderer()
-          break
-        case 'WikimediaDesktop':
-          rendererInstance = new WikimediaDesktopRenderer()
-          break
-        case 'WikimediaMobile':
-          rendererInstance = new WikimediaMobileRenderer()
-          break
-        case 'RestApi':
-          rendererInstance = new RestApiRenderer()
-          break
-        case 'ActionParse':
-          rendererInstance = new ActionParseRenderer()
-          break
-        default:
-          throw new Error(`Unknown renderer: ${renderer}`)
-      }
       let dump: Dump
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
         dump = new Dump('', {} as any, mwMetadata)
+        await RenderingContext.createRenderers(renderer as renderName, true)
       })
 
       test(`getArticle response status for non-existent article id is 404 for ${renderer} render`, async () => {
@@ -246,7 +228,15 @@ describe('Downloader class', () => {
           missing: '',
         }
         await expect(
-          Downloader.getArticle('NeverExistingArticle', RedisStore.articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+          Downloader.getArticle(
+            'NeverExistingArticle',
+            RedisStore.articleDetailXId,
+            RenderingContext.mainPageRenderer,
+            articleUrl,
+            dump,
+            articleDetail,
+            dump.isMainPage(articleId),
+          ),
         ).rejects.toThrowError(new Error('Request failed with status code 404'))
       })
     }

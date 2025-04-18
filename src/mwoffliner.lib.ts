@@ -39,7 +39,6 @@ import {
   extractArticleList,
   getTmpDirectory,
   validateMetadata,
-  downloadModule,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -48,6 +47,7 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
+import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
@@ -197,16 +197,6 @@ async function execute(argv: any) {
   }
   validateMetadata(metaDataRequiredKeys)
 
-  // Try to download startup module which is supposed to be available on all wikis
-  // in order to ensure as early as possible that load.php URL is properly configured
-  // and available
-  try {
-    await downloadModule('startup', 'js')
-  } catch (err) {
-    logger.error('Impossible to reach module API load.php')
-    throw err
-  }
-
   // Sanitizing main page
   let mainPage = articleList ? '' : mwMetaData.mainPage
 
@@ -225,6 +215,9 @@ async function execute(argv: any) {
   await MediaWiki.hasRestApi()
   await MediaWiki.hasVisualEditorApi()
   await MediaWiki.hasActionParseApi()
+  await MediaWiki.hasModuleApi()
+
+  await RenderingContext.createRenderers(forceRender, hasWikimediaMobileApi)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -424,7 +417,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump, hasWikimediaMobileApi, forceRender)
+    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)

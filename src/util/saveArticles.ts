@@ -13,7 +13,7 @@ import { getSizeFromUrl } from './misc.js'
 import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
-import { RendererBuilder } from '../renderers/renderer.builder.js'
+import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, retryCounter = 0) {
@@ -250,7 +250,7 @@ async function saveArticle(
 /*
  * Fetch Articles
  */
-export async function saveArticles(zimCreator: Creator, dump: Dump, hasWikimediaMobileApi: boolean, forceRender = null) {
+export async function saveArticles(zimCreator: Creator, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   const staticFilesList = new Set<string>()
@@ -259,30 +259,8 @@ export async function saveArticles(zimCreator: Creator, dump: Dump, hasWikimedia
   const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
 
-  const rendererBuilder = new RendererBuilder()
-
-  let mainPageRenderer
-  let articlesRenderer
-  if (forceRender) {
-    // All articles and main page will use the same renderer if 'forceRender' is specified
-    const renderer = await rendererBuilder.createRenderer({
-      renderType: 'specific',
-      renderName: forceRender,
-    })
-    mainPageRenderer = renderer
-    articlesRenderer = renderer
-  } else {
-    mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
-    articlesRenderer = await rendererBuilder.createRenderer({
-      renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-    })
-  }
-  logger.log(`Using ${mainPageRenderer.constructor.name} for main page renderer`)
-  logger.log(`Using ${articlesRenderer.constructor.name} for articles renderer`)
-  Downloader.setUrlsDirectors(mainPageRenderer, articlesRenderer)
-
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(articleDetailXId, dump, mainPageRenderer, articlesRenderer)
+    await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.mainPageRenderer, RenderingContext.articlesRenderer)
   }
 
   const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -315,7 +293,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump, hasWikimedia
         let rets: any
         try {
           const isMainPage = dump.isMainPage(articleId)
-          const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+          const renderer = isMainPage ? RenderingContext.mainPageRenderer : RenderingContext.articlesRenderer
           const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId)
 
           rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)

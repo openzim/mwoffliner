@@ -9,6 +9,7 @@ import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import Downloader from '../../src/Downloader.js'
+import RenderingContext from '../../src/renderers/rendering.context.js'
 
 jest.setTimeout(20000)
 
@@ -142,6 +143,8 @@ describe('Styles', () => {
     await RedisStore.redirectsXId.flush()
     const { dump } = await setupScrapeClasses() // en wikipedia
 
+    await RenderingContext.createRenderers(null, true)
+
     await getArticleIds('', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 
     let LondonArticle: StringItem
@@ -156,7 +159,6 @@ describe('Styles', () => {
         },
       } as any,
       dump,
-      true,
     )
 
     const html = LondonArticle.getContentProvider().feed().toString()

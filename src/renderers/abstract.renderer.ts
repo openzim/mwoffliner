@@ -13,7 +13,7 @@ import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
-type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi'
+export type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi' | 'ActionParse'
 
 interface RendererBuilderOptionsBase {
   renderType: renderType

@@ -33,10 +33,6 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
 export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '' } = {}) {
   MediaWiki.base = mwUrl
 
-  const renderer = {}
-
-  Object.defineProperty(renderer.constructor, 'name', { value: 'WikimediaDesktopRenderer' })
-
   Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
   await MediaWiki.getMwMetaData()
@@ -45,12 +41,12 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   await MediaWiki.hasWikimediaMobileApi()
   await MediaWiki.hasRestApi()
   await MediaWiki.hasVisualEditorApi()
+  await MediaWiki.hasModuleApi()
 
   const dump = new Dump(format, {} as any, MediaWiki.metaData)
 
   return {
     dump,
-    renderer,
   }
 }
 
