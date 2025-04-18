@@ -358,6 +358,7 @@ async function execute(argv: any) {
     } else {
       await doDump(dump)
       await filesToDownloadXPath.flush()
+      Downloader.cssDependenceUrls = {}
       logger.log('Finished dump')
     }
   }
