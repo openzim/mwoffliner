@@ -47,6 +47,7 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
+import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
@@ -214,6 +215,9 @@ async function execute(argv: any) {
   await MediaWiki.hasRestApi()
   await MediaWiki.hasVisualEditorApi()
   await MediaWiki.hasActionParseApi()
+  await MediaWiki.hasModuleApi()
+
+  await RenderingContext.createRenderers(forceRender, hasWikimediaMobileApi)
 
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
@@ -413,7 +417,7 @@ async function execute(argv: any) {
 
     logger.log('Getting articles')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump, hasWikimediaMobileApi, forceRender)
+    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)

@@ -4,6 +4,7 @@ Unreleased:
 * FIX: Ignore pages without a single revision / revid - continued (@benoit74 #2234)
 * FIX: Set proper mimetype for ZIM illustration(s) metadata (@benoit74 #1974)
 * FIX: Avoid reducing redirects directly to an Object to avoid memory issue (@benoit74 #2142)
+* NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)

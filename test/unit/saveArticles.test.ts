@@ -7,15 +7,11 @@ import { saveArticles } from '../../src/util/saveArticles.js'
 import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
-import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
 import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
-import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
-import { RestApiRenderer } from '../../src/renderers/rest-api.renderer.js'
-import { ActionParseRenderer } from '../../src/renderers/action-parse.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
-import { RenderOpts } from 'src/renderers/abstract.renderer.js'
-import MediaWiki from '../../src/MediaWiki.js'
+import { renderName, RenderOpts } from 'src/renderers/abstract.renderer.js'
 import Downloader from '../../src/Downloader.js'
+import RenderingContext from '../../src/renderers/rendering.context.js'
 
 jest.setTimeout(40000)
 
@@ -24,36 +20,9 @@ describe('saveArticles', () => {
   afterAll(stopRedis)
 
   for (const renderer of RENDERERS_LIST) {
-    let rendererInstance
-    switch (renderer) {
-      case 'VisualEditor':
-        rendererInstance = new VisualEditorRenderer()
-        break
-      case 'WikimediaDesktop':
-        rendererInstance = new WikimediaDesktopRenderer()
-        break
-      case 'WikimediaMobile':
-        rendererInstance = new WikimediaMobileRenderer()
-        break
-      case 'RestApi':
-        rendererInstance = new RestApiRenderer()
-        break
-      case 'ActionParse':
-        rendererInstance = new ActionParseRenderer()
-        break
-      default:
-        throw new Error(`Unknown renderer: ${renderer}`)
-    }
-
     test(`Article html processing using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
-      await MediaWiki.hasCoordinates()
-      await MediaWiki.hasWikimediaDesktopApi()
-      await MediaWiki.hasWikimediaMobileApi()
-      await MediaWiki.hasRestApi()
-      await MediaWiki.hasVisualEditorApi()
-
-      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      await RenderingContext.createRenderers(renderer as renderName, true)
 
       const _articlesDetail = await Downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -74,8 +43,6 @@ describe('saveArticles', () => {
           },
         } as any,
         dump,
-        true,
-        renderer,
       )
 
       // Successfully scrapped existent articles
@@ -85,7 +52,9 @@ describe('saveArticles', () => {
       const articleId = 'non-existent-article'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const articleDetail = { title: 'Non-existent-article', missing: '' }
-      await expect(Downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))).rejects.toThrowError('')
+      await expect(
+        Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId)),
+      ).rejects.toThrowError('')
 
       const articleDoc = domino.createDocument(addedArticles.shift().getContentProvider().feed().toString())
 
@@ -99,15 +68,15 @@ describe('saveArticles', () => {
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
+      await RenderingContext.createRenderers(renderer as renderName, true)
       const articleId = 'Canada'
-      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -119,7 +88,7 @@ describe('saveArticles', () => {
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      await RenderingContext.createRenderers(renderer as renderName, true)
       const articleId = 'Main_Page'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -127,14 +96,14 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      await RenderingContext.createRenderers(renderer as renderName, true)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
@@ -180,8 +149,6 @@ describe('saveArticles', () => {
         } as any,
 
         dump,
-        true,
-        renderer,
       )
 
       // London was correctly filtered out by customFlavour
@@ -198,9 +165,9 @@ describe('saveArticles', () => {
       expect(PragueDocument.querySelector('#POST_PROCESSOR')).toBeDefined()
     })
 
-    test('Removes inline JS', async () => {
+    test(`Removes inline JS using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
-      Downloader.setUrlsDirectors(rendererInstance, rendererInstance)
+      await RenderingContext.createRenderers(renderer as renderName, true)
       const articleId = 'Potato'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -208,7 +175,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, rendererInstance, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
 
       const articleDoc = domino.createDocument(result[0].html)
 

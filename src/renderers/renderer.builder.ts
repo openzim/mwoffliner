@@ -11,13 +11,19 @@ export class RendererBuilder {
   public async createRenderer(options: RendererBuilderOptions): Promise<Renderer> {
     const { renderType, renderName } = options
 
-    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi, hasActionParseApi] = await Promise.all([
+    const [hasVisualEditorApi, hasWikimediaDesktopApi, hasWikimediaMobileApi, hasRestApi, hasActionParseApi, hasModuleApi] = await Promise.all([
       MediaWiki.hasVisualEditorApi(),
       MediaWiki.hasWikimediaDesktopApi(),
       MediaWiki.hasWikimediaMobileApi(),
       MediaWiki.hasRestApi(),
       MediaWiki.hasActionParseApi(),
+      MediaWiki.hasModuleApi(),
     ])
+
+    if (!hasModuleApi) {
+      logger.error('Module API not available while mandatory')
+      process.exit(1)
+    }
 
     switch (renderType) {
       case 'desktop':

@@ -77,6 +77,7 @@ class MediaWiki {
   #hasRestApi: boolean | null
   #hasActionParseApi: boolean | null
   #hasCoordinates: boolean | null
+  #hasModuleApi: boolean | null
 
   set username(value: string) {
     this.#username = value
@@ -170,6 +171,7 @@ class MediaWiki {
     this.#hasRestApi = null
     this.#hasActionParseApi = null
     this.#hasCoordinates = null
+    this.#hasModuleApi = null
   }
 
   private constructor() {
@@ -251,6 +253,16 @@ class MediaWiki {
       return (this.#hasCoordinates = true)
     }
     return this.#hasCoordinates
+  }
+
+  public async hasModuleApi(): Promise<boolean> {
+    if (this.#hasModuleApi === null) {
+      // startup JS module is supposed to be available on all Mediawikis
+      const checkUrl = `${this.modulePath}lang=en&modules=startup&only=scripts`
+      this.#hasModuleApi = await checkApiAvailability(checkUrl)
+      logger.log('Checked for Module API at', checkUrl, '-- result is: ', this.#hasRestApi)
+    }
+    return this.#hasModuleApi
   }
 
   private setWikimediaDesktopApiUrl() {
