@@ -87,6 +87,26 @@ const matchingRules: MatchingRule[] = [
     detailsMessageKey: 'ACTION_PARSE_504_UPSTREAM_TIMEOUT',
     displayThirdLine: true,
   },
+  {
+    name: 'ActionParse API - JSON 503 HTML error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 503, max: 503 }],
+    contentTypes: ['text/html'],
+    rawResponseDataContains: ['Our servers are currently under maintenance or experiencing a technical problem'],
+    jsonResponseDataContains: null,
+    detailsMessageKey: 'ACTION_PARSE_HTML_503_ERROR',
+    displayThirdLine: true,
+  },
+  {
+    name: 'ActionParse API - DB unexpected error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: null,
+    contentTypes: ['application/json'],
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_DBUnexpectedError'] }],
+    detailsMessageKey: 'ACTION_PARSE_DB_UNEXPECTED_ERROR',
+    displayThirdLine: true,
+  },
 ]
 
 function jsonMatch(jsonObject: any, keyPath: string, allowedValues: string[]) {
