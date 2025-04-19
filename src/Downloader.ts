@@ -7,7 +7,7 @@ import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { default as imageminPngquant } from 'imagemin-pngquant'
 import imageminGifsicle from 'imagemin-gifsicle'
 import imageminJpegoptim from 'imagemin-jpegoptim'
@@ -29,6 +29,7 @@ import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
+import { renderDownloadError } from './renderers/error.render.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -71,6 +72,34 @@ interface BackoffOptions {
 
 interface CompressionData {
   data: any
+}
+
+export class DownloadError extends Error {
+  urlCalled: string | null
+  httpReturnCode: number | null
+  responseContentType: string | null
+  responseData: any
+
+  constructor(message: string, urlCalled: string | null, httpReturnCode: number | null, responseContentType: string | null, responseData: any) {
+    super(message)
+    this.name = 'DownloadError'
+    this.urlCalled = urlCalled
+    this.httpReturnCode = httpReturnCode
+    this.responseContentType = responseContentType
+    this.responseData = responseData
+
+    if ('captureStackTrace' in Error) {
+      // Avoid DownloadError itself in the stack trace
+      Error.captureStackTrace(this, DownloadError)
+    }
+  }
+}
+
+export interface DownloadErrorContext {
+  urlCalled: string
+  httpReturnCode: number | null
+  responseContentType: string | null
+  responseData: any
 }
 
 type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | RestApiURLDirector
@@ -383,20 +412,66 @@ class Downloader {
   ): Promise<any> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
-    const { data, moduleDependencies } = await articleRenderer.download({
-      articleUrl,
-      articleDetail,
-    })
+    try {
+      const { data, moduleDependencies } = await articleRenderer.download({
+        articleUrl,
+        articleDetail,
+      })
 
-    return articleRenderer.render({
-      data,
-      moduleDependencies,
-      articleId,
-      articleDetailXId,
-      articleDetail,
-      isMainPage,
-      dump,
-    })
+      return await articleRenderer.render({
+        data,
+        moduleDependencies,
+        articleId,
+        articleDetailXId,
+        articleDetail,
+        isMainPage,
+        dump,
+      })
+    } catch (err) {
+      let downloadError: DownloadErrorContext
+      if (err instanceof AxiosError) {
+        downloadError = {
+          urlCalled: err.config.url,
+          httpReturnCode: err.status,
+          responseContentType: err.response.headers['content-type'].toString(),
+          responseData: err.response.data,
+        }
+      } else if (err instanceof DownloadError) {
+        downloadError = { urlCalled: err.urlCalled, httpReturnCode: err.httpReturnCode, responseContentType: err.responseContentType, responseData: err.responseData }
+      }
+      if (!downloadError) {
+        throw err
+      }
+      logger.warn(
+        `Article ${articleId} failed to download from ${downloadError.urlCalled} with ${downloadError.httpReturnCode} return code and ${downloadError.responseContentType} content-type returned instead:\n${JSON.stringify(downloadError.responseData)}`,
+      )
+      dump.status.articles.fail += 1
+      dump.status.articles.failedArticleIds.push(articleId)
+      if (dump.maxFailedArticles > 0 && dump.status.articles.fail > dump.maxFailedArticles) {
+        logger.error('Too many articles failed to download, aborting')
+        throw err
+      }
+      const articleTitle = articleId.replace(/_/g, ' ')
+      const errorPlaceholderHtml = renderDownloadError(downloadError, dump, articleId, articleTitle)
+      if (errorPlaceholderHtml === null) {
+        logger.error('This is a fatal download error, aborting')
+        throw err
+      }
+      logger.info(`Replacing article ${articleId} with error placeholder`)
+      return [
+        {
+          articleId,
+          displayTitle: articleTitle,
+          html: errorPlaceholderHtml,
+          imageDependencies: [],
+          videoDependencies: [],
+          mediaDependencies: [],
+          moduleDependencies: [],
+          staticFiles: config.output.downloadErrorResources,
+          subtitles: [],
+        },
+      ]
+    }
   }
 
   public async getJSON<T>(_url: string): Promise<T> {

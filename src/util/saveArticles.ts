@@ -10,7 +10,7 @@ import Timer from './Timer.js'
 import { jsPath } from './index.js'
 import { config } from '../config.js'
 import { getSizeFromUrl } from './misc.js'
-import { CONCURRENCY_LIMIT, DELETED_ARTICLE_ERROR, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
+import { CONCURRENCY_LIMIT, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import RenderingContext from '../renderers/rendering.context.js'
@@ -259,6 +259,9 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
 
+  // number of articles allowed to fail is the greater of 5 or 0.001% (1 per 100k) articles
+  dump.maxFailedArticles = Math.max(5, Math.floor(articlesTotal / 100000))
+
   if (dump.customProcessor?.shouldKeepArticle) {
     await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.mainPageRenderer, RenderingContext.articlesRenderer)
   }
@@ -315,10 +318,10 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
             }
 
             curStage += 1
-            for (const dep of moduleDependencies.jsDependenciesList) {
+            for (const dep of moduleDependencies.jsDependenciesList || []) {
               jsModuleDependencies.add(dep)
             }
-            for (const dep of moduleDependencies.styleDependenciesList) {
+            for (const dep of moduleDependencies.styleDependenciesList || []) {
               cssModuleDependencies.add(dep)
             }
 
@@ -337,12 +340,9 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
             promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle)])
           }
         } catch (err) {
-          dump.status.articles.fail += 1
           logger.error(`Error downloading article ${articleId}`)
-          if ((!err.response || err.response.status !== 404) && err.message !== DELETED_ARTICLE_ERROR) {
-            reject(err)
-            return
-          }
+          reject(err)
+          return
         }
 
         if (parsePromiseQueue.length) {

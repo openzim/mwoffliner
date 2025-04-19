@@ -82,6 +82,18 @@ describe('Misc utility', () => {
         DISCLAIMER: 'This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.',
         LAST_EDITED_ON: 'Last edited on ${date}',
         LICENSE_NAME: 'Creative Commons - Attribution - Sharealike',
+        DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
+        DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
+        DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
+          'This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.',
+        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR:
+          'When the ZIM you are browsing was built, ${server} server failed to render this article HTML content and returned an HTTP 500 error.',
+        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT:
+          'When the ZIM you are browsing was built, ${server} server timed-out while rendering this article HTML content and returned an HTTP 504 error.',
+        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_504_UPSTREAM_TIMEOUT:
+          'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
+        DOWNLOAD_ERRORS_LINE2: 'The missing article was replaced by the placeholder page you are currently seeing.',
+        DOWNLOAD_ERRORS_LINE3: "Let's hope the issue will be solved on ${server} server and our next version of this ZIM will contain this article.",
       })
     })
 
@@ -92,6 +104,18 @@ describe('Misc utility', () => {
         DISCLAIMER: 'This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.',
         LAST_EDITED_ON: 'Viimeksi muokattu ${date}',
         LICENSE_NAME: 'Creative Commons - Nimeä - JaaSamoin',
+        DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
+        DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
+        DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
+          'This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.',
+        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR:
+          'When the ZIM you are browsing was built, ${server} server failed to render this article HTML content and returned an HTTP 500 error.',
+        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT:
+          'When the ZIM you are browsing was built, ${server} server timed-out while rendering this article HTML content and returned an HTTP 504 error.',
+        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_504_UPSTREAM_TIMEOUT:
+          'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
+        DOWNLOAD_ERRORS_LINE2: 'The missing article was replaced by the placeholder page you are currently seeing.',
+        DOWNLOAD_ERRORS_LINE3: "Let's hope the issue will be solved on ${server} server and our next version of this ZIM will contain this article.",
       })
     })
 

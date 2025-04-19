@@ -174,7 +174,13 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
 
       let url: string
       let mimetype: string
-      if (file.endsWith('.css')) {
+      if (file.endsWith('.ttf')) {
+        url = anyPath('ttf', file)
+        mimetype = 'font/ttf'
+      } else if (file.endsWith('.svg')) {
+        url = anyPath('svg', file)
+        mimetype = 'image/svg+xml'
+      } else if (file.endsWith('.css')) {
         url = cssPath(file)
         mimetype = 'text/css'
       } else {
@@ -196,8 +202,12 @@ export function getStaticFiles(jsStaticFiles: string[], cssStaticFiles: string[]
   return jsStaticFiles.concat(cssStaticFiles)
 }
 
+export function anyPath(ext: string, path: string, subDirectory = '') {
+  const regex = new RegExp(`(\\.${ext})?$`)
+  return `${subDirectory ? `${subDirectory}/` : ''}${path.replace(regex, '')}.${ext}`
+}
 export function cssPath(css: string, subDirectory = '') {
-  return `${subDirectory ? `${subDirectory}/` : ''}${css.replace(/(\.css)?$/, '')}.css`
+  return anyPath('css', css, subDirectory)
 }
 export function jsPath(js: string, subDirectory = '') {
   const path = isNodeModule(js) ? normalizeModule(js) : js
