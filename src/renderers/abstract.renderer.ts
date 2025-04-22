@@ -1,7 +1,7 @@
 import * as domino from 'domino'
 import * as logger from '../Logger.js'
 import * as QueryStringParser from 'querystring'
-import htmlMinifier from 'html-minifier'
+import htmlMinifier from 'html-minifier-terser'
 import MediaWiki from '../MediaWiki.js'
 import RedisStore from '../RedisStore.js'
 import DOMUtils from '../DOMUtils.js'
@@ -465,7 +465,7 @@ export abstract class Renderer {
     let outHtml = templatedDoc.documentElement.outerHTML
 
     if (dump.opts.minifyHtml) {
-      outHtml = htmlMinifier.minify(outHtml, {
+      outHtml = await htmlMinifier.minify(outHtml, {
         removeComments: true,
         conservativeCollapse: true,
         collapseBooleanAttributes: true,
