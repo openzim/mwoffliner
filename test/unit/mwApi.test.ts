@@ -68,25 +68,23 @@ describe('mwApi', () => {
 
   test('MWApi NS', async () => {
     await getArticlesByNS(0, undefined, 5) // Get 5 continues/pages of NSes
-    const interestingAIds = ['"...And_Ladies_of_the_Club"', '"M"_Circle']
+    const interestingAIds = ['"...And_Ladies_of_the_Club"', '"Khan_gizi"_spring']
     const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
-    const Ladies = articles['"...And_Ladies_of_the_Club"']
-    const Circle = articles['"M"_Circle']
+    const ArticleWithRevisionsAndCategory = articles['"...And_Ladies_of_the_Club"']
+    const ArticleWithCoordinates = articles['"Khan_gizi"_spring']
 
-    // Article ""...And_Ladies_of_the_Club"" has been scraped
-    expect(Ladies).toBeDefined()
+    // Articles have been retrieved
+    expect(ArticleWithRevisionsAndCategory).not.toBeNull()
+    expect(ArticleWithCoordinates).not.toBeNull()
 
-    // Article ""M"_Circle" has been scraped
-    expect(Circle).toBeDefined()
+    // article has categories
+    expect(ArticleWithRevisionsAndCategory?.categories?.length).toBeGreaterThan(0)
 
-    // Ladies article has categories
-    expect(Ladies?.categories?.length).toBeGreaterThan(0)
+    // article has revision
+    expect(ArticleWithRevisionsAndCategory).toHaveProperty('revisionId')
 
-    // Ladies article has revision
-    expect(Ladies).toHaveProperty('revisionId')
-
-    // Circle article has coordinates'
-    expect(Circle).toHaveProperty('coordinates')
+    // article has coordinates'
+    expect(ArticleWithCoordinates).toHaveProperty('coordinates')
 
     // Got items in namespaces
     expect(Object.keys(MediaWiki.namespaces).length).toBeGreaterThan(0)
