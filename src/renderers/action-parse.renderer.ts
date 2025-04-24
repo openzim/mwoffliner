@@ -6,7 +6,6 @@ import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles } f
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
 import Downloader, { DownloaderClass } from '../Downloader.js'
-import { DownloadError } from '../Downloader.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text&parsoid=1&page={article_title}&skin=vector-2022'
 export class ActionParseRenderer extends Renderer {
@@ -52,9 +51,6 @@ export class ActionParseRenderer extends Renderer {
     const { articleUrl } = downloadOpts
 
     const data = await Downloader.getJSON<any>(articleUrl)
-    if (data.error) {
-      throw new DownloadError(`Error returned while calling API`, articleUrl, null, null, data)
-    }
 
     const moduleDependencies = {
       jsConfigVars: DownloaderClass.extractJsConfigVars(data.parse.headhtml['*']),
