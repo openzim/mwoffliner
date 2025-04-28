@@ -117,6 +117,16 @@ const matchingRules: MatchingRule[] = [
     detailsMessageKey: 'ACTION_PARSE_BAD_REVISION_ERROR',
     displayThirdLine: true,
   },
+  {
+    name: 'ActionParse API - JSON UnreachableException error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 200, max: 200 }],
+    contentTypes: ['application/json'],
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\Assert\\UnreachableException'] }],
+    detailsMessageKey: 'ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR',
+    displayThirdLine: true,
+  },
 ]
 
 function jsonMatch(jsonObject: any, keyPath: string, allowedValues: string[]) {
