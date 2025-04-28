@@ -16,7 +16,8 @@ export const parameterDescriptions = {
   format:
     'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
   keepEmptyParagraphs: 'Keep all paragraphs, even empty ones.',
-  mwWikiPath: 'MediaWiki wiki base path (by default "/wiki/")',
+  mwWikiPath: 'MediaWiki article path (by default "/wiki/")',
+  mwIndexPhpPath: 'MediaWiki index.php path (by default "/w/index.php")',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
   mwRestApiPath: 'MediaWiki REST API path (by default "/w/rest.php")',
   mwModulePath: 'MediaWiki module load path (by default "/w/load.php")',

@@ -31,6 +31,7 @@ export async function sanitize_all(argv: any) {
     customZimDescription,
     forceRender,
     mwWikiPath,
+    mwIndexPhpPath,
     mwActionApiPath,
     mwRestApiPath,
     mwModulePath,
@@ -76,16 +77,29 @@ export async function sanitize_all(argv: any) {
   await sanitize_mwUrl(mwUrl)
 
   // sanitizing mwWikiPath
-  sanitizeWikiPath(mwWikiPath)
+  if (mwWikiPath) {
+    argv.mwWikiPath = sanitizeWikiPath(mwWikiPath)
+  }
+
+  // sanitizing mwIndexPhpPath
+  if (mwIndexPhpPath) {
+    argv.mwIndexPhpPath = sanitizeApiPathParam(mwIndexPhpPath)
+  }
 
   // sanitizing mwRestApiPath
-  sanitizeApiPathParam(mwRestApiPath)
+  if (mwRestApiPath) {
+    argv.mwRestApiPath = sanitizeApiPathParam(mwRestApiPath)
+  }
 
   // sanitizing mwActionApiPath
-  sanitizeApiPathParam(mwActionApiPath)
+  if (mwActionApiPath) {
+    argv.mwActionApiPath = sanitizeApiPathParam(mwActionApiPath)
+  }
 
   // sanitizing mwModulePath
-  sanitizeApiPathParam(mwModulePath)
+  if (mwModulePath) {
+    argv.mwModulePath = sanitizeApiPathParam(mwModulePath)
+  }
 
   // sanitize Custom Main Page
   if (argv.customMainPage) {
@@ -112,6 +126,11 @@ export async function sanitize_all(argv: any) {
 
 export function sanitizeWikiPath(mwWikiPath = '') {
   mwWikiPath = sanitizeApiPathParam(mwWikiPath)
+
+  // Remove trailing $1 since we don't need it
+  if (mwWikiPath?.endsWith('$1')) {
+    mwWikiPath = mwWikiPath.substring(0, mwWikiPath.length - 3)
+  }
 
   // Make sure wikiPath always has forward slash at the end for the correct URL building
   if (!mwWikiPath?.endsWith('/')) {
