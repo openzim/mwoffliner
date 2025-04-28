@@ -50,7 +50,7 @@ Since most wikis have adapted their content to their skin (and vice versa), it i
 
 Skin detection is automated in mwoffliner for now (see https://github.com/openzim/mwoffliner/issues/2213).
 
-For now, only `vector` (legacy) and `vector-2022` are supported, and only with ActionParse renderer. Only `vector-2022` is the truely responsive skin, providing ultimate rendering on mostly all screen sizes.
+For now, only `vector` (legacy), `vector-2022` and `fandomdesktop` are supported, and only with ActionParse renderer. Only `vector-2022` is the truely responsive skin, providing ultimate rendering on mostly all screen sizes.
 
 
 ### JS / CSS dependencies

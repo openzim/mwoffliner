@@ -99,6 +99,7 @@ const config = {
       css_simplified: [
         // infobox styles needed at least on hu.wikipedia.org
         'ext.gadget.infobox,wikiMenuStyles',
+        'skin.fandomdesktop.styles',
       ],
       js_simplified: [
         // base JS scripts always needed / never returned on API calls
@@ -122,6 +123,7 @@ const config = {
       pageWikimediaMobile: './templates/pageWikimediaMobile.html',
       pageVectorLegacy: './templates/pageVectorLegacy.html',
       pageVector2022: './templates/pageVector2022.html',
+      pageFandomDesktop: './templates/pageFandomDesktop.html',
 
       categories: './templates/categories.html',
 

@@ -220,7 +220,7 @@ class MediaWiki {
 
   public async hasActionParseApi(): Promise<boolean> {
     if (this.#hasActionParseApi === null) {
-      for (const skin of ['vector-2022', 'vector']) {
+      for (const skin of ['vector-2022', 'vector', 'fandomdesktop']) {
         this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, skin)
         const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
         this.#hasActionParseApi = await checkApiAvailability(checkUrl)

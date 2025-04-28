@@ -4,7 +4,7 @@ import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 import { config } from '../config.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
-import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
+import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFandomDesktopTemplateCode } from '../Templates.js'
 import Downloader, { DownloaderClass } from '../Downloader.js'
 import { DownloadError } from '../Downloader.js'
 
@@ -25,7 +25,7 @@ export class ActionParseRenderer extends Renderer {
       styleDependenciesList: string[]
     }
 
-    const htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : null
+    const htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : MediaWiki.skin === 'fandomdesktop' ? htmlFandomDesktopTemplateCode : null
 
     if (!htmlTemplateCode) {
       throw new Error(`Skin ${MediaWiki.skin} is not supported by ActionParse renderer`)
