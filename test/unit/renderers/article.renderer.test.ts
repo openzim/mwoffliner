@@ -14,7 +14,7 @@ describe('ArticleRenderer', () => {
       return {
         data: json,
         articleId: '123',
-        articleDetail: { title: 'Eminem and D12', timestamp: '2023-08-24T02:19:04Z' },
+        articleDetail: { title: 'Brian May', timestamp: '2023-08-24T02:19:04Z' },
         isMainPage: false,
       }
     }
