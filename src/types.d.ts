@@ -161,6 +161,7 @@ interface MWMetaData {
 
   baseUrl: string
   wikiPath: string
+  indexPhpPath: string
   actionApiPath: string
   restApiPath: string
   domain: string

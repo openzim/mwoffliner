@@ -47,6 +47,7 @@ class MediaWiki {
   public skin = 'vector' // Default fallback
 
   #wikiPath: string
+  #indexPhpPath: string
   #actionApiPath: string
   #modulePathOpt: string
   #restApiPath: string
@@ -110,6 +111,13 @@ class MediaWiki {
     if (value) {
       this.#wikiPath = value
       this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
+      logger.log(`webUrl: ${this.webUrl}`)
+    }
+  }
+
+  set indexPhpPath(value: string) {
+    if (value) {
+      this.#indexPhpPath = value
     }
   }
 
@@ -149,6 +157,7 @@ class MediaWiki {
     this.#actionApiPath = '/w/api.php'
     this.#restApiPath = '/w/rest.php'
     this.#wikiPath = '/wiki/'
+    this.#indexPhpPath = '/w/index.php'
     this.#modulePathOpt = '/w/load.php'
 
     this.namespaces = {}
@@ -365,13 +374,20 @@ class MediaWiki {
     try {
       const pathname = new URL(href, this.baseUrl).pathname
 
+      // Link to index.php with query parameters like "/w/index.php?title=Blue_whale"
+      if (href.startsWith(this.#indexPhpPath)) {
+        const queryString = href.split('?')[1]
+        const params = new URLSearchParams(queryString)
+        return params.get('title')
+      }
+
       // Local relative URL
       if (href.indexOf('./') === 0) {
         return util.decodeURIComponent(pathname.substr(1))
       }
 
       // Absolute path
-      if (pathname.indexOf(this.webUrl.pathname) === 0) {
+      if (pathname.startsWith(this.webUrl.pathname)) {
         return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length))
       }
 
@@ -510,6 +526,7 @@ class MediaWiki {
       mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
+      indexPhpPath: this.#indexPhpPath,
       baseUrl: this.baseUrl.href,
       actionApiPath: this.#actionApiPath,
       restApiPath: this.#restApiPath,

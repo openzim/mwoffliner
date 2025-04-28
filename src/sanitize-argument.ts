@@ -31,6 +31,7 @@ export async function sanitize_all(argv: any) {
     customZimDescription,
     forceRender,
     mwWikiPath,
+    mwIndexPhpPath,
     mwActionApiPath,
     mwRestApiPath,
     mwModulePath,
@@ -78,6 +79,11 @@ export async function sanitize_all(argv: any) {
   // sanitizing mwWikiPath
   if (mwWikiPath) {
     argv.mwWikiPath = sanitizeWikiPath(mwWikiPath)
+  }
+
+  // sanitizing mwIndexPhpPath
+  if (mwIndexPhpPath) {
+    argv.mwIndexPhpPath = sanitizeApiPathParam(mwIndexPhpPath)
   }
 
   // sanitizing mwRestApiPath

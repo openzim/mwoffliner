@@ -117,6 +117,22 @@ describe('mwApi', () => {
     const interWikiTitle = MediaWiki.extractPageTitleFromHref('Maldives')
     // Interwiki title
     expect(interWikiTitle).toBeNull()
+
+    const relativeRedLink = MediaWiki.extractPageTitleFromHref('./Nanmangalam?action=edit&redlink=1')
+    // A red link which is relative
+    expect(relativeRedLink).toEqual('Nanmangalam')
+
+    const absoluteIndexPath = MediaWiki.extractPageTitleFromHref('/w/index.php?title=Blue_whale1')
+    // A link to index.php
+    expect(absoluteIndexPath).toEqual('Blue_whale1')
+
+    const absoluteIndexPathRedLink = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&title=Blue_whale2&redlink=1')
+    // A red link to index.php
+    expect(absoluteIndexPathRedLink).toEqual('Blue_whale2')
+
+    const absoluteIndexPathNoTitle = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&redlink=1')
+    // An index.php link missing the article title
+    expect(absoluteIndexPathNoTitle).toBeNull()
   })
 })
 

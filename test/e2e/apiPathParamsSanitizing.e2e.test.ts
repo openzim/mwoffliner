@@ -15,6 +15,7 @@ const parameters = {
   mwRestApiPath: sanitizeApiPathParam('/w/rest.php'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
   mwWikiPath: sanitizeWikiPath('/wiki/'),
+  mwIndexPhpPath: sanitizeApiPathParam('/w/index.php'),
 }
 
 await testAllRenders('api-path-params', parameters, async (outFiles) => {
@@ -29,6 +30,10 @@ await testAllRenders('api-path-params', parameters, async (outFiles) => {
 
     test('Mediawiki wikiPath option sanitized', () => {
       expect(outFiles[0].mwMetaData.wikiPath).toBe('/wiki/')
+    })
+
+    test('Mediawiki wikiPath option sanitized', () => {
+      expect(outFiles[0].mwMetaData.indexPhpPath).toBe('/w/index.php')
     })
 
     test('Mediawiki modulePathOpt option sanitized', () => {
