@@ -240,6 +240,10 @@ export abstract class Renderer {
       return
     }
 
+    if (this.constructor.name === 'ActionParseRenderer') {
+      return
+    }
+
     const descriptions = imageNode.getElementsByTagName('figcaption')
     const description = descriptions.length > 0 ? descriptions[0] : undefined
     const imageWidth = parseInt(image.getAttribute('width'), 10)
@@ -360,7 +364,7 @@ export abstract class Renderer {
       imageDependencies = imageDependencies.concat(ret.imageDependencies)
     }
 
-    /* Improve image frames */
+    /* Treat image figures + special spans */
     const figures = parsoidDoc.getElementsByTagName('figure')
     const spans = parsoidDoc.querySelectorAll('span[typeof~=mw:Image/Frameless],span[typeof~=mw:File/Frameless]')
     const imageNodes = Array.prototype.slice.call(figures).concat(Array.prototype.slice.call(spans))
@@ -666,7 +670,9 @@ export abstract class Renderer {
     const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
     for (const node of allNodes) {
       node.removeAttribute('data-parsoid')
-      node.removeAttribute('typeof')
+      if (this.constructor.name !== 'ActionParseRenderer') {
+        node.removeAttribute('typeof')
+      }
       node.removeAttribute('about')
       node.removeAttribute('data-mw')
 

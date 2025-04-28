@@ -10,6 +10,7 @@ Unreleased:
 * FIX: CSS dependencies are not downloaded/pushed to the ZIM on all but first requested flavor (@benoit74 #2249)
 * FIX: Links to articles through index.php are not detected properly (@benoit74 #2260)
 * FIX: Properly sanitize mw* settings (@benoit74 #2269)
+* CHANGED: Keep `typeof` HTML attribute and stop adding custom thumbiner HTML around images when ActionParse renderer is used (@benoit74 #2254)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
