@@ -8,6 +8,7 @@ Unreleased:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
 * CHANGED: Upgrade to node-libzim 3.3.0 (libzim 9.3.0) (@benoit74 #2247)
 * FIX: CSS dependencies are not downloaded/pushed to the ZIM on all but first requested flavor (@benoit74 #2249)
+* FIX: Properly sanitize mw* settings (@benoit74 #2269)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)

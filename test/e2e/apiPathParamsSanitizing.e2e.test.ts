@@ -14,7 +14,7 @@ const parameters = {
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
   mwRestApiPath: sanitizeApiPathParam('/w/rest.php'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
-  mwWikiPath: sanitizeWikiPath('/wiki'),
+  mwWikiPath: sanitizeWikiPath('/wiki/'),
 }
 
 await testAllRenders('api-path-params', parameters, async (outFiles) => {
