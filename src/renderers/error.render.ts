@@ -107,6 +107,16 @@ const matchingRules: MatchingRule[] = [
     detailsMessageKey: 'ACTION_PARSE_DB_UNEXPECTED_ERROR',
     displayThirdLine: true,
   },
+  {
+    name: 'ActionParse API - JSON BadRevisionException error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 200, max: 200 }],
+    contentTypes: ['application/json'],
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_MediaWiki\\Revision\\BadRevisionException'] }],
+    detailsMessageKey: 'ACTION_PARSE_BAD_REVISION_ERROR',
+    displayThirdLine: true,
+  },
 ]
 
 function jsonMatch(jsonObject: any, keyPath: string, allowedValues: string[]) {
@@ -127,7 +137,7 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
       (!matchingRule.urlContains || matchingRule.urlContains.findIndex((urlContain) => err.urlCalled.includes(urlContain)) >= 0) &&
       (!matchingRule.httpReturnCodes ||
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
-      (!matchingRule.contentTypes || matchingRule.contentTypes.findIndex((contentType) => err.responseContentType.toLowerCase() == contentType.toLowerCase()) >= 0) &&
+      (!matchingRule.contentTypes || matchingRule.contentTypes.findIndex((contentType) => (err.responseContentType || "").toLowerCase().includes(contentType.toLowerCase())) >= 0) &&
       (!matchingRule.rawResponseDataContains ||
         matchingRule.rawResponseDataContains.findIndex((rawResponseDataContain) => typeof err.responseData == 'string' && err.responseData.includes(rawResponseDataContain)) >=
           0) &&

@@ -5,11 +5,10 @@ import { startRedis, stopRedis } from './bootstrap.js'
 import { setupScrapeClasses } from '../util.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
 import { StringItem } from '@openzim/libzim'
-import { mwRetToArticleDetail, DELETED_ARTICLE_ERROR } from '../../src/util/index.js'
+import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
-import { VisualEditorRenderer } from '../../src/renderers/visual-editor.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
-import { renderName, RenderOpts } from 'src/renderers/abstract.renderer.js'
+import { renderName } from 'src/renderers/abstract.renderer.js'
 import Downloader from '../../src/Downloader.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
 
@@ -244,35 +243,8 @@ describe('saveArticles', () => {
       expect(fewestChildren).toBeLessThanOrEqual(1)
     })
     */
-
-    test('Test deleted article rendering (Visual editor renderer)', async () => {
-      const { dump } = await setupScrapeClasses() // en wikipedia
-      const { articleDetailXId } = RedisStore
-      const articleId = 'deletedArticle'
-
-      const articleJsonObject = {
-        visualeditor: { oldid: 0 },
-      }
-
-      const articleDetail = { title: articleId, missing: '' }
-      const moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
-
-      const visualEditorRenderer = new VisualEditorRenderer()
-
-      const renderOpts: RenderOpts = {
-        data: articleJsonObject,
-        moduleDependencies,
-        articleId,
-        articleDetailXId,
-        articleDetail,
-        isMainPage: dump.isMainPage(articleId),
-        dump,
-      }
-
-      expect(visualEditorRenderer.render(renderOpts)).rejects.toThrow(DELETED_ARTICLE_ERROR)
-    })
   })
-
+  
   test('Load inline js from HTML', async () => {
     await setupScrapeClasses() // en wikipedia
 

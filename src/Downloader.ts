@@ -177,7 +177,7 @@ class Downloader {
     this.backoffOptions = {
       strategy: new backoff.ExponentialStrategy(),
       failAfter: 7,
-      retryIf: (err: any) => err.code === 'ECONNABORTED' || ![400, 403, 404].includes(err.response?.status),
+      retryIf: (err: any) => err.code === 'ECONNABORTED' || (![400, 403, 404].includes(err.response?.status || err.httpReturnCode) && !err.responseData?.error),
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`)
       },
@@ -481,7 +481,7 @@ class Downloader {
       this.backoffCall(this.getJSONCb, url, 'json', (err: any, val: any) => {
         this.releaseRequest()
         if (err) {
-          const httpStatus = err.response && err.response.status
+          const httpStatus = (err.response && err.response.status) || err.httpReturnCode
           logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
           reject(err)
         } else {
@@ -609,6 +609,12 @@ class Downloader {
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
+      .then((val) => {
+        if ((val.data as any).error) {
+          throw new DownloadError(`Error returned while calling API`, url, val.status, val.headers['content-type'].toString(), val.data)
+        }
+        return val
+      })
       .then((a) => handler(null, a.data), handler)
       .catch((err) => {
         try {
