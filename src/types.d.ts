@@ -171,6 +171,7 @@ interface MWMetaData {
   modulePath: string
   modulePathOpt: string
   mobileModulePath: string
+  sharedModules: string[]
 }
 
 interface MWNamespaces {

@@ -419,6 +419,10 @@ async function execute(argv: any) {
     logger.log('Getting articles')
     stime = Date.now()
     const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
+    for (const module of MediaWiki.metaData.sharedModules) {
+      cssModuleDependencies.add(module);
+    }
+    cssModuleDependencies.add('https://pokemon.fandom.com/wikia.php?controller=ThemeApi&method=themeVariables&version=1745846600')
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)

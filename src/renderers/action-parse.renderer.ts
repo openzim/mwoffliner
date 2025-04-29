@@ -25,6 +25,10 @@ export class ActionParseRenderer extends Renderer {
       styleDependenciesList: string[]
     }
 
+    for (const module of MediaWiki.metaData.sharedModules) {
+      styleDependenciesList.push(module)
+    }
+
     const htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : MediaWiki.skin === 'fandomdesktop' ? htmlFandomDesktopTemplateCode : null
 
     if (!htmlTemplateCode) {
@@ -37,7 +41,7 @@ export class ActionParseRenderer extends Renderer {
     const articleCssList =
       styleDependenciesList.length === 0
         ? ''
-        : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+        : styleDependenciesList.concat(['custom1']).map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
 
     const htmlTemplateString = htmlTemplateCode()
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))

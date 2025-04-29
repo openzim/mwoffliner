@@ -435,6 +435,28 @@ class MediaWiki {
     return textDir
   }
 
+  public async getSharedModules(): Promise<string[]> {
+    logger.log('Getting shared modules...')
+    const { content } = await Downloader.downloadContent(this.webUrl.href, 'data')
+    const body = content.toString() 
+    const doc = domino.createDocument(body)
+    const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+    const modules = [];
+    for (const link of links) {
+      const href = link.getAttribute('href');
+      if (!href) continue;
+      const url = new URL(href, this.webUrl.href);
+      const params = url.searchParams;
+      if (params.get('only') !== 'styles') continue;
+      const modulesParam = params.get('modules');
+      if (!modulesParam) continue;
+      const decodedModules = decodeURIComponent(modulesParam).split('|');
+      modules.push(...decodedModules);
+    }
+    logger.log(`Found ${modules.length} shared modules: ${modules.join(",")}`) 
+    return modules
+  }
+
   public async getSiteInfo() {
     logger.log('Getting site info...')
     const body = await Downloader.query()
@@ -499,8 +521,10 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [textDir, { langIso2, langIso3, mainPage, siteName }, subTitle] = await Promise.all([this.getTextDirection(), this.getSiteInfo(), this.getSubTitle()])
-
+    const [textDir, { langIso2, langIso3, mainPage, siteName }, subTitle, sharedModules] = await Promise.all([this.getTextDirection(), this.getSiteInfo(), this.getSubTitle(), this.getSharedModules()])
+    
+    logger.log(`Found ${sharedModules.length} shared modules: ${sharedModules.join(",")}`) 
+    
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
       actionApiUrl: this.actionApiUrl.href,
@@ -514,6 +538,7 @@ class MediaWiki {
       actionApiPath: this.#actionApiPath,
       restApiPath: this.#restApiPath,
       domain: this.#domain,
+      sharedModules: sharedModules,
 
       textDir: textDir as TextDirection,
       langIso2,

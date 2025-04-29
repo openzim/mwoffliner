@@ -94,7 +94,10 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
     apiParameterOnly = 'styles'
   }
 
-  if (!module.includes('javascript/mobile') && !module.includes('css/mobile')) {
+  if (module.startsWith("http")) {
+    moduleApiUrl = module
+  }
+  else if (!module.includes('javascript/mobile') && !module.includes('css/mobile')) {
     moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=${MediaWiki.skin}&version=&*`)
   } else {
     moduleApiUrl = encodeURI(`https:${module}`)
@@ -142,9 +145,12 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
     if (pathFunction) {
       articleId = pathFunction(module, config.output.dirs.mediawiki)
     }
+    if (articleId.includes('wikia.php')) {
+      articleId = 'mw/custom1.css'
+    }
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text)))
-    logger.info(`Saved module [${module}]`)
+    logger.info(`Saved module [${module}] at [${articleId}]`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
     throw e

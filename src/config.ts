@@ -99,7 +99,6 @@ const config = {
       css_simplified: [
         // infobox styles needed at least on hu.wikipedia.org
         'ext.gadget.infobox,wikiMenuStyles',
-        'skin.fandomdesktop.styles',
       ],
       js_simplified: [
         // base JS scripts always needed / never returned on API calls
