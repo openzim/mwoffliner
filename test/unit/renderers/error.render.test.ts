@@ -72,7 +72,7 @@ describe('ErrorRenderer', () => {
       expect(matchingRule.name).toBe('WikimediaDesktop API - JSON 504 Upstream Request Timeout')
       expect(matchingRule.detailsMessageKey).toBe('WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT')
     })
-    it('should handle ActionParse 504 upstream timeout error', async () => {
+    it('should handle ActionParse upstream timeout error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api.php?action=parse&format=json&tile=page',
         httpReturnCode: 504,
@@ -84,8 +84,8 @@ describe('ErrorRenderer', () => {
         },
       })
       expect(matchingRule).not.toBeNull()
-      expect(matchingRule.name).toBe('ActionParse API - JSON 504 Upstream Request Timeout')
-      expect(matchingRule.detailsMessageKey).toBe('ACTION_PARSE_504_UPSTREAM_TIMEOUT')
+      expect(matchingRule.name).toBe('ActionParse API - JSON Upstream Request Timeout')
+      expect(matchingRule.detailsMessageKey).toBe('ACTION_PARSE_UPSTREAM_TIMEOUT')
     })
     it('should handle general 404', async () => {
       const matchingRule = findFirstMatchingRule({
