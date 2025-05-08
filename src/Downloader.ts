@@ -276,12 +276,8 @@ class Downloader {
   }
 
   public setUrlsDirectors(mainPageRenderer: Renderer, articlesRenderer: Renderer): void {
-    if (!this.articleUrlDirector) {
-      this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
-    }
-    if (!this.mainPageUrlDirector) {
-      this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
-    }
+    this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
+    this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
   }
 
   public getArticleUrl(articleId: string): string {
