@@ -24,7 +24,7 @@ export abstract class DesktopRenderer extends Renderer {
       throw new Error(data.error)
     }
 
-    return { data, moduleDependencies }
+    return { data, moduleDependencies, redirects: [] }
   }
 
   public filterWikimediaDesktopModules(_moduleDependencies) {

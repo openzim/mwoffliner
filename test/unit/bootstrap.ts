@@ -15,5 +15,5 @@ export const startRedis = async () => {
 
 export const stopRedis = async () => {
   console.info('Closing all redis connections')
-  RedisStore.close()
+  await RedisStore.close()
 }

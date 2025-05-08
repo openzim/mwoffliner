@@ -469,17 +469,27 @@ async function execute(argv: any) {
   async function writeArticleRedirects(dump: Dump, zimCreator: Creator) {
     await redirectsXId.iterateItems(Downloader.speed, async (redirects) => {
       for (const [redirectId, { targetId }] of Object.entries(redirects)) {
-        if (redirectId !== targetId) {
-          zimCreator.addRedirection(
-            redirectId,
-            // We fake a title, by just removing the underscores
-            String(redirectId).replace(/_/g, ' '),
-            targetId,
-            { FRONT_ARTICLE: 1 },
-          )
-
-          dump.status.redirects.written += 1
+        if (await RedisStore.articleDetailXId.exists(redirectId)) {
+          logger.warn(`Skipping redirect of '${redirectId}' because it already exists as an article`)
+          continue
         }
+        if (redirectId === targetId) {
+          logger.warn(`Skipping redirect of '${redirectId}' to self`)
+          continue
+        }
+        if (!(await RedisStore.articleDetailXId.exists(targetId))) {
+          logger.warn(`Skipping redirect of '${redirectId}' to '${targetId}' because target is not a known article`)
+          continue
+        }
+        zimCreator.addRedirection(
+          redirectId,
+          // We fake a title, by just removing the underscores
+          String(redirectId).replace(/_/g, ' '),
+          targetId,
+          { FRONT_ARTICLE: 1 },
+        )
+
+        dump.status.redirects.written += 1
       }
     })
   }

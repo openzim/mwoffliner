@@ -155,3 +155,30 @@ describe('Test blacklisted NSs', () => {
     expect(MediaWiki.namespacesToMirror).not.toContain('Story')
   })
 })
+
+describe('Test moved page with redirect', () => {
+  beforeEach(async () => {
+    await RedisStore.articleDetailXId.flush()
+
+    MediaWiki.base = 'https://es.wikipedia.org'
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+
+    await initMW()
+  })
+
+  test('Moved Article Ids', async () => {
+    const aIds = ['Alejandro_González_y_Robleto', 'Vicente_Alejandro_González_y_Robleto']
+
+    await getArticleIds(null, aIds)
+
+    const { Alejandro_González_y_Robleto, Vicente_Alejandro_González_y_Robleto } = await RedisStore.articleDetailXId.getMany(aIds)
+
+    // Article "Alejandro_González_y_Robleto" has been moved so it is not fetched
+    expect(Alejandro_González_y_Robleto).toBeNull()
+
+    // Article "Vicente_Alejandro_González_y_Robleto" is defined and has a title and a revisionId
+    expect(Vicente_Alejandro_González_y_Robleto).toBeDefined()
+    expect(Vicente_Alejandro_González_y_Robleto).toHaveProperty('title')
+    expect(Vicente_Alejandro_González_y_Robleto).toHaveProperty('revisionId')
+  })
+})

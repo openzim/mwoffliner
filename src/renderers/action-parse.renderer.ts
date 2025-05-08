@@ -63,7 +63,15 @@ export class ActionParseRenderer extends Renderer {
       styleDependenciesList: config.output.mw.css_simplified.concat(data.parse.modulestyles),
     }
 
-    return { data: data.parse.text['*'], moduleDependencies }
+    const normalizedRedirects = data.parse.redirects.map((redirect) => {
+      // The API returns the redirect title (!?), we fake the
+      // redirectId by putting the underscore.
+      redirect.from = String(redirect.from).replace(/ /g, '_')
+      redirect.to = String(redirect.to).replace(/ /g, '_')
+      return redirect
+    })
+
+    return { data: data.parse.text['*'], moduleDependencies, redirects: normalizedRedirects }
   }
 
   public async render(renderOpts: RenderOpts): Promise<any> {

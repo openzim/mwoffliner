@@ -30,6 +30,7 @@ import VisualEditorURLDirector from './util/builders/url/visual-editor.director.
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
 import { renderDownloadError } from './renderers/error.render.js'
+import RedisStore from './RedisStore.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -409,10 +410,22 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
-      const { data, moduleDependencies } = await articleRenderer.download({
+      const { data, moduleDependencies, redirects } = await articleRenderer.download({
         articleUrl,
         articleDetail,
       })
+
+      // Cope with the fact that the page we are fetching might have been moved and replaced by a redirect
+      // In such a case, the download above is expected to follow the redirect so that we have proper original
+      // content at original article path, but we probably need to add a redirect since new article location
+      // probably did not existed when listing articles (might have existed if the move occured during article
+      // listing). The redirect we add in hence in the "opposite" direction than usual, i.e. it will redirect
+      // from new location to original location. Note that only ActionParse API gives proper redirects info.
+      for (const redirect of redirects) {
+        if (!(await RedisStore.articleDetailXId.exists(redirect.to)) && !(await RedisStore.redirectsXId.exists(redirect.to))) {
+          RedisStore.redirectsXId.set(redirect.to, { targetId: redirect.from, title: redirect.to })
+        }
+      }
 
       return await articleRenderer.render({
         data,

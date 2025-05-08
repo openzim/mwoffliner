@@ -36,9 +36,15 @@ export interface DownloadOpts {
   articleDetail: ArticleDetail
 }
 
+export interface Redirect {
+  from: string
+  to: string
+}
+
 export interface DownloadRes {
   data?: any
   moduleDependencies: any
+  redirects: Redirect[]
 }
 
 export interface RenderOpts {
