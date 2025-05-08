@@ -10,7 +10,6 @@ import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
 import { jest } from '@jest/globals'
-import urlParser from 'url'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
 import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
@@ -235,7 +234,7 @@ describe('Downloader class', () => {
 
   describeIf('Downloader class with optimisation', () => {
     let s3: S3
-    const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true)
+    const s3UrlObj = new URL(`${process.env.S3_URL}`)
 
     beforeAll(async () => {
       MediaWiki.base = 'https://en.wikipedia.org'
@@ -243,11 +242,11 @@ describe('Downloader class', () => {
 
       s3 = new S3(
         `${s3UrlObj.protocol}//${s3UrlObj.host}/`,
-        {
-          bucketName: s3UrlObj.query.bucketName,
-          keyId: s3UrlObj.query.keyId,
-          secretAccessKey: s3UrlObj.query.secretAccessKey,
-        },
+        new URLSearchParams({
+          bucketName: s3UrlObj.searchParams.get('bucketName'),
+          keyId: s3UrlObj.searchParams.get('keyId'),
+          secretAccessKey: s3UrlObj.searchParams.get('secretAccessKey'),
+        }),
         1000 * 60,
         false,
       )
@@ -271,7 +270,7 @@ describe('Downloader class', () => {
       expect(httpOrHttpsRemoved).toEqual('bm.wikipedia.org/static/images/project-logos/bmwiki-2x.png')
 
       // Delete the image already present in S3
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: httpOrHttpsRemoved })
+      await s3.deleteBlob({ Bucket: s3UrlObj.searchParams.get('bucketName') as string, Key: httpOrHttpsRemoved })
 
       // Check if image exists after deleting from S3
       const imageNotExists = await s3.downloadBlob(httpOrHttpsRemoved)
@@ -282,7 +281,7 @@ describe('Downloader class', () => {
       // Get an image URL to run the test with
       const randomImage = await getRandomImageUrl()
       const imagePath = stripHttpFromUrl(randomImage)
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
+      await s3.deleteBlob({ Bucket: s3UrlObj.searchParams.get('bucketName') as string, Key: imagePath })
 
       // Download the image (and cache it in S3)
       await Downloader.downloadContent(randomImage, 'image')
@@ -305,7 +304,7 @@ describe('Downloader class', () => {
       expect(newS3Resp.Metadata.etag).toEqual(newEtag)
 
       // Remove Image after test
-      await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: imagePath })
+      await s3.deleteBlob({ Bucket: s3UrlObj.searchParams.get('bucketName') as string, Key: imagePath })
     })
   })
 

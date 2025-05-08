@@ -10,17 +10,17 @@ interface BucketParams {
 }
 class S3 {
   public url: any
-  public params: any
+  public params: URLSearchParams
   public s3Handler: any
   public bucketName: string
   private region: string
   private reqTimeout: number
   private insecure: boolean
 
-  constructor(s3Url: any, s3Params: any, reqTimeout: number, insecure: boolean) {
+  constructor(s3Url: any, s3Params: URLSearchParams, reqTimeout: number, insecure: boolean) {
     this.url = s3Url
     this.params = s3Params
-    this.bucketName = s3Params.bucketName
+    this.bucketName = s3Params.get('bucketName')
     this.reqTimeout = reqTimeout
     this.insecure = insecure
     this.setRegion()
@@ -42,8 +42,8 @@ class S3 {
     const s3UrlBase: any = new URL(this.url)
     this.s3Handler = new S3Client({
       credentials: {
-        accessKeyId: this.params.keyId,
-        secretAccessKey: this.params.secretAccessKey,
+        accessKeyId: this.params.get('keyId'),
+        secretAccessKey: this.params.get('secretAccessKey'),
       },
       endpoint: s3UrlBase.href,
       forcePathStyle: s3UrlBase.protocol === 'http:',

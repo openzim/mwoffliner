@@ -11,10 +11,9 @@ import pmap from 'p-map'
 import sharp from 'sharp'
 import domino from 'domino'
 import { rimraf } from 'rimraf'
-import urlParser, { fileURLToPath } from 'url'
+import { fileURLToPath } from 'url'
 import semver from 'semver'
 import * as path from 'path'
-import * as QueryStringParser from 'querystring'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
 import { checkApiAvailability, getArticleIds } from './util/mw-api.js'
 
@@ -141,10 +140,9 @@ async function execute(argv: any) {
   // Check for S3 creds
   if (optimisationCacheUrl) {
     // Decompose the url with path and other S3 creds
-    const s3UrlObj = urlParser.parse(optimisationCacheUrl)
-    const queryReader = QueryStringParser.parse(s3UrlObj.query)
+    const s3UrlObj = new URL(optimisationCacheUrl)
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-    s3Obj = new S3(s3Url, queryReader, requestTimeout * 1000 || config.defaults.requestTimeout, argv.insecure)
+    s3Obj = new S3(s3Url, s3UrlObj.searchParams, requestTimeout * 1000 || config.defaults.requestTimeout, argv.insecure)
     await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3')
     })
@@ -521,7 +519,7 @@ async function execute(argv: any) {
       )
     }
 
-    const parsedUrl = urlParser.parse(entries.logo)
+    const parsedUrl = new URL(entries.logo, MediaWiki.baseUrl)
     const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
     const { content } = await Downloader.downloadContent(logoUrl, 'image')
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()

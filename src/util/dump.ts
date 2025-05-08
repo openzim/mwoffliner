@@ -1,4 +1,4 @@
-import urlParser, { fileURLToPath } from 'url'
+import { fileURLToPath } from 'url'
 import * as pathParser from 'path'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
@@ -34,7 +34,7 @@ export function processStylesheetContent(cssUrl: string, linkMedia: string, body
 
     /* Avoid 'data', so no URL dependency */
     if (!url.match('^data')) {
-      const filePathname = urlParser.parse(url, false, true).pathname
+      const filePathname = new URL(url, cssUrl).pathname
       if (filePathname) {
         const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
 

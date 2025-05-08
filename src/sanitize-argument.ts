@@ -1,12 +1,11 @@
 import S3 from './S3.js'
 import axios from 'axios'
 import RedisStore from './RedisStore.js'
-import urlParser, { fileURLToPath } from 'url'
+import { fileURLToPath } from 'url'
 import pathParser from 'path'
 import * as logger from './Logger.js'
 import { config } from './config.js'
 import fs from 'fs'
-import * as QueryStringParser from 'querystring'
 import { isValidEmail } from './util/index.js'
 import * as path from 'path'
 import { parameterDescriptions } from './parameterList.js'
@@ -64,10 +63,9 @@ export async function sanitize_all(argv: any) {
   // sanitizing S3
   if (optimisationCacheUrl) {
     // Decompose the url with path and other S3 creds
-    const s3UrlObj = urlParser.parse(optimisationCacheUrl)
-    const queryReader = QueryStringParser.parse(s3UrlObj.query)
+    const s3UrlObj = new URL(optimisationCacheUrl)
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-    const s3Obj = new S3(s3Url, queryReader, 1000 * 60, argv.insecure)
+    const s3Obj = new S3(s3Url, s3UrlObj.searchParams, 1000 * 60, argv.insecure)
     await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3')
     })

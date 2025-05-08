@@ -1,5 +1,4 @@
 import * as pathParser from 'path'
-import * as urlParser from 'url'
 import { existsSync } from 'fs'
 import * as logger from './Logger.js'
 import { getStringsForLang } from './util/index.js'
@@ -98,7 +97,7 @@ export class Dump {
       radical = this.opts.filenamePrefix
     } else {
       radical = `${this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)}_`
-      const hostParts = urlParser.parse(this.mwMetaData.webUrl).hostname.split('.')
+      const hostParts = new URL(this.mwMetaData.webUrl).hostname.split('.')
       let langSuffix = this.mwMetaData.langIso2
       for (const part of hostParts) {
         if (part === this.mwMetaData.langIso3) {
@@ -154,7 +153,7 @@ export class Dump {
     let tags = (this.opts.tags || '').split(';')
 
     /* Add Mediawiki hostname radical as a tag */
-    const mwUrlHostParts = urlParser.parse(this.mwMetaData.baseUrl).host.split('.')
+    const mwUrlHostParts = new URL(this.mwMetaData.baseUrl).host.split('.')
     const mwUrlHostPartsRadical = mwUrlHostParts.length > 1 ? mwUrlHostParts[mwUrlHostParts.length - 2] : mwUrlHostParts[mwUrlHostParts.length - 1]
     const mwUrlHostPartsTag = mwUrlHostPartsRadical.toLowerCase()
     addTagWithoutDuplicate(mwUrlHostPartsTag)

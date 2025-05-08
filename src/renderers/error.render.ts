@@ -147,7 +147,8 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
       (!matchingRule.urlContains || matchingRule.urlContains.findIndex((urlContain) => err.urlCalled.includes(urlContain)) >= 0) &&
       (!matchingRule.httpReturnCodes ||
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
-      (!matchingRule.contentTypes || matchingRule.contentTypes.findIndex((contentType) => (err.responseContentType || "").toLowerCase().includes(contentType.toLowerCase())) >= 0) &&
+      (!matchingRule.contentTypes ||
+        matchingRule.contentTypes.findIndex((contentType) => (err.responseContentType || '').toLowerCase().includes(contentType.toLowerCase())) >= 0) &&
       (!matchingRule.rawResponseDataContains ||
         matchingRule.rawResponseDataContains.findIndex((rawResponseDataContain) => typeof err.responseData == 'string' && err.responseData.includes(rawResponseDataContain)) >=
           0) &&

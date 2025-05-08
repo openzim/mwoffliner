@@ -244,7 +244,7 @@ describe('saveArticles', () => {
     })
     */
   })
-  
+
   test('Load inline js from HTML', async () => {
     await setupScrapeClasses() // en wikipedia
 
