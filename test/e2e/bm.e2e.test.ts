@@ -15,7 +15,7 @@ const parameters = {
 }
 
 await testAllRenders('bm-wikipedia', parameters, async (outFiles) => {
-  test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+  test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
     await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
   })
 

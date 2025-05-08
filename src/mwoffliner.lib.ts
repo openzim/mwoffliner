@@ -369,7 +369,7 @@ async function execute(argv: any) {
 
   async function doDump(dump: Dump) {
     const outZim = path.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim')
-    logger.log(`Writing zim to [${outZim}]`)
+    logger.log(`Writing ZIM to [${outZim}]`)
     dump.outFile = outZim
 
     const metadata = {
@@ -455,7 +455,7 @@ async function execute(argv: any) {
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)
 
-    logger.log('Finishing Zim Creation')
+    logger.log('Finishing ZIM Creation')
     await zimCreator.finishZimCreation()
 
     logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
@@ -489,17 +489,17 @@ async function execute(argv: any) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
       if (faviconIsRemote) {
-        logger.log(`Downloading remote zim favicon from [${customZimFavicon}]`)
+        logger.log(`Downloading remote ZIM favicon from [${customZimFavicon}]`)
         content = await Downloader.request({ url: customZimFavicon, method: 'GET', ...Downloader.arrayBufferRequestOptions })
           .then((a) => a.data)
           .catch(() => {
-            throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
+            throw new Error(`Failed to download custom ZIM favicon from [${customZimFavicon}]`)
           })
       } else {
         try {
           content = fs.readFileSync(customZimFavicon)
         } catch {
-          throw new Error(`Failed to read custom zim favicon from [${customZimFavicon}]`)
+          throw new Error(`Failed to read custom ZIM favicon from [${customZimFavicon}]`)
         }
       }
       try {

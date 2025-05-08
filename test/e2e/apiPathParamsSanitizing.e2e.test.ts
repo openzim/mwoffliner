@@ -45,7 +45,7 @@ await testAllRenders('api-path-params', parameters, async (outFiles) => {
       expect(outFiles[0].mwMetaData.actionApiUrl).toBe('https://en.wikipedia.org/w/api.php')
     })
 
-    test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
     })
 
