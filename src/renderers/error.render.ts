@@ -127,6 +127,16 @@ const matchingRules: MatchingRule[] = [
     detailsMessageKey: 'ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR',
     displayThirdLine: true,
   },
+  {
+    name: 'ActionParse API - Truncated Response',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: null,
+    contentTypes: null,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'warnings.result.*', valueContains: ['This result was truncated'] }],
+    detailsMessageKey: 'ACTION_PARSE_TRUNCATED_RESPONSE',
+    displayThirdLine: false,
+  },
 ]
 
 function jsonMatch(jsonObject: any, keyPath: string, allowedValues: string[]) {
