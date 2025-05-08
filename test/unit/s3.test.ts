@@ -1,22 +1,21 @@
 import S3 from '../../src/S3.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
-import urlParser from 'url'
 
 jest.setTimeout(60000)
 
 const describeIf = process.env.S3_URL ? describe : describe.skip
 describeIf('S3', () => {
   test('S3 checks', async () => {
-    const s3UrlObj = urlParser.parse(`${process.env.S3_URL}`, true)
+    const s3UrlObj = new URL(`${process.env.S3_URL}`)
 
     const s3 = new S3(
       `${s3UrlObj.protocol}//${s3UrlObj.host}/`,
-      {
-        bucketName: s3UrlObj.query.bucketName,
-        keyId: s3UrlObj.query.keyId,
-        secretAccessKey: s3UrlObj.query.secretAccessKey,
-      },
+      new URLSearchParams({
+        bucketName: s3UrlObj.searchParams.get('bucketName'),
+        keyId: s3UrlObj.searchParams.get('keyId'),
+        secretAccessKey: s3UrlObj.searchParams.get('secretAccessKey'),
+      }),
       1000 * 60,
       false,
     )
@@ -25,7 +24,7 @@ describeIf('S3', () => {
     // Credentials on S3 exists
     expect(credentialExists).toBeTruthy()
 
-    const bucketExists = await s3.bucketExists(s3UrlObj.query.bucketName as string)
+    const bucketExists = await s3.bucketExists(s3UrlObj.searchParams.get('bucketName') as string)
     // Given bucket exists in S3
     expect(bucketExists).toBeDefined()
 
@@ -41,7 +40,7 @@ describeIf('S3', () => {
     expect(imageExist).toBeDefined()
 
     // Remove Image after test
-    await s3.deleteBlob({ Bucket: s3UrlObj.query.bucketName as string, Key: s3TestKey })
+    await s3.deleteBlob({ Bucket: s3UrlObj.searchParams.get('bucketName') as string, Key: s3TestKey })
 
     const imageNotExist = await s3.downloadBlob('bm.wikipedia.org/static/images/project-logos/polsjsshsgd.png')
     // Image doesnt exist in S3
@@ -49,17 +48,17 @@ describeIf('S3', () => {
   })
 
   test('Test whether the wrong region was set', async () => {
-    const wrongS3UrlObj = urlParser.parse('https://wrong-s3.region.com/?keyId=123&secretAccessKey=123&bucketName=kiwix', true)
+    const wrongS3UrlObj = new URL('https://wrong-s3.region.com/?keyId=123&secretAccessKey=123&bucketName=kiwix')
 
     expect(
       () =>
         new S3(
           `${wrongS3UrlObj.protocol}//${wrongS3UrlObj.host}/`,
-          {
-            bucketName: wrongS3UrlObj.query.bucketName,
-            keyId: wrongS3UrlObj.query.keyId,
-            secretAccessKey: wrongS3UrlObj.query.secretAccessKey,
-          },
+          new URLSearchParams({
+            bucketName: wrongS3UrlObj.searchParams.get('bucketName'),
+            keyId: wrongS3UrlObj.searchParams.get('keyId'),
+            secretAccessKey: wrongS3UrlObj.searchParams.get('secretAccessKey'),
+          }),
           1000 * 60,
           false,
         ),

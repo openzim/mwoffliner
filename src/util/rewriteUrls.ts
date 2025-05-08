@@ -1,4 +1,3 @@
-import * as urlParser from 'url'
 import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc.js'
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
@@ -11,8 +10,13 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
   let href = linkNode.getAttribute('href') || ''
   let hrefProtocol
 
+  const extractScheme = function (href: string) {
+    const match = href.match(/^([a-zA-Z][a-zA-Z\d+\-.]*):/)
+    return match ? match[1] : null
+  }
+
   try {
-    hrefProtocol = urlParser.parse(href).protocol
+    hrefProtocol = extractScheme(href)
   } catch {
     return null
   }
@@ -50,23 +54,14 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
     let lat
     let lon
     if (/poimap2\.php/i.test(href)) {
-      const hrefQuery = urlParser.parse(href, true).query
-      lat = parseFloat(hrefQuery.lat as string)
-      lon = parseFloat(hrefQuery.lon as string)
+      const hrefQuery = new URL(href, MediaWiki.baseUrl)
+      lat = parseFloat(hrefQuery.searchParams.get('lat') as string)
+      lon = parseFloat(hrefQuery.searchParams.get('lon') as string)
     } else if (/geohack\.php/i.test(href)) {
-      let { params } = urlParser.parse(href, true).query
-
-      // "params" might be an array, try to detect the geo localization one
-      if (params instanceof Array) {
-        let i = 0
-        while (params[i] && isNaN(+params[i][0])) {
-          i += 1
-        }
-        params = params[i]
-      }
+      const params = new URL(href, MediaWiki.baseUrl).searchParams.get('params')
 
       if (params) {
-        // see https://bitbucket.org/magnusmanske/geohack/src public_html geo_param.php
+        // see https://bitbucket.org/magnusmanske/geohack/src/public_html/geo_param.php
         const pieces = params.toUpperCase().split('_')
         const semiPieces = pieces.length > 0 ? pieces[0].split(';') : undefined
         if (semiPieces && semiPieces.length === 2) {

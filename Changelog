@@ -13,6 +13,7 @@ Unreleased:
 * CHANGED: Keep `typeof` HTML attribute and stop adding custom thumbiner HTML around images when ActionParse renderer is used (@benoit74 #2254)
 * FIX: Stop removing all images which should not be editable (@benoit74 #2255)
 * FIX: Use only minimal Vector (legacy and 2022) templates to avoid side-effects from CSS reserved spaces (@benoit74 #2259)
+* CHANGED: Replace urlparser deprecated API with WHATWG URL API (@benoit74 #2285)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
