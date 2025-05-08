@@ -24,6 +24,7 @@
     "lint": "eslint .",
     "lint-fix": "eslint --fix .",
     "format": "prettier --write './**/*.ts'",
+    "format-check": "prettier --check './**/*.ts'",
     "prebuild": "node -p \"'export const LIB_VERSION = \\'' + require('./package.json').version + '\\''\" > src/version.ts",
     "build": "./dev/build.sh",
     "watch": "./dev/watch.sh",

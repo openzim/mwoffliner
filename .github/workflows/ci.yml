@@ -40,9 +40,13 @@ jobs:
       - name: Installing other dependencies
         run: |
           npm install
+          npm i -g prettier
           npm i -g eslint
           npm i -g codecov
           wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+
+      - name: Running Prettier
+        run: npm run format-check
 
       - name: Running ESLint
         run: npm run lint
