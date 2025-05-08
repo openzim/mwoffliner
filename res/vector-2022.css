@@ -1,0 +1,15 @@
+/* Set font-size and line-height global default */
+.vector-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Customize infobox on small screens, for some reason this seems to not be done automatically */
+@media screen {
+  @media (max-width: calc(639px)) {
+    table.infobox {
+      width: 100% !important;
+      display: table;
+    }
+  }
+}

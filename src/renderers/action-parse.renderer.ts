@@ -13,7 +13,7 @@ export class ActionParseRenderer extends Renderer {
   constructor() {
     super()
     if (this.staticFilesList.length === 0) {
-      this.staticFilesList = getStaticFiles(config.output.jsResourcesCommon, config.output.cssResourcesCommon)
+      this.staticFilesList = getStaticFiles(config.output.jsResourcesCommon, config.output.cssResourcesCommon.concat(MediaWiki.skin)).concat('external-link.svg')
     }
   }
 

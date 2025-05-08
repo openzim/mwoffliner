@@ -57,7 +57,7 @@ const config = {
 
   output: {
     // CSS and JS resources added by Kiwix
-    cssResourcesCommon: ['style', 'mobile_main_page'],
+    cssResourcesCommon: ['style', 'mobile_main_page', 'footer'],
     jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
     cssResources: ['content.parsoid', 'inserted_style'],
