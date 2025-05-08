@@ -459,6 +459,7 @@ async function execute(argv: any) {
     await zimCreator.finishZimCreation()
 
     logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
+    logger.log(`ZIM is ready at [${outZim}]`)
   }
 
   /* ********************************* */
