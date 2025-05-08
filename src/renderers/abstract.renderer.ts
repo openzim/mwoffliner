@@ -32,6 +32,7 @@ interface RendererBuilderOptionsSpecific extends RendererBuilderOptionsBase {
 export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuilderOptionsSpecific
 
 export interface DownloadOpts {
+  articleId: string
   articleUrl: string
   articleDetail: ArticleDetail
 }

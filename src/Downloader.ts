@@ -398,6 +398,11 @@ class Downloader {
     }
   }
 
+  public async getLogEvents(letype: string, articleId: string): Promise<any> {
+    const logEventsData = await this.getJSON<any>(this.apiUrlDirector.buildLogEventsQuery(letype, articleId))
+    return logEventsData.query?.logevents
+  }
+
   public async getArticle(
     articleId: string,
     articleDetailXId: RKVS<ArticleDetail>,
@@ -411,6 +416,7 @@ class Downloader {
 
     try {
       const { data, moduleDependencies, redirects } = await articleRenderer.download({
+        articleId,
         articleUrl,
         articleDetail,
       })

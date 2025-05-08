@@ -49,9 +49,30 @@ export class ActionParseRenderer extends Renderer {
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
-    const { articleUrl } = downloadOpts
+    const { articleId, articleUrl } = downloadOpts
 
-    const data = await Downloader.getJSON<any>(articleUrl)
+    let data: any
+    try {
+      data = await Downloader.getJSON<any>(articleUrl)
+    } catch (err) {
+      if (err instanceof DownloadError && err.responseData.error?.code === 'missingtitle') {
+        // For missing articles, query log events searching for a recent move, and if found check
+        // if it has been done without redirect left behind. If so, download content from the new
+        // article location
+        const logEvents = await Downloader.getLogEvents('move', articleId)
+        if (!logEvents || !logEvents[0]) {
+          throw err
+        }
+        const logEvent = logEvents[0]
+        if (!logEvent.params?.target_title) {
+          throw err
+        }
+        if (!Object.keys(logEvent.params).includes('suppressredirect')) {
+          throw err
+        }
+        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(logEvent.params.target_title))
+      }
+    }
 
     if (!data.parse) {
       throw new DownloadError('ActionParse response is empty', articleUrl, null, null, data)
