@@ -78,13 +78,13 @@ const matchingRules: MatchingRule[] = [
     displayThirdLine: true,
   },
   {
-    name: 'ActionParse API - JSON 504 Upstream Request Timeout',
+    name: 'ActionParse API - JSON Upstream Request Timeout',
     urlContains: ['api.php?action=parse&format=json'],
-    httpReturnCodes: [{ min: 504, max: 504 }],
+    httpReturnCodes: [{ min: 200, max: 200 }, { min: 504, max: 504 }],
     contentTypes: ['application/json'],
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\RequestTimeout\\RequestTimeoutException'] }],
-    detailsMessageKey: 'ACTION_PARSE_504_UPSTREAM_TIMEOUT',
+    detailsMessageKey: 'ACTION_PARSE_UPSTREAM_TIMEOUT',
     displayThirdLine: true,
   },
   {
@@ -126,6 +126,16 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\Assert\\UnreachableException'] }],
     detailsMessageKey: 'ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR',
     displayThirdLine: true,
+  },
+  {
+    name: 'ActionParse API - Truncated Response',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: null,
+    contentTypes: null,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'warnings.result.*', valueContains: ['This result was truncated'] }],
+    detailsMessageKey: 'ACTION_PARSE_TRUNCATED_RESPONSE',
+    displayThirdLine: false,
   },
 ]
 

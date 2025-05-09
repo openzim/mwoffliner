@@ -12,7 +12,7 @@
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Artikel ini dihapus setelah kami menyusun daftar artikel yang akan diambil tapi sebelum kami mengambilnya untuk membangun ZIM yang Anda telusuri.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Saat ZIM yang Anda jelajahi dibuat, server ${server} gagal menyajikan konten HTML artikel ini dan menyatakan kesalahan HTTP 500.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Saat ZIM yang Anda jelajahi sedang dibuat, server ${server} gagal menyajikan konten HTML artikel ini dan menyatakan kesalahan HTTP 504.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_504_UPSTREAM_TIMEOUT": "Saat ZIM yang Anda jelajahi dibuat, API ActionParse server ${server} gagal menyajikan konten HTML artikel ini dan menyatakan kesalahan HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Saat ZIM yang Anda jelajahi dibuat, API ActionParse server ${server} gagal menyajikan konten HTML artikel ini dan menyatakan kesalahan HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Saat ZIM yang Anda jelajahi dibuat, API ActionParse server ${server} menyatakan kesalahan HTTP 503 saat memberikan detail tentang HTML artikel ini.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR": "Saat ZIM yang Anda telusuri dibuat, API ActionParse server ${server} memunculkan kesalahan DB yang tidak terduga saat memberikan detail tentang HTML artikel ini.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Saat ZIM yang Anda telusuri dibuat, API ActionParse server ${server} memunculkan kesalahan revisi ID buruk tak terduga saat memberikan detail tentang HTML artikel ini.",
