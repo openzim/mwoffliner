@@ -71,6 +71,8 @@ export class ActionParseRenderer extends Renderer {
           throw err
         }
         data = await Downloader.getJSON<any>(Downloader.getArticleUrl(logEvent.params.target_title))
+      } else {
+        throw err
       }
     }
 
