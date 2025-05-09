@@ -21,7 +21,7 @@ const parameters = {
 
 await testAllRenders('zim-metadata', parameters, async (outFiles) => {
   describe('zimMetadata', () => {
-    test(`check all zim metadata using zimdump for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`check all ZIM metadata using zimdump for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
 
       expect(outFiles).toHaveLength(1)

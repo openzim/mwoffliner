@@ -7,7 +7,7 @@ import { rimraf } from 'rimraf'
 
 jest.setTimeout(60000)
 
-// Check the integrity of img elements between zim file and article html taken from it
+// Check the integrity of img elements between ZIM file and article html taken from it
 const verifyImgElements = (imgFilesArr, imgElements) => {
   for (const img of imgElements) {
     for (const imgFile of imgFilesArr) {
@@ -33,7 +33,7 @@ await testRenders(
     describe('e2e test for wiki.openstreetmap.org', () => {
       const articleDoc = domino.createDocument(articleFromDump)
 
-      test(`test zim integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+      test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
         await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
       })
 

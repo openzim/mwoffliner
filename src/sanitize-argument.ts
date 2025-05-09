@@ -116,7 +116,7 @@ export async function sanitize_all(argv: any) {
   // created a redis client and then closed it.
   sanitize_redis(argv)
 
-  // sanitizing custom zim favicon
+  // sanitizing custom ZIM favicon
   if (customZimFavicon) {
     await sanitize_customZimFavicon(customZimFavicon)
   }
@@ -208,7 +208,7 @@ export async function sanitize_customZimFavicon(customZimFavicon: any) {
   if (faviconIsRemote) {
     // make a download to check custom favicon link is valid
     await axios.get(customZimFavicon).catch(() => {
-      throw new Error(`Failed to download custom zim favicon from [${customZimFavicon}]`)
+      throw new Error(`Failed to download custom ZIM favicon from [${customZimFavicon}]`)
     })
   } else {
     fs.readFileSync(customZimFavicon)

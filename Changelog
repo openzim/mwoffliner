@@ -14,6 +14,7 @@ Unreleased:
 * FIX: Stop removing all images which should not be editable (@benoit74 #2255)
 * FIX: Use only minimal Vector (legacy and 2022) templates to avoid side-effects from CSS reserved spaces (@benoit74 #2259)
 * CHANGED: Replace urlparser deprecated API with WHATWG URL API (@benoit74 #2285)
+* CHANGED: Log ZIM location at the end of the scrape for conveniency (@benoit74 #2297)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
