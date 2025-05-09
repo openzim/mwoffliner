@@ -151,9 +151,21 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], conti
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
           if (articleDetail.redirects) {
             for (const target of articleDetail.redirects) {
-              redirects[target.title] = {
-                targetId: articleId,
-                title: target.title,
+              const targetExistsAsArticle = (await RedisStore.articleDetailXId.exists(target.title)) || Object.keys(chunk.articleDetails).includes(target.title)
+              if (targetExistsAsArticle) {
+                logger.warn(
+                  `Article '${target.title}' found in redirects of '${articleId}' while it is also listed among articles to fetch ; scraper will automatically recover from this edge case`,
+                )
+                redirects[articleId] = {
+                  targetId: target.title,
+                  title: articleId,
+                }
+                delete chunk.articleDetails[articleId]
+              } else {
+                redirects[target.title] = {
+                  targetId: articleId,
+                  title: target.title,
+                }
               }
             }
           }

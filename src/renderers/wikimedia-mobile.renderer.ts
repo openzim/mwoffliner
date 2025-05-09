@@ -37,7 +37,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
 
     const data = await Downloader.getJSON<any>(articleUrl)
 
-    return { data, moduleDependencies }
+    return { data, moduleDependencies, redirects: [] }
   }
 
   public async render(renderOpts: RenderOpts): Promise<any> {

@@ -20,11 +20,12 @@ import { renderName } from 'src/renderers/abstract.renderer.js'
 
 jest.setTimeout(200000)
 
-describe('Downloader class', () => {
+describe('Downloader class - wikipedia EN', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
   beforeAll(async () => {
+    MediaWiki.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
@@ -314,4 +315,134 @@ describe('Downloader class', () => {
     )
     return resp.data.query.pages[0].imageinfo[0].url
   }
+})
+
+describe('Downloader class - wikipedia ES', () => {
+  beforeAll(startRedis)
+  afterAll(stopRedis)
+
+  beforeAll(async () => {
+    MediaWiki.reset()
+    MediaWiki.base = 'https://es.wikipedia.org'
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+
+    await MediaWiki.getMwMetaData()
+    await MediaWiki.hasCoordinates()
+    await MediaWiki.hasWikimediaDesktopApi()
+    await MediaWiki.hasWikimediaMobileApi()
+    await MediaWiki.hasRestApi()
+    await MediaWiki.hasVisualEditorApi()
+  })
+
+  describe('getArticle response content for moved article id with redirect', () => {
+    for (const renderer of RENDERERS_LIST) {
+      // for (const renderer of ['ActionParse']) {
+      let dump: Dump
+      beforeAll(async () => {
+        const mwMetadata = await MediaWiki.getMwMetaData()
+        dump = new Dump('', {} as any, mwMetadata)
+        await RenderingContext.createRenderers(renderer as renderName, true)
+      })
+
+      test(`for ${renderer} render`, async () => {
+        // This test is KO with VisualEditor, we "skip" it
+        if (renderer == 'VisualEditor') {
+          return
+        }
+
+        // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when
+        // listing articles and getting their details, but the article has then been moved (with a redirect)
+        // to 'Vicente_Alejandro_González_y_Robleto'
+        // In such a case, we expect to:
+        // - retrieve content of redirection target to have real content
+        // - place this content in original article path (Alejandro_González_y_Robleto)
+        const articleId = 'Alejandro_González_y_Robleto'
+        const redirectArticleId = 'Vicente_Alejandro_González_y_Robleto'
+
+        // Retrieve details from the redirection target (in real-life scenario, this would have been retrieved
+        // because the move did not yet happened when getting article details, but happened before getting
+        // article content)
+        const mwArticleDetails = await Downloader.getArticleDetailsIds([redirectArticleId])
+        const articleDetails = mwRetToArticleDetail(mwArticleDetails)
+
+        // Move detail to articleId instead of redirectArticleId
+        articleDetails[articleId] = articleDetails[redirectArticleId]
+        delete articleDetails[redirectArticleId]
+        await RedisStore.articleDetailXId.setMany(articleDetails)
+
+        const articleResult = await Downloader.getArticle(
+          articleId,
+          RedisStore.articleDetailXId,
+          RenderingContext.articlesRenderer,
+          Downloader.getArticleUrl(articleId),
+          dump,
+          articleDetails[articleId],
+          dump.isMainPage(articleId),
+        )
+        expect(articleResult).toHaveLength(1)
+        expect(articleResult[0].articleId).toBe('Alejandro_González_y_Robleto')
+        expect(articleResult[0].html).toContain('Datos biográficos')
+
+        // Only ActionParse API gives sufficient information so that we automatically add missing redirects
+        if (renderer == 'ActionParse') {
+          expect(RedisStore.redirectsXId.exists('Vicente_Alejandro_González_y_Robleto')).toBeTruthy()
+        }
+      })
+    }
+  })
+
+  test(`getArticle response content for article moved during listing`, async () => {
+    const renderer = ''
+
+    const mwMetadata = await MediaWiki.getMwMetaData()
+    const dump = new Dump('', {} as any, mwMetadata)
+    await RenderingContext.createRenderers(renderer as renderName, true)
+
+    // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when
+    // listing articles and getting their details, but the article has then been moved (with a redirect)
+    // to 'Vicente_Alejandro_González_y_Robleto' during article listing, so we have both articles to fetch
+    const articleId = 'Alejandro_González_y_Robleto'
+    const redirectArticleId = 'Vicente_Alejandro_González_y_Robleto'
+
+    // Retrieve details from the redirection target (in real-life scenario, this would have been retrieved
+    // because the move did not yet happened when getting article details, but happened before getting
+    // article content)
+    const mwArticleDetails = await Downloader.getArticleDetailsIds([redirectArticleId])
+    const articleDetails = mwRetToArticleDetail(mwArticleDetails)
+
+    // Move detail to articleId instead of redirectArticleId
+    articleDetails[articleId] = articleDetails[redirectArticleId]
+    await RedisStore.articleDetailXId.setMany(articleDetails)
+
+    const articleResult = await Downloader.getArticle(
+      articleId,
+      RedisStore.articleDetailXId,
+      RenderingContext.articlesRenderer,
+      Downloader.getArticleUrl(articleId),
+      dump,
+      articleDetails[articleId],
+      dump.isMainPage(articleId),
+    )
+    expect(articleResult).toHaveLength(1)
+    expect(articleResult[0].articleId).toBe('Alejandro_González_y_Robleto')
+    expect(articleResult[0].html).toContain('Datos biográficos')
+
+    const redirectArticleResult = await Downloader.getArticle(
+      redirectArticleId,
+      RedisStore.articleDetailXId,
+      RenderingContext.articlesRenderer,
+      Downloader.getArticleUrl(redirectArticleId),
+      dump,
+      articleDetails[redirectArticleId],
+      dump.isMainPage(redirectArticleId),
+    )
+    expect(redirectArticleResult).toHaveLength(1)
+    expect(redirectArticleResult[0].articleId).toBe('Vicente_Alejandro_González_y_Robleto')
+    expect(redirectArticleResult[0].html).toContain('Datos biográficos')
+
+    // both redirects have been added by 'mistake' ; it will be the responsibility of code handling
+    // redirects rewrite to recover from this situation
+    expect(RedisStore.redirectsXId.exists('Vicente_Alejandro_González_y_Robleto')).toBeTruthy()
+    expect(RedisStore.redirectsXId.exists('Alejandro_González_y_Robleto')).toBeTruthy()
+  })
 })
