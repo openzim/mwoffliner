@@ -1,6 +1,6 @@
 import * as domino from 'domino'
 import { Renderer } from './abstract.renderer.js'
-import { getStaticFiles, genCanonicalLink, genHeaderScript, genHeaderCSSLink } from '../util/misc.js'
+import { getStaticFiles, genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePath } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
@@ -30,12 +30,12 @@ export abstract class MobileRenderer extends Renderer {
     return wikimediaMobileModuleDependencies
   }
 
-  private genWikimediaMobileOverrideCSSLink(css: string) {
-    return `<link rel="stylesheet" href="./${css}.css" />`
+  private genWikimediaMobileOverrideCSSLink(relativeFilePath: string, css: string) {
+    return `<link rel="stylesheet" href="${relativeFilePath}${css}.css" />`
   }
 
-  private genWikimediaMobileOverrideScript(js: string) {
-    return `<script src='./${js}.js'></script>`
+  private genWikimediaMobileOverrideScript(relativeFilePath: string, js: string) {
+    return `<script src='${relativeFilePath}${js}.js'></script>`
   }
 
   public templateMobileArticle(moduleDependencies: any, articleId: string): Document {
@@ -48,11 +48,12 @@ export abstract class MobileRenderer extends Renderer {
         ? ''
         : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
 
+    const relativeFilePath = getRelativeFilePath(articleId, '')
     const htmlTemplateString = htmlWikimediaMobileTemplateCode()
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', '')
-      .replace('__JS_SCRIPTS__', this.genWikimediaMobileOverrideScript(config.output.wikimediaMobileJsResources[0]))
-      .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(config.output.wikimediaMobileCssResources[0]))
+      .replace('__JS_SCRIPTS__', this.genWikimediaMobileOverrideScript(relativeFilePath, config.output.wikimediaMobileJsResources[0]))
+      .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(relativeFilePath, config.output.wikimediaMobileCssResources[0]))
       .replace('__ARTICLE_JS_LIST__', articleJsList)
       .replace('__ARTICLE_CSS_LIST__', articleCssList)
 

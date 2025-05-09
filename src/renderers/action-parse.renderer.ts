@@ -2,7 +2,7 @@ import domino from 'domino'
 import { DownloadOpts, DownloadRes, Renderer } from './abstract.renderer.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 import { config } from '../config.js'
-import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles } from '../util/misc.js'
+import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
 import Downloader, { DownloaderClass, DownloadError } from '../Downloader.js'
@@ -43,6 +43,7 @@ export class ActionParseRenderer extends Renderer {
       .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
       .replace('__ARTICLE_JS_LIST__', articleJsList)
       .replace('__ARTICLE_CSS_LIST__', articleCssList)
+      .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
 
     return domino.createDocument(htmlTemplateString)
   }
