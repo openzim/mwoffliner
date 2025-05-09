@@ -52,6 +52,10 @@ export default class ApiURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2' }).build(true)
   }
 
+  buildLogEventsQuery(letype: string, articleId: string) {
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', list: 'logevents', letype: letype, letitle: articleId, format: 'json' }).build()
+  }
+
   buildArticleApiURL(articleId: string) {
     return urlBuilder
       .setDomain(this.baseDomain)

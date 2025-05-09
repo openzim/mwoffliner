@@ -4,7 +4,10 @@ import { DELETED_ARTICLE_ERROR } from '../../../src/util/const.js'
 import { VisualEditorRenderer } from '../../../src/renderers/visual-editor.renderer.js'
 import { setupScrapeClasses } from '../../util.js'
 import { RenderOpts } from 'src/renderers/abstract.renderer.js'
-import Downloader from '../../../src/Downloader.js'
+import Downloader, { DownloadError } from '../../../src/Downloader.js'
+import { ActionParseRenderer } from '../../../src/renderers/action-parse.renderer.js'
+import MediaWiki from '../../../src/MediaWiki.js'
+import { config } from '../../../src/config.js'
 
 jest.setTimeout(10000)
 
@@ -132,6 +135,36 @@ describe('ArticleRenderer', () => {
       } as RenderOpts)
 
       expect(result).toBe('')
+    })
+  })
+
+  describe('test ActionParse renderer', () => {
+    const actionParseRenderer = new ActionParseRenderer()
+
+    beforeAll(async () => {
+      MediaWiki.base = 'https://zh.wikipedia.org'
+      MediaWiki.getCategories = true
+      Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+      await MediaWiki.getMwMetaData()
+      await MediaWiki.hasActionParseApi()
+      Downloader.setUrlsDirectors(actionParseRenderer, actionParseRenderer)
+    })
+
+    it('regular paged has content', async () => {
+      const articleId = '荷蘭Floriade世界園藝博覽會'
+      const downloadRes = await actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })
+      expect(downloadRes.data).toBeDefined()
+    })
+
+    it('moved paged has content retrieved from fallback logic', async () => {
+      const articleId = '荷兰Floriade世界園藝博覽會'
+      const downloadRes = await actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })
+      expect(downloadRes.data).toBeDefined()
+    })
+
+    it('missing page throws a download error', async () => {
+      const articleId = 'foo-foo-foo'
+      expect(actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })).rejects.toThrow(DownloadError)
     })
   })
 })
