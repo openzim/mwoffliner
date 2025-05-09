@@ -17,6 +17,7 @@ describe('saveStaticFiles', () => {
       'images_loaded.min.js',
       'style.css',
       'mobile_main_page.css',
+      'footer.css',
       '../node_modules/details-element-polyfill/dist/details-element-polyfill.js',
       'content.parsoid.css',
       'inserted_style.css',
@@ -36,6 +37,7 @@ describe('saveStaticFiles', () => {
       'images_loaded.min.js',
       'style.css',
       'mobile_main_page.css',
+      'footer.css',
       'wm_mobile_override_script.js',
       'wm_mobile_override_style.css',
     ]

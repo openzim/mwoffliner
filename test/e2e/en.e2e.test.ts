@@ -21,12 +21,12 @@ const verifyImgElements = (imgFilesArr, imgElements) => {
 
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
-  articleList: 'BMW',
+  articleList: 'Providence/Stoughton Line', // use article with a slash in its name to check relative links are properly handled
   adminEmail: 'test@kiwix.org',
 }
 
 await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
-  const articleFromDump = await zimdump(`show --url ${parameters.articleList} ${outFiles[0].outFile}`)
+  const articleFromDump = await zimdump(`show --url ${parameters.articleList.replace(' ', '_')} ${outFiles[0].outFile}`)
   describe('e2e test for en.wikipedia.org', () => {
     const articleDoc = domino.createDocument(articleFromDump)
 

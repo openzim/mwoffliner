@@ -15,6 +15,8 @@ Unreleased:
 * FIX: Use only minimal Vector (legacy and 2022) templates to avoid side-effects from CSS reserved spaces (@benoit74 #2259)
 * CHANGED: Replace urlparser deprecated API with WHATWG URL API (@benoit74 #2285)
 * CHANGED: Log ZIM location at the end of the scrape for conveniency (@benoit74 #2297)
+* FIX: ActionParse: enhance fixed style management + add external link icon in footer (@benoit74 #2276 #2283)
+* FIX: WikimediaMobile: fix wrong CSS/JS links when article has a slash in its title (@benoit74 #2293)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
