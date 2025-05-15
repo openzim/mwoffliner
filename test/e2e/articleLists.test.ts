@@ -34,7 +34,8 @@ await testAllRenders('article-lists', parameters, async (outFiles) => {
           // Output has right amount of articles
           expect(dump.status.articles.success).toEqual(listMinusIgnore)
           // Output has no failed article
-          expect(dump.status.articles.fail).toEqual(0)
+          expect(dump.status.articles.hardFail).toEqual(0)
+          expect(dump.status.articles.softFail).toEqual(0)
         }
       }
 

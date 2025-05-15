@@ -413,8 +413,8 @@ async function execute(argv: any) {
 
     await getThumbnailsData()
 
-    logger.log('Getting Main Page')
-    await getMainPage(dump, zimCreator)
+    logger.log('Checking Main Page rendering')
+    await getMainPage(dump, true, zimCreator)
 
     logger.log('Getting articles')
     stime = Date.now()
@@ -454,6 +454,9 @@ async function execute(argv: any) {
 
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)
+
+    logger.log('Writing Main Page to the ZIM')
+    await getMainPage(dump, false, zimCreator)
 
     logger.log('Finishing ZIM Creation')
     await zimCreator.finishZimCreation()
@@ -545,9 +548,8 @@ async function execute(argv: any) {
     }
   }
 
-  function getMainPage(dump: Dump, zimCreator: Creator) {
+  function getMainPage(dump: Dump, dryrun: boolean, zimCreator: Creator) {
     async function createMainPage() {
-      logger.log('Creating main page...')
       const doc = domino.createDocument(
         articleListHomeTemplate.replace(
           '</head>',
@@ -591,13 +593,17 @@ async function execute(argv: any) {
       }
 
       /* Write the static html file */
-      const item = new StringItem('index', 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
-      return zimCreator.addItem(item)
+      if (!dryrun) {
+        const item = new StringItem('index', 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
+        return zimCreator.addItem(item)
+      }
     }
 
     function createMainPageRedirect() {
-      logger.log(`Create main page redirection from [index] to [${mainPage}]`)
-      zimCreator.addRedirection('index', '', mainPage, { FRONT_ARTICLE: 1 })
+      if (!dryrun) {
+        logger.log(`Create main page redirection from [index] to [${mainPage}]`)
+        zimCreator.addRedirection('index', '', mainPage, { FRONT_ARTICLE: 1 })
+      }
     }
 
     return mainPage ? createMainPageRedirect() : createMainPage()
