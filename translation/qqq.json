@@ -1,22 +1,20 @@
 {
-	"@metadata": {
-		"authors": [
-			"Amire80"
-		]
-	},
-	"DISCLAIMER": "Text printed in the footer of each article. With some publishers, \"${creator}\" will be the name of a person who wrote the article; with some others, it will be the publisher name (e.g. \"Wikipedia\").",
-	"LAST_EDITED_ON": "Hint indicated at which time the article has been updated last time",
-	"LICENSE_NAME": "Create Commons name localised",
-	"DOWNLOAD_ERRORS_HEADING": "Title of the placeholder HTML when article failed to download.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Main message of the placeholder HTML when article failed to download.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "First details message showed on placeholder HTML when article failed to download and error is of given type",
-    "DOWNLOAD_ERRORS_LINE2": "Second details message showed on placeholder HTML when article failed to download",
-	"DOWNLOAD_ERRORS_LINE3": "Third details message showed on placeholder HTML when article failed to download"
+  "@metadata": {
+    "authors": ["Amire80"]
+  },
+  "DISCLAIMER": "Text printed in the footer of each article. With some publishers, \"${creator}\" will be the name of a person who wrote the article; with some others, it will be the publisher name (e.g. \"Wikipedia\").",
+  "LAST_EDITED_ON": "Hint indicated at which time the article has been updated last time",
+  "LICENSE_NAME": "Create Commons name localised",
+  "DOWNLOAD_ERRORS_HEADING": "Title of the placeholder HTML when article failed to download.",
+  "DOWNLOAD_ERRORS_MESSAGE": "Main message of the placeholder HTML when article failed to download.",
+  "DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+  "DOWNLOAD_ERRORS_LINE2": "Second details message showed on placeholder HTML when article failed to download",
+  "DOWNLOAD_ERRORS_LINE3": "Third details message showed on placeholder HTML when article failed to download"
 }
