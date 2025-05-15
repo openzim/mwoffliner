@@ -39,7 +39,9 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
       let isFailed = false
       try {
         if (resp.result && resp.result.content && resp.result.contentType) {
-          const item = new StringItem(resp.path, resp.result.contentType, '', {}, resp.result.content)
+          // { FRONT_ARTICLE: 0 } is here very important, should we retrieve HTML we want to be sure the libzim will
+          // not consider it for title index
+          const item = new StringItem(resp.path, resp.result.contentType, null, { FRONT_ARTICLE: 0 }, resp.result.content)
           await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
           dump.status.files.success += 1
         } else {
@@ -402,7 +404,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
   if (jsConfigVars) {
-    const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', '', {}, jsConfigVars)
+    const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', null, { FRONT_ARTICLE: 0 }, jsConfigVars)
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(jsConfigVarArticle))
   }
 
