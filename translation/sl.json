@@ -1,10 +1,8 @@
 {
-	"@metadata": {
-		"authors": [
-			"Eleassar"
-		]
-	},
-	"DISCLAIMER": "Ta članek je izdal ${creator}. Besedilo je licencirano pod ${license}. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
-	"LAST_EDITED_ON": "Zadnja sprememba ${date}.",
-	"LICENSE_NAME": "Creative Commons Priznanje avtorstva-Deljenje pod enakimi pogoji"
+  "@metadata": {
+    "authors": ["Eleassar"]
+  },
+  "DISCLAIMER": "Ta članek je izdal ${creator}. Besedilo je licencirano pod ${license}. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
+  "LAST_EDITED_ON": "Zadnja sprememba ${date}.",
+  "LICENSE_NAME": "Creative Commons Priznanje avtorstva-Deljenje pod enakimi pogoji"
 }
