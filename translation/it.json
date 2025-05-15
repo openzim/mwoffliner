@@ -12,5 +12,5 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "La voce richiesta '${articleTitle}' non è disponibile in questo ZIM. Non è stato possibile recuperarla da ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Quando è stato creato lo ZIM che stai navigando, il server ${server} non è riuscito a visualizzare il contenuto HTML di questa voce ed ha restituito un errore HTTP 500.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Quando è stato creato lo ZIM che stai navigando, il server ${server} ha registrato un timeout durante il rendering del contenuto HTML di questa voce e ha restituito un errore HTTP 504.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_504_UPSTREAM_TIMEOUT": "Durante la creazione dello ZIM che stai navigando, l'API ActionParse del server ${server} ha registrato un timeout durante l'elaborazione di questa voce ed ha restituito un errore HTTP 504."
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Durante la creazione dello ZIM che stai navigando, l'API ActionParse del server ${server} ha registrato un timeout durante l'elaborazione di questa voce ed ha restituito un errore HTTP 504."
 }
