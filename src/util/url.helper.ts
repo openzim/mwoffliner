@@ -2,7 +2,8 @@ class URLHelper {
   private readonly urlPartCache: KVS<string> = {}
 
   public serializeUrl(url: string): string {
-    const path = new URL(url).pathname
+    const urlObj = new URL(url)
+    const path = urlObj.pathname + urlObj.search + urlObj.hash
     const cacheablePart = url.replace(path, '')
     const cacheEntry = Object.entries(this.urlPartCache).find(([, value]) => value === cacheablePart)
     let cacheKey
