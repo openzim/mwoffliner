@@ -1,4 +1,4 @@
-import { renderDownloadError, findFirstMatchingRule } from '../../../src/renderers/error.render.js'
+import { renderDownloadError, findFirstMatchingRule } from '../../../src/error.manager.js'
 import { Dump } from '../../../src/Dump.js'
 import MediaWiki from '../../../src/MediaWiki.js'
 
@@ -116,26 +116,23 @@ describe('ErrorRenderer', () => {
     })
 
     it('should not handle 200 return code', async () => {
-      const rendererError = renderDownloadError(
-        { urlCalled: 'https://www.acme.com/api/rest_v1/page/html/', httpReturnCode: 200, responseContentType: 'application/json', responseData: 'upstream request timeout' },
-        new Dump('', {} as any, {} as any),
-        'My_Article_Title',
-        'My Article Title',
-      )
-      expect(rendererError).toBeNull()
+      const matchingRule = findFirstMatchingRule({
+        urlCalled: 'https://www.acme.com/api/rest_v1/page/html/',
+        httpReturnCode: 200,
+        responseContentType: 'application/json',
+        responseData: 'upstream request timeout',
+      })
+      expect(matchingRule).toBeNull()
     })
     it('should handle WikimediaDesktop 500 error', async () => {
-      const rendererError = renderDownloadError(
-        {
-          urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
-          httpReturnCode: 500,
-          responseContentType: 'text/html',
-          responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
-        },
-        new Dump('', {} as any, {} as any),
-        'My_Article_Title',
-        'My Article Title',
-      )
+      const matchingRule = findFirstMatchingRule({
+        urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        httpReturnCode: 500,
+        responseContentType: 'text/html',
+        responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
+      })
+      expect(matchingRule).not.toBeNull()
+      const rendererError = renderDownloadError(matchingRule, new Dump('', {} as any, {} as any), 'My_Article_Title', 'My Article Title')
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')
@@ -147,17 +144,14 @@ describe('ErrorRenderer', () => {
       expect(rendererError).toContain('"./article_not_found.svg"')
     })
     it('should handle 404 error', async () => {
-      const rendererError = renderDownloadError(
-        {
-          urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
-          httpReturnCode: 404,
-          responseContentType: 'text/html',
-          responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
-        },
-        new Dump('', {} as any, {} as any),
-        'My/Article/Title',
-        'My Article Title',
-      )
+      const matchingRule = findFirstMatchingRule({
+        urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        httpReturnCode: 404,
+        responseContentType: 'text/html',
+        responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
+      })
+      expect(matchingRule).not.toBeNull()
+      const rendererError = renderDownloadError(matchingRule, new Dump('', {} as any, {} as any), 'My/Article/Title', 'My Article Title')
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')

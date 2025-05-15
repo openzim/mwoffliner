@@ -3,6 +3,7 @@ import * as mwoffliner from '../src/mwoffliner.lib.js'
 import { execa } from 'execa'
 import { RENDERERS_LIST } from '../src/util/const.js'
 import { zimcheckAvailable, zimdumpAvailable } from './util.js'
+import { Dump } from '../src/Dump.js'
 
 interface Parameters {
   mwUrl: string
@@ -45,20 +46,25 @@ async function checkZimTools() {
   zimToolsChecked = true
 }
 
-async function getOutFiles(renderName: string, testId: string, parameters: Parameters): Promise<any> {
+async function getOutFiles(renderName: string, testId: string, parameters: Parameters): Promise<Dump[]> {
   await execa('redis-cli flushall', { shell: true })
   const outFiles = await mwoffliner.execute({ ...parameters, outputDirectory: testId, forceRender: renderName })
 
   return outFiles
 }
 
-export async function testRenders(testName: string, parameters: Parameters, callback, renderersList: Array<string>) {
+interface TestDump extends Dump {
+  testId: string
+  renderer: string
+}
+
+export async function testRenders(testName: string, parameters: Parameters, callback: { (outFiles: TestDump[]): any }, renderersList: Array<string>) {
   await checkZimTools()
   for (const renderer of renderersList) {
     try {
       const now = new Date()
       const testId = `mwo-test-${testName}-${renderer}-${+now}`
-      const outFiles = await getOutFiles(renderer, testId, parameters)
+      const outFiles = (await getOutFiles(renderer, testId, parameters)) as TestDump[]
       outFiles[0].testId = testId
       outFiles[0].renderer = renderer
       await callback(outFiles)
@@ -69,6 +75,6 @@ export async function testRenders(testName: string, parameters: Parameters, call
   }
 }
 
-export async function testAllRenders(testName: string, parameters: Parameters, callback) {
+export async function testAllRenders(testName: string, parameters: Parameters, callback: { (outFiles: TestDump[]): any }) {
   return testRenders(testName, parameters, callback, RENDERERS_LIST)
 }

@@ -262,7 +262,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   const articlesTotal = await articleDetailXId.len()
 
   // number of articles allowed to fail is the greater of 5 or 0.001% (1 per 100k) articles
-  dump.maxFailedArticles = Math.max(5, Math.floor(articlesTotal / 100000))
+  dump.maxHardFailedArticles = Math.max(5, Math.floor(articlesTotal / 100000))
 
   if (dump.customProcessor?.shouldKeepArticle) {
     await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.mainPageRenderer, RenderingContext.articlesRenderer)
@@ -371,11 +371,15 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
           parsePromiseQueue.push(flattenPromises(promises))
         }
 
-        if ((dump.status.articles.success + dump.status.articles.fail) % 10 === 0) {
-          const percentProgress = (((dump.status.articles.success + dump.status.articles.fail) / articlesTotal) * 100).toFixed(1)
+        if ((dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail) % 10 === 0) {
+          const percentProgress = (((dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail) / articlesTotal) * 100).toFixed(1)
           if (percentProgress !== prevPercentProgress) {
             prevPercentProgress = percentProgress
-            logger.log(`Progress downloading articles [${dump.status.articles.success + dump.status.articles.fail}/${articlesTotal}] [${percentProgress}%]`)
+            logger.log(
+              `Progress downloading articles [${
+                dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail
+              }/${articlesTotal}] [${percentProgress}%]`,
+            )
           }
         }
       }

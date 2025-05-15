@@ -19,6 +19,8 @@ Unreleased:
 * FIX: WikimediaMobile: fix wrong CSS/JS links when article has a slash in its title (@benoit74 #2293)
 * FIX: Fix issues when article is moved with redirect left behind (@benoit74 #2278)
 * FIX: ActionParse: Handle articles moved without redirects left behind (@benoit74 #2282)
+* FIX: Introduce the concept of soft/hard article download errors (@benoit74 #2302)
+* FIX: Stop creating links to titles which are known to be in error (@benoit74 #2303)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
