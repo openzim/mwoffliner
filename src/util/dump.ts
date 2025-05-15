@@ -143,7 +143,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
       articleId = pathFunction(module, config.output.dirs.mediawiki)
     }
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(articleId, mimetype, '', {}, text)))
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(articleId, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
     logger.info(`Saved module [${module}]`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
@@ -157,7 +157,7 @@ export async function importPolyfillModules(zimCreator: Creator) {
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
   ].forEach(async ({ name, path }) => {
-    const item = new StringItem(jsPath(name), 'text/javascript', '', {}, fs.readFileSync(path, 'utf8').toString())
+    const item = new StringItem(jsPath(name), 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(path, 'utf8').toString())
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
   })
 
@@ -167,6 +167,6 @@ export async function importPolyfillModules(zimCreator: Creator) {
       throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)
     })
 
-  const item = new StringItem(jsPath('webpHandler'), 'text/javascript', '', {}, content)
+  const item = new StringItem(jsPath('webpHandler'), 'text/javascript', null, { FRONT_ARTICLE: 0 }, content)
   await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
 }
