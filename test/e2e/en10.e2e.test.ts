@@ -31,7 +31,8 @@ await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
           // nopic has 10 articles
           expect(dump.status.articles.success).toEqual(10)
           // No article and files error
-          expect(dump.status.articles.fail).toEqual(0)
+          expect(dump.status.articles.hardFail).toEqual(0)
+          expect(dump.status.articles.softFail).toEqual(0)
           expect(dump.status.files.fail).toEqual(0)
         } else if (dump.novid) {
           // novid has enough files
@@ -57,7 +58,8 @@ await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
         }
 
         // No download error
-        expect(dump.status.articles.fail).toEqual(0)
+        expect(dump.status.articles.hardFail).toEqual(0)
+        expect(dump.status.articles.softFail).toEqual(0)
         expect(dump.status.files.fail).toEqual(0)
       }
     })

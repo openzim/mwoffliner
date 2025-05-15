@@ -29,7 +29,7 @@ import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
-import { renderDownloadError } from './renderers/error.render.js'
+import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
 
 const imageminOptions = new Map()
@@ -458,21 +458,31 @@ class Downloader {
         throw err
       }
       logger.warn(
-        `Article ${articleId} failed to download from ${downloadError.urlCalled} with ${downloadError.httpReturnCode} return code and ${downloadError.responseContentType} content-type returned instead:\n${JSON.stringify(downloadError.responseData)}`,
+        `Article ${articleId} failed to download from ${downloadError.urlCalled} with ${downloadError.httpReturnCode} return code and ${
+          downloadError.responseContentType
+        } content-type returned instead:\n${JSON.stringify(downloadError.responseData)}`,
       )
-      dump.status.articles.fail += 1
-      dump.status.articles.failedArticleIds.push(articleId)
-      if (dump.maxFailedArticles > 0 && dump.status.articles.fail > dump.maxFailedArticles) {
-        logger.error('Too many articles failed to download, aborting')
-        throw err
-      }
-      const articleTitle = articleId.replace(/_/g, ' ')
-      const errorPlaceholderHtml = renderDownloadError(downloadError, dump, articleId, articleTitle)
-      if (errorPlaceholderHtml === null) {
+      const errorRule = findFirstMatchingRule(downloadError)
+      if (errorRule === null) {
         logger.error('This is a fatal download error, aborting')
         throw err
       }
-      logger.info(`Replacing article ${articleId} with error placeholder`)
+      if (errorRule.isHardFailure) {
+        logger.log(`This is a hard ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
+        dump.status.articles.hardFail += 1
+        dump.status.articles.hardFailedArticleIds.push(articleId)
+        if (dump.maxHardFailedArticles > 0 && dump.status.articles.hardFail > dump.maxHardFailedArticles) {
+          logger.error('Too many articles failed to download, aborting')
+          throw err
+        }
+      } else {
+        logger.log(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
+        dump.status.articles.softFail += 1
+        dump.status.articles.softFailedArticleIds.push(articleId)
+      }
+      RedisStore.articleDetailXId.delete(articleId) // Remove article from list so that we stop creating links to this placeholder
+      const articleTitle = articleId.replace(/_/g, ' ')
+      const errorPlaceholderHtml = renderDownloadError(errorRule, dump, articleId, articleTitle)
       return [
         {
           articleId,

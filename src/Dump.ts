@@ -38,7 +38,7 @@ export class Dump {
   public isMainPage = (articleId: string): boolean => {
     return this.mwMetaData.mainPage === articleId ? true : false
   }
-  public maxFailedArticles: number = 0
+  public maxHardFailedArticles: number = 0
   public status = {
     files: {
       success: 0,
@@ -46,8 +46,10 @@ export class Dump {
     },
     articles: {
       success: 0,
-      fail: 0,
-      failedArticleIds: [],
+      hardFail: 0,
+      hardFailedArticleIds: [],
+      softFail: 0,
+      softFailedArticleIds: [],
     },
     redirects: {
       written: 0,

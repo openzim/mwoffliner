@@ -1,9 +1,9 @@
 import { Dump } from 'src/Dump.js'
-import { downloadErrorPlaceholderTemplate } from '../Templates.js'
-import { getRelativeFilePath, interpolateTranslationString } from '../util/misc.js'
-import MediaWiki from '../MediaWiki.js'
-import { DownloadErrorContext } from '../Downloader.js'
-import { DELETED_ARTICLE_ERROR } from '../util/const.js'
+import { downloadErrorPlaceholderTemplate } from './Templates.js'
+import { getRelativeFilePath, interpolateTranslationString } from './util/misc.js'
+import MediaWiki from './MediaWiki.js'
+import { DownloadErrorContext } from './Downloader.js'
+import { DELETED_ARTICLE_ERROR } from './util/const.js'
 
 interface HttpReturnCodeRange {
   min: number
@@ -24,6 +24,7 @@ interface MatchingRule {
   jsonResponseDataContains: JsonContain[] | null
   detailsMessageKey: string
   displayThirdLine: boolean
+  isHardFailure: boolean
 }
 
 const matchingRules: MatchingRule[] = [
@@ -36,6 +37,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: null,
     detailsMessageKey: 'DELETED_ARTICLE',
     displayThirdLine: false,
+    isHardFailure: false,
   },
   {
     name: 'deleted article error',
@@ -46,6 +48,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: null,
     detailsMessageKey: 'DELETED_ARTICLE',
     displayThirdLine: false,
+    isHardFailure: false,
   },
   {
     name: 'missing title error',
@@ -56,6 +59,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['missingtitle'] }],
     detailsMessageKey: 'DELETED_ARTICLE',
     displayThirdLine: false,
+    isHardFailure: false,
   },
   {
     name: 'WikimediaDesktop API - HTML 500 error',
@@ -66,6 +70,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: null,
     detailsMessageKey: 'WIKIMEDIA_DESKTOP_API_HTML_500_ERROR',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'WikimediaDesktop API - JSON 504 Upstream Request Timeout',
@@ -76,6 +81,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'httpReason', valueContains: ['upstream request timeout'] }],
     detailsMessageKey: 'WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'ActionParse API - JSON Upstream Request Timeout',
@@ -89,6 +95,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\RequestTimeout\\RequestTimeoutException'] }],
     detailsMessageKey: 'ACTION_PARSE_UPSTREAM_TIMEOUT',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'ActionParse API - JSON 503 HTML error',
@@ -99,6 +106,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: null,
     detailsMessageKey: 'ACTION_PARSE_HTML_503_ERROR',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'ActionParse API - DB unexpected error',
@@ -109,6 +117,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_DBUnexpectedError'] }],
     detailsMessageKey: 'ACTION_PARSE_DB_UNEXPECTED_ERROR',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'ActionParse API - JSON BadRevisionException error',
@@ -119,6 +128,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_MediaWiki\\Revision\\BadRevisionException'] }],
     detailsMessageKey: 'ACTION_PARSE_BAD_REVISION_ERROR',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'ActionParse API - JSON UnreachableException error',
@@ -129,6 +139,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\Assert\\UnreachableException'] }],
     detailsMessageKey: 'ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR',
     displayThirdLine: true,
+    isHardFailure: true,
   },
   {
     name: 'ActionParse API - Truncated Response',
@@ -139,6 +150,7 @@ const matchingRules: MatchingRule[] = [
     jsonResponseDataContains: [{ key: 'warnings.result.*', valueContains: ['This result was truncated'] }],
     detailsMessageKey: 'ACTION_PARSE_TRUNCATED_RESPONSE',
     displayThirdLine: false,
+    isHardFailure: true,
   },
 ]
 
@@ -176,11 +188,7 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
   return null
 }
 
-export function renderDownloadError(err: DownloadErrorContext, dump: Dump, articleId: string, articleTitle: string): string | null {
-  const matchingRule = findFirstMatchingRule(err)
-  if (matchingRule === null) {
-    return null
-  }
+export function renderDownloadError(matchingRule: MatchingRule, dump: Dump, articleId: string, articleTitle: string): string | null {
   return downloadErrorPlaceholderTemplate({
     heading: dump.strings.DOWNLOAD_ERRORS_HEADING,
     relative_file_path: getRelativeFilePath(articleId, ''),

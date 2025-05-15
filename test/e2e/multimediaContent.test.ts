@@ -26,7 +26,8 @@ await testRenders(
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles[0].status.articles.success).toEqual(1)
-            expect(outFiles[0].status.articles.fail).toEqual(0)
+            expect(outFiles[0].status.articles.hardFail).toEqual(0)
+            expect(outFiles[0].status.articles.softFail).toEqual(0)
             const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
             const allFilesArr = allFiles.split('\n')
             const mediaFiles = allFilesArr
@@ -56,7 +57,8 @@ await testRenders(
             await execa('redis-cli flushall', { shell: true })
 
             expect(outFiles[0].status.articles.success).toEqual(1)
-            expect(outFiles[0].status.articles.fail).toEqual(0)
+            expect(outFiles[0].status.articles.hardFail).toEqual(0)
+            expect(outFiles[0].status.articles.softFail).toEqual(0)
             const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
             const allFilesArr = allFiles.split('\n')
             const mediaFiles = allFilesArr
@@ -102,7 +104,8 @@ await testRenders(
 
             for (const dump of outFiles) {
               expect(dump.status.articles.success).toEqual(1)
-              expect(dump.status.articles.fail).toEqual(0)
+              expect(dump.status.articles.hardFail).toEqual(0)
+              expect(dump.status.articles.softFail).toEqual(0)
 
               await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
@@ -164,7 +167,8 @@ await testRenders(
 
             for (const dump of outFiles) {
               expect(dump.status.articles.success).toEqual(1)
-              expect(dump.status.articles.fail).toEqual(0)
+              expect(dump.status.articles.hardFail).toEqual(0)
+              expect(dump.status.articles.softFail).toEqual(0)
 
               await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
 
