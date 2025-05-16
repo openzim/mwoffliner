@@ -1,8 +1,10 @@
 {
-  "@metadata": {
-    "authors": ["Jon Harald Søby"]
-  },
-  "DISCLAIMER": "Denne artikkelen er utgitt av ${creator}. Teksten er lisensiert under ${license}. Ytterligere vilkår kan gjelde mediefilene.",
-  "LAST_EDITED_ON": "Sist redigert ${date}",
-  "LICENSE_NAME": "Creative Commons-Navngivelse-DelPåSammeVilkår"
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"DISCLAIMER": "Denne artikkelen er utgitt av ${creator}. Teksten er lisensiert under ${license}. Ytterligere vilkår kan gjelde mediefilene.",
+	"LAST_EDITED_ON": "Sist redigert ${date}",
+	"LICENSE_NAME": "Creative Commons-Navngivelse-DelPåSammeVilkår"
 }
