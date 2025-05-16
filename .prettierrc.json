@@ -1,7 +1,17 @@
 {
-    "trailingComma": "all",
-    "tabWidth": 2,
-    "semi": false,
-    "singleQuote": true,
-    "printWidth": 180
-  }
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 180,
+  "overrides": [
+    {
+      "files": "translation/*",
+      "options": {
+        "tabWidth": 4,
+        "printWidth": 1,
+        "useTabs": true
+      }
+    }
+  ]
+}

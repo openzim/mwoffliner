@@ -1,6 +1,8 @@
 {
-  "@metadata": {
-    "authors": ["Ajeje Brazorf"]
-  },
-  "LAST_EDITED_ON": "Ùrtimu canciamentu lu ${date}"
+	"@metadata": {
+		"authors": [
+			"Ajeje Brazorf"
+		]
+	},
+	"LAST_EDITED_ON": "Ùrtimu canciamentu lu ${date}"
 }

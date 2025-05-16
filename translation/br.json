@@ -1,6 +1,8 @@
 {
-  "@metadata": {
-    "authors": ["Adriendelucca"]
-  },
-  "LAST_EDITED_ON": "Kemm diwezhañ d'an ${date}"
+	"@metadata": {
+		"authors": [
+			"Adriendelucca"
+		]
+	},
+	"LAST_EDITED_ON": "Kemm diwezhañ d'an ${date}"
 }

@@ -1,8 +1,11 @@
 {
-  "@metadata": {
-    "authors": ["El-hussain14", "Rofiatmustapha12"]
-  },
-  "DISCLAIMER": "An bayar da wannan labarin daga ${creator}. Rubutun yana da lasisi a ƙarƙashin ${license}. Ƙarin sharuɗɗa na iya aiki don fayilolin mai jarida.",
-  "LAST_EDITED_ON": "Gyaran ƙarshe akan ${date}",
-  "LICENSE_NAME": "Creative Commons - Bayyanawa - Sharealike"
+	"@metadata": {
+		"authors": [
+			"El-hussain14",
+			"Rofiatmustapha12"
+		]
+	},
+	"DISCLAIMER": "An bayar da wannan labarin daga ${creator}. Rubutun yana da lasisi a ƙarƙashin ${license}. Ƙarin sharuɗɗa na iya aiki don fayilolin mai jarida.",
+	"LAST_EDITED_ON": "Gyaran ƙarshe akan ${date}",
+	"LICENSE_NAME": "Creative Commons - Bayyanawa - Sharealike"
 }
