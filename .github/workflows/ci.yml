@@ -16,53 +16,88 @@ env:
   KEEP_ZIMS: 1
 
 jobs:
-  ci-test:
+  unit-tests:
     runs-on: ubuntu-24.04
 
-    strategy:
-      matrix:
-        node-version: [22.x]
-
     steps:
-      - name: Installing Node.js ${{ matrix.node-version }}
+      - name: Download codebase
+        uses: actions/checkout@v4
+
+      - name: Installing Node.JS
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: .node-version
 
       - name: Installing Redis
         uses: shogo82148/actions-setup-redis@v1
         with:
           redis-version: '6.x'
 
-      - name: Downloading code
+      - name: Installing other dependencies
+        run: |
+          npm install
+          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+
+      - name: Running unit tests (w/coverage)
+        if: ${{ github.event_name != 'schedule' }}
+        run: npm run test:unit-coverage
+
+      - name: Running unit tests (no coverage)
+        if: ${{ github.event_name == 'schedule' }}
+        run: npm run test:unit
+
+      - name: Mailgun Action
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: vineetchoudhary/mailgun-action@v1.1
+        with:
+          api-key: ${{ secrets.MAILGUN_API_KEY }}
+          domain: ${{ secrets.MAILGUN_DOMAIN }}
+          from: 'mwoffliner-github-alert'
+          to: ${{ secrets.CI_SCHEDULED_FAIL_EMAIL_TO }}
+          subject: 'mwoffliner scheduled CI run FAILED (silent)'
+
+      - name: Upload coverage results for unit tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/unit/coverage-final.json
+          retention-days: 1
+
+  e2e-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Download codebase
         uses: actions/checkout@v4
+
+      - name: Installing Node.JS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Installing Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: '6.x'
 
       - name: Installing other dependencies
         run: |
           npm install
-          npm i -g prettier
-          npm i -g eslint
-          npm i -g codecov
           wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
 
-      - name: Running Prettier
-        run: npm run format-check
-
-      - name: Running ESLint
-        run: npm run lint
-
-      - name: Running all tests (w/coverage)
+      - name: Running e2e tests (w/coverage)
         if: ${{ github.event_name != 'schedule' }}
-        run: npm run codecov
+        run: npm run test:e2e-coverage
 
-      - name: Running scheduled all tests (no coverage)
+      - name: Running e2e tests (no coverage)
         if: ${{ github.event_name == 'schedule' }}
-        run: npm run test-without-coverage
+        run: npm run test:e2e
 
       - name: Uploading ZIM artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
+          name: zims-e2e
           path: mwo-test-*/*.zim
           # keep scheduled (daily artifacts for 7 days, others only 1 day)
           retention-days: ${{ github.event_name == 'schedule' && 7 || 1 }}
@@ -78,16 +113,82 @@ jobs:
           to: ${{ secrets.CI_SCHEDULED_FAIL_EMAIL_TO }}
           subject: 'mwoffliner scheduled CI run FAILED (silent)'
 
+      - name: Upload coverage results for e2e tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e
+          path: coverage/e2e/coverage-final.json
+          retention-days: 1
+
+  upload-coverage:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-24.04
+    needs:
+      - unit-tests
+      - e2e-tests
+    steps:
+      - name: Download codebase
+        uses: actions/checkout@v4
+
+      - name: Installing Node.JS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Installing dependencies
+        run: |
+          npm install
+          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+
+      - name: Download coverage results for unit tests
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/unit/
+
+      - name: Download coverage results for e2e tests
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-e2e
+          path: coverage/e2e/
+
+      - name: Merge coverage results
+        run: npm run codecov:merge
+
       - name: Uploading Codecov stats
         uses: codecov/codecov-action@v4
-        if: ${{ matrix.node-version == '22.x' }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  build_docker:
+  code-quality:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Download codebase
+        uses: actions/checkout@v4
+
+      - name: Installing Node.JS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Installing other dependencies
+        run: |
+          npm install
+          npm i -g prettier
+          npm i -g eslint
+
+      - name: Running Prettier
+        run: npm run format-check
+
+      - name: Running ESLint
+        run: npm run lint
+
+  build-docker:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Download codebase
+        uses: actions/checkout@v4
 
       - name: Ensure we can build the Docker image
         run: |
