@@ -55,7 +55,7 @@
     "url": "https://github.com/openzim/mwoffliner/issues"
   },
   "engines": {
-    "node": ">=22.0.0 <23.0.0"
+    "node": ">=24 <25"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.779.0",
