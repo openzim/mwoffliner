@@ -93,8 +93,6 @@ describe('Misc utility', () => {
           'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an HTTP 503 error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected DB error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected bad revision ID error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR:
@@ -124,8 +122,6 @@ describe('Misc utility', () => {
           'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an HTTP 503 error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected DB error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected bad revision ID error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR:

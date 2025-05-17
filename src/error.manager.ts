@@ -109,17 +109,6 @@ const matchingRules: MatchingRule[] = [
     isHardFailure: true,
   },
   {
-    name: 'ActionParse API - DB unexpected error',
-    urlContains: ['api.php?action=parse&format=json'],
-    httpReturnCodes: null,
-    contentTypes: ['application/json'],
-    rawResponseDataContains: null,
-    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_DBUnexpectedError'] }],
-    detailsMessageKey: 'ACTION_PARSE_DB_UNEXPECTED_ERROR',
-    displayThirdLine: true,
-    isHardFailure: true,
-  },
-  {
     name: 'ActionParse API - JSON BadRevisionException error',
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],

@@ -176,9 +176,34 @@ class Downloader {
     this.insecure = insecure
 
     this.backoffOptions = {
-      strategy: new backoff.ExponentialStrategy(),
-      failAfter: 7,
-      retryIf: (err: any) => err.code === 'ECONNABORTED' || (![400, 403, 404].includes(err.response?.status || err.httpReturnCode) && !err.responseData?.error),
+      // retry up to 10 times, with a minimum of 1sec, maximum of 1min
+      // this means we retry for up to about 6 mins, which is supposed
+      // to be sufficient for backend to recover from transient errors
+      strategy: new backoff.ExponentialStrategy({ initialDelay: 1000, maxDelay: 60000 }),
+      failAfter: 10,
+      retryIf: (err: any) => {
+        const requestedUrl = err.config?.url || 'unknown'
+        if (err.code === 'ECONNABORTED') {
+          logger.log(`Retrying ${requestedUrl} URL due to ECONNABORTED error`)
+          return true // retry connection issues
+        }
+        const httpReturnCode = err.response?.status || err.httpReturnCode
+        if ([429].includes(httpReturnCode)) {
+          logger.log(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
+          return true // retry these HTTP status codes
+        }
+        if (
+          [
+            'internal_api_error_DBConnectionError',
+            'internal_api_error_DBUnexpectedError',
+            'internal_api_error_Wikibase\\DataModel\\Services\\Lookup\\EntityLookupException',
+          ].includes(err.responseData?.error?.code)
+        ) {
+          logger.log(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
+          return true // retry these Mediawiki codes which are known to be transient
+        }
+        return false // don't retry other errors
+      },
       backoffHandler: (number: number, delay: number) => {
         logger.info(`[backoff] #${number} after ${delay} ms`)
       },
@@ -507,7 +532,7 @@ class Downloader {
         this.releaseRequest()
         if (err) {
           const httpStatus = (err.response && err.response.status) || err.httpReturnCode
-          logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
+          logger.info(`Failed to get [${url}] [status=${httpStatus}]`)
           reject(err)
         } else {
           resolve(val)
@@ -636,27 +661,12 @@ class Downloader {
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((val) => {
         if ((val.data as any).error) {
-          throw new DownloadError(`Error returned while calling API`, url, val.status, val.headers['content-type'].toString(), val.data)
-        }
-        return val
-      })
-      .then((a) => handler(null, a.data), handler)
-      .catch((err) => {
-        try {
-          if (err.response && err.response.status === 429) {
-            logger.log('Received a [status=429], slowing down')
-            const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1)
-            logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`)
-            this.maxActiveRequests = newMaxActiveRequests
-            return this.getJSONCb(url, kind, handler)
-          } else if (err.response && err.response.status === 404) {
-            handler(err)
-          }
-        } catch {
-          logger.log('ERR', err)
-          handler(err)
+          handler(new DownloadError(`Error returned while calling API`, url, val.status, val.headers['content-type'].toString(), val.data))
+        } else {
+          handler(null, val.data)
         }
       })
+      .catch((err) => handler(err))
   }
 
   private async getImageMimeType(data: any): Promise<string | null> {

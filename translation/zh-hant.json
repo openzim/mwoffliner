@@ -14,7 +14,6 @@
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "當您瀏覽的 ZIM 在建置時，${server} 伺服器會在呈現該條目的 HTML 內容時逾時，並會回傳 HTTP 504 錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在處理該條目時逾時，並會回傳 HTTP 504 錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發 HTTP 503 錯誤。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發非預期資料庫錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發非預期錯誤修訂 ID。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發無法存取的例外錯誤。",
 	"DOWNLOAD_ERRORS_LINE2": "缺少的條目已被您目前看到的佔位符頁面所取代。",

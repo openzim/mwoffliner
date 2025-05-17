@@ -16,7 +16,6 @@
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，${server} 服务器在渲染此条目 HTML 内容时超时，并返回 HTTP 504 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在处理此条目时超时，并返回 HTTP 504 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供此关于此条目 HTML 的详细信息时引发 HTTP 503 错误。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_DB_UNEXPECTED_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发意外的数据库错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时，引发意外的修订版本 ID 不合法的错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发无法访问的异常错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 未能提供关于此条目 HTML 的详细信息，因为此条目过长。需要在 ${server} 服务器上将此条目拆分为多个相对短的条目。",
