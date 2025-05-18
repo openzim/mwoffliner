@@ -6,7 +6,7 @@ Unreleased:
 * CHANGED: Handle bad errors while downloading an article and replace with placeholder (@benoit74 #2185 #2239 #2253 #2256 #2277 #2284)
 * FIX: Avoid reducing redirects directly to an Object to avoid memory issue (@benoit74 #2142)
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
-* CHANGED: Upgrade to node-libzim 3.3.0 (libzim 9.3.0) (@benoit74 #2247)
+* CHANGED: Upgrade to node-libzim 3.3.0 (libzim 9.3.0) and Node.JS 24 (@benoit74 #2247 #2314 @kelson42 #2300)
 * FIX: CSS dependencies are not downloaded/pushed to the ZIM on all but first requested flavor (@benoit74 #2249)
 * FIX: Links to articles through index.php are not detected properly (@benoit74 #2260)
 * FIX: Properly sanitize mw* settings (@benoit74 #2269)

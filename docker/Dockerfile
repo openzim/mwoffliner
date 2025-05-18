@@ -1,6 +1,6 @@
 FROM redis:7 AS redis
 
-FROM node:22-bookworm
+FROM node:24-bookworm
 LABEL org.opencontainers.image.source=https://github.com/openzim/mwoffliner
 
 COPY --from=redis /usr/local/bin/redis-* /usr/local/bin/
