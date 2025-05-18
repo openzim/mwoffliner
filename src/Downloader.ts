@@ -98,6 +98,7 @@ export class DownloadError extends Error {
 
 export interface DownloadErrorContext {
   urlCalled: string
+  errorCode: string | null
   httpReturnCode: number | null
   responseContentType: string | null
   responseData: any
@@ -183,9 +184,9 @@ class Downloader {
       failAfter: 10,
       retryIf: (err: any) => {
         const requestedUrl = err.config?.url || 'unknown'
-        if (err.code === 'ECONNABORTED') {
-          logger.log(`Retrying ${requestedUrl} URL due to ECONNABORTED error`)
-          return true // retry connection issues
+        if (err.code && err.code != 'ERR_BAD_REQUEST') {
+          logger.log(`Retrying ${requestedUrl} URL due to ${err.code} error`)
+          return true // retry all connection issues
         }
         const httpReturnCode = err.response?.status || err.httpReturnCode
         if ([429].includes(httpReturnCode)) {
@@ -468,26 +469,35 @@ class Downloader {
         dump,
       })
     } catch (err) {
-      let downloadError: DownloadErrorContext
+      let downloadErrorContext: DownloadErrorContext
       if (err instanceof AxiosError) {
-        downloadError = {
+        downloadErrorContext = {
+          errorCode: err.code,
           urlCalled: err.config.url,
           httpReturnCode: err.status,
-          responseContentType: err.response.headers['content-type'].toString(),
-          responseData: err.response.data,
+          responseContentType: err.response ? err.response.headers['content-type'].toString() : null,
+          responseData: err.response?.data,
         }
       } else if (err instanceof DownloadError) {
-        downloadError = { urlCalled: err.urlCalled, httpReturnCode: err.httpReturnCode, responseContentType: err.responseContentType, responseData: err.responseData }
+        downloadErrorContext = {
+          errorCode: null,
+          urlCalled: err.urlCalled,
+          httpReturnCode: err.httpReturnCode,
+          responseContentType: err.responseContentType,
+          responseData: err.responseData,
+        }
       }
-      if (!downloadError) {
+      if (!downloadErrorContext) {
         throw err
       }
       logger.warn(
-        `Article ${articleId} failed to download from ${downloadError.urlCalled} with ${downloadError.httpReturnCode} return code and ${
-          downloadError.responseContentType
-        } content-type returned instead:\n${JSON.stringify(downloadError.responseData)}`,
+        `Article ${articleId} failed to download from '${downloadErrorContext.urlCalled}' with ` +
+          `'${downloadErrorContext.errorCode}' error code, ` +
+          `'${downloadErrorContext.httpReturnCode}' HTTP return code ` +
+          `and '${downloadErrorContext.responseContentType}' content-type ` +
+          `returned instead:\n${JSON.stringify(downloadErrorContext.responseData)}`,
       )
-      const errorRule = findFirstMatchingRule(downloadError)
+      const errorRule = findFirstMatchingRule(downloadErrorContext)
       if (errorRule === null) {
         logger.error('This is a fatal download error, aborting')
         throw err
