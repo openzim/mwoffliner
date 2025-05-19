@@ -15,6 +15,7 @@
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE2": "Second details message showed on placeholder HTML when article failed to download",
 	"DOWNLOAD_ERRORS_LINE3": "Third details message showed on placeholder HTML when article failed to download"
