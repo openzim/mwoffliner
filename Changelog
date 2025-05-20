@@ -21,6 +21,7 @@ Unreleased:
 * FIX: ActionParse: Handle articles moved without redirects left behind (@benoit74 #2282)
 * FIX: Introduce the concept of soft/hard article download errors (@benoit74 #2302)
 * FIX: Stop creating links to titles which are known to be in error (@benoit74 #2303)
+* FIX: Fix webpHandler.js script handling (@benoit74 #2316)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)

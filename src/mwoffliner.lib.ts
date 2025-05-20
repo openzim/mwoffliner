@@ -34,7 +34,7 @@ import {
   mkdirPromise,
   sanitizeString,
   saveStaticFiles,
-  importPolyfillModules,
+  addWebpJsScripts,
   extractArticleList,
   getTmpDirectory,
   validateMetadata,
@@ -411,6 +411,11 @@ async function execute(argv: any) {
 
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
+    if (Downloader.webp) {
+      logger.log('Adding webp polyfilling JS scripts')
+      await addWebpJsScripts(zimCreator)
+    }
+
     await getThumbnailsData()
 
     logger.log('Checking Main Page rendering')
@@ -431,11 +436,6 @@ async function execute(argv: any) {
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ]
-
-    if (Downloader.webp) {
-      logger.log('Downloading polyfill module')
-      await importPolyfillModules(zimCreator)
-    }
 
     logger.log('Downloading module dependencies')
     await Promise.all(
