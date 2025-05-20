@@ -16,7 +16,6 @@ export const ALL_READY_FUNCTION = /function allReady\( modules \) {/
 export const DO_PROPAGATION = /mw\.requestIdleCallback\( doPropagation, \{ timeout: 1 \} \);/
 export const LOAD_PHP = /script.src = ".*load\.php.*";/
 export const RULE_TO_REDIRECT = /window\.top !== window\.self/
-export const WEBP_HANDLER_URL = 'https://gist.githubusercontent.com/rgaudin/60bb9cc6f187add506584258028b8ee1/raw/9d575b8e25d67eed2a9c9a91d3e053a0062d2fc7/web-handler.js'
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const BLACKLISTED_NS = ['Story'] // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
 export const RENDERERS_LIST = ['WikimediaDesktop', 'VisualEditor', 'WikimediaMobile', 'RestApi', 'ActionParse']

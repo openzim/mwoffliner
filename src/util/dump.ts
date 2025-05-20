@@ -8,7 +8,7 @@ import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
 import fs from 'fs'
-import { DO_PROPAGATION, ALL_READY_FUNCTION, WEBP_HANDLER_URL, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
+import { DO_PROPAGATION, ALL_READY_FUNCTION, LOAD_PHP, RULE_TO_REDIRECT } from './const.js'
 import * as path from 'path'
 import urlHelper from './url.helper.js'
 import { zimCreatorMutex } from '../mutex.js'
@@ -152,21 +152,13 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.
-export async function importPolyfillModules(zimCreator: Creator) {
+export async function addWebpJsScripts(zimCreator: Creator) {
   ;[
     { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
+    { name: 'webpHandler', path: path.join(__dirname, '../../res/webpHandler.js') },
   ].forEach(async ({ name, path }) => {
     const item = new StringItem(jsPath(name), 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(path, 'utf8').toString())
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
   })
-
-  const content = await Downloader.request({ url: WEBP_HANDLER_URL, method: 'GET', ...Downloader.arrayBufferRequestOptions })
-    .then((a) => a.data)
-    .catch((err) => {
-      throw new Error(`Failed to download webpHandler from [${WEBP_HANDLER_URL}]: ${err}`)
-    })
-
-  const item = new StringItem(jsPath('webpHandler'), 'text/javascript', null, { FRONT_ARTICLE: 0 }, content)
-  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
 }
