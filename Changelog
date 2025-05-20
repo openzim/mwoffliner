@@ -23,6 +23,7 @@ Unreleased:
 * FIX: Stop creating links to titles which are known to be in error (@benoit74 #2303)
 * FIX: Fix webpHandler.js script handling (@benoit74 #2316)
 * FIX: Truncate article titles to 245 bytes (@benoit74 #2320)
+* FIX: Do not add JS scripts/modules in the ZIM with ActionParser renderer for now (@benoit74 #2319)
 
 1.14.2:
 * FIX: Ignore pages without a single revision / revid (@benoit74 #2091)
