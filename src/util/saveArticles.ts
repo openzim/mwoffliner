@@ -268,9 +268,12 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
     await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.mainPageRenderer, RenderingContext.articlesRenderer)
   }
 
-  const stages = ['Download Article', 'Get module dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
-  const timeout = Math.max(Downloader.requestTimeout * 2, 10 * 60 * 1000)
-
+  const stages = ['Download Article and dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
+  // depending on which renderer we use, we can have up to 2 requests to make to download article details
+  // each request we need to make can be retried 10 times. Each retry attempttakes at most requestTimeout + retry interval
+  // retry interval is an exponentional value from 1 to 60s
+  // we assume rest of processing is "fast" and takes at most 1 minute
+  const timeout = 2 * (Downloader.requestTimeout * 10 + (1 + 2 + 4 + 8 + 16 + 32 + 60 * 4) * 1000) + 60000
   await articleDetailXId.iterateItems(Downloader.speed, (articleKeyValuePairs, workerId) => {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
@@ -280,7 +283,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
       let curStage = 0
       let curArticle = ''
       const timer = new Timer(() => {
-        const errorMessage = `Worker timed out at ${stages[curStage]} ${curArticle}`
+        const errorMessage = `Worker timed out after ${timeout} ms at ${stages[curStage]} ${curArticle}`
         logger.error(errorMessage)
         reject(new Error(errorMessage))
       }, timeout)
@@ -303,6 +306,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
 
           rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
+          curStage += 1
           for (const {
             articleId,
             displayTitle: articleTitle,
@@ -319,7 +323,6 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
               continue
             }
 
-            curStage += 1
             for (const dep of moduleDependencies.jsDependenciesList || []) {
               jsModuleDependencies.add(dep)
             }
@@ -347,8 +350,8 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
           return
         }
 
+        curStage += 1
         if (parsePromiseQueue.length) {
-          curStage += 1
           const [articleId, parsePromise] = parsePromiseQueue.shift()
           curArticle = articleId
           /*

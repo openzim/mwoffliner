@@ -108,9 +108,11 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], conti
      */
     const stages = ['Download ArticleDetails', 'Check Redirects', 'Store ArticleDetails in Redis', 'Clean Up left Promises']
     let curStage = 0
+    // We don't really know how long this is going to take because we have a query continuation parameter which might induce
+    // more request to make + we also get categories with more requests which is a recursive call
     const timeout = Math.max(Downloader.requestTimeout * 2, 10 * 60 * 1000)
     const timer = new Timer(() => {
-      const errorMessage = `Worker timed out at ${stages[curStage]}`
+      const errorMessage = `Worker timed out after ${timeout} ms at ${stages[curStage]}`
       logger.error(errorMessage)
       reject(new Error(errorMessage))
     }, timeout)

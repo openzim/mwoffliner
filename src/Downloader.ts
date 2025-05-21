@@ -183,8 +183,8 @@ class Downloader {
       strategy: new backoff.ExponentialStrategy({ initialDelay: 1000, maxDelay: 60000 }),
       failAfter: 10,
       retryIf: (err: any) => {
-        const requestedUrl = err.config?.url || 'unknown'
-        if (err.code && err.code != 'ERR_BAD_REQUEST') {
+        const requestedUrl = err.urlCalled || err.config?.url || 'unknown'
+        if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE'].includes(err.code)) {
           logger.log(`Retrying ${requestedUrl} URL due to ${err.code} error`)
           return true // retry all connection issues
         }
