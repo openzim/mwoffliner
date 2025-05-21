@@ -20,6 +20,7 @@ interface MatchingRule {
   urlContains: string[] | null
   httpReturnCodes: HttpReturnCodeRange[] | null
   contentTypes: string[] | null
+  responseIsEmpty: boolean
   rawResponseDataContains: string[] | null
   jsonResponseDataContains: JsonContain[] | null
   detailsMessageKey: string
@@ -33,6 +34,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: null,
     httpReturnCodes: [{ min: 404, max: 404 }],
     contentTypes: null,
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: null,
     detailsMessageKey: 'DELETED_ARTICLE',
@@ -44,6 +46,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: null,
     httpReturnCodes: null,
     contentTypes: null,
+    responseIsEmpty: false,
     rawResponseDataContains: [DELETED_ARTICLE_ERROR],
     jsonResponseDataContains: null,
     detailsMessageKey: 'DELETED_ARTICLE',
@@ -55,6 +58,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: null,
     httpReturnCodes: null,
     contentTypes: null,
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['missingtitle'] }],
     detailsMessageKey: 'DELETED_ARTICLE',
@@ -66,6 +70,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['/api/rest_v1/page/html/'],
     httpReturnCodes: [{ min: 500, max: 500 }],
     contentTypes: ['text/html'],
+    responseIsEmpty: false,
     rawResponseDataContains: ['Our servers are currently under maintenance or experiencing a technical issue'],
     jsonResponseDataContains: null,
     detailsMessageKey: 'WIKIMEDIA_DESKTOP_API_HTML_500_ERROR',
@@ -77,6 +82,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['/api/rest_v1/page/html/'],
     httpReturnCodes: [{ min: 504, max: 504 }],
     contentTypes: ['application/json'],
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'httpReason', valueContains: ['upstream request timeout'] }],
     detailsMessageKey: 'WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT',
@@ -91,6 +97,7 @@ const matchingRules: MatchingRule[] = [
       { min: 504, max: 504 },
     ],
     contentTypes: ['application/json'],
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\RequestTimeout\\RequestTimeoutException'] }],
     detailsMessageKey: 'ACTION_PARSE_UPSTREAM_TIMEOUT',
@@ -102,6 +109,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 503, max: 503 }],
     contentTypes: ['text/html'],
+    responseIsEmpty: false,
     rawResponseDataContains: ['Our servers are currently under maintenance or experiencing a technical problem'],
     jsonResponseDataContains: null,
     detailsMessageKey: 'ACTION_PARSE_HTML_503_ERROR',
@@ -113,6 +121,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_MediaWiki\\Revision\\BadRevisionException'] }],
     detailsMessageKey: 'ACTION_PARSE_BAD_REVISION_ERROR',
@@ -124,6 +133,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\Assert\\UnreachableException'] }],
     detailsMessageKey: 'ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR',
@@ -135,6 +145,7 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Error'] }],
     detailsMessageKey: 'ACTION_PARSE_GENERIC_INTERNAL_API_ERROR',
@@ -146,10 +157,23 @@ const matchingRules: MatchingRule[] = [
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: null,
     contentTypes: null,
+    responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'warnings.result.*', valueContains: ['This result was truncated'] }],
     detailsMessageKey: 'ACTION_PARSE_TRUNCATED_RESPONSE',
     displayThirdLine: false,
+    isHardFailure: true,
+  },
+  {
+    name: 'ActionParse API - Emtpy HTML 500 error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 500, max: 500 }],
+    contentTypes: ['text/html'],
+    responseIsEmpty: true,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: null,
+    detailsMessageKey: 'ACTION_PARSE_EMPTY_500_RESPONSE',
+    displayThirdLine: true,
     isHardFailure: true,
   },
 ]
@@ -174,6 +198,7 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
       (!matchingRule.contentTypes ||
         matchingRule.contentTypes.findIndex((contentType) => (err.responseContentType || '').toLowerCase().includes(contentType.toLowerCase())) >= 0) &&
+      (!matchingRule.responseIsEmpty || err.responseData == '') &&
       (!matchingRule.rawResponseDataContains ||
         matchingRule.rawResponseDataContains.findIndex((rawResponseDataContain) => typeof err.responseData == 'string' && err.responseData.includes(rawResponseDataContain)) >=
           0) &&
