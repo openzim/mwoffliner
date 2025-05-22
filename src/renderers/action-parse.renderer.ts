@@ -5,7 +5,7 @@ import { config } from '../config.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
-import Downloader, { DownloaderClass, DownloadError } from '../Downloader.js'
+import Downloader, { DownloadError } from '../Downloader.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text&parsoid=1&page={article_title}&skin=vector-2022'
 export class ActionParseRenderer extends Renderer {
@@ -81,8 +81,9 @@ export class ActionParseRenderer extends Renderer {
     }
 
     const moduleDependencies = {
-      jsConfigVars: DownloaderClass.extractJsConfigVars(data.parse.headhtml['*']),
-      jsDependenciesList: config.output.mw.js_simplified.concat(data.parse.modules),
+      // Do not add JS-related stuff for now with ActionParse, see #2310
+      jsConfigVars: '', // DownloaderClass.extractJsConfigVars(data.parse.headhtml['*']),
+      jsDependenciesList: [], // config.output.mw.js_simplified.concat(data.parse.modules),
       styleDependenciesList: config.output.mw.css_simplified.concat(data.parse.modulestyles),
     }
 
