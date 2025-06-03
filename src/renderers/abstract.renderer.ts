@@ -9,7 +9,7 @@ import DU from '../DOMUtils.js'
 import { config } from '../config.js'
 import { Dump } from '../Dump.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
-import { footerTemplate } from '../Templates.js'
+import { subPagesTemplate, subCategoriesTemplate, categoriesTemplate, footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
@@ -540,8 +540,71 @@ export abstract class Renderer {
       headingNode.parentNode.insertBefore(subpagesNode, headingNode)
     }
 
+    /* Set sub categories */
+    if (articleDetail.subCategories && articleDetail.subCategories.length) {
+      const subCategoriesDiv = htmlTemplateDoc.createElement('div')
+
+      const subCategories = articleDetail.subCategories.map((category) => {
+          return {
+              name: category.title.split(':').slice(1).join(':'),
+              sortkeyprefix: category.sortkeyprefix,
+              url: encodeArticleIdForZimHtmlUrl(category.title),
+          };
+      });
+
+      const groups = this.groupAlphabetical(subCategories);
+
+      subCategoriesDiv.innerHTML = subCategoriesTemplate({
+          strings: dump.strings,
+          groups,
+      });
+
+      htmlTemplateDoc.getElementById('mw-content-text').appendChild(subCategoriesDiv)
+    }
+
+    /* Set category page members */
+    if (articleDetail.pages && articleDetail.pages.length) {
+      const pagesDiv = htmlTemplateDoc.createElement('div')
+
+      const pages = articleDetail.pages.map((page) => {
+          return {
+              name: page.title,
+              sortkeyprefix: page.sortkeyprefix,
+              url: encodeArticleIdForZimHtmlUrl(page.title),
+          };
+      });
+
+      const groups = this.groupAlphabetical(pages);
+
+      pagesDiv.innerHTML = subPagesTemplate({
+          strings: dump.strings,
+          groups,
+      });
+
+      htmlTemplateDoc.getElementById('mw-content-text').appendChild(pagesDiv)
+    }
+
+    /* Set page categories */
+    if (articleDetail.categories && articleDetail.categories.length) {
+      const categoriesDiv = htmlTemplateDoc.createElement('div')
+
+      const categories = articleDetail.categories.map((category) => {
+          return {
+              name: category.title.split(':').slice(1).join(':'),
+              url: encodeArticleIdForZimHtmlUrl(category.title),
+          };
+      });
+
+      categoriesDiv.innerHTML = categoriesTemplate({
+          strings: dump.strings,
+          categories,
+      });
+
+      htmlTemplateDoc.getElementById('mw-content-text').appendChild(categoriesDiv)
+    }
+
     /* Set footer */
-    const div = htmlTemplateDoc.createElement('div')
+    const footerDiv = htmlTemplateDoc.createElement('div')
 
     /* Revision date */
     const date = new Date(articleDetail.timestamp)
@@ -559,15 +622,15 @@ export abstract class Renderer {
 
     const licenseLink = `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`
 
-    div.innerHTML = footerTemplate({
+    footerDiv.innerHTML = footerTemplate({
       disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {
         creator: creatorLink,
         license: licenseLink,
       }),
       strings: dump.strings,
     })
-    htmlTemplateDoc.getElementById('mw-content-text').appendChild(div)
-    this.addNoIndexCommentToElement(div)
+    htmlTemplateDoc.getElementById('mw-content-text').appendChild(footerDiv)
+    this.addNoIndexCommentToElement(footerDiv)
 
     /* Geo-coordinates */
     if (articleDetail.coordinates) {
@@ -579,6 +642,23 @@ export abstract class Renderer {
     }
 
     return htmlTemplateDoc
+  }
+
+  private groupAlphabetical(items: Array<{ name: string, sortkeyprefix: string, url: string }>) {
+    const groupsAlphabetical = items.reduce((acc: any, item) => {
+        const groupId = item.sortkeyprefix ? item.sortkeyprefix[0].toLocaleUpperCase() : item.name[0].toLocaleUpperCase();
+        acc[groupId] = (acc[groupId] || []).concat(item);
+        return acc;
+    }, {});
+
+    return Object.keys(groupsAlphabetical)
+        .sort()
+        .map((letter) => {
+            return {
+                title: letter,
+                items: groupsAlphabetical[letter],
+            };
+        });
   }
 
   private addNoIndexCommentToElement(element: DominoElement) {

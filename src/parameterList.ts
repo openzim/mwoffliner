@@ -41,6 +41,8 @@ export const parameterDescriptions = {
   forceRender:
     'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile, RestApi, ActionParse ]',
   insecure: 'Skip HTTPS server authenticity verification step',
+  getCategories: '[WIP] Download category pages',
+  getCategoryPages: '[WIP] Add pages to categories',
 }
 
 // TODO: Add an interface based on the object above

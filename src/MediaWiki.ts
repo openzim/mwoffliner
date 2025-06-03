@@ -39,6 +39,7 @@ class MediaWiki {
   public metaData: MWMetaData
   public baseUrl: URL
   public getCategories: boolean
+  public getCategoryPages: boolean
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
   public apiCheckArticleId: string
@@ -153,6 +154,7 @@ class MediaWiki {
     this.#username = ''
     this.#password = ''
     this.getCategories = false
+    this.getCategoryPages = false
 
     this.#actionApiPath = '/w/api.php'
     this.#restApiPath = '/w/rest.php'
@@ -348,6 +350,7 @@ class MediaWiki {
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
         const isContent = type === 'namespaces' ? !!(entry.content || util.contains(addNamespaces, num)) : !!(entry.content !== undefined || util.contains(addNamespaces, num))
+        const isCategory = entry.canonical == 'Category'
         const isBlacklisted = BLACKLISTED_NS.includes(name)
         const canonical = entry.canonical ? entry.canonical : ''
         const details = { num, allowedSubpages, isContent }
@@ -363,7 +366,7 @@ class MediaWiki {
         }
 
         /* Is content to mirror */
-        if (isContent && !isBlacklisted) {
+        if (isContent && !isBlacklisted || (this.getCategories && isCategory)) {
           this.namespacesToMirror.push(name)
         }
       })
