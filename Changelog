@@ -3,6 +3,7 @@ Unreleased:
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
 * NEW: Add support for ActionParse API as renderer (@benoit74 #2127)
+* NEW: Add `--mwIndexPhpPath` CLI parameter to customize index.php when needed and properly detect links through index.php (@benoit74 #2260)
 * CHANGED: Upgrade to node-libzim 3.3.0 (libzim 9.3.0) and Node.JS 24 (@benoit74 #2247 #2314 @kelson42 #2300)
 * CHANGED: Handle bad errors while downloading an article and replace with placeholder (@benoit74 #2185 #2239 #2253 #2256 #2277 #2284 #2312 #2323)
 * CHANGED: Keep `typeof` HTML attribute and stop adding custom thumbiner HTML around images when ActionParse renderer is used (@benoit74 #2254)
