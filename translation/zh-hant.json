@@ -16,6 +16,7 @@
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發 HTTP 503 錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發非預期錯誤修訂 ID。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發無法存取的例外錯誤。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發非預期資料庫錯誤。",
 	"DOWNLOAD_ERRORS_LINE2": "缺少的條目已被您目前看到的佔位符頁面所取代。",
 	"DOWNLOAD_ERRORS_LINE3": "希望 ${server} 伺服器上的問題可以解決，以及希望我們的下一個版本的 ZIM 將包含此條目。"
 }
