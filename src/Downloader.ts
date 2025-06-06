@@ -354,6 +354,10 @@ class Downloader {
       } else {
         if (MediaWiki.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
+
+          if (MediaWiki.getCategoryPages) {
+            processedResponse = await this.setArticlePageMembers(processedResponse)
+          }
         }
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
@@ -411,6 +415,10 @@ class Downloader {
       } else {
         if (MediaWiki.getCategories) {
           processedResponse = await this.setArticleSubCategories(processedResponse)
+
+          if (MediaWiki.getCategoryPages) {
+            processedResponse = await this.setArticlePageMembers(processedResponse)
+          }
         }
 
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
@@ -649,6 +657,18 @@ class Downloader {
     return articleDetails
   }
 
+  private async setArticlePageMembers(articleDetails: QueryMwRet) {
+    logger.info('Getting category page members')
+    for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
+      const isCategoryArticle = articleDetail.ns === 14
+      if (isCategoryArticle) {
+        const pages = await this.getPageMembers(articleId)
+        ;(articleDetails[articleId] as any).pages = pages.slice()
+      }
+    }
+    return articleDetails
+  }
+
   private async claimRequest(): Promise<null> {
     if (this.activeRequests < this.maxActiveRequests) {
       this.activeRequests += 1
@@ -840,6 +860,20 @@ class Downloader {
 
     if (cont && cont.cmcontinue) {
       const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)
+      return items.concat(nextItems)
+    } else {
+      return items
+    }
+  }
+
+  private async getPageMembers(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+
+    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildPageMembersURL(articleId, continueStr))
+    const items = query.categorymembers.filter((a: any) => a && a.title)
+
+    if (cont && cont.cmcontinue) {
+      const nextItems = await this.getPageMembers(articleId, cont.cmcontinue)
       return items.concat(nextItems)
     } else {
       return items

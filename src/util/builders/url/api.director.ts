@@ -22,6 +22,24 @@ export default class ApiURLDirector {
         formatversion: '2',
         cmtitle: articleId,
         cmcontinue: continueStr,
+        cmprop: "title|sortkeyprefix",
+      })
+      .build()
+  }
+
+  buildPageMembersURL(articleId: string, continueStr = '') {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({
+        action: 'query',
+        list: 'categorymembers',
+        cmtype: 'page',
+        cmlimit: 'max',
+        format: 'json',
+        formatversion: '2',
+        cmtitle: articleId,
+        cmcontinue: continueStr,
+        cmprop: "title|sortkeyprefix",
       })
       .build()
   }

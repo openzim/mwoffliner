@@ -282,6 +282,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
       title: val.title,
       categories: val.categories,
       subCategories: val.subCategories,
+      pages: val.pages,
       thumbnail: newThumbnail,
       missing: val.missing,
       ...(val.ns !== 0 ? { ns: val.ns } : {}),
