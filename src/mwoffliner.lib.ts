@@ -388,7 +388,6 @@ async function execute(argv: any) {
       zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
     }
     zimCreator.startZimCreation(outZim)
-    zimCreator.setMainPath(dump.opts.mainPage ? dump.opts.mainPage : 'index')
 
     // Helper function to transform a Buffer into a libzim ContentProvider
     const createBufferContentProvider = (buffer: Buffer): ContentProvider => {
@@ -419,7 +418,7 @@ async function execute(argv: any) {
     await getThumbnailsData()
 
     logger.log('Checking Main Page rendering')
-    await getMainPage(dump, true, zimCreator)
+    await createMainPage(dump, 'index', zimCreator, true)
 
     logger.log('Getting articles')
     stime = Date.now()
@@ -455,8 +454,19 @@ async function execute(argv: any) {
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)
 
-    logger.log('Writing Main Page to the ZIM')
-    await getMainPage(dump, false, zimCreator)
+    if (mainPage) {
+      zimCreator.setMainPath(mainPage)
+    } else {
+      let mainPagePath = 'index'
+      let indexNum = 0
+      while ((await RedisStore.articleDetailXId.exists(mainPagePath)) || (await RedisStore.redirectsXId.exists(mainPagePath))) {
+        mainPagePath = `index${indexNum}`
+        indexNum++
+      }
+      zimCreator.setMainPath(mainPagePath)
+      logger.log('Writing Main Page to the ZIM')
+      await createMainPage(dump, mainPagePath, zimCreator, false)
+    }
 
     logger.log('Finishing ZIM Creation')
     await zimCreator.finishZimCreation()
@@ -548,65 +558,54 @@ async function execute(argv: any) {
     }
   }
 
-  function getMainPage(dump: Dump, dryrun: boolean, zimCreator: Creator) {
-    async function createMainPage() {
-      const doc = domino.createDocument(
-        articleListHomeTemplate.replace(
-          '</head>',
-          genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) +
-            '\n' +
-            genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
-            '\n' +
-            '\n</head>',
-        ),
-      )
-      doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
-      const articlesWithImages: ArticleDetail[] = []
-      const allArticles: ArticleDetail[] = []
-      for (const articleId of articleListLines) {
-        const articleDetail = await articleDetailXId.get(articleId)
-        if (articleDetail) {
-          allArticles.push(articleDetail)
-          if (articleDetail.thumbnail && articleDetail.internalThumbnailUrl) {
-            articlesWithImages.push(articleDetail)
-            if (articlesWithImages.length >= 100) {
-              break
-            }
+  async function createMainPage(dump: Dump, mainPagePath: string, zimCreator: Creator, dryrun: boolean) {
+    const doc = domino.createDocument(
+      articleListHomeTemplate.replace(
+        '</head>',
+        genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) +
+          '\n' +
+          genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
+          '\n' +
+          '\n</head>',
+      ),
+    )
+    doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
+    const articlesWithImages: ArticleDetail[] = []
+    const allArticles: ArticleDetail[] = []
+    for (const articleId of articleListLines) {
+      const articleDetail = await articleDetailXId.get(articleId)
+      if (articleDetail) {
+        allArticles.push(articleDetail)
+        if (articleDetail.thumbnail && articleDetail.internalThumbnailUrl) {
+          articlesWithImages.push(articleDetail)
+          if (articlesWithImages.length >= 100) {
+            break
           }
         }
       }
-
-      if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
-        doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
-      } else {
-        const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
-        doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`
-      }
-
-      /* Write the static html file */
-      if (!dryrun) {
-        const item = new StringItem('index', 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
-        return zimCreator.addItem(item)
-      }
     }
 
-    function createMainPageRedirect() {
-      if (!dryrun) {
-        logger.log(`Create main page redirection from [index] to [${mainPage}]`)
-        zimCreator.addRedirection('index', '', mainPage, { FRONT_ARTICLE: 1 })
-      }
+    if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
+      const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
+      doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
+    } else {
+      const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
+      doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`
     }
 
-    return mainPage ? createMainPageRedirect() : createMainPage()
+    /* Write the static html file */
+    if (!dryrun) {
+      const item = new StringItem(mainPagePath, 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
+      return zimCreator.addItem(item)
+    }
   }
 
   async function fetchArticleDetail(articleId: string) {
