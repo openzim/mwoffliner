@@ -71,7 +71,11 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
             )
           }
         }
-        const existingArticleDetails = await articleDetailXId.getMany(Object.keys(articleDetails))
+        const keys = Object.keys(articleDetails)
+        if (keys.length == 0) {
+          return
+        }
+        const existingArticleDetails = await articleDetailXId.getMany(keys)
         await articleDetailXId.setMany(deepmerge(existingArticleDetails, articleDetails))
       }
     },
