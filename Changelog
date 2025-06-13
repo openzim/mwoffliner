@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
 
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
