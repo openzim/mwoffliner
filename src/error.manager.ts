@@ -141,6 +141,18 @@ const matchingRules: MatchingRule[] = [
     isHardFailure: true,
   },
   {
+    name: 'ActionParse API - JSON InvariantException error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 200, max: 200 }],
+    contentTypes: ['application/json'],
+    responseIsEmpty: false,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\Assert\\InvariantException'] }],
+    detailsMessageKey: 'ACTION_PARSE_INVARIANT_EXCEPTION_ERROR',
+    displayThirdLine: true,
+    isHardFailure: true,
+  },
+  {
     name: 'ActionParse API - JSON Generic Internal API error',
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
