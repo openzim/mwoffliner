@@ -97,8 +97,12 @@ describe('Misc utility', () => {
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected bad revision ID error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unreachable exception error while giving details about this article HTML.',
+        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR:
+          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an invariant exception error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API error while giving details about this article HTML.',
+        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR:
+          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API type error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE:
           'When the ZIM you are browsing was built, ${server} server ActionParse API failed to give details about this article HTML because this article is way too big. Someone should probably split this article into multiple smaller articles on ${server} server.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE:
@@ -130,8 +134,12 @@ describe('Misc utility', () => {
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected bad revision ID error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unreachable exception error while giving details about this article HTML.',
+        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR:
+          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an invariant exception error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR:
           'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API error while giving details about this article HTML.',
+        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR:
+          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API type error while giving details about this article HTML.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE:
           'When the ZIM you are browsing was built, ${server} server ActionParse API failed to give details about this article HTML because this article is way too big. Someone should probably split this article into multiple smaller articles on ${server} server.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE:

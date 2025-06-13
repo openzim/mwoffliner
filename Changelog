@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2326 #2341)
 
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
