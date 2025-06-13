@@ -165,6 +165,18 @@ const matchingRules: MatchingRule[] = [
     isHardFailure: true,
   },
   {
+    name: 'ActionParse API - JSON Internal API type error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 200, max: 200 }],
+    contentTypes: ['application/json'],
+    responseIsEmpty: false,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_TypeError'] }],
+    detailsMessageKey: 'ACTION_PARSE_INTERNAL_API_TYPE_ERROR',
+    displayThirdLine: true,
+    isHardFailure: true,
+  },
+  {
     name: 'ActionParse API - Truncated Response',
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: null,
