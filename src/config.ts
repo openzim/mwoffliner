@@ -9,6 +9,8 @@ const config = {
     requestTimeout: 120 * 1000,
   },
 
+  candidateIndexPath: ['index', 'welcome', 'home', 'Main_Page'],
+
   filters: {
     /* All DOM nodes with one of these styles will be removed */
     /* On Wikivoyage 'noprint' remove also top banners like on 'South America'. */

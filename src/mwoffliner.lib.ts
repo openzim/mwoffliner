@@ -397,7 +397,6 @@ async function execute(argv: any) {
       zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
     }
     zimCreator.startZimCreation(outZim)
-    zimCreator.setMainPath(dump.opts.mainPage ? dump.opts.mainPage : 'index')
 
     // Helper function to transform a Buffer into a libzim ContentProvider
     const createBufferContentProvider = (buffer: Buffer): ContentProvider => {
@@ -427,8 +426,10 @@ async function execute(argv: any) {
 
     await getThumbnailsData()
 
-    logger.log('Checking Main Page rendering')
-    await getMainPage(dump, true, zimCreator)
+    if (!mainPage) {
+      logger.log('Checking Main Page rendering')
+      await createIndexPage(dump, zimCreator, true)
+    }
 
     logger.log('Getting gadgets')
     await Gadgets.fetchGadgets()
@@ -467,8 +468,8 @@ async function execute(argv: any) {
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)
 
-    logger.log('Writing Main Page to the ZIM')
-    await getMainPage(dump, false, zimCreator)
+    const mainPath = mainPage ? mainPage : await createIndexPage(dump, zimCreator, false)
+    zimCreator.setMainPath(mainPath)
 
     logger.log('Finishing ZIM Creation')
     await zimCreator.finishZimCreation()
@@ -554,65 +555,74 @@ async function execute(argv: any) {
     }
   }
 
-  function getMainPage(dump: Dump, dryrun: boolean, zimCreator: Creator) {
-    async function createMainPage() {
-      const doc = domino.createDocument(
-        articleListHomeTemplate.replace(
-          '</head>',
-          genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) +
-            '\n' +
-            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) +
-            '\n' +
-            genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
-            '\n' +
-            '\n</head>',
-        ),
-      )
-      doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
-      const articlesWithImages: ArticleDetail[] = []
-      const allArticles: ArticleDetail[] = []
-      for (const articleId of articleListLines) {
-        const articleDetail = await articleDetailXId.get(articleId)
-        if (articleDetail) {
-          allArticles.push(articleDetail)
-          if (articleDetail.thumbnail && articleDetail.internalThumbnailUrl) {
-            articlesWithImages.push(articleDetail)
-            if (articlesWithImages.length >= 100) {
-              break
-            }
+  async function getIndexPath() {
+    for (const candidate of config.candidateIndexPath) {
+      if (!(await RedisStore.articleDetailXId.exists(candidate)) && !(await RedisStore.redirectsXId.exists(candidate))) {
+        return candidate
+      }
+    }
+    throw new Error('All candidate main page paths are already used by an article or a redirect')
+  }
+
+  /**
+   * Create a custom index page used as main page, listing all articles in the ZIM
+   * Mainly used for selections which do not have a proper main page to use
+   * Supports a dry-run mode where main page is not really created, to be used before we
+   * fetch all articles. Real index creation must be done after we have fetched all articles,
+   * should some have failed we do not want to add them to the index
+   */
+  async function createIndexPage(dump: Dump, zimCreator: Creator, dryrun: boolean) {
+    const indexPagePath = await getIndexPath()
+
+    const doc = domino.createDocument(
+      articleListHomeTemplate.replace(
+        '</head>',
+        genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) +
+          '\n' +
+          genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) +
+          '\n' +
+          genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
+          '\n' +
+          '\n</head>',
+      ),
+    )
+    doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
+    const articlesWithImages: ArticleDetail[] = []
+    const allArticles: ArticleDetail[] = []
+    for (const articleId of articleListLines) {
+      const articleDetail = await articleDetailXId.get(articleId)
+      if (articleDetail) {
+        allArticles.push(articleDetail)
+        if (articleDetail.thumbnail && articleDetail.internalThumbnailUrl) {
+          articlesWithImages.push(articleDetail)
+          if (articlesWithImages.length >= 100) {
+            break
           }
         }
       }
-
-      if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-        const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
-        doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
-      } else {
-        const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
-        doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`
-      }
-
-      /* Write the static html file */
-      if (!dryrun) {
-        const item = new StringItem('index', 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
-        return zimCreator.addItem(item)
-      }
     }
 
-    function createMainPageRedirect() {
-      if (!dryrun) {
-        logger.log(`Create main page redirection from [index] to [${mainPage}]`)
-        zimCreator.addRedirection('index', '', mainPage, { FRONT_ARTICLE: 1 })
-      }
+    if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
+      const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
+      doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
+    } else {
+      const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
+      doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`
     }
 
-    return mainPage ? createMainPageRedirect() : createMainPage()
+    /* Write the static html file */
+    if (!dryrun) {
+      const item = new StringItem(indexPagePath, 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
+      zimCreator.addItem(item)
+    }
+
+    return indexPagePath
   }
 
   async function fetchArticleDetail(articleId: string) {
