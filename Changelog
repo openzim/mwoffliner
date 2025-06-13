@@ -1,4 +1,5 @@
 Unreleased:
+* CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
 
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
