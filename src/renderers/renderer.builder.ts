@@ -27,29 +27,33 @@ export class RendererBuilder {
 
     switch (renderType) {
       case 'desktop':
-        if (hasWikimediaDesktopApi) {
+        if (hasActionParseApi) {
+          return new ActionParseRenderer()
+        } else if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
           return new VisualEditorRenderer()
         } else if (hasRestApi) {
           return new RestApiRenderer()
-        } else if (hasActionParseApi) {
-          return new ActionParseRenderer()
         } else {
           logger.error('No available desktop renderer.')
           process.exit(1)
         }
         break // prettier-ignore
       case 'mobile':
-        if (hasWikimediaMobileApi) {
+        if (hasActionParseApi) {
+          return new ActionParseRenderer()
+        } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
         }
         logger.error('No available mobile renderer.')
         process.exit(1)
         break // prettier-ignore
       case 'auto':
-        if (hasWikimediaDesktopApi) {
+        if (hasActionParseApi) {
+          return new ActionParseRenderer()
+        } else if (hasWikimediaDesktopApi) {
           // Choose WikimediaDesktopRenderer if it's present, regardless of hasVisualEditorApi value
           return new WikimediaDesktopRenderer()
         } else if (hasVisualEditorApi) {
@@ -58,8 +62,6 @@ export class RendererBuilder {
           return new RestApiRenderer()
         } else if (hasWikimediaMobileApi) {
           return new WikimediaMobileRenderer()
-        } else if (hasActionParseApi) {
-          return new ActionParseRenderer()
         } else {
           logger.error('No render available at all.')
           process.exit(1)
