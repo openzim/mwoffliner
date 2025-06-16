@@ -38,6 +38,7 @@ import {
   extractArticleList,
   getTmpDirectory,
   validateMetadata,
+  truncateUtf8Bytes,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -487,7 +488,7 @@ async function execute(argv: any) {
         zimCreator.addRedirection(
           redirectId,
           // We fake a title, by just removing the underscores
-          String(redirectId).replace(/_/g, ' '),
+          truncateUtf8Bytes(String(redirectId).replace(/_/g, ' '), 245),
           targetId,
           { FRONT_ARTICLE: 1 },
         )

@@ -15,6 +15,7 @@ import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
+import { truncateUtf8Bytes } from './misc.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, retryCounter = 0) {
   await retryStore.flush()
@@ -247,35 +248,6 @@ async function saveArticle(
   } catch (err) {
     return err
   }
-}
-
-function truncateUtf8Bytes(text: string, maxBytes: number) {
-  // Truncate text to maxBytes bytes once encoded to UTF-8 ; takes into account multi-bytes characters, avoiding to split
-  // in the middle of a character, trying to do this in an efficient manner with binary search
-  const encoder = new TextEncoder()
-  const encoded = encoder.encode(text)
-
-  if (encoded.length <= maxBytes) {
-    return text
-  }
-
-  // Binary search to find the maximum substring that fits in maxBytes
-  let low = 0
-  let high = text.length
-
-  while (low < high) {
-    const mid = Math.floor((low + high) / 2)
-    const slice = text.slice(0, mid)
-    const sliceBytes = encoder.encode(slice).length
-
-    if (sliceBytes <= maxBytes) {
-      low = mid + 1
-    } else {
-      high = mid
-    }
-  }
-
-  return text.slice(0, low - 1)
 }
 
 /*
