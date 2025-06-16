@@ -165,6 +165,18 @@ const matchingRules: MatchingRule[] = [
     isHardFailure: true,
   },
   {
+    name: 'ActionParse API - JSON InvalidArgumentException error',
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 200, max: 200 }],
+    contentTypes: ['application/json'],
+    responseIsEmpty: false,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_InvalidArgumentException'] }],
+    detailsMessageKey: 'ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR',
+    displayThirdLine: true,
+    isHardFailure: true,
+  },
+  {
     name: 'ActionParse API - JSON Internal API type error',
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
