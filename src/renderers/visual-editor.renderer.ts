@@ -59,6 +59,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
         dump,
         articleId,
         articleDetail,
+        '',
         moduleDependencies,
         super.templateDesktopArticle.bind(this),
       )

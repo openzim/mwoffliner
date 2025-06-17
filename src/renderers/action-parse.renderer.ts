@@ -8,7 +8,7 @@ import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Tem
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text&parsoid=1&page={article_title}&skin=vector-2022'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle&parsoid=1&page={article_title}&skin=vector-2022'
 export class ActionParseRenderer extends Renderer {
   public staticFilesList: string[] = []
   constructor() {
@@ -105,12 +105,12 @@ export class ActionParseRenderer extends Renderer {
       return redirect
     })
 
-    return { data: data.parse.text['*'], moduleDependencies, redirects: normalizedRedirects }
+    return { data: data.parse.text['*'], moduleDependencies, redirects: normalizedRedirects, displayTitle: data.parse.displaytitle }
   }
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, moduleDependencies, dump } = renderOpts
+    const { data, articleId, displayTitle, moduleDependencies, dump } = renderOpts
 
     if (!data) {
       throw new Error('Cannot render missing data into an article')
@@ -140,6 +140,7 @@ export class ActionParseRenderer extends Renderer {
       dump,
       articleId,
       articleDetail,
+      displayTitle,
       moduleDependencies,
       this.templateDesktopArticle.bind(this),
     )

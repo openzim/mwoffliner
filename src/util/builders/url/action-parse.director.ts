@@ -15,7 +15,15 @@ export default class ActionParseURLDirector {
   buildArticleURL(articleId: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml|text', parsoid: '1', page: articleId, useskin: this.skin, redirects: '1' })
+      .setQueryParams({
+        action: 'parse',
+        format: 'json',
+        prop: 'modules|jsconfigvars|headhtml|text|displaytitle',
+        parsoid: '1',
+        page: articleId,
+        useskin: this.skin,
+        redirects: '1',
+      })
       .build()
   }
 }
