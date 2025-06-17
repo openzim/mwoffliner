@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "1.15.1",
+  "version": "1.15.2-dev0",
   "description": "MediaWiki ZIM scraper",
   "main": "lib/mwoffliner.lib.js",
   "license": "GPL-3.0",
