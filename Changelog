@@ -1,4 +1,4 @@
-Unreleased:
+1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
 * FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2326 #2341 #2350)
 * FIX: Truncate redirect titles to 245 bytes (@benoit74 #2331)
