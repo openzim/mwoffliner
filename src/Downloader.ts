@@ -441,7 +441,7 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
-      const { data, moduleDependencies, redirects } = await articleRenderer.download({
+      const { data, moduleDependencies, redirects, displayTitle } = await articleRenderer.download({
         articleId,
         articleUrl,
         articleDetail,
@@ -465,6 +465,7 @@ class Downloader {
         articleId,
         articleDetailXId,
         articleDetail,
+        displayTitle,
         isMainPage,
         dump,
       })
