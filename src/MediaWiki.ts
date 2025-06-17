@@ -314,7 +314,6 @@ class MediaWiki {
       // Logging in
       await Downloader.request({
         url: this.actionApiUrl.href,
-        ...Downloader.arrayBufferRequestOptions,
         data: qs.stringify({
           action: 'login',
           format: 'json',
@@ -336,8 +335,6 @@ class MediaWiki {
         } else {
           logger.log('Login Success')
         }
-
-        Downloader.loginCookie = resp.headers['set-cookie'].join(';')
       })
     }
   }
