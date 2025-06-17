@@ -327,8 +327,14 @@ class MediaWiki {
         },
         method: 'POST',
       }).then(async (resp) => {
-        if (resp.data.login.result !== 'Success') {
+        if (resp.data.login?.result !== 'Success') {
+          const reason = resp.data.login?.reason
+          if (reason) {
+            logger.error(reason)
+          }
           throw new Error('Login Failed')
+        } else {
+          logger.log('Login Success')
         }
 
         Downloader.loginCookie = resp.headers['set-cookie'].join(';')
