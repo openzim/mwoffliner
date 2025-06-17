@@ -1,6 +1,6 @@
 Unreleased:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
-* FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2326 #2341)
+* FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2326 #2341 #2350)
 
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
