@@ -217,6 +217,11 @@ class Downloader {
       httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
       timeout: this.requestTimeout,
       headers: {
+        // Use the base domain of the wiki being scraped as the Referer header, so that we can
+        // successfully scrap WMF map tiles.
+        Referer: MediaWiki.baseUrl.href,
+        // Set loginCookie if present (might be dynamic, so we need to override it at every call)
+        cookie: this.loginCookie,
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
       },
@@ -554,24 +559,29 @@ class Downloader {
   public async request<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): Promise<R> {
     return axios
       .request<T, R, D>({
+        ...this._basicRequestOptions,
         ...config,
         headers: {
-          // Use the base domain of the wiki being scraped as the Referer header, so that we can
-          // successfully scrap WMF map tiles.
-          Referer: MediaWiki.baseUrl.href,
-          // Set loginCookie if present (might be dynamic, so we need to override it at every call)
-          cookie: this.loginCookie,
-          ...config.headers,
+          ...this._basicRequestOptions.headers,
+          ...config?.headers,
         },
         signal: AbortSignal.timeout(this.requestTimeout),
       })
       .then(async (resp) => {
         // Store cookie if needed, so that we can pass it to next requests
-        if (resp.headers['set-cookie']) {
+        if (resp && resp.headers['set-cookie']) {
           this.loginCookie = resp.headers['set-cookie'].join(';')
         }
         return resp
       })
+  }
+
+  public async get<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R> {
+    return this.request({ url, method: 'GET', ...config })
+  }
+
+  public async post<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R> {
+    return this.request({ url, data, method: 'POST', ...config })
   }
 
   public async downloadContent(_url: string, kind: DonwloadKind, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {

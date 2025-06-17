@@ -47,9 +47,9 @@ if (argv.osTmpDir) {
   }
 }
 
-/* ***********************/
-/* TESTING ALL ARGUMENTS */
-/* ***********************/
+/* ***********************************/
+/* PERFORMING STATIC ARGUMENTS TESTS */
+/* ***********************************/
 
 import { sanitize_all } from './sanitize-argument.js'
 const execStartTime = Date.now()

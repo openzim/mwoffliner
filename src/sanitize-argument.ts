@@ -1,5 +1,4 @@
 import S3 from './S3.js'
-import axios from 'axios'
 import RedisStore from './RedisStore.js'
 import { fileURLToPath } from 'url'
 import pathParser from 'path'
@@ -10,21 +9,21 @@ import { isValidEmail } from './util/index.js'
 import * as path from 'path'
 import { parameterDescriptions } from './parameterList.js'
 import { RENDERERS_LIST } from './util/const.js'
+import Downloader from './Downloader.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const parametersWithArrayType = ['format']
 
+// Perform "static check" of arguments not depending on external connectivity
+// Stack is not yet sufficiently ready to perform live external connectivity checks
 export async function sanitize_all(argv: any) {
   // extracting all arguments
   const {
     articleList,
     addNamespaces,
-    speed: _speed,
+    speed,
     adminEmail,
-    mwUrl,
-    customZimFavicon,
-    optimisationCacheUrl,
     verbose,
     customZimLongDescription,
     customZimDescription,
@@ -44,7 +43,7 @@ export async function sanitize_all(argv: any) {
   sanitize_verbose(verbose)
 
   // sanitizing speed
-  sanitize_speed(_speed)
+  sanitize_speed(speed)
 
   // sanitizing longDescription
   sanitizeStringMaxLength(customZimLongDescription, 'customZimLongDescription', 4000)
@@ -59,20 +58,6 @@ export async function sanitize_all(argv: any) {
       throw new Error('Custom Flavour not found')
     }
   }
-
-  // sanitizing S3
-  if (optimisationCacheUrl) {
-    // Decompose the url with path and other S3 creds
-    const s3UrlObj = new URL(optimisationCacheUrl)
-    const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-    const s3Obj = new S3(s3Url, s3UrlObj.searchParams, 1000 * 60, argv.insecure)
-    await s3Obj.initialise().then(() => {
-      logger.log('Successfully logged in S3')
-    })
-  }
-
-  // sanitizing mwUrl
-  await sanitize_mwUrl(mwUrl)
 
   // sanitizing mwWikiPath
   if (mwWikiPath) {
@@ -111,14 +96,26 @@ export async function sanitize_all(argv: any) {
   if (forceRender) {
     sanitize_forceRender(forceRender)
   }
+}
 
-  // Redis client sanitization
+// perform live checks of arguments needing a connection "somewhere"
+export async function check_all(argv: any) {
+  // extracting required arguments
+  const { mwUrl, customZimFavicon, optimisationCacheUrl, insecure } = argv
+
+  // check mwUrl availability
+  await check_mwUrl(mwUrl)
+
+  // check s3 availability
+  await check_s3(optimisationCacheUrl, insecure)
+
+  // Check Redis availability
   // created a redis client and then closed it.
-  sanitize_redis(argv)
+  await check_redis(argv)
 
-  // sanitizing custom ZIM favicon
+  // check custom ZIM favicon availability
   if (customZimFavicon) {
-    await sanitize_customZimFavicon(customZimFavicon)
+    await check_customZimFavicon(customZimFavicon)
   }
 }
 
@@ -184,9 +181,9 @@ export function sanitize_speed(_speed: any) {
   }
 }
 
-export async function sanitize_mwUrl(mwUrl: string) {
-  await axios.get(mwUrl).catch(() => {
-    throw new Error(`mwUrl [${mwUrl}] is not valid.`)
+export async function check_mwUrl(mwUrl: string) {
+  await Downloader.get(mwUrl).catch((err) => {
+    throw new Error(`mwUrl [${mwUrl}] is not valid:\n${err}`)
   })
 }
 
@@ -196,22 +193,35 @@ export function sanitize_adminEmail(adminEmail: any) {
   }
 }
 
-export async function sanitize_redis(argv: any) {
+export async function check_redis(argv: any) {
   RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect(false)
   logger.log('closing sanitize redis DB')
   await RedisStore.close()
 }
 
-export async function sanitize_customZimFavicon(customZimFavicon: any) {
+export async function check_customZimFavicon(customZimFavicon: any) {
   const faviconIsRemote = customZimFavicon.includes('http')
   if (faviconIsRemote) {
     // make a download to check custom favicon link is valid
-    await axios.get(customZimFavicon).catch(() => {
+    await Downloader.get(customZimFavicon).catch(() => {
       throw new Error(`Failed to download custom ZIM favicon from [${customZimFavicon}]`)
     })
   } else {
     fs.readFileSync(customZimFavicon)
+  }
+}
+
+export async function check_s3(optimisationCacheUrl: string, insecure: boolean) {
+  // sanitizing S3
+  if (optimisationCacheUrl) {
+    // Decompose the url with path and other S3 creds
+    const s3UrlObj = new URL(optimisationCacheUrl)
+    const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
+    const s3Obj = new S3(s3Url, s3UrlObj.searchParams, 1000 * 60, insecure)
+    await s3Obj.initialise().then(() => {
+      logger.log('Successfully logged in S3')
+    })
   }
 }
 

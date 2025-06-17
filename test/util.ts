@@ -2,7 +2,6 @@ import MediaWiki from '../src/MediaWiki.js'
 import Downloader from '../src/Downloader.js'
 import { Dump } from '../src/Dump.js'
 import { config } from '../src/config.js'
-import axios from 'axios'
 import { execa } from 'execa'
 import * as logger from '../src/Logger.js'
 import 'dotenv/config.js'
@@ -86,7 +85,7 @@ export async function zimdump(params: string): Promise<string> {
 
 export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): Promise<any> {
   try {
-    return await axios.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`, {
+    return await Downloader.post(`${baseUrl}api/rest_v1/transform/wikitext/to/html`, {
       wikitext: wikicode,
       body_only: true,
     })

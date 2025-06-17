@@ -17,6 +17,8 @@ import * as path from 'path'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
 import { checkApiAvailability, getArticleIds } from './util/mw-api.js'
 
+import { check_all } from './sanitize-argument.js'
+
 import {
   MAX_CPU_CORES,
   MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
@@ -177,6 +179,8 @@ async function execute(argv: any) {
 
   /* perform login */
   await MediaWiki.login()
+
+  await check_all(argv)
 
   /* Get MediaWiki Info */
   let mwMetaData
