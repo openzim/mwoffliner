@@ -47,6 +47,7 @@ export interface DownloadRes {
   data?: any
   moduleDependencies: any
   redirects: Redirect[]
+  displayTitle?: string
 }
 
 export interface RenderOpts {
@@ -55,6 +56,7 @@ export interface RenderOpts {
   articleId?: string
   articleDetailXId?: RKVS<ArticleDetail>
   articleDetail?: ArticleDetail
+  displayTitle?: string
   isMainPage?: boolean
   dump: Dump
 }
@@ -412,7 +414,7 @@ export abstract class Renderer {
   }
 
   // TODO: The first part of this method is common for all renders
-  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, _moduleDependencies: any, callback) {
+  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, displayTitle: string, _moduleDependencies: any, callback) {
     let imageDependencies: Array<{ url: string; path: string }> = []
     let videoDependencies: Array<{ url: string; path: string }> = []
     let mediaDependencies: Array<{ url: string; path: string }> = []
@@ -468,7 +470,7 @@ export abstract class Renderer {
     }
 
     let templatedDoc = callback(_moduleDependencies, articleId)
-    templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId)
+    templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId, displayTitle)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
       templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
@@ -505,6 +507,7 @@ export abstract class Renderer {
     articleDetail: ArticleDetail,
     articleDetailXId: RKVS<ArticleDetail>,
     articleId: string,
+    displayTitle: string,
   ) {
     /* Create final document by merging template and parsoid documents */
     const mwContentText = htmlTemplateDoc.getElementById('mw-content-text')
@@ -519,7 +522,7 @@ export abstract class Renderer {
     // Set inline page title when missing
     const inlineTitle = htmlTemplateDoc.getElementById('openzim-page-title')
     if (inlineTitle && !inlineTitle.innerHTML) {
-      inlineTitle.innerHTML = articleTitle
+      inlineTitle.innerHTML = displayTitle || articleTitle
     }
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 

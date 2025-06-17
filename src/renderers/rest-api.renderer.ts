@@ -57,6 +57,7 @@ export class RestApiRenderer extends DesktopRenderer {
         dump,
         articleId,
         articleDetail,
+        '',
         moduleDependencies,
         super.templateDesktopArticle.bind(this),
       )
