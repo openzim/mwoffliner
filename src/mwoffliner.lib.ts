@@ -52,7 +52,6 @@ import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
-import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
 
@@ -157,6 +156,7 @@ async function execute(argv: any) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
   MediaWiki.getCategories = !!argv.getCategories
+  MediaWiki.getCategoryPages = !!argv.getCategoryPages
   MediaWiki.wikiPath = mwWikiPath
   MediaWiki.indexPhpPath = mwIndexPhpPath
   MediaWiki.actionApiPath = mwActionApiPath
@@ -304,20 +304,6 @@ async function execute(argv: any) {
   let stime = Date.now()
   await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
-
-  if (MediaWiki.getCategories) {
-    await getCategoriesForArticles(articleDetailXId)
-
-    while ((await trimUnmirroredPages()) > 0) {
-      // Remove unmirrored pages, categories, subCategories
-      // trimUnmirroredPages returns number of modified articles
-    }
-
-    // while ((await simplifyGraph(downloader, redisStore)).deletedNodes !== 0) {
-    //   // keep simplifying graph
-    // }
-    // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
-  }
 
   const filenameDate = new Date().toISOString().slice(0, 7)
 

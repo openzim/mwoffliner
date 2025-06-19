@@ -105,6 +105,7 @@ type TextDirection = 'ltr' | 'rtl'
 interface QueryRet {
   subCategories?: PageInfo[] // :(
   categories?: QueryCategoriesRet
+  pages?: PageInfo[]
   revisions?: QueryRevisionsRet
   coordinates?: QueryCoordinatesRet
   redirects?: QueryRedirectsRet
@@ -220,6 +221,7 @@ interface QueryContinueOpts {
 interface PageInfo {
   ns?: number
   title: string
+  sortkeyprefix?: string
 }
 
 interface PageRef {

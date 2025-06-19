@@ -1,11 +1,12 @@
-<br />
-<div class="mwo-catlinks">
-    Categories:
-    <ul>
-        {% for category in categories %}
-        <li>
-            <a href="{{category.url}}" rel="mwo:NoRewrite">{{category.name}}</a>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
+<details id="categories" data-level="2">
+    <summary class='section-heading'><h2>Categories</h2></summary>
+    <div class="mwo-catlinks">
+        <ul>
+            {% for category in categories %}
+            <li>
+                <a href="{{category.url}}" rel="mwo:NoRewrite">{{category.name}}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</details>
