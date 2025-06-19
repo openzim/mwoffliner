@@ -346,7 +346,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
             promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle)])
           }
         } catch (err) {
-          logger.error(`Error downloading article ${articleId}`)
+          logger.error(`Error downloading/rendering article ${articleId}`)
           reject(err)
           return
         }
