@@ -16,7 +16,6 @@ import {
   validateMetadata,
 } from '../../src/util/index.js'
 import { testHtmlRewritingE2e } from '../util.js'
-import axios from 'axios'
 import * as path from 'path'
 import { jest } from '@jest/globals'
 import fs from 'fs'
@@ -231,7 +230,7 @@ describe('Utils', () => {
   })
 
   test('No title normalisation', async () => {
-    const resp = await axios.get<MwApiResponse>(
+    const resp = await Downloader.get<MwApiResponse>(
       'https://en.wiktionary.org/w/api.php?action=query&format=json&prop=redirects|revisions|pageimages&rdlimit=max&rdnamespace=0&redirects=true&titles=constructor&formatversion=2',
       { responseType: 'json' },
     )
@@ -262,7 +261,7 @@ describe('Utils', () => {
       },
     }
     try {
-      await axios.get('https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685')
+      await Downloader.get('https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685')
       fail('it should not reach here')
     } catch (err) {
       const cleanupedError = cleanupAxiosError(err)

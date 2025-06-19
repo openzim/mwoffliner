@@ -13,9 +13,9 @@ import imageminGifsicle from 'imagemin-gifsicle'
 import imageminJpegoptim from 'imagemin-jpegoptim'
 import imageminWebp from 'imagemin-webp'
 import sharp from 'sharp'
-import http from 'http'
-import https from 'https'
 import { fileTypeFromBuffer } from 'file-type'
+import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
+import { CookieJar } from 'tough-cookie'
 
 import S3 from './S3.js'
 import * as logger from './Logger.js'
@@ -116,7 +116,6 @@ class Downloader {
     }
     return Downloader.instance
   }
-  public loginCookie = ''
   private _speed: number
   public cssDependenceUrls: KVS<boolean> = {}
   private _webp: boolean = false
@@ -135,6 +134,7 @@ class Downloader {
   private optimisationCacheUrl: string
   private s3: S3
   private apiUrlDirector: ApiURLDirector
+  private cookierJar: CookieJar
 
   private articleUrlDirector: URLDirector
   private mainPageUrlDirector: URLDirector
@@ -169,12 +169,12 @@ class Downloader {
     this._speed = speed
     this.maxActiveRequests = speed * 10
     this._requestTimeout = reqTimeout
-    this.loginCookie = ''
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
     this.s3 = s3
     this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
+    this.cookierJar = new CookieJar()
 
     this.backoffOptions = {
       // retry up to 10 times, with a minimum of 1sec, maximum of 1min
@@ -213,10 +213,14 @@ class Downloader {
 
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-      httpAgent: new http.Agent({ keepAlive: true }),
-      httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
+      // Set cookie jar and use special Http(s)CookieAgent so that cookies are automatically intercepted and persited across calls
+      httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookierJar }, keepAlive: true }),
+      httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookierJar }, keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
       timeout: this.requestTimeout,
       headers: {
+        // Use the base domain of the wiki being scraped as the Referer header, so that we can
+        // successfully scrap WMF map tiles.
+        Referer: MediaWiki.baseUrl.href,
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
       },
@@ -259,7 +263,6 @@ class Downloader {
     this._speed = undefined
     this.maxActiveRequests = undefined
     this._requestTimeout = undefined
-    this.loginCookie = ''
     this.optimisationCacheUrl = undefined
     this._webp = false
     this.s3 = undefined
@@ -552,26 +555,23 @@ class Downloader {
   }
 
   public async request<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): Promise<R> {
-    return axios
-      .request<T, R, D>({
-        ...config,
-        headers: {
-          // Use the base domain of the wiki being scraped as the Referer header, so that we can
-          // successfully scrap WMF map tiles.
-          Referer: MediaWiki.baseUrl.href,
-          // Set loginCookie if present (might be dynamic, so we need to override it at every call)
-          cookie: this.loginCookie,
-          ...config.headers,
-        },
-        signal: AbortSignal.timeout(this.requestTimeout),
-      })
-      .then(async (resp) => {
-        // Store cookie if needed, so that we can pass it to next requests
-        if (resp.headers['set-cookie']) {
-          this.loginCookie = resp.headers['set-cookie'].join(';')
-        }
-        return resp
-      })
+    return axios.request<T, R, D>({
+      ...this._basicRequestOptions,
+      ...config,
+      headers: {
+        ...this._basicRequestOptions.headers,
+        ...config?.headers,
+      },
+      signal: AbortSignal.timeout(this.requestTimeout),
+    })
+  }
+
+  public async get<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R> {
+    return this.request({ url, method: 'GET', ...config })
+  }
+
+  public async post<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R> {
+    return this.request({ url, data, method: 'POST', ...config })
   }
 
   public async downloadContent(_url: string, kind: DonwloadKind, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {

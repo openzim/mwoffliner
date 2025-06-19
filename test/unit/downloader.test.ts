@@ -2,7 +2,6 @@ import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
 import RedisStore from '../../src/RedisStore.js'
-import Axios from 'axios'
 import { mwRetToArticleDetail, stripHttpFromUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
@@ -112,7 +111,7 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('downloadContent successfully downloaded an image', async () => {
-    const { data: LondonHtml } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
+    const { data: LondonHtml } = await Downloader.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
     const doc = domino.createDocument(LondonHtml)
     const imgToGet = Array.from(doc.querySelectorAll('[data-mw-section-id="0"] img'))[0]
     let imgToGetSrc = ''
@@ -125,7 +124,7 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('downloadContent successfully downloads a map image', async () => {
-    const { data: LondonHtml } = await Axios.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
+    const { data: LondonHtml } = await Downloader.get('https://en.wikipedia.org/api/rest_v1/page/html/London')
     const doc = domino.createDocument(LondonHtml)
     const imgToGet = Array.from(doc.querySelectorAll('.mw-kartographer-map img'))[0]
     let imgToGetSrc = ''
@@ -291,7 +290,7 @@ describe('Downloader class - wikipedia EN', () => {
       await setTimeout(5000)
 
       // Check if S3 Etag is like online Etag
-      const upstreamResp = await Axios(randomImage)
+      const upstreamResp = await Downloader.get(randomImage)
       const s3Resp = await s3.downloadBlob(imagePath)
       expect(Downloader.removeEtagWeakPrefix(`${upstreamResp.headers.etag}`)).toEqual(s3Resp.Metadata.etag)
 
@@ -310,7 +309,7 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   async function getRandomImageUrl(): Promise<string> {
-    const resp = await Axios(
+    const resp = await Downloader.get(
       'https://commons.wikimedia.org/w/api.php?action=query&generator=random&grnnamespace=6&prop=imageinfo&iiprop=url&formatversion=2&iiurlwidth=100&format=json&formatversion=2',
     )
     return resp.data.query.pages[0].imageinfo[0].url
