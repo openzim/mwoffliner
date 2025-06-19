@@ -7,6 +7,7 @@ Unreleased:
 * FIX: Always use proper UserAgent and other shared http request settings (@benoit74 #2359)
 * FIX: Enhance login logs (@benoit74 #2362)
 * FIX: Properly store/reuse Cookies across HTTP calls (@benoit74 #2361)
+* FIX: Retry more transient errors (@benoit #2366)
 
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)
