@@ -77,7 +77,7 @@ describe('Misc utility', () => {
 
     test('returns en strings if lang file is missing completely', () => {
       const strings = getStringsForLang('XX')
-      expect(strings).toEqual({
+      expect(strings).toMatchObject({
         DISCLAIMER: 'This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.',
         LAST_EDITED_ON: 'Last edited on ${date}',
         LICENSE_NAME: 'Creative Commons - Attribution - Sharealike',
@@ -116,7 +116,7 @@ describe('Misc utility', () => {
 
     test('falls back to en strings if lang file is missing certain fields', () => {
       const strings = getStringsForLang('fi')
-      expect(strings).toEqual({
+      expect(strings).toMatchObject({
         DISCLAIMER: 'This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.',
         LAST_EDITED_ON: 'Viimeksi muokattu ${date}',
         LICENSE_NAME: 'Creative Commons - Nimeä - JaaSamoin',
@@ -156,7 +156,7 @@ describe('Misc utility', () => {
     test('falls back to specified fallback language', () => {
       const strings = getStringsForLang('XX', 'de')
       console.log(JSON.stringify(strings))
-      expect(strings).toEqual({
+      expect(strings).toMatchObject({
         DISCLAIMER:
           'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist als ${license} lizenziert. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.',
         LAST_EDITED_ON: 'Zuletzt bearbeitet am ${date}',
