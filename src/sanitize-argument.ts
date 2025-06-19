@@ -3,7 +3,6 @@ import RedisStore from './RedisStore.js'
 import { fileURLToPath } from 'url'
 import pathParser from 'path'
 import * as logger from './Logger.js'
-import { config } from './config.js'
 import fs from 'fs'
 import { isValidEmail } from './util/index.js'
 import * as path from 'path'
@@ -111,7 +110,7 @@ export async function check_all(argv: any) {
 
   // Check Redis availability
   // created a redis client and then closed it.
-  await check_redis(argv)
+  await check_redis()
 
   // check custom ZIM favicon availability
   if (customZimFavicon) {
@@ -193,8 +192,7 @@ export function sanitize_adminEmail(adminEmail: any) {
   }
 }
 
-export async function check_redis(argv: any) {
-  RedisStore.setOptions(argv.redis || config.defaults.redisPath)
+export async function check_redis() {
   await RedisStore.connect(false)
   logger.log('closing sanitize redis DB')
   await RedisStore.close()

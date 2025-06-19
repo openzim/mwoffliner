@@ -180,6 +180,11 @@ async function execute(argv: any) {
   /* perform login */
   await MediaWiki.login()
 
+  /* set Redis settings so that we can check them ; do it only once, should we call execute twice */
+  if (!RedisStore.client) {
+    RedisStore.setOptions(argv.redis || config.defaults.redisPath)
+  }
+
   await check_all(argv)
 
   /* Get MediaWiki Info */
@@ -224,7 +229,6 @@ async function execute(argv: any) {
 
   await RenderingContext.createRenderers(forceRender, hasWikimediaMobileApi)
 
-  RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   await RedisStore.connect()
   const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = RedisStore
   // Output directory
