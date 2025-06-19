@@ -17,6 +17,7 @@ interface JsonContain {
 
 interface MatchingRule {
   name: string
+  errorCodes: string[] | null
   urlContains: string[] | null
   httpReturnCodes: HttpReturnCodeRange[] | null
   contentTypes: string[] | null
@@ -31,6 +32,7 @@ interface MatchingRule {
 const matchingRules: MatchingRule[] = [
   {
     name: '404 return code',
+    errorCodes: null,
     urlContains: null,
     httpReturnCodes: [{ min: 404, max: 404 }],
     contentTypes: null,
@@ -43,6 +45,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'deleted article error',
+    errorCodes: null,
     urlContains: null,
     httpReturnCodes: null,
     contentTypes: null,
@@ -55,6 +58,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'missing title error',
+    errorCodes: null,
     urlContains: null,
     httpReturnCodes: null,
     contentTypes: null,
@@ -66,7 +70,21 @@ const matchingRules: MatchingRule[] = [
     isHardFailure: false,
   },
   {
+    name: 'Client-side timeout',
+    errorCodes: ['ERR_CANCELED'],
+    urlContains: null,
+    httpReturnCodes: null,
+    contentTypes: null,
+    responseIsEmpty: false, // we don't mind if response is empty or not, even if it probably is
+    rawResponseDataContains: null,
+    jsonResponseDataContains: null,
+    detailsMessageKey: 'CLIENT_SIDE_TIMEOUT',
+    displayThirdLine: true,
+    isHardFailure: true,
+  },
+  {
     name: 'WikimediaDesktop API - HTML 500 error',
+    errorCodes: null,
     urlContains: ['/api/rest_v1/page/html/'],
     httpReturnCodes: [{ min: 500, max: 500 }],
     contentTypes: ['text/html'],
@@ -79,6 +97,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'WikimediaDesktop API - JSON 504 Upstream Request Timeout',
+    errorCodes: null,
     urlContains: ['/api/rest_v1/page/html/'],
     httpReturnCodes: [{ min: 504, max: 504 }],
     contentTypes: ['application/json'],
@@ -91,6 +110,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON Upstream Request Timeout',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [
       { min: 200, max: 200 },
@@ -106,6 +126,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON 503 HTML error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 503, max: 503 }],
     contentTypes: ['text/html'],
@@ -118,6 +139,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON BadRevisionException error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
@@ -130,6 +152,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON UnreachableException error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
@@ -142,6 +165,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON InvariantException error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
@@ -154,6 +178,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON Generic Internal API error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
@@ -166,6 +191,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON InvalidArgumentException error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
@@ -178,6 +204,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - JSON Internal API type error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 200, max: 200 }],
     contentTypes: ['application/json'],
@@ -190,6 +217,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - Truncated Response',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: null,
     contentTypes: null,
@@ -202,6 +230,7 @@ const matchingRules: MatchingRule[] = [
   },
   {
     name: 'ActionParse API - Emtpy HTML 500 error',
+    errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
     httpReturnCodes: [{ min: 500, max: 500 }],
     contentTypes: ['text/html'],
@@ -230,6 +259,7 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
   for (const matchingRule of matchingRules) {
     if (
       (!matchingRule.urlContains || matchingRule.urlContains.findIndex((urlContain) => err.urlCalled.includes(urlContain)) >= 0) &&
+      (!matchingRule.errorCodes || matchingRule.errorCodes.findIndex((error) => err.errorCode.includes(error)) >= 0) &&
       (!matchingRule.httpReturnCodes ||
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
       (!matchingRule.contentTypes ||

@@ -184,7 +184,7 @@ class Downloader {
       failAfter: 10,
       retryIf: (err: any) => {
         const requestedUrl = err.urlCalled || err.config?.url || 'unknown'
-        if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE'].includes(err.code)) {
+        if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE', 'ERR_CANCELED'].includes(err.code)) {
           logger.log(`Retrying ${requestedUrl} URL due to ${err.code} error`)
           return true // retry all connection issues
         }
