@@ -2,10 +2,12 @@
 	"@metadata": {
 		"authors": [
 			"Brettchenweber",
-			"IMayBeABitShy"
+			"IMayBeABitShy",
+			"Nortix"
 		]
 	},
 	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist als ${license} lizenziert. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.",
 	"LAST_EDITED_ON": "Zuletzt bearbeitet am ${date}",
-	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
+	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Als das ZIM, das Sie durchsuchen, erstellt wurde, erhob der Server ${server} ActionParse API einen Argument-Ausnahmerfehler, während er Details über diesen HTML-Artikel gab."
 }
