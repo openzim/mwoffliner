@@ -324,8 +324,8 @@ class Downloader {
     return etag && etag.replace(WEAK_ETAG_REGEX, '')
   }
 
-  public query(): KVS<any> {
-    return this.getJSON(this.apiUrlDirector.buildSiteInfoQueryURL())
+  public querySiteInfo(): KVS<any> {
+    return this.getJSON(this.apiUrlDirector.buildSiteInfoURL())
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {

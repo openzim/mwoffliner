@@ -11,16 +11,6 @@ describe('ApiURLDirector', () => {
     })
   })
 
-  describe('buildSiteInfoQueryURL', () => {
-    it('should return string URL to get site info', () => {
-      const url = apiUrlDirector.buildSiteInfoQueryURL()
-
-      expect(url).toBe(
-        'https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json&formatversion=2&siprop=general%7Cnamespaces%7Cstatistics%7Cvariables%7Ccategory%7Cwikidesc',
-      )
-    })
-  })
-
   describe('buildQueryURL', () => {
     it('should build a string URL with provided query params', () => {
       const url = apiUrlDirector.buildQueryURL({ param1: 'param1', param2: 'param2' })
@@ -49,7 +39,7 @@ describe('ApiURLDirector', () => {
     it('should return a string URL with predefined query params for retrieving site info', () => {
       const url = apiUrlDirector.buildSiteInfoURL()
 
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json&formatversion=2')
+      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=general&format=json&formatversion=2')
     })
   })
 

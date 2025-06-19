@@ -53,7 +53,6 @@ import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
-import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -531,19 +530,12 @@ async function execute(argv: any) {
       }
     }
 
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-
-    const body = await Downloader.getJSON<any>(apiUrlDirector.buildSiteInfoURL())
-
-    const entries = body.query.general
-    if (!entries.logo) {
-      throw new Error(
-        `********\nNo site Logo Url. Expected a string, but got [${entries.logo}].\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`,
-      )
+    if (!mwMetaData.logo) {
+      throw new Error(`********\nNo site Logo Url found in site info.\n\nPlease try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)\n********`)
     }
 
-    const parsedUrl = new URL(entries.logo, MediaWiki.baseUrl)
-    const logoUrl = parsedUrl.protocol ? entries.logo : MediaWiki.baseUrl.protocol + entries.logo
+    const parsedUrl = new URL(mwMetaData.logo, MediaWiki.baseUrl)
+    const logoUrl = parsedUrl.protocol ? mwMetaData.logo : MediaWiki.baseUrl.protocol + mwMetaData.logo
     const { content } = await Downloader.downloadContent(logoUrl, 'image')
     return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
   }
