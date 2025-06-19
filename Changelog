@@ -5,6 +5,7 @@ Unreleased:
 * FIX: Retry more transient errors (@benoit #2366)
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
 * FIX: Fix/simplify retrieval of siteinfo metadata (@benoit74 #2328)
+* FIX: Ensure illustration metadata is really 48x48 even if source image is not square (@benoit74 #2368)
 
 1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)

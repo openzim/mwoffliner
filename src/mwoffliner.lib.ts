@@ -506,6 +506,7 @@ async function execute(argv: any) {
   }
 
   async function getIllustrationMetadata(): Promise<Buffer> {
+    const resizeOptions: sharp.ResizeOptions = { fit: sharp.fit.contain, withoutEnlargement: true, background: { r: 1, g: 1, b: 1, alpha: 0 } }
     if (customZimFavicon) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
@@ -524,7 +525,7 @@ async function execute(argv: any) {
         }
       }
       try {
-        return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
+        return sharp(content).resize(48, 48, resizeOptions).png().toBuffer()
       } catch {
         throw new Error('Failed to read or process IllustrationMetadata using sharp')
       }
@@ -537,7 +538,7 @@ async function execute(argv: any) {
     const parsedUrl = new URL(mwMetaData.logo, MediaWiki.baseUrl)
     const logoUrl = parsedUrl.protocol ? mwMetaData.logo : MediaWiki.baseUrl.protocol + mwMetaData.logo
     const { content } = await Downloader.downloadContent(logoUrl, 'image')
-    return sharp(content).resize(48, 48, { fit: sharp.fit.inside, withoutEnlargement: true }).png().toBuffer()
+    return sharp(content).resize(48, 48, resizeOptions).png().toBuffer()
   }
 
   async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
