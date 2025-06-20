@@ -7,6 +7,7 @@ describe('ErrorRenderer', () => {
     it('should not handle 200 return code', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/',
+        errorCode: 'FOO',
         httpReturnCode: 200,
         responseContentType: 'application/json',
         responseData: 'upstream request timeout',
@@ -16,6 +17,7 @@ describe('ErrorRenderer', () => {
     it('should handle WikimediaDesktop 500 error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 500,
         responseContentType: 'text/html',
         responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
@@ -26,6 +28,7 @@ describe('ErrorRenderer', () => {
     it('should not handle WikimediaMobile 500 error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/mobile-html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 500,
         responseContentType: 'text/html',
         responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
@@ -35,6 +38,7 @@ describe('ErrorRenderer', () => {
     it('should not handle WikimediaDesktop 501 error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 501,
         responseContentType: 'text/html',
         responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
@@ -44,6 +48,7 @@ describe('ErrorRenderer', () => {
     it('should not handle WikimediaDesktop 500 bad content type', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 500,
         responseContentType: 'foo/html',
         responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
@@ -53,6 +58,7 @@ describe('ErrorRenderer', () => {
     it('should not handle WikimediaDesktop 500 bad error message', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 500,
         responseContentType: 'text/html',
         responseData: '---Lorem ispum---',
@@ -62,6 +68,7 @@ describe('ErrorRenderer', () => {
     it('should handle WikimediaDesktop 504 upstream timeout error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 504,
         responseContentType: 'application/json',
         responseData: {
@@ -75,6 +82,7 @@ describe('ErrorRenderer', () => {
     it('should handle ActionParse upstream timeout error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api.php?action=parse&format=json&tile=page',
+        errorCode: 'FOO',
         httpReturnCode: 504,
         responseContentType: 'application/json',
         responseData: {
@@ -90,6 +98,7 @@ describe('ErrorRenderer', () => {
     it('should handle general 404', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api.php?action=parse&format=json&tile=page',
+        errorCode: 'FOO',
         httpReturnCode: 404,
         responseContentType: 'any/content_type',
         responseData: 'any response data',
@@ -101,6 +110,7 @@ describe('ErrorRenderer', () => {
     it('should handle delete article message', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api.php?action=parse&format=json&tile=page',
+        errorCode: 'FOO',
         httpReturnCode: 200,
         responseContentType: 'any/content_type',
         responseData: '--- Article has been deleted. ---',
@@ -118,6 +128,7 @@ describe('ErrorRenderer', () => {
     it('should not handle 200 return code', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/',
+        errorCode: 'FOO',
         httpReturnCode: 200,
         responseContentType: 'application/json',
         responseData: 'upstream request timeout',
@@ -127,6 +138,7 @@ describe('ErrorRenderer', () => {
     it('should handle WikimediaDesktop 500 error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 500,
         responseContentType: 'text/html',
         responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
@@ -146,6 +158,7 @@ describe('ErrorRenderer', () => {
     it('should handle 404 error', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api/rest_v1/page/html/Page1',
+        errorCode: 'FOO',
         httpReturnCode: 404,
         responseContentType: 'text/html',
         responseData: '---Our servers are currently under maintenance or experiencing a technical issue---',
