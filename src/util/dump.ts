@@ -3,7 +3,7 @@ import * as pathParser from 'path'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import RedisStore from '../RedisStore.js'
-import { getFullUrl, jsPath, cssPath } from './index.js'
+import { getFullUrl, jsPath, cssPath, getRelativeFilePath } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
@@ -16,7 +16,10 @@ import { zimCreatorMutex } from '../mutex.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export function processStylesheetContent(cssUrl: string, linkMedia: string, body: string) {
+export function processStylesheetContent(cssUrl: string, linkMedia: string, body: string, articleId?: string) {
+  // articleId is supposed to be passed only when we rewrite inline CSS for a given article and we hence have
+  // to compute relative path to assets
+
   const { filesToDownloadXPath } = RedisStore
   const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.+?)[\'"]{0,1}\\)', 'gi')
 
@@ -39,7 +42,8 @@ export function processStylesheetContent(cssUrl: string, linkMedia: string, body
         const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
 
         /* Rewrite the CSS */
-        rewrittenCss = rewrittenCss.replace(url, filename)
+        const relativePath = articleId ? getRelativeFilePath(articleId, `mw/${filename}`) : filename
+        rewrittenCss = rewrittenCss.replace(url, relativePath)
 
         /* Need a rewrite if url doesn't include protocol */
         url = getFullUrl(url, cssUrl)
@@ -117,7 +121,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
   }
 
   if (type === 'css') {
-    text = processStylesheetContent(moduleApiUrl, '', text)
+    text = processStylesheetContent(moduleApiUrl, '', text, '')
   }
 
   // Zimcheck complains about empty files, and it is too late to decide to not create this file

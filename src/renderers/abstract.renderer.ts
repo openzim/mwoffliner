@@ -11,6 +11,7 @@ import { Dump } from '../Dump.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
+import { processStylesheetContent } from '../util/dump.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 export type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi' | 'ActionParse'
@@ -428,7 +429,7 @@ export abstract class Renderer {
           return { url, path }
         }),
     )
-    doc = this.applyOtherTreatments(doc, dump)
+    doc = this.applyOtherTreatments(doc, dump, articleId)
 
     const tmRet = await this.treatMedias(doc, dump, articleId)
 
@@ -706,7 +707,7 @@ export abstract class Renderer {
     }
   }
 
-  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump) {
+  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
     const filtersConfig = config.filters
     this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
 
@@ -724,6 +725,18 @@ export abstract class Renderer {
           DU.deleteNode(span)
         }
       }
+    }
+
+    /* Go through all inline style and rewrite it */
+    const styles: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('style'))
+    for (const style of styles) {
+      if (!style.textContent) {
+        continue
+      }
+      // We use MediaWiki.baseUrl which is an approximation but it is deemed sufficient because
+      // all non-absolute URL found in inline CSS are expected to be relative to the root, not to
+      // current web URL which is "moving" (could use something like /w/index.php?title=... or /wiki/...)
+      style.textContent = processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, articleId)
     }
 
     /* Remove element with id in the blacklist */

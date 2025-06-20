@@ -29,7 +29,7 @@ await testAllRenders('bm-wikipedia', parameters, async (outFiles) => {
         // nopic has enough files (this is just an estimate and can change
         // with time, as new Mediwiki versions are released).
         expect(dump.status.files.success).toBeGreaterThanOrEqual(outFiles[0].renderer == 'WikimediaMobile' ? 1 : 3)
-        expect(dump.status.files.success).toBeLessThan(14)
+        expect(dump.status.files.success).toBeLessThan(20)
         // nopic has enough redirects
         expect(dump.status.redirects.written).toBeGreaterThan(170)
         // nopic has enough articles
