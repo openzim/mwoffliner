@@ -198,6 +198,8 @@ class Downloader {
             'internal_api_error_DBConnectionError',
             'internal_api_error_DBUnexpectedError',
             'internal_api_error_Wikibase\\DataModel\\Services\\Lookup\\EntityLookupException',
+            'internal_api_error_Shellbox\\ShellboxError',
+            'internal_api_error_Wikimedia\\FileBackend\\FileBackendError',
           ].includes(err.responseData?.error?.code)
         ) {
           logger.log(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
