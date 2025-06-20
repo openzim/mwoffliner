@@ -49,6 +49,7 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
+import Gadgets from './Gadgets.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
@@ -428,6 +429,9 @@ async function execute(argv: any) {
 
     logger.log('Checking Main Page rendering')
     await getMainPage(dump, true, zimCreator)
+
+    logger.log('Getting gadgets')
+    await Gadgets.fetchGadgets()
 
     logger.log('Getting articles')
     stime = Date.now()
