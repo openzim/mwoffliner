@@ -167,7 +167,7 @@ class MediaWiki {
     this.queryOpts = {
       action: 'query',
       format: 'json',
-      prop: 'redirects|revisions',
+      prop: 'info|redirects|revisions',
       rdlimit: 'max',
       rdnamespace: 0,
       redirects: false,

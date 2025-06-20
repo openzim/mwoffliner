@@ -37,6 +37,7 @@ type ArticleDetail = PageInfo & {
   nextArticleId?: string
   prevArticleId?: string
   missing?: string
+  contentmodel?: string
 }
 
 type FileDetail = {
@@ -108,6 +109,7 @@ interface QueryRet {
   revisions?: QueryRevisionsRet
   coordinates?: QueryCoordinatesRet
   redirects?: QueryRedirectsRet
+  contentmodel: string
 
   thumbnail?: {
     source: string

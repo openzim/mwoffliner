@@ -55,4 +55,11 @@ export default class ApiURLDirector {
       .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId })
       .build()
   }
+
+  buildGadgetsUrl() {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'query', list: 'gadgets', gaprop: 'id|metadata', gaallowedonly: '1', gaenabledonly: '1', format: 'json', formatversion: '2' })
+      .build()
+  }
 }

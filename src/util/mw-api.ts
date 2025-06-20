@@ -289,6 +289,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
       thumbnail: newThumbnail,
       missing: val.missing,
       ...(val.ns !== 0 ? { ns: val.ns } : {}),
+      ...(val.contentmodel !== 'wikitext' ? { contentmodel: val.contentmodel } : {}),
       ...(rev ? { revisionId: rev.revid, timestamp: rev.timestamp } : {}),
       ...(geo ? { coordinates: `${geo.lat};${geo.lon}` } : {}),
     }
