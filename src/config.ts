@@ -96,10 +96,7 @@ const config = {
         'ext.gadget.VisibilityToggles',
         'ext.gadget.defaultVisibilityToggles',
       ],
-      css_simplified: [
-        // infobox styles needed at least on hu.wikipedia.org
-        'ext.gadget.infobox,wikiMenuStyles',
-      ],
+      css_simplified: [],
       js_simplified: [
         // base JS scripts always needed / never returned on API calls
         'startup',
