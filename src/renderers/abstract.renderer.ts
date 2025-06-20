@@ -49,9 +49,15 @@ export interface DownloadRes {
   redirects: Redirect[]
 }
 
+export interface RenderOptsModules {
+  jsConfigVars: string
+  jsDependenciesList: string[]
+  styleDependenciesList: string[]
+}
+
 export interface RenderOpts {
   data?: any
-  moduleDependencies: any
+  moduleDependencies: RenderOptsModules
   articleId?: string
   articleDetailXId?: RKVS<ArticleDetail>
   articleDetail?: ArticleDetail

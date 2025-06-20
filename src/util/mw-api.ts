@@ -291,6 +291,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
       pagelang: val.pagelanguagehtmlcode,
       pagedir: val.pagelanguagedir,
       ...(val.ns !== 0 ? { ns: val.ns } : {}),
+      ...(val.contentmodel !== 'wikitext' ? { contentmodel: val.contentmodel } : {}),
       ...(rev ? { revisionId: rev.revid, timestamp: rev.timestamp } : {}),
       ...(geo ? { coordinates: `${geo.lat};${geo.lon}` } : {}),
     }

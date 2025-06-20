@@ -1,11 +1,12 @@
 import domino from 'domino'
-import { DownloadOpts, DownloadRes, Renderer } from './abstract.renderer.js'
+import { DownloadOpts, DownloadRes, Renderer, RenderOptsModules } from './abstract.renderer.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 import { config } from '../config.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
+import Gadgets from '../Gadgets.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text&parsoid=1&page={article_title}&skin=vector-2022'
 export class ActionParseRenderer extends Renderer {
@@ -17,12 +18,8 @@ export class ActionParseRenderer extends Renderer {
     }
   }
 
-  public templateDesktopArticle(moduleDependencies: any, articleId: string): Document {
-    const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
-      jsConfigVars
-      jsDependenciesList: string[]
-      styleDependenciesList: string[]
-    }
+  public templateDesktopArticle(moduleDependencies: RenderOptsModules, articleId: string): Document {
+    const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : null
 
@@ -117,6 +114,15 @@ export class ActionParseRenderer extends Renderer {
     editLinks.forEach((elem: DominoElement) => {
       elem.remove()
     })
+
+    // Add CSS-only gadgets which are used on this article
+    const { cssGadgets } = Gadgets.getActiveGadgetsByType(articleDetail)
+    cssGadgets.sort().map((gadgetId) => {
+      moduleDependencies.styleDependenciesList.push(`ext.gadget.${gadgetId}`)
+    })
+    /*jsGadgets.map((gadgetId) => {
+      moduleDependencies.jsDependenciesList.push(`ext.gadget.${gadgetId}`)
+    })*/
 
     const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
       htmlDocument.documentElement.outerHTML,
