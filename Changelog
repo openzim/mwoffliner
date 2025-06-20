@@ -1,14 +1,16 @@
 Unreleased:
-
-1.15.1:
-* FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
-* FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2326 #2341 #2350 #2340)
-* FIX: Truncate redirect titles to 245 bytes (@benoit74 #2331)
 * FIX: Always use proper UserAgent and other shared http request settings (@benoit74 #2359)
 * FIX: Enhance login logs (@benoit74 #2362)
 * FIX: Properly store/reuse Cookies across HTTP calls (@benoit74 #2361)
 * FIX: Retry more transient errors (@benoit #2366)
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
+* FIX: Fix/simplify retrieval of siteinfo metadata (@benoit74 #2328)
+* FIX: Ensure illustration metadata is really 48x48 even if source image is not square (@benoit74 #2368)
+
+1.15.1:
+* FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
+* FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2326 #2341 #2350 #2340)
+* FIX: Truncate redirect titles to 245 bytes (@benoit74 #2331)
 
 1.15.0:
 * NEW: Check early for availability APIs + add check for module API (@benoit74 #2246 / #2248)

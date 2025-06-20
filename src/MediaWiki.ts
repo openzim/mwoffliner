@@ -456,7 +456,7 @@ class MediaWiki {
 
   public async getSiteInfo() {
     logger.log('Getting site info...')
-    const body = await Downloader.query()
+    const body = await Downloader.querySiteInfo()
 
     const entries = body.query.general
 
@@ -469,6 +469,7 @@ class MediaWiki {
 
     const mainPage = entries.mainpage.replace(/ /g, '_')
     const siteName = entries.sitename
+    const logo = entries.logo
 
     // Gather languages codes (en remove the 'dialect' part)
     const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
@@ -499,6 +500,7 @@ class MediaWiki {
       siteName,
       langIso2,
       langIso3,
+      logo,
     }
   }
 
@@ -518,7 +520,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [textDir, { langIso2, langIso3, mainPage, siteName }, subTitle] = await Promise.all([this.getTextDirection(), this.getSiteInfo(), this.getSubTitle()])
+    const [textDir, { langIso2, langIso3, mainPage, siteName, logo }, subTitle] = await Promise.all([this.getTextDirection(), this.getSiteInfo(), this.getSubTitle()])
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -542,6 +544,7 @@ class MediaWiki {
       subTitle,
       creator,
       mainPage,
+      logo,
     }
 
     this.metaData = mwMetaData

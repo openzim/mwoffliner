@@ -43,8 +43,8 @@ describe('Downloader class - wikipedia EN', () => {
     expect(actionAPIResV1).not.toEqual(actionAPIResV2)
   })
 
-  test('downloader.query returns valid JSON', async () => {
-    const queryRet = await Downloader.query()
+  test('downloader.querySiteInfo returns valid JSON', async () => {
+    const queryRet = await Downloader.querySiteInfo()
     expect(typeof queryRet).toBe('object')
   })
 

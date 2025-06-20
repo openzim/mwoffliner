@@ -26,13 +26,6 @@ export default class ApiURLDirector {
       .build()
   }
 
-  buildSiteInfoQueryURL() {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json', formatversion: '2', siprop: 'general|namespaces|statistics|variables|category|wikidesc' })
-      .build()
-  }
-
   buildQueryURL<T extends Record<string, any>>(queryParams: T) {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
   }
@@ -45,7 +38,7 @@ export default class ApiURLDirector {
   }
 
   buildSiteInfoURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', meta: 'siteinfo', format: 'json', formatversion: '2' }).build()
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'general', format: 'json', formatversion: '2' }).build()
   }
 
   buildVisualEditorURL() {
