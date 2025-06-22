@@ -288,6 +288,8 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
       subCategories: val.subCategories,
       thumbnail: newThumbnail,
       missing: val.missing,
+      pagelang: val.pagelanguagehtmlcode,
+      pagedir: val.pagelanguagedir,
       ...(val.ns !== 0 ? { ns: val.ns } : {}),
       ...(rev ? { revisionId: rev.revid, timestamp: rev.timestamp } : {}),
       ...(geo ? { coordinates: `${geo.lat};${geo.lon}` } : {}),

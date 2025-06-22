@@ -37,6 +37,8 @@ type ArticleDetail = PageInfo & {
   nextArticleId?: string
   prevArticleId?: string
   missing?: string
+  pagelang?: string
+  pagedir?: TextDirection
 }
 
 type FileDetail = {
@@ -108,6 +110,8 @@ interface QueryRet {
   revisions?: QueryRevisionsRet
   coordinates?: QueryCoordinatesRet
   redirects?: QueryRedirectsRet
+  pagelanguagehtmlcode?: string
+  pagelanguagedir?: TextDirection
 
   thumbnail?: {
     source: string
@@ -158,6 +162,7 @@ interface MWMetaData {
   creator: string
   mainPage: string
   textDir: TextDirection
+  langMw: string
   logo: string
 
   baseUrl: string

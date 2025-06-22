@@ -507,8 +507,11 @@ export abstract class Renderer {
     articleId: string,
   ) {
     /* Create final document by merging template and parsoid documents */
-    htmlTemplateDoc.getElementById('mw-content-text').style.setProperty('direction', dump.mwMetaData.textDir)
-    htmlTemplateDoc.getElementById('mw-content-text').innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML
+    const mwContentText = htmlTemplateDoc.getElementById('mw-content-text')
+    mwContentText.lang = articleDetail.pagelang
+    mwContentText.dir = articleDetail.pagedir
+    mwContentText.classList.add('mw-content-' + articleDetail.pagedir)
+    mwContentText.innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML
 
     /* Title */
     const articleTitle = htmlTemplateDoc.getElementById('title_0') ? htmlTemplateDoc.getElementById('title_0').textContent : articleId.replace(/_/g, ' ')

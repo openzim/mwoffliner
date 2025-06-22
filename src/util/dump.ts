@@ -90,6 +90,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
     )
   }
 
+  const langMw = MediaWiki.metaData?.langMw || 'en'
   let apiParameterOnly
   let moduleApiUrl: string
   if (type === 'js') {
@@ -99,7 +100,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
   }
 
   if (!module.includes('javascript/mobile') && !module.includes('css/mobile')) {
-    moduleApiUrl = encodeURI(`${MediaWiki.modulePath}debug=true&lang=en&modules=${module}&only=${apiParameterOnly}&skin=${MediaWiki.skin}&version=&*`)
+    moduleApiUrl = encodeURI(`${MediaWiki.modulePath}lang=${langMw}&modules=${module}&only=${apiParameterOnly}&skin=${MediaWiki.skin}`)
   } else {
     moduleApiUrl = encodeURI(`https:${module}`)
   }

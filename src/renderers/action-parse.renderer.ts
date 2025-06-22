@@ -30,6 +30,7 @@ export class ActionParseRenderer extends Renderer {
       throw new Error(`Skin ${MediaWiki.skin} is not supported by ActionParse renderer`)
     }
 
+    const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
     const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
     const articleJsList =
       jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
@@ -39,6 +40,7 @@ export class ActionParseRenderer extends Renderer {
         : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
 
     const htmlTemplateString = htmlTemplateCode()
+      .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
       .replace('__ARTICLE_JS_LIST__', articleJsList)
