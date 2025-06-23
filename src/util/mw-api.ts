@@ -65,7 +65,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
           if (articleDetail.redirects && articleDetail.redirects.length) {
             await redirectsXId.setMany(
               articleDetail.redirects.reduce((acc, redirect) => {
-                acc[redirect.title] = { targetId: articleId, title: redirect.title }
+                acc[redirect.title] = { title: redirect.title, targetId: articleId, fragment: redirect.fragment || '' }
                 return acc
               }, {}),
             )
@@ -171,6 +171,7 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], conti
                 redirects[target.title] = {
                   targetId: articleId,
                   title: target.title,
+                  fragment: target.fragment,
                 }
               }
             }

@@ -462,7 +462,7 @@ class Downloader {
       // from new location to original location. Note that only ActionParse API gives proper redirects info.
       for (const redirect of redirects) {
         if (!(await RedisStore.articleDetailXId.exists(redirect.to)) && !(await RedisStore.redirectsXId.exists(redirect.to))) {
-          RedisStore.redirectsXId.set(redirect.to, { targetId: redirect.from, title: redirect.to })
+          RedisStore.redirectsXId.set(redirect.to, { targetId: redirect.from, title: redirect.to, fragment: '' })
         }
       }
 

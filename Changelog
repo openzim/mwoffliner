@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Support section redirects (@Markus-Rost @benoit74 #2382)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

@@ -484,7 +484,7 @@ async function execute(argv: any) {
 
   async function writeArticleRedirects(dump: Dump, zimCreator: Creator) {
     await redirectsXId.iterateItems(Downloader.speed, async (redirects) => {
-      for (const [redirectId, { targetId }] of Object.entries(redirects)) {
+      for (const [redirectId, { targetId, fragment }] of Object.entries(redirects)) {
         if (await RedisStore.articleDetailXId.exists(redirectId)) {
           logger.warn(`Skipping redirect of '${redirectId}' because it already exists as an article`)
           continue
@@ -501,7 +501,7 @@ async function execute(argv: any) {
           redirectId,
           // We fake a title, by just removing the underscores
           truncateUtf8Bytes(String(redirectId).replace(/_/g, ' '), 245),
-          targetId,
+          targetId + ( fragment ? '#' + fragment : '' ),
           { FRONT_ARTICLE: 1 },
         )
 
