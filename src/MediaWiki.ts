@@ -167,7 +167,7 @@ class MediaWiki {
     this.queryOpts = {
       action: 'query',
       format: 'json',
-      prop: 'redirects|revisions',
+      prop: 'info|redirects|revisions',
       rdlimit: 'max',
       rdnamespace: 0,
       redirects: false,
@@ -432,28 +432,6 @@ class MediaWiki {
     return creator
   }
 
-  public async getTextDirection(): Promise<TextDirection> {
-    logger.log('Getting text direction...')
-    const { content } = await Downloader.downloadContent(this.webUrl.href, 'data')
-    const body = content.toString()
-    const doc = domino.createDocument(body)
-    const contentNode = doc.getElementById('mw-content-text')
-    const languageDirectionRegex = /"pageLanguageDir":"(.*?)"/
-    const parts = languageDirectionRegex.exec(body)
-    let isLtr = true
-    if (parts && parts[1]) {
-      isLtr = parts[1] === 'ltr'
-    } else if (contentNode) {
-      isLtr = contentNode.getAttribute('dir') === 'ltr'
-    } else {
-      logger.log('Unable to get the language direction, fallback to ltr')
-      isLtr = true
-    }
-    const textDir = isLtr ? 'ltr' : 'rtl'
-    logger.log(`Text direction is [${textDir}]`)
-    return textDir
-  }
-
   public async getSiteInfo() {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
@@ -470,9 +448,12 @@ class MediaWiki {
     const mainPage = entries.mainpage.replace(/ /g, '_')
     const siteName = entries.sitename
     const logo = entries.logo
+    const langMw = entries.lang
+    const textDir = entries.rtl ? 'rtl' : 'ltr'
+    logger.log(`Text direction is [${textDir}]`)
 
     // Gather languages codes (en remove the 'dialect' part)
-    const langs: string[] = [entries.lang].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
+    const langs: string[] = [langMw].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
       return e.replace(/-.*/, '')
     })
 
@@ -498,6 +479,8 @@ class MediaWiki {
     return {
       mainPage,
       siteName,
+      textDir,
+      langMw,
       langIso2,
       langIso3,
       logo,
@@ -520,7 +503,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [textDir, { langIso2, langIso3, mainPage, siteName, logo }, subTitle] = await Promise.all([this.getTextDirection(), this.getSiteInfo(), this.getSubTitle()])
+    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, textDir }, subTitle] = await Promise.all([this.getSiteInfo(), this.getSubTitle()])
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -538,6 +521,7 @@ class MediaWiki {
       domain: this.#domain,
 
       textDir: textDir as TextDirection,
+      langMw,
       langIso2,
       langIso3,
       title: siteName,

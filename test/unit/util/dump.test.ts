@@ -21,10 +21,10 @@ describe('Download CSS or JS Module', () => {
     const { text: content, moduleApiUrl } = await downloadModule('skins.vector.styles', 'css')
 
     // URL expected to be used to retrieve CSS module
-    expect(moduleApiUrl).toBe('https://en.wikipedia.org/w/load.php?debug=true&lang=en&modules=skins.vector.styles&only=styles&skin=vector&version=&*')
+    expect(moduleApiUrl).toBe('https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector')
 
     // Check if CSS module still contain this background image
-    expect(content).toContain(`background-image: url(link.ernal-small-ltr-progressive.svg`)
+    expect(content).toContain(`background-image:url(link.ernal-small-ltr-progressive.svg`)
 
     // One SVG (among others) expected to be used inside the CSS
     expect(Object.keys(Downloader.cssDependenceUrls)).toContain(
@@ -34,7 +34,7 @@ describe('Download CSS or JS Module', () => {
 
   test('rewrite standalone CSS', async () => {
     const rewrittenCSS = processStylesheetContent(
-      'https://en.wikipedia.org/w/load.php?debug=true&lang=en&modules=skins.vector.styles&only=styles&skin=vector&version=&*',
+      'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
       'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d)); }',
       '',
@@ -49,7 +49,7 @@ describe('Download CSS or JS Module', () => {
 
   test('rewrite inline CSS with relative path', async () => {
     const rewrittenCSS = processStylesheetContent(
-      'https://en.wikipedia.org/w/load.php?debug=true&lang=en&modules=skins.vector.styles&only=styles&skin=vector&version=&*',
+      'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
       'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d)); }',
       'article/with/slashes',
@@ -64,7 +64,7 @@ describe('Download CSS or JS Module', () => {
 
   test('rewrite inline CSS with absolute path', async () => {
     const rewrittenCSS = processStylesheetContent(
-      'https://en.wikipedia.org/w/load.php?debug=true&lang=en&modules=skins.vector.styles&only=styles&skin=vector&version=&*',
+      'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
       'a.external { background-image: url(//upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png)); }',
       'articleTitle',
