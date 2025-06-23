@@ -8,6 +8,7 @@ Unreleased:
 * FIX: Ensure illustration metadata is really 48x48 even if source image is not square (@benoit74 #2368)
 * FIX: Also rewrite inline <style> tags found in article HTML (@benoit74 #1807)
 * FIX: Better RTL support (@Markus-Rost #1865 #2367)
+* FIX: Support section redirects (@Markus-Rost #2382)
 
 1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)

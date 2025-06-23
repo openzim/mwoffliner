@@ -132,6 +132,7 @@ class RedisStore implements RS {
       n: 'title',
     })
     this.#redirectsXId = new RedisKvs(this.#client, `${Date.now()}-redirect`, {
+      f: 'fragment',
       t: 'targetId',
       n: 'title',
     })
