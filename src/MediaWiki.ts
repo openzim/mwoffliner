@@ -22,6 +22,7 @@ export interface QueryOpts {
   prop: string
   rdlimit: string
   rdnamespace: string | number
+  rdprop: string
   redirects?: boolean
   formatversion: string
 }
@@ -169,7 +170,8 @@ class MediaWiki {
       format: 'json',
       prop: 'info|redirects|revisions',
       rdlimit: 'max',
-      rdnamespace: 0,
+      rdnamespace: '0',
+      rdprop: 'title|fragment',
       redirects: false,
       formatversion: '2',
     }
@@ -249,7 +251,7 @@ class MediaWiki {
       const reqOpts = {
         ...this.queryOpts,
         prop: this.queryOpts.prop + '|coordinates', // add coordinates for this call to get proper warning if not supported
-        rdnamespace: validNamespaceIds,
+        rdnamespace: validNamespaceIds.join('|'),
       }
 
       const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
