@@ -133,7 +133,7 @@ class Downloader {
   private backoffOptions: BackoffOptions
   private optimisationCacheUrl: string
   private s3: S3
-  private apiUrlDirector: ApiURLDirector
+  private _apiUrlDirector: ApiURLDirector
   private cookierJar: CookieJar
 
   private articleUrlDirector: URLDirector
@@ -162,6 +162,9 @@ class Downloader {
   get streamRequestOptions() {
     return this._streamRequestOptions
   }
+  get apiUrlDirector() {
+    return this._apiUrlDirector
+  }
 
   set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
     this.reset()
@@ -172,7 +175,7 @@ class Downloader {
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
     this.s3 = s3
-    this.apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    this._apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
     this.cookierJar = new CookieJar()
 
@@ -268,7 +271,7 @@ class Downloader {
     this.optimisationCacheUrl = undefined
     this._webp = false
     this.s3 = undefined
-    this.apiUrlDirector = undefined
+    this._apiUrlDirector = undefined
     this.insecure = false
 
     this.backoffOptions = undefined

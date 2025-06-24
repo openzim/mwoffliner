@@ -39,6 +39,7 @@ type ArticleDetail = PageInfo & {
   missing?: string
   pagelang?: string
   pagedir?: TextDirection
+  contentmodel?: string
 }
 
 type FileDetail = {
@@ -112,6 +113,7 @@ interface QueryRet {
   redirects?: QueryRedirectsRet
   pagelanguagehtmlcode?: string
   pagelanguagedir?: TextDirection
+  contentmodel: string
 
   thumbnail?: {
     source: string
