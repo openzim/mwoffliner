@@ -96,7 +96,10 @@ const config = {
         'ext.gadget.VisibilityToggles',
         'ext.gadget.defaultVisibilityToggles',
       ],
-      css_simplified: [],
+      css_simplified: [
+        'site.styles', // always needed
+        'noscript', // recommended until we solve https://github.com/openzim/mwoffliner/issues/2310
+      ],
       js_simplified: [
         // base JS scripts always needed / never returned on API calls
         'startup',

@@ -31,17 +31,28 @@ export class ActionParseRenderer extends Renderer {
     const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
     const articleJsList =
       jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
-    const articleCssList =
-      styleDependenciesList.length === 0
-        ? ''
-        : styleDependenciesList.map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki)).join('\n')
+    const articleCssBeforeMeta = styleDependenciesList
+      .filter((oneCssDep: string) => {
+        return !oneCssDep.startsWith('ext.gadget') && !['site.styles', 'noscript'].includes(oneCssDep)
+      })
+      .sort()
+      .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki))
+      .join('\n    ')
+    const articleCssAfterMeta = styleDependenciesList
+      .filter((oneCssDep: string) => {
+        return oneCssDep.startsWith('ext.gadget')
+      })
+      .sort()
+      .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki))
+      .join('\n    ')
 
     const htmlTemplateString = htmlTemplateCode()
       .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
       .replace('__ARTICLE_JS_LIST__', articleJsList)
-      .replace('__ARTICLE_CSS_LIST__', articleCssList)
+      .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
+      .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
 
     return domino.createDocument(htmlTemplateString)
