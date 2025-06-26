@@ -23,6 +23,7 @@ export default class ActionParseURLDirector {
         page: articleId,
         useskin: this.skin,
         redirects: '1',
+        formatversion: '2',
       })
       .build()
   }

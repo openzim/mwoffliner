@@ -43,7 +43,8 @@ describe('Checking Mediawiki capabilities', () => {
     expect(await MediaWiki.hasVisualEditorApi()).toBe(true)
   })
 
-  test('test capabilities of minecraft.wiki with correct VisualEditor receipt', async () => {
+  // skip this test for now, looks like cloudflare is blocking us as of 2025.06.26
+  test.skip('test capabilities of minecraft.wiki with correct VisualEditor receipt', async () => {
     MediaWiki.base = 'https://minecraft.wiki'
     MediaWiki.wikiPath = '/'
     MediaWiki.actionApiPath = '/api.php'
