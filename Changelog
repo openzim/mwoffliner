@@ -9,6 +9,7 @@ Unreleased:
 * FIX: Also rewrite inline <style> tags found in article HTML (@benoit74 #1807)
 * FIX: Better RTL support (@Markus-Rost #1865 #2367)
 * CHANGED: Retrieve CSS from CSS-only gadgets automatically (@benoit74 #2212)
+* CHANGED: Make ActionParse renderer respect custom display titles (@Markus-Rost #2330)
 
 1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)

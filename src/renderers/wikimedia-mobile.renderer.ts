@@ -66,6 +66,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
               dump,
               articleId,
               articleDetail,
+              '',
               moduleDependencies,
               super.templateMobileArticle.bind(this),
             )
