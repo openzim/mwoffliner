@@ -192,7 +192,7 @@ class Downloader {
           return true // retry all connection issues
         }
         const httpReturnCode = err.response?.status || err.httpReturnCode
-        if ([429].includes(httpReturnCode)) {
+        if ([429, 502, 503, 504].includes(httpReturnCode)) {
           logger.log(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
           return true // retry these HTTP status codes
         }
@@ -355,7 +355,7 @@ class Downloader {
 
       Downloader.handleMWWarningsAndErrors(resp)
 
-      let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {}
+      let processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
       if (resp.continue) {
         continuation = resp.continue
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
@@ -516,8 +516,7 @@ class Downloader {
         dump.status.articles.hardFail += 1
         dump.status.articles.hardFailedArticleIds.push(articleId)
         if (dump.maxHardFailedArticles > 0 && dump.status.articles.hardFail > dump.maxHardFailedArticles) {
-          logger.error('Too many articles failed to download, aborting')
-          throw err
+          throw new Error('Too many articles failed to download')
         }
       } else {
         logger.log(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)

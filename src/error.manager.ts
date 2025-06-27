@@ -177,6 +177,19 @@ const matchingRules: MatchingRule[] = [
     isHardFailure: true,
   },
   {
+    name: 'ActionParse API - JSON Parsoid resource limit exceeded error',
+    errorCodes: null,
+    urlContains: ['api.php?action=parse&format=json'],
+    httpReturnCodes: [{ min: 200, max: 200 }],
+    contentTypes: ['application/json'],
+    responseIsEmpty: false,
+    rawResponseDataContains: null,
+    jsonResponseDataContains: [{ key: 'error.code', valueContains: ['internal_api_error_Wikimedia\\Parsoid\\Core\\ResourceLimitExceededException'] }],
+    detailsMessageKey: 'ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED',
+    displayThirdLine: true,
+    isHardFailure: true,
+  },
+  {
     name: 'ActionParse API - JSON Generic Internal API error',
     errorCodes: null,
     urlContains: ['api.php?action=parse&format=json'],
@@ -259,7 +272,7 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
   for (const matchingRule of matchingRules) {
     if (
       (!matchingRule.urlContains || matchingRule.urlContains.findIndex((urlContain) => err.urlCalled.includes(urlContain)) >= 0) &&
-      (!matchingRule.errorCodes || matchingRule.errorCodes.findIndex((error) => err.errorCode.includes(error)) >= 0) &&
+      (!matchingRule.errorCodes || matchingRule.errorCodes.findIndex((error) => err.errorCode && err.errorCode.includes(error)) >= 0) &&
       (!matchingRule.httpReturnCodes ||
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
       (!matchingRule.contentTypes ||
