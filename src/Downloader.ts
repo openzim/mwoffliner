@@ -516,8 +516,7 @@ class Downloader {
         dump.status.articles.hardFail += 1
         dump.status.articles.hardFailedArticleIds.push(articleId)
         if (dump.maxHardFailedArticles > 0 && dump.status.articles.hardFail > dump.maxHardFailedArticles) {
-          logger.error('Too many articles failed to download, aborting')
-          throw err
+          throw new Error('Too many articles failed to download')
         }
       } else {
         logger.log(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
