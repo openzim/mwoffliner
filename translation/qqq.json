@@ -18,6 +18,7 @@
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
