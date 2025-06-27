@@ -355,7 +355,7 @@ class Downloader {
 
       Downloader.handleMWWarningsAndErrors(resp)
 
-      let processedResponse = resp.query ? normalizeMwResponse(resp.query) : {}
+      let processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
       if (resp.continue) {
         continuation = resp.continue
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)

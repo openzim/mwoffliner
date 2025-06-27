@@ -11,6 +11,7 @@ Unreleased:
 * CHANGED: Retrieve CSS from CSS-only gadgets automatically (@benoit74 #2212)
 * CHANGED: Make ActionParse renderer respect custom display titles (@Markus-Rost #2330)
 * CHANGED: Retry 502, 503 and 504 HTTP errors as well (@benoit74 #2389)
+* FIX: query.pages can be undefined when getting articles details by IDs (@benoit74 #2376)
 
 1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
