@@ -259,7 +259,7 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
   for (const matchingRule of matchingRules) {
     if (
       (!matchingRule.urlContains || matchingRule.urlContains.findIndex((urlContain) => err.urlCalled.includes(urlContain)) >= 0) &&
-      (!matchingRule.errorCodes || matchingRule.errorCodes.findIndex((error) => err.errorCode.includes(error)) >= 0) &&
+      (!matchingRule.errorCodes || matchingRule.errorCodes.findIndex((error) => err.errorCode && err.errorCode.includes(error)) >= 0) &&
       (!matchingRule.httpReturnCodes ||
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
       (!matchingRule.contentTypes ||
