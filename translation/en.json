@@ -1,7 +1,7 @@
 {
-	"DISCLAIMER": "This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.",
+	"DISCLAIMER": "This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.",
 	"LAST_EDITED_ON": "Last edited on ${date}",
-	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike",
+	"LICENSE_UNKNOWN": "an unknown license",
 	"DOWNLOAD_ERRORS_HEADING": "Oops. Article not found.",
 	"DOWNLOAD_ERRORS_MESSAGE": "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.",

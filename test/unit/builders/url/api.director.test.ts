@@ -39,7 +39,7 @@ describe('ApiURLDirector', () => {
     it('should return a string URL with predefined query params for retrieving site info', () => {
       const url = apiUrlDirector.buildSiteInfoURL()
 
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=general&format=json&formatversion=2')
+      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=general%7Crightsinfo&format=json&formatversion=2')
     })
   })
 
