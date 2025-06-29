@@ -10,7 +10,8 @@ export default class WikimediaMobileURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildArticleURL(articleId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildArticleURL(articleId: string, articleUrlOpts?: RendererArticleOpts) {
     return urlBuilder.setDomain(this.baseDomain).setPath(encodeURIComponent(articleId)).build()
   }
 }

@@ -315,8 +315,8 @@ class Downloader {
     this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
   }
 
-  public getArticleUrl(articleId: string): string {
-    return this.articleUrlDirector.buildArticleURL(articleId)
+  public getArticleUrl(articleId: string, articleUrlOpts: RendererArticleOpts = {}): string {
+    return this.articleUrlDirector.buildArticleURL(articleId, articleUrlOpts)
   }
 
   public getMainPageUrl(articleId: string): string {
