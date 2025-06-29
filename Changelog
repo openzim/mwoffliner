@@ -15,6 +15,7 @@ Unreleased:
 * FIX: Do not rethrow original error when too many articles failed to download (@benoit74 #2388)
 * FIX: Handle more bad errors while downloading an article and replace with placeholder (@benoit74 #2340 #2394)
 * FIX: Use correct license and creator name in the footer (@Markus-Rost #2344 #2345)
+* CHANGED: Use wiki default parser instead of forcing Parsoid with ActionParse (@Markus-Rost #2391)
 
 1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)

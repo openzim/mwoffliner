@@ -28,7 +28,7 @@ await testRenders(
     })
 
     test(`test preceding modules for ${outFiles[0]?.renderer} renderer`, async () => {
-      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./mw/ext.cite.parsoid.styles.css"]')
+      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./mw/ext.cite.styles.css"]')
       const meta = articleDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
       expect(module).toBeTruthy()
       expect(meta).toBeTruthy()
