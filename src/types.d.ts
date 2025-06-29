@@ -225,6 +225,10 @@ interface QueryContinueOpts {
   }
 }
 
+interface RendererArticleOpts {
+  sectionId?: string
+}
+
 interface PageInfo {
   ns?: number
   title: string

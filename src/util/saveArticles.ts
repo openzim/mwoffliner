@@ -129,7 +129,8 @@ async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump:
       try {
         const isMainPage = dump.isMainPage(articleId)
         const renderer = isMainPage ? mainPageRenderer : articlesRenderer
-        const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId)
+        const leadSectonId = dump.nodet ? config.filters.leadSectonId : ''
+        const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectonId })
 
         rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
         for (const { articleId, html } of rets) {
@@ -303,7 +304,8 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
         try {
           const isMainPage = dump.isMainPage(articleId)
           const renderer = isMainPage ? RenderingContext.mainPageRenderer : RenderingContext.articlesRenderer
-          const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId)
+          const leadSectonId = dump.nodet ? config.filters.leadSectonId : ''
+          const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectonId })
 
           rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
 
