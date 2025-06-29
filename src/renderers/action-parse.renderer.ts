@@ -8,7 +8,7 @@ import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Tem
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle&parsoid=1&page={article_title}&skin=vector-2022&formatversion=2'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
 export class ActionParseRenderer extends Renderer {
   public staticFilesList: string[] = []
   constructor() {
