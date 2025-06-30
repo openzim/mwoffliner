@@ -10,7 +10,8 @@ export default class RestApiURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildArticleURL(articleId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildArticleURL(articleId: string, articleUrlOpts?: RendererArticleOpts) {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setPath('v1/page/' + encodeURIComponent(articleId) + '/html')
