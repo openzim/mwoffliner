@@ -6,6 +6,5 @@
 		]
 	},
 	"DISCLAIMER": "Esse artigo foi publicado por ${creator}. O texto é licenciado sobre a ${license}. Termos adicionar podem ser aplicados aos arquivos de mídia.",
-	"LAST_EDITED_ON": "Ultima edição em ${date}",
-	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike"
+	"LAST_EDITED_ON": "Ultima edição em ${date}"
 }
