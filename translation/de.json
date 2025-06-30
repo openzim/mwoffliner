@@ -7,9 +7,9 @@
 			"Nortix"
 		]
 	},
-	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist als ${license} lizenziert. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.",
+	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist verfügbar unter ${license}, sofern nicht anders angegeben. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.",
 	"LAST_EDITED_ON": "Zuletzt bearbeitet am ${date}",
-	"LICENSE_NAME": "Creative Commons - Attribution - Sharealike",
+	"LICENSE_UNKNOWN": "einer unbekannten Lizenz",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Als das ZIM, das du durchsuchst, erstellt wurde, konnte der ${server}-Server nicht rechtzeitig Details über diesen HTML-Artikel geben.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Beim Erstellen des von dir durchsuchten ZIM hat die ActionParse-API des Servers ${server} beim Angeben von Details zu diesem Artikel-HTML einen invarianten Ausnahmefehler ausgelöst.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Beim Erstellen des von dir durchsuchten ZIM hat die ActionParse-API des Servers ${server} beim Angeben von Details zu diesem Artikel-HTML einen internen API-Typfehler ausgelöst.",

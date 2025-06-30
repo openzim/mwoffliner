@@ -6,7 +6,6 @@
 	},
 	"DISCLAIMER": "此條目由${creator}發布。內容文字基於${license}獲得許可。額外條款有機會適用於媒體檔案。",
 	"LAST_EDITED_ON": "最後編輯於${date}",
-	"LICENSE_NAME": "創用CC - 姓名標示 ─ 相同方式分享",
 	"DOWNLOAD_ERRORS_HEADING": "哎呀。找不到條目。",
 	"DOWNLOAD_ERRORS_MESSAGE": "所要求的條目「${articleTitle}」在此 ZIM 中不可用，無法從 ${server} 檢索。",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "此條目在我們編譯要檢索的條目清單之後，且在我們取得它以建置您正在瀏覽的 ZIM 之前被刪除了。",

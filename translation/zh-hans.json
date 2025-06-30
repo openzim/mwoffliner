@@ -8,7 +8,6 @@
 	},
 	"DISCLAIMER": "本条目由${creator}发布。该条目基于${license}获得许可。附加条款可能适用于媒体文件。",
 	"LAST_EDITED_ON": "最后编辑于：${date}",
-	"LICENSE_NAME": "知识共享署名-相同方式共享",
 	"DOWNLOAD_ERRORS_HEADING": "哎呀！找不到条目。",
 	"DOWNLOAD_ERRORS_MESSAGE": "所请求的条目“${articleTitle}”在此 ZIM 中不可用，无法从 ${server} 检索。",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "此条目在待检索条目的列表编译之后、获取此条目以构建您浏览的 ZIM 之前被删除。",

@@ -568,9 +568,12 @@ export abstract class Renderer {
       '<a class="external text" ' +
       `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
       `href="${MediaWiki.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
-      `${dump.mwMetaData.creator}</a>`
+      `${dump.mwMetaData.title || dump.mwMetaData.creator}</a>`
 
-    const licenseLink = `<a class="external text" href="https://creativecommons.org/licenses/by-sa/4.0/">${dump.strings.LICENSE_NAME}</a>`
+    const licenseLink =
+      (dump.mwMetaData.licenseUrl ? `<a class="external text" href="${dump.mwMetaData.licenseUrl}">` : '') +
+      (dump.mwMetaData.licenseName || dump.mwMetaData.licenseUrl || dump.strings.LICENSE_UNKNOWN).replace(/</g, '&lt;') +
+      (dump.mwMetaData.licenseUrl ? `</a>` : '')
 
     div.innerHTML = footerTemplate({
       disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {

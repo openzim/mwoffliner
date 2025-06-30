@@ -437,6 +437,7 @@ class MediaWiki {
     const body = await Downloader.querySiteInfo()
 
     const entries = body.query.general
+    const { url: licenseUrl, text: licenseName } = body.query.rightsinfo
 
     // Checking mediawiki version
     const mwVersion = semver.coerce(entries.generator).raw
@@ -484,6 +485,8 @@ class MediaWiki {
       langIso2,
       langIso3,
       logo,
+      licenseName,
+      licenseUrl,
     }
   }
 
@@ -503,7 +506,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, textDir }, subTitle] = await Promise.all([this.getSiteInfo(), this.getSubTitle()])
+    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([this.getSiteInfo(), this.getSubTitle()])
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -529,6 +532,8 @@ class MediaWiki {
       creator,
       mainPage,
       logo,
+      licenseName,
+      licenseUrl,
     }
 
     this.metaData = mwMetaData

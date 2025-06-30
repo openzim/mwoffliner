@@ -78,9 +78,9 @@ describe('Misc utility', () => {
     test('returns en strings if lang file is missing completely', () => {
       const strings = getStringsForLang('XX')
       expect(strings).toMatchObject({
-        DISCLAIMER: 'This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.',
+        DISCLAIMER: 'This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.',
         LAST_EDITED_ON: 'Last edited on ${date}',
-        LICENSE_NAME: 'Creative Commons - Attribution - Sharealike',
+        LICENSE_UNKNOWN: 'an unknown license',
         DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
         DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
         DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
@@ -117,9 +117,9 @@ describe('Misc utility', () => {
     test('falls back to en strings if lang file is missing certain fields', () => {
       const strings = getStringsForLang('fi')
       expect(strings).toMatchObject({
-        DISCLAIMER: 'This article is issued from ${creator}. The text is licensed under ${license}. Additional terms may apply for the media files.',
+        DISCLAIMER: 'This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.',
         LAST_EDITED_ON: 'Viimeksi muokattu ${date}',
-        LICENSE_NAME: 'Creative Commons - Nimeä - JaaSamoin',
+        LICENSE_UNKNOWN: 'an unknown license',
         DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
         DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
         DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
@@ -158,9 +158,9 @@ describe('Misc utility', () => {
       console.log(JSON.stringify(strings))
       expect(strings).toMatchObject({
         DISCLAIMER:
-          'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist als ${license} lizenziert. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.',
+          'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist verfügbar unter ${license}, sofern nicht anders angegeben. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.',
         LAST_EDITED_ON: 'Zuletzt bearbeitet am ${date}',
-        LICENSE_NAME: 'Creative Commons - Attribution - Sharealike',
+        LICENSE_UNKNOWN: 'einer unbekannten Lizenz',
       })
     })
   })

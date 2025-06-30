@@ -5,6 +5,5 @@
 		]
 	},
 	"DISCLAIMER": "Dit artikel is uitgegeven door ${creator}. De tekst is vrijgegeven onder de licentie ${license}. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
-	"LAST_EDITED_ON": "Laatst bewerkt op ${date}",
-	"LICENSE_NAME": "Creative Commons - Naamsvermelding - Gelijk delen"
+	"LAST_EDITED_ON": "Laatst bewerkt op ${date}"
 }
