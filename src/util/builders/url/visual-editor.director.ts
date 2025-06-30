@@ -10,7 +10,8 @@ export default class VisualEditorURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildArticleURL(articleId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildArticleURL(articleId: string, articleUrlOpts?: RendererArticleOpts) {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams({ page: articleId }, '&').build()
   }
 

@@ -655,7 +655,7 @@ export abstract class Renderer {
       nodesToDelete.push({
         tag: 'section',
         filter(n) {
-          return n.getAttribute('data-mw-section-id') !== filtersConfig.leadSectonId
+          return n.getAttribute('data-mw-section-id') !== filtersConfig.leadSectionId
         },
       })
     }

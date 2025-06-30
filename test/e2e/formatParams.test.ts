@@ -38,10 +38,13 @@ await testAllRenders('format-params-nodet', { ...parameters, format: 'nodet', ar
       const articleFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
       const articleDoc = domino.createDocument(articleFromDump)
 
-      const sectionsElements = Array.from(articleDoc.querySelectorAll('section'))
+      const headings = Array.from(articleDoc.querySelectorAll('.mw-heading'))
+      const infoboxes = Array.from(articleDoc.querySelectorAll('table.infobox'))
+      const paragraphs = Array.from(articleDoc.querySelectorAll('p'))
 
-      expect(sectionsElements).toHaveLength(1)
-      expect(sectionsElements[0].getAttribute('data-mw-section-id')).toEqual('0')
+      expect(headings).toHaveLength(0)
+      expect(infoboxes).toHaveLength(1)
+      expect(paragraphs.length).toBeGreaterThan(1)
       if (!process.env.KEEP_ZIMS) {
         rimraf.sync(`./${outFiles[0].testId}`)
       }
