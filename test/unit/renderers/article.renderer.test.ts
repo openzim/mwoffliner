@@ -14,7 +14,7 @@ jest.setTimeout(10000)
 describe('ArticleRenderer', () => {
   describe('test Visual Editor renderer', () => {
     const prepareFixtures = (json: Record<string, any> | null) => {
-      MediaWiki.metaData.mainPage = '456'
+      MediaWiki.metaData = { mainPage: '456' }
       return {
         data: json,
         articleId: '123',
