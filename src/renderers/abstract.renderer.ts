@@ -12,6 +12,7 @@ import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
+import { isMainPage, isSubpage } from '../util/articles.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 export type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi' | 'ActionParse'
@@ -63,7 +64,6 @@ export interface RenderOpts {
   articleDetailXId?: RKVS<ArticleDetail>
   articleDetail?: ArticleDetail
   displayTitle?: string
-  isMainPage?: boolean
   dump: Dump
 }
 
@@ -471,7 +471,7 @@ export abstract class Renderer {
         }),
     )
 
-    if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
+    if (!isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
@@ -533,7 +533,7 @@ export abstract class Renderer {
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 
     /* Subpage */
-    if (this.isSubpage(articleId) && !dump.isMainPage(articleId)) {
+    if (isSubpage(articleId) && !isMainPage(articleId)) {
       const headingNode = htmlTemplateDoc.getElementById('mw-content-text')
       const subpagesNode = htmlTemplateDoc.createElement('span')
       const parents = articleId.split('/')

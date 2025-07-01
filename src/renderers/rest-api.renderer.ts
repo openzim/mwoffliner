@@ -2,6 +2,7 @@ import domino from 'domino'
 import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
+import { isMainPage } from '../util/articles.js'
 
 // Represent 'https://{wikimedia-wiki}/api/rest.php/v1/page/html/'
 export class RestApiRenderer extends DesktopRenderer {
@@ -34,7 +35,7 @@ export class RestApiRenderer extends DesktopRenderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleDetailXId, moduleDependencies, isMainPage, dump } = renderOpts
+    const { data, articleId, articleDetailXId, moduleDependencies, dump } = renderOpts
 
     /* istanbul ignore if */
     if (!data) {
@@ -49,7 +50,7 @@ export class RestApiRenderer extends DesktopRenderer {
     for (let i = 0; i < numberOfPagesToSplitInto; i++) {
       const { strippedTitle, _articleId } = await this.retrieveHtml(data, i, articleId, articleDetail, numberOfPagesToSplitInto, articleDetailXId)
       let dataWithHeader = ''
-      if (!isMainPage) {
+      if (!isMainPage(articleId)) {
         dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)
       }
       const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
