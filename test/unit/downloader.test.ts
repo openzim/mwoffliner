@@ -162,15 +162,7 @@ describe('Downloader class - wikipedia EN', () => {
         timestamp: '2023-08-20T14:54:01Z',
         coordinates: '51.50722222;-0.1275',
       }
-      const LondonArticle = await Downloader.getArticle(
-        articleId,
-        RedisStore.articleDetailXId,
-        wikimediaMobileRenderer,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const LondonArticle = await Downloader.getArticle(articleId, RedisStore.articleDetailXId, wikimediaMobileRenderer, articleUrl, dump, articleDetail)
       expect(LondonArticle).toHaveLength(1)
     })
 
@@ -185,15 +177,7 @@ describe('Downloader class - wikipedia EN', () => {
       }
       // Enforce desktop url here as this test desktop API-specific
       const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
-      const PaginatedArticle = await Downloader.getArticle(
-        articleId,
-        RedisStore.articleDetailXId,
-        wikimediaDesktopRenderer,
-        articleUrl,
-        dump,
-        articleDetail,
-        dump.isMainPage(articleId),
-      )
+      const PaginatedArticle = await Downloader.getArticle(articleId, RedisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl, dump, articleDetail)
       expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
   })
@@ -221,7 +205,6 @@ describe('Downloader class - wikipedia EN', () => {
           articleUrl,
           dump,
           articleDetail,
-          dump.isMainPage(articleId),
         )
         expect(neverExistingArticleResult).toHaveLength(1)
         expect(neverExistingArticleResult[0].articleId).toBe('NeverExistingArticle')
@@ -376,7 +359,6 @@ describe('Downloader class - wikipedia ES', () => {
           Downloader.getArticleUrl(articleId),
           dump,
           articleDetails[articleId],
-          dump.isMainPage(articleId),
         )
         expect(articleResult).toHaveLength(1)
         expect(articleResult[0].articleId).toBe('Alejandro_González_y_Robleto')
@@ -420,7 +402,6 @@ describe('Downloader class - wikipedia ES', () => {
       Downloader.getArticleUrl(articleId),
       dump,
       articleDetails[articleId],
-      dump.isMainPage(articleId),
     )
     expect(articleResult).toHaveLength(1)
     expect(articleResult[0].articleId).toBe('Alejandro_González_y_Robleto')
@@ -433,7 +414,6 @@ describe('Downloader class - wikipedia ES', () => {
       Downloader.getArticleUrl(redirectArticleId),
       dump,
       articleDetails[redirectArticleId],
-      dump.isMainPage(redirectArticleId),
     )
     expect(redirectArticleResult).toHaveLength(1)
     expect(redirectArticleResult[0].articleId).toBe('Vicente_Alejandro_González_y_Robleto')

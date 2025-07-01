@@ -35,9 +35,6 @@ export class Dump {
   public strings: KVS<string>
   public mwMetaData: MWMetaData
   public outFile: string
-  public isMainPage = (articleId: string): boolean => {
-    return this.mwMetaData.mainPage === articleId ? true : false
-  }
   public maxHardFailedArticles: number = 0
   public status = {
     files: {

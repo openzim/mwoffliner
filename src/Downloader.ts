@@ -444,7 +444,6 @@ class Downloader {
     articleUrl,
     dump: Dump,
     articleDetail?: ArticleDetail,
-    isMainPage?: boolean,
   ): Promise<any> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
@@ -474,7 +473,6 @@ class Downloader {
         articleDetailXId,
         articleDetail,
         displayTitle,
-        isMainPage,
         dump,
       })
     } catch (err) {
