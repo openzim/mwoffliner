@@ -49,6 +49,8 @@ export interface DownloadRes {
   moduleDependencies: any
   redirects: Redirect[]
   displayTitle?: string
+  bodyCssClass?: string
+  htmlCssClass?: string
 }
 
 export interface RenderOptsModules {
@@ -64,6 +66,8 @@ export interface RenderOpts {
   articleDetailXId?: RKVS<ArticleDetail>
   articleDetail?: ArticleDetail
   displayTitle?: string
+  bodyCssClass?: string
+  htmlCssClass?: string
   dump: Dump
 }
 
@@ -600,17 +604,6 @@ export abstract class Renderer {
   private addNoIndexCommentToElement(element: DominoElement) {
     const slices = element.parentElement.innerHTML.split(element.outerHTML)
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
-  }
-
-  private isSubpage(id: string) {
-    if (id && id.indexOf('/') >= 0) {
-      const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
-      const ns = MediaWiki.namespaces[namespace] // namespace already defined
-      if (ns !== undefined) {
-        return ns.allowedSubpages
-      }
-    }
-    return false
   }
 
   private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump) {
