@@ -6,8 +6,9 @@
 			"Verdy p"
 		]
 	},
-	"DISCLAIMER": "Cet article est issu de ${creator}. Le texte est sous licence ${license}. Des conditions supplémentaires peuvent s’appliquer aux fichiers multimédias.",
+	"DISCLAIMER": "Cet article est issu de ${creator}. Sauf mention contraire, le texte est disponible sous licence ${license}. Des conditions supplémentaires peuvent s’appliquer aux fichiers multimédias.",
 	"LAST_EDITED_ON": "Dernière modification le ${date}",
+	"LICENSE_UNKNOWN": "inconnue",
 	"DOWNLOAD_ERRORS_HEADING": "Oups. Article non trouvé.",
 	"DOWNLOAD_ERRORS_MESSAGE": "L'article demandé « ${articleTitle} » n’est pas disponible dans ce ZIM, il n’a pas été possible de le récupérer depuis ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Cet article a été supprimé après que la liste des articles à récupérer ait été compliée, mais avant qu’il ait été récupéré pour créer le ZIM que vous parcourez.",
@@ -19,6 +20,7 @@
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur inattendue d’ID de révision incorrect pendant qu’elle donnait des détails sur l’HTML de cet article.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur d’exception inaccessible pendant qu’elle donnait des détails sur l’HTML de cet article.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur d’exception d’invariant pendant qu’elle donnait des détails sur l’HTML de cet article.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur liée au dépassement des limites des ressources de Parsoid pendant qu’elle donnait des détails sur l’HTML de cet article.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur interne à l’API pendant qu’elle donnait des détails sur l’HTML de cet article.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur de typage interne à l’API pendant qu’elle donnait des détails sur l’HTML de cet article.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur d’exception d’argument d’API pendant qu’elle donnait des détails sur l’HTML de cet article.",
