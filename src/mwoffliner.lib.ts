@@ -16,7 +16,7 @@ import semver from 'semver'
 import * as path from 'path'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
 import { checkApiAvailability, getArticleIds } from './util/mw-api.js'
-
+import { zimCreatorMutex } from './mutex.js'
 import { check_all } from './sanitize-argument.js'
 
 import {
@@ -50,7 +50,7 @@ import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
-import { articleListHomeTemplate } from './Templates.js'
+import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import urlHelper from './util/url.helper.js'
@@ -492,13 +492,22 @@ async function execute(argv: any) {
           logger.warn(`Skipping redirect of '${redirectId}' to '${targetId}' because target is not a known article`)
           continue
         }
-        zimCreator.addRedirection(
-          redirectId,
-          // We fake a title, by just removing the underscores
-          truncateUtf8Bytes(String(redirectId).replace(/_/g, ' '), 245),
-          targetId + ( fragment ? '#' + fragment : '' ),
-          { FRONT_ARTICLE: 1 },
-        )
+        // We fake a title, by just removing the underscores
+        const redirectTitle = truncateUtf8Bytes(String(redirectId).replace(/_/g, ' '), 245)
+        if (fragment) {
+          // Should we have a fragment (i.e. we redirect to a section of an article), this is not (yet) supported by libzim
+          // (to have such a redirect with a fragment inside the path), so we create a "fake" entry with only an HTML-based
+          // redirect inside
+          const htmlTemplateString = htmlRedirectTemplateCode()
+            .replace(/__TITLE__/g, redirectTitle)
+            // we have to replace space in fragment with underscores, see https://phabricator.wikimedia.org/T398724
+            .replace(/__TARGET__/g, `${targetId}#${fragment.replace(/ /g, '_')}`)
+            .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(redirectId, ''))
+          await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(redirectId, 'text/html', redirectTitle, { FRONT_ARTICLE: 1 }, htmlTemplateString)))
+        } else {
+          // Otherwise we simply add a "regular" libzim redirect
+          await zimCreatorMutex.runExclusive(() => zimCreator.addRedirection(redirectId, redirectTitle, targetId, { FRONT_ARTICLE: 1 }))
+        }
 
         dump.status.redirects.written += 1
       }

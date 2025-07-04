@@ -145,6 +145,9 @@ const config = {
 
       /* Template for article download error */
       downloadErrorPlaceholder: './templates/download_error_placeholder.html',
+
+      /* Template for HTML-based redirects (to section of an article typically) */
+      htmlRedirect: './templates/html_redirect.html',
     },
   },
 }
