@@ -444,12 +444,11 @@ class Downloader {
     articleUrl,
     dump: Dump,
     articleDetail?: ArticleDetail,
-    isMainPage?: boolean,
   ): Promise<any> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
-      const { data, moduleDependencies, redirects, displayTitle } = await articleRenderer.download({
+      const { data, moduleDependencies, redirects, displayTitle, bodyCssClass, htmlCssClass } = await articleRenderer.download({
         articleId,
         articleUrl,
         articleDetail,
@@ -474,7 +473,8 @@ class Downloader {
         articleDetailXId,
         articleDetail,
         displayTitle,
-        isMainPage,
+        bodyCssClass,
+        htmlCssClass,
         dump,
       })
     } catch (err) {

@@ -4,6 +4,7 @@ import { DesktopRenderer } from './abstractDesktop.render.js'
 import { getStrippedTitleFromHtml } from '../util/misc.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 import { DownloadError } from '../Downloader.js'
+import { isMainPage } from '../util/articles.js'
 
 /*
 Relies on VisualEditor API typically looking like 'https://{wiki-host}/w/api.php?action=visualeditor&mobileformat=html&format=json&paction=parse&page={title}'
@@ -14,7 +15,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
   }
 
   private async retrieveHtml(renderOpts: RenderOpts): Promise<any> {
-    const { data, articleId, articleDetail, isMainPage } = renderOpts
+    const { data, articleId, articleDetail } = renderOpts
 
     /* istanbul ignore if */
     if (!data) {
@@ -31,7 +32,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
         logger.error(DELETED_ARTICLE_ERROR)
         throw new DownloadError(DELETED_ARTICLE_ERROR, null, null, null, DELETED_ARTICLE_ERROR)
       }
-      html = isMainPage ? data.visualeditor.content : super.injectH1TitleToHtml(data.visualeditor.content, articleDetail)
+      html = isMainPage(articleId) ? data.visualeditor.content : super.injectH1TitleToHtml(data.visualeditor.content, articleDetail)
       strippedTitle = getStrippedTitleFromHtml(html)
       displayTitle = strippedTitle || articleId.replace('_', ' ')
       return { html, displayTitle }

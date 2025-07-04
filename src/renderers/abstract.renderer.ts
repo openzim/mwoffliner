@@ -12,6 +12,7 @@ import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
+import { isMainPage, isSubpage } from '../util/articles.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 export type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi' | 'ActionParse'
@@ -48,6 +49,8 @@ export interface DownloadRes {
   moduleDependencies: any
   redirects: Redirect[]
   displayTitle?: string
+  bodyCssClass?: string
+  htmlCssClass?: string
 }
 
 export interface RenderOptsModules {
@@ -63,7 +66,8 @@ export interface RenderOpts {
   articleDetailXId?: RKVS<ArticleDetail>
   articleDetail?: ArticleDetail
   displayTitle?: string
-  isMainPage?: boolean
+  bodyCssClass?: string
+  htmlCssClass?: string
   dump: Dump
 }
 
@@ -471,7 +475,7 @@ export abstract class Renderer {
         }),
     )
 
-    if (!dump.isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
+    if (!isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
@@ -533,7 +537,7 @@ export abstract class Renderer {
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 
     /* Subpage */
-    if (this.isSubpage(articleId) && !dump.isMainPage(articleId)) {
+    if (isSubpage(articleId) && !isMainPage(articleId)) {
       const headingNode = htmlTemplateDoc.getElementById('mw-content-text')
       const subpagesNode = htmlTemplateDoc.createElement('span')
       const parents = articleId.split('/')
@@ -600,17 +604,6 @@ export abstract class Renderer {
   private addNoIndexCommentToElement(element: DominoElement) {
     const slices = element.parentElement.innerHTML.split(element.outerHTML)
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
-  }
-
-  private isSubpage(id: string) {
-    if (id && id.indexOf('/') >= 0) {
-      const namespace = id.indexOf(':') >= 0 ? id.substring(0, id.indexOf(':')) : ''
-      const ns = MediaWiki.namespaces[namespace] // namespace already defined
-      if (ns !== undefined) {
-        return ns.allowedSubpages
-      }
-    }
-    return false
   }
 
   private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump) {
