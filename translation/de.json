@@ -3,6 +3,7 @@
 		"authors": [
 			"Brettchenweber",
 			"IMayBeABitShy",
+			"MarkusRost",
 			"MoritzMT20",
 			"Nortix"
 		]
@@ -10,8 +11,23 @@
 	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist verfügbar unter ${license}, sofern nicht anders angegeben. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.",
 	"LAST_EDITED_ON": "Zuletzt bearbeitet am ${date}",
 	"LICENSE_UNKNOWN": "einer unbekannten Lizenz",
+	"DOWNLOAD_ERRORS_HEADING": "Hoppla. Artikel nicht gefunden.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Der angeforderte Artikel „${articleTitle}“ ist in diesem ZIM nicht verfügbar, er konnte nicht von ${server} abgerufen werden.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dieser Artikel wurde gelöscht, nachdem wir die Liste der abzurufenden Artikel zusammengestellt hatten, aber bevor wir ihn zum Erstellen dieser ZIM abgerufen haben.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Als das ZIM, das du durchsuchst, erstellt wurde, konnte der ${server}-Server nicht rechtzeitig Details über diesen HTML-Artikel geben.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Beim Erstellen dieser ZIM konnte der Server ${server} den HTML-Inhalt dieses Artikels nicht darstellen und gab einen HTTP 500-Fehler zurück.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Beim Erstellen dieser ZIM hatte der Server ${server} eine Zeitüberschreitung beim Darstellen des HTML-Inhaltes dieses Artikels und gab einen HTTP 504-Fehler zurück.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} eine Zeitüberschreitung beim Verarbeiten dieses Artikels und gab einen HTTP 504-Fehler zurück.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Beim Erstellen dieser ZIM gab die ActionParse API des Servers ${server} einen HTTP 503-Fehler zurück, beim Erhalten von Details über das HTML des Artikels.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} einen unerwarteten Schlechte Versions-ID Fehler, beim Erhalten von Details über das HTML des Artikels.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} einen nicht erreichbaren Ausnahmefehler, beim Erhalten von Details über das HTML des Artikels.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Beim Erstellen des von dir durchsuchten ZIM hat die ActionParse-API des Servers ${server} beim Angeben von Details zu diesem Artikel-HTML einen invarianten Ausnahmefehler ausgelöst.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} einen Fehler bezüglich überschrittener Parsoid-Ressourcengrenzen, beim Erhalten von Details über das HTML des Artikels.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} einen internen API-Fehler, beim Erhalten von Details über das HTML des Artikels.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Beim Erstellen des von dir durchsuchten ZIM hat die ActionParse-API des Servers ${server} beim Angeben von Details zu diesem Artikel-HTML einen internen API-Typfehler ausgelöst.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Als das ZIM, das Sie durchsuchen, erstellt wurde, erhob der Server ${server} ActionParse API einen Argument-Ausnahmerfehler, während er Details über diesen HTML-Artikel gab."
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Als das ZIM, das Sie durchsuchen, erstellt wurde, erhob der Server ${server} ActionParse API einen Argument-Ausnahmerfehler, während er Details über diesen HTML-Artikel gab.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Beim Erstellen dieser ZIM konnte die ActionParse API des Servers ${server} keine Details über das HTML des Artikels geben weil der Artikel viel zu groß ist. Jemand sollte wohl den Artikel auf dem Server ${server} in mehrere kleinere Artikel aufteilen.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Beim Erstellen dieser ZIM gab die ActionParse API des Servers ${server} keine Details über das HTML des Artikels, nur eine leere Antwort.",
+	"DOWNLOAD_ERRORS_LINE2": "Der fehlende Artikel wurde durch die Platzhalterseite ersetzt, die Sie aktuell sehen.",
+	"DOWNLOAD_ERRORS_LINE3": "Hoffen wir, dass das Problem auf dem Server ${server} gelöst wird und unsere nächste Version dieser ZIM diesen Artikel enthält."
 }
