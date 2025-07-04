@@ -12,19 +12,27 @@ export default class ActionParseURLDirector {
     this.skin = skin
   }
 
-  buildArticleURL(articleId: string) {
+  buildArticleURL(articleId: string, articleUrlOpts: RendererArticleOpts = {}) {
+    const { sectionId } = articleUrlOpts
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({
-        action: 'parse',
-        format: 'json',
-        prop: 'modules|jsconfigvars|headhtml|text|displaytitle',
-        parsoid: '1',
-        page: articleId,
-        useskin: this.skin,
-        redirects: '1',
-        formatversion: '2',
-      })
+      .setQueryParams(
+        {
+          action: 'parse',
+          format: 'json',
+          prop: 'modules|jsconfigvars|headhtml|text|displaytitle',
+          usearticle: '1',
+          disableeditsection: '1',
+          disablelimitreport: '1',
+          page: articleId,
+          useskin: this.skin,
+          redirects: '1',
+          formatversion: '2',
+          section: sectionId,
+        },
+        '?',
+        true,
+      )
       .build()
   }
 }

@@ -40,7 +40,7 @@ const config = {
     cssClassDisplayList: ['thumb'],
 
     /* Lead section to display */
-    leadSectonId: '0',
+    leadSectionId: '0',
 
     /* List of style to be removed. 'onlyoffline' is a *hack* to
     /* display WPEN medical articles, see for example

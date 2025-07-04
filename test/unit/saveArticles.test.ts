@@ -62,7 +62,7 @@ describe('saveArticles', () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
       await RenderingContext.createRenderers(renderer as renderName, true)
       const articleId = 'Canada'
-      const articleUrl = Downloader.getArticleUrl(articleId)
+      const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: '0' })
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
       const { articleDetailXId } = RedisStore
@@ -72,10 +72,13 @@ describe('saveArticles', () => {
 
       const articleDoc = domino.createDocument(result[0].html)
 
-      const sections = Array.from(articleDoc.querySelectorAll('section'))
-      const leadSection = sections[0]
-      expect(sections.length).toEqual(1)
-      expect(leadSection.getAttribute('data-mw-section-id')).toEqual('0')
+      const headings = Array.from(articleDoc.querySelectorAll('.mw-heading'))
+      const infoboxes = Array.from(articleDoc.querySelectorAll('table.infobox'))
+      const paragraphs = Array.from(articleDoc.querySelectorAll('p'))
+
+      expect(headings).toHaveLength(0)
+      expect(infoboxes).toHaveLength(1)
+      expect(paragraphs.length).toBeGreaterThan(1)
     })
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
