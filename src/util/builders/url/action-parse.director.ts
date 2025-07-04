@@ -6,10 +6,12 @@ import urlBuilder from './url.builder.js'
 export default class ActionParseURLDirector {
   baseDomain: string
   skin: string
+  variant?: string
 
-  constructor(baseDomain: string, skin: string) {
+  constructor(baseDomain: string, skin: string, variant?: string) {
     this.baseDomain = baseDomain
     this.skin = skin
+    this.variant = variant
   }
 
   buildArticleURL(articleId: string, articleUrlOpts: RendererArticleOpts = {}) {
@@ -26,6 +28,7 @@ export default class ActionParseURLDirector {
           disablelimitreport: '1',
           page: articleId,
           useskin: this.skin,
+          variant: this.variant,
           redirects: '1',
           formatversion: '2',
           section: sectionId,

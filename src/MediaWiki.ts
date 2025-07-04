@@ -230,7 +230,7 @@ class MediaWiki {
   public async hasActionParseApi(): Promise<boolean> {
     if (this.#hasActionParseApi === null) {
       for (const skin of ['vector-2022', 'vector']) {
-        this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, skin)
+        this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, skin, this.metaData.langVar)
         const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
         this.#hasActionParseApi = await checkApiAvailability(checkUrl)
         logger.log(`Checked for ActionParseApi with skin ${skin} at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
@@ -525,6 +525,7 @@ class MediaWiki {
 
       textDir: textDir as TextDirection,
       langMw,
+      langVar: langMw === 'zh' ? 'zh-cn' : null,
       langIso2,
       langIso3,
       title: siteName,
