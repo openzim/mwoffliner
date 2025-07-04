@@ -165,6 +165,7 @@ interface MWMetaData {
   mainPage: string
   textDir: TextDirection
   langMw: string
+  langVar: string | null
   logo: string
   licenseName: string
   licenseUrl: string
