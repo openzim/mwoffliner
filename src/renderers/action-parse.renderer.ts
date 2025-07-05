@@ -8,7 +8,7 @@ import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Tem
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
 export class ActionParseRenderer extends Renderer {
   public staticFilesList: string[] = []
   constructor() {
@@ -105,12 +105,18 @@ export class ActionParseRenderer extends Renderer {
       return redirect
     })
 
-    return { data: data.parse.text, moduleDependencies, redirects: normalizedRedirects, displayTitle: data.parse.displaytitle }
+    return {
+      data: data.parse.text,
+      moduleDependencies,
+      redirects: normalizedRedirects,
+      displayTitle: data.parse.displaytitle,
+      articleSubtitle: data.parse.subtitle,
+    }
   }
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, displayTitle, moduleDependencies, dump } = renderOpts
+    const { data, articleId, displayTitle, articleSubtitle, moduleDependencies, dump } = renderOpts
 
     if (!data) {
       throw new Error('Cannot render missing data into an article')
@@ -135,15 +141,16 @@ export class ActionParseRenderer extends Renderer {
       moduleDependencies.jsDependenciesList.push(`ext.gadget.${gadgetId}`)
     })*/
 
-    const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
-      htmlDocument.documentElement.outerHTML,
+    const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml({
+      html: htmlDocument.documentElement.outerHTML,
       dump,
       articleId,
       articleDetail,
       displayTitle,
+      articleSubtitle,
       moduleDependencies,
-      this.templateDesktopArticle.bind(this),
-    )
+      callback: this.templateDesktopArticle.bind(this),
+    })
 
     result.push({
       articleId,
