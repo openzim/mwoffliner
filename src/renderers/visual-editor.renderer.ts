@@ -55,15 +55,14 @@ export class VisualEditorRenderer extends DesktopRenderer {
     const { articleId, articleDetail, moduleDependencies, dump } = renderOpts
     const { html, displayTitle } = await this.retrieveHtml(renderOpts)
     if (html) {
-      const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
+      const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml({
         html,
         dump,
         articleId,
         articleDetail,
-        '',
         moduleDependencies,
-        super.templateDesktopArticle.bind(this),
-      )
+        callback: super.templateDesktopArticle.bind(this),
+      })
       result.push({
         articleId,
         displayTitle,
