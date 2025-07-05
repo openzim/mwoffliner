@@ -48,6 +48,7 @@ export interface DownloadRes {
   moduleDependencies: any
   redirects: Redirect[]
   displayTitle?: string
+  articleSubtitle?: string
 }
 
 export interface RenderOptsModules {
@@ -63,8 +64,20 @@ export interface RenderOpts {
   articleDetailXId?: RKVS<ArticleDetail>
   articleDetail?: ArticleDetail
   displayTitle?: string
+  articleSubtitle?: string
   isMainPage?: boolean
   dump: Dump
+}
+
+export interface ProcessHtmlOpts {
+  html: string
+  dump: Dump
+  articleId: string
+  articleDetail: any
+  displayTitle?: string
+  articleSubtitle?: string
+  moduleDependencies: any
+  callback: any
 }
 
 export interface RenderSingleOutput {
@@ -420,7 +433,8 @@ export abstract class Renderer {
   }
 
   // TODO: The first part of this method is common for all renders
-  public async processHtml(html: string, dump: Dump, articleId: string, articleDetail: any, displayTitle: string, _moduleDependencies: any, callback) {
+  public async processHtml(processHtmlOpts: ProcessHtmlOpts) {
+    let { html, dump, articleId, articleDetail, displayTitle, articleSubtitle, moduleDependencies, callback } = processHtmlOpts
     let imageDependencies: Array<{ url: string; path: string }> = []
     let videoDependencies: Array<{ url: string; path: string }> = []
     let mediaDependencies: Array<{ url: string; path: string }> = []
@@ -442,6 +456,14 @@ export abstract class Renderer {
     const tmRet = await this.treatMedias(doc, dump, articleId)
 
     doc = tmRet.doc
+
+    // Subtitle
+    if (articleSubtitle) {
+      let articleSubtitleDoc = domino.createDocument(articleSubtitle)
+      const ruRetSubtitle = await rewriteUrlsOfDoc(articleSubtitleDoc, articleId, dump)
+      articleSubtitleDoc = ruRetSubtitle.doc
+      articleSubtitle = articleSubtitleDoc.getElementsByTagName('body')[0].innerHTML
+    }
 
     videoDependencies = videoDependencies.concat(
       tmRet.videoDependencies
@@ -475,8 +497,8 @@ export abstract class Renderer {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
-    let templatedDoc = callback(_moduleDependencies, articleId)
-    templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId, displayTitle)
+    let templatedDoc = callback(moduleDependencies, articleId)
+    templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId, displayTitle, articleSubtitle)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
       templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
@@ -514,6 +536,7 @@ export abstract class Renderer {
     articleDetailXId: RKVS<ArticleDetail>,
     articleId: string,
     displayTitle: string,
+    articleSubtitle: string,
   ) {
     /* Create final document by merging template and parsoid documents */
     const mwContentText = htmlTemplateDoc.getElementById('mw-content-text')
@@ -533,7 +556,10 @@ export abstract class Renderer {
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 
     /* Subpage */
-    if (this.isSubpage(articleId) && !dump.isMainPage(articleId)) {
+    if (this.constructor.name === 'ActionParseRenderer') {
+      const mwContentSubtitle = htmlTemplateDoc.getElementById('mw-content-subtitle')
+      mwContentSubtitle.innerHTML = articleSubtitle || ''
+    } else if (this.isSubpage(articleId) && !dump.isMainPage(articleId)) {
       const headingNode = htmlTemplateDoc.getElementById('mw-content-text')
       const subpagesNode = htmlTemplateDoc.createElement('span')
       const parents = articleId.split('/')
