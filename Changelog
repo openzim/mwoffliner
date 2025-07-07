@@ -18,6 +18,7 @@ Unreleased:
 * FIX: Implement fallback index page names to avoid conflicts with articles (@benoit74 #2335)
 * CHANGED: Use wiki default parser instead of forcing Parsoid with ActionParse (@Markus-Rost #2391)
 * CHANGED: Fetch article <html> and <body> CSS class from headhtml response of the action=parse request (@benoit74 #2356)
+* FIX: Temporarily enforce `zh-cn` variant for Chinese wikis (@Markus-Rost #840)
 
 1.15.1:
 * FIX: Do not fail when all articles retrieved have no revision (@benoit74 #2346)
