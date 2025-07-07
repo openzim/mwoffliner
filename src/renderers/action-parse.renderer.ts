@@ -7,6 +7,7 @@ import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
+import { extractBodyCssClass, extractHtmlCssClass } from '../util/articles.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
 export class ActionParseRenderer extends Renderer {
@@ -18,7 +19,7 @@ export class ActionParseRenderer extends Renderer {
     }
   }
 
-  public templateDesktopArticle(moduleDependencies: RenderOptsModules, articleId: string): Document {
+  public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, moduleDependencies: RenderOptsModules, articleId: string): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : null
@@ -54,6 +55,9 @@ export class ActionParseRenderer extends Renderer {
       .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
       .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
+      .replace(/__ARTICLE_BODY_CSS_CLASS__/g, bodyCssClass)
+      // for now, always disable JS (see https://github.com/openzim/mwoffliner/issues/2310) and nigth mode (see https://github.com/openzim/mwoffliner/issues/1136)
+      .replace(/__ARTICLE_HTML_CSS_CLASS__/g, `client-nojs vector-feature-night-mode-disabled ${htmlCssClass}`)
 
     return domino.createDocument(htmlTemplateString)
   }
@@ -105,12 +109,15 @@ export class ActionParseRenderer extends Renderer {
       return redirect
     })
 
-    return { data: data.parse.text, moduleDependencies, redirects: normalizedRedirects, displayTitle: data.parse.displaytitle }
+    const bodyCssClass = extractBodyCssClass(data.parse.headhtml)
+    const htmlCssClass = extractHtmlCssClass(data.parse.headhtml)
+
+    return { data: data.parse.text, moduleDependencies, redirects: normalizedRedirects, displayTitle: data.parse.displaytitle, bodyCssClass, htmlCssClass }
   }
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, displayTitle, moduleDependencies, dump } = renderOpts
+    const { data, articleId, displayTitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
 
     if (!data) {
       throw new Error('Cannot render missing data into an article')
@@ -142,7 +149,7 @@ export class ActionParseRenderer extends Renderer {
       articleDetail,
       displayTitle,
       moduleDependencies,
-      this.templateDesktopArticle.bind(this),
+      this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass),
     )
 
     result.push({

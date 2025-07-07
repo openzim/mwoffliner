@@ -68,7 +68,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -91,7 +91,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
@@ -170,7 +170,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail, dump.isMainPage(articleId))
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
 
       const articleDoc = domino.createDocument(result[0].html)
 

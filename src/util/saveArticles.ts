@@ -16,6 +16,7 @@ import { Renderer } from '../renderers/abstract.renderer.js'
 import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
 import { truncateUtf8Bytes } from './misc.js'
+import { isMainPage } from './articles.js'
 
 export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, retryCounter = 0) {
   await retryStore.flush()
@@ -127,19 +128,19 @@ async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump:
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       let rets: any
       try {
-        const isMainPage = dump.isMainPage(articleId)
-        const renderer = isMainPage ? mainPageRenderer : articlesRenderer
+        const mainPage = isMainPage(articleId)
+        const renderer = mainPage ? mainPageRenderer : articlesRenderer
         const leadSectionId = dump.nodet ? config.filters.leadSectionId : ''
-        const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+        const articleUrl = mainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
 
-        rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+        rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
           }
 
           const doc = domino.createDocument(html)
-          if (!dump.isMainPage(articleId) && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
+          if (!mainPage && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }
         }
@@ -302,12 +303,12 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
 
         let rets: any
         try {
-          const isMainPage = dump.isMainPage(articleId)
-          const renderer = isMainPage ? RenderingContext.mainPageRenderer : RenderingContext.articlesRenderer
+          const mainPage = isMainPage(articleId)
+          const renderer = mainPage ? RenderingContext.mainPageRenderer : RenderingContext.articlesRenderer
           const leadSectionId = dump.nodet ? config.filters.leadSectionId : ''
-          const articleUrl = isMainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+          const articleUrl = mainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
 
-          rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail, isMainPage)
+          rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail)
 
           curStage += 1
           for (const {

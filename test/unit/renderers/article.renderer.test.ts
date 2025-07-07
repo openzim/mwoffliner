@@ -14,11 +14,11 @@ jest.setTimeout(10000)
 describe('ArticleRenderer', () => {
   describe('test Visual Editor renderer', () => {
     const prepareFixtures = (json: Record<string, any> | null) => {
+      MediaWiki.metaData = { mainPage: '456' }
       return {
         data: json,
         articleId: '123',
         articleDetail: { title: 'Brian May', timestamp: '2023-08-24T02:19:04Z' },
-        isMainPage: false,
       }
     }
     const visualEditorRenderer = new VisualEditorRenderer()
@@ -43,13 +43,13 @@ describe('ArticleRenderer', () => {
       const { dump } = await setupScrapeClasses()
       const { data, articleId, articleDetail } = prepareFixtures({ visualeditor: { content: 'Lorem ipsum dolor sit amet' } })
       const moduleDependencies = await Downloader.getModuleDependencies(articleDetail.title)
+      MediaWiki.metaData.mainPage = articleId
       const result = await visualEditorRenderer.render({
         data,
         webp: Downloader.webp,
         moduleDependencies,
         articleId,
         articleDetail,
-        isMainPage: true,
         dump,
       } as RenderOpts)
 
@@ -70,7 +70,6 @@ describe('ArticleRenderer', () => {
         moduleDependencies,
         articleId,
         articleDetail: { title: 'consectetur adipiscing elit', timestamp: '2023-08-24T02:19:04Z' },
-        isMainPage: false,
         dump,
       } as RenderOpts)
 
@@ -89,7 +88,6 @@ describe('ArticleRenderer', () => {
         moduleDependencies,
         articleId,
         articleDetail,
-        isMainPage: false,
         dump,
       } as RenderOpts)
 
@@ -110,7 +108,6 @@ describe('ArticleRenderer', () => {
         moduleDependencies,
         articleId,
         articleDetail,
-        isMainPage: false,
         dump,
       } as RenderOpts)
 
@@ -130,7 +127,6 @@ describe('ArticleRenderer', () => {
         moduleDependencies,
         articleId,
         articleDetail,
-        isMainPage: false,
         dump,
       } as RenderOpts)
 
