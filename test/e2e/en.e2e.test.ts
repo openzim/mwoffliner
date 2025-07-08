@@ -121,6 +121,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       const redirectFromDump = await zimdump(`show --url Attleboro_Line ${outFiles[0].outFile}`)
       expect(redirectFromDump).toContain('<title>Attleboro Line</title>')
       expect(redirectFromDump).toContain('<meta http-equiv="refresh" content="0;URL=\'./Providence/Stoughton_Line#Ownership_and_financing\'" />')
+      expect(redirectFromDump).toContain('<a href="./Providence/Stoughton_Line#Ownership_and_financing">Attleboro Line</a>')
     })
 
     afterAll(() => {

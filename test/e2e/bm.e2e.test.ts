@@ -68,6 +68,7 @@ await testAllRenders('bm-wikipedia', parameters, async (outFiles) => {
     const redirectFromDump = await zimdump(`show --url Bamakɔ_Monumentsa ${outFiles[0].outFile}`)
     expect(redirectFromDump).toContain('<title>Bamakɔ Monumentsa</title>')
     expect(redirectFromDump).toContain('<meta http-equiv="refresh" content="0;URL=\'./Bamakɔ#Monumentsa_ni_yɔrɔ\'" />')
+    expect(redirectFromDump).toContain('<a href="./Bamakɔ#Monumentsa_ni_yɔrɔ">Bamakɔ Monumentsa</a>')
   })
 
   afterAll(() => {
