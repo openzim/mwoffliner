@@ -5,5 +5,25 @@
 		]
 	},
 	"DISCLAIMER": "Iste articulo es publicate per ${creator}. Le texto es disponibile sub le licentia ${license} si non se indica le contrario. Additional terminos pote applicar se al files multimedial.",
-	"LAST_EDITED_ON": "Ultime modification le ${date}"
+	"LAST_EDITED_ON": "Ultime modification le ${date}",
+	"LICENSE_UNKNOWN": "un licentia incognite",
+	"DOWNLOAD_ERRORS_HEADING": "Articulo non trovate.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Le articulo requestate ‘${articleTitle}’ non es disponibile in iste ZIM. Non esseva possibile recuperar lo de ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Iste articulo ha essite eliminate post le generation del lista de articulos a obtener, ma ante le obtention del articulo mesme pro construer le file ZIM in uso.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Durante le construction del file ZIM in uso, le servitor ${server} ha fallite de dar le detalios sur le codice HTML de iste articulo in tempore utile.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Durante le construction del file ZIM in uso, le servitor ${server} ha fallite de render le contento HTML de iste articulo e ha restituite un error HTTP 500.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Durante le construction del file ZIM in uso, le servitor ${server} ha excedite le tempore limite durante le rendition del contento HTML de iste articulo e ha restituite un error HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha excedite le tempore limite durante le processamento de iste articulo e ha restituite un error HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error HTTP 503 durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error inexpectate de mal ID de version durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error de servitor inattingibile durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error de valor invariante non valide durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error ligate al excesso del limites de ressources de Parsoid durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error interne del API durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error interne de typo del API durante que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha restituite un error de argumento non valide que illo dava le detalios sur le codice HTML de iste articulo.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha fallite de dar le detalios sur le codice HTML de iste articulo perque le articulo es multo troppo grande. Alcuno deberea probabilemente divider iste articulo in plure articulos minor sur le servitor ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Durante le construction del file ZIM in uso, le API ActionParse del servitor ${server} ha fallite de dar le detalios sur le codice HTML de iste articulo, restituente un responsa vacue.",
+	"DOWNLOAD_ERRORS_LINE2": "Le articulo mancante ha essite reimplaciate per le pagina de substituto que tu vide ora.",
+	"DOWNLOAD_ERRORS_LINE3": "Que nos spera que le problema essera resolvite sur le servitor ${server} e que nostre proxime version de iste ZIM continera iste articulo."
 }
