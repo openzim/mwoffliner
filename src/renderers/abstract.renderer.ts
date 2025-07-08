@@ -297,29 +297,6 @@ export abstract class Renderer {
       return { imageDependencies }
     }
 
-    /* Remove image link */
-    const linkNode = img.parentNode
-    if (linkNode.tagName === 'A') {
-      /* Check if the target is mirrored */
-      const href = linkNode.getAttribute('href') || ''
-      const title = MediaWiki.extractPageTitleFromHref(href)
-      const keepLink = title && (await RedisStore.articleDetailXId.exists(title))
-
-      /* Under certain condition it seems that this is possible
-       * to have parentNode == undefined, in this case this
-       * seems preferable to remove the whole link+content than
-       * keeping a wrong link. See for example this url
-       * http://parsoid.wmflabs.org/ko/%EC%9D%B4%ED%9C%98%EC%86%8C */
-      if (!keepLink) {
-        if (linkNode.parentNode) {
-          linkNode.parentNode.replaceChild(img, linkNode)
-        } else {
-          DOMUtils.deleteNode(img)
-          return { imageDependencies }
-        }
-      }
-    }
-
     /* Rewrite image src attribute */
     const src = getFullUrl(img.getAttribute('src'), MediaWiki.baseUrl)
     let newSrc: string
