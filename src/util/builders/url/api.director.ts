@@ -38,7 +38,10 @@ export default class ApiURLDirector {
   }
 
   buildSiteInfoURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'general|rightsinfo', format: 'json', formatversion: '2' }).build()
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'general|skins|rightsinfo', format: 'json', formatversion: '2' })
+      .build()
   }
 
   buildVisualEditorURL() {

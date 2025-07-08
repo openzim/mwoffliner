@@ -1,6 +1,6 @@
 import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
-import MediaWiki from '../../src/MediaWiki.js'
+import MediaWiki, { SiteInfoSkin } from '../../src/MediaWiki.js'
 import RedisStore from '../../src/RedisStore.js'
 import { getArticleIds } from '../../src/util/mw-api.js'
 import { getArticlesByNS } from '../../src/util/index.js'
@@ -180,5 +180,42 @@ describe('Test moved page with redirect', () => {
     expect(Vicente_Alejandro_González_y_Robleto).toBeDefined()
     expect(Vicente_Alejandro_González_y_Robleto).toHaveProperty('title')
     expect(Vicente_Alejandro_González_y_Robleto).toHaveProperty('revisionId')
+  })
+})
+
+describe('Mediawiki utils', () => {
+  test.each([
+    [
+      // Standard test case
+      [
+        { code: 'vector', name: 'Vector Legacy' },
+        { code: 'vector-2022', name: 'Vector (2022)', default: true },
+        { code: 'modern', name: 'Modern', unusable: true },
+      ],
+      'vector-2022',
+    ],
+    [
+      // Edge-case where we have two default skin
+      [
+        { code: 'vector-2022', name: 'Vector (2022)', default: true },
+        { code: 'vector', name: 'Vector Legacy', default: true },
+      ],
+      'vector-2022',
+    ],
+  ])('Get skin', (skins: SiteInfoSkin[], defaultSkin: string) => {
+    expect(MediaWiki.getDefaultSkin(skins)).toBe(defaultSkin)
+  })
+
+  test.each([
+    [
+      // No default skin
+      [
+        { code: 'vector', name: 'Vector Legacy' },
+        { code: 'vector-2022', name: 'Vector (2022)' },
+        { code: 'modern', name: 'Modern', unusable: true },
+      ],
+    ],
+  ])('Get skin', (skins: SiteInfoSkin[]) => {
+    expect(() => MediaWiki.getDefaultSkin(skins)).toThrow()
   })
 })

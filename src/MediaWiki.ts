@@ -27,6 +27,13 @@ export interface QueryOpts {
   formatversion: string
 }
 
+export interface SiteInfoSkin {
+  code: string
+  name: string
+  default?: boolean
+  unusable?: boolean
+}
+
 class MediaWiki {
   private static instance: MediaWiki
 
@@ -231,16 +238,10 @@ class MediaWiki {
 
   public async hasActionParseApi(): Promise<boolean> {
     if (this.#hasActionParseApi === null) {
-      for (const skin of ['vector-2022', 'vector']) {
-        this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, skin, this.metaData.langVar)
-        const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
-        this.#hasActionParseApi = await checkApiAvailability(checkUrl)
-        logger.log(`Checked for ActionParseApi with skin ${skin} at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
-        if (this.#hasActionParseApi) {
-          this.skin = skin
-          break
-        }
-      }
+      this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin, this.metaData.langVar)
+      const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
+      this.#hasActionParseApi = await checkApiAvailability(checkUrl)
+      logger.log(`Checked for ActionParseApi at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
     }
     return this.#hasActionParseApi
   }
@@ -434,29 +435,40 @@ class MediaWiki {
     return creator
   }
 
+  public getDefaultSkin(skins: SiteInfoSkin[]) {
+    const defaultSkins = skins.filter((skin) => skin.default).map((skin) => skin.code)
+    if (defaultSkins.length == 0) {
+      throw new Error(`This wiki has no default skin:\n${JSON.stringify(skins)}`)
+    }
+    if (defaultSkins.length > 1) {
+      logger.warn('Multiple default skins found, defaulting to first default one')
+    }
+    return defaultSkins[0]
+  }
+
   public async getSiteInfo() {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
-    const entries = body.query.general
+    const generalEntries = body.query.general
     const { url: licenseUrl, text: licenseName } = body.query.rightsinfo
 
     // Checking mediawiki version
-    const mwVersion = semver.coerce(entries.generator).raw
+    const mwVersion = semver.coerce(generalEntries.generator).raw
     const mwMinimalVersion = 1.27
-    if (!entries.generator || !semver.satisfies(mwVersion, `>=${mwMinimalVersion}`)) {
+    if (!generalEntries.generator || !semver.satisfies(mwVersion, `>=${mwMinimalVersion}`)) {
       throw new Error(`Mediawiki version ${mwVersion} not supported should be >=${mwMinimalVersion}`)
     }
 
-    const mainPage = entries.mainpage.replace(/ /g, '_')
-    const siteName = entries.sitename
-    const logo = entries.logo
-    const langMw = entries.lang
-    const textDir = entries.rtl ? 'rtl' : 'ltr'
+    const mainPage = generalEntries.mainpage.replace(/ /g, '_')
+    const siteName = generalEntries.sitename
+    const logo = generalEntries.logo
+    const langMw = generalEntries.lang
+    const textDir = generalEntries.rtl ? 'rtl' : 'ltr'
     logger.log(`Text direction is [${textDir}]`)
 
     // Gather languages codes (en remove the 'dialect' part)
-    const langs: string[] = [langMw].concat(entries.fallback.map((e: any) => e.code)).map(function (e) {
+    const langs: string[] = [langMw].concat(generalEntries.fallback.map((e: any) => e.code)).map(function (e) {
       return e.replace(/-.*/, '')
     })
 
@@ -478,6 +490,8 @@ class MediaWiki {
       possibleLangPairs = possibleLangPairs.filter((a) => a)
       return possibleLangPairs[0] || ['en', 'eng']
     })
+
+    this.skin = this.getDefaultSkin(body.query.skins)
 
     return {
       mainPage,
