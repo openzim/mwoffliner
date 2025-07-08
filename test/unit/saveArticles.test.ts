@@ -178,75 +178,44 @@ describe('saveArticles', () => {
       const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('script:not([src])'))
       expect(remainingInlineScripts.length).toBe(0)
     })
-  }
 
-  describe('applyOtherTreatments', () => {
-    // TODO: Fix unit tests below once 'keepEmptyParagraphs' option will be modified. See issues/1866
-    /*
-    let dump: Dump
-    let dump2: Dump
-    let articleHtml: string
-
-    beforeEach(async () => {
-      const classes = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      dump = classes.dump
-      const downloader = classes.downloader
-
-      await Downloader.setCapabilities()
-      await Downloader.setUrlsDirectors()
-      const _articleDetailsRet = await Downloader.getArticleDetailsIds(['Western_Greenland'])
+    test(`Remove empty paragraphs for ${renderer} renderer`, async () => {
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
+      await RenderingContext.createRenderers(renderer as renderName, true)
+      const articleId = 'Western_Greenland'
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
       const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
-      const { articleDetailXId } = redisStore
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      ;[{ html: articleHtml }] = await Downloader.getArticle('Western_Greenland', dump, articleDetailXId)
-      dump2 = new Dump('', { keepEmptyParagraphs: true } as any, dump.mwMetaData)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const articleDoc = domino.createDocument(result[0].html)
+      expect(articleDoc.querySelector('#Get_around')).toBeTruthy()
+      expect(articleDoc.querySelector('#Do')).toBeFalsy()
+      expect(articleDoc.querySelector('#Eat')).toBeTruthy()
+      expect(articleDoc.querySelector('#Drink')).toBeFalsy()
     })
 
-    test('Found no empty details elements when they should be stripped in mobile view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump)
-
-      const details = Array.from(doc.querySelectorAll('details'))
-      let fewestChildren = 0
-      for (const d of details) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
-      }
-      expect(fewestChildren).toBeGreaterThan(0)
+    test(`Keep empty paragraphs for ${renderer} renderer`, async () => {
+      const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
+      dump.opts.keepEmptyParagraphs = true
+      await RenderingContext.createRenderers(renderer as renderName, true)
+      const articleId = 'Western_Greenland'
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
+      articleDetailXId.setMany(articlesDetail)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const articleDoc = domino.createDocument(result[0].html)
+      expect(articleDoc.querySelector('#Get_around')).toBeTruthy()
+      expect(articleDoc.querySelector('#Do')).toBeTruthy()
+      expect(articleDoc.querySelector('#Eat')).toBeTruthy()
+      expect(articleDoc.querySelector('#Drink')).toBeTruthy()
     })
-
-    test('Found empty details elements when they should be left im mobile view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump2)
-
-      const details = Array.from(doc.querySelectorAll('details'))
-
-      let fewestChildren = 0
-      for (const d of details) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
-      }
-      expect(fewestChildren).toBeLessThanOrEqual(1)
-    })
-
-    test('Found empty sections when they should be left im desktop view', async () => {
-      const doc = domino.createDocument(articleHtml)
-      await applyOtherTreatments(doc, dump2)
-
-      const sections = Array.from(doc.querySelectorAll('section'))
-
-      let fewestChildren = 0
-      for (const d of sections) {
-        if (fewestChildren === 0 || d.children.length < fewestChildren) {
-          fewestChildren = d.children.length
-        }
-      }
-      expect(fewestChildren).toBeLessThanOrEqual(1)
-    })
-    */
-  })
+  }
 
   test('Load inline js from HTML', async () => {
     await setupScrapeClasses() // en wikipedia

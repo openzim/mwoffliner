@@ -30,6 +30,7 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
 }
 
 export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '' } = {}) {
+  MediaWiki.reset()
   MediaWiki.base = mwUrl
 
   Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }

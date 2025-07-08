@@ -768,17 +768,17 @@ export abstract class Renderer {
     })
 
     /* Remove empty paragraphs */
-    // TODO: Refactor this option to work with page/html and page/mobile-html output. See issues/1866
     if (!dump.opts.keepEmptyParagraphs) {
-      // Mobile view === details
-      // Desktop view === section
-      const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('details, section'))
+      const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('section'))
       for (const section of sections) {
         if (
-          section.children.length ===
           Array.from(section.children).filter((child: DominoElement) => {
-            return child.matches('summary')
-          }).length
+            // Check if there is more than the expected children we have in all sections
+            // RestApi : h2 tag
+            // WikimediaDesktop, VisualEditor, Action Parse: mw-heading class
+            // WikimediaMobile: pcs-edit-section-header class
+            return !child.matches('h2') && !child.classList.contains('mw-heading') && !child.classList.contains('pcs-edit-section-header')
+          }).length === 0
         ) {
           DU.deleteNode(section)
         }
