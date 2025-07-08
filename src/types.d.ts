@@ -52,6 +52,7 @@ type FileDetail = {
 type ArticleRedirect = {
   targetId: string
   title: string
+  fragment?: string
 }
 
 // RedisKvs interface
@@ -101,7 +102,11 @@ type QueryCoordinatesRet = Array<{
   globe: string
 }>
 
-type QueryRedirectsRet = PageInfo[]
+type QueryRedirectsRet = Array<
+  PageInfo & {
+    fragment?: string
+  }
+>
 
 type TextDirection = 'ltr' | 'rtl'
 

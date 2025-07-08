@@ -91,6 +91,39 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       expect(verifyImgElements(imgFilesArr, imgElements)).toBe(true)
     })
 
+    test(`test redirect without fragment ${outFiles[0]?.renderer} renderer`, async () => {
+      // "Providence_Line" should be a redirect to "Providence/Stoughton_Line"
+      const redirectInfo = await zimdump(`list --details --url Providence_Line ${outFiles[0].outFile}`)
+
+      expect(redirectInfo).toMatch(/path:\s*Providence_Line/)
+      expect(redirectInfo).toMatch(/title:\s*Providence Line/)
+      expect(redirectInfo).toMatch(/type:\s*redirect/)
+      const redirectIndexMatch = redirectInfo.match(/redirect index:\s*(\d+)/)
+      expect(redirectIndexMatch).not.toBe(null)
+      const redirectIndex = redirectIndexMatch ? parseInt(redirectIndexMatch[1], 10) : null
+      expect(redirectIndex).not.toBeNull()
+
+      const redirectTargetInfo = await zimdump(`list --details --idx ${redirectIndex} ${outFiles[0].outFile}`)
+      expect(redirectTargetInfo).toMatch(/path:\s*Providence\/Stoughton_Line/)
+      expect(redirectTargetInfo).toMatch(/title:\s*Providence\/Stoughton Line/)
+      expect(redirectTargetInfo).toMatch(/type:\s*item/)
+    })
+
+    test(`test redirect with fragment ${outFiles[0]?.renderer} renderer`, async () => {
+      // "Attleboro_Line" should be an HTML item which will redirect to "Providence/Stoughton_Line#Ownership_and_financing"
+      // through http-equiv="refresh"
+      const redirectInfo = await zimdump(`list --details --url Attleboro_Line ${outFiles[0].outFile}`)
+
+      expect(redirectInfo).toMatch(/path:\s*Attleboro_Line/)
+      expect(redirectInfo).toMatch(/title:\s*Attleboro Line/)
+      expect(redirectInfo).toMatch(/type:\s*item/)
+
+      const redirectFromDump = await zimdump(`show --url Attleboro_Line ${outFiles[0].outFile}`)
+      expect(redirectFromDump).toContain('<title>Attleboro Line</title>')
+      expect(redirectFromDump).toContain('<meta http-equiv="refresh" content="0;URL=\'./Providence/Stoughton_Line#Ownership_and_financing\'" />')
+      expect(redirectFromDump).toContain('<a href="./Providence/Stoughton_Line#Ownership_and_financing">Attleboro Line</a>')
+    })
+
     afterAll(() => {
       if (!process.env.KEEP_ZIMS) {
         rimraf.sync(`./${outFiles[0].testId}`)

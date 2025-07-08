@@ -38,6 +38,10 @@ const htmlVector2022TemplateCode = () => {
   return readTemplate(config.output.templates.pageVector2022)
 }
 
+const htmlRedirectTemplateCode = () => {
+  return readTemplate(config.output.templates.htmlRedirect)
+}
+
 const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate)
 
 export {
@@ -49,6 +53,7 @@ export {
   htmlWikimediaDesktopTemplateCode,
   htmlVectorLegacyTemplateCode,
   htmlVector2022TemplateCode,
+  htmlRedirectTemplateCode,
   articleListHomeTemplate,
   categoriesTemplate,
   subCategoriesTemplate,
