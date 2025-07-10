@@ -483,8 +483,15 @@ async function execute(argv: any) {
   /* ********************************* */
 
   async function writeArticleRedirects(dump: Dump, zimCreator: Creator) {
+    let processed = -1
+    const total = await redirectsXId.len()
+    logger.log(`${total} redirects to process`)
     await redirectsXId.iterateItems(Downloader.speed, async (redirects) => {
       for (const [redirectId, { targetId, fragment }] of Object.entries(redirects)) {
+        processed += 1
+        if (processed > 0 && processed % 5000 == 0) {
+          logger.log(`${processed} redirects have been processed (${Math.round((processed / total) * 1000) / 10} %)`)
+        }
         if (await RedisStore.articleDetailXId.exists(redirectId)) {
           logger.warn(`Skipping redirect of '${redirectId}' because it already exists as an article`)
           continue
