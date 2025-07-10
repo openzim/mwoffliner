@@ -6,9 +6,9 @@
 			"Verdy p"
 		]
 	},
-	"DISCLAIMER": "Cet article est issu de ${creator}. Sauf mention contraire, le texte est disponible sous licence ${license}. Des conditions supplémentaires peuvent s’appliquer aux fichiers multimédias.",
+	"DISCLAIMER": "Cet article est issu de ${creator}. Sauf mention contraire, le texte est disponible sous ${license}. Des conditions supplémentaires peuvent s’appliquer aux fichiers multimédias.",
 	"LAST_EDITED_ON": "Dernière modification le ${date}",
-	"LICENSE_UNKNOWN": "Licence inconnue",
+	"LICENSE_UNKNOWN": "une licence inconnue",
 	"DOWNLOAD_ERRORS_HEADING": "Oups. Article non trouvé.",
 	"DOWNLOAD_ERRORS_MESSAGE": "L'article demandé « ${articleTitle} » n’est pas disponible dans ce ZIM, il n’a pas été possible de le récupérer depuis ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Cet article a été supprimé après que la liste des articles à récupérer ait été compliée, mais avant qu’il ait été récupéré pour créer le ZIM que vous parcourez.",

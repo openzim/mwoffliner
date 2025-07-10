@@ -158,7 +158,7 @@ describe('Misc utility', () => {
       console.log(JSON.stringify(strings))
       expect(strings).toMatchObject({
         DISCLAIMER:
-          'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist verfügbar unter ${license}, sofern nicht anders angegeben. Möglicherweise können weitere Bestimmungen für Mediendateien gelten.',
+          'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist unter ${license} verfügbar, sofern nicht anders angegeben. Für die Mediendateien können zusätzliche Bedingungen gelten.',
         LAST_EDITED_ON: 'Zuletzt bearbeitet am ${date}',
         LICENSE_UNKNOWN: 'einer unbekannten Lizenz',
       })
