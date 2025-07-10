@@ -42,6 +42,11 @@ const config = {
     /* Lead section to display */
     leadSectionId: '0',
 
+    /* List of style to be removed. 'onlyoffline' is a *hack* to
+    /* display WPEN medical articles, see for example
+    /* [[Carcinoid_syndrome]] */
+    cssClassCallsBlackList: ['plainlinks', 'onlyoffline'],
+
     /* All nodes with one of these ids will be removed */
     idBlackList: ['purgelink'],
 
