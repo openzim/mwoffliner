@@ -219,6 +219,12 @@ async function execute(argv: any) {
   }
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
+  if (!(await MediaWiki.checkWikiPath())) {
+    throw new Error(`wikiPath '${MediaWiki.metaData.wikiPath}' is incorrect, please fix it with --mwWikiPath`)
+  }
+  if (!(await MediaWiki.checkIndexPhpPath())) {
+    throw new Error(`indexPhpPath '${MediaWiki.metaData.indexPhpPath}' is incorrect, please fix it with --mwIndexPhpPath`)
+  }
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasWikimediaDesktopApi()
   const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()

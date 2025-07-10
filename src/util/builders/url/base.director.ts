@@ -11,8 +11,12 @@ export default class BaseURLDirector {
     this.baseDomain = baseDomain.endsWith('/') ? baseDomain.substring(0, baseDomain.length - 1) : baseDomain
   }
 
-  buildURL(path: string) {
-    return urlBuilder.setDomain(this.baseDomain).setPath(path).build(true)
+  buildURL(path: string, params: Record<string, string> = null) {
+    let builder = urlBuilder.setDomain(this.baseDomain).setPath(path)
+    if (params) {
+      builder = builder.setQueryParams(params)
+    }
+    return builder.build(true)
   }
 
   buildWikimediaDesktopApiUrl() {
