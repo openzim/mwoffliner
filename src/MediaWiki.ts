@@ -276,6 +276,20 @@ class MediaWiki {
     return this.#hasModuleApi
   }
 
+  public async checkWikiPath(): Promise<boolean> {
+    const checkUrl = this.urlDirector.buildURL(`${this.#wikiPath}${this.apiCheckArticleId}`).href
+    const result = await checkApiAvailability(checkUrl)
+    logger.log('Checked WikiPath at', checkUrl, '-- result is: ', result)
+    return result
+  }
+
+  public async checkIndexPhpPath(): Promise<boolean> {
+    const checkUrl = this.urlDirector.buildURL(this.#indexPhpPath, { title: this.apiCheckArticleId }).href
+    const result = await checkApiAvailability(checkUrl)
+    logger.log('Checked IndexPhpPath at', checkUrl, '-- result is: ', result)
+    return result
+  }
+
   private setWikimediaDesktopApiUrl() {
     this.wikimediaDesktopApiUrl = this.urlDirector.buildWikimediaDesktopApiUrl()
   }
