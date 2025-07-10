@@ -1,9 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"B3rnas"
+			"B3rnas",
+			"Mansil alfalb"
 		]
 	},
 	"DISCLAIMER": "Este artigo é emitido por ${creator}. O texto é licenciado sob ${license}. Termos adicionais podem ser aplicados aos arquivos de mídia.",
-	"LAST_EDITED_ON": "Última edição em ${date}"
+	"LAST_EDITED_ON": "Última edição em ${date}",
+	"LICENSE_UNKNOWN": "uma licença desconhecida"
 }
