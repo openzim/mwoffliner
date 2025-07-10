@@ -679,6 +679,38 @@ export abstract class Renderer {
     }
   }
 
+  private clearNodes(parsoidDoc: DominoElement, filtersConfig: any) {
+    const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
+    for (const node of allNodes) {
+      /* ?? */
+      node.removeAttribute('data-parsoid')
+      node.removeAttribute('about')
+
+      /* Lots of bloat about templates wikitext */
+      node.removeAttribute('data-mw')
+
+      if (node.getAttribute('img')) {
+        /* Remove a few images Parsoid attributes */
+        node.removeAttribute('data-file-width')
+        node.removeAttribute('data-file-height')
+        node.removeAttribute('data-file-type')
+      }
+
+      /* Remove a few css class which are typically used to hide things when online,
+         but we want to see them when offline */
+      filtersConfig.cssClassCallsBlackList.map((classname: string) => {
+        if (node.getAttribute('class')) {
+          node.setAttribute('class', node.getAttribute('class').replace(classname, ''))
+        }
+      })
+    }
+
+    const kartographerMaplinkNodes = Array.from<DominoElement>(parsoidDoc.querySelectorAll('.mw-kartographer-maplink')).filter((n) => !!n.textContent)
+    for (const node of kartographerMaplinkNodes) {
+      node.textContent = '🌍'
+    }
+  }
+
   private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
     const filtersConfig = config.filters
     this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
@@ -753,6 +785,7 @@ export abstract class Renderer {
       }
     }
 
+    this.clearNodes(parsoidDoc, filtersConfig)
     return parsoidDoc
   }
 
