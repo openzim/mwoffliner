@@ -592,13 +592,6 @@ export abstract class Renderer {
       nodesToDelete.push({ tag: 'map' })
     }
 
-    /* Remove useless DOM nodes without children */
-    function emptyChildFilter(n: any) {
-      return !n.innerHTML
-    }
-    nodesToDelete.push({ tag: 'li', filter: emptyChildFilter })
-    nodesToDelete.push({ tag: 'span', filter: emptyChildFilter })
-
     /* Remove gallery boxes if pics need stripping of if it doesn't have thumbs */
     nodesToDelete.push({
       class: 'gallerybox',
