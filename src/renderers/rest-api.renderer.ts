@@ -53,15 +53,14 @@ export class RestApiRenderer extends DesktopRenderer {
       if (!isMainPage(articleId)) {
         dataWithHeader = super.injectH1TitleToHtml(data, articleDetail)
       }
-      const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml(
-        dataWithHeader || data,
+      const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml({
+        html: dataWithHeader || data,
         dump,
         articleId,
         articleDetail,
-        '',
         moduleDependencies,
-        super.templateDesktopArticle.bind(this),
-      )
+        callback: super.templateDesktopArticle.bind(this),
+      })
 
       result.push({
         articleId: _articleId,

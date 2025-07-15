@@ -22,7 +22,7 @@ export default class ActionParseURLDirector {
         {
           action: 'parse',
           format: 'json',
-          prop: 'modules|jsconfigvars|headhtml|text|displaytitle',
+          prop: 'modules|jsconfigvars|headhtml|text|displaytitle|subtitle',
           usearticle: '1',
           disableeditsection: '1',
           disablelimitreport: '1',

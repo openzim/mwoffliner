@@ -19,6 +19,7 @@ interface Parameters {
   mwActionApiPath?: string
   mwRestApiPath?: string
   mwModulePath?: string
+  mwWikiPath?: string
 }
 
 /*

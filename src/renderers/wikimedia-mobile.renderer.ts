@@ -61,15 +61,14 @@ export class WikimediaMobileRenderer extends MobileRenderer {
           this.removeHiddenClass,
           this.INTERNAL.unhideSections,
           async (doc) => {
-            const { finalHTML, subtitles, mediaDependencies, videoDependencies, imageDependencies } = await super.processHtml(
-              doc.documentElement.outerHTML,
+            const { finalHTML, subtitles, mediaDependencies, videoDependencies, imageDependencies } = await super.processHtml({
+              html: doc.documentElement.outerHTML,
               dump,
               articleId,
               articleDetail,
-              '',
               moduleDependencies,
-              super.templateMobileArticle.bind(this),
-            )
+              callback: super.templateMobileArticle.bind(this),
+            })
 
             mediaDependenciesVal = mediaDependencies
             imageDependenciesVal = imageDependencies
