@@ -13,7 +13,7 @@ import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
 import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
 import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
-import { checkApiAvailability } from './util/mw-api.js'
+import { checkApiAvailability, checkArticleUrl } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
 
 export interface QueryOpts {
@@ -276,16 +276,16 @@ class MediaWiki {
     return this.#hasModuleApi
   }
 
-  public async checkWikiPath(): Promise<boolean> {
-    const checkUrl = this.urlDirector.buildURL(`${this.#wikiPath}${this.apiCheckArticleId}`).href
-    const result = await checkApiAvailability(checkUrl)
+  public async checkWikiPath(articleId: string = this.apiCheckArticleId): Promise<boolean> {
+    const checkUrl = this.urlDirector.buildURL(`${this.#wikiPath}${articleId}`).href
+    const result = await checkArticleUrl(checkUrl)
     logger.log('Checked WikiPath at', checkUrl, '-- result is: ', result)
     return result
   }
 
-  public async checkIndexPhpPath(): Promise<boolean> {
-    const checkUrl = this.urlDirector.buildURL(this.#indexPhpPath, { title: this.apiCheckArticleId }).href
-    const result = await checkApiAvailability(checkUrl)
+  public async checkIndexPhpPath(articleId: string = this.apiCheckArticleId): Promise<boolean> {
+    const checkUrl = this.urlDirector.buildURL(this.#indexPhpPath, { title: articleId, redirect: 'no' }).href
+    const result = await checkArticleUrl(checkUrl)
     logger.log('Checked IndexPhpPath at', checkUrl, '-- result is: ', result)
     return result
   }
