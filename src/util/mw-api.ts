@@ -340,6 +340,22 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
   }
 }
 
+/**
+ * Check for article content at given URL
+ *
+ * @param url The URL to check.
+ * @returns Promise resolving to true if the URL returned something looking like an article content
+ */
+export async function checkArticleUrl(url: string): Promise<boolean> {
+  try {
+    const resp = await Downloader.request({ url: decodeURI(url), method: 'GET', ...Downloader.basicRequestOptions })
+    return resp.status === 200 && resp.headers['content-type'].includes('text/html') && resp.data.includes('id="mw-content-text"')
+  } catch (err) {
+    logger.info('checkArticleUrl failed: ', cleanupAxiosError(err))
+    return false
+  }
+}
+
 export async function getArticleIds(mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
   if (mainPage) {
     await getArticlesByIds([mainPage])
