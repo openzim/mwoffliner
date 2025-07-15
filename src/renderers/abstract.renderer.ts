@@ -682,23 +682,22 @@ export abstract class Renderer {
   private clearNodes(parsoidDoc: DominoElement, filtersConfig: any) {
     const allNodes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('*'))
     for (const node of allNodes) {
+      /* ?? */
       node.removeAttribute('data-parsoid')
-      if (this.constructor.name !== 'ActionParseRenderer') {
-        node.removeAttribute('typeof')
-      }
       node.removeAttribute('about')
+
+      /* Lots of bloat about templates wikitext */
       node.removeAttribute('data-mw')
 
-      if (node.getAttribute('rel') && node.getAttribute('rel').substr(0, 3) === 'mw:') {
-        node.removeAttribute('rel')
-      } else if (node.getAttribute('img')) {
+      if (node.getAttribute('img')) {
         /* Remove a few images Parsoid attributes */
         node.removeAttribute('data-file-width')
         node.removeAttribute('data-file-height')
         node.removeAttribute('data-file-type')
       }
 
-      /* Remove a few css calls */
+      /* Remove a few css class which are typically used to hide things when online,
+         but we want to see them when offline */
       filtersConfig.cssClassCallsBlackList.map((classname: string) => {
         if (node.getAttribute('class')) {
           node.setAttribute('class', node.getAttribute('class').replace(classname, ''))
