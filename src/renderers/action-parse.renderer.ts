@@ -1,10 +1,11 @@
 import domino from 'domino'
 import { DownloadOpts, DownloadRes, Renderer, RenderOptsModules } from './abstract.renderer.js'
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
+import * as logger from '../Logger.js'
 import { config } from '../config.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
-import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode } from '../Templates.js'
+import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
 import { extractBodyCssClass, extractHtmlCssClass } from '../util/articles.js'
@@ -12,21 +13,24 @@ import { extractBodyCssClass, extractHtmlCssClass } from '../util/articles.js'
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
 export class ActionParseRenderer extends Renderer {
   public staticFilesList: string[] = []
+  #htmlTemplateCode: () => string
   constructor() {
     super()
     if (this.staticFilesList.length === 0) {
-      this.staticFilesList = getStaticFiles(config.output.jsResourcesCommon, config.output.cssResourcesCommon.concat(MediaWiki.skin)).concat('external-link.svg')
+      let cssResourcesCommon = config.output.cssResourcesCommon
+      if (['vector', 'vector-2022'].includes(MediaWiki.skin)) {
+        cssResourcesCommon = cssResourcesCommon.concat(MediaWiki.skin)
+      }
+      this.staticFilesList = getStaticFiles(config.output.jsResourcesCommon, cssResourcesCommon).concat('external-link.svg')
+    }
+    this.#htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : htmlFallbackTemplateCode
+    if (this.#htmlTemplateCode === htmlFallbackTemplateCode) {
+      logger.warn(`Unsupported skin ${MediaWiki.skin}, using fallback template to display pages.`)
     }
   }
 
   public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, moduleDependencies: RenderOptsModules, articleId: string): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
-
-    const htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : null
-
-    if (!htmlTemplateCode) {
-      throw new Error(`Skin ${MediaWiki.skin} is not supported by ActionParse renderer`)
-    }
 
     const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
     const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
@@ -47,7 +51,7 @@ export class ActionParseRenderer extends Renderer {
       .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki))
       .join('\n    ')
 
-    const htmlTemplateString = htmlTemplateCode()
+    const htmlTemplateString = this.#htmlTemplateCode()
       .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)

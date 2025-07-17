@@ -100,6 +100,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     customFlavour,
     forceRender,
+    forceSkin,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -194,6 +195,10 @@ async function execute(argv: any) {
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
+  }
+
+  if (forceSkin) {
+    MediaWiki.skin = forceSkin
   }
 
   const metaDataRequiredKeys = {

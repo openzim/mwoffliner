@@ -25,7 +25,7 @@ await testRenders(
     test(`test article subtitle for subpage on minecraft.wiki`, async () => {
       const articleSubtitle = articleDoc.querySelector('#contentSub > #mw-content-subtitle')
       expect(articleSubtitle).toBeTruthy()
-      expect(articleSubtitle.innerHTML).toBe('<div class="subpages">&lt; <a href="../Commands" title="Commands">Commands</a></div>')
+      expect(articleSubtitle.innerHTML).toBe('<div class="subpages">&lt; <bdi dir="ltr"><a href="../Commands" title="Commands">Commands</a></bdi></div>')
     })
 
     afterAll(() => {
