@@ -40,6 +40,7 @@ export const parameterDescriptions = {
   optimisationCacheUrl: 'Object Storage URL (including credentials and bucket name) to cache optimised media files',
   forceRender:
     'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile, RestApi, ActionParse ]',
+  forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
   insecure: 'Skip HTTPS server authenticity verification step',
 }
 

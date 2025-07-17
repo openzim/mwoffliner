@@ -124,6 +124,7 @@ const config = {
       pageWikimediaMobile: './templates/pageWikimediaMobile.html',
       pageVectorLegacy: './templates/pageVectorLegacy.html',
       pageVector2022: './templates/pageVector2022.html',
+      pageFallback: './templates/pageFallback.html',
 
       categories: './templates/categories.html',
 
