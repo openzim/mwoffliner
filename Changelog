@@ -10,6 +10,9 @@ Unreleased:
 * FIX: Restore --keepEmptyParagraphs correct behavior on all renderers, except ActionParse when wiki is not yet using Parsoid parser (@benoit74 #1866 #1915)
 * FIX: Request lead section with nodet only for wikitext pages (@Markus-Rost #2444)
 * FIX: Use mainpage-title for Main Page display title (@Markus-Rost #2436)
+* FIX: Avoid path conflicts between articles, assets and resources (@benoit74 #2333 #2408)
+* NEW: Use ZIM illustration as HTML favicon (@benoit74 #2437)
+* FIX: Restore webp polyfills operation (@benoit74 #2438)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

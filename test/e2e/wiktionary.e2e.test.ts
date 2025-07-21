@@ -10,7 +10,9 @@ await testAllRenders(
   'wiktionary',
   {
     mwUrl: 'https://en.wiktionary.org',
-    articleList: 'index,location', // fetch index article which will cause a conflict with default index page
+    // fetch index article which will cause a conflict with default index page
+    // fetch favicon article which will cause a conflict with former favicon illustration
+    articleList: 'index,location,favicon',
     adminEmail: 'test@kiwix.org',
   },
   async (outFiles) => {

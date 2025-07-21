@@ -158,15 +158,15 @@ describe('MediaTreatment', () => {
       const sourceUrl = sources[0].getAttribute('src')
 
       // Video poster correctly re-written
-      expect(videoPosterUrl).toEqual('./S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg')
+      expect(videoPosterUrl).toEqual('./_assets_/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg')
       // Source src correctly re-written
-      expect(sourceUrl).toEqual('./S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm')
+      expect(sourceUrl).toEqual('./_assets_/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.120p.vp9.webm')
 
       const imgEl = ret.doc.querySelector('img')
       const imgSrc = imgEl.getAttribute('src')
 
       // Img src correctly re-written
-      expect(imgSrc).toEqual('./Dendritic_cell_revealed.jpg')
+      expect(imgSrc).toEqual('./_assets_/Dendritic_cell_revealed.jpg')
     })
 
     test('treatMedias format="nopic"', async () => {

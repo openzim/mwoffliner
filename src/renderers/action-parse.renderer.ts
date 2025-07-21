@@ -34,8 +34,10 @@ export class ActionParseRenderer extends Renderer {
 
     const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
     const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
-    const articleJsList =
-      jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+    const articleJsScripts = jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki))
+    if (Downloader.webp) {
+      articleJsScripts.push(...['webpHandler'].map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.webp)))
+    }
     const articleCssBeforeMeta = styleDependenciesList
       .filter((oneCssDep: string) => {
         return !oneCssDep.startsWith('ext.gadget') && !['site.styles', 'noscript'].includes(oneCssDep)
@@ -55,9 +57,12 @@ export class ActionParseRenderer extends Renderer {
       .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
       .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
-      .replace('__ARTICLE_JS_LIST__', articleJsList)
+      .replace('__ARTICLE_JS_LIST__', articleJsScripts.join('\n'))
       .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
       .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
+      .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
+      .replace(/__RES_DIR__/g, config.output.dirs.res)
+      .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
       .replace('__ARTICLE_BODY_CSS_CLASS__', bodyCssClass)
       .replace('__ARTICLE_HTML_CSS_CLASS__', htmlCssClass)

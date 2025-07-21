@@ -43,6 +43,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
         if (resp.result && resp.result.content && resp.result.contentType) {
           // { FRONT_ARTICLE: 0 } is here very important, should we retrieve HTML we want to be sure the libzim will
           // not consider it for title index
+          // const item = new StringItem(`${config.output.dirs.assets}/${resp.path}`, resp.result.contentType, null, { FRONT_ARTICLE: 0 }, resp.result.content)
           const item = new StringItem(resp.path, resp.result.contentType, null, { FRONT_ARTICLE: 0 }, resp.result.content)
           await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
           dump.status.files.success += 1

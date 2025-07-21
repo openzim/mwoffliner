@@ -42,7 +42,7 @@ export function processStylesheetContent(cssUrl: string, linkMedia: string, body
         const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
 
         /* Rewrite the CSS */
-        const relativePath = articleId ? getRelativeFilePath(articleId, `mw/${filename}`) : filename
+        const relativePath = articleId ? getRelativeFilePath(articleId, `${config.output.dirs.mediawiki}/${filename}`) : filename
         rewrittenCss = rewrittenCss.replace(url, relativePath)
 
         /* Need a rewrite if url doesn't include protocol */
@@ -137,19 +137,13 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
   const { text, moduleApiUrl } = await downloadModule(module, type)
 
   try {
-    let articleId
-    const pathFunctions = {
-      js: jsPath,
-      css: cssPath,
+    if (!['js', 'css'].includes(type)) {
+      throw new Error(`Unsupported module type: ${type}`)
     }
-
-    const pathFunction = pathFunctions[type]
-    if (pathFunction) {
-      articleId = pathFunction(module, config.output.dirs.mediawiki)
-    }
+    const modulePath = type === 'js' ? jsPath(module, config.output.dirs.mediawiki) : cssPath(module, config.output.dirs.mediawiki)
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(articleId, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
-    logger.info(`Saved module [${module}]`)
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
+    logger.info(`Saved module [${module}] at ${modulePath}`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
     throw e
@@ -163,7 +157,7 @@ export async function addWebpJsScripts(zimCreator: Creator) {
     { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
     { name: 'webpHandler', path: path.join(__dirname, '../../res/webpHandler.js') },
   ].forEach(async ({ name, path }) => {
-    const item = new StringItem(jsPath(name), 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(path, 'utf8').toString())
+    const item = new StringItem(`${config.output.dirs.webp}/${jsPath(name)}`, 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(path, 'utf8').toString())
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
   })
 }

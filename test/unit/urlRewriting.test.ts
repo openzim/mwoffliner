@@ -128,13 +128,13 @@ describe('Styles', () => {
     // resourceLink is still a link
     expect($resourceLink.nodeName).toEqual('A')
     // resourceLink has been re-written
-    expect($resourceLink.getAttribute('href')).toEqual('../De-Z%C3%BCrich.ogg')
+    expect($resourceLink.getAttribute('href')).toEqual('../_assets_/De-Z%C3%BCrich.ogg')
 
     await rewriteUrl(complexParentArticleId, dump, $ogaResourceLink)
     // ogaResourceLink is still a link
     expect($ogaResourceLink.nodeName).toEqual('A')
     // ogaResourceLink has been re-written
-    expect($ogaResourceLink.getAttribute('href')).toEqual('../Fr-Laissez-faire.oga')
+    expect($ogaResourceLink.getAttribute('href')).toEqual('../_assets_/Fr-Laissez-faire.oga')
   })
 
   test('e2e url rewriting', async () => {

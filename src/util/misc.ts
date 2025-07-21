@@ -172,23 +172,23 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
     staticFiles.forEach(async (file) => {
       const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
 
-      let url: string
+      let zimPath: string
       let mimetype: string
       if (file.endsWith('.ttf')) {
-        url = anyPath('ttf', file)
+        zimPath = anyPath('ttf', file)
         mimetype = 'font/ttf'
       } else if (file.endsWith('.svg')) {
-        url = anyPath('svg', file)
+        zimPath = anyPath('svg', file)
         mimetype = 'image/svg+xml'
       } else if (file.endsWith('.css')) {
-        url = cssPath(file)
+        zimPath = cssPath(file)
         mimetype = 'text/css'
       } else {
-        url = jsPath(file)
+        zimPath = jsPath(file)
         mimetype = 'application/javascript'
       }
 
-      const article = new StringItem(url, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
+      const article = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
       await zimCreatorMutex.runExclusive(() => zimCreator.addItem(article))
     })
   } catch (err) {
@@ -211,7 +211,7 @@ export function cssPath(css: string, subDirectory = '') {
 }
 export function jsPath(js: string, subDirectory = '') {
   const path = isNodeModule(js) ? normalizeModule(js) : js
-  return `${subDirectory ? `${config.output.dirs.mediawiki}/` : ''}${path.replace(/(\.js)?$/, '')}.js`
+  return `${subDirectory ? `${subDirectory}/` : ''}${path.replace(/(\.js)?$/, '')}.js`
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '') {
   const slashesInUrl = articleId.split('/').length - 1
@@ -299,7 +299,11 @@ export function getMediaBase(url: string, escape: boolean) {
     filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname(new URL(url).pathname)
   }
 
-  return escape ? encodeURIComponent(filename) : filename
+  if (escape) {
+    filename = encodeURIComponent(filename)
+  }
+
+  return `${config.output.dirs.assets}/${filename}`
 }
 
 /**
