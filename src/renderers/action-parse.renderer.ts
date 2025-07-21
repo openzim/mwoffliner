@@ -8,7 +8,7 @@ import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
-import { extractBodyCssClass, extractHtmlCssClass } from '../util/articles.js'
+import { extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
 export class ActionParseRenderer extends Renderer {
@@ -29,7 +29,7 @@ export class ActionParseRenderer extends Renderer {
     }
   }
 
-  public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, moduleDependencies: RenderOptsModules, articleId: string): Document {
+  public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, hideFirstHeading: boolean, moduleDependencies: RenderOptsModules, articleId: string): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
@@ -61,6 +61,7 @@ export class ActionParseRenderer extends Renderer {
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
       .replace('__ARTICLE_BODY_CSS_CLASS__', bodyCssClass)
       .replace('__ARTICLE_HTML_CSS_CLASS__', htmlCssClass)
+      .replace('__ARTICLE_FIRST_HEADING_STYLE__', hideFirstHeading ? 'style="display: none;"' : '')
 
     return domino.createDocument(htmlTemplateString)
   }
@@ -136,7 +137,8 @@ export class ActionParseRenderer extends Renderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, displayTitle, articleSubtitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
+    const { data, articleId, articleSubtitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
+    let { displayTitle } = renderOpts
 
     if (!data) {
       throw new Error('Cannot render missing data into an article')
@@ -151,6 +153,18 @@ export class ActionParseRenderer extends Renderer {
     editLinks.forEach((elem: DominoElement) => {
       elem.remove()
     })
+
+    // Main page display title
+    let hideFirstHeading = false
+    if (bodyCssClass.split(' ').includes('page-Main_Page')) {
+      // Check for class to avoid custom main pages
+      const mainpageTitle = await getMainpageTitle()
+      if (mainpageTitle === '') {
+        hideFirstHeading = true
+      } else if (mainpageTitle !== '-') {
+        displayTitle = mainpageTitle
+      }
+    }
 
     // Add CSS-only gadgets which are used on this article
     const { cssGadgets } = Gadgets.getActiveGadgetsByType(articleDetail)
@@ -169,7 +183,7 @@ export class ActionParseRenderer extends Renderer {
       displayTitle,
       articleSubtitle,
       moduleDependencies,
-      callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass),
+      callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
     })
 
     result.push({

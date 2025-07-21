@@ -9,6 +9,7 @@ Unreleased:
 * NEW: Automatically detect and use mediawiki default skin (@benoit74 @Markus-Rost #2213, #2358, #2396)
 * FIX: Restore --keepEmptyParagraphs correct behavior on all renderers, except ActionParse when wiki is not yet using Parsoid parser (@benoit74 #1866 #1915)
 * FIX: Request lead section with nodet only for wikitext pages (@Markus-Rost #2444)
+* FIX: Use mainpage-title for Main Page display title (@Markus-Rost #2436)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
