@@ -59,9 +59,8 @@ export class ActionParseRenderer extends Renderer {
       .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
       .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
-      .replace(/__ARTICLE_BODY_CSS_CLASS__/g, bodyCssClass)
-      // for now, always disable JS (see https://github.com/openzim/mwoffliner/issues/2310) and nigth mode (see https://github.com/openzim/mwoffliner/issues/1136)
-      .replace(/__ARTICLE_HTML_CSS_CLASS__/g, `client-nojs vector-feature-night-mode-disabled ${htmlCssClass}`)
+      .replace('__ARTICLE_BODY_CSS_CLASS__', bodyCssClass)
+      .replace('__ARTICLE_HTML_CSS_CLASS__', htmlCssClass)
 
     return domino.createDocument(htmlTemplateString)
   }
@@ -98,11 +97,19 @@ export class ActionParseRenderer extends Renderer {
       throw new DownloadError('ActionParse response is empty', articleUrl, null, null, data)
     }
 
+    // Remove user specific module dependencies
+    const styleDependenciesList = data.parse.modulestyles.filter((oneCssDep: string) => {
+      return !oneCssDep.startsWith('user')
+    })
+    /*const jsDependenciesList = data.parse.modules.filter((oneJsDep: string) => {
+      return !oneJsDep.startsWith('user')
+    })*/
+
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310
       jsConfigVars: '', // DownloaderClass.extractJsConfigVars(data.parse.headhtml),
-      jsDependenciesList: [], // config.output.mw.js_simplified.concat(data.parse.modules),
-      styleDependenciesList: config.output.mw.css_simplified.concat(data.parse.modulestyles),
+      jsDependenciesList: [], // config.output.mw.js_simplified.concat(jsDependenciesList),
+      styleDependenciesList: config.output.mw.css_simplified.concat(styleDependenciesList),
     }
 
     const normalizedRedirects = data.parse.redirects.map((redirect) => {

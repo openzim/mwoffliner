@@ -35,7 +35,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
     })
 
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
-      expect(articleDoc.querySelector('h1.firstHeading > span#openzim-page-title, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
+      expect(articleDoc.querySelector('h1#firstHeading, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
 
     test(`test article <body> CSS class for ${outFiles[0]?.renderer} renderer`, async () => {
@@ -68,6 +68,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       }
       const expectedClasses = [
         'client-nojs',
+        'skin-theme-clientpref-day',
         'vector-feature-appearance-pinned-clientpref-1',
         'vector-feature-custom-font-size-clientpref-1',
         'vector-feature-language-in-header-enabled',
@@ -75,7 +76,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         'vector-feature-limited-width-clientpref-1',
         'vector-feature-limited-width-content-enabled',
         'vector-feature-main-menu-pinned-disabled',
-        'vector-feature-night-mode-disabled',
+        'vector-feature-night-mode-enabled',
         'vector-feature-page-tools-pinned-disabled',
         'vector-feature-toc-pinned-clientpref-1',
         'vector-sticky-header-enabled',

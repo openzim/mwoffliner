@@ -55,7 +55,7 @@ describe('saveArticles', () => {
       // Geo Position data is correct
       expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
       // Check if header exists
-      expect(articleDoc.querySelector('h1.firstHeading > span#openzim-page-title, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
+      expect(articleDoc.querySelector('h1#firstHeading, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {

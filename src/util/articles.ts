@@ -58,20 +58,10 @@ export function extractBodyCssClass(headHtml: string): string {
 export function extractHtmlCssClass(headHtml: string): string {
   const document = domino.createDocument(headHtml)
   let cssClass = document.documentElement.className
-  // drop some known classes:
-  // - client-js / client-nojs: scraper will add proper class on its own
-  // - vector-feature-night-mode-xxx and skin-theme-clientpref-xxx : scraper will add proper class on its own once dark mode is supported
-  for (const blacklistedClass of [
-    'client-js',
-    'client-nojs',
-    'vector-feature-night-mode-disabled',
-    'vector-feature-night-mode-enabled',
-    'skin-theme-clientpref-day',
-    'skin-theme-clientpref-night',
-    'skin-theme-clientpref-os',
-  ]) {
+  // drop some known classes which do not makes sense in a ZIM
+  /* for (const blacklistedClass of []) {
     cssClass = cssClass.replace(blacklistedClass, '')
-  }
+  } */
   // drop repetitions of two spaces
   return cssClass
     .split(' ')

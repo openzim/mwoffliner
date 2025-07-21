@@ -531,7 +531,7 @@ export abstract class Renderer {
     const articleTitle = htmlTemplateDoc.getElementById('title_0') ? htmlTemplateDoc.getElementById('title_0').textContent : articleId.replace(/_/g, ' ')
     htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = articleTitle
     // Set inline page title when missing
-    const inlineTitle = htmlTemplateDoc.getElementById('openzim-page-title')
+    const inlineTitle = htmlTemplateDoc.getElementById('h1#firstHeading')
     if (inlineTitle && !inlineTitle.innerHTML) {
       inlineTitle.innerHTML = displayTitle || articleTitle
     }

@@ -34,7 +34,7 @@ await testRenders(
     })
 
     test(`test article header for ${outFiles[0].renderer} renderer`, async () => {
-      const articleTitle = articleDoc.querySelector('h1.firstHeading > span#openzim-page-title')
+      const articleTitle = articleDoc.querySelector('h1#firstHeading')
       expect(articleTitle).toBeTruthy()
       expect(articleTitle.innerHTML).toBe('<i>Giraffe</i> (album)')
     })
