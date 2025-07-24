@@ -8,7 +8,7 @@ import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
-import { extractBodyCssClass, extractHtmlCssClass } from '../util/articles.js'
+import { extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
 export class ActionParseRenderer extends Renderer {
@@ -29,7 +29,7 @@ export class ActionParseRenderer extends Renderer {
     }
   }
 
-  public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, moduleDependencies: RenderOptsModules, articleId: string): Document {
+  public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, hideFirstHeading: boolean, moduleDependencies: RenderOptsModules, articleId: string): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
@@ -59,9 +59,9 @@ export class ActionParseRenderer extends Renderer {
       .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
       .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
-      .replace(/__ARTICLE_BODY_CSS_CLASS__/g, bodyCssClass)
-      // for now, always disable JS (see https://github.com/openzim/mwoffliner/issues/2310) and nigth mode (see https://github.com/openzim/mwoffliner/issues/1136)
-      .replace(/__ARTICLE_HTML_CSS_CLASS__/g, `client-nojs vector-feature-night-mode-disabled ${htmlCssClass}`)
+      .replace('__ARTICLE_BODY_CSS_CLASS__', bodyCssClass)
+      .replace('__ARTICLE_HTML_CSS_CLASS__', htmlCssClass)
+      .replace('__ARTICLE_FIRST_HEADING_STYLE__', hideFirstHeading ? 'style="display: none;"' : '')
 
     return domino.createDocument(htmlTemplateString)
   }
@@ -98,11 +98,19 @@ export class ActionParseRenderer extends Renderer {
       throw new DownloadError('ActionParse response is empty', articleUrl, null, null, data)
     }
 
+    // Remove user specific module dependencies
+    const styleDependenciesList = data.parse.modulestyles.filter((oneCssDep: string) => {
+      return !oneCssDep.startsWith('user')
+    })
+    /*const jsDependenciesList = data.parse.modules.filter((oneJsDep: string) => {
+      return !oneJsDep.startsWith('user')
+    })*/
+
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310
       jsConfigVars: '', // DownloaderClass.extractJsConfigVars(data.parse.headhtml),
-      jsDependenciesList: [], // config.output.mw.js_simplified.concat(data.parse.modules),
-      styleDependenciesList: config.output.mw.css_simplified.concat(data.parse.modulestyles),
+      jsDependenciesList: [], // config.output.mw.js_simplified.concat(jsDependenciesList),
+      styleDependenciesList: config.output.mw.css_simplified.concat(styleDependenciesList),
     }
 
     const normalizedRedirects = data.parse.redirects.map((redirect) => {
@@ -129,7 +137,8 @@ export class ActionParseRenderer extends Renderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, displayTitle, articleSubtitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
+    const { data, articleId, articleSubtitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
+    let { displayTitle } = renderOpts
 
     if (!data) {
       throw new Error('Cannot render missing data into an article')
@@ -144,6 +153,18 @@ export class ActionParseRenderer extends Renderer {
     editLinks.forEach((elem: DominoElement) => {
       elem.remove()
     })
+
+    // Main page display title
+    let hideFirstHeading = false
+    if (bodyCssClass.split(' ').includes('page-Main_Page')) {
+      // Check for class to avoid custom main pages
+      const mainpageTitle = await getMainpageTitle()
+      if (mainpageTitle === '') {
+        hideFirstHeading = true
+      } else if (mainpageTitle !== '-') {
+        displayTitle = mainpageTitle
+      }
+    }
 
     // Add CSS-only gadgets which are used on this article
     const { cssGadgets } = Gadgets.getActiveGadgetsByType(articleDetail)
@@ -162,7 +183,7 @@ export class ActionParseRenderer extends Renderer {
       displayTitle,
       articleSubtitle,
       moduleDependencies,
-      callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass),
+      callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
     })
 
     result.push({

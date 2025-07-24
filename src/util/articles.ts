@@ -1,4 +1,5 @@
 import MediaWiki from '../MediaWiki.js'
+import Downloader from '../Downloader.js'
 import * as domino from 'domino'
 
 /**
@@ -57,24 +58,39 @@ export function extractBodyCssClass(headHtml: string): string {
  */
 export function extractHtmlCssClass(headHtml: string): string {
   const document = domino.createDocument(headHtml)
-  let cssClass = document.documentElement.className
-  // drop some known classes:
-  // - client-js / client-nojs: scraper will add proper class on its own
-  // - vector-feature-night-mode-xxx and skin-theme-clientpref-xxx : scraper will add proper class on its own once dark mode is supported
-  for (const blacklistedClass of [
-    'client-js',
-    'client-nojs',
-    'vector-feature-night-mode-disabled',
-    'vector-feature-night-mode-enabled',
-    'skin-theme-clientpref-day',
-    'skin-theme-clientpref-night',
-    'skin-theme-clientpref-os',
-  ]) {
+  const cssClass = document.documentElement.className
+  // drop some known classes which do not makes sense in a ZIM
+  /* for (const blacklistedClass of []) {
     cssClass = cssClass.replace(blacklistedClass, '')
-  }
+  } */
   // drop repetitions of two spaces
   return cssClass
     .split(' ')
     .filter((cssClass) => cssClass)
     .join(' ')
+}
+
+/**
+ * Get the special display title for the main page
+ */
+export async function getMainpageTitle(): Promise<string> {
+  const checkUrl = Downloader.apiUrlDirector.buildQueryURL({
+    action: 'query',
+    meta: 'allmessages',
+    ammessages: 'mainpage-title',
+    amenableparser: '1',
+    format: 'json',
+    formatversion: '2',
+  })
+  let data: any
+  try {
+    data = await Downloader.getJSON<any>(checkUrl)
+    const message = data.query.allmessages[0]
+    if (!message || message.missing) {
+      return '-'
+    }
+    return message.content
+  } catch {
+    return '-'
+  }
 }
