@@ -249,14 +249,17 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
     }
     const articleId = String(id).replace(/ /g, '_')
     if (page.redirects) {
-      page.redirects = page.redirects.map((redirect) => {
-        // The API returns the redirect title (!?), we fake the
-        // redirectId by putting the underscore. That way we
-        // secure the URL rewritting works fine.
-        redirect.title = String(redirect.title).replace(/ /g, '_')
+      page.redirects = page.redirects
+        // drop redirects from talk (not subject) namespaces and from User namespace, except if namespace has been expressly requested
+        .filter((redirect) => (redirect.ns % 2 === 0 && redirect.ns !== 2) || MediaWiki.namespacesToMirror.some((ns) => MediaWiki.namespaces[ns].num === redirect.ns))
+        .map((redirect) => {
+          // The API returns the redirect title (!?), we fake the
+          // redirectId by putting the underscore. That way we
+          // secure the URL rewritting works fine.
+          redirect.title = String(redirect.title).replace(/ /g, '_')
 
-        return redirect
-      })
+          return redirect
+        })
     }
     if (articleId) {
       return {

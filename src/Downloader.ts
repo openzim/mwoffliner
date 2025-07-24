@@ -632,15 +632,13 @@ class Downloader {
     if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
   }
 
-  private async getArticleQueryOpts(includePageimages = false, redirects = false): Promise<QueryOpts> {
-    const validNamespaceIds = MediaWiki.namespacesToMirror.map((ns) => MediaWiki.namespaces[ns].num)
+  private async getArticleQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
     const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
     return {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
-      rdnamespace: validNamespaceIds.join('|'),
       formatversion: '2',
-      redirects: redirects ? true : undefined,
+      redirects: followRedirects ? true : undefined,
     }
   }
 
