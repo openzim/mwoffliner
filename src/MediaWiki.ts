@@ -464,6 +464,7 @@ class MediaWiki {
     const siteName = generalEntries.sitename
     const logo = generalEntries.logo
     const langMw = generalEntries.lang
+    const validLangVars = (generalEntries.variants || []).map((e: any) => e.code)
     const textDir = generalEntries.rtl ? 'rtl' : 'ltr'
     logger.log(`Text direction is [${textDir}]`)
 
@@ -498,6 +499,7 @@ class MediaWiki {
       siteName,
       textDir,
       langMw,
+      validLangVars,
       langIso2,
       langIso3,
       logo,
@@ -522,7 +524,10 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([this.getSiteInfo(), this.getSubTitle()])
+    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, validLangVars, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([
+      this.getSiteInfo(),
+      this.getSubTitle(),
+    ])
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -541,7 +546,8 @@ class MediaWiki {
 
       textDir: textDir as TextDirection,
       langMw,
-      langVar: langMw === 'zh' ? 'zh-cn' : null,
+      langVar: null,
+      validLangVars,
       langIso2,
       langIso3,
       title: siteName,

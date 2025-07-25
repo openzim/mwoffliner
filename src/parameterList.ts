@@ -41,6 +41,7 @@ export const parameterDescriptions = {
   forceRender:
     'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile, RestApi, ActionParse ]',
   forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
+  langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
   insecure: 'Skip HTTPS server authenticity verification step',
 }
 

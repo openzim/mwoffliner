@@ -101,6 +101,7 @@ async function execute(argv: any) {
     customFlavour,
     forceRender,
     forceSkin,
+    langVariant,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -199,6 +200,14 @@ async function execute(argv: any) {
 
   if (forceSkin) {
     MediaWiki.skin = forceSkin
+  }
+
+  if (langVariant) {
+    if (MediaWiki.metaData.validLangVars.includes(langVariant)) {
+      MediaWiki.metaData.langVar = langVariant
+    } else {
+      throw new Error(`Language variant [${langVariant}] is not available on the wiki`)
+    }
   }
 
   const metaDataRequiredKeys = {
