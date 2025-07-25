@@ -109,10 +109,10 @@ describe('Utils', () => {
     ).toEqual('https://bm.wikipedia.org/w/resources/src/mediawiki.skinning/images/spinner.gif?ca65b')
 
     // Full Url for relative path with skipping one file
-    expect(getFullUrl('./-/mw/jsConfigVars.js', new URL('https://bm.wikipedia.org/'))).toEqual('https://bm.wikipedia.org/-/mw/jsConfigVars.js')
+    expect(getFullUrl('./_mw_/jsConfigVars.js', new URL('https://bm.wikipedia.org/'))).toEqual('https://bm.wikipedia.org/_mw_/jsConfigVars.js')
 
     // Full Url for relative path with skipping one folder
-    expect(getFullUrl('../-/mw/jsConfigVars.js', 'https://bm.wikipedia.org/')).toEqual('https://bm.wikipedia.org/-/mw/jsConfigVars.js')
+    expect(getFullUrl('../_mw_/jsConfigVars.js', 'https://bm.wikipedia.org/')).toEqual('https://bm.wikipedia.org/_mw_/jsConfigVars.js')
 
     // Full Url when base and url both strtas with http/s
     expect(getFullUrl('https://wikimedia.org/api/rest_v1/media/math/render/svg/34cbb1e27dae0c04fc794a91f2aa001aca7054c1', 'https://en.wikipedia.org/')).toEqual(
@@ -147,14 +147,14 @@ describe('Utils', () => {
   test('getMediaBase tests', async () => {
     // Thumbs
     // Thumb 1
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true)).toEqual('Westminstpalace.jpg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true)).toEqual('_assets_/Westminstpalace.jpg')
     // No thumb
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true)).toEqual('Westminstpalace.jpg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true)).toEqual('_assets_/Westminstpalace.jpg')
     // SVG
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true)).toEqual('VFPt_Solenoid_correct2.svg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true)).toEqual('_assets_/VFPt_Solenoid_correct2.svg')
     // SVG PNG thumb
     expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true)).toEqual(
-      'VFPt_Solenoid_correct2.svg.png',
+      '_assets_/VFPt_Solenoid_correct2.svg.png',
     )
     // Video poster
     expect(
@@ -162,9 +162,9 @@ describe('Utils', () => {
         'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg',
         true,
       ),
-    ).toEqual('S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg')
+    ).toEqual('_assets_/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg')
     // Escaped UR
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', false)).toEqual('De-Zürich.ogg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', false)).toEqual('_assets_/De-Zürich.ogg')
     // Long thumb
     expect(
       getMediaBase(
@@ -172,7 +172,7 @@ describe('Utils', () => {
         true,
       ),
     ).toEqual(
-      'US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.jpg',
+      '_assets_/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.jpg',
     )
     // Long thumb with SVG PNG
     expect(
@@ -181,27 +181,27 @@ describe('Utils', () => {
         true,
       ),
     ).toEqual(
-      'US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.svg.png',
+      '_assets_/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.svg.png',
     )
 
     // Latex (equations)
     expect(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true)).toEqual(
-      'da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg',
+      '_assets_/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg',
     )
 
     // WikiHiero (hieroglyphs)
     // WikiHiero png with URL args
-    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', false)).toEqual('hiero_G1.png')
+    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', false)).toEqual('_assets_/hiero_G1.png')
     // WikiHiero png without URL args
-    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png', false)).toEqual('hiero_G1.png')
+    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png', false)).toEqual('_assets_/hiero_G1.png')
 
     // Score - is default behaviour
-    expect(getMediaBase('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png', false)).toEqual('012a83318ce8d3a438dbed3127b9e339.png')
+    expect(getMediaBase('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png', false)).toEqual('_assets_/012a83318ce8d3a438dbed3127b9e339.png')
 
     // Graphoid (charts) - is default behaviour
     expect(
       getMediaBase('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', true),
-    ).toEqual('43ffd82a8ffc4755312c22950fde7ac5.png')
+    ).toEqual('_assets_/43ffd82a8ffc4755312c22950fde7ac5.png')
 
     // Fandom
     expect(
@@ -209,7 +209,7 @@ describe('Utils', () => {
         'https://static.wikia.nocookie.net/minecraft_de_gamepedia/images/e/ee/Diamantschwert_%28Dungeons%29.png/revision/latest/scale-to-width-down/60?cb=20200409173531',
         true,
       ),
-    ).toEqual('Diamantschwert_(Dungeons).png')
+    ).toEqual('_assets_/Diamantschwert_(Dungeons).png')
 
     // Default behaviour
     expect(
@@ -217,7 +217,7 @@ describe('Utils', () => {
         'https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe',
         true,
       ),
-    ).toEqual('589fd4e3821c15d4fcebcedf2effd5b0.png')
+    ).toEqual('_assets_/589fd4e3821c15d4fcebcedf2effd5b0.png')
   })
 
   test('isWebpCandidate by mime type', async () => {

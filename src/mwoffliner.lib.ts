@@ -570,7 +570,7 @@ async function execute(argv: any) {
   async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
     logger.log('Saving favicon.png...')
     try {
-      return zimCreator.addItem(new StringItem('favicon', 'image/png', null, { FRONT_ARTICLE: 0 }, data))
+      return zimCreator.addItem(new StringItem(`${config.output.dirs.res}/favicon.png`, 'image/png', null, { FRONT_ARTICLE: 0 }, data))
     } catch {
       throw new Error('Failed to save favicon')
     }
@@ -596,22 +596,27 @@ async function execute(argv: any) {
     const indexPagePath = await getIndexPath()
 
     const doc = domino.createDocument(
-      articleListHomeTemplate.replace(
-        '</head>',
-        genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage) +
-          '\n' +
-          genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage) +
-          '\n' +
-          genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage) +
-          '\n' +
-          genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage) +
-          '\n' +
-          genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage) +
-          '\n' +
-          genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
-          '\n' +
-          '\n</head>',
-      ),
+      articleListHomeTemplate
+        .replace(
+          '</head>',
+          genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            '\n' +
+            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            '\n' +
+            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            '\n' +
+            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            '\n' +
+            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            '\n' +
+            genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
+            '\n' +
+            '\n</head>',
+        )
+        .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
+        .replace(/__RES_DIR__/g, config.output.dirs.res)
+        .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
+        .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(indexPagePath, '')),
     )
     doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
     const articlesWithImages: ArticleDetail[] = []

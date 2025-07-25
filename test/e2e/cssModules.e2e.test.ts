@@ -28,7 +28,7 @@ await testRenders(
     })
 
     test(`test preceding modules for ${outFiles[0]?.renderer} renderer`, async () => {
-      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./mw/ext.cite.styles.css"]')
+      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.cite.styles.css"]')
       const meta = articleDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
       expect(module).toBeTruthy()
       expect(meta).toBeTruthy()
@@ -36,7 +36,7 @@ await testRenders(
     })
 
     test(`test following modules for ${outFiles[0]?.renderer} renderer`, async () => {
-      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./mw/ext.gadget.citeRef.css"]')
+      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.gadget.citeRef.css"]')
       const meta = articleDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
       expect(module).toBeTruthy()
       expect(meta).toBeTruthy()
@@ -44,8 +44,8 @@ await testRenders(
     })
 
     test(`test site.styles position for ${outFiles[0]?.renderer} renderer`, async () => {
-      const gadgetModule = articleDoc.querySelector('link[rel="stylesheet"][href="./mw/ext.gadget.citeRef.css"]')
-      const siteStylesModule = articleDoc.querySelector('link[rel="stylesheet"][href="./mw/site.styles.css"]')
+      const gadgetModule = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.gadget.citeRef.css"]')
+      const siteStylesModule = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/site.styles.css"]')
       expect(gadgetModule).toBeTruthy()
       expect(siteStylesModule).toBeTruthy()
       expect(siteStylesModule.compareDocumentPosition(gadgetModule) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()

@@ -108,9 +108,12 @@ const config = {
       ],
     },
 
-    // Output directories for storing mw related js and css resources
+    // Output paths for storing stuff
     dirs: {
-      mediawiki: 'mw',
+      mediawiki: '_mw_', // mw related js and css resources
+      webp: '_webp_', // webp polyfills
+      assets: '_assets_', // images, videos and other assets
+      res: '_res_', // additional resources from mwoffliner
     },
 
     // Output templates (TODO: Needs more docs)

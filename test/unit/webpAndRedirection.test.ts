@@ -45,7 +45,7 @@ Real-time computer graphics`
 })
 
 async function isWebpPresent(path: string, zimFile: Archive) {
-  return (await FileType.fileTypeFromBuffer(zimFile.getEntryByPath(path).getItem().data.data))?.mime === 'image/webp'
+  return (await FileType.fileTypeFromBuffer(zimFile.getEntryByPath(`_assets_/${path}`).getItem().data.data))?.mime === 'image/webp'
 }
 
 async function isRedirectionPresent(path: string, zimFile: Archive) {

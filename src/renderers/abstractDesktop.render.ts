@@ -1,6 +1,6 @@
 import * as domino from 'domino'
 import { DownloadOpts, DownloadRes, Renderer } from './abstract.renderer.js'
-import { getStaticFiles, genCanonicalLink, genHeaderScript, genHeaderCSSLink } from '../util/misc.js'
+import { getStaticFiles, genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePath } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 
@@ -54,17 +54,21 @@ export abstract class DesktopRenderer extends Renderer {
     }
 
     const cssLinks = config.output.cssResources.reduce((buf, css) => {
-      return buf + genHeaderCSSLink(config, css, articleId)
+      return buf + genHeaderCSSLink(config, css, articleId, config.output.dirs.res)
     }, '')
 
-    const jsScripts = config.output.jsResources.reduce((buf, js) => {
+    let jsScripts = config.output.jsResources.reduce((buf, js) => {
       return (
         buf +
         (js === 'script'
-          ? genHeaderScript(config, js, articleId, '', `data-article-id="${articleId.replace(/"/g, '\\\\"')}" id="script-js"`)
-          : genHeaderScript(config, js, articleId))
+          ? genHeaderScript(config, js, articleId, config.output.dirs.res, `data-article-id="${articleId.replace(/"/g, '\\\\"')}" id="script-js"`)
+          : genHeaderScript(config, js, articleId, config.output.dirs.res))
       )
     }, '')
+
+    if (Downloader.webp) {
+      jsScripts += genHeaderScript(config, 'webpHandler', articleId, config.output.dirs.webp)
+    }
 
     const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
     const articleJsList =
@@ -81,6 +85,10 @@ export abstract class DesktopRenderer extends Renderer {
       .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
       .replace('__ARTICLE_JS_LIST__', articleJsList)
       .replace('__ARTICLE_CSS_LIST__', articleCssList)
+      .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
+      .replace(/__RES_DIR__/g, config.output.dirs.res)
+      .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
+      .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
 
     return domino.createDocument(htmlTemplateString)
   }

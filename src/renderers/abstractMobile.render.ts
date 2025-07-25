@@ -3,6 +3,7 @@ import { Renderer } from './abstract.renderer.js'
 import { getStaticFiles, genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePath } from '../util/misc.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
+import Downloader from '../Downloader.js'
 
 import { htmlWikimediaMobileTemplateCode } from '../Templates.js'
 
@@ -31,18 +32,21 @@ export abstract class MobileRenderer extends Renderer {
   }
 
   private genWikimediaMobileOverrideCSSLink(relativeFilePath: string, css: string) {
-    return `<link rel="stylesheet" href="${relativeFilePath}${css}.css" />`
+    return `<link rel="stylesheet" href="${relativeFilePath}${config.output.dirs.res}/${css}.css" />`
   }
 
   private genWikimediaMobileOverrideScript(relativeFilePath: string, js: string) {
-    return `<script src='${relativeFilePath}${js}.js'></script>`
+    return `<script src='${relativeFilePath}${config.output.dirs.res}/${js}.js'></script>`
   }
 
   public templateMobileArticle(moduleDependencies: any, articleId: string): Document {
     const { jsDependenciesList, styleDependenciesList } = moduleDependencies
 
-    const articleJsList =
+    let articleJsList =
       jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
+    if (Downloader.webp) {
+      articleJsList += genHeaderScript(config, 'webpHandler', articleId, config.output.dirs.webp)
+    }
     const articleCssList =
       styleDependenciesList.length === 0
         ? ''
@@ -56,6 +60,10 @@ export abstract class MobileRenderer extends Renderer {
       .replace('__CSS_LINKS__', this.genWikimediaMobileOverrideCSSLink(relativeFilePath, config.output.wikimediaMobileCssResources[0]))
       .replace('__ARTICLE_JS_LIST__', articleJsList)
       .replace('__ARTICLE_CSS_LIST__', articleCssList)
+      .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
+      .replace(/__RES_DIR__/g, config.output.dirs.res)
+      .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
+      .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
 
     return domino.createDocument(htmlTemplateString)
   }
