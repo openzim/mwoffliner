@@ -49,7 +49,6 @@ import { Dump } from './Dump.js'
 import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
-import Gadgets from './Gadgets.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
@@ -183,10 +182,16 @@ async function execute(argv: any) {
 
   await check_all(argv)
 
+  const addNamespaces = _addNamespaces
+    ? String(_addNamespaces)
+        .split(',')
+        .map((a: string) => Number(a))
+    : []
+
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData({ mwRestApiPath, mwModulePath, forceSkin, langVariant })
+    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, mwRestApiPath, mwModulePath, forceSkin, langVariant })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -259,12 +264,6 @@ async function execute(argv: any) {
 
   const dumpFormats = getDumps(format)
 
-  const addNamespaces = _addNamespaces
-    ? String(_addNamespaces)
-        .split(',')
-        .map((a: string) => Number(a))
-    : []
-
   /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
@@ -293,8 +292,6 @@ async function execute(argv: any) {
       throw err
     }
   }
-
-  await MediaWiki.getNamespaces(addNamespaces)
 
   logger.info('Getting article ids')
   let stime = Date.now()
@@ -426,9 +423,6 @@ async function execute(argv: any) {
       logger.log('Checking Main Page rendering')
       await createIndexPage(dump, zimCreator, true)
     }
-
-    logger.log('Getting gadgets')
-    await Gadgets.fetchGadgets()
 
     logger.log('Getting articles')
     stime = Date.now()

@@ -254,6 +254,7 @@ interface RenderedArticle {
 }
 
 interface SiteInfoArgv {
+  addNamespaces?: number[]
   mwRestApiPath?: string
   mwModulePath?: string
   forceSkin?: string

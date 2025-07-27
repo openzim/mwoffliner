@@ -21,8 +21,6 @@ const initMW = async () => {
   await MediaWiki.hasWikimediaDesktopApi()
   await MediaWiki.hasRestApi()
   await MediaWiki.hasVisualEditorApi()
-
-  await MediaWiki.getNamespaces([])
 }
 
 describe('mwApi', () => {

@@ -1,8 +1,8 @@
 import * as pathParser from 'path'
 import * as logger from './Logger.js'
 import * as util from './util/index.js'
-import * as domino from 'domino'
 import Downloader from './Downloader.js'
+import Gadgets, { Gadget } from './Gadgets.js'
 import qs from 'querystring'
 import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
@@ -25,6 +25,61 @@ export interface QueryOpts {
   rdprop: string
   redirects?: boolean
   formatversion: string
+}
+
+export interface SiteInfoResponse {
+  batchcomplete: boolean
+  query: SiteInfoQueryResponse
+  warnings?: {
+    [key: string]: {
+      [key: string]: string
+    }
+  }
+}
+
+export interface SiteInfoQueryResponse {
+  general: SiteInfoGeneral
+  skins: SiteInfoSkin[]
+  rightsinfo: {
+    url: string
+    text: string
+  }
+  namespaces: {
+    [key: string]: {
+      id: number
+      name: string
+      canonical: string
+      content: boolean
+      subpages: boolean
+    }
+  }
+  namespacealiases: {
+    id: number
+    alias: string
+  }[]
+  allmessages: {
+    name: string
+    content: string
+  }[]
+  gadgets?: Gadget[]
+}
+
+export interface SiteInfoGeneral {
+  generator: string
+  mainpage: string
+  sitename: string
+  logo: string
+  lang: string
+  rtl: boolean
+  articlepath: string
+  script: string
+  scriptpath: string
+  fallback: {
+    code: string
+  }[]
+  variants?: {
+    code: string
+  }[]
 }
 
 export interface SiteInfoSkin {
@@ -342,12 +397,9 @@ class MediaWiki {
     }
   }
 
-  public async getNamespaces(addNamespaces: number[]) {
-    const url = this.#apiUrlDirector.buildNamespacesURL()
-
-    const json: any = await Downloader.getJSON(url)
+  public setNamespaces(json: SiteInfoQueryResponse, addNamespaces: number[]) {
     ;['namespaces', 'namespacealiases'].forEach((type) => {
-      const entries = json.query[type]
+      const entries = json[type]
       Object.keys(entries).forEach((key) => {
         const entry = entries[key]
         const name = type === 'namespaces' ? entry.name : entry.alias
@@ -446,12 +498,17 @@ class MediaWiki {
     return defaultSkins[0]
   }
 
-  public async getSiteInfo({ mwRestApiPath, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
+  public async getSiteInfo({ addNamespaces, mwRestApiPath, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
     const generalEntries = body.query.general
+
+    this.setNamespaces(body.query, addNamespaces || [])
+    Gadgets.setGadgets(body.query.gadgets)
+
     const { url: licenseUrl, text: licenseName } = body.query.rightsinfo
+    const subTitle = body.query.allmessages[0].content || ''
 
     // Checking mediawiki version
     const mwVersion = semver.coerce(generalEntries.generator).raw
@@ -524,16 +581,8 @@ class MediaWiki {
       logo,
       licenseName,
       licenseUrl,
+      subTitle,
     }
-  }
-
-  public async getSubTitle() {
-    logger.log('Getting sub-title...')
-    const { content } = await Downloader.downloadContent(this.webUrl.href, 'data')
-    const html = content.toString()
-    const doc = domino.createDocument(html)
-    const subTitleNode = doc.getElementById('siteSub')
-    return subTitleNode ? subTitleNode.innerHTML : ''
   }
 
   public async getMwMetaData(argvOpts: SiteInfoArgv): Promise<MWMetaData> {
@@ -543,10 +592,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, langVar, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([
-      this.getSiteInfo(argvOpts),
-      this.getSubTitle(),
-    ])
+    const { langIso2, langIso3, mainPage, siteName, logo, langMw, langVar, textDir, licenseName, licenseUrl, subTitle } = await this.getSiteInfo(argvOpts)
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,

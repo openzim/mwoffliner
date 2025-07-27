@@ -1,4 +1,3 @@
-import Downloader from './Downloader.js'
 import * as logger from './Logger.js'
 import MediaWiki from './MediaWiki.js'
 
@@ -13,13 +12,8 @@ class Gadgets {
     return Gadgets.instance
   }
 
-  public async fetchGadgets() {
-    const gadgetsUrl = Downloader.apiUrlDirector.buildGadgetsUrl()
-    const gadgetsResponse = await Downloader.getJSON<GadgetQueryResult>(gadgetsUrl)
-    if (!gadgetsResponse.batchcomplete) {
-      throw new Error(`Error while fetching gadgets with ${gadgetsUrl}, batch seems to be incomplete, scraper does not expect/support pagination here`)
-    }
-    this.gadgets = gadgetsResponse.query?.gadgets
+  public setGadgets(gadgets: Gadget[]) {
+    this.gadgets = gadgets
     logger.info(this.gadgets === undefined ? 'Gadgets are not supported on this wiki' : `${this.gadgets.length} gadgets retrieved`)
   }
 
@@ -56,15 +50,6 @@ class Gadgets {
 
     return { cssGadgets, jsGadgets }
   }
-}
-
-export interface GadgetQueryResult {
-  batchcomplete: boolean
-  query: Query
-}
-
-export interface Query {
-  gadgets: Gadget[]
 }
 
 export interface Gadget {
