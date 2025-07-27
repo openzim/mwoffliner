@@ -446,7 +446,7 @@ class MediaWiki {
     return defaultSkins[0]
   }
 
-  public async getSiteInfo() {
+  public async getSiteInfo({ mwRestApiPath, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
@@ -491,13 +491,34 @@ class MediaWiki {
       return possibleLangPairs[0] || ['en', 'eng']
     })
 
-    this.skin = this.getDefaultSkin(body.query.skins)
+    // Use CLI parameter and set MediaWiki config
+    const articlepath = generalEntries.articlepath
+    if (articlepath.includes('?') || !articlepath.endsWith('$1')) {
+      throw new Error(`Article path [${articlepath}] is not supported`)
+    }
+    this.wikiPath = articlepath.replace('$1', '')
+    this.indexPhpPath = generalEntries.script
+    this.restApiPath = mwRestApiPath || generalEntries.scriptpath + '/rest.php'
+    this.modulePathOpt = mwModulePath || generalEntries.scriptpath + '/load.php'
+
+    const skins: SiteInfoSkin[] = body.query.skins.filter((skin) => !skin.unusable)
+    if (forceSkin && !skins.map((skin) => skin.code).includes(forceSkin)) {
+      throw new Error(`Skin [${forceSkin}] is not usable on the wiki`)
+    }
+    this.skin = forceSkin || this.getDefaultSkin(skins)
+
+    const validLangVars = (generalEntries.variants || []).map((e: any) => e.code)
+    if (langVariant && !validLangVars.includes(langVariant)) {
+      throw new Error(`Language variant [${langVariant}] is not available on the wiki`)
+    }
+    const langVar = langVariant || null
 
     return {
       mainPage,
       siteName,
       textDir,
       langMw,
+      langVar,
       langIso2,
       langIso3,
       logo,
@@ -515,14 +536,17 @@ class MediaWiki {
     return subTitleNode ? subTitleNode.innerHTML : ''
   }
 
-  public async getMwMetaData(): Promise<MWMetaData> {
+  public async getMwMetaData(argvOpts: SiteInfoArgv): Promise<MWMetaData> {
     if (this.metaData) {
       return this.metaData
     }
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([this.getSiteInfo(), this.getSubTitle()])
+    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, langVar, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([
+      this.getSiteInfo(argvOpts),
+      this.getSubTitle(),
+    ])
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -541,7 +565,7 @@ class MediaWiki {
 
       textDir: textDir as TextDirection,
       langMw,
-      langVar: langMw === 'zh' ? 'zh-cn' : null,
+      langVar,
       langIso2,
       langIso3,
       title: siteName,

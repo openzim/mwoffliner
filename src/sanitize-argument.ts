@@ -18,21 +18,7 @@ const parametersWithArrayType = ['format']
 // Stack is not yet sufficiently ready to perform live external connectivity checks
 export async function sanitize_all(argv: any) {
   // extracting all arguments
-  const {
-    articleList,
-    addNamespaces,
-    speed,
-    adminEmail,
-    verbose,
-    customZimLongDescription,
-    customZimDescription,
-    forceRender,
-    mwWikiPath,
-    mwIndexPhpPath,
-    mwActionApiPath,
-    mwRestApiPath,
-    mwModulePath,
-  } = argv
+  const { articleList, addNamespaces, speed, adminEmail, verbose, customZimLongDescription, customZimDescription, forceRender, mwActionApiPath, mwRestApiPath, mwModulePath } = argv
 
   sanitizeDoubleUsedParameters(argv)
 
@@ -56,16 +42,6 @@ export async function sanitize_all(argv: any) {
     if (!argv.customFlavour) {
       throw new Error('Custom Flavour not found')
     }
-  }
-
-  // sanitizing mwWikiPath
-  if (mwWikiPath) {
-    argv.mwWikiPath = sanitizeWikiPath(mwWikiPath)
-  }
-
-  // sanitizing mwIndexPhpPath
-  if (mwIndexPhpPath) {
-    argv.mwIndexPhpPath = sanitizeApiPathParam(mwIndexPhpPath)
   }
 
   // sanitizing mwRestApiPath
@@ -116,22 +92,6 @@ export async function check_all(argv: any) {
   if (customZimFavicon) {
     await check_customZimFavicon(customZimFavicon)
   }
-}
-
-export function sanitizeWikiPath(mwWikiPath = '') {
-  mwWikiPath = sanitizeApiPathParam(mwWikiPath)
-
-  // Remove trailing $1 since we don't need it
-  if (mwWikiPath?.endsWith('$1')) {
-    mwWikiPath = mwWikiPath.substring(0, mwWikiPath.length - 3)
-  }
-
-  // Make sure wikiPath always has forward slash at the end for the correct URL building
-  if (!mwWikiPath?.endsWith('/')) {
-    mwWikiPath += '/'
-  }
-
-  return mwWikiPath
 }
 
 export function sanitizeApiPathParam(apiPathParam: string) {
