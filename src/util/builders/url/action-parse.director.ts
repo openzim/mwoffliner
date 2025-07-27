@@ -24,6 +24,7 @@ export default class ActionParseURLDirector {
           format: 'json',
           prop: 'modules|jsconfigvars|headhtml|text|displaytitle|subtitle',
           usearticle: '1',
+          disabletoc: '1',
           disableeditsection: '1',
           disablelimitreport: '1',
           page: articleId,
