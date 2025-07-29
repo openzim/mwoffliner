@@ -13,7 +13,6 @@ import * as logger from '../Logger.js'
 import {
   LATEX_IMAGE_URL_REGEX,
   FANDOM_IMAGE_URL_REGEX,
-  WIKIHIERO_IMAGE_URL_REGEX,
   IMAGE_THUMB_URL_REGEX,
   FIND_HTTP_REGEX,
   BITMAP_IMAGE_MIME_REGEX,
@@ -262,36 +261,36 @@ export function getMediaBase(url: string, escape: boolean) {
   const decodedUrl = decodeURI(url)
   let parts
   let filename
+  let filedir = ''
 
   // Image thumbs
   if ((parts = IMAGE_THUMB_URL_REGEX.exec(decodedUrl)) !== null) {
-    // Remove trailing / in parts[1] if possible
-    parts[1] = parts[1] ? parts[1].substring(0, parts[1].length - 1) : ''
+    // Remove trailing / in parts[4] if possible
+    parts[4] = parts[4] ? parts[4].substring(0, parts[4].length - 1) : ''
 
     // Most common case
-    if (!parts[1] || parts[1].length <= parts[3].length) {
-      filename = parts[3]
+    if (!parts[4] || parts[4].length <= parts[6].length) {
+      filename = parts[6]
     }
 
     // To handle /...px-thumbnail.jpg use case
     else {
-      filename = parts[1] + (parts[4] || '')
+      filename = parts[4] + (parts[7] || '')
     }
+
+    filedir = parts[1]
   }
 
   // Latex (equations)
   else if ((parts = LATEX_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
-    filename = parts[1] + '.svg'
-  }
-
-  // WikiHiero hieroglyphs (betting there won't be a name conflict with main namespace pictures)
-  else if ((parts = WIKIHIERO_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
-    filename = parts[1]
+    filename = parts[2] + '.svg'
+    filedir = parts[1]
   }
 
   // Fandom has even an other URL scheme
   else if ((parts = FANDOM_IMAGE_URL_REGEX.exec(decodedUrl)) !== null) {
-    filename = parts[1]
+    filename = parts[2]
+    filedir = parts[1]
   }
 
   // Default behaviour (make a hash of the URL)
@@ -299,11 +298,15 @@ export function getMediaBase(url: string, escape: boolean) {
     filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname(new URL(url).pathname)
   }
 
+  if (filedir) {
+    filedir = crypto.createHash('md5').update(filedir).digest('hex') + '/'
+  }
+
   if (escape) {
     filename = encodeURIComponent(filename)
   }
 
-  return `${config.output.dirs.assets}/${filename}`
+  return `${config.output.dirs.assets}/${filedir}${filename}`
 }
 
 /**
