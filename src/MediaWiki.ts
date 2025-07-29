@@ -381,7 +381,7 @@ class MediaWiki {
       const pathname = new URL(href, this.baseUrl).pathname
 
       // Link to index.php with query parameters like "/w/index.php?title=Blue_whale"
-      if (href.startsWith(this.#indexPhpPath)) {
+      if (pathname === this.#indexPhpPath) {
         const queryString = href.split('?')[1]
         const params = new URLSearchParams(queryString)
         return params.get('title')
