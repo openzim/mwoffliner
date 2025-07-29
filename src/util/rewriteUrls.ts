@@ -10,6 +10,17 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
   let href = linkNode.getAttribute('href') || ''
   let hrefProtocol
 
+  // Always keep selflinks
+  if (linkNode.matches('a.mw-selflink') && !href) {
+    return null
+  }
+  // Always remove redlinks
+  if (linkNode.matches('a.new')) {
+    migrateChildren(linkNode, linkNode.parentNode, linkNode)
+    linkNode.parentNode.removeChild(linkNode)
+    return null
+  }
+
   const extractScheme = function (href: string) {
     const match = href.match(/^([a-zA-Z][a-zA-Z\d+\-.]*):/)
     return match ? match[1] : null
