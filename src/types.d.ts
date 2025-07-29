@@ -252,3 +252,10 @@ interface RenderedArticle {
   displayTitle: string
   html: string
 }
+
+interface SiteInfoArgv {
+  mwRestApiPath?: string
+  mwModulePath?: string
+  forceSkin?: string
+  langVariant?: string
+}
