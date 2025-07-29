@@ -119,7 +119,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
     }
   }
 
-  if (rel) {
+  if (rel && !href.startsWith(MediaWiki.webUrl.href)) {
     // This is Parsoid HTML
 
     /* Add 'external' class to interwiki links */
@@ -146,6 +146,12 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
     const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'))
     linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title) + localAnchor)
     return title
+  }
+
+  // Rewrite any relative urls still remaining
+  if (href.substring(0, 1) === '/') {
+    DU.appendToAttr(linkNode, 'class', 'external')
+    linkNode.setAttribute('href', getFullUrl(href, MediaWiki.baseUrl))
   }
 
   return null
@@ -196,12 +202,7 @@ async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoEleme
     const articlesRedirected = await RedisStore.redirectsXId.existsMany(unmirroredTitles)
     for (const articleTitle of unmirroredTitles) {
       const redirect = articlesRedirected[articleTitle]
-      if (redirect) {
-        const href = encodeArticleIdForZimHtmlUrl(articleTitle)
-        wikilinkMappings[articleTitle].forEach((linkNode: DominoElement) => {
-          linkNode.setAttribute('href', href)
-        })
-      } else {
+      if (!redirect) {
         wikilinkMappings[articleTitle].forEach((linkNode: DominoElement) => {
           migrateChildren(linkNode, linkNode.parentNode, linkNode)
           linkNode.parentNode.removeChild(linkNode)
