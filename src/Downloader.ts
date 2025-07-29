@@ -688,6 +688,10 @@ class Downloader {
 
   private async getImageMimeType(data: any): Promise<string | null> {
     const fileType = await fileTypeFromBuffer(data)
+    if (fileType && fileType.mime === 'application/xml') {
+      // File type is known to be wrong, might be SVG
+      return null
+    }
     return fileType ? fileType.mime : null
   }
 
