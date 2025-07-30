@@ -15,6 +15,7 @@ Unreleased:
 * FIX: Restore webp polyfills operation (@benoit74 #2438)
 * FIX: Fix wrong SVG content type (@Markus-Rost #2464)
 * FIX: Fix missing page titles on some mwIndexPhpPath values (@Markus-Rost #2468)
+* FIX: Set correct MimeType on ZIM Metadata (@Markus-Rost #2470)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
