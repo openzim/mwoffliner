@@ -419,7 +419,7 @@ async function execute(argv: any) {
     }
 
     Object.entries(metadata).forEach(([key, value]) => {
-      zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value, key.startsWith('Illustration_') ? 'image/png' : undefined)
+      zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value, key.startsWith('Illustration_') ? 'image/png' : 'text/plain')
     })
 
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
