@@ -8,5 +8,8 @@
 	"DISCLAIMER": "הערך הזה נוצר על־ידי ${creator}. הטקסט מתפרסם לפי תנאי רישיון ${license}. תנאים נוספים עשויים לחול על קובצי המדיה.",
 	"LAST_EDITED_ON": "נערך לאחרונה ב־${date}",
 	"LICENSE_UNKNOWN": "רישיון לא ידוע",
-	"DOWNLOAD_ERRORS_HEADING": "אופס. הערך לא נמצא."
+	"DOWNLOAD_ERRORS_HEADING": "אופס. הערך לא נמצא.",
+	"DOWNLOAD_ERRORS_MESSAGE": "הערך שהתבקש ‚${articleTitle}’ לא זמין בתוך ה־ZIM, לא היתה אפשרות למשוך אותו מ־${server}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "הערך הזה נמחק לאחר שאספנו את רשימת הערכים למשיכה אבל לפני שמשכנו אותה לבנות את ה־ZIM שמופיע בפניך כרגע.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "כאשר ה־ZIM שמוצג בפניך כרגע נבנה, השרת ${server} נכשל במסירת הפרטים על ה־HTML של הערך הזה בזמן סביר."
 }

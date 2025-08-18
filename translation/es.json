@@ -1,7 +1,14 @@
 {
 	"@metadata": {
-		"authors": []
+		"authors": [
+			"Laranxa"
+		]
 	},
 	"DISCLAIMER": "Este artículo ha sido escrito por ${creator}. El texto está disponible bajo la licencia ${license}. Pueden aplicarse cláusulas adicionales a los archivos multimedia.",
-	"LAST_EDITED_ON": "Esta página se editó por última vez el ${date}"
+	"LAST_EDITED_ON": "Esta página se editó por última vez el ${date}",
+	"LICENSE_UNKNOWN": "una licencia desconocida",
+	"DOWNLOAD_ERRORS_HEADING": "Ups. Articulo no encontrado.",
+	"DOWNLOAD_ERRORS_MESSAGE": "El artículo solicitado ${articleTitle}' no esta disponible dentro de este ZIM, no ha sido posible obtenerlo de ${server}.",
+	"DOWNLOAD_ERRORS_LINE2": "El artículo faltante fue remplazado por el marcador de posición que está viendo actualmente.",
+	"DOWNLOAD_ERRORS_LINE3": "Esperemos que el problema sea solucionado en el servidor ${server} y nuestra próxima versión de este ZIM contenga este artículo."
 }
