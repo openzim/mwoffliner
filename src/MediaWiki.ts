@@ -380,6 +380,11 @@ class MediaWiki {
     try {
       const pathname = new URL(href, this.baseUrl).pathname
 
+      // Link to domain root when main page is domain root
+      if (href === '/' && this.metaData.mainPageIsDomainRoot) {
+        return this.metaData.mainPage
+      }
+
       // Link to index.php with query parameters like "/w/index.php?title=Blue_whale"
       if (pathname === this.#indexPhpPath) {
         const queryString = href.split('?')[1]
@@ -461,6 +466,7 @@ class MediaWiki {
     }
 
     const mainPage = generalEntries.mainpage.replace(/ /g, '_')
+    const mainPageIsDomainRoot = generalEntries.mainpageisdomainroot
     const siteName = generalEntries.sitename
     const logo = generalEntries.logo
     const langMw = generalEntries.lang
@@ -495,6 +501,7 @@ class MediaWiki {
 
     return {
       mainPage,
+      mainPageIsDomainRoot,
       siteName,
       textDir,
       langMw,
@@ -522,7 +529,10 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const [{ langIso2, langIso3, mainPage, siteName, logo, langMw, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([this.getSiteInfo(), this.getSubTitle()])
+    const [{ langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, textDir, licenseName, licenseUrl }, subTitle] = await Promise.all([
+      this.getSiteInfo(),
+      this.getSubTitle(),
+    ])
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -548,6 +558,7 @@ class MediaWiki {
       subTitle,
       creator,
       mainPage,
+      mainPageIsDomainRoot,
       logo,
       licenseName,
       licenseUrl,
