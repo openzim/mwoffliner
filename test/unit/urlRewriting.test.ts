@@ -42,10 +42,12 @@ describe('Styles', () => {
     const $extNoProtocol = makeLink($doc, '//google.com', '', "Google's Homepage (no protocol)")
     const $wikiLink = makeLink($doc, '/wiki/British_Museum', '', 'British Museum')
     const $wikiLink2 = makeLink($doc, '/wiki/British_Museum', '', 'British Museum')
+    const $absoluteWikiLink = makeLink($doc, 'https://en.wikipedia.org/wiki/British_Museum', '', 'British Museum')
     const $wikiLinkWithSlash = makeLink($doc, '/wiki/Farnborough/Aldershot_built-up_area', '', 'Farnborough/Aldershot built-up Area')
     const $nonScrapedWikiLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'fake link')
     const $redLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'red link', '', { class: 'new' })
     const $selfLink = makeLink($doc, '', '', '', 'self link', { class: 'selflink mw-selflink' })
+    const $editDiffLink = makeLink($doc, '/w/index.php?diff=1', '', 'edit diff link')
     const $specialMap = makeLink($doc, '/wiki/Special:Map/9/51.51/-0.08/en', '', 'Interactive map outlining London')
     const $hashLink = makeLink($doc, '#cite_note-LAS-150', '', 'The London Air Ambulance')
     const $resourceLink = makeLink($doc, '//upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', '', 'De-Z%C3%BCrich.ogg', 'Zurich', {
@@ -104,6 +106,12 @@ describe('Styles', () => {
     // wikiLink HREF is correct with complex parent id
     expect($wikiLink2.getAttribute('href')).toEqual('../British_Museum')
 
+    await rewriteUrl(complexParentArticleId, dump, $absoluteWikiLink)
+    // absoluteWikiLink is still a link
+    expect($absoluteWikiLink.nodeName).toEqual('A')
+    // absoluteWikiLink HREF is correct and relative
+    expect($absoluteWikiLink.getAttribute('href')).toEqual('../British_Museum')
+
     await rewriteUrl(complexParentArticleId, dump, $wikiLinkWithSlash)
     // wikiLinkWithSlash is still a link
     expect($wikiLinkWithSlash.nodeName).toEqual('A')
@@ -135,6 +143,12 @@ describe('Styles', () => {
     expect($selfLink.nodeName).toEqual('A')
     // selfLink still has no href
     expect($selfLink.getAttribute('href')).toBeFalsy()
+
+    await rewriteUrl(complexParentArticleId, dump, $editDiffLink)
+    // editDiffLink is still a link
+    expect($editDiffLink.nodeName).toEqual('A')
+    // editDiffLink HREF is correct and external
+    expect($editDiffLink.getAttribute('href')).toEqual('https://en.wikipedia.org/w/index.php?diff=1')
 
     await rewriteUrl(complexParentArticleId, dump, $resourceLink)
     // resourceLink is still a link

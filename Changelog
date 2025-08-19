@@ -22,6 +22,7 @@ Unreleased:
 * FIX: Always keep selflinks (@Markus-Rost #2454)
 * FIX: Rewrite main page links when main page is at domain root (@Markus-Rost #2461)
 * FIX: Don't encode filenames twice when rewriting CSS files (@Markus-Rost #2473)
+* FIX: Treat absolute URLs to the wiki article path as local links. (@Markus-Rost #2459)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
