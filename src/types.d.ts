@@ -168,6 +168,7 @@ interface MWMetaData {
   subTitle: string
   creator: string
   mainPage: string
+  mainPageIsDomainRoot: boolean
   textDir: TextDirection
   langMw: string
   langVar: string | null
