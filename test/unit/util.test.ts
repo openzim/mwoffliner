@@ -147,14 +147,22 @@ describe('Utils', () => {
   test('getMediaBase tests', async () => {
     // Thumbs
     // Thumb 1
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true)).toEqual('_assets_/Westminstpalace.jpg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Westminstpalace.jpg/220px-Westminstpalace.jpg', true)).toEqual(
+      '_assets_/0c70a452f799bfe840676ee341124611/Westminstpalace.jpg',
+    )
+    // Thumb 2 (with cache break)
+    expect(getMediaBase('https://terraria.wiki.gg/images/thumb/c/c3/Achievement_Eye_on_You.png/48px-Achievement_Eye_on_You.png?926e93', true)).toEqual(
+      '_assets_/d8a9a8b9feaff5d65577eb04975bf021/Achievement_Eye_on_You.png',
+    )
     // No thumb
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true)).toEqual('_assets_/Westminstpalace.jpg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/3/39/Westminstpalace.jpg', true)).toEqual('_assets_/0c70a452f799bfe840676ee341124611/Westminstpalace.jpg')
     // SVG
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true)).toEqual('_assets_/VFPt_Solenoid_correct2.svg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/0/0d/VFPt_Solenoid_correct2.svg', true)).toEqual(
+      '_assets_/0c70a452f799bfe840676ee341124611/VFPt_Solenoid_correct2.svg',
+    )
     // SVG PNG thumb
     expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true)).toEqual(
-      '_assets_/VFPt_Solenoid_correct2.svg.png',
+      '_assets_/0c70a452f799bfe840676ee341124611/VFPt_Solenoid_correct2.svg.png',
     )
     // Video poster
     expect(
@@ -162,9 +170,9 @@ describe('Utils', () => {
         'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv/120px--S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg',
         true,
       ),
-    ).toEqual('_assets_/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg')
+    ).toEqual('_assets_/0c70a452f799bfe840676ee341124611/S6-Dendritic_Cells_with_Conidia_in_Collagen.ogv.jpg')
     // Escaped UR
-    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', false)).toEqual('_assets_/De-Zürich.ogg')
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', false)).toEqual('_assets_/0c70a452f799bfe840676ee341124611/De-Zürich.ogg')
     // Long thumb
     expect(
       getMediaBase(
@@ -172,7 +180,7 @@ describe('Utils', () => {
         true,
       ),
     ).toEqual(
-      '_assets_/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.jpg',
+      '_assets_/0c70a452f799bfe840676ee341124611/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.jpg',
     )
     // Long thumb with SVG PNG
     expect(
@@ -181,35 +189,56 @@ describe('Utils', () => {
         true,
       ),
     ).toEqual(
-      '_assets_/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.svg.png',
+      '_assets_/0c70a452f799bfe840676ee341124611/US_Navy_070406-N-2959L-756_Members_of_USS_Ronald_Reagan_(CVN_76)_First_Class_Association_prepare_and_put_toppings_on_pizzas_in_the_galley_as_part_of_a_special_dinner_prepared_for_the_crew.svg.png',
     )
 
-    // Latex (equations)
-    expect(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true)).toEqual(
-      '_assets_/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg',
+    // No hashed upload directory
+    // Thumb
+    expect(getMediaBase('https://minecraft.wiki/images/thumb/Diamond_Pickaxe_JE3_BE3.png/120px-Diamond_Pickaxe_JE3_BE3.png?7409d', true)).toEqual(
+      '_assets_/5af80496508534f4cdd561aac15bbc50/Diamond_Pickaxe_JE3_BE3.png',
     )
+    // No thumb
+    expect(getMediaBase('https://minecraft.wiki/images/Minecraft_Wiki_header.svg?0d27d', true)).toEqual('_assets_/5af80496508534f4cdd561aac15bbc50/Minecraft_Wiki_header.svg')
 
     // WikiHiero (hieroglyphs)
     // WikiHiero png with URL args
-    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', false)).toEqual('_assets_/hiero_G1.png')
+    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png?4d556', false)).toEqual('_assets_/782505031fe338abab4546d8d985b782/hiero_G1.png')
     // WikiHiero png without URL args
-    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png', false)).toEqual('_assets_/hiero_G1.png')
+    expect(getMediaBase('https://en.wikipedia.org/w/extensions/wikihiero/img/hiero_G1.png', false)).toEqual('_assets_/782505031fe338abab4546d8d985b782/hiero_G1.png')
 
-    // Score - is default behaviour
-    expect(getMediaBase('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png', false)).toEqual('_assets_/012a83318ce8d3a438dbed3127b9e339.png')
+    // Score
+    expect(getMediaBase('https://upload.wikimedia.org/score/6/c/6clze8fxoo65795idk91426rskovmgp/6clze8fx.png', false)).toEqual(
+      '_assets_/a3b45f05ce6fe783907ef96d52c753c0/6clze8fx.png',
+    )
 
-    // Graphoid (charts) - is default behaviour
+    // Graphoid (charts)
     expect(
       getMediaBase('https://en.wikipedia.org/api/rest_v1/page/graph/png/COVID-19_pandemic_in_the_United_Kingdom/0/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png', true),
-    ).toEqual('_assets_/43ffd82a8ffc4755312c22950fde7ac5.png')
+    ).toEqual('_assets_/c54a67d200901809165ee017d0c80e94/28fe8c45f73e8cc60d45086655340f49cdfd37d0.png')
+
+    // Latex (equations)
+    expect(getMediaBase('https://wikimedia.org/api/rest_v1/media/math/render/svg/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606', true)).toEqual(
+      '_assets_/eb734a37dd21ce173a46342d1cc64c92/da47d67ac8dcb0be8b68d7bfdc676d9ce9bf1606.svg',
+    )
 
     // Fandom
+    // Thumb
     expect(
       getMediaBase(
         'https://static.wikia.nocookie.net/minecraft_de_gamepedia/images/e/ee/Diamantschwert_%28Dungeons%29.png/revision/latest/scale-to-width-down/60?cb=20200409173531',
         true,
       ),
-    ).toEqual('_assets_/Diamantschwert_(Dungeons).png')
+    ).toEqual('_assets_/28589f4742a95f314ca2e83cca07f2d0/Diamantschwert_(Dungeons).png')
+    // No thumb
+    expect(getMediaBase('https://static.wikia.nocookie.net/minecraft_de_gamepedia/images/e/ee/Diamantschwert_%28Dungeons%29.png/revision/latest?cb=20200409173531', true)).toEqual(
+      '_assets_/28589f4742a95f314ca2e83cca07f2d0/Diamantschwert_(Dungeons).png',
+    )
+
+    // Same filename from different sources
+    // https://commons.wikimedia.org/wiki/File:Example.jpg
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg', true)).toEqual('_assets_/0c70a452f799bfe840676ee341124611/Example.jpg')
+    // https://en.wikipedia.org/wiki/File:Example.jpg
+    expect(getMediaBase('https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg', true)).toEqual('_assets_/c8f24dc75f9c782269c846c9b17e400f/Example.jpg')
 
     // Default behaviour
     expect(
