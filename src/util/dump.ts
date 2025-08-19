@@ -49,11 +49,20 @@ export function processStylesheetContent(cssUrl: string, linkMedia: string, body
         url = getFullUrl(url, cssUrl)
         url = url.indexOf('%') < 0 ? encodeURI(url) : url
 
+        let decodedFilename = filename
+        if (filename.indexOf('%') >= 0) {
+          try {
+            decodedFilename = decodeURIComponent(filename)
+          } catch {
+            decodedFilename = filename
+          }
+        }
+
         /* Download CSS dependency, but avoid duplicate calls */
         // eslint-disable-next-line no-prototype-builtins
-        if (!Downloader.cssDependenceUrls.hasOwnProperty(url) && filename) {
+        if (!Downloader.cssDependenceUrls.hasOwnProperty(url) && decodedFilename) {
           Downloader.cssDependenceUrls[url] = true
-          filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + filename, { url: urlHelper.serializeUrl(url), kind: 'media' })
+          filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + decodedFilename, { url: urlHelper.serializeUrl(url), kind: 'media' })
         }
       } else {
         logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
