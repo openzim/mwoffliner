@@ -36,9 +36,9 @@ Real-time computer graphics`
   const zimFile = new Archive(outFiles[0].outFile)
 
   // passed test for png
-  expect(await isWebpPresent('Animexample3edit.png', zimFile)).toBeTruthy()
+  expect(await isWebpPresent('0c70a452f799bfe840676ee341124611/Animexample3edit.png', zimFile)).toBeTruthy()
   // passed test for jpg
-  expect(await isWebpPresent('Claychick.jpg', zimFile)).toBeTruthy()
+  expect(await isWebpPresent('0c70a452f799bfe840676ee341124611/Claychick.jpg', zimFile)).toBeTruthy()
   // redirection check successful
   expect(await isRedirectionPresent('href="Real-time_rendering"', zimFile)).toBeTruthy()
   rimraf.sync(testId)
