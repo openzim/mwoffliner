@@ -36,10 +36,10 @@ describe('Download CSS or JS Module', () => {
     const rewrittenCSS = processStylesheetContent(
       'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
-      'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d)); }',
+      'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d); }',
       '',
     )
-    expect(rewrittenCSS).toContain('a.external { background-image: url(link.ernal-small-ltr-progressive.svg)); }')
+    expect(rewrittenCSS).toContain('a.external { background-image: url(link.ernal-small-ltr-progressive.svg); }')
     expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/link.ernal-small-ltr-progressive.svg'])
     const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/link.ernal-small-ltr-progressive.svg')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe(
@@ -51,10 +51,10 @@ describe('Download CSS or JS Module', () => {
     const rewrittenCSS = processStylesheetContent(
       'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
-      'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d)); }',
+      'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d); }',
       'article/with/slashes',
     )
-    expect(rewrittenCSS).toContain('a.external { background-image: url(../../_mw_/link.ernal-small-ltr-progressive.svg)); }')
+    expect(rewrittenCSS).toContain('a.external { background-image: url(../../_mw_/link.ernal-small-ltr-progressive.svg); }')
     expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/link.ernal-small-ltr-progressive.svg'])
     const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/link.ernal-small-ltr-progressive.svg')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe(
@@ -66,12 +66,25 @@ describe('Download CSS or JS Module', () => {
     const rewrittenCSS = processStylesheetContent(
       'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
-      'a.external { background-image: url(//upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png)); }',
+      'a.external { background-image: url(//upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png); }',
       'articleTitle',
     )
-    expect(rewrittenCSS).toContain('a.external { background-image: url(./_mw_/64px-Commons-logo.svg.png)); }')
+    expect(rewrittenCSS).toContain('a.external { background-image: url(./_mw_/64px-Commons-logo.svg.png); }')
     expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/64px-Commons-logo.svg.png'])
     const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/64px-Commons-logo.svg.png')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png')
+  })
+
+  test('rewrite CSS with encoded image', async () => {
+    const rewrittenCSS = processStylesheetContent(
+      'https://minecraft.wiki/load.php?lang=en&modules=ext.gadget.site-styles&only=styles&skin=vector',
+      '',
+      '.mcui-arrow { background: url(/images/Grid_layout_Arrow_%28small%29.png?a4894) no-repeat; }',
+      '',
+    )
+    expect(rewrittenCSS).toContain('.mcui-arrow { background: url(Grid_layout_Arrow_%28small%29.png) no-repeat; }')
+    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/Grid_layout_Arrow_(small).png'])
+    const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/Grid_layout_Arrow_(small).png')
+    expect(urlHelper.deserializeUrl(redisValue.url)).toBe('https://minecraft.wiki/images/Grid_layout_Arrow_%28small%29.png?a4894')
   })
 })
