@@ -44,6 +44,8 @@ describe('Styles', () => {
     const $wikiLink2 = makeLink($doc, '/wiki/British_Museum', '', 'British Museum')
     const $wikiLinkWithSlash = makeLink($doc, '/wiki/Farnborough/Aldershot_built-up_area', '', 'Farnborough/Aldershot built-up Area')
     const $nonScrapedWikiLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'fake link')
+    const $redLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'red link', '', { class: 'new' })
+    const $selfLink = makeLink($doc, '', '', '', 'self link', { class: 'selflink mw-selflink' })
     const $specialMap = makeLink($doc, '/wiki/Special:Map/9/51.51/-0.08/en', '', 'Interactive map outlining London')
     const $hashLink = makeLink($doc, '#cite_note-LAS-150', '', 'The London Air Ambulance')
     const $resourceLink = makeLink($doc, '//upload.wikimedia.org/wikipedia/commons/c/c6/De-Z%C3%BCrich.ogg', '', 'De-Z%C3%BCrich.ogg', 'Zurich', {
@@ -123,6 +125,16 @@ describe('Styles', () => {
     await rewriteUrl(complexParentArticleId, dump, $nonScrapedWikiLink)
     // nonScrapedWikiLink has been deleted
     expect($nonScrapedWikiLink.parentElement).toBeNull()
+
+    await rewriteUrl(complexParentArticleId, dump, $redLink)
+    // redLink has been deleted
+    expect($redLink.parentElement).toBeNull()
+
+    await rewriteUrl(complexParentArticleId, dump, $selfLink)
+    // selfLink is still a link
+    expect($selfLink.nodeName).toEqual('A')
+    // selfLink still has no href
+    expect($selfLink.getAttribute('href')).toBeFalsy()
 
     await rewriteUrl(complexParentArticleId, dump, $resourceLink)
     // resourceLink is still a link
