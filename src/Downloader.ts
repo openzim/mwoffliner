@@ -60,7 +60,6 @@ interface DownloaderOpts {
   s3?: S3
   webp: boolean
   backoffOptions?: BackoffOptions
-  mwWikiPath?: string
   insecure?: boolean
 }
 

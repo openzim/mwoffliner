@@ -23,6 +23,9 @@ Unreleased:
 * FIX: Rewrite main page links when main page is at domain root (@Markus-Rost #2461)
 * FIX: Don't encode filenames twice when rewriting CSS files (@Markus-Rost #2473)
 * FIX: Treat absolute URLs to the wiki article path as local links. (@Markus-Rost #2459)
+* CHANGED: Deprecate `mwWikiPath` and `mwIndexPhpPath` CLI parameter, use values from the API instead (@Markus-Rost #2422)
+* CHANGED: Build `mwRestApiPath` and `mwModulePath` CLI parameter default values from the API (@Markus-Rost #2422)
+* NEW: Add `langVariant` CLI parameter for language conversion (@Markus-Rost #2399)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

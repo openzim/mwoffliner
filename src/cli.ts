@@ -22,7 +22,9 @@ const argv: any = yargs(hideBin(process.argv))
 Usage: npm run mwoffliner -- --help`,
   )
   .describe(parameterDescriptions)
-  .require(requiredParams as any)
+  .demandOption(requiredParams)
+  .deprecateOption('mwWikiPath')
+  .deprecateOption('mwIndexPhpPath')
   .strict().argv
 
 /* ***********************************/

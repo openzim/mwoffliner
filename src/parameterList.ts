@@ -16,11 +16,11 @@ export const parameterDescriptions = {
   format:
     'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
   keepEmptyParagraphs: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
-  mwWikiPath: 'MediaWiki article path (by default "/wiki/")',
-  mwIndexPhpPath: 'MediaWiki index.php path (by default "/w/index.php")',
+  mwWikiPath: 'MediaWiki article path (by default fetched from the wiki)',
+  mwIndexPhpPath: 'MediaWiki index.php path (by default fetched from the wiki)',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
-  mwRestApiPath: 'MediaWiki REST API path (by default "/w/rest.php")',
-  mwModulePath: 'MediaWiki module load path (by default "/w/load.php")',
+  mwRestApiPath: 'MediaWiki REST API path ($wgRestPath), automatically chosen based on script path otherwise.',
+  mwModulePath: 'MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise.',
   mwDomain: 'MediaWiki user domain (thought for private wikis)',
   mwUsername: 'MediaWiki username (thought for private wikis)',
   mwPassword: 'MediaWiki user password (thought for private wikis)',
@@ -41,6 +41,7 @@ export const parameterDescriptions = {
   forceRender:
     'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile, RestApi, ActionParse ]',
   forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
+  langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
   insecure: 'Skip HTTPS server authenticity verification step',
 }
 
