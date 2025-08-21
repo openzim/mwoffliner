@@ -4,6 +4,8 @@
 			"Eleassar"
 		]
 	},
-	"DISCLAIMER": "Ta članek je izdal ${creator}. Besedilo je licencirano pod ${license}. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
-	"LAST_EDITED_ON": "Zadnja sprememba ${date}."
+	"DISCLAIMER": "Ta članek je izdal ${creator}. Besedilo je na voljo pod ${license}, razen če je navedeno drugače. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
+	"LAST_EDITED_ON": "Zadnja sprememba ${date}.",
+	"LICENSE_UNKNOWN": "neznana licenca",
+	"DOWNLOAD_ERRORS_HEADING": "Ups. Članka ni bilo mogoče najti."
 }
