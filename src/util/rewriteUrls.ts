@@ -6,16 +6,17 @@ import DU from '../DOMUtils.js'
 import * as logger from '../Logger.js'
 
 function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): string {
-  let rel = linkNode.getAttribute('rel')
+  const classList: string[] = (linkNode.getAttribute('class') || '').split(' ').filter((cssClass) => cssClass)
+  const rel: string[] = (linkNode.getAttribute('rel') || '').split(' ').filter((rel) => rel)
   let href = linkNode.getAttribute('href') || ''
   let hrefProtocol
 
   // Always keep selflinks
-  if (linkNode.matches('a.mw-selflink') && !href) {
+  if (classList.includes('mw-selflink') && !href) {
     return null
   }
   // Always remove redlinks
-  if (linkNode.matches('a.new')) {
+  if (classList.includes('new')) {
     migrateChildren(linkNode, linkNode.parentNode, linkNode)
     linkNode.parentNode.removeChild(linkNode)
     return null
@@ -35,7 +36,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
     // e.g. geo:11111,11111
     return null
   }
-  if (rel === 'mwo:NoRewrite') {
+  if (rel.includes('mwo:NoRewrite')) {
     return null
   }
   if (!hrefProtocol && href.slice(0, 2) === '//') {
@@ -43,11 +44,11 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
     linkNode.setAttribute('href', href)
     hrefProtocol = MediaWiki.webUrl.protocol
   }
-  if (!rel && linkNode.getAttribute('resource')) {
-    rel = 'mw:MediaLink'
+  if (!rel.length && linkNode.getAttribute('resource')) {
+    rel.push('mw:MediaLink')
   }
-  if (hrefProtocol && hrefProtocol.includes('http') && !rel) {
-    rel = 'mw:ExtLink'
+  if (hrefProtocol && hrefProtocol.includes('http') && !rel.length) {
+    rel.push('mw:ExtLink')
   }
   if (!href) {
     DU.deleteNode(linkNode)
@@ -61,7 +62,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
    * http://maps.wikivoyage-ev.org/w/poimap2.php?lat=44.5044943&lon=34.1969633&zoom=15&layer=M&lang=ru&name=%D0%9C%D0%B0%D1%81%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0
    * http://tools.wmflabs.org/geohack/geohack.php?language=fr&pagename=Tour_Eiffel&params=48.85825_N_2.2945_E_type:landmark_region:fr
    */
-  if (rel !== 'mw:WikiLink') {
+  if (!rel.includes('mw:WikiLink')) {
     let lat
     let lon
     if (/poimap2\.php/i.test(href)) {
@@ -103,7 +104,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
       const parts = href.split('/')
       lat = parts[4]
       lon = parts[5]
-    } else if (rel === 'mw:MediaLink') {
+    } else if (rel.includes('mw:MediaLink') || classList.includes('internal')) {
       const shouldScrape = (href.includes('.pdf') && !dump.nopdf) || ((href.includes('.ogg') || href.includes('.oga')) && !dump.nopic && !dump.novid && !dump.nodet)
 
       if (shouldScrape) {
@@ -117,7 +118,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
           logger.warn('Error parsing url:', err)
           DU.deleteNode(linkNode)
         }
-      } else if (href.includes('.ogg') || href.includes('.oga')) {
+      } else {
         linkNode.outerHTML = linkNode.innerHTML
       }
       return null
@@ -130,15 +131,14 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
     }
   }
 
-  if (rel && !href.startsWith(MediaWiki.webUrl.href)) {
-    // This is Parsoid HTML
-
+  if (!(href.startsWith(MediaWiki.webUrl.href) && !classList.includes('external')) && !classList.includes('mirror-link')) {
     /* Add 'external' class to interwiki links */
-    if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'mw:WikiLink/Interwiki') {
+    if (!classList.includes('external') && (rel.includes('mw:ExtLink') || rel.includes('mw:WikiLink/Interwiki') || classList.includes('extiw'))) {
       DU.appendToAttr(linkNode, 'class', 'external')
+      classList.push('external')
     }
     /* Rewrite external links starting with // */
-    if (rel.substring(0, 10) === 'mw:ExtLink' || rel === 'nofollow') {
+    if (classList.includes('external') || rel.includes('nofollow')) {
       if (href.substring(0, 1) === '/') {
         linkNode.setAttribute('href', getFullUrl(href, MediaWiki.baseUrl))
       } else if (href.substring(0, 2) === './') {
@@ -147,7 +147,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
       }
       return null
     }
-    if (rel !== 'mw:WikiLink' && rel !== 'mw:referencedBy') {
+    if (rel.length && !rel.includes('mw:WikiLink') && !rel.includes('mw:referencedBy')) {
       return null
     }
   }

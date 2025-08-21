@@ -47,6 +47,7 @@ describe('Styles', () => {
     const $nonScrapedWikiLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'fake link')
     const $redLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'red link', '', { class: 'new' })
     const $selfLink = makeLink($doc, '', '', '', 'self link', { class: 'selflink mw-selflink' })
+    const $mirrorLink = makeLink($doc, '/wiki/British_Museum', 'nofollow', 'British Museum', '', { class: 'mirror-link' })
     const $editDiffLink = makeLink($doc, '/w/index.php?diff=1', '', 'edit diff link')
     const $specialMap = makeLink($doc, '/wiki/Special:Map/9/51.51/-0.08/en', '', 'Interactive map outlining London')
     const $hashLink = makeLink($doc, '#cite_note-LAS-150', '', 'The London Air Ambulance')
@@ -143,6 +144,12 @@ describe('Styles', () => {
     expect($selfLink.nodeName).toEqual('A')
     // selfLink still has no href
     expect($selfLink.getAttribute('href')).toBeFalsy()
+
+    await rewriteUrl(complexParentArticleId, dump, $mirrorLink)
+    // mirrorLink is still a link
+    expect($mirrorLink.nodeName).toEqual('A')
+    // mirrorLink HREF is correct and relative
+    expect($mirrorLink.getAttribute('href')).toEqual('../British_Museum')
 
     await rewriteUrl(complexParentArticleId, dump, $editDiffLink)
     // editDiffLink is still a link
