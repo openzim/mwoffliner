@@ -146,13 +146,13 @@ describe('ArticleRenderer', () => {
       Downloader.setUrlsDirectors(actionParseRenderer, actionParseRenderer)
     })
 
-    it('regular paged has content', async () => {
+    it('regular page has content', async () => {
       const articleId = '荷蘭Floriade世界園藝博覽會'
       const downloadRes = await actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })
       expect(downloadRes.data).toBeDefined()
     })
 
-    it('moved paged has content retrieved from fallback logic', async () => {
+    it('moved page has content retrieved from fallback logic', async () => {
       const articleId = '荷兰Floriade世界園藝博覽會'
       const downloadRes = await actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })
       expect(downloadRes.data).toBeDefined()

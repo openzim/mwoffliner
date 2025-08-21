@@ -14,8 +14,6 @@ await testRenders(
     articleList: 'Commands/summon,Commands',
     adminEmail: 'test@kiwix.org',
     mwActionApiPath: '/api.php',
-    mwModulePath: '/load.php',
-    mwWikiPath: '/w/',
   },
   async (outFiles) => {
     const articleFromDump = await zimdump(`show --url "Commands/summon" ${outFiles[0].outFile}`)

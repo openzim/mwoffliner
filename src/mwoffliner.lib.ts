@@ -101,6 +101,7 @@ async function execute(argv: any) {
     customFlavour,
     forceRender,
     forceSkin,
+    langVariant,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -158,11 +159,7 @@ async function execute(argv: any) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
   MediaWiki.getCategories = !!argv.getCategories
-  MediaWiki.wikiPath = mwWikiPath
-  MediaWiki.indexPhpPath = mwIndexPhpPath
   MediaWiki.actionApiPath = mwActionApiPath
-  MediaWiki.restApiPath = mwRestApiPath
-  MediaWiki.modulePathOpt = mwModulePath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword
   MediaWiki.username = mwUsername
@@ -191,14 +188,10 @@ async function execute(argv: any) {
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData()
+    mwMetaData = await MediaWiki.getMwMetaData({ mwWikiPath, mwIndexPhpPath, mwRestApiPath, mwModulePath, forceSkin, langVariant })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
-  }
-
-  if (forceSkin) {
-    MediaWiki.skin = forceSkin
   }
 
   const metaDataRequiredKeys = {
