@@ -26,6 +26,7 @@ Unreleased:
 * CHANGED: Deprecate `mwWikiPath` and `mwIndexPhpPath` CLI parameter, use values from the API instead (@Markus-Rost #2422)
 * CHANGED: Build `mwRestApiPath` and `mwModulePath` CLI parameter default values from the API (@Markus-Rost #2422)
 * NEW: Add `langVariant` CLI parameter for language conversion (@Markus-Rost #2399)
+* FIX: Merge initial API calls fetching site info (@Markus-Rost #2385)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

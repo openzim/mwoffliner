@@ -257,6 +257,7 @@ interface RenderedArticle {
 interface SiteInfoArgv {
   mwWikiPath?: string
   mwIndexPhpPath?: string
+  addNamespaces?: number[]
   mwRestApiPath?: string
   mwModulePath?: string
   forceSkin?: string
