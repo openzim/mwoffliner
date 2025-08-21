@@ -27,19 +27,13 @@ describe('ApiURLDirector', () => {
     })
   })
 
-  describe('buildNamespacesURL', () => {
-    it('should return a string URL with predefined query params to get article namespaces', () => {
-      const url = apiUrlDirector.buildNamespacesURL()
-
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases&format=json&formatversion=2')
-    })
-  })
-
   describe('buildSiteInfoURL', () => {
     it('should return a string URL with predefined query params for retrieving site info', () => {
       const url = apiUrlDirector.buildSiteInfoURL()
 
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=general%7Cskins%7Crightsinfo&format=json&formatversion=2')
+      expect(url).toBe(
+        'https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo%7Callmessages&siprop=general%7Cskins%7Crightsinfo%7Cnamespaces%7Cnamespacealiases&ammessages=tagline&amenableparser=1&list=gadgets&gaprop=id%7Cmetadata&gaallowedonly=1&gaenabledonly=1&format=json&formatversion=2',
+      )
     })
   })
 

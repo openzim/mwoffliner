@@ -30,17 +30,22 @@ export default class ApiURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
   }
 
-  buildNamespacesURL() {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'namespaces|namespacealiases', format: 'json', formatversion: '2' })
-      .build()
-  }
-
   buildSiteInfoURL() {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', meta: 'siteinfo', siprop: 'general|skins|rightsinfo', format: 'json', formatversion: '2' })
+      .setQueryParams({
+        action: 'query',
+        meta: 'siteinfo|allmessages',
+        siprop: 'general|skins|rightsinfo|namespaces|namespacealiases',
+        ammessages: 'tagline',
+        amenableparser: '1',
+        list: 'gadgets',
+        gaprop: 'id|metadata',
+        gaallowedonly: '1',
+        gaenabledonly: '1',
+        format: 'json',
+        formatversion: '2',
+      })
       .build()
   }
 
@@ -56,13 +61,6 @@ export default class ApiURLDirector {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId })
-      .build()
-  }
-
-  buildGadgetsUrl() {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', list: 'gadgets', gaprop: 'id|metadata', gaallowedonly: '1', gaenabledonly: '1', format: 'json', formatversion: '2' })
       .build()
   }
 }

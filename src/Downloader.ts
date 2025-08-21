@@ -19,7 +19,7 @@ import { CookieJar } from 'tough-cookie'
 
 import S3 from './S3.js'
 import * as logger from './Logger.js'
-import MediaWiki, { QueryOpts } from './MediaWiki.js'
+import MediaWiki, { QueryOpts, SiteInfoResponse } from './MediaWiki.js'
 import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
@@ -327,8 +327,8 @@ class Downloader {
     return etag && etag.replace(WEAK_ETAG_REGEX, '')
   }
 
-  public querySiteInfo(): KVS<any> {
-    return this.getJSON(this.apiUrlDirector.buildSiteInfoURL())
+  public querySiteInfo(): Promise<SiteInfoResponse> {
+    return this.getJSON<SiteInfoResponse>(this.apiUrlDirector.buildSiteInfoURL())
   }
 
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
