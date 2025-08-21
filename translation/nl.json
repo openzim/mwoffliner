@@ -5,5 +5,25 @@
 		]
 	},
 	"DISCLAIMER": "Dit artikel is uitgegeven door ${creator}. De tekst is beschikbaar onder ${license}, tenzij anders vermeld. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
-	"LAST_EDITED_ON": "Laatst bewerkt op ${date}"
+	"LAST_EDITED_ON": "Laatst bewerkt op ${date}",
+	"LICENSE_UNKNOWN": "een onbekende licentie",
+	"DOWNLOAD_ERRORS_HEADING": "Oeps. Artikel niet gevonden.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel ‘${articleTitle}’ is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dit artikel is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server ${server} niet op tijd details verstrekken over de HTML-code van dit artikel.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server ${server} de HTML-inhoud van dit artikel niet weergeven en werd er een HTTP 500-fout geretourneerd.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, is er een time-out opgetreden bij de server ${server} tijdens het weergeven van de HTML-inhoud van dit artikel. Er is een HTTP 504-fout geretourneerd.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, is er een time-out opgetreden in de ActionParse-API van de server ${server} tijdens het verwerken van dit artikel. Er is een HTTP 504-fout geretourneerd.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server} een HTTP 503-fout terwijl er details werden gegeven over de HTML-code van dit artikel.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een onverwachte fout met betrekking tot een onjuiste versie-ID.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een foutmelding die aangaf dat het artikel onbereikbaar was.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een HTTP 503-fout.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een foutmelding die betrekking had op de overschrijding van de bronlimieten van Parsoid.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een interne API-foutmelding.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een interne API-type-foutmelding.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server ${server}, bij het geven van details over de HTML-code van dit artikel, een foutmelding over een verkeerd argument.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Toen de ZIM die u bekijkt werd opgebouwd, kon de ActionParse-API van de server ${server} geen details over de HTML-code van dit artikel geven, omdat dit artikel veel te groot is. Het is aan te raden dit artikel in meerdere kleinere artikelen op de server ${server} op te splitsen.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Toen de ZIM die u bekijkt werd opgebouwd, kon de ActionParse-API van de server ${server} geen details over de HTML-code van dit artikel verstrekken, waardoor een leeg antwoord werd geretourneerd.",
+	"DOWNLOAD_ERRORS_LINE2": "Het ontbrekende artikel is vervangen door de plaatsvervangende pagina die u nu ziet.",
+	"DOWNLOAD_ERRORS_LINE3": "Laten we hopen dat het probleem op de server ${server} wordt opgelost en dat dit artikel wel in onze volgende versie van deze ZIM zal staan."
 }
