@@ -37,6 +37,26 @@ export function getNamespaceName(namespace: number) {
 }
 
 /**
+ * Extract the JS config variables from its headHtml, typically returned by MW API call when fetching article content
+ */
+export function extractJsConfigVars(headHtml: string, extraJsConfigVars) {
+  const jsConfigVars = JSON.parse(headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/)[1])
+  delete jsConfigVars.wgRequestId
+  delete jsConfigVars.wgUserId
+  delete jsConfigVars.wgUserIsTemp
+  delete jsConfigVars.wgUserEditCount
+  delete jsConfigVars.wgUserRegistration
+  delete jsConfigVars.wgUserFirstRegistration
+  return Object.assign(jsConfigVars, extraJsConfigVars, {
+    wgBreakFrames: false,
+    wgUserName: null,
+    wgUserGroups: ['*'],
+    wgIsProbablyEditable: false,
+    wgRelevantPageIsProbablyEditable: false,
+  })
+}
+
+/**
  * Extract the CSS class to apply on article <body> tag from its headHtml, typically returned by MW API call when fetching article content
  */
 export function extractBodyCssClass(headHtml: string): string {
