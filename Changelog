@@ -29,6 +29,7 @@ Unreleased:
 * FIX: Merge initial API calls fetching site info (@Markus-Rost #2385)
 * FIX: Rewrite non-Parsoid links properly (@Markus-Rost #2479)
 * FIX: Don't reserve space for elements that don't exist (@Markus-Rost #2495)
+* FIX: Get the whole article when the specified section is not available (@Markus-Rost #2480)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
