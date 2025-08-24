@@ -67,7 +67,7 @@ describe('articles utility', () => {
 
   test('extractHtmlCssClass', () => {
     expect(extractHtmlCssClass(fakeHeadHtml).split(' ').sort()).toEqual(
-      'client-nojs vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-page-tools-pinned-disabled vector-feature-toc-pinned-clientpref-1 vector-feature-main-menu-pinned-disabled vector-feature-limited-width-clientpref-1 vector-feature-limited-width-content-enabled vector-feature-custom-font-size-clientpref-1 vector-feature-appearance-pinned-clientpref-1 vector-feature-night-mode-enabled skin-theme-clientpref-day vector-sticky-header-enabled'
+      'client-nojs vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-page-tools-pinned-disabled vector-feature-toc-pinned-clientpref-0 vector-toc-not-available vector-feature-main-menu-pinned-disabled vector-feature-limited-width-clientpref-1 vector-feature-limited-width-content-enabled vector-feature-custom-font-size-clientpref-1 vector-feature-appearance-pinned-clientpref-0 vector-feature-night-mode-enabled skin-theme-clientpref-day vector-sticky-header-enabled'
         .split(' ')
         .sort(),
     )

@@ -69,7 +69,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       const expectedClasses = [
         'client-nojs',
         'skin-theme-clientpref-day',
-        'vector-feature-appearance-pinned-clientpref-1',
+        'vector-feature-appearance-pinned-clientpref-0',
         'vector-feature-custom-font-size-clientpref-1',
         'vector-feature-language-in-header-enabled',
         'vector-feature-language-in-main-page-header-disabled',
@@ -78,8 +78,9 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         'vector-feature-main-menu-pinned-disabled',
         'vector-feature-night-mode-enabled',
         'vector-feature-page-tools-pinned-disabled',
-        'vector-feature-toc-pinned-clientpref-1',
+        'vector-feature-toc-pinned-clientpref-0',
         'vector-sticky-header-enabled',
+        'vector-toc-not-available',
       ].sort()
       expect(articleDoc.documentElement.className.split(' ').sort()).toEqual(expectedClasses)
     })
