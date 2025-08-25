@@ -94,6 +94,10 @@ export class ActionParseRenderer extends Renderer {
           throw err
         }
         data = await Downloader.getJSON<any>(Downloader.getArticleUrl(logEvent.params.target_title))
+      } else if (err instanceof DownloadError && err.responseData.error?.code === 'nosuchsection') {
+        // For articles without the specified section, get the whole article instead
+        logger.warn(`Can't get a specific section of article "${articleId}", getting the complete article instead.`)
+        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(articleId))
       } else {
         throw err
       }
