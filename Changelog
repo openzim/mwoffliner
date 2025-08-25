@@ -28,6 +28,7 @@ Unreleased:
 * NEW: Add `langVariant` CLI parameter for language conversion (@Markus-Rost #2399)
 * FIX: Merge initial API calls fetching site info (@Markus-Rost #2385)
 * FIX: Rewrite non-Parsoid links properly (@Markus-Rost #2479)
+* FIX: Don't reserve space for elements that don't exist (@Markus-Rost #2495)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

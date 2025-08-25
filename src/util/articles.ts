@@ -58,11 +58,18 @@ export function extractBodyCssClass(headHtml: string): string {
  */
 export function extractHtmlCssClass(headHtml: string): string {
   const document = domino.createDocument(headHtml)
-  const cssClass = document.documentElement.className
-  // drop some known classes which do not makes sense in a ZIM
-  /* for (const blacklistedClass of []) {
-    cssClass = cssClass.replace(blacklistedClass, '')
-  } */
+  let cssClass = document.documentElement.className
+  // replace some known classes which do not makes sense in a ZIM
+  for (const [oldClass, newClass] of [
+    // don't reserve space for elements that don't exist
+    ['vector-toc-available', 'vector-toc-not-available'],
+    ['vector-feature-toc-pinned-clientpref-1', 'vector-feature-toc-pinned-clientpref-0 vector-toc-not-available'],
+    ['vector-feature-appearance-pinned-clientpref-1', 'vector-feature-appearance-pinned-clientpref-0'],
+    ['vector-feature-page-tools-pinned-enabled', 'vector-feature-page-tools-pinned-disabled'],
+    ['vector-feature-main-menu-pinned-enabled', 'vector-feature-main-menu-pinned-disabled'],
+  ]) {
+    cssClass = cssClass.replace(oldClass, newClass)
+  }
   // drop repetitions of two spaces
   return cssClass
     .split(' ')
