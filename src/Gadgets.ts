@@ -37,7 +37,7 @@ class Gadgets {
       const module = gadget.metadata.module
       if (module.peers && module.peers.length) {
         // Only JS Gadgets can have peers
-        cssGadgets.concat(module.peers)
+        cssGadgets.push(...module.peers)
         return jsGadgets.push(gadget.id)
       }
       if (module.scripts && module.scripts.length) return jsGadgets.push(gadget.id)

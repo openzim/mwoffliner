@@ -27,6 +27,8 @@ export async function sanitize_all(argv: any) {
     customZimLongDescription,
     customZimDescription,
     forceRender,
+    javaScript,
+    addModules,
     mwWikiPath,
     mwIndexPhpPath,
     mwActionApiPath,
@@ -57,6 +59,9 @@ export async function sanitize_all(argv: any) {
       throw new Error('Custom Flavour not found')
     }
   }
+
+  // sanitizing javaScript
+  sanitize_javaScript_addModules(javaScript, addModules)
 
   // sanitizing mwWikiPath
   if (mwWikiPath) {
@@ -177,6 +182,15 @@ export function sanitizeDoubleUsedParameters(options: object) {
 export function sanitize_speed(_speed: any) {
   if (_speed && isNaN(_speed)) {
     throw new Error('speed is not a number, please give a number value to --speed.')
+  }
+}
+
+export function sanitize_javaScript_addModules(javaScript: any, addModules: any) {
+  if (javaScript && !['none', 'trusted', 'all'].includes(javaScript)) {
+    throw new Error(`"${javaScript}" is not a valid value for option javaScript. It should be empty or one of [none, trusted, all].`)
+  }
+  if (javaScript === 'none' && addModules) {
+    throw new Error('options --javaScript=none and --addModules cannot be used together')
   }
 }
 
