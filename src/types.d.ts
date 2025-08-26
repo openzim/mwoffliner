@@ -67,7 +67,7 @@ interface RKVS<T> {
   deleteMany: (prop: string[]) => Promise<number>
   keys: () => Promise<string[]>
   len: () => Promise<number>
-  iterateItems: (numWorkers: number, func: (items: KVS<T>, run: number) => Promise<void>) => Promise<void>
+  iterateItems: (numWorkers: number, func: (items: KVS<T>, runningWorkers: number) => Promise<void>) => Promise<void>
   scan: (cursor: number) => Promise<{ cursor: number; items: KVS<T> }>
   flush: () => Promise<number>
 }
