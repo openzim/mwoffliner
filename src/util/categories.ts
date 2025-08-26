@@ -9,9 +9,9 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
   const nextCategoriesBatch: RKVS<ArticleDetail> = RedisStore.createRedisKvs(`${Date.now()}-request`)
   logger.log(`Fetching categories for [${await articleStore.len()}] articles`)
 
-  await articleStore.iterateItems(Downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, workerId: number) => {
+  await articleStore.iterateItems(Downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, runningWorkers: number) => {
     const articleKeys = Object.keys(articleKeyValuePairs)
-    logger.log(`Worker [${workerId}] getting categories for articles ${logger.logifyArray(articleKeys)}`)
+    logger.log(`Worker getting categories for articles [${logger.logifyArray(articleKeys)}] - ${runningWorkers} worker(s) running`)
 
     const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs).reduce((acc: any, [, detail]: [string, ArticleDetail]) => {
       for (const cat of detail.categories || []) {
