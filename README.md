@@ -61,6 +61,16 @@ npm i -g mwoffliner
 how your `npm` / OS is configured. `npm` permission checking can be a bit annoying for a
 newcomer. Please read the documentation carefully if you hit problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
 
+> [!WARNING]
+> Installing with `npm` on Apple Silicon devices specifically requires the following steps:
+```
+brew install jpeg
+echo 'export PATH="/opt/homebrew/opt/jpeg/bin:$PATH"' >> ~/.zshrc
+export LDFLAGS="-L/opt/homebrew/opt/jpeg/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/jpeg/include"
+npm i -g mwoffliner
+```
+
 Then you can run the scraper:
 ```bash
 mwoffliner --help
