@@ -59,6 +59,7 @@ interface DownloaderOpts {
   optimisationCacheUrl: string
   s3?: S3
   webp: boolean
+  trustedJs?: string[]
   backoffOptions?: BackoffOptions
   insecure?: boolean
 }
@@ -123,6 +124,7 @@ class Downloader {
   private _arrayBufferRequestOptions: AxiosRequestConfig
   private _jsonRequestOptions: AxiosRequestConfig
   private _streamRequestOptions: AxiosRequestConfig
+  public trustedJs: string[] = []
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
@@ -165,7 +167,7 @@ class Downloader {
     return this._apiUrlDirector
   }
 
-  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
+  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, trustedJs = config.output.mw.js_trusted.slice(), backoffOptions, insecure }: DownloaderOpts) {
     this.reset()
     this.uaString = uaString
     this._speed = speed
@@ -173,6 +175,7 @@ class Downloader {
     this._requestTimeout = reqTimeout
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
+    this.trustedJs = trustedJs
     this.s3 = s3
     this._apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
@@ -270,6 +273,7 @@ class Downloader {
     this._requestTimeout = undefined
     this.optimisationCacheUrl = undefined
     this._webp = false
+    this.trustedJs = []
     this.s3 = undefined
     this._apiUrlDirector = undefined
     this.insecure = false

@@ -210,7 +210,7 @@ export function cssPath(css: string, subDirectory = '') {
 }
 export function jsPath(js: string, subDirectory = '') {
   const path = isNodeModule(js) ? normalizeModule(js) : js
-  return `${subDirectory ? `${subDirectory}/` : ''}${path.replace(/(\.js)?$/, '')}.js`
+  return `${subDirectory ? `${subDirectory}/` : ''}${path}.js`
 }
 export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '') {
   const slashesInUrl = articleId.split('/').length - 1
