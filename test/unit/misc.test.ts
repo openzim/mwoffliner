@@ -115,10 +115,10 @@ describe('Misc utility', () => {
     })
 
     test('falls back to en strings if lang file is missing certain fields', () => {
-      const strings = getStringsForLang('fi')
+      const strings = getStringsForLang('ar')
       expect(strings).toMatchObject({
-        DISCLAIMER: 'This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.',
-        LAST_EDITED_ON: 'Viimeksi muokattu ${date}',
+        DISCLAIMER: 'هذه المقالة صادرة عن ${creator}.النص متاح تحت رخصة ${license} مالم يرد خلاف ذلك. قد تُطبَّق شروط إضافية على ملفات الوسائط.',
+        LAST_EDITED_ON: 'تم التحرير آخر مرة في ${date}',
         LICENSE_UNKNOWN: 'an unknown license',
         DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
         DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
