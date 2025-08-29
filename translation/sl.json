@@ -16,5 +16,14 @@
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionPArse strežnika ${server} med obdelavo tega članka presegel časovno omejitev in vrnil napako HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik ${server} ni pravočasno posredoval podrobnosti o HTML-ju tega članka.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil nepričakovano napako z napačnim ID-jem redakcije.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako izjeme »nedosegljivo«."
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako izjeme »nedosegljivo«.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako zaradi invariantne izjeme.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako, povezanimi s preseženimi omejitvami virov Parsoida.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil notranjo napako API-ja.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako zaradi notranjo napako tipa API.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako izjeme argumenta.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Ko se je ZIM, po katerem brskate, sestavljal, API ActionParse strežnika ${server} ni uspel podati podrobnosti o HTML-ju tega članka, ker je ta članek veliko prevelik. Nekdo bi ga verjetno moral razdeliti v več manjših člankov na strežniku ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Ko se je ZIM, po katerem brskate, sestavljal, API ActionParse strežnika ${server} ni uspel podati podrobnosti o HTML-ju tega članka in je vrnil prazen odgovor.",
+	"DOWNLOAD_ERRORS_LINE2": "Manjkajoči članek je bil nadomeščen z nadomestno stranjo, ki jo trenutno vidite.",
+	"DOWNLOAD_ERRORS_LINE3": "Upajmo, da bo težava na strežniku ${server} rešena in da bo naša naslednja različica tega ZIM-a vsebovala ta članek."
 }
