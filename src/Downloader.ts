@@ -197,6 +197,7 @@ class Downloader {
         }
         if (
           [
+            'internal_api_error_MWException',
             'internal_api_error_ArgumentCountError',
             'internal_api_error_DBConnectionError',
             'internal_api_error_DBUnexpectedError',
