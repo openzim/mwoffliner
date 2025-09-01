@@ -31,7 +31,7 @@ Unreleased:
 * FIX: Don't reserve space for elements that don't exist (@Markus-Rost #2495)
 * FIX: Get the whole article when the specified section is not available (@Markus-Rost #2480)
 * FIX: Retry ERR_CANCELED errors since this might be a transient problem (@benoit74 #2414)
-* FIX: Also retry `internal_api_error_MWException` and `internal_api_error_ThrottledError` errors (@benoit74 #2505 #2506)
+* FIX: Also retry `internal_api_error_MWException`, `internal_api_error_ThrottledError` and `internal_api_error_RuntimeException` errors (@benoit74 #2505 #2506 #2509)
 * FIX: Fix logging + documentation around `RedisKvs.iterateItems` (@benoit74 #2500)
 * FIX: Add redirects from all acceptable namespaces (@benoit74 #2429)
 
