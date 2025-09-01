@@ -79,9 +79,21 @@ export default class RedisKvs<T> implements RKVS<T> {
     return this.redisClient.hLen(this.dbName)
   }
 
+  /**
+   * Iteratively call function passed with batches of items from the underlying KVS hash, with a given number of workers
+   * working in parallel.
+   *
+   * This function scans the underlying KVS hash for items to batch. Batch size is "around" 10 items (Redis does
+   * not garantee exact batch size for SCAN operation). For every batch retrieved, passed "func" is called with the
+   * "items" retrieved.
+   *
+   * "numWorkers" are started in parallel, each processing a batch of items. Number of "runningWorkers" is passed to
+   * "func" called, mostly useful for logging / debugging purposes.
+   *
+   * This function returns when all items have been batched and passed to processing function.
+   */
   public iterateItems(numWorkers: number, func: (items: KVS<T>, runningWorkers: number) => Promise<void>): Promise<void> {
-    // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       let runningWorkers = 0
       let isScanning = false
       let done = false

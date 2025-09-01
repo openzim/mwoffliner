@@ -27,8 +27,8 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
   logger.log(`${retryCounter ? 'RE-' : ''}Downloading a total of [${retryCounter ? filesForAttempt : filesTotal}] files...`)
   let prevPercentProgress: string
 
-  await fileStore.iterateItems(Downloader.speed, async (fileDownloadPairs, workerId) => {
-    logger.info(`Worker [${workerId}] processing batch of [${Object.keys(fileDownloadPairs).length}] files`)
+  await fileStore.iterateItems(Downloader.speed, async (fileDownloadPairs, runningWorkers) => {
+    logger.log(`Worker processing batch of [${Object.keys(fileDownloadPairs).length}] files - ${runningWorkers} worker(s) running`)
 
     // todo align fileDownloadPairs and listOfArguments
     const listOfArguments = []
@@ -278,7 +278,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   // retry interval is an exponentional value from 1 to 60s
   // we assume rest of processing is "fast" and takes at most 1 minute
   const timeout = 2 * (Downloader.requestTimeout * 10 + (1 + 2 + 4 + 8 + 16 + 32 + 60 * 4) * 1000) + 60000
-  await articleDetailXId.iterateItems(Downloader.speed, (articleKeyValuePairs, workerId) => {
+  await articleDetailXId.iterateItems(Downloader.speed, (articleKeyValuePairs, runningWorkers) => {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       /*
@@ -292,7 +292,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
         reject(new Error(errorMessage))
       }, timeout)
 
-      logger.info(`Worker [${workerId}] processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}]`)
+      logger.log(`Worker processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}] - ${runningWorkers} worker(s) running`)
 
       const parsePromiseQueue: [string, Promise<Error>][] = []
 
