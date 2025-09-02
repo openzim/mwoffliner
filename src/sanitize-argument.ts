@@ -182,9 +182,10 @@ export function sanitize_speed(_speed: any) {
 }
 
 export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: string) {
-  const apiFullUrl = new URL(mwActionApiPath || MediaWiki.actionApiPath, mwUrl).toString()
-  await Downloader.get(apiFullUrl).catch((err) => {
-    throw new Error(`Mediawiki API URL [${apiFullUrl}] is not reachable:\n${err}`)
+  // We are building an API query "by-hand" because we've not yet initialized the whole URL director / URL builder stack
+  const apiQueryUrl = `${new URL(mwActionApiPath || MediaWiki.actionApiPath, mwUrl).toString()}?action=query&format=json&formatversion=2`
+  await Downloader.get(apiQueryUrl).catch((err) => {
+    throw new Error(`Mediawiki API is not reachable with ${apiQueryUrl}\n${err}`)
   })
 }
 
