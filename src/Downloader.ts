@@ -197,6 +197,7 @@ class Downloader {
         }
         if (
           [
+            'internal_api_error_RuntimeException',
             'internal_api_error_ThrottledError',
             'internal_api_error_MWException',
             'internal_api_error_ArgumentCountError',
