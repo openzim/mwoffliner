@@ -1,6 +1,6 @@
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, URL } from 'url'
 import pathParser from 'path'
 import * as logger from './Logger.js'
 import fs from 'fs'
@@ -9,6 +9,7 @@ import * as path from 'path'
 import { parameterDescriptions } from './parameterList.js'
 import { RENDERERS_LIST } from './util/const.js'
 import Downloader from './Downloader.js'
+import MediaWiki from './MediaWiki.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -100,10 +101,10 @@ export async function sanitize_all(argv: any) {
 // perform live checks of arguments needing a connection "somewhere"
 export async function check_all(argv: any) {
   // extracting required arguments
-  const { mwUrl, customZimFavicon, optimisationCacheUrl, insecure } = argv
+  const { mwUrl, mwActionApiPath, customZimFavicon, optimisationCacheUrl, insecure } = argv
 
-  // check mwUrl availability
-  await check_mwUrl(mwUrl)
+  // check mediawiki API availability
+  await check_mwApiReachability(mwUrl, mwActionApiPath)
 
   // check s3 availability
   await check_s3(optimisationCacheUrl, insecure)
@@ -180,10 +181,16 @@ export function sanitize_speed(_speed: any) {
   }
 }
 
-export async function check_mwUrl(mwUrl: string) {
-  await Downloader.get(mwUrl).catch((err) => {
-    throw new Error(`mwUrl [${mwUrl}] is not valid:\n${err}`)
+export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: string) {
+  // We are building an API query "by-hand" because we've not yet initialized the whole URL director / URL builder stack
+  const apiQueryUrl = `${new URL(mwActionApiPath || MediaWiki.actionApiPath, mwUrl).toString()}?action=query&format=json&formatversion=2`
+  const value = await Downloader.get(apiQueryUrl).catch((err) => {
+    throw new Error(`Mediawiki API is not reachable with ${apiQueryUrl}\n${err}`)
   })
+  const contentType = value.headers['content-type']
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Mediawiki API is returning '${contentType}' Content-Type instead of 'application/json' with ${apiQueryUrl}`)
+  }
 }
 
 export function sanitize_adminEmail(adminEmail: any) {
