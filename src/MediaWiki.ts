@@ -152,6 +152,10 @@ class MediaWiki {
     this.#password = value
   }
 
+  get actionApiPath() {
+    return this.#actionApiPath
+  }
+
   set actionApiPath(value: string) {
     if (value) {
       this.#actionApiPath = value
