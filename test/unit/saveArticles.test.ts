@@ -199,7 +199,7 @@ describe('saveArticles', () => {
 
     test(`Keep empty paragraphs for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
-      dump.opts.keepEmptyParagraphs = true
+      dump.opts.keepEmptySections = true
       await RenderingContext.createRenderers(renderer as renderName, true)
       const articleId = 'Western_Greenland'
       const articleUrl = Downloader.getArticleUrl(articleId)
