@@ -608,15 +608,7 @@ async function execute(argv: any) {
     doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
     const articlesWithImages: ArticleDetail[] = []
     const allArticles: ArticleDetail[] = []
-    for (const articleTitle of articleListLines) {
-      let articleId = articleTitle.replace(/ /g, '_')
-
-      // check if this is a redirect
-      const redirect = await redirectsXId.get(articleId)
-      if (redirect) {
-        articleId = redirect.targetId
-      }
-
+    for (const articleId of articleListLines) {
       const articleDetail = await articleDetailXId.get(articleId)
       if (articleDetail) {
         allArticles.push(articleDetail)

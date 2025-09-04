@@ -767,7 +767,7 @@ export abstract class Renderer {
       }
     })
 
-    /* Remove empty paragraphs */
+    /* Remove empty sections */
     if (!dump.opts.keepEmptySections) {
       const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('section'))
       for (const section of sections) {
