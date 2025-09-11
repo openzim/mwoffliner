@@ -68,7 +68,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       }
       const expectedClasses = [
         'client-nojs',
-        'skin-theme-clientpref-day',
+        'skin-theme-clientpref-os',
         'vector-feature-appearance-pinned-clientpref-0',
         'vector-feature-custom-font-size-clientpref-1',
         'vector-feature-language-in-header-enabled',

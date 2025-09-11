@@ -67,6 +67,9 @@ export function extractHtmlCssClass(headHtml: string): string {
     ['vector-feature-appearance-pinned-clientpref-1', 'vector-feature-appearance-pinned-clientpref-0'],
     ['vector-feature-page-tools-pinned-enabled', 'vector-feature-page-tools-pinned-disabled'],
     ['vector-feature-main-menu-pinned-enabled', 'vector-feature-main-menu-pinned-disabled'],
+    // if vector2022 night mode is enabled, use the preferred color scheme
+    ['vector-feature-night-mode-enabled skin-theme-clientpref-day', 'vector-feature-night-mode-enabled skin-theme-clientpref-os'],
+    ['vector-feature-night-mode-enabled skin-theme-clientpref-night', 'vector-feature-night-mode-enabled skin-theme-clientpref-os'],
   ]) {
     cssClass = cssClass.replace(oldClass, newClass)
   }
