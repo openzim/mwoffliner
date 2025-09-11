@@ -25,12 +25,14 @@ At scraper startup, it retrieves generic data about Mediawiki instance using `ac
 
 Currently, scrape uses this call to retrieve:
 
-- from `siteinfo`: `general` info (language, title, mainPage, site name, logo, text direction, ...), `skins` (to detect default skin), `rightsinfo` (to extract the license), `namespaces` and `namespacealiases` to build the list of namespcaes
+- from `siteinfo`: `general` info (language, title, mainPage, site name, logo, text direction, ...), `skins` (to detect default skin), `rightsinfo` (to extract the license), `namespaces` and `namespacealiases` to build the list of namespaces
 - from `allmessages`: the `tagline` (subtitle)
 
 ## Retrive list of articles to include and their metadata
 
 First, the scraper needs a list of article IDs and their details (redirects, ...).
+
+"Article ID" refers to the page title with underscores instead of spaces, not the numeric page ID.
 
 If user specified the exact list of articles to retrieve, then scraper simply request details about every articles in the list, in batches of about 50 articles (with `action=query&titles=titleX|titleY|...` ; batch sizes may vary due to constraints on query parameters size).
 
