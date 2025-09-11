@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Ensure homepage includes redirected articles from --articleList (@ziaddevv #2206)
 * FIX: Support section redirects (@Markus-Rost @benoit74 #2382)
 * FIX: Stop removing links around images (@benoit74 #1214)
 * FIX: Retry more transient errors (@benoit74 #2425)
