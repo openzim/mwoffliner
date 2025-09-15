@@ -2,6 +2,7 @@ import { createClient } from 'redis'
 import type { RedisClientType } from 'redis'
 import RedisKvs from './util/RedisKvs.js'
 import * as logger from './Logger.js'
+import RedisQueue from './util/RedisQueue.js'
 
 class RedisStore implements RS {
   private static instance: RedisStore
@@ -9,9 +10,13 @@ class RedisStore implements RS {
   #client: RedisClientType
   #storesReady: boolean
   #filesToDownloadXPath: RKVS<FileDetail>
-  #filesToRetryXPath: RKVS<FileDetail>
   #articleDetailXId: RKVS<ArticleDetail>
   #redirectsXId: RKVS<ArticleRedirect>
+  #filesQueues: RedisQueue<FileToDownload>[]
+
+  private constructor() {
+    this.#filesQueues = []
+  }
 
   public get client() {
     return this.#client
@@ -21,16 +26,16 @@ class RedisStore implements RS {
     return this.#filesToDownloadXPath
   }
 
-  public get filesToRetryXPath(): RKVS<FileDetail> {
-    return this.#filesToRetryXPath
-  }
-
   public get articleDetailXId(): RKVS<ArticleDetail> {
     return this.#articleDetailXId
   }
 
   public get redirectsXId(): RKVS<ArticleRedirect> {
     return this.#redirectsXId
+  }
+
+  public get filesQueues(): RedisQueue<FileToDownload>[] {
+    return this.#filesQueues
   }
 
   public static getInstance(): RedisStore {
@@ -83,7 +88,7 @@ class RedisStore implements RS {
   public async close() {
     if (this.#client.isReady && this.#storesReady) {
       logger.log('Flushing Redis DBs')
-      await Promise.all([this.#filesToDownloadXPath.flush(), this.#filesToRetryXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush()])
+      await Promise.all([this.#filesToDownloadXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush(), ...this.#filesQueues.map((queue) => queue.flush)])
     }
     if (this.#client.isOpen) {
       await this.#client.quit()
@@ -91,7 +96,7 @@ class RedisStore implements RS {
   }
 
   public async checkForExistingStores() {
-    const patterns = ['*-media', '*-media-retry', '*-detail', '*-redirect']
+    const patterns = ['*-media', '*-detail', '*-redirect', '*-files']
     let keys: string[] = []
     for (const pattern of patterns) {
       keys = keys.concat(await this.#client.keys(pattern))
@@ -101,7 +106,8 @@ class RedisStore implements RS {
       try {
         const length = await this.#client.hLen(key)
         const time = new Date(Number(key.slice(0, key.indexOf('-'))))
-        logger.error(`Found store from previous run from ${time} that is still in redis: ${key} with length ${length}`)
+        logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key} with length ${length}`)
+        this.#client.del(key)
       } catch {
         logger.error(`Key ${key} exists in DB, and is no hash.`)
       }
@@ -110,11 +116,6 @@ class RedisStore implements RS {
 
   private async populateStores() {
     this.#filesToDownloadXPath = new RedisKvs(this.#client, `${Date.now()}-media`, {
-      u: 'url',
-      m: 'mult',
-      w: 'width',
-    })
-    this.#filesToRetryXPath = new RedisKvs(this.#client, `${Date.now()}-media-retry`, {
       u: 'url',
       m: 'mult',
       w: 'width',
