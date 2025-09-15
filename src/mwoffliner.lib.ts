@@ -233,7 +233,7 @@ async function execute(argv: any) {
   await RenderingContext.createRenderers(forceRender, hasWikimediaMobileApi)
 
   await RedisStore.connect()
-  const { articleDetailXId, filesToDownloadXPath, filesToRetryXPath, redirectsXId } = RedisStore
+  const { articleDetailXId, filesToDownloadXPath, redirectsXId } = RedisStore
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
   await mkdirPromise(outputDirectory)
@@ -455,7 +455,7 @@ async function execute(argv: any) {
       }),
     )
 
-    await downloadFiles(filesToDownloadXPath, filesToRetryXPath, zimCreator, dump)
+    await downloadFiles(filesToDownloadXPath, zimCreator, dump)
 
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)

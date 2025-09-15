@@ -39,6 +39,8 @@ Unreleased:
 * CHANGED: If vector2022 night mode is enabled, use the preferred color scheme (@Markus-Rost #2086)
 * NEW: Add `maxlag` API parameter to reduce pressure on Mediawiki servers during high load (@benoit74 #2365)
 * FIX: Better handling of audio resources in articles for full ZIMs (@benoit74 #2420)
+* CHANGED: Rework file downloads to reduce pressure on servers and better handle throttling (@benoit74 #2377)
+* FIX: Automatically delete old Redis lists (@benoit74 #1906)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

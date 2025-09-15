@@ -9,119 +9,187 @@ import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
 import { jsPath } from './index.js'
 import { config } from '../config.js'
-import { getSizeFromUrl } from './misc.js'
-import { CONCURRENCY_LIMIT, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
+import { getSizeFromUrl, parseRetryAfterHeader } from './misc.js'
+import { FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK, FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import RenderingContext from '../renderers/rendering.context.js'
-import { zimCreatorMutex } from '../mutex.js'
+import { fileDownloadMutex, zimCreatorMutex } from '../mutex.js'
 import { truncateUtf8Bytes } from './misc.js'
 import { isMainPage } from './articles.js'
+import RedisQueue from './RedisQueue.js'
 
-export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump, retryCounter = 0) {
-  await retryStore.flush()
-  const filesForAttempt = await fileStore.len()
-  const filesTotal = filesForAttempt + dump.status.files.success + dump.status.files.fail
-  const doRetry = retryCounter < MAX_FILE_DOWNLOAD_RETRIES
+export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump) {
+  interface HostData {
+    filesToDownload: RedisQueue<FileToDownload>
+    lastRequestDate?: number
+    requestInterval: number
+    notBeforeDate?: number
+    downloadSuccess: number
+    downloadFailure: number
+    downloadsComplete: boolean
+  }
 
-  logger.log(`${retryCounter ? 'RE-' : ''}Downloading a total of [${retryCounter ? filesForAttempt : filesTotal}] files...`)
   let prevPercentProgress: string
 
-  await fileStore.iterateItems(Downloader.speed, async (fileDownloadPairs, runningWorkers) => {
-    logger.info(`Worker processing batch of [${Object.keys(fileDownloadPairs).length}] files - ${runningWorkers} worker(s) running`)
+  // create structure + Redis queue to requests hosts in a responsible manner
+  const hosts = new Map<string, HostData>()
+  const filesTotal = await RedisStore.filesToDownloadXPath.len()
 
-    // todo align fileDownloadPairs and listOfArguments
-    const listOfArguments = []
-    for (const [path, { url, mult, width, kind }] of Object.entries(fileDownloadPairs)) {
-      listOfArguments.push({ path, url, mult, width, kind })
-    }
-
-    const responses = await downloadBulk(listOfArguments)
-    for (const resp of responses) {
-      let isFailed = false
-      try {
-        if (resp.result && resp.result.content && resp.result.contentType) {
-          // { FRONT_ARTICLE: 0 } is here very important, should we retrieve HTML we want to be sure the libzim will
-          // not consider it for title index
-          // const item = new StringItem(`${config.output.dirs.assets}/${resp.path}`, resp.result.contentType, null, { FRONT_ARTICLE: 0 }, resp.result.content)
-          const item = new StringItem(resp.path, resp.result.contentType, null, { FRONT_ARTICLE: 0 }, resp.result.content)
-          await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
-          dump.status.files.success += 1
-        } else {
-          isFailed = true
-        }
-      } catch {
-        isFailed = true
-      } finally {
-        if (isFailed) {
-          if (doRetry && resp.status !== 404) {
-            await retryStore.set(resp.path, { url: resp.url, mult: resp.mult, width: resp.width, kind: resp.kind })
-          } else {
-            logger.warn(`Error downloading file [${urlHelper.deserializeUrl(resp.url)}], skipping`)
-            dump.status.files.fail += 1
-          }
-        }
+  await RedisStore.filesToDownloadXPath.iterateItems(1, async (filesToDownload: KVS<FileDetail>) => {
+    for (const [path, { url, mult, width, kind }] of Object.entries(filesToDownload)) {
+      const hostname = new URL(urlHelper.deserializeUrl(url)).hostname
+      if (!hosts.has(hostname)) {
+        const filesToDownload = new RedisQueue<FileToDownload>(RedisStore.client, `${hostname}-files`)
+        RedisStore.filesQueues.push(filesToDownload)
+        filesToDownload.flush()
+        hosts.set(hostname, {
+          filesToDownload,
+          requestInterval: 10, // initial request interval is 10 ms
+          downloadSuccess: 0,
+          downloadFailure: 0,
+          downloadsComplete: false,
+        })
       }
-      if ((dump.status.files.success + dump.status.files.fail) % (10 * Downloader.speed) === 0) {
-        const percentProgress = (((dump.status.files.success + dump.status.files.fail) / filesTotal) * 100).toFixed(1)
-        if (percentProgress !== prevPercentProgress) {
-          prevPercentProgress = percentProgress
-          logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`)
-        }
-      }
+      hosts.get(hostname).filesToDownload.push({
+        path: path,
+        url: url,
+        mult: mult,
+        width: width,
+        kind: kind,
+        downloadAttempts: 0,
+      })
     }
   })
 
-  logger.log(`Done with ${retryCounter ? 'RE-' : ''}Downloading [${retryCounter ? filesForAttempt : filesTotal}] files`)
+  await RedisStore.filesToDownloadXPath.flush()
 
-  if (doRetry) {
-    const amountToRetry = await retryStore.len()
-    if (amountToRetry > 0) {
-      const ts = (retryCounter + 1) * 10
-      logger.log(`Waiting ${ts} seconds before retrying ${amountToRetry} files`)
-      await new Promise((res) => setTimeout(res, ts * 1000))
-      await downloadFiles(retryStore, fileStore, zimCreator, dump, retryCounter + 1)
-    } else {
-      logger.log('No files to retry')
+  /**
+   * Return next file ready to download or wait if all hosts need to make a pause.
+   * Return null when there is no more file to download.
+   */
+  async function getNextFileToDownload(): Promise<{ fileToDownload: FileToDownload; hostData: HostData; hostname: string }> {
+    // loop until we've found a file to download or list is empty
+    while (true) {
+      // check if all donwloads have completed and exit
+      const hostValues = Array.from(hosts.values())
+      const completedHosts = hostValues.reduce((buf, host) => {
+        return host.downloadsComplete ? buf + 1 : 0
+      }, 0)
+      if (completedHosts == hostValues.length) {
+        return null
+      }
+
+      for (const [hostname, hostData] of hosts.entries()) {
+        // check conditions which leads to ignore current host
+        if (
+          hostData.downloadsComplete ||
+          (hostData.notBeforeDate && hostData.notBeforeDate > Date.now()) ||
+          (hostData.lastRequestDate && hostData.lastRequestDate + hostData.requestInterval > Date.now())
+        ) {
+          continue
+        }
+
+        // grab next item from Redis queue
+        const fileToDownload = await hostData.filesToDownload.pop()
+        if (!fileToDownload) {
+          hostData.downloadsComplete = true
+          continue
+        }
+
+        // modify lastRequestDate immediately so that all workers are aware
+        hostData.lastRequestDate = Date.now()
+        return { fileToDownload, hostData, hostname }
+      }
+
+      // pause few milliseconds, no host has something to process (just to not burn CPU)
+      await new Promise((resolve) => {
+        setTimeout(resolve, 10)
+      })
     }
   }
-}
 
-async function downloadBulk(listOfArguments: any[]): Promise<any> {
-  try {
-    // Enhance arguments array to have an index of the argument at hand
-    const argsCopy = [].concat(listOfArguments.map((val, ind) => ({ val, ind })))
-    const argList = []
-
-    while (argsCopy.length > 0) {
-      const arg = argsCopy.shift()
-      argList.push(arg)
+  /**
+   * Really try to download one file, handling potential errors received to slow down host, stop scraper, ignore failed file
+   * @param fileToDownload information about the file to download
+   * @param hostname hostname to process
+   * @param hostData data about the host to process
+   * @param workerId ID of worker currently processing this download
+   */
+  async function workerDownloadFile(fileToDownload: FileToDownload, hostname: string, hostData: HostData, workerId: number) {
+    if ((dump.status.files.success + dump.status.files.fail) % (10 * Downloader.speed) === 0) {
+      const percentProgress = (((dump.status.files.success + dump.status.files.fail) / filesTotal) * 100).toFixed(1)
+      if (percentProgress !== prevPercentProgress) {
+        prevPercentProgress = percentProgress
+        logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`)
+      }
+      if (dump.status.files.fail > FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK && (dump.status.files.fail * 10000) / filesTotal > FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND) {
+        throw new Error(`Too many files failed to download: [${dump.status.files.fail}/${filesTotal}]`)
+      }
     }
-    return pmap(
-      argList,
-      async (arg) => {
-        const resp: any = {}
-        resp.path = arg.val.path
-        resp.url = arg.val.url
-        resp.mult = arg.val.mult
-        resp.width = arg.val.width
-        resp.kind = arg.val.kind
 
-        return Downloader.downloadContent(arg.val.url, arg.val.kind, false)
-          .then((r) => {
-            resp.result = r
-            return resp
-          })
-          .catch((err) => {
-            resp.status = err.response?.status
-            return resp
-          })
-      },
-      { concurrency: CONCURRENCY_LIMIT },
-    )
-  } catch (err) {
-    logger.log(`Not able download in bulk due to ${err}`)
+    fileToDownload.downloadAttempts += 1
+    logger.info(`Worker ${workerId} downloading ${urlHelper.deserializeUrl(fileToDownload.url)} (${fileToDownload.kind})`)
+    await Downloader.downloadContent(fileToDownload.url, fileToDownload.kind, false)
+      .then(async (resp) => {
+        if (resp && resp.content && resp.contentType) {
+          // { FRONT_ARTICLE: 0 } is here very important, should we retrieve HTML we want to be sure the libzim will
+          // not consider it for title index
+          const item = new StringItem(fileToDownload.path, resp.contentType, null, { FRONT_ARTICLE: 0 }, resp.content)
+          await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
+          dump.status.files.success += 1
+          hostData.downloadSuccess += 1
+        } else {
+          throw new Error(`Bad response received: ${resp}`)
+        }
+      })
+      .catch(async (err) => {
+        if (fileToDownload.downloadAttempts > MAX_FILE_DOWNLOAD_RETRIES || (err.response && err.response.status == 404)) {
+          logger.warn(`Error downloading file [${urlHelper.deserializeUrl(fileToDownload.url)}] [status=${err.response?.status}], skipping`)
+          dump.status.files.fail += 1
+          hostData.downloadFailure += 1
+        } else {
+          if (err.response) {
+            const retryAfterHeader = err.response.headers['retry-after'].toString()
+            if (retryAfterHeader) {
+              const retryDate = parseRetryAfterHeader(retryAfterHeader)
+              if (retryDate) {
+                hostData.notBeforeDate = retryDate
+                logger.log(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
+              } else {
+                logger.warn(`Received a [Retry-After=${retryAfterHeader}] from ${hostname} but failed to interpret it`)
+              }
+            }
+          }
+          if (err.response && [429, 503, 524].includes(err.response.status)) {
+            hostData.requestInterval = hostData.requestInterval * 1.2 // 1.2 is arbitrary value to progressively slow requests to host down
+            logger.log(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
+          }
+          await hostData.filesToDownload.push(fileToDownload)
+        }
+      })
   }
+
+  await pmap(
+    Array.from({ length: Downloader.speed }, (_, i) => i),
+    async (workerId: number) => {
+      while (true) {
+        // get next file to download in a Mutex (we do not want two workers trying to get next file at same time
+        // since we need to take into account limits per hostname, so this getNextFileToDownload will update
+        // data about load per host)
+        const nextFileData = await fileDownloadMutex.runExclusive(getNextFileToDownload)
+        if (!nextFileData) break
+        const { fileToDownload, hostname, hostData } = nextFileData
+        await workerDownloadFile(fileToDownload, hostname, hostData, workerId)
+      }
+    },
+    { concurrency: Downloader.speed },
+  )
+
+  logger.log(
+    `Done with downloading ${filesTotal} files: ${dump.status.files.success} success, ${dump.status.files.fail} fail: `,
+    JSON.stringify(Object.fromEntries([...hosts].map(([hostname, hostData]) => [hostname, { success: hostData.downloadSuccess, fail: hostData.downloadFailure }])), null, '\t'),
+  )
 }
 
 async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
