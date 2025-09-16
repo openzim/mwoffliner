@@ -28,7 +28,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, retryStore: RKV
   let prevPercentProgress: string
 
   await fileStore.iterateItems(Downloader.speed, async (fileDownloadPairs, runningWorkers) => {
-    logger.log(`Worker processing batch of [${Object.keys(fileDownloadPairs).length}] files - ${runningWorkers} worker(s) running`)
+    logger.info(`Worker processing batch of [${Object.keys(fileDownloadPairs).length}] files - ${runningWorkers} worker(s) running`)
 
     // todo align fileDownloadPairs and listOfArguments
     const listOfArguments = []
@@ -292,7 +292,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
         reject(new Error(errorMessage))
       }, timeout)
 
-      logger.log(`Worker processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}] - ${runningWorkers} worker(s) running`)
+      logger.info(`Worker processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}] - ${runningWorkers} worker(s) running`)
 
       const parsePromiseQueue: [string, Promise<Error>][] = []
 
