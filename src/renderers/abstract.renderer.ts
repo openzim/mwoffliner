@@ -257,7 +257,8 @@ export abstract class Renderer {
     // Take into account the standard case where <audio> has no <source> child
     if (audioSourceEls.length == 0) {
       if (originalSrc) {
-        // If audio has a single `src` attribute, this is an acceptable src
+        // If audio has a single `src` or `resource` attribute, this is an acceptable src
+        audioEl.removeAttribute('resource') // cleanup `resource attribute, `src` will be set afterwards
         return audioEl
       } else {
         return null
