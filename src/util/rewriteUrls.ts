@@ -183,7 +183,7 @@ async function checkIfArticlesMirrored(articleTitles: string[], articleDetailXId
   return [mirrored, unmirrored]
 }
 
-async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
+export async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
   const mediaDependencies: string[] = []
 
   /*
@@ -232,10 +232,6 @@ async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoEleme
   }
 
   return { mediaDependencies }
-}
-
-export function rewriteUrl(articleId: string, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
-  return rewriteUrls(articleId, dump, [linkNode])
 }
 
 export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, articleId: string, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
