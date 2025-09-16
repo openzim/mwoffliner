@@ -1,3 +1,4 @@
+import { config } from '../../../config.js'
 import urlBuilder from './url.builder.js'
 
 /**
@@ -22,6 +23,7 @@ export default class ApiURLDirector {
         formatversion: '2',
         cmtitle: articleId,
         cmcontinue: continueStr,
+        maxlag: config.defaults.maxlag,
       })
       .build()
   }
@@ -45,6 +47,7 @@ export default class ApiURLDirector {
         gaenabledonly: '1',
         format: 'json',
         formatversion: '2',
+        maxlag: config.defaults.maxlag,
       })
       .build()
   }
@@ -54,13 +57,16 @@ export default class ApiURLDirector {
   }
 
   buildLogEventsQuery(letype: string, articleId: string) {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'query', list: 'logevents', letype: letype, letitle: articleId, format: 'json' }).build()
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({ action: 'query', list: 'logevents', letype: letype, letitle: articleId, format: 'json', maxlag: config.defaults.maxlag })
+      .build()
   }
 
   buildArticleApiURL(articleId: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId })
+      .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId, maxlag: config.defaults.maxlag })
       .build()
   }
 }

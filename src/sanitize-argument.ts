@@ -10,6 +10,7 @@ import { parameterDescriptions } from './parameterList.js'
 import { RENDERERS_LIST } from './util/const.js'
 import Downloader from './Downloader.js'
 import MediaWiki from './MediaWiki.js'
+import { config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -183,7 +184,7 @@ export function sanitize_speed(_speed: any) {
 
 export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: string) {
   // We are building an API query "by-hand" because we've not yet initialized the whole URL director / URL builder stack
-  const apiQueryUrl = `${new URL(mwActionApiPath || MediaWiki.actionApiPath, mwUrl).toString()}?action=query&format=json&formatversion=2`
+  const apiQueryUrl = `${new URL(mwActionApiPath || MediaWiki.actionApiPath, mwUrl).toString()}?action=query&format=json&formatversion=2&maxlag=${config.defaults.maxlag}`
   const value = await Downloader.get(apiQueryUrl).catch((err) => {
     throw new Error(`Mediawiki API is not reachable with ${apiQueryUrl}\n${err}`)
   })

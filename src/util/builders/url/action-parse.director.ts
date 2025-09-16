@@ -1,3 +1,4 @@
+import { config } from '../../../config.js'
 import urlBuilder from './url.builder.js'
 
 /**
@@ -33,6 +34,7 @@ export default class ActionParseURLDirector {
           redirects: '1',
           formatversion: '2',
           section: sectionId,
+          maxlag: config.defaults.maxlag,
         },
         '?',
         true,
