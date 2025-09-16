@@ -1,7 +1,7 @@
 import domino from 'domino'
 import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
-import { rewriteUrl } from '../../src/util/rewriteUrls.js'
+import { rewriteUrls } from '../../src/util/rewriteUrls.js'
 import { makeLink, setupScrapeClasses } from '../util.js'
 import { getArticleIds } from '../../src/util/mw-api.js'
 import { saveArticles } from '../../src/util/saveArticles.js'
@@ -10,8 +10,13 @@ import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import Downloader from '../../src/Downloader.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
+import { Dump } from '../../src/Dump.js'
 
 jest.setTimeout(20000)
+
+function rewriteUrl(articleId: string, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
+  return rewriteUrls(articleId, dump, [linkNode])
+}
 
 describe('Styles', () => {
   beforeAll(startRedis)
