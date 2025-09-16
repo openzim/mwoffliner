@@ -13,7 +13,7 @@ describe('MediaTreatment', () => {
       return null
     }
     public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement) {
-      return this.treatVideo(dump, srcCache, articleId, videoEl)
+      return this.treatAudioVideo(dump, srcCache, articleId, videoEl)
     }
     public async testTreatSubtitle(trackEle: DominoElement, articleId: string) {
       return this.treatSubtitle(trackEle, articleId)
