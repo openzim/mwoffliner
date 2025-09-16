@@ -15,6 +15,7 @@ import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
+import { config } from './config.js'
 
 export interface QueryOpts {
   action: string
@@ -25,6 +26,7 @@ export interface QueryOpts {
   rdprop: string
   redirects?: boolean
   formatversion: string
+  maxlag: string
 }
 
 export interface SiteInfoResponse {
@@ -241,6 +243,7 @@ class MediaWiki {
       rdprop: 'title|fragment',
       redirects: false,
       formatversion: '2',
+      maxlag: config.defaults.maxlag,
     }
 
     this.#hasWikimediaDesktopApi = null
@@ -373,7 +376,7 @@ class MediaWiki {
       }
 
       // Getting token to login.
-      const { content } = await Downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2', 'data')
+      const { content } = await Downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2&maxlag=' + config.defaults.maxlag, 'data')
 
       // Logging in
       await Downloader.request({
