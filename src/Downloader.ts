@@ -191,7 +191,7 @@ class Downloader {
           return true // retry all connection issues
         }
         const httpReturnCode = err.response?.status || err.httpReturnCode
-        if ([429, 500, 502, 503, 504].includes(httpReturnCode)) {
+        if ([429, 500, 502, 503, 504, 524].includes(httpReturnCode)) {
           logger.log(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
           return true // retry these HTTP status codes
         }
