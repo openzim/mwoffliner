@@ -106,35 +106,47 @@ export abstract class Renderer {
     }
   }
 
-  protected async treatVideo(
+  protected async treatAudioVideo(
     dump: Dump,
     srcCache: KVS<boolean>,
     articleId: string,
-    videoEl: DominoElement,
+    audioVideoEl: DominoElement,
   ): Promise<{ imageDependencies: string[]; videoDependencies: string[]; subtitles: string[] }> {
     const imageDependencies: string[] = []
     const videoDependencies: string[] = []
     const subtitles: string[] = []
 
     if (dump.nopic || dump.novid || dump.nodet) {
-      DOMUtils.deleteNode(videoEl)
+      DOMUtils.deleteNode(audioVideoEl)
       return { imageDependencies, videoDependencies, subtitles }
     }
 
-    this.adjustVideoElementAttributes(videoEl)
+    const isVideo = audioVideoEl.tagName === 'VIDEO'
+    const isAudio = audioVideoEl.tagName === 'AUDIO'
 
-    const chosenVideoSourceEl = this.chooseBestVideoSource(videoEl)
+    if (!isAudio && !isVideo) {
+      throw new Error(`Cannot treat non audio/video HTML element: \n${audioVideoEl.outerHTML}`)
+    }
 
-    if (!chosenVideoSourceEl) {
-      logger.warn(`Unable to find an appropriate video/audio source for an media element in article '${articleId}'`)
-      DOMUtils.deleteNode(videoEl)
+    if (isVideo) {
+      this.adjustVideoElementAttributes(audioVideoEl)
+    }
+
+    const chosenAudioVideoSourceEl = isVideo ? this.chooseBestVideoSource(audioVideoEl) : this.chooseBestAudioSource(audioVideoEl)
+
+    if (!chosenAudioVideoSourceEl) {
+      logger.warn(`Deleting audio/video HTML node missing an appropriate source in article '${articleId}':\n${audioVideoEl.outerHTML}`)
+      DOMUtils.deleteNode(audioVideoEl)
       return { imageDependencies, videoDependencies, subtitles }
     }
 
-    this.handleVideoPoster(videoEl, articleId, imageDependencies, srcCache)
-    this.updateVideoSrc(chosenVideoSourceEl, articleId, srcCache, videoDependencies)
+    if (isVideo) {
+      this.handleVideoPoster(audioVideoEl, articleId, imageDependencies, srcCache)
+    }
 
-    const trackElements = Array.from(videoEl.querySelectorAll('track'))
+    this.updateAudioVideoSrc(chosenAudioVideoSourceEl, articleId, srcCache, videoDependencies)
+
+    const trackElements = Array.from(audioVideoEl.querySelectorAll('track'))
     for (const track of trackElements) {
       subtitles.push(await this.treatSubtitle(track, articleId))
     }
@@ -151,23 +163,33 @@ export abstract class Renderer {
 
   private chooseBestVideoSource(videoEl: DominoElement): DominoElement | null {
     /* Choose best fiting resolution <source> video node */
+    if (videoEl.tagName !== 'VIDEO') {
+      throw new Error(`Cannot choose best video source for non-video HTML element: \n${videoEl.outerHTML}`)
+    }
     const videoSourceEls: any[] = Array.from(videoEl.children).filter((child: any) => child.tagName === 'SOURCE')
+    const originalSrc = videoEl.getAttribute('src')
+
+    // Take into account the rare edge case where <video> has no <source> child
+    if (videoSourceEls.length == 0) {
+      if (originalSrc && originalSrc.endsWith('.webm')) {
+        // If video has a webm `src` attribute, this is an acceptable src
+        return videoEl
+      } else {
+        return null
+      }
+    }
+
+    // Remove src attribute should it exists since there are <source> element(s)
+    if (originalSrc) {
+      videoEl.removeAttribute('src')
+    }
+
     const videoDisplayedWidth = Number(videoEl.getAttribute('width'))
     let bestWidthDiff = 424242
-    let chosenVideoSourceEl: DominoElement
+    let chosenVideoSourceEl: DominoElement = null
     videoSourceEls.forEach((videoSourceEl: DominoElement) => {
-      // Ignore non-webm && non-audio sources
-      const videoSourceType = videoSourceEl.getAttribute('type')
-      if (!videoSourceEl.getAttribute('src').endsWith('.webm') && !videoSourceType.startsWith('audio')) {
-        DOMUtils.deleteNode(videoSourceEl)
-        return
-      }
-
-      // Handle audio content
-      if (videoSourceType.startsWith('audio/ogg')) {
-        chosenVideoSourceEl = videoSourceEl
-        return
-      } else if (videoSourceType.startsWith('audio')) {
+      // Ignore non-webm sources
+      if (!videoSourceEl.getAttribute('src').endsWith('.webm')) {
         DOMUtils.deleteNode(videoSourceEl)
         return
       }
@@ -222,6 +244,54 @@ export abstract class Renderer {
     return chosenVideoSourceEl
   }
 
+  private chooseBestAudioSource(audioEl: DominoElement): DominoElement | null {
+    /* Choose best fiting resolution <source> audio node */
+    if (audioEl.tagName !== 'AUDIO') {
+      throw new Error(`Cannot choose best audio source for non-audio HTML element: \n${audioEl.outerHTML}`)
+    }
+    const audioSourceEls: any[] = Array.from(audioEl.children).filter((child: any) => child.tagName === 'SOURCE')
+
+    // Looks like in some cases we get the `src` in `resource` attribute
+    const originalSrc = audioEl.getAttribute('src') || audioEl.getAttribute('resource')
+
+    // Cleanup src and resource attributes should they exist
+    audioEl.removeAttribute('src')
+    audioEl.removeAttribute('resource')
+
+    // Take into account the standard case where <audio> has no <source> child
+    if (audioSourceEls.length == 0) {
+      if (originalSrc) {
+        // If audio has a single `src` or `resource` attribute, this is an acceptable src
+        // Set this source back in `src`, no matter where it originally was
+        audioEl.setAttribute('src', originalSrc)
+        return audioEl
+      } else {
+        return null
+      }
+    }
+
+    // Dive into audio sources and choose best one: for now, preferably the first ogg one, otherwise the first one
+    let chosenAudioSourceEl: DominoElement = null
+    function isOggAudio(audioEl: DominoElement) {
+      return audioEl.getAttribute('type')?.startsWith('audio/ogg') || audioEl.getAttribute('src')?.endsWith('.ogg')
+    }
+    audioSourceEls.forEach((audioSourceEl: DominoElement) => {
+      if (!chosenAudioSourceEl) {
+        // use first element by default
+        chosenAudioSourceEl = audioSourceEl
+      } else if (!isOggAudio(chosenAudioSourceEl) && isOggAudio(audioSourceEl)) {
+        // if we've found an ogg audio and current best source is not ogg, then we prefer this source
+        DOMUtils.deleteNode(chosenAudioSourceEl)
+        chosenAudioSourceEl = audioSourceEl
+      } else {
+        // delete other sources
+        DOMUtils.deleteNode(audioSourceEl)
+      }
+    })
+
+    return chosenAudioSourceEl
+  }
+
   private handleVideoPoster(videoEl: DominoElement, articleId: string, imageDependencies: string[], srcCache: KVS<boolean>): void {
     const posterUrl = videoEl.getAttribute('poster')
     if (posterUrl) {
@@ -241,7 +311,7 @@ export abstract class Renderer {
     }
   }
 
-  private updateVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, videoDependencies: string[]): void {
+  private updateAudioVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, videoDependencies: string[]): void {
     /* Download content, but avoid duplicate calls */
     const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), MediaWiki.baseUrl)
     // eslint-disable-next-line no-prototype-builtins
@@ -358,12 +428,12 @@ export abstract class Renderer {
     let subtitles: string[] = []
     /* Clean/rewrite image tags */
     const imgs = Array.from(parsoidDoc.getElementsByTagName('img'))
-    const videos: DominoElement = Array.from(parsoidDoc.querySelectorAll('video, audio'))
+    const audiosAndVideos: DominoElement = Array.from(parsoidDoc.querySelectorAll('video, audio'))
     const srcCache: KVS<boolean> = {}
 
-    for (const videoEl of videos) {
+    for (const audioVideoEl of audiosAndVideos) {
       // <video /> and <audio />
-      const ret = await this.treatVideo(dump, srcCache, articleId, videoEl)
+      const ret = await this.treatAudioVideo(dump, srcCache, articleId, audioVideoEl)
       imageDependencies = imageDependencies.concat(ret.imageDependencies)
       videoDependencies = videoDependencies.concat(ret.videoDependencies)
       subtitles = subtitles.concat(ret.subtitles)
