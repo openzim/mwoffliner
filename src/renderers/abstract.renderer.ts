@@ -254,21 +254,20 @@ export abstract class Renderer {
     // Looks like in some cases we get the `src` in `resource` attribute
     const originalSrc = audioEl.getAttribute('src') || audioEl.getAttribute('resource')
 
+    // Cleanup src and resource attributes should they exist
+    audioEl.removeAttribute('src')
+    audioEl.removeAttribute('resource')
+
     // Take into account the standard case where <audio> has no <source> child
     if (audioSourceEls.length == 0) {
       if (originalSrc) {
         // If audio has a single `src` or `resource` attribute, this is an acceptable src
-        audioEl.removeAttribute('resource') // cleanup `resource attribute, `src` will be set afterwards
+        // Set this source back in `src`, no matter where it originally was
+        audioEl.setAttribute('src', originalSrc)
         return audioEl
       } else {
         return null
       }
-    }
-
-    // Remove src and resource attributes should they exist since there are <source> element(s)
-    if (originalSrc) {
-      audioEl.removeAttribute('src')
-      audioEl.removeAttribute('resource')
     }
 
     // Dive into audio sources and choose best one: for now, preferably the first ogg one, otherwise the first one
