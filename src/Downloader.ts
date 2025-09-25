@@ -203,6 +203,7 @@ class Downloader {
           err.responseData?.error?.code &&
           ![
             'missingtitle',
+            'readapidenied',
             'internal_api_error_MediaWiki\\Revision\\BadRevisionException',
             'internal_api_error_Wikimedia\\Assert\\UnreachableException',
             'internal_api_error_Wikimedia\\Assert\\InvariantException',
