@@ -7,5 +7,25 @@
 		]
 	},
 	"DISCLAIMER": "هذه المقالة صادرة عن ${creator}.النص متاح تحت رخصة ${license} مالم يرد خلاف ذلك. قد تُطبَّق شروط إضافية على ملفات الوسائط.",
-	"LAST_EDITED_ON": "تم التحرير آخر مرة في ${date}"
+	"LAST_EDITED_ON": "تم التحرير آخر مرة في ${date}",
+	"LICENSE_UNKNOWN": "رخصة غير معروفة",
+	"DOWNLOAD_ERRORS_HEADING": "عفواً، لم يتم العثور على المقالة.",
+	"DOWNLOAD_ERRORS_MESSAGE": "المقالة المطلوبة '${articleTitle}' غير متوفرة داخل هذا ZIM، ولم يكن من الممكن استردادها من ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "تم حذف هذه المقالة بعد أن قمنا بتجميع قائمة المقالات التي سيتم استرجاعها ولكن قبل أن نقوم بجلبها لبناء ZIM الذي تتصفحه.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "عندما تم إنشاء ZIM الذي تتصفحه، فشل خادم ${server} في تقديم تفاصيل حول هذه المقالة HTML في الوقت المناسب.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "عندما تم إنشاء ZIM الذي تتصفحه، فشل خادم ${server} في عرض محتوى HTML لهذه المقالة وأعاد خطأ HTTP 500.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "عندما تم إنشاء ZIM الذي تتصفحه، توقف خادم ${server} عن العمل أثناء عرض محتوى HTML لهذه المقالة وأعاد خطأ HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "عندما تم إنشاء ZIM الذي تتصفحه، توقف مؤقتًا برنامج ActionParse API الخاص بخادم ${server} أثناء معالجة هذه المقالة وأعاد خطأ HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأ HTTP 503 أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأ غير متوقع في معرف المراجعة الخاطئة أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse لخادم ${server} خطأ استثناء لا يمكن الوصول إليه أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأ استثناء ثابتًا أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأً مرتبطًا بتجاوز حدود موارد Parsoid أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأً داخليًا في واجهة برمجة التطبيقات أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأً داخليًا في نوع واجهة برمجة التطبيقات أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "عند إنشاء ZIM الذي تتصفحه، أثارت واجهة برمجة تطبيقات ActionParse الخاصة بخادم ${server} خطأ استثناء وسيطة أثناء تقديم تفاصيل حول هذه المقالة HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "عند إنشاء ZIM الذي تتصفحه، لم تتمكن واجهة برمجة تطبيقات ActionParse لخادم ${server} من تقديم تفاصيل حول هذه المقالة بتنسيق HTML نظرًا لحجمها الكبير. ربما ينبغي تقسيم هذه المقالة إلى عدة مقالات أصغر على خادم ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "عندما تم إنشاء ZIM الذي تتصفحه، فشلت واجهة برمجة تطبيقات ActionParse لخادم ${server} في تقديم تفاصيل حول هذه المقالة HTML التي تعيد استجابة فارغة.",
+	"DOWNLOAD_ERRORS_LINE2": "تم استبدال المقالة المفقودة بالصفحة النائبة التي تشاهدها حاليًا.",
+	"DOWNLOAD_ERRORS_LINE3": "نأمل أن يتم حل المشكلة على خادم ${server} وأن تحتوي نسختنا التالية من هذا ZIM على هذه المقالة."
 }
