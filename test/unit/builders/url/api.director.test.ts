@@ -7,7 +7,9 @@ describe('ApiURLDirector', () => {
     it('should return a string URL to get article sub categories', () => {
       const url = apiUrlDirector.buildSubCategoriesURL('article-123')
 
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&formatversion=2&cmtitle=article-123&cmcontinue=')
+      expect(url).toBe(
+        'https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&formatversion=2&cmtitle=article-123&cmcontinue=&maxlag=5',
+      )
     })
   })
 
@@ -23,7 +25,7 @@ describe('ApiURLDirector', () => {
     it('should return a string URL with predefined query params and provided page for retrieving article', () => {
       const url = apiUrlDirector.buildArticleApiURL('article-123')
 
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules%7Cjsconfigvars%7Cheadhtml&formatversion=2&page=article-123')
+      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules%7Cjsconfigvars%7Cheadhtml&formatversion=2&page=article-123&maxlag=5')
     })
   })
 
@@ -32,7 +34,7 @@ describe('ApiURLDirector', () => {
       const url = apiUrlDirector.buildSiteInfoURL()
 
       expect(url).toBe(
-        'https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo%7Callmessages&siprop=general%7Cskins%7Crightsinfo%7Cnamespaces%7Cnamespacealiases&ammessages=tagline&amenableparser=1&list=gadgets&gaprop=id%7Cmetadata&gaallowedonly=1&gaenabledonly=1&format=json&formatversion=2',
+        'https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo%7Callmessages&siprop=general%7Cskins%7Crightsinfo%7Cnamespaces%7Cnamespacealiases&ammessages=tagline&amenableparser=1&list=gadgets&gaprop=id%7Cmetadata&gaallowedonly=1&gaenabledonly=1&format=json&formatversion=2&maxlag=5',
       )
     })
   })
