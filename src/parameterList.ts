@@ -36,6 +36,8 @@ export const parameterDescriptions = {
   withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
+  javaScript: 'Amount of JavaScript being allowed in pages, one of the following values can be given: "none", "trusted" or "all" (default being "trusted").',
+  addModules: 'Add additional ResourceLoader modules for dynamic loading (comma separated list)',
   osTmpDir: 'Override default operating system temporary directory path environment variable',
   optimisationCacheUrl: 'Object Storage URL (including credentials and bucket name) to cache optimised media files',
   forceRender:
