@@ -42,7 +42,8 @@ Unreleased:
 * CHANGED: Rework file downloads to reduce pressure on servers and better handle throttling (@benoit74 #2377)
 * FIX: Automatically delete old Redis lists (@benoit74 #1906)
 * FIX: Also retry 524 HTTP errors - usually coming from Cloudflare handling of timeouts (@benoit74 #2526)
-# FIX: Remove any iframe in article content (@benoit74 #2537)
+* FIX: Remove any iframe in article content (@benoit74 #2537)
+* FIX: Remove any citation material from article content in nodet flavor (@benoit74 #2520)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)

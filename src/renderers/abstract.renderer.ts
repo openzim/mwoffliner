@@ -688,6 +688,28 @@ export abstract class Renderer {
     }
   }
 
+  private removeCitations(parsoidDoc: DominoElement) {
+    // Remove all citation-related material
+
+    const sups: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('sup'))
+    for (const sup of sups) {
+      if (!(sup.getAttribute('class') || '').includes('reference')) {
+        continue
+      }
+      DU.deleteNode(sup)
+    }
+
+    const citeErrors: DominoElement[] = Array.from(parsoidDoc.getElementsByClassName('mw-ext-cite-error'))
+    for (const citeError of citeErrors) {
+      DU.deleteNode(citeError)
+    }
+
+    const references: DominoElement[] = Array.from(parsoidDoc.getElementsByClassName('mw-references-wrap'))
+    for (const reference of references) {
+      DU.deleteNode(reference)
+    }
+  }
+
   private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump) {
     /* Don't need <link> and <input> tags */
     const nodesToDelete: Array<{ class?: string; tag?: string; filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }]
@@ -791,6 +813,10 @@ export abstract class Renderer {
 
   private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
     this.removeIframeTags(parsoidDoc)
+
+    if (dump.nodet) {
+      this.removeCitations(parsoidDoc)
+    }
 
     const filtersConfig = config.filters
     this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
