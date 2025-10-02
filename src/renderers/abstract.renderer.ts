@@ -680,6 +680,14 @@ export abstract class Renderer {
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
   }
 
+  private removeIframeTags(parsoidDoc: DominoElement) {
+    // Remove all <iframe> tags
+    const iframes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('iframe'))
+    for (const iframe of iframes) {
+      DU.deleteNode(iframe)
+    }
+  }
+
   private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump) {
     /* Don't need <link> and <input> tags */
     const nodesToDelete: Array<{ class?: string; tag?: string; filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }]
@@ -782,6 +790,8 @@ export abstract class Renderer {
   }
 
   private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+    this.removeIframeTags(parsoidDoc)
+
     const filtersConfig = config.filters
     this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
 
