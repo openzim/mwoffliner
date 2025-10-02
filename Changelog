@@ -38,6 +38,7 @@ Unreleased:
 * FIX: Check API availability at scraper startup instead of raw mwUrl which might not be reachable (@benoit74 #2447)
 * CHANGED: If vector2022 night mode is enabled, use the preferred color scheme (@Markus-Rost #2086)
 * NEW: Add `maxlag` API parameter to reduce pressure on Mediawiki servers during high load (@benoit74 #2365)
+* FIX: Better handling of audio resources in articles for full ZIMs (@benoit74 #2420)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
