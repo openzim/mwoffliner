@@ -25,6 +25,7 @@ Usage: npm run mwoffliner -- --help`,
   .demandOption(requiredParams)
   .deprecateOption('mwWikiPath')
   .deprecateOption('mwIndexPhpPath')
+  .deprecateOption('keepEmptyParagraphs', 'use --keepEmptySections instead')
   .strict().argv
 
 /* ***********************************/

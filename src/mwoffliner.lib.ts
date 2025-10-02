@@ -341,7 +341,7 @@ async function execute(argv: any) {
         withoutZimFullTextIndex,
         resume,
         minifyHtml,
-        keepEmptySections,
+        keepEmptySections: keepEmptySections ?? argv.keepEmptyParagraphs,
         tags: customZimTags,
         filenameDate,
       },

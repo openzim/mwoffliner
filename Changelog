@@ -1,4 +1,5 @@
 Unreleased:
+* CHANGED: Deprecated `--keepEmptyParagraphs` CLI option in favor of `--keepEmptySections` for better clarity. The old option still works but will show a deprecation warning. It will be removed in a future major version.
 * FIX: Ensure homepage includes redirected articles from --articleList (@ziaddevv #2206)
 * CHANGED: Rename CLI parameter --keepEmptyParagraphs to --keepEmptySections for better clarity (@ziaddevv #2513)
 * FIX: Support section redirects (@Markus-Rost @benoit74 #2382)
