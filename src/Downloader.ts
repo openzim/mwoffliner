@@ -200,15 +200,14 @@ class Downloader {
           return true // retry these HTTP status codes
         }
         if (
-          [
-            'internal_api_error_ThrottledError',
-            'internal_api_error_MWException',
-            'internal_api_error_ArgumentCountError',
-            'internal_api_error_DBConnectionError',
-            'internal_api_error_DBUnexpectedError',
-            'internal_api_error_Wikibase\\DataModel\\Services\\Lookup\\EntityLookupException',
-            'internal_api_error_Shellbox\\ShellboxError',
-            'internal_api_error_Wikimedia\\FileBackend\\FileBackendError',
+          err.responseData?.error?.code &&
+          ![
+            'missingtitle',
+            'readapidenied',
+            'internal_api_error_MediaWiki\\Revision\\BadRevisionException',
+            'internal_api_error_Wikimedia\\Assert\\UnreachableException',
+            'internal_api_error_Wikimedia\\Assert\\InvariantException',
+            'internal_api_error_Wikimedia\\Parsoid\\Core\\ResourceLimitExceededException',
           ].includes(err.responseData?.error?.code)
         ) {
           logger.log(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
