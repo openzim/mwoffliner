@@ -36,7 +36,7 @@ Unreleased:
 * FIX: Fix logging + documentation around `RedisKvs.iterateItems` (@benoit74 #2500)
 * FIX: Add redirects from all acceptable namespaces (@benoit74 #2429)
 * FIX: Check API availability at scraper startup instead of raw mwUrl which might not be reachable (@benoit74 #2447)
-* CHANGED: If vector2022 night mode is enabled, use the preferred color scheme (@Markus-Rost #2086)
+* CHANGED: If vector2022 night mode is enabled, use the preferred color scheme (@Markus-Rost #2086, @benoit74 #2540)
 * NEW: Add `maxlag` API parameter to reduce pressure on Mediawiki servers during high load (@benoit74 #2365)
 * FIX: Better handling of audio resources in articles for full ZIMs (@benoit74 #2420)
 * CHANGED: Rework file downloads to reduce pressure on servers and better handle throttling (@benoit74 #2377)
