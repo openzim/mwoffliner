@@ -42,6 +42,11 @@ type ArticleDetail = PageInfo & {
   contentmodel?: string
 }
 
+type FileToDownload = FileDetail & {
+  path: string
+  downloadAttempts: number
+}
+
 type FileDetail = {
   url: string
   mult?: number
@@ -76,7 +81,6 @@ interface RKVS<T> {
 interface RS {
   readonly client: any // RedisClientType
   readonly filesToDownloadXPath: RKVS<FileDetail>
-  readonly filesToRetryXPath: RKVS<FileDetail>
   readonly articleDetailXId: RKVS<ArticleDetail>
   readonly redirectsXId: RKVS<ArticleRedirect>
   connect: (populateStores?: boolean) => Promise<void>

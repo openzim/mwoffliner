@@ -503,3 +503,31 @@ export function truncateUtf8Bytes(text: string, maxBytes: number) {
 
   return text.slice(0, low - 1)
 }
+
+/**
+ * Parse a Retry-After header into a timestamp (ms since epoch).
+ * @param {string} headerValue The value of the Retry-After header.
+ * @returns {number|null} Epoch time in ms at which you can retry, or null if invalid.
+ */
+export function parseRetryAfterHeader(headerValue: string) {
+  if (!headerValue) return null
+
+  // Trim whitespace just in case
+  const value = headerValue.trim()
+
+  // Case 1: delta-seconds (numeric)
+  if (/^\d+$/.test(value)) {
+    const seconds = parseInt(value, 10)
+    if (isNaN(seconds)) return null
+    return Date.now() + seconds * 1000
+  }
+
+  // Case 2: HTTP-date
+  const date = Date.parse(value)
+  if (!isNaN(date)) {
+    return date
+  }
+
+  // Could not parse
+  return null
+}
