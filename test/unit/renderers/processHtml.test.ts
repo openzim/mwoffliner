@@ -37,102 +37,138 @@ describe('processHtml', () => {
     return await testRenderer.processHtml(opts)
   }
 
-  function checkAudioOnly(data) {
-    const { finalHTML, videoDependencies } = data
-    const finalDoc = domino.createDocument(finalHTML)
-    const audioEls = finalDoc.getElementsByTagName('audio')
-    expect(audioEls.length).toBe(1)
-    const audioEl = audioEls[0]
-    expect(audioEl.getAttribute('src')).toContain(`./${expectedAudioPath}`)
-    expect(audioEl.getAttribute('resource')).toBeNull()
-    expect(videoDependencies.length).toBe(1)
-    const videoDependency = videoDependencies[0]
-    expect(videoDependency.path).toContain(expectedAudioPath)
-    expect(videoDependency.url).toContain(`https:${audioSrc.replace('.ogg', '.')}`)
-  }
+  describe('audio tags', () => {
+    function checkAudioOnly(data) {
+      const { finalHTML, videoDependencies } = data
+      const finalDoc = domino.createDocument(finalHTML)
+      const audioEls = finalDoc.getElementsByTagName('audio')
+      expect(audioEls.length).toBe(1)
+      const audioEl = audioEls[0]
+      expect(audioEl.getAttribute('src')).toContain(`./${expectedAudioPath}`)
+      expect(audioEl.getAttribute('resource')).toBeNull()
+      expect(videoDependencies.length).toBe(1)
+      const videoDependency = videoDependencies[0]
+      expect(videoDependency.path).toContain(expectedAudioPath)
+      expect(videoDependency.url).toContain(`https:${audioSrc.replace('.ogg', '.')}`)
+    }
 
-  it('rewrite audio with src attribute', async () => {
-    checkAudioOnly(await testProcessHtml(`<audio src="${audioSrc}"></audio>`))
+    it('rewrite audio with src attribute', async () => {
+      checkAudioOnly(await testProcessHtml(`<audio src="${audioSrc}"></audio>`))
+    })
+
+    it('rewrite audio with resource attribute', async () => {
+      checkAudioOnly(await testProcessHtml(`<audio resource="${audioSrc}"></audio>`))
+    })
+
+    it('rewrite audio with both src and resource attribute - order 1', async () => {
+      checkAudioOnly(await testProcessHtml(`<audio src="${audioSrc}" resource="${audioSrc.replace('Elevator', 'Foo')}"></audio>`))
+    })
+
+    it('rewrite audio with both src and resource attribute - order 2', async () => {
+      checkAudioOnly(await testProcessHtml(`<audio resource="${audioSrc.replace('Elevator', 'Foo')}" src="${audioSrc}"></audio>`))
+    })
+
+    function checkAudioWithSource(data) {
+      const { finalHTML, videoDependencies } = data
+      const finalDoc = domino.createDocument(finalHTML)
+      const audioEls = finalDoc.getElementsByTagName('audio')
+      expect(audioEls.length).toBe(1)
+      const audioEl = audioEls[0]
+      expect(audioEl.getAttribute('src')).toBeNull()
+      expect(audioEl.getAttribute('resource')).toBeNull()
+      const sourceEls = finalDoc.getElementsByTagName('source')
+      expect(sourceEls.length).toBe(1)
+      const sourceEl = sourceEls[0]
+      expect(sourceEl.getAttribute('src')).toContain(`./${expectedAudioPath}`)
+      expect(sourceEl.getAttribute('resource')).toBeNull()
+      expect(videoDependencies.length).toBe(1)
+      const videoDependency = videoDependencies[0]
+      expect(videoDependency.path).toContain(expectedAudioPath)
+      expect(videoDependency.url).toContain(`https:${audioSrc.replace('.ogg', '.')}`)
+    }
+
+    it('rewrite audio with src, resource attributes and one source', async () => {
+      checkAudioWithSource(
+        await testProcessHtml(`<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc}"></audio>`),
+      )
+    })
+
+    it('rewrite audio with src, resource attributes and two sources', async () => {
+      checkAudioWithSource(
+        await testProcessHtml(
+          `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc}"><source src="${audioSrc.replace(
+            'Elevator',
+            'Foo',
+          )}"></audio>`,
+        ),
+      )
+    })
+
+    it('rewrite audio with src, resource attributes and two sources, ogg first', async () => {
+      checkAudioWithSource(
+        await testProcessHtml(
+          `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace(
+            'Elevator',
+            'Bar',
+          )}"><source src="${audioSrc}" type="audio/ogg"><source src="${audioSrc.replace('Elevator', 'Foo')}"></audio>`,
+        ),
+      )
+    })
+
+    it('rewrite audio with src, resource attributes and two sources, ogg last with type', async () => {
+      checkAudioWithSource(
+        await testProcessHtml(
+          `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc.replace(
+            '.ogg',
+            '.mp3',
+          )}"><source src="${audioSrc.replace('.ogg', '.foo')}" type="audio/ogg"></audio>`,
+        ),
+      )
+    })
+
+    it('rewrite audio with src, resource attributes and two sources, ogg last without type', async () => {
+      checkAudioWithSource(
+        await testProcessHtml(
+          `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc.replace(
+            '.ogg',
+            '.mp3',
+          )}"><source src="${audioSrc}"><source src="${audioSrc.replace('Elevator', 'Foo')}"></audio>`,
+        ),
+      )
+    })
   })
 
-  it('rewrite audio with resource attribute', async () => {
-    checkAudioOnly(await testProcessHtml(`<audio resource="${audioSrc}"></audio>`))
-  })
-
-  it('rewrite audio with both src and resource attribute - order 1', async () => {
-    checkAudioOnly(await testProcessHtml(`<audio src="${audioSrc}" resource="${audioSrc.replace('Elevator', 'Foo')}"></audio>`))
-  })
-
-  it('rewrite audio with both src and resource attribute - order 2', async () => {
-    checkAudioOnly(await testProcessHtml(`<audio resource="${audioSrc.replace('Elevator', 'Foo')}" src="${audioSrc}"></audio>`))
-  })
-
-  function checkAudioWithSource(data) {
-    const { finalHTML, videoDependencies } = data
-    const finalDoc = domino.createDocument(finalHTML)
-    const audioEls = finalDoc.getElementsByTagName('audio')
-    expect(audioEls.length).toBe(1)
-    const audioEl = audioEls[0]
-    expect(audioEl.getAttribute('src')).toBeNull()
-    expect(audioEl.getAttribute('resource')).toBeNull()
-    const sourceEls = finalDoc.getElementsByTagName('source')
-    expect(sourceEls.length).toBe(1)
-    const sourceEl = sourceEls[0]
-    expect(sourceEl.getAttribute('src')).toContain(`./${expectedAudioPath}`)
-    expect(sourceEl.getAttribute('resource')).toBeNull()
-    expect(videoDependencies.length).toBe(1)
-    const videoDependency = videoDependencies[0]
-    expect(videoDependency.path).toContain(expectedAudioPath)
-    expect(videoDependency.url).toContain(`https:${audioSrc.replace('.ogg', '.')}`)
-  }
-
-  it('rewrite audio with src, resource attributes and one source', async () => {
-    checkAudioWithSource(
-      await testProcessHtml(`<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc}"></audio>`),
-    )
-  })
-
-  it('rewrite audio with src, resource attributes and two sources', async () => {
-    checkAudioWithSource(
-      await testProcessHtml(
-        `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc}"><source src="${audioSrc.replace(
-          'Elevator',
-          'Foo',
-        )}"></audio>`,
-      ),
-    )
-  })
-
-  it('rewrite audio with src, resource attributes and two sources, ogg first', async () => {
-    checkAudioWithSource(
-      await testProcessHtml(
-        `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace(
-          'Elevator',
-          'Bar',
-        )}"><source src="${audioSrc}" type="audio/ogg"><source src="${audioSrc.replace('Elevator', 'Foo')}"></audio>`,
-      ),
-    )
-  })
-
-  it('rewrite audio with src, resource attributes and two sources, ogg last with type', async () => {
-    checkAudioWithSource(
-      await testProcessHtml(
-        `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc.replace(
-          '.ogg',
-          '.mp3',
-        )}"><source src="${audioSrc.replace('.ogg', '.foo')}" type="audio/ogg"></audio>`,
-      ),
-    )
-  })
-
-  it('rewrite audio with src, resource attributes and two sources, ogg last without type', async () => {
-    checkAudioWithSource(
-      await testProcessHtml(
-        `<audio src="${audioSrc.replace('Elevator', 'Foo')}" resource="${audioSrc.replace('Elevator', 'Bar')}"><source src="${audioSrc.replace(
-          '.ogg',
-          '.mp3',
-        )}"><source src="${audioSrc}"><source src="${audioSrc.replace('Elevator', 'Foo')}"></audio>`,
-      ),
-    )
+  describe('iframe', () => {
+    it('remove empty iframe', async () => {
+      const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe></iframe></div>`)
+      expect(finalHTML).toContain('<div id="foo"></div>')
+    })
+    it('remove full iframe', async () => {
+      const { finalHTML } = await testProcessHtml(
+        `<div id="foo">` +
+          `<iframe id="inlineFrameExample" title="Inline Frame Example" width="300" height="200" ` +
+          `src="https://www.openstreetmap.org/export/embed.html"></iframe></div>`,
+      )
+      expect(finalHTML).toContain('<div id="foo"></div>')
+    })
+    it('remove iframe "with content"', async () => {
+      const { finalHTML } = await testProcessHtml(
+        `<div id="foo">` +
+          `<iframe id="inlineFrameExample" title="Inline Frame Example" width="300" height="200" ` +
+          `src="https://www.openstreetmap.org/export/embed.html"><span>bar</span></iframe></div>`,
+      )
+      expect(finalHTML).toContain('<div id="foo"></div>')
+    })
+    it('remove multiple iframes', async () => {
+      const { finalHTML } = await testProcessHtml(
+        `<div id="foo">` +
+          `<iframe id="inlineFrameExample1" title="Inline Frame Example 1" width="300" height="200" ` +
+          `src="https://www.openstreetmap.org/export/embed.html"></iframe></div>` +
+          `<div id="bar">` +
+          `<iframe id="inlineFrameExample2" title="Inline Frame Example 2" width="300" height="200" ` +
+          `src="https://www.openstreetmap.org/export/embed.html"></iframe></div>`,
+      )
+      expect(finalHTML).toContain('<div id="foo"></div><div id="bar"></div>')
+    })
   })
 })
