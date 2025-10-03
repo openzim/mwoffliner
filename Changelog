@@ -44,6 +44,7 @@ Unreleased:
 * FIX: Also retry 524 HTTP errors - usually coming from Cloudflare handling of timeouts (@benoit74 #2526)
 * FIX: Remove any iframe in article content (@benoit74 #2537)
 * FIX: Remove any citation material from article content in nodet flavor (@benoit74 #2520)
+* FIX: Upgrade to node-libzim 3.5.0 (@benoit74 #2541)
 
 1.16.0:
 * CHANGED: ActionParse renderer is now the preferred one when available (@benoit74 #2183)
