@@ -1,3 +1,5 @@
+Unreleased:
+
 1.17.0:
 * FIX: Ensure homepage includes redirected articles from --articleList (@ziaddevv #2206)
 * FIX: Support section redirects (@Markus-Rost @benoit74 #2382)
