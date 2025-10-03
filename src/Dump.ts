@@ -20,7 +20,7 @@ interface DumpOpts {
   articleList?: string
   resume?: boolean
   minifyHtml: boolean
-  keepEmptyParagraphs: boolean
+  keepEmptySections: boolean
   tags?: string
   filenameDate: string
 }

@@ -873,8 +873,8 @@ export abstract class Renderer {
       }
     })
 
-    /* Remove empty paragraphs */
-    if (!dump.opts.keepEmptyParagraphs) {
+    /* Remove empty sections */
+    if (!dump.opts.keepEmptySections) {
       const sections: DominoElement[] = Array.from(parsoidDoc.querySelectorAll('section'))
       for (const section of sections) {
         if (
