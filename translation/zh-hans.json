@@ -3,22 +3,30 @@
 		"authors": [
 			"GuoPC",
 			"IceButBin",
-			"Prmsh"
+			"Prmsh",
+			"TFX202X"
 		]
 	},
-	"DISCLAIMER": "本条目由${creator}发布。该条目基于${license}获得许可。附加条款可能适用于媒体文件。",
+	"DISCLAIMER": "本文由${creator}发布。除非另有说明，文本内容遵循${license}协议。媒体文件可能适用附加条款。",
 	"LAST_EDITED_ON": "最后编辑于：${date}",
+	"LICENSE_UNKNOWN": "未知的许可证",
 	"DOWNLOAD_ERRORS_HEADING": "哎呀！找不到条目。",
 	"DOWNLOAD_ERRORS_MESSAGE": "所请求的条目“${articleTitle}”在此 ZIM 中不可用，无法从 ${server} 检索。",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "此条目在待检索条目的列表编译之后、获取此条目以构建您浏览的 ZIM 之前被删除。",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "当您正在浏览的ZIM文件被创建时，${server}服务器未能及时提供此文章HTML的详细信息。",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器无法渲染此条目的 HTML 内容，并返回 HTTP 500 错误。",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，${server} 服务器在渲染此条目 HTML 内容时超时，并返回 HTTP 504 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在处理此条目时超时，并返回 HTTP 504 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供此关于此条目 HTML 的详细信息时引发 HTTP 503 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时，引发意外的修订版本 ID 不合法的错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发无法访问的异常错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "当您正在浏览的ZIM文件构建时，${server}服务器的ActionParse API在提供此文章HTML详情时触发了不变异常错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "当您浏览的ZIM文件被构建时，${server}服务器的ActionParse API在提供此文章HTML详细信息时引发了与Parsoid资源限制超出相关的错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发内部 API 错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "当您正在浏览的ZIM文件被构建时，${server}服务器的ActionParse API在提供此文章HTML的详细信息时引发了内部API类型错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "当您正在浏览的ZIM文件构建时，${server}服务器的ActionParse API在提供有关此文章HTML的详细信息时引发了一个参数异常错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 未能提供关于此条目 HTML 的详细信息，因为此条目过长。需要在 ${server} 服务器上将此条目拆分为多个相对短的条目。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "当您正在浏览的ZIM文件被构建时，${server}服务器的ActionParse API未能返回关于此文章的HTML详细内容，返回了一个空响应。",
 	"DOWNLOAD_ERRORS_LINE2": "缺失的条目已被您当前看到的占位符页面所取代。",
 	"DOWNLOAD_ERRORS_LINE3": "希望 ${server} 服务器上的问题能够得到解决，以及希望下一个版本的 ZIM 能够包含此条目。"
 }
