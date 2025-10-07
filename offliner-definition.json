@@ -1,0 +1,280 @@
+{
+  "offliner_id": "mwoffliner",
+  "stdOutput": "outputDirectory",
+  "stdStats": false,
+  "flags": {
+    "mwUrl": {
+      "type": "url",
+      "required": true,
+      "title": "Wiki URL",
+      "description": "The URL of the mediawiki to scrape"
+    },
+    "adminEmail": {
+      "type": "email",
+      "required": true,
+      "title": "Admin Email",
+      "description": "Email of the mwoffliner user which will be put in the HTTP user-agent string"
+    },
+    "articleList": {
+      "type": "string",
+      "required": false,
+      "title": "Article List",
+      "description": "List of articles to include. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line"
+    },
+    "articleListToIgnore": {
+      "type": "string",
+      "required": false,
+      "title": "Article List to ignore",
+      "description": "List of articles to ignore. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line"
+    },
+    "customMainPage": {
+      "type": "string",
+      "required": false,
+      "title": "Main Page",
+      "description": "Article Name to use as home page. Automatically built or guessed otherwise."
+    },
+    "customZimTitle": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Title",
+      "description": "Custom ZIM title. Wiki name otherwise.",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "customZimDescription": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Description",
+      "description": "Max length is 80 chars",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "customZimLongDescription": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Long Description",
+      "description": "Max length is 4000 chars",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "customZimFavicon": {
+      "type": "url",
+      "required": false,
+      "title": "ZIM favicon",
+      "description": "URL to a png to use as favicon. Will be resized to 48x48px."
+    },
+    "customZimTags": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Tags",
+      "description": "Semi-colon separated list of ZIM tags"
+    },
+    "customZimLanguage": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Language Metadata",
+      "description": "Custom ISO-639-3 language code for the ZIM",
+      "pattern": "^[a-z]{3}(,[a-z]{3})*$",
+      "customValidator": "language_code"
+    },
+    "publisher": {
+      "type": "string",
+      "required": false,
+      "title": "Publisher",
+      "isPublisher": true,
+      "description": "ZIM publisher metadata. `openZIM` otherwise."
+    },
+    "filenamePrefix": {
+      "type": "string",
+      "required": false,
+      "title": "Filename prefix",
+      "description": "Custome filename up to the formats and date parts."
+    },
+    "formats": {
+      "type": "list-of-string-enum",
+      "required": false,
+      "title": "Formats",
+      "description": "Which flavours to build, as `<flavour>:<custom-suffix>`. Empty option is full without suffix.",
+      "alias": "format",
+      "choices": [
+        { "title": "NODET_NOPIC_MINI", "value": "nodet,nopic:mini" },
+        { "title": "NODET_MINI", "value": "nodet:mini" },
+        { "title": "NOPIC_NOPIC", "value": "nopic:nopic" },
+        { "title": "NOVID_MAXI", "value": "novid:maxi" },
+        { "title": "EMPTY", "value": "" },
+        { "title": "NODET", "value": "nodet" },
+        { "title": "NOPIC", "value": "nopic" },
+        { "title": "NOVID", "value": "novid" },
+        { "title": "NODET_NOPIC", "value": "nodet,nopic" }
+      ]
+    },
+    "customFlavour": {
+      "type": "string-enum",
+      "required": false,
+      "title": "Custom Flavour",
+      "description": "Custom processor to filter and process articles (see extensions/*.js)",
+      "choices": [
+        {
+          "title": "WIKTIONARY_FR",
+          "value": "/tmp/mwoffliner/extensions/wiktionary_fr.js"
+        }
+      ]
+    },
+    "optimisationCacheUrl": {
+      "type": "url",
+      "required": false,
+      "title": "Optimisation Cache URL",
+      "description": "S3 Storage URL including credentials and bucket",
+      "secret": true
+    },
+    "addNamespaces": {
+      "type": "string",
+      "required": false,
+      "title": "Add Namespaces",
+      "description": "Include addional namespaces (comma separated numbers)"
+    },
+    "getCategories": {
+      "type": "boolean",
+      "required": false,
+      "title": "Add categories",
+      "description": "[WIP] Download category pages"
+    },
+    "keepEmptyParagraphs": {
+      "type": "boolean",
+      "required": false,
+      "title": "Keep empty paragraphs",
+      "description": "Keep all paragraphs, even empty ones."
+    },
+    "minifyHtml": {
+      "type": "boolean",
+      "required": false,
+      "title": "Minify HTML",
+      "description": "Try to reduce the size of the HTML"
+    },
+    "mwWikiPath": {
+      "type": "string",
+      "required": false,
+      "title": "Wiki Path",
+      "description": "Mediawiki wiki base path. Otherwise `/wiki/`."
+    },
+    "mwActionApiPath": {
+      "type": "string",
+      "required": false,
+      "title": "API Path",
+      "description": "Mediawiki API path. Otherwise `/w/api.php`."
+    },
+    "mwRestApiPath": {
+      "type": "string",
+      "required": false,
+      "title": "REST API Path",
+      "description": "Mediawiki REST API path. Otherwise `/w/rest.php`."
+    },
+    "mwModulePath": {
+      "type": "string",
+      "required": false,
+      "title": "Module Path",
+      "description": "Mediawiki module load path. Otherwise `/w/load.php`."
+    },
+    "mwIndexPhpPath": {
+      "type": "string",
+      "required": false,
+      "title": "index.php Path",
+      "description": "Path to Mediawiki index.php. Otherwise `/w/index.php`."
+    },
+    "mwDomain": {
+      "type": "string",
+      "required": false,
+      "title": "User Domain",
+      "description": "Mediawiki user domain (for private wikis)"
+    },
+    "mwUsername": {
+      "type": "string",
+      "required": false,
+      "title": "Username",
+      "description": "Mediawiki username (for private wikis)"
+    },
+    "mwPassword": {
+      "type": "string",
+      "required": false,
+      "title": "Password",
+      "description": "Mediawiki user password (for private wikis)",
+      "secret": true
+    },
+    "osTmpDir": {
+      "type": "string",
+      "required": false,
+      "title": "OS Temp Dir",
+      "description": "Override default operating system temporary directory path environnement variable"
+    },
+    "outputDirectory": {
+      "type": "string",
+      "required": false,
+      "title": "Output folder",
+      "description": "Output folder for ZIM file or build folder. Leave it as `/output`",
+      "pattern": "^/output$"
+    },
+    "requestTimeout": {
+      "type": "integer",
+      "required": false,
+      "title": "Request Timeout",
+      "description": "Request timeout (in seconds)",
+      "min": 1
+    },
+    "speed": {
+      "type": "float",
+      "title": "Speed",
+      "required": false,
+      "description": "Multiplicator for the number of parallel HTTP requests on Parsoid backend. Otherwise `1`. Reduce on throttled Wikis."
+    },
+    "withoutZimFullTextIndex": {
+      "type": "boolean",
+      "title": "Without ZIM Full Text Index",
+      "required": false,
+      "description": "Don't include a fulltext search index to the ZIM"
+    },
+    "verbose": {
+      "type": "string-enum",
+      "required": false,
+      "title": "Verbose",
+      "description": "Level of log verbosity, one of info, log, warn, error or quiet. Default is error.",
+      "choices": [
+        { "title": "INFO", "value": "info" },
+        { "title": "LOG", "value": "log" },
+        { "title": "WARN", "value": "warn" },
+        { "title": "ERROR", "value": "error" },
+        { "title": "QUIET", "value": "quiet" }
+      ]
+    },
+    "webp": {
+      "type": "boolean",
+      "title": "Webp",
+      "description": "Convert images to Webp",
+      "required": false
+    },
+    "forceRender": {
+      "type": "string-enum",
+      "required": false,
+      "title": "Force Render",
+      "description": "Force the usage of a specific API end-point/render, automatically chosen otherwise",
+      "choices": [
+        { "title": "VISUAL_EDITOR", "value": "VisualEditor" },
+        { "title": "WIKIMEDIA_DESKTOP", "value": "WikimediaDeskto" },
+        { "title": "WIKIMEDIA_MOBILE", "value": "WikimediaMobile" },
+        { "title": "REST_API", "value": "RestApi" },
+        { "title": "ACTION_PARSE", "value": "ActionParse" }
+      ]
+    },
+    "insecure": {
+      "type": "boolean",
+      "title": "Insecure",
+      "description": "Skip HTTPS server authenticity verification step",
+      "required": false
+    },
+    "langVariant": {
+      "type": "string",
+      "title": "Language Variant",
+      "description": "Use a specific language variant, only for wikis supporting language conversion",
+      "required": false
+    }
+  }
+}
