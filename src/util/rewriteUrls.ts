@@ -109,10 +109,11 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
 
       if (shouldScrape) {
         try {
-          const newHref = getRelativeFilePath(articleId, getMediaBase(href, true))
+          const mediaUrl = getFullUrl(href, MediaWiki.baseUrl)
+          const newHref = getRelativeFilePath(articleId, getMediaBase(mediaUrl, true))
           linkNode.setAttribute('href', newHref)
           if (mediaDependencies) {
-            mediaDependencies.push(href)
+            mediaDependencies.push(mediaUrl)
           }
         } catch (err) {
           logger.warn('Error parsing url:', err)

@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Ensure media dependencies are full url (@Markus-Rost #2549)
 
 1.17.0:
 * FIX: Ensure homepage includes redirected articles from --articleList (@ziaddevv #2206)
