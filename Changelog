@@ -1,3 +1,5 @@
+Unreleased
+
 1.17.1:
 * FIX: Ensure media dependencies are full url (@Markus-Rost #2549)
 * CHANGED: Rename CLI parameter --keepEmptyParagraphs to --keepEmptySections for better clarity ; --keepEmptyParagraphs is only deprecated for the time being (@ziaddevv #2513)
