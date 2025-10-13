@@ -127,8 +127,6 @@ class Downloader {
   public wikimediaMobileStyleDependenciesList: string[] = []
 
   private uaString: string
-  private activeRequests = 0
-  private maxActiveRequests = 1
   private backoffOptions: BackoffOptions
   private optimisationCacheUrl: string
   private s3: S3
@@ -169,7 +167,6 @@ class Downloader {
     this.reset()
     this.uaString = uaString
     this._speed = speed
-    this.maxActiveRequests = speed * 10
     this._requestTimeout = reqTimeout
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
@@ -271,7 +268,6 @@ class Downloader {
   private reset() {
     this.uaString = undefined
     this._speed = undefined
-    this.maxActiveRequests = undefined
     this._requestTimeout = undefined
     this.optimisationCacheUrl = undefined
     this._webp = false
@@ -289,9 +285,6 @@ class Downloader {
 
     this.wikimediaMobileJsDependenciesList = []
     this.wikimediaMobileStyleDependenciesList = []
-
-    this.activeRequests = 0
-    this.maxActiveRequests = 1
 
     this.articleUrlDirector = undefined
     this.mainPageUrlDirector = undefined
@@ -550,10 +543,8 @@ class Downloader {
 
   public async getJSON<T>(_url: string): Promise<T> {
     const url = urlHelper.deserializeUrl(_url)
-    await this.claimRequest()
     return new Promise<T>((resolve, reject) => {
       this.backoffCall(this.getJSONCb, url, 'json', (err: any, val: any) => {
-        this.releaseRequest()
         if (err) {
           const httpStatus = (err.response && err.response.status) || err.httpReturnCode
           logger.info(`Failed to get [${url}] [status=${httpStatus}]`)
@@ -595,8 +586,6 @@ class Downloader {
       url = `${MediaWiki.baseUrl.protocol}${url}`
     }
 
-    await this.claimRequest()
-
     try {
       return new Promise((resolve, reject) => {
         const cb = (err: any, val: any) => {
@@ -616,8 +605,6 @@ class Downloader {
       const httpStatus = err.response && err.response.status
       logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
       throw err
-    } finally {
-      this.releaseRequest()
     }
   }
 
@@ -656,23 +643,6 @@ class Downloader {
       }
     }
     return articleDetails
-  }
-
-  private async claimRequest(): Promise<null> {
-    if (this.activeRequests < this.maxActiveRequests) {
-      this.activeRequests += 1
-      return null
-    } else {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 200)
-      })
-      return this.claimRequest()
-    }
-  }
-
-  private async releaseRequest(): Promise<null> {
-    this.activeRequests -= 1
-    return null
   }
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
@@ -835,12 +805,6 @@ class Downloader {
   }
 
   private errHandler(err: any, url: string, handler: any): void {
-    if (err.response && err.response.status === 429) {
-      logger.log('Received a [status=429], slowing down')
-      const newMaxActiveRequests: number = Math.max(this.maxActiveRequests - 1, 1)
-      logger.log(`Setting maxActiveRequests from [${this.maxActiveRequests}] to [${newMaxActiveRequests}]`)
-      this.maxActiveRequests = newMaxActiveRequests
-    }
     logger.log(`Not able to download content for ${url} due to ${err}`)
     handler(err)
   }

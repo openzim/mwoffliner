@@ -1,4 +1,5 @@
 Unreleased
+* FIX: Remove deprecated logic around claiming requests (@benoit74 #2557)
 
 1.17.1:
 * FIX: Ensure media dependencies are full url (@Markus-Rost #2549)
