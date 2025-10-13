@@ -1,4 +1,5 @@
 Unreleased
+* FIX: Fix parsing of potentially missing retry-after header (@benoit74 #2556)
 * FIX: Remove deprecated logic around claiming requests (@benoit74 #2557)
 
 1.17.1:
