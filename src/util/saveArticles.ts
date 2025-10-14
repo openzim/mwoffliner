@@ -150,7 +150,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
           hostData.downloadFailure += 1
         } else {
           if (err.response) {
-            const retryAfterHeader = err.response.headers['retry-after'].toString()
+            const retryAfterHeader = err.response.headers['retry-after']?.toString()
             if (retryAfterHeader) {
               const retryDate = parseRetryAfterHeader(retryAfterHeader)
               if (retryDate) {
