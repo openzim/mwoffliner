@@ -8,5 +8,7 @@
 	"LAST_EDITED_ON": "Последна измена на ${date}",
 	"LICENSE_UNKNOWN": "непозната лиценца",
 	"DOWNLOAD_ERRORS_HEADING": "Упс. Не ја пронајдов статијата.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Бараната статија „${articleTitle}“ не е достапна во овој ZIM. Не можев да ја довијам од ${server}."
+	"DOWNLOAD_ERRORS_MESSAGE": "Бараната статија „${articleTitle}“ не е достапна во овој ZIM. Не можев да ја довијам од ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Оваа статија беше избришана откако го составивме списокот на статии за преземање, но пред да го преземеме за да го изградиме ZIM-от што го прелистувате.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Кога беше изграден ZIM-от што го прелистувате, опслужувачот ${server} не успеа навреме да даде поединости за HTML-кодот на оваа статија."
 }
