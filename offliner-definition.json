@@ -264,6 +264,12 @@
         { "title": "ACTION_PARSE", "value": "ActionParse" }
       ]
     },
+    "forceSkin": {
+      "type": "string",
+      "required": false,
+      "title": "Force Skin",
+      "description": "Force the usage of a skin (must be available on wiki), default skin automatically chosen otherwise"
+    },
     "insecure": {
       "type": "boolean",
       "title": "Insecure",
