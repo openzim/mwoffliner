@@ -28,7 +28,7 @@ describe('Sanitize parameters', () => {
 
     await expect(sanitize_all(twoUrlParameters)).rejects.toThrow(/Parameter '--mwUrl' can only be used once/)
 
-    // equivalent to command: node lib/cli.js --verbose=info --adminEmail="est@test.test" --articleList="User:Kelson/MWoffliner_CI_reference" --mwUrl="https://en.m.wikipedia.org/" --format=nopic --format=nopdf --format=novid
+    // equivalent to command: node lib/cli.js --verbose=info --adminEmail="est@test.test" --articleList="User:Kelson/MWoffliner_CI_reference" --mwUrl="https://en.wikipedia.org/" --format=nopic --format=nopdf --format=novid
     const threeFormatParameters = {
       _: [],
       verbose: 'info',
@@ -36,8 +36,8 @@ describe('Sanitize parameters', () => {
       'admin-email': 'test@test.test',
       articleList: 'User:Kelson/MWoffliner_CI_reference',
       'article-list': 'User:Kelson/MWoffliner_CI_reference',
-      mwUrl: 'https://en.m.wikipedia.org/',
-      'mw-url': 'https://en.m.wikipedia.org/',
+      mwUrl: 'https://en.wikipedia.org/',
+      'mw-url': 'https://en.wikipedia.org/',
       format: ['nopic', 'nopdf', 'novid'],
       $0: 'node_modules/ts-node/dist/child/child-entrypoint.js',
     }

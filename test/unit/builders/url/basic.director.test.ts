@@ -3,9 +3,9 @@ import basicURLDirector from '../../../../src/util/builders/url/basic.director.j
 describe('BasicURLDirector', () => {
   describe('buildMediawikiBaseURL', () => {
     it('should return a basic URL as an URL object with trailing character', () => {
-      const url = basicURLDirector.buildMediawikiBaseURL('https://en.m.wikipedia.org')
+      const url = basicURLDirector.buildMediawikiBaseURL('https://en.wikipedia.org')
 
-      expect(url.href).toBe('https://en.m.wikipedia.org/')
+      expect(url.href).toBe('https://en.wikipedia.org/')
     })
   })
 
