@@ -1,9 +1,30 @@
 {
 	"@metadata": {
 		"authors": [
+			"Apq",
 			"Sabelöga"
 		]
 	},
-	"DISCLAIMER": "Den här artikeln kommer från ${creator}. Texten är licensierad under ${license}. Ytterligare termer kan gälla för mediefiler.",
-	"LAST_EDITED_ON": "Senast redigerad den ${date}"
+	"DISCLAIMER": "Denna artikel är utgiven av ${creator}. Texten är tillgänglig under ${license} om inget annat anges. Ytterligare villkor kan gälla för mediefilerna.",
+	"LAST_EDITED_ON": "Senast redigerad den ${date}",
+	"LICENSE_UNKNOWN": "okänd licens",
+	"DOWNLOAD_ERRORS_HEADING": "Hoppsan. Artikeln hittades inte.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Den begärda artikeln '${articleTitle}' är inte tillgänglig i denna ZIM, det gick inte att hämta den från ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Den här artikeln raderades efter att vi sammanställde listan över artiklar att hämta, men innan vi hämtade den för att bygga den ZIM du tittar på.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "När ZIM-filen du tittar på skapades misslyckades ${server}-servern med att ge information om den här artikelns HTML-kod i tid.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "När ZIM-filen du tittar på skapades misslyckades ${server}-servern med att rendera HTML-innehållet i den här artikeln och returnerade ett HTTP 500-fel.",
+	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "När ZIM-filen du tittar på skapades, övergick ${server}-servern till timeout när den renderade HTML-innehållet i artikeln och returnerade ett HTTP 504-fel.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "När ZIM-filen du tittar på skapades, överskred ${server}-serverns ActionParse API tidsgränsen vid bearbetning av den här artikeln och returnerade ett HTTP 504-fel.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett HTTP 503-fel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett oväntat felaktigt revisions-ID-fel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett undantagsfel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett invariant undantagsfel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett fel relaterat till Parsoid-resurbegränsningar när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett internt API-fel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett internt API-typfel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett resonemangsfel när information om den här artikelns HTML-kod angavs.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "När ZIM-filen du tittar på skapades misslyckades ${server}-serverns ActionParse API med att ge information om den här artikelns HTML-kod eftersom artikeln är alldeles för stor. Någon borde nog dela upp den här artikeln i flera mindre artiklar på ${server} servern.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "När ZIM-filen du tittar på skapades misslyckades ${server}-servern med att ge information om den här artikelns HTML-kod och gav ett tomt resultat.",
+	"DOWNLOAD_ERRORS_LINE2": "Den saknade artikeln har ersatts av platshållarsidan du ser för närvarande.",
+	"DOWNLOAD_ERRORS_LINE3": "Låt oss hoppas att problemet löses på ${server}-servern och att vår nästa version av denna ZIM kommer att innehålla den här artikeln."
 }
