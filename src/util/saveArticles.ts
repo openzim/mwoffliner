@@ -161,7 +161,8 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
               }
             }
           }
-          if (err.response && [429, 503, 524].includes(err.response.status)) {
+          // slow down except for wikimedia thumbnails whose server is known to be lying (see https://github.com/openzim/mwoffliner/issues/2572)
+          if (err.response && [429, 503, 524].includes(err.response.status) && !fileToDownload.url.match(/^https?:\/\/upload\.wikimedia\.org\/.*\/thumb\//)) {
             hostData.requestInterval = hostData.requestInterval * 1.2 // 1.2 is arbitrary value to progressively slow requests to host down
             logger.log(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
           }

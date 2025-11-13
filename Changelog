@@ -1,5 +1,6 @@
 Unreleased:
 * CHANGED: pass `pageid` in `rdprop` for proper mdwiki API operation (@benoit74 #2557)
+* FIX: Fix backoff and slow down issues (@benoit74 #2574)
 
 1.17.2:
 * FIX: Fix parsing of potentially missing retry-after header (@benoit74 #2556)
