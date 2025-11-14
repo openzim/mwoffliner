@@ -240,7 +240,9 @@ class MediaWiki {
       prop: 'info|redirects|revisions',
       rdlimit: 'max',
       rdnamespace: '0',
-      rdprop: 'title|fragment',
+      // pageid in rdprop is not mandatory in general, but required for proper
+      // mdwiki API operation
+      rdprop: 'pageid|title|fragment',
       redirects: false,
       formatversion: '2',
       maxlag: config.defaults.maxlag,
