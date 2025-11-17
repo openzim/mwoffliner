@@ -1,9 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"Hedda"
+			"Hedda",
+			"SaldırganSincap"
 		]
 	},
-	"DISCLAIMER": "Bu makale, ${creator} tarafından yayımlanmıştır. Metin, ${license} kapsamında lisanslanmıştır. Medya dosyaları için ek koşullar geçerli olabilir.",
+	"DISCLAIMER": "Bu madde ${creator} tarafından yayımlanmıştır. Aksi belirtilmedikçe metin ${license} lisansı altında kullanılabilir. Medya dosyaları için ek koşullar geçerli olabilir.",
 	"LAST_EDITED_ON": "Son düzenleme ${date} tarihinde yapıldı"
 }
