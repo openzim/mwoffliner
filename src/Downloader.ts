@@ -824,6 +824,7 @@ class Downloader {
   }
 
   private backoffCall(handler: (...args: any[]) => void, url: string, kind: DonwloadKind, callback: (...args: any[]) => void | Promise<void>): void {
+    this.backoffOptions.strategy.reset() // reset delay to initial one at each call
     const call = backoff.call(handler, url, kind, callback)
     call.setStrategy(this.backoffOptions.strategy)
     call.retryIf(this.backoffOptions.retryIf)
