@@ -1,4 +1,4 @@
-Unreleased:
+1.17.3:
 * CHANGED: pass `pageid` in `rdprop` for proper mdwiki API operation (@benoit74 #2557)
 * FIX: Fix backoff and slow down issues (@benoit74 #2574)
 
