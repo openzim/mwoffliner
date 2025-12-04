@@ -1,6 +1,7 @@
-Unreleased:
+1.17.4:
 
-* FIX: Fix slow down issues again (@benoit74 #xxx)
+* FIX: Fix slow down issues again (@benoit74 #2591)
+* CHANGED: Significant upgrade of all Node.JS dependencies (@pippotadde #2579)
 
 1.17.3:
 * CHANGED: pass `pageid` in `rdprop` for proper mdwiki API operation (@benoit74 #2557)
