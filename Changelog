@@ -1,5 +1,6 @@
-1.17.4:
+Unreleased:
 
+1.17.4:
 * FIX: Fix slow down issues again (@benoit74 #2591)
 * CHANGED: Significant upgrade of all Node.JS dependencies (@pippotadde #2579)
 
