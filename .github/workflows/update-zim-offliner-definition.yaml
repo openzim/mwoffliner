@@ -4,16 +4,16 @@ on:
   push:
     branches: [main]
     paths:
-      - "offliner-definition.json"
+      - 'offliner-definition.json'
   release:
     types: [published]
 
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish"
+        description: 'Version to publish'
         required: false
-        default: "dev"
+        default: 'dev'
 
 jobs:
   prepare-json:
@@ -22,7 +22,7 @@ jobs:
       offliner_definition_b64: ${{ steps.read-json.outputs.offliner_definition_b64 }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -43,4 +43,3 @@ jobs:
       offliner_definition_b64: ${{ needs.prepare-json.outputs.offliner_definition_b64 }}
     secrets:
       zimfarm_ci_secret: ${{ secrets.ZIMFARM_CI_SECRET }}
-

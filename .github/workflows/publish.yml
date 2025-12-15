@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  id-token: write # Required for Trusted Publishing on NPM
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -11,19 +14,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
           registry-url: 'https://registry.npmjs.org'
 
+      # Ensure npm 11.5.1 or later is installed
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - run: npm ci
 
       - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Build and push Docker image
         uses: openzim/docker-publish-action@v10

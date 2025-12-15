@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
 
@@ -48,7 +48,7 @@ jobs:
 
       - name: Mailgun Action
         if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: vineetchoudhary/mailgun-action@v1.1
+        uses: vineetchoudhary/mailgun-action@v1.2
         with:
           api-key: ${{ secrets.MAILGUN_API_KEY }}
           domain: ${{ secrets.MAILGUN_DOMAIN }}
@@ -57,7 +57,7 @@ jobs:
           subject: 'mwoffliner scheduled CI run FAILED (silent)'
 
       - name: Upload coverage results for unit tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-unit
           path: coverage/unit/coverage-final.json
@@ -68,10 +68,10 @@ jobs:
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
 
@@ -94,7 +94,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Uploading ZIM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: zims-e2e
@@ -105,7 +105,7 @@ jobs:
 
       - name: Mailgun Action
         if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: vineetchoudhary/mailgun-action@v1.1
+        uses: vineetchoudhary/mailgun-action@v1.2
         with:
           api-key: ${{ secrets.MAILGUN_API_KEY }}
           domain: ${{ secrets.MAILGUN_DOMAIN }}
@@ -114,7 +114,7 @@ jobs:
           subject: 'mwoffliner scheduled CI run FAILED (silent)'
 
       - name: Upload coverage results for e2e tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-e2e
           path: coverage/e2e/coverage-final.json
@@ -128,10 +128,10 @@ jobs:
       - e2e-tests
     steps:
       - name: Download codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
 
@@ -141,13 +141,13 @@ jobs:
           wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
 
       - name: Download coverage results for unit tests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coverage-unit
           path: coverage/unit/
 
       - name: Download coverage results for e2e tests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: coverage-e2e
           path: coverage/e2e/
@@ -156,7 +156,7 @@ jobs:
         run: npm run codecov:merge
 
       - name: Uploading Codecov stats
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -165,10 +165,10 @@ jobs:
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
 
@@ -188,7 +188,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Ensure we can build the Docker image
         run: |
