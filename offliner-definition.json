@@ -58,7 +58,8 @@
       "maxLength": 4000
     },
     "customZimFavicon": {
-      "type": "url",
+      "type": "blob",
+      "kind": "image",
       "required": false,
       "title": "ZIM favicon",
       "description": "URL to a png to use as favicon. Will be resized to 48x48px."
