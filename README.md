@@ -117,3 +117,11 @@ License
 
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0) or later, see
 [LICENSE](LICENSE) for more details.
+
+Acknowledgements
+--------
+
+This project received funding through [NGI Zero Core](https://nlnet.nl/core), a fund established by [NLnet](https://nlnet.nl/) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu/) program. Learn more at the [NLnet project page](https://nlnet.nl/project/MWOffliner).
+
+[<img width="20%" alt="NLnet foundation logo" src="https://github.com/user-attachments/assets/22233242-ec49-4540-a0af-b70725cedbee" />](https://nlnet.nl/)
+[<img width="20%" alt="NGI Zero Logo" src="https://github.com/user-attachments/assets/1bbbda57-dc6f-4902-ae29-236e5e89228f" />](https://nlnet.nl/core)
