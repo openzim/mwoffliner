@@ -1,5 +1,6 @@
 Unreleased:
 
+* NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
 * CHANGED: Upgrade @openzim/libzim to v4.0.0 (@dhyaniritesh89 #2590)
 
 1.17.4:
