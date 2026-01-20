@@ -149,9 +149,11 @@ function main() {
 
     if (missingDoc.length > 0) {
       console.warn(`${C.Yellow}[WARN] Missing documentation in ${CONFIG.DOC_LANG}: ${missingDoc.length} keys${C.Reset}`)
+      missingDoc.sort().forEach((k) => console.log(`   - ${k}`))
     }
     if (extraDoc.length > 0) {
       console.warn(`${C.Yellow}[WARN] Extra keys in ${CONFIG.DOC_LANG} (not in source): ${extraDoc.length} keys${C.Reset}`)
+      extraDoc.sort().forEach((k) => console.log(`   - ${k}`))
     }
     if (missingDoc.length === 0 && extraDoc.length === 0) {
       console.log(`${C.Green}[PASS] ${CONFIG.DOC_LANG} matches ${CONFIG.SOURCE_LANG} keys${C.Reset}`)
@@ -172,7 +174,8 @@ function main() {
     const unknownKeys = [...keys].filter((k) => !sourceKeys.has(k))
 
     if (unknownKeys.length > 0) {
-      error(`${C.Red}[FAIL] ${f}: Contains ${unknownKeys.length} keys not in ${CONFIG.SOURCE_LANG}${C.Reset} (${unknownKeys.slice(0, 3).join(', ')}...)`)
+      error(`${C.Red}[FAIL] ${f}: Contains ${unknownKeys.length} keys not in ${CONFIG.SOURCE_LANG}${C.Reset}`)
+      unknownKeys.sort().forEach((k) => console.log(`   - ${k}`))
     }
   })
 
