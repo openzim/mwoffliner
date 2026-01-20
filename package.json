@@ -20,6 +20,7 @@
     "test": "npm run test:unit-coverage -- --silent && npm run test:e2e-coverage -- --silent",
     "test-verbose": "npm run test:unit-coverage && npm run test:e2e-coverage",
     "test-without-coverage": "npm run test:unit -- -- --silent && npm run test:e2e -- -- --silent",
+    "test:i18n": "node dev/check-translations.js",
     "codecov:merge": "rm -f coverage.json && rm -rf coverage/merge && mkdir -p coverage/merge && cp coverage/e2e/coverage-final.json coverage/merge/coverage-e2e.json && cp coverage/unit/coverage-final.json coverage/merge/coverage-unit.json && nyc report --reporter=lcov --temp-dir=coverage/merge && rm -rf coverage/merge coverage/unit coverage/e2e",
     "codecov": "rm -rf coverage && npm run test:unit-coverage && npm run test:e2e-coverage && npm run codecov:merge",
     "lint": "eslint .",
