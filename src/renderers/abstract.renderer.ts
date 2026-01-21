@@ -55,7 +55,7 @@ export interface DownloadRes {
 }
 
 export interface RenderOptsModules {
-  jsConfigVars: string
+  jsConfigVars: KVS<any>
   jsDependenciesList: string[]
   styleDependenciesList: string[]
 }
