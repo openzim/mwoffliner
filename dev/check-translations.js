@@ -32,10 +32,9 @@ const C = {
 }
 
 let exitCode = 0
-const errors = []
 
 function error(msg) {
-  errors.push(msg)
+  console.error(msg)
   exitCode = 1
 }
 
@@ -92,12 +91,28 @@ function extractKeysFromCode(dir) {
   const files = walkDir(dir, '.ts')
   const usedKeys = new Set()
   const keyLocations = {} // key -> [files]
+  const foundPrefixes = new Set()
 
   const patterns = [/\.strings\.([a-zA-Z0-9_]+)/g, /\.strings\['([a-zA-Z0-9_]+)'\]/g, /\.strings\["([a-zA-Z0-9_]+)"\]/g]
 
   files.forEach((file) => {
     const content = fs.readFileSync(file, 'utf8')
     const relativePath = path.relative(CONFIG.ROOT, file)
+
+    // Check for dynamic key prefixes with context
+    CONFIG.DYNAMIC_KEYS_PREFIXES.forEach((prefix) => {
+      if (foundPrefixes.has(prefix)) return
+
+      // Escape prefix for regex
+      const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+      // Look for: .strings.PREFIX or .strings['PREFIX or .strings["PREFIX or .strings[`PREFIX
+      const regex = new RegExp(`\\.strings(?:\\.|\\['|\\["|\\[\`)${escapedPrefix}`)
+
+      if (regex.test(content)) {
+        foundPrefixes.add(prefix)
+      }
+    })
 
     patterns.forEach((regex) => {
       let match
@@ -112,7 +127,7 @@ function extractKeysFromCode(dir) {
     })
   })
 
-  return { usedKeys, keyLocations }
+  return { usedKeys, keyLocations, foundPrefixes }
 }
 
 function main() {
@@ -148,11 +163,11 @@ function main() {
     const extraDoc = [...qqqKeys].filter((k) => !sourceKeys.has(k))
 
     if (missingDoc.length > 0) {
-      console.warn(`${C.Yellow}[WARN] Missing documentation in ${CONFIG.DOC_LANG}: ${missingDoc.length} keys${C.Reset}`)
+      error(`${C.Red}[FAIL] Missing documentation in ${CONFIG.DOC_LANG}: ${missingDoc.length} keys${C.Reset}`)
       missingDoc.sort().forEach((k) => console.log(`   - ${k}`))
     }
     if (extraDoc.length > 0) {
-      console.warn(`${C.Yellow}[WARN] Extra keys in ${CONFIG.DOC_LANG} (not in source): ${extraDoc.length} keys${C.Reset}`)
+      error(`${C.Red}[FAIL] Extra keys in ${CONFIG.DOC_LANG} (not in source): ${extraDoc.length} keys${C.Reset}`)
       extraDoc.sort().forEach((k) => console.log(`   - ${k}`))
     }
     if (missingDoc.length === 0 && extraDoc.length === 0) {
@@ -179,13 +194,9 @@ function main() {
     }
   })
 
-  if (exitCode === 0) {
-    console.log(`${C.Green}[PASS] All locale files are consistent subsets of ${CONFIG.SOURCE_LANG}${C.Reset}`)
-  }
-
   // Code Usage Check
   printHeader('3. Checking Code Usage')
-  const { usedKeys, keyLocations } = extractKeysFromCode(CONFIG.SRC_DIR)
+  const { usedKeys, keyLocations, foundPrefixes } = extractKeysFromCode(CONFIG.SRC_DIR)
   console.log(`Found ${C.Bold}${usedKeys.size}${C.Reset} unique translation keys in source code.`)
 
   // Check 1: Keys in Code but missing in Source
@@ -207,18 +218,28 @@ function main() {
 
   // Check 2: Keys in Source but not found in Code (Unused?)
   const unusedInSource = [...sourceKeys].filter((k) => !usedKeys.has(k))
-  const potentiallyUnused = unusedInSource.filter((k) => !CONFIG.DYNAMIC_KEYS_PREFIXES.some((prefix) => k.startsWith(prefix)))
+  const unused = unusedInSource.filter((k) => !CONFIG.DYNAMIC_KEYS_PREFIXES.some((prefix) => k.startsWith(prefix)))
 
-  if (potentiallyUnused.length > 0) {
-    console.warn(`${C.Yellow}[WARN] ${potentiallyUnused.length} keys in ${CONFIG.SOURCE_LANG} NOT found in code (potential unused):${C.Reset}`)
-    potentiallyUnused.sort().forEach((k) => console.log(`   - ${k}`))
+  if (unused.length > 0) {
+    error(`${C.Red}[FAIL] ${unused.length} keys in ${CONFIG.SOURCE_LANG} NOT found in code (unused):${C.Reset}`)
+    unused.sort().forEach((k) => console.log(`   - ${k}`))
   } else {
     console.log(`${C.Green}[PASS] All ${CONFIG.SOURCE_LANG} keys appear to be used${C.Reset}`)
   }
 
+  // Check 3: Dynamic Keys Prefix
+  printHeader('4. Checking Dynamic Keys')
+  const missingPrefixes = CONFIG.DYNAMIC_KEYS_PREFIXES.filter((prefix) => !foundPrefixes.has(prefix))
+  if (missingPrefixes.length > 0) {
+    error(`${C.Red}[FAIL] Dynamic keys prefix not found in source code (must be used with 'strings'):${C.Reset}`)
+    missingPrefixes.forEach((prefix) => console.log(`   - ${prefix}`))
+  } else {
+    console.log(`${C.Green}[PASS] All dynamic keys prefixes found in source code${C.Reset}`)
+  }
+
   // Report
   printHeader('Summary')
-  if (errors.length > 0) {
+  if (exitCode !== 0) {
     console.log(`${C.Red}[FAIL] Verification Failed!${C.Reset}`)
     process.exit(1)
   } else {
