@@ -1,5 +1,6 @@
 Unreleased:
 
+* NEW: Add validation for internationalization (i18n) files (@ShreyashSri #2563)
 * CHANGED: Upgrade @openzim/libzim to v4.0.0 (@dhyaniritesh89 #2590)
 * FIX: Don't check for night-mode feature flag (@Markus-Rost #2598)
 

@@ -184,6 +184,9 @@ jobs:
       - name: Running ESLint
         run: npm run lint
 
+      - name: Validate Translations
+        run: npm run test:i18n
+
   build-docker:
     runs-on: ubuntu-24.04
     steps:
