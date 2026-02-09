@@ -69,8 +69,28 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
    * Return null when there is no more file to download.
    */
   async function getNextFileToDownload(): Promise<{ fileToDownload: FileToDownload; hostData: HostData; hostname: string }> {
+    const startPolling = Date.now()
     // loop until we've found a file to download or list is empty
     while (true) {
+      // ensure we are not in a dead loop forever (1 hour is way too much, but this is a safety net anyway)
+      if (startPolling + 1000 * 60 * 60 < Date.now()) {
+        logger.warn('No file to download for more than 1 hour, exiting the loop')
+        for (const hostData of hosts.values()) {
+          if (hostData.downloadsComplete) {
+            continue
+          }
+          while (await hostData.filesToDownload.pop()) {
+            dump.status.files.fail += 1
+            if (
+              dump.status.files.fail > FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK &&
+              (dump.status.files.fail * 10000) / filesTotal > FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND
+            ) {
+              throw new Error(`Too many files failed to download: [${dump.status.files.fail}/${filesTotal}]`)
+            }
+          }
+        }
+        return null
+      }
       // check if all donwloads have completed and exit
       const hostValues = Array.from(hosts.values())
       const completedHosts = hostValues.reduce((buf, host) => {
