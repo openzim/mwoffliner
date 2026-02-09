@@ -19,6 +19,10 @@ import { truncateUtf8Bytes } from './misc.js'
 import { isMainPage } from './articles.js'
 import RedisQueue from './RedisQueue.js'
 
+// Maximum delay between file download attempts on a given host
+// Default upload.wikimedia.org Retry-After value is 11 seconds
+const MAXIMUM_FILE_DOWNLOAD_DELAY = 20000
+
 export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump) {
   interface HostData {
     filesToDownload: RedisQueue<FileToDownload>
@@ -174,8 +178,12 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
             if (retryAfterHeader) {
               const retryDate = parseRetryAfterHeader(retryAfterHeader)
               if (retryDate) {
-                hostData.notBeforeDate = retryDate
-                logger.log(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
+                if (retryDate > Date.now() + MAXIMUM_FILE_DOWNLOAD_DELAY) {
+                  logger.log(`Received a [Retry-After=${retryAfterHeader}] on ${hostname} but this is too far away, ignoring`)
+                } else {
+                  hostData.notBeforeDate = retryDate
+                  logger.log(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
+                }
               } else {
                 logger.warn(`Received a [Retry-After=${retryAfterHeader}] from ${hostname} but failed to interpret it`)
               }
@@ -187,7 +195,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
             [429, 503, 524].includes(err.response.status) &&
             !urlHelper.deserializeUrl(fileToDownload.url).match(/^https?:\/\/upload\.wikimedia\.org\/.*\/thumb\//)
           ) {
-            hostData.requestInterval = hostData.requestInterval * 1.2 // 1.2 is arbitrary value to progressively slow requests to host down
+            hostData.requestInterval = Math.min(MAXIMUM_FILE_DOWNLOAD_DELAY, hostData.requestInterval * 1.2) // 1.2 is arbitrary value to progressively slow requests to host down
             logger.log(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
           }
           await hostData.filesToDownload.push(fileToDownload)

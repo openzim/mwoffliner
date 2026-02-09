@@ -4,6 +4,7 @@ Unreleased:
 * CHANGED: Upgrade @openzim/libzim to v4.0.0 (@dhyaniritesh89 #2590)
 * FIX: Don't check for night-mode feature flag (@Markus-Rost #2598)
 * FIX: Add safety net to exit file downloads loop if stuck (@benoit74 #2612)
+* FIX: Set maximum retry interval to 20 seconds for files download (@benoit74 #2612)
 
 1.17.4:
 * FIX: Fix slow down issues again (@benoit74 #2591)
