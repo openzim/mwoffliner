@@ -19,6 +19,10 @@ import { truncateUtf8Bytes } from './misc.js'
 import { isMainPage } from './articles.js'
 import RedisQueue from './RedisQueue.js'
 
+// Maximum delay between file download attempts on a given host
+// Default upload.wikimedia.org Retry-After value is 11 seconds
+const MAXIMUM_FILE_DOWNLOAD_DELAY = 20000
+
 export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Creator, dump: Dump) {
   interface HostData {
     filesToDownload: RedisQueue<FileToDownload>
@@ -69,8 +73,28 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
    * Return null when there is no more file to download.
    */
   async function getNextFileToDownload(): Promise<{ fileToDownload: FileToDownload; hostData: HostData; hostname: string }> {
+    const startPolling = Date.now()
     // loop until we've found a file to download or list is empty
     while (true) {
+      // ensure we are not in a dead loop forever (1 hour is way too much, but this is a safety net anyway)
+      if (startPolling + 1000 * 60 * 60 < Date.now()) {
+        logger.warn('No file to download for more than 1 hour, exiting the loop')
+        for (const hostData of hosts.values()) {
+          if (hostData.downloadsComplete) {
+            continue
+          }
+          while (await hostData.filesToDownload.pop()) {
+            dump.status.files.fail += 1
+            if (
+              dump.status.files.fail > FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK &&
+              (dump.status.files.fail * 10000) / filesTotal > FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND
+            ) {
+              throw new Error(`Too many files failed to download: [${dump.status.files.fail}/${filesTotal}]`)
+            }
+          }
+        }
+        return null
+      }
       // check if all donwloads have completed and exit
       const hostValues = Array.from(hosts.values())
       const completedHosts = hostValues.reduce((buf, host) => {
@@ -154,8 +178,12 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
             if (retryAfterHeader) {
               const retryDate = parseRetryAfterHeader(retryAfterHeader)
               if (retryDate) {
-                hostData.notBeforeDate = retryDate
-                logger.log(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
+                if (retryDate > Date.now() + MAXIMUM_FILE_DOWNLOAD_DELAY) {
+                  logger.log(`Received a [Retry-After=${retryAfterHeader}] on ${hostname} but this is too far away, ignoring`)
+                } else {
+                  hostData.notBeforeDate = retryDate
+                  logger.log(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
+                }
               } else {
                 logger.warn(`Received a [Retry-After=${retryAfterHeader}] from ${hostname} but failed to interpret it`)
               }
@@ -167,7 +195,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
             [429, 503, 524].includes(err.response.status) &&
             !urlHelper.deserializeUrl(fileToDownload.url).match(/^https?:\/\/upload\.wikimedia\.org\/.*\/thumb\//)
           ) {
-            hostData.requestInterval = hostData.requestInterval * 1.2 // 1.2 is arbitrary value to progressively slow requests to host down
+            hostData.requestInterval = Math.min(MAXIMUM_FILE_DOWNLOAD_DELAY, hostData.requestInterval * 1.2) // 1.2 is arbitrary value to progressively slow requests to host down
             logger.log(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
           }
           await hostData.filesToDownload.push(fileToDownload)

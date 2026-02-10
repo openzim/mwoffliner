@@ -805,7 +805,7 @@ class Downloader {
   }
 
   private errHandler(err: any, url: string, handler: any): void {
-    logger.log(`Not able to download content for ${url} due to ${err}`)
+    logger.info(`Error while downloading content for ${url} due to ${err} ; might be retried`)
     handler(err)
   }
 
