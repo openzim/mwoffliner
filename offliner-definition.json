@@ -141,12 +141,6 @@
       "title": "Add Content Models",
       "description": "Include additional content models besides wikitext (comma separated). By default, only wikitext articles are scraped."
     },
-    "getCategories": {
-      "type": "boolean",
-      "required": false,
-      "title": "Add categories",
-      "description": "[WIP] Download category pages"
-    },
     "keepEmptySections": {
       "type": "boolean",
       "required": false,
