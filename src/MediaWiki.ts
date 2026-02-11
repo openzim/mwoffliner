@@ -100,7 +100,6 @@ class MediaWiki {
 
   public metaData: MWMetaData
   public baseUrl: URL
-  public getCategories: boolean
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
   public apiCheckArticleId: string
@@ -193,7 +192,6 @@ class MediaWiki {
     this.#domain = ''
     this.#username = ''
     this.#password = ''
-    this.getCategories = false
 
     this.#actionApiPath = '/w/api.php'
     this.#wikiPath = '/wiki/'

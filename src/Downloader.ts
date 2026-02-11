@@ -339,12 +339,6 @@ class Downloader {
         ...(await this.getArticleQueryOpts(shouldGetThumbnail, true)),
         titles: articleIds.join('|'),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
-        ...(MediaWiki.getCategories
-          ? {
-              cllimit: 'max',
-              clshow: '!hidden',
-            }
-          : {}),
         ...continuation,
       }
 
@@ -354,14 +348,11 @@ class Downloader {
 
       Downloader.handleMWWarningsAndErrors(resp)
 
-      let processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
+      const processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
       if (resp.continue) {
         continuation = resp.continue
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (MediaWiki.getCategories) {
-          processedResponse = await this.setArticleSubCategories(processedResponse)
-        }
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
       }
@@ -379,12 +370,6 @@ class Downloader {
       const queryOpts: KVS<any> = {
         ...(await this.getArticleQueryOpts()),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
-        ...(MediaWiki.getCategories
-          ? {
-              cllimit: 'max',
-              clshow: '!hidden',
-            }
-          : {}),
         rawcontinue: 'true',
         generator: 'allpages',
         gapfilterredir: 'nonredirects',
@@ -395,7 +380,6 @@ class Downloader {
 
       if (queryContinuation) {
         queryOpts.cocontinue = queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue
-        queryOpts.clcontinue = queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue
         queryOpts.picontinue = queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue
         queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
       }
@@ -405,7 +389,7 @@ class Downloader {
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
 
-      let processedResponse = normalizeMwResponse(resp.query)
+      const processedResponse = normalizeMwResponse(resp.query)
 
       gCont = resp['query-continue']?.allpages?.gapcontinue ?? gCont
 
@@ -416,10 +400,6 @@ class Downloader {
 
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (MediaWiki.getCategories) {
-          processedResponse = await this.setArticleSubCategories(processedResponse)
-        }
-
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
       }
@@ -625,25 +605,13 @@ class Downloader {
   }
 
   private async getArticleQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
-    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
+    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}`
     return {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
       formatversion: '2',
       redirects: followRedirects ? true : undefined,
     }
-  }
-
-  private async setArticleSubCategories(articleDetails: QueryMwRet) {
-    logger.info('Getting subCategories')
-    for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
-      const isCategoryArticle = articleDetail.ns === 14
-      if (isCategoryArticle) {
-        const categoryMembers = await this.getSubCategories(articleId)
-        ;(articleDetails[articleId] as any).subCategories = categoryMembers.slice()
-      }
-    }
-    return articleDetails
   }
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
@@ -808,20 +776,6 @@ class Downloader {
   private errHandler(err: any, url: string, handler: any): void {
     logger.info(`Error while downloading content for ${url} due to ${err} ; might be retried`)
     handler(err)
-  }
-
-  private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-
-    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
-    const items = query.categorymembers.filter((a: any) => a && a.title)
-
-    if (cont && cont.cmcontinue) {
-      const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)
-      return items.concat(nextItems)
-    } else {
-      return items
-    }
   }
 
   private backoffCall(handler: (...args: any[]) => void, url: string, kind: DonwloadKind, callback: (...args: any[]) => void | Promise<void>): void {

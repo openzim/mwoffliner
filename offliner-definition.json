@@ -134,12 +134,6 @@
       "title": "Add Namespaces",
       "description": "Include addional namespaces (comma separated numbers)"
     },
-    "getCategories": {
-      "type": "boolean",
-      "required": false,
-      "title": "Add categories",
-      "description": "[WIP] Download category pages"
-    },
     "keepEmptyParagraphs": {
       "type": "boolean",
       "required": false,
