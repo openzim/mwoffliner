@@ -22,8 +22,6 @@ interface KVS<T> {
 }
 
 type ArticleDetail = PageInfo & {
-  subCategories?: PageInfo[]
-  categories?: PageInfo[]
   pages?: PageInfo[]
   thumbnail?: {
     source: string
@@ -88,8 +86,6 @@ interface RS {
   createRedisKvs: (dbName: string, keyMapping?: KVS<string>) => RKVS<any>
 }
 
-type QueryCategoriesRet = PageInfo[]
-
 type QueryRevisionsRet = Array<{
   revid: number
   parentid: number
@@ -115,8 +111,6 @@ type QueryRedirectsRet = Array<
 type TextDirection = 'ltr' | 'rtl'
 
 interface QueryRet {
-  subCategories?: PageInfo[] // :(
-  categories?: QueryCategoriesRet
   revisions?: QueryRevisionsRet
   coordinates?: QueryCoordinatesRet
   redirects?: QueryRedirectsRet
@@ -211,7 +205,6 @@ interface MWConfig {
   username?: string
   password?: string
   modulePath?: string
-  getCategories?: boolean
 }
 
 interface ContinueOpts {
@@ -221,9 +214,6 @@ interface ContinueOpts {
 }
 
 interface QueryContinueOpts {
-  categories: {
-    clcontinue: string
-  }
   coordinates: {
     cocontinue: string
   }

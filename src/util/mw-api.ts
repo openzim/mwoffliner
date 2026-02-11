@@ -288,8 +288,6 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
     }
     ret[key] = {
       title: val.title,
-      categories: val.categories,
-      subCategories: val.subCategories,
       thumbnail: newThumbnail,
       missing: val.missing,
       pagelang: val.pagelanguagehtmlcode,
