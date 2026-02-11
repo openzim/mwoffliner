@@ -38,7 +38,7 @@ If user specified the exact list of articles to retrieve, then scraper simply re
 
 Otherwise, the scraper enumerates articles in given namespaces (by default, all content namespaces) with the `allpages` generator, requesting one namespace content at a time (`action=query&generator=allpages&gapnamespace=xx`).
 
-The details we retrieve at this stage about every articles are their title, subtitle, revisions, redirects, thumbnail, categories, coordinates (when it applies), text language, text direction and contentmodel (to consider only on wikitext ones).
+The details we retrieve at this stage about every articles are their title, subtitle, revisions, redirects, thumbnail, coordinates (when it applies), text language, text direction and contentmodel (to consider only on wikitext ones).
 
 ## Retrieving article HTML and rendering
 
