@@ -11,23 +11,6 @@ export default class ApiURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildSubCategoriesURL(articleId: string, continueStr = '') {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({
-        action: 'query',
-        list: 'categorymembers',
-        cmtype: 'subcat',
-        cmlimit: 'max',
-        format: 'json',
-        formatversion: '2',
-        cmtitle: articleId,
-        cmcontinue: continueStr,
-        maxlag: config.defaults.maxlag,
-      })
-      .build()
-  }
-
   buildQueryURL<T extends Record<string, any>>(queryParams: T) {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
   }

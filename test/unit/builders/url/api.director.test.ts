@@ -3,16 +3,6 @@ import ApiURLDirector from '../../../../src/util/builders/url/api.director.js'
 describe('ApiURLDirector', () => {
   const apiUrlDirector = new ApiURLDirector('https://en.wikipedia.org/w/api.php')
 
-  describe('buildSubCategoriesURL', () => {
-    it('should return a string URL to get article sub categories', () => {
-      const url = apiUrlDirector.buildSubCategoriesURL('article-123')
-
-      expect(url).toBe(
-        'https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtype=subcat&cmlimit=max&format=json&formatversion=2&cmtitle=article-123&cmcontinue=&maxlag=5',
-      )
-    })
-  })
-
   describe('buildQueryURL', () => {
     it('should build a string URL with provided query params', () => {
       const url = apiUrlDirector.buildQueryURL({ param1: 'param1', param2: 'param2' })
