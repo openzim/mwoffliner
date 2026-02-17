@@ -29,7 +29,7 @@ export abstract class DesktopRenderer extends Renderer {
 
   public filterWikimediaDesktopModules(_moduleDependencies) {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = _moduleDependencies as {
-      jsConfigVars: string
+      jsConfigVars: KVS<any>
       jsDependenciesList: string[]
       styleDependenciesList: string[]
     }
@@ -48,7 +48,7 @@ export abstract class DesktopRenderer extends Renderer {
 
   public templateDesktopArticle(moduleDependencies: any, articleId: string): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies as {
-      jsConfigVars
+      jsConfigVars: KVS<any>
       jsDependenciesList: string[]
       styleDependenciesList: string[]
     }
@@ -70,7 +70,7 @@ export abstract class DesktopRenderer extends Renderer {
       jsScripts += genHeaderScript(config, 'webpHandler', articleId, config.output.dirs.webp)
     }
 
-    const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
+    const articleConfigVarsList = Object.keys(jsConfigVars).length ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
     const articleJsList =
       jsDependenciesList.length === 0 ? '' : jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki)).join('\n')
     const articleCssList =

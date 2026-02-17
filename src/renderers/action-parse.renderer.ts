@@ -3,14 +3,32 @@ import { DownloadOpts, DownloadRes, Renderer, RenderOptsModules } from './abstra
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 import * as logger from '../Logger.js'
 import { config } from '../config.js'
-import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath } from '../util/misc.js'
+import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath, jsonStringify } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
-import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode } from '../Templates.js'
+import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode, javaScriptTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
-import { extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
+import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&skin=vector-2022&formatversion=2'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&useskin=vector-2022&redirects=1&formatversion=2'
+export interface ActionParseResult {
+  parse: {
+    title: string
+    pageid: number
+    redirects?: {
+      from: string
+      to: string
+    }[]
+    text: string
+    displaytitle: string
+    subtitle: string
+    headhtml: string
+    modules: string[]
+    modulestyles: string[]
+    jsconfigvars: KVS<any>
+  }
+}
+
 export class ActionParseRenderer extends Renderer {
   public staticFilesList: string[] = []
   #htmlTemplateCode: () => string
@@ -33,10 +51,16 @@ export class ActionParseRenderer extends Renderer {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
 
     const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
-    const articleConfigVarsList = jsConfigVars === '' ? '' : genHeaderScript(config, 'jsConfigVars', articleId, config.output.dirs.mediawiki)
-    const articleJsScripts = jsDependenciesList.map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.mediawiki))
+    moduleDependencies.jsConfigVars = {}
+    jsConfigVars.zimRelativeFilePath = getRelativeFilePath(articleId, '')
+    const articleJsScripts: string[] = []
     if (Downloader.webp) {
       articleJsScripts.push(...['webpHandler'].map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.webp)))
+    }
+    const articleJsStartup = Downloader.trustedJs ? genHeaderScript(config, 'startup', articleId, config.output.dirs.mediawiki, 'async') : ''
+    const articleCssState = { 'user.options': 'loading' }
+    for (const oneCssDep of styleDependenciesList) {
+      articleCssState[oneCssDep] = 'ready'
     }
     const articleCssBeforeMeta = styleDependenciesList
       .filter((oneCssDep: string) => {
@@ -52,14 +76,25 @@ export class ActionParseRenderer extends Renderer {
       .sort()
       .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki))
       .join('\n    ')
+    let articleCssNoscript = genHeaderCSSLink(config, 'noscript', articleId, config.output.dirs.mediawiki)
+    if (Downloader.trustedJs) {
+      articleCssNoscript = `<noscript>${articleCssNoscript}</noscript>`
+    }
+
+    const javaScriptTemplateString = (Downloader.trustedJs ? javaScriptTemplateCode() : '')
+      .replace('__ARTICLE_CONFIGVARS__', jsonStringify(jsConfigVars))
+      .replace('__ARTICLE_JS_MODULES__', jsonStringify(jsDependenciesList))
+      .replace('__ARTICLE_CSS_STATE__', jsonStringify(articleCssState))
 
     const htmlTemplateString = this.#htmlTemplateCode()
       .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
-      .replace('__ARTICLE_CONFIGVARS_LIST__', articleConfigVarsList)
       .replace('__ARTICLE_JS_LIST__', articleJsScripts.join('\n'))
+      .replace('__ARTICLE_JAVASCRIPT__', javaScriptTemplateString)
       .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
+      .replace('__ARTICLE_JS_STARTUP__', articleJsStartup)
       .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
+      .replace('__ARTICLE_CSS_NOSCRIPT__', articleCssNoscript)
       .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
       .replace(/__RES_DIR__/g, config.output.dirs.res)
       .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
@@ -74,9 +109,9 @@ export class ActionParseRenderer extends Renderer {
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
     const { articleId, articleUrl } = downloadOpts
 
-    let data: any
+    let data: ActionParseResult
     try {
-      data = await Downloader.getJSON<any>(articleUrl)
+      data = await Downloader.getJSON<ActionParseResult>(articleUrl)
     } catch (err) {
       if (err instanceof DownloadError && err.responseData.error?.code === 'missingtitle') {
         // For missing articles, query log events searching for a recent move, and if found check
@@ -111,14 +146,25 @@ export class ActionParseRenderer extends Renderer {
     const styleDependenciesList = data.parse.modulestyles.filter((oneCssDep: string) => {
       return !oneCssDep.startsWith('user')
     })
-    /*const jsDependenciesList = data.parse.modules.filter((oneJsDep: string) => {
+    const jsDependenciesList = data.parse.modules.filter((oneJsDep: string) => {
       return !oneJsDep.startsWith('user')
-    })*/
+    })
+
+    // Preload jquery.tablesorter for mediawiki.page.ready
+    if (data.parse.text.includes('sortable')) {
+      styleDependenciesList.push('jquery.tablesorter.styles')
+      jsDependenciesList.push('jquery.tablesorter')
+    }
+    // Preload jquery.makeCollapsible for mediawiki.page.ready
+    if (data.parse.text.includes('mw-collapsible')) {
+      styleDependenciesList.push('jquery.makeCollapsible.styles')
+      jsDependenciesList.push('jquery.makeCollapsible')
+    }
 
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310
-      jsConfigVars: '', // DownloaderClass.extractJsConfigVars(data.parse.headhtml),
-      jsDependenciesList: [], // config.output.mw.js_simplified.concat(jsDependenciesList),
+      jsConfigVars: extractJsConfigVars(data.parse.headhtml, data.parse.jsconfigvars),
+      jsDependenciesList: config.output.mw.js_simplified.concat(jsDependenciesList),
       styleDependenciesList: config.output.mw.css_simplified.concat(styleDependenciesList),
     }
 
@@ -175,14 +221,22 @@ export class ActionParseRenderer extends Renderer {
       }
     }
 
-    // Add CSS-only gadgets which are used on this article
-    const { cssGadgets } = Gadgets.getActiveGadgetsByType(articleDetail)
+    // Add gadgets which are used on this article
+    const { cssGadgets, jsGadgets } = Gadgets.getActiveGadgetsByType(articleDetail)
     cssGadgets.sort().map((gadgetId) => {
       moduleDependencies.styleDependenciesList.push(`ext.gadget.${gadgetId}`)
     })
-    /*jsGadgets.map((gadgetId) => {
+    jsGadgets.map((gadgetId) => {
       moduleDependencies.jsDependenciesList.push(`ext.gadget.${gadgetId}`)
-    })*/
+    })
+
+    if (!Downloader.trustedJs) {
+      moduleDependencies.jsDependenciesList = []
+    } else if (Downloader.trustedJs.length) {
+      moduleDependencies.jsDependenciesList = moduleDependencies.jsDependenciesList.filter((oneJsDep) => {
+        return Downloader.trustedJs.includes(oneJsDep)
+      })
+    }
 
     const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml({
       html: htmlDocument.documentElement.outerHTML,

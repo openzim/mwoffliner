@@ -175,7 +175,7 @@ describe('saveArticles', () => {
       const articleDoc = domino.createDocument(result[0].html)
 
       // Document has scripts that we added, but shouldn't have any without a `src` (inline).
-      const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('script:not([src])'))
+      const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('script:not([src]):not(#mwoffliner-jsConfigVars)'))
       expect(remainingInlineScripts.length).toBe(0)
     })
 
@@ -231,7 +231,7 @@ describe('saveArticles', () => {
     // Create a new function that sets the values
     const setJsConfigVars = new Function(`
         return function(RLCONF, RLSTATE, RLPAGEMODULES, document) {
-            ${_moduleDependencies.jsConfigVars}
+            RLCONF=${JSON.stringify(_moduleDependencies.jsConfigVars)}
             return { RLCONF, RLSTATE, RLPAGEMODULES };
         };
     `)()
