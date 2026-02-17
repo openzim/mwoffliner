@@ -175,5 +175,23 @@ describe('ErrorRenderer', () => {
       expect(rendererError).not.toContain('hope the issue will be solved')
       expect(rendererError).toContain('"../../article_not_found.svg"')
     })
+    it('should handle permission denied error', async () => {
+      const matchingRule = findFirstMatchingRule({
+        urlCalled: 'https://wikem.org/w/api.php?action=parse&format=json&page=HarborUCLA%3AEKG_screening',
+        errorCode: null,
+        httpReturnCode: 200,
+        responseContentType: 'application/json',
+        responseData: {
+          error: {
+            code: 'permissiondenied',
+            info: 'The action you have requested is limited to users in the group: .',
+          },
+        },
+      })
+      expect(matchingRule).not.toBeNull()
+      expect(matchingRule.name).toBe('permission denied error')
+      expect(matchingRule.detailsMessageKey).toBe('PERMISSION_DENIED')
+      expect(matchingRule.isHardFailure).toBe(false)
+    })
   })
 })
