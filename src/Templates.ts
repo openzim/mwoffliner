@@ -46,6 +46,10 @@ const htmlRedirectTemplateCode = () => {
   return readTemplate(config.output.templates.htmlRedirect)
 }
 
+const javaScriptTemplateCode = () => {
+  return readTemplate(config.output.templates.javaScript)
+}
+
 const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate)
 
 export {
@@ -59,6 +63,7 @@ export {
   htmlVector2022TemplateCode,
   htmlFallbackTemplateCode,
   htmlRedirectTemplateCode,
+  javaScriptTemplateCode,
   articleListHomeTemplate,
   categoriesTemplate,
   subCategoriesTemplate,

@@ -3,7 +3,6 @@ import { config } from './config.js'
 import { contains, normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import { Readable } from 'stream'
 import deepmerge from 'deepmerge'
-import * as domino from 'domino'
 import { default as imagemin } from 'imagemin'
 import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
@@ -31,6 +30,7 @@ import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
+import { extractJsConfigVars } from './util/articles.js'
 
 const imageminOptions = new Map()
 imageminOptions.set('default', new Map())
@@ -59,6 +59,7 @@ interface DownloaderOpts {
   optimisationCacheUrl: string
   s3?: S3
   webp: boolean
+  trustedJs?: string[]
   backoffOptions?: BackoffOptions
   insecure?: boolean
 }
@@ -123,6 +124,7 @@ class Downloader {
   private _arrayBufferRequestOptions: AxiosRequestConfig
   private _jsonRequestOptions: AxiosRequestConfig
   private _streamRequestOptions: AxiosRequestConfig
+  public trustedJs: string[] = []
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
 
@@ -163,13 +165,14 @@ class Downloader {
     return this._apiUrlDirector
   }
 
-  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, backoffOptions, insecure }: DownloaderOpts) {
+  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, trustedJs = config.output.mw.js_trusted.slice(), backoffOptions, insecure }: DownloaderOpts) {
     this.reset()
     this.uaString = uaString
     this._speed = speed
     this._requestTimeout = reqTimeout
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
+    this.trustedJs = trustedJs
     this.s3 = s3
     this._apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
@@ -272,6 +275,7 @@ class Downloader {
     this._requestTimeout = undefined
     this.optimisationCacheUrl = undefined
     this._webp = false
+    this.trustedJs = []
     this.s3 = undefined
     this._apiUrlDirector = undefined
     this.insecure = false
@@ -850,7 +854,7 @@ class Downloader {
 
       /* If article is missing (for example because it just has been deleted) or access is denied */
       if (articleData.error.code === 'missingtitle' || articleData.error.code === 'permissiondenied') {
-        return { jsConfigVars: '', jsDependenciesList: [], styleDependenciesList: [] }
+        return { jsConfigVars: {}, jsDependenciesList: [], styleDependenciesList: [] }
       }
 
       /* Something went wrong in modules retrieval at app level (no HTTP error) */
@@ -871,7 +875,7 @@ class Downloader {
     logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
     logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
 
-    const jsConfigVars = Downloader.extractJsConfigVars(headhtml)
+    const jsConfigVars = extractJsConfigVars(headhtml)
 
     // Download mobile page dependencies only once
     if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
@@ -904,27 +908,6 @@ class Downloader {
       stream.on('error', reject)
       stream.on('end', () => resolve(Buffer.concat(chunks)))
     })
-  }
-
-  public static extractJsConfigVars(headhtml: string) {
-    let jsConfigVars = ''
-
-    // Saving, as a js module, the jsconfigvars that are set in the header of a wikipedia page
-    // the script below extracts the config with a regex executed on the page header returned from the api
-    const scriptTags = domino.createDocument(`${headhtml}</body></html>`).getElementsByTagName('script')
-    const regex = /mw\.config\.set\(\{.*?\}\);/gm
-    for (let i = 0; i < scriptTags.length; i += 1) {
-      if (scriptTags[i].text.includes('mw.config.set')) {
-        jsConfigVars = regex.exec(scriptTags[i].text)[0] || ''
-        jsConfigVars = `(window.RLQ=window.RLQ||[]).push(function() {${jsConfigVars}});`
-      } else if (scriptTags[i].text.includes('RLCONF') || scriptTags[i].text.includes('RLSTATE') || scriptTags[i].text.includes('RLPAGEMODULES')) {
-        jsConfigVars = scriptTags[i].text
-      }
-    }
-
-    jsConfigVars = jsConfigVars.replace('nosuchaction', 'view') // to replace the wgAction config that is set to 'nosuchaction' from api but should be 'view'
-
-    return jsConfigVars
   }
 }
 

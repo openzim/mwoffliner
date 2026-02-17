@@ -9,7 +9,7 @@ import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
 import { jsPath } from './index.js'
 import { config } from '../config.js'
-import { getSizeFromUrl, parseRetryAfterHeader } from './misc.js'
+import { getSizeFromUrl, jsonStringify, parseRetryAfterHeader } from './misc.js'
 import { FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK, FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
@@ -361,7 +361,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   const staticFilesList = new Set<string>()
-  let jsConfigVars = ''
+  const jsConfigVars: KVS<any> = {}
   let prevPercentProgress: string
   const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
@@ -440,7 +440,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
               staticFilesList.add(file)
             }
 
-            jsConfigVars = moduleDependencies.jsConfigVars || ''
+            Object.assign(jsConfigVars, moduleDependencies.jsConfigVars)
 
             /*
              * getModuleDependencies and downloader.getArticle are
@@ -516,8 +516,9 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
-  if (jsConfigVars) {
-    const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', null, { FRONT_ARTICLE: 0 }, jsConfigVars)
+  if (Object.keys(jsConfigVars).length) {
+    const jsConfigVarsFunction = `(window.RLQ=window.RLQ||[]).push(function() {mw.config.set(${jsonStringify(jsConfigVars)})});`
+    const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', null, { FRONT_ARTICLE: 0 }, jsConfigVarsFunction)
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(jsConfigVarArticle))
   }
 
