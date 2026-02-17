@@ -39,6 +39,22 @@ Run `mwoffliner --help` to get all the possible options.
 
 ## Prerequisites
 
+- [Docker](https://docs.docker.com/engine/install/) (or Docker-based engine)
+- amd64 architecture
+
+## Installation
+
+The recommended way to install and run `mwoffliner` is using the pre-built Docker container:
+
+```sh
+docker pull ghcr.io/openzim/mwoffliner
+```
+
+<details>
+<summary>Run software locally / Build from source</summary>
+
+### Prerequisites for local execution
+
 - *NIX Operating System (GNU/Linux, macOS, ...)
 - [Redis](https://redis.io/)
 - [NodeJS](https://nodejs.org/en/) version 24 (we support only one single Node.JS version, other versions might work or not)
@@ -49,26 +65,73 @@ Run `mwoffliner --help` to get all the possible options.
 
 ... and an online MediaWiki with its API available.
 
+### Installation methods
+
+#### Build your own container
+
+1. Clone the repository locally:
+
+   ```sh
+   git clone https://github.com/openzim/mwoffliner.git && cd mwoffliner
+   ```
+
+1. Build the image:
+
+   ```sh
+   docker build . -f docker/Dockerfile -t ghcr.io/openzim/mwoffliner
+   ```
+
+#### Run the software locally using NPM
+
+> [!WARNING]
+> Local installation requires several system dependencies (see above). Using the Docker image is strongly recommended to avoid setup issues.
+
+1. Install latest released MWoffliner version from NPM (use `-g` to install globally):
+
+   ```sh
+   npm i -g mwoffliner
+   ```
+
+   > [!WARNING] 
+   > Note that you might need to run this command with the `sudo` command, depending
+   how your `npm` / OS is configured. `npm` permission checking can be a bit annoying for a
+   newcomer. Please read the documentation carefully if you hit problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
+
+</details>
+
 ## Usage
 
-To install latest released MWoffliner version from NPM repo (use `-g` to install globally, not only in current folder):
-```bash
-npm i -g mwoffliner
+### Using Docker (Recommended)
+
+```sh
+# Get help
+docker run -v $(pwd)/out:/out -ti ghcr.io/openzim/mwoffliner mwoffliner --help
 ```
 
-> [!WARNING] 
-> Note that you might need to run this command with the `sudo` command, depending
-how your `npm` / OS is configured. `npm` permission checking can be a bit annoying for a
-newcomer. Please read the documentation carefully if you hit problems: https://docs.npmjs.com/cli/v7/using-npm/scripts#user
+```sh
+# Create a ZIM for https://bm.wikipedia.org
+docker run -v $(pwd)/out:/out -ti ghcr.io/openzim/mwoffliner \
+       mwoffliner --mwUrl=https://bm.wikipedia.org --adminEmail=foo@bar.net
+```
 
-Then you can run the scraper:
-```bash
+<details>
+<summary>Using NPM / Local Install</summary>
+
+```sh
+# Get help
 mwoffliner --help
 ```
 
+```sh
+# Create a ZIM for https://bm.wikipedia.org
+mwoffliner --mwUrl=https://bm.wikipedia.org --adminEmail=foo@bar.net
+```
+
+</details>
+
 To use MWoffliner with a S3 cache, you should provide a S3 URL like
 this:
-```bash
+```sh
 --optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket&keyId=my-key-id&secretAccessKey=my-sac"
 ```
 
