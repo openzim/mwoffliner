@@ -10,6 +10,7 @@
 	"DOWNLOAD_ERRORS_HEADING": "Title of the placeholder HTML when article failed to download.",
 	"DOWNLOAD_ERRORS_MESSAGE": "Main message of the placeholder HTML when article failed to download.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "First details message showed on placeholder HTML when article failed to download and error is of given type",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "First details message showed on placeholder HTML when article failed to download and error is of given type",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "First details message showed on placeholder HTML when article failed to download and error is of given type",

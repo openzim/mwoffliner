@@ -201,6 +201,7 @@ class Downloader {
           ![
             'missingtitle',
             'readapidenied',
+            'permissiondenied',
             'internal_api_error_MediaWiki\\Revision\\BadRevisionException',
             'internal_api_error_Wikimedia\\Assert\\UnreachableException',
             'internal_api_error_Wikimedia\\Assert\\InvariantException',
@@ -847,8 +848,8 @@ class Downloader {
       const errorMessage = `Unable to retrieve js/css dependencies for article '${title}': ${articleData.error.code}`
       logger.error(errorMessage)
 
-      /* If article is missing (for example because it just has been deleted) */
-      if (articleData.error.code === 'missingtitle') {
+      /* If article is missing (for example because it just has been deleted) or access is denied */
+      if (articleData.error.code === 'missingtitle' || articleData.error.code === 'permissiondenied') {
         return { jsConfigVars: '', jsDependenciesList: [], styleDependenciesList: [] }
       }
 
