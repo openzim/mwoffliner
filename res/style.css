@@ -115,3 +115,49 @@ summary.section-heading {
 body[data-useragent*='KAIOS'] h1 {
     display: none !important;
 }
+
+
+
+.external-video-card {
+    margin: 1em 0;
+    border: 1px solid #a2a9b1;
+    background-color: #f8f9fa;
+}
+
+.external-video-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.external-video-thumbnail {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.external-video-thumbnail img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.external-video-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1em;
+    text-align: center;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.25));
+}
+
+.external-video-fallback {
+    padding: 0.75em 1em;
+}

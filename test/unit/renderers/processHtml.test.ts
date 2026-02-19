@@ -143,23 +143,37 @@ describe('processHtml', () => {
       const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe></iframe></div>`)
       expect(finalHTML).toContain('<div id="foo"></div>')
     })
-    it('remove full iframe', async () => {
+    it('replace full non-youtube iframe with external placeholder', async () => {
       const { finalHTML } = await testProcessHtml(
         `<div id="foo">` +
-          `<iframe id="inlineFrameExample" title="Inline Frame Example" width="300" height="200" ` +
+          `<iframe id="inlineFrameExample" class="sample-frame" title="Inline Frame Example" width="300" height="200" style="border:0;" ` +
           `src="https://www.openstreetmap.org/export/embed.html"></iframe></div>`,
       )
-      expect(finalHTML).toContain('<div id="foo"></div>')
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      const placeholder = finalDoc.querySelector('#foo .external-video-card') as DominoElement
+      expect(placeholder).toBeDefined()
+      expect(placeholder.getAttribute('id')).toBe('inlineFrameExample')
+      expect(placeholder.getAttribute('width')).toBe('300')
+      expect(placeholder.getAttribute('height')).toBe('200')
+      expect(placeholder.getAttribute('style')).toContain('border')
+      expect(placeholder.className).toContain('sample-frame')
+      const link = finalDoc.querySelector('#foo .external-video-link')
+      expect(link?.getAttribute('href')).toBe('https://www.openstreetmap.org/export/embed.html')
+      expect(link?.getAttribute('onclick')).toContain('window.confirm')
+      expect(link?.textContent).toContain('Open embedded content (external)')
     })
-    it('remove iframe "with content"', async () => {
+    it('replace iframe "with content" with external placeholder', async () => {
       const { finalHTML } = await testProcessHtml(
         `<div id="foo">` +
           `<iframe id="inlineFrameExample" title="Inline Frame Example" width="300" height="200" ` +
           `src="https://www.openstreetmap.org/export/embed.html"><span>bar</span></iframe></div>`,
       )
-      expect(finalHTML).toContain('<div id="foo"></div>')
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      expect(finalDoc.querySelector('#foo .external-video-card')).not.toBeNull()
     })
-    it('remove multiple iframes', async () => {
+    it('replace multiple iframes', async () => {
       const { finalHTML } = await testProcessHtml(
         `<div id="foo">` +
           `<iframe id="inlineFrameExample1" title="Inline Frame Example 1" width="300" height="200" ` +
@@ -168,7 +182,50 @@ describe('processHtml', () => {
           `<iframe id="inlineFrameExample2" title="Inline Frame Example 2" width="300" height="200" ` +
           `src="https://www.openstreetmap.org/export/embed.html"></iframe></div>`,
       )
-      expect(finalHTML).toContain('<div id="foo"></div><div id="bar"></div>')
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelectorAll('.external-video-card').length).toBe(2)
+    })
+
+     it('rewrites youtube.com embed iframe', async () => {
+     const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe src="https://www.youtube.com/embed/VIDEO_ID"></iframe></div>`)
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      expect(finalDoc.querySelector('#foo .external-video-card')).not.toBeNull()
+      expect(finalDoc.querySelector('#foo .external-video-link')?.getAttribute('href')).toBe('https://www.youtube.com/watch?v=VIDEO_ID')
+      expect(finalDoc.querySelector('#foo .external-video-link')?.getAttribute('onclick')).toContain('window.confirm')
+      expect(finalDoc.querySelector('#foo .external-video-thumbnail img')?.getAttribute('src')).toContain('_assets_')
+    })
+
+    it('rewrites youtube-nocookie embed iframe', async () => {
+      const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe src="https://www.youtube-nocookie.com/embed/NOC_ID"></iframe></div>`)
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      expect(finalDoc.querySelector('#foo .external-video-link')?.getAttribute('href')).toBe('https://www.youtube.com/watch?v=NOC_ID')
+    })
+
+    it('rewrites youtu.be iframe', async () => {
+      const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe src="https://youtu.be/SHORT_ID"></iframe></div>`)
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      expect(finalDoc.querySelector('#foo .external-video-link')?.getAttribute('href')).toBe('https://www.youtube.com/watch?v=SHORT_ID')
+    })
+
+    it('rewrites youtube watch iframe', async () => {
+      const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe src="https://www.youtube.com/watch?v=WATCH_ID&t=20"></iframe></div>`)
+      const finalDoc = domino.createDocument(finalHTML)
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      expect(finalDoc.querySelector('#foo .external-video-link')?.getAttribute('href')).toBe('https://www.youtube.com/watch?v=WATCH_ID')
+    })
+
+    it('falls back to text link when youtube id extraction fails', async () => {
+      const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe src="https://www.youtube.com/watch?feature=share"></iframe></div>`)
+      const finalDoc = domino.createDocument(finalHTML)
+      const link = finalDoc.querySelector('#foo .external-video-link')
+      expect(finalDoc.querySelector('#foo iframe') == null).toBe(true)
+      expect(finalDoc.querySelector('#foo .external-video-fallback')).not.toBeNull()
+      expect(finalDoc.querySelector('#foo .external-video-thumbnail')).toBeUndefined()
+      expect(link?.getAttribute('href')).toBe('https://www.youtube.com/watch?feature=share')
+      expect(link?.textContent).toContain('Watch on YouTube (external)')
     })
   })
 })
