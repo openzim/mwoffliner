@@ -85,10 +85,6 @@ describe('Misc utility', () => {
         DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
         DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
           'This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.',
-        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR:
-          'When the ZIM you are browsing was built, ${server} server failed to render this article HTML content and returned an HTTP 500 error.',
-        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT:
-          'When the ZIM you are browsing was built, ${server} server timed-out while rendering this article HTML content and returned an HTTP 504 error.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT:
           'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR:
@@ -124,10 +120,6 @@ describe('Misc utility', () => {
         DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
         DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
           'This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.',
-        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR:
-          'When the ZIM you are browsing was built, ${server} server failed to render this article HTML content and returned an HTTP 500 error.',
-        DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT:
-          'When the ZIM you are browsing was built, ${server} server timed-out while rendering this article HTML content and returned an HTTP 504 error.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT:
           'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
         DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR:

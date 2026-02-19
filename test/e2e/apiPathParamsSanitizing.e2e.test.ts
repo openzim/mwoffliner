@@ -12,7 +12,6 @@ const parameters = {
   articleList: 'BMW',
   adminEmail: 'test@kiwix.org',
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
-  mwRestApiPath: sanitizeApiPathParam('/w/rest.php'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),
 }
 
@@ -20,10 +19,6 @@ await testAllRenders('api-path-params', parameters, async (outFiles) => {
   describe(`e2e test for api url params for en.wikipedia.org for ${outFiles[0]?.renderer} renderer`, () => {
     test('Mediawiki actionApiPath option sanitized', () => {
       expect(outFiles[0].mwMetaData.actionApiPath).toBe('/w/api.php')
-    })
-
-    test('Mediawiki restApiPath option sanitized', () => {
-      expect(outFiles[0].mwMetaData.restApiPath).toBe('/w/rest.php')
     })
 
     test('Mediawiki modulePathOpt option sanitized', () => {

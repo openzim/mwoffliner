@@ -11,8 +11,6 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "Zahtevani članek '${articleTitle}' ni na voljo v tem ZIM-u, ni ga bilo mogoče pridobiti iz strežnika ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Ta članek je bil izbrisan po tem, ko smo sestavili seznam člankov za pridobitev, vendar še preden smo ga pridobili za izdelavo datoteke ZIM, po kateri trenutno brskate.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik ${server} ni pravočasno posredoval podrobnosti o HTML-ju tega članka.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, strežniku ${server} ni uspelo upodobiti HTML-ja vsebine tega članka in je vrnil napako HTTP 500.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, je strežnik ${server} med upodabljanjem HTML presegel časovno omejitev in vrnil napako HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionPArse strežnika ${server} med obdelavo tega članka presegel časovno omejitev in vrnil napako HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik ${server} ni pravočasno posredoval podrobnosti o HTML-ju tega članka.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika ${server} pri podajanju podrobnosti o HTML-ju tega članka sprožil nepričakovano napako z napačnim ID-jem redakcije.",

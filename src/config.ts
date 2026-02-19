@@ -63,12 +63,6 @@ const config = {
     cssResourcesCommon: ['style', 'mobile_main_page', 'footer'],
     jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
-    cssResources: ['content.parsoid', 'inserted_style'],
-    jsResources: ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
-
-    wikimediaMobileCssResources: ['wm_mobile_override_style'],
-    wikimediaMobileJsResources: ['wm_mobile_override_script'],
-
     downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
 
     // JS/CSS resources to be imported from MediaWiki
@@ -124,8 +118,6 @@ const config = {
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
-      pageWikimediaDesktop: './templates/pageWikimediaDesktop.html',
-      pageWikimediaMobile: './templates/pageWikimediaMobile.html',
       pageVectorLegacy: './templates/pageVectorLegacy.html',
       pageVector2022: './templates/pageVector2022.html',
       pageFallback: './templates/pageFallback.html',

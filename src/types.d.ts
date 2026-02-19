@@ -184,15 +184,12 @@ interface MWMetaData {
   wikiPath: string
   indexPhpPath: string
   actionApiPath: string
-  restApiPath: string
   domain: string
   webUrl: string
   actionApiUrl: string
-  restApiUrl: string
   webUrlPath: string
   modulePath: string
   modulePathOpt: string
-  mobileModulePath: string
 }
 
 interface MWNamespaces {
@@ -262,7 +259,6 @@ interface SiteInfoArgv {
   mwWikiPath?: string
   mwIndexPhpPath?: string
   addNamespaces?: number[]
-  mwRestApiPath?: string
   mwModulePath?: string
   forceSkin?: string
   langVariant?: string

@@ -16,8 +16,6 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "Der angeforderte Artikel „${articleTitle}“ ist in diesem ZIM nicht verfügbar, er konnte nicht von ${server} abgerufen werden.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dieser Artikel wurde gelöscht, nachdem wir die Liste der abzurufenden Artikel zusammengestellt hatten, aber bevor wir ihn zum Erstellen dieser ZIM abgerufen haben.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Als das ZIM, das du durchsuchst, erstellt wurde, konnte der ${server}-Server nicht rechtzeitig Details über diesen HTML-Artikel geben.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Beim Erstellen dieser ZIM konnte der Server ${server} den HTML-Inhalt dieses Artikels nicht darstellen und gab einen HTTP 500-Fehler zurück.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Beim Erstellen dieser ZIM hatte der Server ${server} eine Zeitüberschreitung beim Darstellen des HTML-Inhaltes dieses Artikels und gab einen HTTP 504-Fehler zurück.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} eine Zeitüberschreitung beim Verarbeiten dieses Artikels und gab einen HTTP 504-Fehler zurück.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Beim Erstellen dieser ZIM gab die ActionParse API des Servers ${server} einen HTTP 503-Fehler zurück, beim Erhalten von Details über das HTML des Artikels.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers ${server} einen unerwarteten Schlechte Versions-ID Fehler, beim Erhalten von Details über das HTML des Artikels.",
