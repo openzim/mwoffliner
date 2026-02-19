@@ -1,4 +1,5 @@
 Unreleased:
+* UPDATE: Replace iFrame with a placeholder card instead of deleting them (@kunalsiyag #2481)
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)
 * FIX: In nopic mode, fixed layout issues by preserving image layout using SVG placeholders (@kunalsiyag #1004)
 * NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
