@@ -115,3 +115,10 @@ summary.section-heading {
 body[data-useragent*='KAIOS'] h1 {
     display: none !important;
 }
+
+.mwo-external-video-card {
+    display: block;
+    margin: 1em 0;
+    border: 1px solid #a2a9b1;
+    background-color: #f8f9fa;
+}
