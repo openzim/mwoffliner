@@ -52,10 +52,6 @@ export default class ApiURLDirector {
       .build()
   }
 
-  buildVisualEditorURL() {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams({ action: 'visualeditor', mobileformat: 'html', format: 'json', paction: 'parse', formatversion: '2' }).build(true)
-  }
-
   buildLogEventsQuery(letype: string, articleId: string) {
     return urlBuilder
       .setDomain(this.baseDomain)

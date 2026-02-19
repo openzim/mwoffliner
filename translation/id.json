@@ -11,8 +11,6 @@
 	"DOWNLOAD_ERRORS_HEADING": "Waduh. Artikel tidak ditemukan.",
 	"DOWNLOAD_ERRORS_MESSAGE": "Artikel yang diminta '${articleTitle}' tidak tersedia di dalam ZIM ini, tidak mungkin untuk mengambilnya dari ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Artikel ini dihapus setelah kami menyusun daftar artikel yang akan diambil tapi sebelum kami mengambilnya untuk membangun ZIM yang Anda telusuri.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Saat ZIM yang Anda jelajahi dibuat, peladen ${server} gagal menyajikan konten HTML artikel ini dan menyatakan galat HTTP 500.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Saat ZIM yang Anda jelajahi dibuat, peladen ${server} gagal menyajikan konten HTML artikel ini dan mengembalikan galat HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Saat ZIM yang Anda jelajahi dibangun, API ActionParse peladen ${server} gagal menyajikan konten HTML artikel ini dan menyatakan galat HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Saat ZIM yang Anda jelajahi dibangun, API ActionParse peladen ${server} menyatakan galat HTTP 503 saat memberi rincian tentang HTML artikel ini.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Saat ZIM yang Anda telusuri dibangun, API ActionParse peladen ${server} memunculkan galat revisi ID buruk tak terduga saat memberi rincian tentang HTML artikel ini.",

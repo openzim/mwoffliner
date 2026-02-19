@@ -75,7 +75,6 @@ async function execute(argv: any) {
     mwWikiPath,
     mwIndexPhpPath,
     mwActionApiPath,
-    mwRestApiPath,
     mwModulePath,
     mwDomain,
     mwUsername,
@@ -193,7 +192,7 @@ async function execute(argv: any) {
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwRestApiPath, mwModulePath, forceSkin, langVariant })
+    mwMetaData = await MediaWiki.getMwMetaData({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwModulePath, forceSkin, langVariant })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -223,14 +222,10 @@ async function execute(argv: any) {
 
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates()
-  await MediaWiki.hasWikimediaDesktopApi()
-  const hasWikimediaMobileApi = await MediaWiki.hasWikimediaMobileApi()
-  await MediaWiki.hasRestApi()
-  await MediaWiki.hasVisualEditorApi()
   await MediaWiki.hasActionParseApi()
   await MediaWiki.hasModuleApi()
 
-  await RenderingContext.createRenderers(forceRender, hasWikimediaMobileApi)
+  await RenderingContext.createRenderers(forceRender)
 
   await RedisStore.connect()
   const { articleDetailXId, filesToDownloadXPath, redirectsXId } = RedisStore
