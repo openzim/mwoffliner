@@ -1,4 +1,5 @@
 Unreleased:
+* UPDATE: Update README to recommend Docker image installation (@kunalsiyag #2601)
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
 
 * NEW: Add validation for internationalization (i18n) files (@ShreyashSri #2563)
