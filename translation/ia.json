@@ -10,6 +10,7 @@
 	"DOWNLOAD_ERRORS_HEADING": "Articulo non trovate.",
 	"DOWNLOAD_ERRORS_MESSAGE": "Le articulo requestate ‘${articleTitle}’ non es disponibile in iste ZIM. Non esseva possibile recuperar lo de ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Iste articulo ha essite eliminate post le generation del lista de articulos a obtener, ma ante le obtention del articulo mesme pro construer le file ZIM in uso.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Le accesso a iste articulo ha essite restringite sur le servitor ${server}. Illo require permissiones special que non es disponibile durante le processo de extraction ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Durante le construction del file ZIM in uso, le servitor ${server} ha fallite de dar le detalios sur le codice HTML de iste articulo in tempore utile.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Durante le construction del file ZIM in uso, le servitor ${server} ha fallite de render le contento HTML de iste articulo e ha restituite un error HTTP 500.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Durante le construction del file ZIM in uso, le servitor ${server} ha excedite le tempore limite durante le rendition del contento HTML de iste articulo e ha restituite un error HTTP 504.",
