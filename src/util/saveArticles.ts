@@ -49,7 +49,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
         filesToDownload.flush()
         hosts.set(hostname, {
           filesToDownload,
-          requestInterval: 10, // initial request interval is 10 ms
+          requestInterval: 500, // initial request interval is 500 ms
           downloadSuccess: 0,
           downloadFailure: 0,
           downloadsComplete: false,
