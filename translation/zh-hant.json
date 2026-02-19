@@ -11,8 +11,6 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "所要求的條目「${articleTitle}」在此 ZIM 中不可用，無法從 ${server} 檢索。",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "此條目在我們編譯要檢索的條目清單之後，且在我們取得它以建置您正在瀏覽的 ZIM 之前被刪除了。",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "當您瀏覽的 ZIM 在建置時，${server} 伺服器未能及時提供有關該條目 HTML 的詳細資訊。",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器會無法呈現該條目的 HTML 內容，並會回傳 HTTP 500 錯誤。",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "當您瀏覽的 ZIM 在建置時，${server} 伺服器會在呈現該條目的 HTML 內容時逾時，並會回傳 HTTP 504 錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在處理該條目時逾時，並會回傳 HTTP 504 錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發 HTTP 503 錯誤。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "當您瀏覽的 ZIM 在建置時，${server} 伺服器的 ActionParse API 會在提供關於該條目 HTML 詳細資訊時引發非預期錯誤修訂 ID。",

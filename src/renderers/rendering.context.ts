@@ -16,7 +16,7 @@ class RenderingContext {
     return RenderingContext.instance
   }
 
-  public async createRenderers(forceRender: renderName | null, hasWikimediaMobileApi: boolean) {
+  public async createRenderers(forceRender: renderName | null) {
     const rendererBuilder = new RendererBuilder()
 
     if (forceRender) {
@@ -29,9 +29,7 @@ class RenderingContext {
       this.articlesRenderer = renderer
     } else {
       this.mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
-      this.articlesRenderer = await rendererBuilder.createRenderer({
-        renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-      })
+      this.articlesRenderer = await rendererBuilder.createRenderer({ renderType: 'auto' })
     }
     logger.log(`Using ${this.mainPageRenderer.constructor.name} for main page renderer`)
     logger.log(`Using ${this.articlesRenderer.constructor.name} for articles renderer`)

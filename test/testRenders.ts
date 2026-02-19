@@ -17,7 +17,6 @@ interface Parameters {
   noLocalParserFallback?: boolean
   forceRender?: string
   mwActionApiPath?: string
-  mwRestApiPath?: string
   mwModulePath?: string
 }
 

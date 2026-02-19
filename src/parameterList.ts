@@ -20,7 +20,6 @@ export const parameterDescriptions = {
   mwWikiPath: 'MediaWiki article path (by default fetched from the wiki)',
   mwIndexPhpPath: 'MediaWiki index.php path (by default fetched from the wiki)',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
-  mwRestApiPath: 'MediaWiki REST API path ($wgRestPath), automatically chosen based on script path otherwise.',
   mwModulePath: 'MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise.',
   mwDomain: 'MediaWiki user domain (thought for private wikis)',
   mwUsername: 'MediaWiki username (thought for private wikis)',
@@ -39,8 +38,7 @@ export const parameterDescriptions = {
   addNamespaces: 'Force additional namespace (comma separated numbers)',
   osTmpDir: 'Override default operating system temporary directory path environment variable',
   optimisationCacheUrl: 'Object Storage URL (including credentials and bucket name) to cache optimised media files',
-  forceRender:
-    'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ VisualEditor, WikimediaDesktop. WikimediaMobile, RestApi, ActionParse ]',
+  forceRender: 'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ ActionParse ]',
   forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
   langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
   insecure: 'Skip HTTPS server authenticity verification step',
