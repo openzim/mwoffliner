@@ -18,9 +18,6 @@ afterAll(stopRedis)
 const initMW = async () => {
   await MediaWiki.getMwMetaData()
   await MediaWiki.hasCoordinates()
-  await MediaWiki.hasWikimediaDesktopApi()
-  await MediaWiki.hasRestApi()
-  await MediaWiki.hasVisualEditorApi()
 }
 
 describe('mwApi', () => {

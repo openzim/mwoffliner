@@ -164,12 +164,6 @@
       "title": "API Path",
       "description": "Mediawiki API path. Otherwise `/w/api.php`."
     },
-    "mwRestApiPath": {
-      "type": "string",
-      "required": false,
-      "title": "REST API Path",
-      "description": "Mediawiki REST API path. Otherwise `/w/rest.php`."
-    },
     "mwModulePath": {
       "type": "string",
       "required": false,
@@ -257,13 +251,7 @@
       "required": false,
       "title": "Force Render",
       "description": "Force the usage of a specific API end-point/render, automatically chosen otherwise",
-      "choices": [
-        { "title": "VISUAL_EDITOR", "value": "VisualEditor" },
-        { "title": "WIKIMEDIA_DESKTOP", "value": "WikimediaDeskto" },
-        { "title": "WIKIMEDIA_MOBILE", "value": "WikimediaMobile" },
-        { "title": "REST_API", "value": "RestApi" },
-        { "title": "ACTION_PARSE", "value": "ActionParse" }
-      ]
+      "choices": [{ "title": "ACTION_PARSE", "value": "ActionParse" }]
     },
     "forceSkin": {
       "type": "string",

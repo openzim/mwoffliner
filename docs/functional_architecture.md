@@ -44,32 +44,18 @@ The details we retrieve at this stage about every articles are their title, subt
 
 In order to retrieve article HTML and render it, multiple solutions have been identified.
 
-As of today, 5 renderers (way to download article + render it to ZIM compatible HTML) are implemented:
+As of today, 1 renderer (way to download article + render it to ZIM compatible HTML) is left implemented: ActionParse. Other renderers have been dropped in mwoffliner 2.0 because they were not used anymore, not implementing skin support and not providing added value compared to ActionParse render.
 
-- WikimediaDesktop
-- WikimediaMobile
-- RestApi
-- VisualEditor
-- ActionParse
+ActionParse API is available in Mediawiki since 1.16.0 (2010).
 
-WikimediaDesktop and WikimediaMobile are only available on Wikimedia Mediawikis.
+ActionParse renderer implements a thorough skin support (see below about skin) and needs only one HTTP query per article.
 
-Availability of RestApi and VisualEditor is subject to Mediawiki admin decision to support it or not. RestApi is available by default but might be blocked by admin. VisualEditor is an extension which might be installed or not.
-
-ActionParse is available since 1.16.0 (2010) and is anyway a requirement for other APIs.
-
-Only ActionParse (most recent renderer at mwoffliner level) implements a thorough skin support (see below about skin).
-
-All renderers but ActionParse needs two HTTP queries: one to retrieve the article HTML and one to retrieve its metadata (to a 'simplified' ActionParse URL in fact).
-
-The article metadata we retrieve at this stage is the article are:
+The article metadata we retrieve at this stage are:
 
 - `displaytitle` and `subtitle`
 - `headhtml`: used to extract proper CSS classes we have to set on `<html>` and `<body>` tags + some JS configuration variables which are part of the HTML head
 - `jsconfigvars`: other JS configuration variables which comes from other parts of the Mediawiki codebase
 - `modules`: list of JS and CSS modules to apply on current article
-
-Renderer is automatically selected based on its availability and mwoffliner own preference. ActionParse is the preferred renderer since 1.15.0 due to its general availability and support of skins.
 
 ### ActionParse parser
 

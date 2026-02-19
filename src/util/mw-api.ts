@@ -5,7 +5,6 @@ import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
 import RedisStore from '../RedisStore.js'
 import MediaWiki from '../MediaWiki.js'
-import { REDIRECT_PAGE_SIGNATURE } from './const.js'
 import { cleanupAxiosError } from './misc.js'
 
 export async function getArticlesByIds(articleIds: string[], log = true): Promise<void> {
@@ -317,8 +316,6 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
   try {
     const resp = await Downloader.request({ url: decodeURI(url), method: 'GET', maxRedirects: 0, ...Downloader.basicRequestOptions })
 
-    const isRedirectPage = typeof resp.data === 'string' && resp.data.startsWith(REDIRECT_PAGE_SIGNATURE)
-
     // Read https://phabricator.wikimedia.org/T359187 to understand
     // the 'mediawiki-api-error' === 'rest-permission-error' exception
     const isSuccess = resp.status === 200 && (!resp.headers['mediawiki-api-error'] || resp.headers['mediawiki-api-error'] === 'rest-permission-error')
@@ -336,7 +333,7 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
       }
     }
 
-    return !isRedirectPage && isSuccess && validMimeType
+    return isSuccess && validMimeType
   } catch (err) {
     logger.info('checkApiAvailability failed: ', cleanupAxiosError(err))
     return false

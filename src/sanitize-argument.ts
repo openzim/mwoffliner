@@ -32,7 +32,6 @@ export async function sanitize_all(argv: any) {
     mwWikiPath,
     mwIndexPhpPath,
     mwActionApiPath,
-    mwRestApiPath,
     mwModulePath,
   } = argv
 
@@ -68,11 +67,6 @@ export async function sanitize_all(argv: any) {
   // sanitizing mwIndexPhpPath
   if (mwIndexPhpPath) {
     argv.mwIndexPhpPath = sanitizeApiPathParam(mwIndexPhpPath)
-  }
-
-  // sanitizing mwRestApiPath
-  if (mwRestApiPath) {
-    argv.mwRestApiPath = sanitizeApiPathParam(mwRestApiPath)
   }
 
   // sanitizing mwActionApiPath
