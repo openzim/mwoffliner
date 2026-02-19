@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"HanV",
 			"McDutchie"
 		]
 	},
@@ -10,6 +11,7 @@
 	"DOWNLOAD_ERRORS_HEADING": "Oeps. Artikel niet gevonden.",
 	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel ‘${articleTitle}’ is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dit artikel is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "De toegang tot dit artikel is op de server ${server} beperkt. Er zijn speciale machtigingen vereist die niet beschikbaar zijn tijdens het scrapen van ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server ${server} niet op tijd details verstrekken over de HTML-code van dit artikel.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server ${server} de HTML-inhoud van dit artikel niet weergeven en werd er een HTTP 500-fout geretourneerd.",
 	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, is er een time-out opgetreden bij de server ${server} tijdens het weergeven van de HTML-inhoud van dit artikel. Er is een HTTP 504-fout geretourneerd.",
