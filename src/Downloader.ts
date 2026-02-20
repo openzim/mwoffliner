@@ -74,6 +74,18 @@ interface CompressionData {
   data: any
 }
 
+function isMalformedJsonResponseError(err: unknown): boolean {
+  if (err instanceof SyntaxError) {
+    return true
+  }
+
+  if (!axios.isAxiosError(err) || err.code !== AxiosError.ERR_BAD_RESPONSE) {
+    return false
+  }
+
+  return err.cause instanceof SyntaxError
+}
+
 export class DownloadError extends Error {
   urlCalled: string | null
   httpReturnCode: number | null
@@ -183,6 +195,11 @@ class Downloader {
       failAfter: 10,
       retryIf: (err: any) => {
         const requestedUrl = err.urlCalled || err.config?.url || 'unknown'
+        if (isMalformedJsonResponseError(err)) {
+          logger.log(`Retrying ${requestedUrl} due to malformed JSON response`)
+          return true
+        }
+
         if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE'].includes(err.code)) {
           logger.log(`Retrying ${requestedUrl} URL due to ${err.code} error`)
           return true // retry all connection issues
@@ -251,6 +268,11 @@ class Downloader {
         'accept-encoding': 'gzip, deflate',
       },
       responseType: 'json',
+      transitional: {
+        // Parse failures must throw so backoff retries can be triggered.
+        silentJSONParsing: false,
+        forcedJSONParsing: true,
+      },
       method: 'GET',
     }
 
@@ -656,7 +678,12 @@ class Downloader {
           handler(null, val.data)
         }
       })
-      .catch((err) => handler(err))
+      .catch((err) => {
+        if (isMalformedJsonResponseError(err)) {
+          logger.warn(`Malformed JSON from [${url}] → ${err.message}`)
+        }
+        handler(err)
+      })
   }
 
   private async getImageMimeType(data: any): Promise<string | null> {
