@@ -427,7 +427,16 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
-      const { data, moduleDependencies, redirects, displayTitle, articleSubtitle, bodyCssClass, htmlCssClass } = await articleRenderer.download({
+      const {
+        data,
+        moduleDependencies,
+        redirects,
+        displayTitle,
+        articleSubtitle,
+        categoriesHtml = '',
+        bodyCssClass,
+        htmlCssClass,
+      } = await articleRenderer.download({
         articleId,
         articleUrl,
         articleDetail,
@@ -445,6 +454,8 @@ class Downloader {
         }
       }
 
+      const categoryMembers = articleDetail.categoryinfo && articleDetail.categoryinfo.size && (await this.getCategoryMembers(articleId))
+
       return await articleRenderer.render({
         data,
         moduleDependencies,
@@ -453,6 +464,8 @@ class Downloader {
         articleDetail,
         displayTitle,
         articleSubtitle,
+        categoryMembers,
+        categoriesHtml,
         bodyCssClass,
         htmlCssClass,
         dump,
@@ -776,6 +789,31 @@ class Downloader {
   private errHandler(err: any, url: string, handler: any): void {
     logger.info(`Error while downloading content for ${url} due to ${err} ; might be retried`)
     handler(err)
+  }
+
+  private async getCategoryMembers(articleId: string, continueStr = ''): Promise<GroupedCategoryMembers> {
+    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+
+    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(articleId, continueStr))
+    const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
+      const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':')[1]) || a.title)
+      a.sortkeyprefix = [...sortkey][0]
+      return a && a.title
+    })
+    const subcats = items.filter((a: CategoryMember) => a && a.type === 'subcat')
+    const pages = items.filter((a: CategoryMember) => a && a.type === 'page')
+    const files = items.filter((a: CategoryMember) => a && a.type === 'file')
+
+    if (cont && cont.cmcontinue) {
+      const nextItems = await this.getCategoryMembers(articleId, cont.cmcontinue)
+      return {
+        subcats: subcats.concat(nextItems.subcats),
+        pages: pages.concat(nextItems.pages),
+        files: files.concat(nextItems.files),
+      }
+    } else {
+      return { subcats, pages, files }
+    }
   }
 
   private backoffCall(handler: (...args: any[]) => void, url: string, kind: DonwloadKind, callback: (...args: any[]) => void | Promise<void>): void {

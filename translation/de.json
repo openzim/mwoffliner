@@ -9,6 +9,14 @@
 			"Nortix"
 		]
 	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": "{{PLURAL:${totalCount}|Diese Kategorie enthält nur folgende Datei.|Folgende {{PLURAL:${curPageCount}|Datei ist|${curPageCount} Dateien sind}} in dieser Kategorie, von ${totalCount} insgesamt.}}",
+	"categoryMediaHeader": "Medien in der Kategorie „${pageName}“",
+	"categoryArticleCount": "{{PLURAL:${totalCount}|Diese Kategorie enthält nur die folgende Seite.|Folgende {{PLURAL:${curPageCount}|Seite ist|${curPageCount} Seiten sind}} in dieser Kategorie, von ${totalCount} insgesamt.}}",
+	"categoryHeader": "Seiten in der Kategorie „${pageName}“",
+	"categorySubcatCount": "{{PLURAL:${totalCount}|Diese Kategorie enthält nur die folgende Unterkategorie:|Diese Kategorie enthält die {{PLURAL:${curPageCount}|folgende Unterkategorie|folgenden ${curPageCount} Unterkategorien}} (${totalCount} insgesamt):}}",
+	"subcategories": "Unterkategorien",
+	"categoryEmpty": "<em>Diese Kategorie enthält zurzeit keine Seiten oder Medien.</em>",
 	"DISCLAIMER": "Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist unter ${license} verfügbar, sofern nicht anders angegeben. Für die Mediendateien können zusätzliche Bedingungen gelten.",
 	"LAST_EDITED_ON": "Zuletzt bearbeitet am ${date}",
 	"LICENSE_UNKNOWN": "einer unbekannten Lizenz",

@@ -43,7 +43,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
   public async render(renderOpts: RenderOpts): Promise<any> {
     try {
       const result: RenderOutput = []
-      const { data, articleId, moduleDependencies, dump } = renderOpts
+      const { data, articleId, moduleDependencies, categoryMembers, dump } = renderOpts
       const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
       const displayTitle = this.getStrippedTitle(renderOpts)
@@ -67,6 +67,7 @@ export class WikimediaMobileRenderer extends MobileRenderer {
               articleId,
               articleDetail,
               moduleDependencies,
+              categoryMembers,
               callback: super.templateMobileArticle.bind(this),
             })
 
