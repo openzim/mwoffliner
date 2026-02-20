@@ -286,11 +286,17 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
         source: val.thumbnail.source,
       }
     }
+    let newCategoryinfo
+    if (val.categoryinfo) {
+      newCategoryinfo = {
+        ...val.categoryinfo,
+        nogallery: val.pageprops && val.pageprops.nogallery === '',
+      }
+    }
     ret[key] = {
       title: val.title,
-      categories: val.categories,
-      subCategories: val.subCategories,
       thumbnail: newThumbnail,
+      categoryinfo: newCategoryinfo,
       missing: val.missing,
       pagelang: val.pagelanguagehtmlcode,
       pagedir: val.pagelanguagedir,

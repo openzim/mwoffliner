@@ -28,7 +28,6 @@ describe('mwApi', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://en.wikipedia.org'
-    MediaWiki.getCategories = true
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
@@ -44,9 +43,6 @@ describe('mwApi', () => {
 
     // Article "United_Kingdom" was scraped
     expect(United_Kingdom).toBeDefined()
-
-    // Article "United_Kingdom" has categories
-    expect(United_Kingdom?.categories?.length).toBeGreaterThanOrEqual(11)
 
     // Article "United_Kingdom" has thumbnail
     expect(United_Kingdom).toHaveProperty('thumbnail')
@@ -68,18 +64,15 @@ describe('mwApi', () => {
     await getArticlesByNS(0, undefined, 5) // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"Khan_gizi"_spring']
     const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
-    const ArticleWithRevisionsAndCategory = articles['"...And_Ladies_of_the_Club"']
+    const ArticleWithRevisions = articles['"...And_Ladies_of_the_Club"']
     const ArticleWithCoordinates = articles['"Khan_gizi"_spring']
 
     // Articles have been retrieved
-    expect(ArticleWithRevisionsAndCategory).not.toBeNull()
+    expect(ArticleWithRevisions).not.toBeNull()
     expect(ArticleWithCoordinates).not.toBeNull()
 
-    // article has categories
-    expect(ArticleWithRevisionsAndCategory?.categories?.length).toBeGreaterThan(0)
-
     // article has revision
-    expect(ArticleWithRevisionsAndCategory).toHaveProperty('revisionId')
+    expect(ArticleWithRevisions).toHaveProperty('revisionId')
 
     // article has coordinates'
     expect(ArticleWithCoordinates).toHaveProperty('coordinates')
@@ -139,7 +132,6 @@ describe('Test blacklisted NSs', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://id.wikipedia.org'
-    MediaWiki.getCategories = true
 
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
