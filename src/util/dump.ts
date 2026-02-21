@@ -208,6 +208,16 @@ export function getModuleDependencies(oneModule: ResourceLoaderModule, allModule
   return allDeps
 }
 
+// Download a custom CSS file and save it into the ZIM.
+export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: string, filename: string): Promise<void> {
+  logger.log(`Downloading custom CSS [${cssUrl}]`)
+  const { content: cssBody } = await Downloader.downloadContent(cssUrl, 'css')
+  const processedCss = processStylesheetContent(cssUrl, '', cssBody.toString())
+  const zimPath = cssPath(filename, config.output.dirs.res)
+  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/css', null, { FRONT_ARTICLE: 0 }, processedCss)))
+  logger.log(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
+}
+
 // URLs should be kept the same as Kiwix JS relies on it.
 export async function addWebpJsScripts(zimCreator: Creator) {
   ;[
