@@ -266,4 +266,5 @@ interface SiteInfoArgv {
   mwModulePath?: string
   forceSkin?: string
   langVariant?: string
+  customCss?: string
 }

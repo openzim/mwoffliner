@@ -125,6 +125,7 @@ class Downloader {
   private _streamRequestOptions: AxiosRequestConfig
   public wikimediaMobileJsDependenciesList: string[] = []
   public wikimediaMobileStyleDependenciesList: string[] = []
+  public customCssUrls: string[] = []
 
   private uaString: string
   private backoffOptions: BackoffOptions

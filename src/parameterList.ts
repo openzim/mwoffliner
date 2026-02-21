@@ -44,6 +44,7 @@ export const parameterDescriptions = {
   forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
   langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
   insecure: 'Skip HTTPS server authenticity verification step',
+  customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
 }
 
 // TODO: Add an interface based on the object above
