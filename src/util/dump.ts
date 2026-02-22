@@ -165,7 +165,7 @@ export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: stri
     logger.log(`Downloading custom CSS [${cssUrl}]`)
     const { data: cssBody } = await Downloader.request<string>({ url: cssUrl, method: 'GET', responseType: 'text', timeout: 30000 })
     const processedCss = processStylesheetContent(cssUrl, '', cssBody)
-    const zimPath = cssPath(`custom.${filename}`, config.output.dirs.mediawiki)
+    const zimPath = cssPath(`custom.${filename}`, config.output.dirs.res)
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/css', null, { FRONT_ARTICLE: 0 }, processedCss)))
     logger.log(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
   } catch (err) {

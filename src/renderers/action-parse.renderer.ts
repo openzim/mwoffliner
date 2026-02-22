@@ -58,7 +58,7 @@ export class ActionParseRenderer extends Renderer {
     const customCssLinks = (Downloader.customCssUrls || [])
       .map((cssUrl: string) => {
         const filename = customCssUrlToFilename(cssUrl)
-        return genHeaderCSSLink(config, `custom.${filename}`, articleId, config.output.dirs.mediawiki)
+        return genHeaderCSSLink(config, `custom.${filename}`, articleId, config.output.dirs.res)
       })
       .join('\n    ')
 
