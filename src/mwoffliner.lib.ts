@@ -108,14 +108,6 @@ async function execute(argv: any) {
 
   let { articleList, articleListToIgnore } = argv
 
-  // Parse --customCss and populate Downloader so renderers can use the list
-  if (customCss) {
-    Downloader.customCssUrls = parseCustomCssUrls(String(customCss))
-    if (Downloader.customCssUrls.length > 0) {
-      logger.log(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
-    }
-  }
-
   logger.setVerboseLevel(verbose ? verbose : 'log') // Default log level is 'log'
 
   logger.log(`Starting mwoffliner v${packageJSON.version}...`)
@@ -123,6 +115,14 @@ async function execute(argv: any) {
   // TODO: Move it to sanitaze method
   if (articleList) articleList = String(articleList)
   if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
+
+  // Parse --customCss and populate Downloader so renderers can use the list
+  if (customCss) {
+    Downloader.customCssUrls = parseCustomCssUrls(String(customCss))
+    if (Downloader.customCssUrls.length > 0) {
+      logger.log(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
+    }
+  }
   const publisher = _publisher || config.defaults.publisher
 
   // TODO: Move it to sanitaze method
@@ -437,6 +437,23 @@ async function execute(argv: any) {
       await createIndexPage(dump, zimCreator, true)
     }
 
+    // Download and save custom CSS files
+    if (Downloader.customCssUrls.length > 0) {
+      logger.log(`Downloading ${Downloader.customCssUrls.length} custom CSS file(s)`)
+      const cssErrors: string[] = []
+      for (const cssUrl of Downloader.customCssUrls) {
+        try {
+          const filename = customCssUrlToFilename(cssUrl)
+          await downloadAndSaveCustomCss(zimCreator, cssUrl, filename)
+        } catch (err) {
+          cssErrors.push(`  - Failed to download [${cssUrl}]: ${err}`)
+        }
+      }
+      if (cssErrors.length > 0) {
+        throw new Error(`Failed to download custom CSS file(s):\n${cssErrors.join('\n')}`)
+      }
+    }
+
     logger.log('Getting articles')
     stime = Date.now()
     const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
@@ -465,15 +482,6 @@ async function execute(argv: any) {
         )
       }),
     )
-
-    // Download and save custom CSS files
-    if (Downloader.customCssUrls.length > 0) {
-      logger.log(`Downloading ${Downloader.customCssUrls.length} custom CSS file(s)`)
-      for (const cssUrl of Downloader.customCssUrls) {
-        const filename = customCssUrlToFilename(cssUrl)
-        await downloadAndSaveCustomCss(zimCreator, cssUrl, filename)
-      }
-    }
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump)
 

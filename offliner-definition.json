@@ -282,6 +282,12 @@
       "title": "Language Variant",
       "description": "Use a specific language variant, only for wikis supporting language conversion",
       "required": false
+    },
+    "customCss": {
+      "type": "string",
+      "required": false,
+      "title": "Custom CSS",
+      "description": "Comma-separated list of CSS URLs to inject into all rendered pages. Alternatively, a path to a local file containing one URL per line."
     }
   }
 }
