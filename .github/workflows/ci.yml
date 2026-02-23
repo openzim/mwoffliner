@@ -17,7 +17,7 @@ env:
 
 jobs:
   unit-tests:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, ubuntu-24.04]
 
     steps:
       - name: Download codebase
@@ -64,7 +64,7 @@ jobs:
           retention-days: 1
 
   e2e-tests:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, ubuntu-24.04]
 
     steps:
       - name: Download codebase
