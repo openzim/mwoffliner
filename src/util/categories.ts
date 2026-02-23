@@ -1,220 +1,128 @@
-import Downloader from '../Downloader.js'
-import RedisStore from '../RedisStore.js'
-import * as logger from '../Logger.js'
-import { getArticlesByIds } from './mw-api.js'
-import { deDup } from './misc.js'
+import MediaWiki from '../MediaWiki.js'
+import { Dump } from '../Dump.js'
+import { interpolateTranslationString } from './misc.js'
 
-export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>, deleteArticleStore = false): Promise<void> {
-  const { articleDetailXId } = RedisStore
-  const nextCategoriesBatch: RKVS<ArticleDetail> = RedisStore.createRedisKvs(`${Date.now()}-request`)
-  logger.log(`Fetching categories for [${await articleStore.len()}] articles`)
-
-  await articleStore.iterateItems(Downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, runningWorkers: number) => {
-    const articleKeys = Object.keys(articleKeyValuePairs)
-    logger.log(`Worker getting categories for articles [${logger.logifyArray(articleKeys)}] - ${runningWorkers} worker(s) running`)
-
-    const pagesXCategoryId: { [categoryId: string]: PageInfo[] } = Object.entries(articleKeyValuePairs).reduce((acc: any, [, detail]: [string, ArticleDetail]) => {
-      for (const cat of detail.categories || []) {
-        const catId = cat.title
-        acc[catId] = (acc[catId] || []).concat({ title: detail.title, ns: detail.ns } as PageInfo)
+export function buildCategoryMemberList(
+  type: 'subcats' | 'pages' | 'files',
+  categoryMembers: Array<CategoryMember>,
+  articleDetail: ArticleDetail,
+  doc: Document,
+  dump: Dump,
+  numericSorting: boolean,
+): DominoElement {
+  let idName, headerText, descText
+  if (type === 'subcats') {
+    idName = 'mw-subcategories'
+    headerText = dump.strings.subcategories
+    descText = dump.strings.categorySubcatCount
+  } else if (type === 'pages') {
+    idName = 'mw-pages'
+    headerText = dump.strings.categoryHeader
+    descText = dump.strings.categoryArticleCount
+  } else if (type === 'files') {
+    idName = 'mw-category-media'
+    headerText = dump.strings.categoryMediaHeader
+    descText = dump.strings.categoryFileCount
+  }
+  const categoryinfo = articleDetail.categoryinfo
+  const section = doc.createElement('div')
+  section.id = idName
+  const header = doc.createElement('h2')
+  header.textContent = interpolateTranslationString(headerText, {
+    pageName: articleDetail.title.split(':').slice(1).join(':'),
+  })
+  section.appendChild(header)
+  const desc = doc.createElement('p')
+  desc.textContent = parsePlural(
+    parsePlural(
+      interpolateTranslationString(descText, {
+        curPageCount: String(categoryinfo[type]),
+        totalCount: String(categoryinfo[type]),
+      }),
+    ),
+  )
+  section.appendChild(desc)
+  const content = doc.createElement('div')
+  content.lang = articleDetail.pagelang
+  content.dir = articleDetail.pagedir
+  content.classList.add('mw-content-' + articleDetail.pagedir)
+  const columns = doc.createElement('div')
+  columns.classList.add('mw-category', 'mw-category-columns')
+  let lastPrefix, column, list
+  for (const categoryMember of categoryMembers) {
+    const sortkeyPrefix = numericSorting && /^\d/.test(categoryMember.sortkeyprefix) ? dump.strings.categoryHeaderNumerals : categoryMember.sortkeyprefix
+    if (lastPrefix !== sortkeyPrefix) {
+      lastPrefix = sortkeyPrefix
+      if (column) {
+        column.appendChild(list)
+        columns.appendChild(column)
       }
-      return acc
-    }, {})
-
-    const foundCategoryIds = Object.keys(pagesXCategoryId)
-    if (foundCategoryIds.length) {
-      const existingArticles = await articleDetailXId.getMany(foundCategoryIds)
-      const categoriesToGet = Object.entries(existingArticles)
-        .filter(([, detail]) => !detail)
-        .map(([id]) => id)
-      if (categoriesToGet.length) {
-        await getArticlesByIds(categoriesToGet, false)
-      }
-
-      const catDetails: KVS<ArticleDetail> = await articleDetailXId.getMany(foundCategoryIds)
-
-      for (const [id, detail] of Object.entries(catDetails)) {
-        if (!detail) {
-          continue
-        }
-
-        const parentCategories = (detail.categories || []).reduce((acc, info) => {
-          acc[info.title] = info
-          return acc
-        }, {})
-
-        await nextCategoriesBatch.setMany(parentCategories)
-
-        detail.pages = (detail.pages || []).concat(pagesXCategoryId[id])
-
-        await articleDetailXId.set(id, detail)
+      column = doc.createElement('div')
+      column.classList.add('mw-category-group')
+      const groupHeader = doc.createElement('h3')
+      groupHeader.textContent = sortkeyPrefix === ' ' ? '\u00A0' : sortkeyPrefix
+      column.appendChild(groupHeader)
+      list = doc.createElement('ul')
+      if (type === 'files' && !categoryinfo.nogallery) {
+        list.classList.add('gallery', 'mw-gallery-traditional')
       }
     }
-  })
-
-  if (deleteArticleStore) {
-    await articleStore.flush()
+    if (type === 'files' && !categoryinfo.nogallery) {
+      const pageName = categoryMember.title.split(':').slice(1).join(':')
+      const member = doc.createElement('li')
+      member.classList.add('gallerybox')
+      member.setAttribute('style', 'width: 155px')
+      const thumb = doc.createElement('div')
+      thumb.classList.add('thumb')
+      thumb.setAttribute('style', 'width: 150px; height: 150px;')
+      const span = doc.createElement('span')
+      span.setAttribute('typeof', 'mw:File')
+      const filelink = doc.createElement('a')
+      filelink.classList.add('mw-file-description')
+      filelink.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title))
+      const file = doc.createElement('img')
+      file.classList.add('mw-file-description')
+      // Special:Filepath work-around for file redirects
+      file.setAttribute('src', MediaWiki.webUrl.pathname + encodeURIComponent(`Special:Filepath/${encodeURIComponent(pageName)}?width=120`))
+      file.setAttribute('style', 'width: auto; height: auto; max-width: 120px; max-height: 120px;')
+      file.setAttribute('width', '120')
+      file.setAttribute('height', '120')
+      file.setAttribute('decoding', 'async')
+      file.setAttribute('loading', 'lazy')
+      filelink.appendChild(file)
+      span.appendChild(filelink)
+      thumb.appendChild(span)
+      member.appendChild(thumb)
+      const text = doc.createElement('div')
+      text.classList.add('gallerytext')
+      const link = doc.createElement('a')
+      link.classList.add('galleryfilename', 'galleryfilename-truncate')
+      link.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title))
+      link.setAttribute('title', categoryMember.title)
+      link.textContent = pageName
+      text.appendChild(link)
+      member.appendChild(text)
+      list.appendChild(member)
+    } else {
+      const member = doc.createElement('li')
+      const link = doc.createElement('a')
+      link.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title))
+      link.setAttribute('title', categoryMember.title)
+      link.textContent = type === 'subcats' ? categoryMember.title.split(':').slice(1).join(':') : categoryMember.title
+      member.appendChild(link)
+      list.appendChild(member)
+    }
   }
-
-  const nextBatchSize = await nextCategoriesBatch.len()
-  if (nextBatchSize) {
-    return getCategoriesForArticles(nextCategoriesBatch, true)
-  } else {
-    return null
-  }
+  content.appendChild(columns)
+  section.appendChild(content)
+  return section
 }
 
-export async function trimUnmirroredPages() {
-  const { articleDetailXId } = RedisStore
-  logger.log(`Trimming un-mirrored articles for [${await articleDetailXId.len()}] articles`)
-  const numKeys = await articleDetailXId.len()
-  let prevPercentProgress = -1
-  let processedArticles = 0
-  let modifiedArticles = 0
-
-  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
-    for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      processedArticles += 1
-      if (typeof (articleDetail as any).missing === 'string') {
-        await articleDetailXId.delete(articleId)
-        modifiedArticles += 1
-
-        // TODO: remove references to current article on delete
-        continue
-      }
-
-      const categoriesXId: any = (articleDetail.categories || []).reduce((acc: any, c) => {
-        acc[c.title] = c
-        return acc
-      }, {})
-      const categoryIds = Object.keys(categoriesXId)
-      const subCategoriesXId: any = (articleDetail.subCategories || []).reduce((acc: any, c) => {
-        acc[c.title] = c
-        return acc
-      }, {})
-      const subCategoryIds = Object.keys(subCategoriesXId)
-      const pagesXId: any = (articleDetail.pages || []).reduce((acc: any, c) => {
-        acc[c.title] = c
-        return acc
-      }, {})
-      const pageIds = Object.keys(pagesXId)
-
-      const [categoriesExist, subCategoriesExist, pagesExist] = await Promise.all([
-        categoryIds.length ? articleDetailXId.existsMany(categoryIds, true) : Promise.resolve({}),
-        subCategoryIds.length ? articleDetailXId.existsMany(subCategoryIds, true) : Promise.resolve({}),
-        pageIds.length ? articleDetailXId.existsMany(pageIds, true) : Promise.resolve({}),
-      ])
-
-      const existingCategories = Object.keys(categoriesExist).filter((key) => categoriesExist[key])
-      const existingSubCategories = Object.keys(subCategoriesExist).filter((key) => subCategoriesExist[key])
-      const existingPages = Object.keys(pagesExist).filter((key) => pagesExist[key])
-
-      let hasUpdated = false
-
-      const newCategoryKeys = deDup(existingCategories || [], (p) => p)
-      const newCategories = newCategoryKeys.map((key) => categoriesXId[key])
-      if (newCategories.length !== categoryIds.length) {
-        articleDetail.categories = newCategories
-        hasUpdated = true
-      }
-
-      const newSubCategoryKeys = deDup(existingSubCategories || [], (p) => p)
-      const newSubCategories = newSubCategoryKeys.map((key) => subCategoriesXId[key])
-      if (newSubCategories.length !== subCategoryIds.length) {
-        articleDetail.subCategories = newSubCategories
-        hasUpdated = true
-      }
-
-      const newPageKeys = deDup(existingPages || [], (p) => p)
-      const newPages = newPageKeys.map((key) => pagesXId[key])
-      if (newPages.length !== pageIds.length) {
-        articleDetail.pages = newPages
-        hasUpdated = true
-      }
-
-      if (hasUpdated) {
-        await articleDetailXId.set(articleId, articleDetail)
-        modifiedArticles += 1
-      }
-
-      if (processedArticles % 100 === 0) {
-        const percentProgress = Math.floor((processedArticles / numKeys) * 1000) / 10
-        if (percentProgress !== prevPercentProgress) {
-          prevPercentProgress = percentProgress
-          logger.log(`Progress trimming un-mirrored articles [${processedArticles}/${numKeys}] [${percentProgress}%]`)
-        }
-      }
-    }
+function parsePlural(text: string) {
+  if (!text.includes('PLURAL:')) return text
+  return text.replace(/{{\s*PLURAL:\s*[+-]?(\d+)\s*\|\s*([^{}]*?)\s*}}/g, (m, number: string, cases: string) => {
+    const args = cases.split(/\s*\|\s*/)
+    if (parseInt(number, 10) === 1) return args[0]
+    else return args.length > 1 ? args[1] : args[args.length - 1]
   })
-
-  return modifiedArticles
-}
-
-export async function simplifyGraph() {
-  logger.log('Simplifying graph (removing empty categories)')
-  const { articleDetailXId } = RedisStore
-  const numKeys = await articleDetailXId.len()
-  let prevPercentProgress = -1
-  let processedArticles = 0
-  let deletedNodes = 0
-
-  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
-    for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      processedArticles += 1
-
-      if (articleDetail.ns !== 14) {
-        continue // Only trim category articles
-      }
-
-      const subArticles = (articleDetail.subCategories || []).concat(articleDetail.pages || [])
-      const shouldRemoveNode = subArticles.length <= 3
-      if (shouldRemoveNode) {
-        // Update sub pages
-        // Add parent categories to child pages
-        const hasPages = articleDetail.pages && articleDetail.pages.length
-        const scrapedPages = hasPages ? await articleDetailXId.getMany(articleDetail.pages.map((p) => p.title)) : {}
-        for (const [pageId, pageDetail] of Object.entries(scrapedPages)) {
-          if (pageDetail) {
-            pageDetail.categories = (pageDetail.categories || [])
-              .filter((c) => c && c.title !== articleDetail.title) // remove self
-              .concat(articleDetail.categories || []) // add parent categories
-
-            pageDetail.categories = deDup(pageDetail.categories, (o) => o.title)
-
-            await articleDetailXId.set(pageId, pageDetail)
-          }
-        }
-
-        // Update parent categories
-        // Add children to parent categories
-        const hasCategories = articleDetail.categories && articleDetail.categories.length
-        const scrapedCategories = hasCategories ? await articleDetailXId.getMany(articleDetail.categories.map((p) => p.title)) : {}
-        for (const [catId, catDetail] of Object.entries(scrapedCategories)) {
-          if (catDetail) {
-            const categoryDetail = Object.assign({ pages: [], subCategories: [] }, catDetail || {}) as ArticleDetail
-
-            categoryDetail.pages = categoryDetail.pages.concat(articleDetail.pages)
-            categoryDetail.subCategories = categoryDetail.subCategories.concat(articleDetail.subCategories).filter((c) => c.title === articleDetail.title)
-
-            categoryDetail.pages = deDup(categoryDetail.pages, (o) => o.title)
-            categoryDetail.subCategories = deDup(categoryDetail.subCategories, (o) => o.title)
-
-            await articleDetailXId.set(catId, categoryDetail)
-          }
-        }
-
-        await articleDetailXId.delete(articleId)
-        deletedNodes += 1
-      }
-    }
-
-    if (processedArticles % 10 === 0) {
-      const percentProgress = Math.floor((processedArticles / numKeys) * 1000) / 10
-      if (percentProgress !== prevPercentProgress) {
-        prevPercentProgress = percentProgress
-        logger.log(`Progress simplifying graph [${processedArticles}/${numKeys}] [${percentProgress}%] deleted [${deletedNodes}]`)
-      }
-    }
-  })
-  return { deletedNodes }
 }

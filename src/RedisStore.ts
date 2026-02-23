@@ -121,8 +121,6 @@ class RedisStore implements RS {
       w: 'width',
     })
     this.#articleDetailXId = new RedisKvs(this.#client, `${Date.now()}-detail`, {
-      s: 'subCategories',
-      c: 'categories',
       p: 'pages',
       h: 'thumbnail',
       g: 'coordinates',

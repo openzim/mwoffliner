@@ -8,7 +8,7 @@ import MediaWiki from '../MediaWiki.js'
 import { REDIRECT_PAGE_SIGNATURE } from './const.js'
 import { cleanupAxiosError } from './misc.js'
 
-export async function getArticlesByIds(articleIds: string[], log = true): Promise<void> {
+export async function getArticlesByIds(articleIds: string[], categoryIds = new Set<string>(), log = true): Promise<void> {
   let from = 0
   let numThumbnails = 0
   const MAX_BATCH_SIZE = 50
@@ -62,6 +62,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
         const articleDetails = mwRetToArticleDetail(mwArticleDetails)
 
         for (const [articleId, articleDetail] of Object.entries(mwArticleDetails)) {
+          articleDetail.categories?.forEach(({ title }) => categoryIds.add(title))
           if (articleDetail.redirects && articleDetail.redirects.length) {
             await redirectsXId.setMany(
               articleDetail.redirects.reduce((acc, redirect) => {
@@ -97,7 +98,7 @@ async function saveToStore(
   }
 }
 
-export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
+export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], categoryIds = new Set(), continueLimit?: number): Promise<void> {
   // eslint-disable-next-line no-async-promise-executor
   return new Promise(async (resolve, reject) => {
     let totalArticles = 0
@@ -155,6 +156,7 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], conti
         curStage += 1
         const redirects: KVS<ArticleRedirect> = {}
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
+          articleDetail.categories?.forEach(({ title }) => categoryIds.add(title))
           if (articleDetail.redirects) {
             for (const target of articleDetail.redirects) {
               const targetExistsAsArticle = (await RedisStore.articleDetailXId.exists(target.title)) || Object.keys(chunk.articleDetails).includes(target.title)
@@ -286,11 +288,17 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
         source: val.thumbnail.source,
       }
     }
+    let newCategoryinfo
+    if (val.categoryinfo) {
+      newCategoryinfo = {
+        ...val.categoryinfo,
+        nogallery: val.pageprops && val.pageprops.nogallery === '',
+      }
+    }
     ret[key] = {
       title: val.title,
-      categories: val.categories,
-      subCategories: val.subCategories,
       thumbnail: newThumbnail,
+      categoryinfo: newCategoryinfo,
       missing: val.missing,
       pagelang: val.pagelanguagehtmlcode,
       pagedir: val.pagelanguagedir,
@@ -344,19 +352,26 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
 }
 
 export async function getArticleIds(mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
+  const categorySet = new Set<string>()
+
   if (mainPage) {
-    await getArticlesByIds([mainPage])
+    await getArticlesByIds([mainPage], categorySet)
   }
 
   if (articleIds) {
-    await getArticlesByIds(articleIds)
+    await getArticlesByIds(articleIds, categorySet)
   } else {
     await pmap(
       MediaWiki.namespacesToMirror,
       (namespace: string) => {
-        return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore)
+        return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore, categorySet)
       },
       { concurrency: Downloader.speed },
     )
+  }
+
+  if (MediaWiki.getCategories) {
+    const categoryIds = articleIdsToIgnore ? [...categorySet].filter((title: string) => !articleIdsToIgnore.includes(title)) : [...categorySet]
+    await getArticlesByIds(categoryIds)
   }
 }

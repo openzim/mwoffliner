@@ -1,4 +1,13 @@
 {
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": "{{PLURAL:${totalCount}|This category contains only the following file.|The following {{PLURAL:${curPageCount}|file is|${curPageCount} files are}} in this category, out of ${totalCount} total.}}",
+	"categoryMediaHeader": "Media in category \"${pageName}\"",
+	"categoryArticleCount": "{{PLURAL:${totalCount}|This category contains only the following page.|The following {{PLURAL:${curPageCount}|page is|${curPageCount} pages are}} in this category, out of ${totalCount} total.}}",
+	"categoryHeader": "Pages in category \"${pageName}\"",
+	"categorySubcatCount": "{{PLURAL:${totalCount}|This category has only the following subcategory.|This category has the following {{PLURAL:${curPageCount}|subcategory|${curPageCount} subcategories}}, out of ${totalCount} total.}}",
+	"subcategories": "Subcategories",
+	"categoryEmpty": "<em>This category currently contains no pages or media.</em>",
+	"categoryLimited": "<em>This contents of this category have been reduced to only include pages inside the ZIM.</em>",
 	"DISCLAIMER": "This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.",
 	"LAST_EDITED_ON": "Last edited on ${date}",
 	"LICENSE_UNKNOWN": "an unknown license",

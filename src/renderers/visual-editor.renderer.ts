@@ -52,7 +52,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { articleId, articleDetail, moduleDependencies, dump } = renderOpts
+    const { articleId, articleDetail, moduleDependencies, categoryMembers, dump } = renderOpts
     const { html, displayTitle } = await this.retrieveHtml(renderOpts)
     if (html) {
       const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml({
@@ -61,6 +61,7 @@ export class VisualEditorRenderer extends DesktopRenderer {
         articleId,
         articleDetail,
         moduleDependencies,
+        categoryMembers,
         callback: super.templateDesktopArticle.bind(this),
       })
       result.push({

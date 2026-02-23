@@ -13,6 +13,7 @@ import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
 import { isMainPage, isSubpage } from '../util/articles.js'
+import { buildCategoryMemberList } from '../util/categories.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 export type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi' | 'ActionParse'
@@ -50,6 +51,7 @@ export interface DownloadRes {
   redirects: Redirect[]
   displayTitle?: string
   articleSubtitle?: string
+  categoriesHtml?: string
   bodyCssClass?: string
   htmlCssClass?: string
 }
@@ -68,6 +70,8 @@ export interface RenderOpts {
   articleDetail?: ArticleDetail
   displayTitle?: string
   articleSubtitle?: string
+  categoryMembers?: GroupedCategoryMembers
+  categoriesHtml?: string
   bodyCssClass?: string
   htmlCssClass?: string
   dump: Dump
@@ -77,9 +81,11 @@ export interface ProcessHtmlOpts {
   html: string
   dump: Dump
   articleId: string
-  articleDetail: any
+  articleDetail: ArticleDetail
   displayTitle?: string
   articleSubtitle?: string
+  categoryMembers?: GroupedCategoryMembers
+  categoriesHtml?: string
   moduleDependencies: any
   callback: any
 }
@@ -485,7 +491,7 @@ export abstract class Renderer {
 
   // TODO: The first part of this method is common for all renders
   public async processHtml(processHtmlOpts: ProcessHtmlOpts) {
-    const { html, dump, articleId, articleDetail, displayTitle, moduleDependencies, callback } = processHtmlOpts
+    const { html, dump, articleId, articleDetail, displayTitle, categoryMembers, categoriesHtml, moduleDependencies, callback } = processHtmlOpts
     let { articleSubtitle } = processHtmlOpts
     let imageDependencies: Array<{ url: string; path: string }> = []
     let videoDependencies: Array<{ url: string; path: string }> = []
@@ -505,6 +511,67 @@ export abstract class Renderer {
     )
     doc = this.applyOtherTreatments(doc, dump, articleId)
 
+    /* The content of a category page, listing all its members */
+    if (articleDetail.categoryinfo) {
+      const categoryinfo = articleDetail.categoryinfo
+      const categoryContent = doc.createElement('div')
+      categoryContent.lang = articleDetail.pagelang
+      categoryContent.dir = articleDetail.pagedir
+      categoryContent.classList.add('mw-category-generated')
+      if (categoryinfo.size) {
+        const categoryCollation = MediaWiki.metaData.categoryCollation
+        const numericSorting = categoryCollation === 'numeric' || (categoryCollation.startsWith('uca-') && categoryCollation.endsWith('-u-kn'))
+        moduleDependencies.styleDependenciesList.push('mediawiki.action.styles')
+        if (categoryinfo.subcats) {
+          if (categoryinfo.subcats > 200) {
+            // TODO: pagination iframe #2620
+            // TEMP: List only first 200 subcategories
+            const subcatsSection = buildCategoryMemberList('subcats', categoryMembers.subcats.slice(0, 200), articleDetail, doc, dump, numericSorting)
+            categoryContent.appendChild(subcatsSection)
+          } else {
+            const subcatsSection = buildCategoryMemberList('subcats', categoryMembers.subcats, articleDetail, doc, dump, numericSorting)
+            categoryContent.appendChild(subcatsSection)
+          }
+        }
+        if (categoryinfo.pages) {
+          if (categoryinfo.pages > 200) {
+            // TODO: pagination iframe #2620
+            // TEMP: List only first 200 pages
+            const pagesSection = buildCategoryMemberList('pages', categoryMembers.pages.slice(0, 200), articleDetail, doc, dump, numericSorting)
+            categoryContent.appendChild(pagesSection)
+          } else {
+            const pagesSection = buildCategoryMemberList('pages', categoryMembers.pages, articleDetail, doc, dump, numericSorting)
+            categoryContent.appendChild(pagesSection)
+          }
+        }
+        if (categoryinfo.files) {
+          if (!categoryinfo.nogallery) {
+            moduleDependencies.styleDependenciesList.push('mediawiki.page.gallery.styles')
+          }
+          if (categoryinfo.files > 200) {
+            // TODO: pagination iframe #2620
+            // TEMP: List onst first 200 files
+            const filesSection = buildCategoryMemberList('files', categoryMembers.files.slice(0, 200), articleDetail, doc, dump, numericSorting)
+            categoryContent.appendChild(filesSection)
+          } else {
+            const filesSection = buildCategoryMemberList('files', categoryMembers.files, articleDetail, doc, dump, numericSorting)
+            categoryContent.appendChild(filesSection)
+          }
+        }
+        if (MediaWiki.getCategories) {
+          const p = doc.createElement('p')
+          p.innerHTML = dump.strings.categoryLimited
+          categoryContent.appendChild(p)
+        }
+      } else {
+        const p = doc.createElement('p')
+        p.innerHTML = dump.strings.categoryEmpty
+        categoryContent.appendChild(p)
+      }
+      const ruRetCategoryContent = await rewriteUrlsOfDoc(categoryContent, articleId, dump)
+      doc.getElementsByTagName('body')[0].appendChild(ruRetCategoryContent.doc)
+    }
+
     const tmRet = await this.treatMedias(doc, dump, articleId)
 
     doc = tmRet.doc
@@ -515,6 +582,14 @@ export abstract class Renderer {
       const ruRetSubtitle = await rewriteUrlsOfDoc(articleSubtitleDoc, articleId, dump)
       articleSubtitleDoc = ruRetSubtitle.doc
       articleSubtitle = articleSubtitleDoc.getElementsByTagName('body')[0].innerHTML
+    }
+
+    // List of categories the page is a member of
+    if (categoriesHtml) {
+      let categoriesDoc = domino.createDocument(categoriesHtml)
+      const ruRetCategories = await rewriteUrlsOfDoc(categoriesDoc, articleId, dump)
+      categoriesDoc = ruRetCategories.doc
+      doc.getElementsByTagName('body')[0].appendChild(categoriesDoc.getElementById('catlinks'))
     }
 
     videoDependencies = videoDependencies.concat(
@@ -660,7 +735,7 @@ export abstract class Renderer {
       }),
       strings: dump.strings,
     })
-    htmlTemplateDoc.getElementById('mw-content-text').appendChild(div)
+    mwContentText.appendChild(div)
     this.addNoIndexCommentToElement(div)
 
     /* Geo-coordinates */

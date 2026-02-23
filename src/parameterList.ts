@@ -15,6 +15,7 @@ export const parameterDescriptions = {
   filenamePrefix: 'Part of the ZIM filename which is before the format & date parts.',
   format:
     'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
+  getCategories: 'Include the categories of all included articles.',
   keepEmptyParagraphs: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
   keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
   mwWikiPath: 'MediaWiki article path (by default fetched from the wiki)',

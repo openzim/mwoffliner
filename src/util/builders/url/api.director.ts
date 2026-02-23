@@ -11,13 +11,19 @@ export default class ApiURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildSubCategoriesURL(articleId: string, continueStr = '') {
+  buildQueryURL<T extends Record<string, any>>(queryParams: T) {
+    return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
+  }
+
+  buildCategoryMembersURL(articleId: string, continueStr = '') {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setQueryParams({
         action: 'query',
         list: 'categorymembers',
-        cmtype: 'subcat',
+        cmtype: 'subcat|page|file',
+        cmprop: 'title|sortkeyprefix|type',
+        cmsort: 'sortkey',
         cmlimit: 'max',
         format: 'json',
         formatversion: '2',
@@ -26,10 +32,6 @@ export default class ApiURLDirector {
         maxlag: config.defaults.maxlag,
       })
       .build()
-  }
-
-  buildQueryURL<T extends Record<string, any>>(queryParams: T) {
-    return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
   }
 
   buildSiteInfoURL() {
