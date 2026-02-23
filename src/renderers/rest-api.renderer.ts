@@ -23,7 +23,7 @@ export class RestApiRenderer extends DesktopRenderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleDetailXId, moduleDependencies, dump } = renderOpts
+    const { data, articleId, articleDetailXId, moduleDependencies, categoryMembers, dump } = renderOpts
 
     /* istanbul ignore if */
     if (!data) {
@@ -43,12 +43,13 @@ export class RestApiRenderer extends DesktopRenderer {
       articleId,
       articleDetail,
       moduleDependencies,
+      categoryMembers,
       callback: super.templateDesktopArticle.bind(this),
     })
 
     result.push({
       articleId,
-      displayTitle: (strippedTitle || articleId.replace(/_/g, ' ')),
+      displayTitle: strippedTitle || articleId.replace(/_/g, ' '),
       html: finalHTML,
       mediaDependencies,
       videoDependencies,
@@ -57,7 +58,7 @@ export class RestApiRenderer extends DesktopRenderer {
       staticFiles: this.staticFilesListDesktop,
       subtitles,
     })
-    
+
     return result
   }
 }

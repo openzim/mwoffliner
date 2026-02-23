@@ -26,6 +26,7 @@ describe('Downloader class - wikipedia EN', () => {
   beforeAll(async () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     await MediaWiki.getMwMetaData()
@@ -173,11 +174,21 @@ describe('Downloader class - wikipedia EN', () => {
         ns: 14,
         revisionId: 1168361498,
         timestamp: '2023-08-02T09:57:11Z',
+        categoryinfo: {
+          size: 83967,
+          pages: 0,
+          files: 0,
+          subcats: 83967,
+          hidden: true,
+          nogallery: false,
+        },
       }
       // Enforce desktop url here as this test desktop API-specific
       const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
       const PaginatedArticle = await Downloader.getArticle(articleId, RedisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl, dump, articleDetail)
-      expect(PaginatedArticle.length).toBeGreaterThan(100)
+      // TODO: Re-implement pagination #2620
+      expect(PaginatedArticle.length).toBe(1)
+      // expect(PaginatedArticle.length).toBeGreaterThan(100)
     })
   })
 
@@ -220,6 +231,7 @@ describe('Downloader class - wikipedia EN', () => {
 
     beforeAll(async () => {
       MediaWiki.base = 'https://en.wikipedia.org'
+      MediaWiki.getCategories = true
 
       s3 = new S3(
         `${s3UrlObj.protocol}//${s3UrlObj.host}/`,

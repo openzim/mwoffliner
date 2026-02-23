@@ -134,11 +134,12 @@ export class ActionParseRenderer extends Renderer {
     const htmlCssClass = extractHtmlCssClass(data.parse.headhtml)
 
     return {
-      data: data.parse.text + data.parse.categorieshtml,
+      data: data.parse.text,
       moduleDependencies,
       redirects: normalizedRedirects,
       displayTitle: data.parse.displaytitle,
       articleSubtitle: data.parse.subtitle,
+      categoriesHtml: data.parse.categorieshtml,
       bodyCssClass,
       htmlCssClass,
     }
@@ -146,7 +147,7 @@ export class ActionParseRenderer extends Renderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleSubtitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
+    const { data, articleId, articleSubtitle, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
     let { displayTitle } = renderOpts
 
     if (!data) {
@@ -191,6 +192,8 @@ export class ActionParseRenderer extends Renderer {
       articleDetail,
       displayTitle,
       articleSubtitle,
+      categoryMembers,
+      categoriesHtml,
       moduleDependencies,
       callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
     })

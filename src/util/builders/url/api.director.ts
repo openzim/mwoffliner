@@ -15,6 +15,25 @@ export default class ApiURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
   }
 
+  buildCategoryMembersURL(articleId: string, continueStr = '') {
+    return urlBuilder
+      .setDomain(this.baseDomain)
+      .setQueryParams({
+        action: 'query',
+        list: 'categorymembers',
+        cmtype: 'subcat|page|file',
+        cmprop: 'title|sortkeyprefix|type',
+        cmsort: 'sortkey',
+        cmlimit: 'max',
+        format: 'json',
+        formatversion: '2',
+        cmtitle: articleId,
+        cmcontinue: continueStr,
+        maxlag: config.defaults.maxlag,
+      })
+      .build()
+  }
+
   buildSiteInfoURL() {
     return urlBuilder
       .setDomain(this.baseDomain)

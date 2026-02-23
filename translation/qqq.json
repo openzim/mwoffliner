@@ -4,6 +4,15 @@
 			"Amire80"
 		]
 	},
+	"categoryHeaderNumerals": "A header for all pages whose titles start with a number. This is used on category pages. This should only be translated if your language uses a different method to indicate a range of numbers. Should match {{msg-mw|category-header-numerals}}",
+	"categoryFileCount": "This message is displayed at the top of a category page showing the number of pages in the category. Should match {{msg-mw|category-file-count}}",
+	"categoryMediaHeader": "In category description page. Note that \"media\" is short for \"multimedia\". It doesn't mean \"journalism\". Should match {{msg-mw|category-media-header}}",
+	"categoryArticleCount": "This message is used on category pages. Should match {{msg-mw|category-article-count}}",
+	"categoryHeader": "In category description page, be aware that this is not about biology, but about bibliography. Should match {{msg-mw|category_header}}",
+	"categorySubcatCount": "This message is displayed at the top of a category page showing the number of pages in the category. Should match {{msg-mw|category-subcat-count}}",
+	"subcategories": "Used as a header on category pages that have subcategories. Should match {{msg-mw|subcategories}}",
+	"categoryEmpty": "The text displayed in category page when that category is empty. Should match {{msg-mw|category-empty}}",
+	"categoryLimited": "The text displayed in category page when that category contents have been limited.",
 	"DISCLAIMER": "Text printed in the footer of each article. With some publishers, \"${creator}\" will be the name of a person who wrote the article; with some others, it will be the publisher name (e.g. \"Wikipedia\").",
 	"LAST_EDITED_ON": "Hint indicated at which time the article has been updated last time",
 	"LICENSE_UNKNOWN": "Fallback value for \"${license}\" in the disclaimer, if the license of the text is unknown.",
