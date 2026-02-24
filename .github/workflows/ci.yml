@@ -63,8 +63,8 @@ jobs:
           path: coverage/unit/coverage-final.json
           retention-days: 1
 
-  e2e-tests:
-    runs-on: ubuntu-24.04
+  e2e-part1-tests:
+    runs-on: [self-hosted, ubuntu-24.04]
 
     steps:
       - name: Download codebase
@@ -87,17 +87,17 @@ jobs:
 
       - name: Running e2e tests (w/coverage)
         if: ${{ github.event_name != 'schedule' }}
-        run: npm run test:e2e-coverage
+        run: npm run test:e2e-part1-coverage
 
       - name: Running e2e tests (no coverage)
         if: ${{ github.event_name == 'schedule' }}
-        run: npm run test:e2e
+        run: npm run test:e2e-part1
 
       - name: Uploading ZIM artifacts
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: zims-e2e
+          name: zims-e2e-part1
           path: mwo-test-*/*.zim
           # keep scheduled (daily artifacts for 7 days, others only 1 day)
           retention-days: ${{ github.event_name == 'schedule' && 7 || 1 }}
@@ -116,8 +116,65 @@ jobs:
       - name: Upload coverage results for e2e tests
         uses: actions/upload-artifact@v6
         with:
-          name: coverage-e2e
-          path: coverage/e2e/coverage-final.json
+          name: coverage-e2e-part1
+          path: coverage/e2e-part1/coverage-final.json
+          retention-days: 1
+
+  e2e-part2-tests:
+    runs-on: [self-hosted, ubuntu-24.04]
+
+    steps:
+      - name: Download codebase
+        uses: actions/checkout@v6
+
+      - name: Installing Node.JS
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+
+      - name: Installing Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: '6.x'
+
+      - name: Installing other dependencies
+        run: |
+          npm install
+          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+
+      - name: Running e2e tests (w/coverage)
+        if: ${{ github.event_name != 'schedule' }}
+        run: npm run test:e2e-part2-coverage
+
+      - name: Running e2e tests (no coverage)
+        if: ${{ github.event_name == 'schedule' }}
+        run: npm run test:e2e-part2
+
+      - name: Uploading ZIM artifacts
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: zims-e2e-part2
+          path: mwo-test-*/*.zim
+          # keep scheduled (daily artifacts for 7 days, others only 1 day)
+          retention-days: ${{ github.event_name == 'schedule' && 7 || 1 }}
+          compression-level: 0
+
+      - name: Mailgun Action
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: vineetchoudhary/mailgun-action@v1.2
+        with:
+          api-key: ${{ secrets.MAILGUN_API_KEY }}
+          domain: ${{ secrets.MAILGUN_DOMAIN }}
+          from: 'mwoffliner-github-alert'
+          to: ${{ secrets.CI_SCHEDULED_FAIL_EMAIL_TO }}
+          subject: 'mwoffliner scheduled CI run FAILED (silent)'
+
+      - name: Upload coverage results for e2e tests
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-e2e-part2
+          path: coverage/e2e-part2/coverage-final.json
           retention-days: 1
 
   upload-coverage:
@@ -125,7 +182,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs:
       - unit-tests
-      - e2e-tests
+      - e2e-part1-tests
+      - e2e-part2-tests
     steps:
       - name: Download codebase
         uses: actions/checkout@v6
@@ -146,11 +204,17 @@ jobs:
           name: coverage-unit
           path: coverage/unit/
 
-      - name: Download coverage results for e2e tests
+      - name: Download coverage results for e2e part1 tests
         uses: actions/download-artifact@v6
         with:
-          name: coverage-e2e
-          path: coverage/e2e/
+          name: coverage-e2e-part1
+          path: coverage/e2e-part1/
+
+      - name: Download coverage results for e2e part2 tests
+        uses: actions/download-artifact@v6
+        with:
+          name: coverage-e2e-part2
+          path: coverage/e2e-part2/
 
       - name: Merge coverage results
         run: npm run codecov:merge
