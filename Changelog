@@ -1,6 +1,8 @@
 Unreleased:
+* NEW: Detect image size from HTML attribute instead of URL regex and recompress (@kunalsiyag #2192)
 * NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
 * CHANGED: Keep only ActionParse renderer (@benoit74 #2210)
+
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
