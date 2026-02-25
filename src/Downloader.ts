@@ -545,7 +545,7 @@ class Downloader {
   public async getJSON<T>(_url: string): Promise<T> {
     const url = urlHelper.deserializeUrl(_url)
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, url, 'json', (err: any, val: any) => {
+      this.backoffCall(this.getJSONCb, url, 'json', undefined, (err: any, val: any) => {
         if (err) {
           const httpStatus = (err.response && err.response.status) || err.httpReturnCode
           logger.info(`Failed to get [${url}] [status=${httpStatus}]`)
@@ -577,7 +577,7 @@ class Downloader {
     return this.request({ url, data, method: 'POST', ...config })
   }
 
-  public async downloadContent(_url: string, kind: DonwloadKind, retry = true): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
+  public async downloadContent(_url: string, kind: DonwloadKind, retry = true, requestedWidth?: number): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
     }
@@ -597,9 +597,9 @@ class Downloader {
           }
         }
         if (retry) {
-          this.backoffCall(this.getContentCb, url, kind, cb)
+          this.backoffCall(this.getContentCb, url, kind, requestedWidth, cb)
         } else {
-          this.getContentCb(url, kind, cb)
+          this.getContentCb(url, kind, requestedWidth, cb)
         }
       })
     } catch (err) {
@@ -646,7 +646,7 @@ class Downloader {
     return articleDetails
   }
 
-  private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
+  private getJSONCb = <T>(url: string, kind: DonwloadKind, _requestedWidth: number | undefined, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((val) => {
@@ -668,26 +668,42 @@ class Downloader {
     return fileType ? fileType.mime : null
   }
 
-  private async getCompressedBody(input: CompressionData): Promise<CompressionData> {
+  private async getCompressedBody(input: CompressionData, requestedWidth?: number): Promise<CompressionData> {
     const contentType = await this.getImageMimeType(input.data)
     if (isBitmapImageMimeType(contentType)) {
+      // Resize down with sharp before compression when the source is wider
+      // than the requested display width. Skip GIFs to avoid breaking animations.
+      let dataToCompress = input.data
+      if (requestedWidth && contentType !== 'image/gif') {
+        try {
+          const metadata = await sharp(input.data).metadata()
+          if (metadata.width && metadata.width > requestedWidth) {
+            dataToCompress = await sharp(input.data)
+              .resize({ width: requestedWidth, withoutEnlargement: true })
+              .toBuffer()
+          }
+        } catch (err) {
+          logger.warn(`Failed to resize image to ${requestedWidth}px, proceeding without resize: ${err.message}`)
+        }
+      }
+
       if (this.webp && isWebpCandidateImageMimeType(contentType)) {
         return {
           data: await (imagemin as any)
-            .buffer(input.data, imageminOptions.get('webp').get(contentType))
+            .buffer(dataToCompress, imageminOptions.get('webp').get(contentType))
             .catch(async (err) => {
               if (/Unsupported color conversion request/.test(err.stderr)) {
                 return (imagemin as any)
-                  .buffer(await sharp(input.data).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(contentType))
+                  .buffer(await sharp(dataToCompress).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(contentType))
                   .catch(() => {
-                    return input.data
+                    return dataToCompress
                   })
                   .then((data) => {
                     return data
                   })
               } else {
-                return (imagemin as any).buffer(input.data, imageminOptions.get('default').get(contentType)).catch(() => {
-                  return input.data
+                return (imagemin as any).buffer(dataToCompress, imageminOptions.get('default').get(contentType)).catch(() => {
+                  return dataToCompress
                 })
               }
             })
@@ -697,8 +713,8 @@ class Downloader {
         }
       } else {
         return {
-          data: await (imagemin as any).buffer(input.data, imageminOptions.get('default').get(contentType)).catch(() => {
-            return input.data
+          data: await (imagemin as any).buffer(dataToCompress, imageminOptions.get('default').get(contentType)).catch(() => {
+            return dataToCompress
           }),
         }
       }
@@ -708,15 +724,15 @@ class Downloader {
     }
   }
 
-  private getContentCb = async (url: string, kind: DonwloadKind, handler: any): Promise<void> => {
+  private getContentCb = async (url: string, kind: DonwloadKind, requestedWidth: number | undefined, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`)
     try {
       if (this.optimisationCacheUrl && kind === 'image') {
-        this.downloadImage(url, handler)
+        this.downloadImage(url, handler, requestedWidth)
       } else {
         const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
         // If content is an image, we might benefit from compressing it
-        const content = kind === 'image' ? (await this.getCompressedBody({ data: resp.data })).data : resp.data
+        const content = kind === 'image' ? (await this.getCompressedBody({ data: resp.data }, requestedWidth)).data : resp.data
         // compute content-type from content, since getCompressedBody might have modified it
         const contentType = kind === 'image' ? (await this.getImageMimeType(content)) || resp.headers['content-type'] : resp.headers['content-type']
         handler(null, {
@@ -733,12 +749,18 @@ class Downloader {
     }
   }
 
-  private async downloadImage(url: string, handler: any) {
+  private async downloadImage(url: string, handler: any, requestedWidth?: number) {
+    // Build a width-aware cache version token so the same URL at different
+    // requested widths does not reuse an undersized cached image.
+    const cacheVersion = this.webp
+      ? (requestedWidth ? `webp-w${requestedWidth}` : 'webp')
+      : (requestedWidth ? `1-w${requestedWidth}` : '1')
+
     try {
       this.s3
 
         // Check first if we have an entry in the (object storage) cache for this URL
-        .downloadBlob(stripHttpFromUrl(url), this.webp ? 'webp' : '1')
+        .downloadBlob(stripHttpFromUrl(url), cacheVersion)
 
         // Handle the cache response and act accordingly
         .then(async (s3Resp) => {
@@ -775,12 +797,12 @@ class Downloader {
           }
 
           // Compress content because image blob comes from upstream MediaWiki
-          const compressedData = (await this.getCompressedBody({ data: mwResp.data })).data
+          const compressedData = (await this.getCompressedBody({ data: mwResp.data }, requestedWidth)).data
 
           // Check for the ETag and upload to cache
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
           if (etag) {
-            await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, this.webp ? 'webp' : '1')
+            await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, cacheVersion)
           }
 
           // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
@@ -824,9 +846,9 @@ class Downloader {
     }
   }
 
-  private backoffCall(handler: (...args: any[]) => void, url: string, kind: DonwloadKind, callback: (...args: any[]) => void | Promise<void>): void {
+  private backoffCall(handler: (...args: any[]) => void, url: string, kind: DonwloadKind, requestedWidth: number | undefined, callback: (...args: any[]) => void | Promise<void>): void {
     this.backoffOptions.strategy.reset() // reset delay to initial one at each call
-    const call = backoff.call(handler, url, kind, callback)
+    const call = backoff.call(handler, url, kind, requestedWidth, callback)
     call.setStrategy(this.backoffOptions.strategy)
     call.retryIf(this.backoffOptions.retryIf)
     call.failAfter(this.backoffOptions.failAfter)

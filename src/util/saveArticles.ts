@@ -154,7 +154,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
 
     fileToDownload.downloadAttempts += 1
     logger.info(`Worker ${workerId} downloading ${urlHelper.deserializeUrl(fileToDownload.url)} (${fileToDownload.kind})`)
-    await Downloader.downloadContent(fileToDownload.url, fileToDownload.kind, false)
+    await Downloader.downloadContent(fileToDownload.url, fileToDownload.kind, false, fileToDownload.width)
       .then(async (resp) => {
         if (resp && resp.content && resp.contentType) {
           // { FRONT_ARTICLE: 0 } is here very important, should we retrieve HTML we want to be sure the libzim will
@@ -311,7 +311,9 @@ async function saveArticle(
       const existingVals = await RedisStore.filesToDownloadXPath.getMany(imageDependencies.map((dep) => dep.path))
 
       for (const dep of imageDependencies) {
-        const { mult, width } = getSizeFromUrl(dep.url)
+        const urlSize = getSizeFromUrl(dep.url)
+        const width = dep.width || urlSize.width
+        const mult = urlSize.mult
         const existingVal = existingVals[dep.path]
         const currentDepIsHigherRes = !existingVal || existingVal.width < (width || 10e6) || existingVal.mult < (mult || 1)
         if (currentDepIsHigherRes) {
