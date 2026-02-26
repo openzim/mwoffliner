@@ -3,9 +3,10 @@ module.exports = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  moduleFileExtensions: ["ts", "js"],
+  moduleFileExtensions: ['ts', 'js'],
   collectCoverage: false,
   verbose: true,
+  setupFilesAfterEnv: ['<rootDir>/test/jest.setup.ts'],
   transform: {
     '^.+\\.ts?$': [
       'ts-jest',
@@ -15,4 +16,3 @@ module.exports = {
     ],
   },
 }
-  

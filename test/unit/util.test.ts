@@ -86,7 +86,7 @@ describe('Utils', () => {
   })
 
   test('wikitext comparison', async () => {
-    testHtmlRewritingE2e(
+    await testHtmlRewritingE2e(
       'An [[isolated system]] remains the system is free.',
       '<p id="mwAg">An <a rel="mw:WikiLink" href="./Isolated_system" title="Isolated system" id="mwAw">isolated system</a> remains the system is free.</p>',
     )

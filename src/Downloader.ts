@@ -283,6 +283,29 @@ class Downloader {
     this.mainPageUrlDirector = undefined
   }
 
+  /**
+   * Destroys HTTP agents to properly close all connections.
+   * This is required for tests to prevent "Jest environment has been torn down" errors.
+   * Safe to call multiple times (idempotent).
+   */
+  public async destroy(): Promise<void> {
+    try {
+      if (this._basicRequestOptions?.httpAgent && typeof this._basicRequestOptions.httpAgent.destroy === 'function') {
+        this._basicRequestOptions.httpAgent.destroy()
+      }
+    } catch {
+      // Ignore errors from destroying agents
+    }
+
+    try {
+      if (this._basicRequestOptions?.httpsAgent && typeof this._basicRequestOptions.httpsAgent.destroy === 'function') {
+        this._basicRequestOptions.httpsAgent.destroy()
+      }
+    } catch {
+      // Ignore errors from destroying agents
+    }
+  }
+
   private getUrlDirector(renderer: object): URLDirector {
     switch (renderer.constructor.name) {
       case 'ActionParseRenderer':
