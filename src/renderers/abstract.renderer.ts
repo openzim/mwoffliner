@@ -483,11 +483,52 @@ export abstract class Renderer {
     return thumbDiv
   }
 
+  private getPositiveIntegerAttribute(node: DominoElement, attribute: string): number | undefined {
+    const val = Number.parseInt(node.getAttribute(attribute), 10)
+    return Number.isFinite(val) && val > 0 ? val : undefined
+  }
+
+  private getRequestedImageWidths(doc: DominoElement): KVS<number> {
+    const requestedWidths: KVS<number> = {}
+    const setRequestedWidth = (url: string, width: number) => {
+      const prevWidth = requestedWidths[url] || 0
+      requestedWidths[url] = Math.max(prevWidth, width)
+    }
+
+    for (const image of Array.from<HTMLImageElement>(doc.getElementsByTagName('img'))) {
+      const imageSrc = image.getAttribute('src')
+      const width = this.getPositiveIntegerAttribute(image, 'width') || this.getPositiveIntegerAttribute(image, 'data-width')
+      if (!imageSrc || !width) {
+        continue
+      }
+      try {
+        setRequestedWidth(getFullUrl(imageSrc, MediaWiki.baseUrl), width)
+      } catch {
+        continue
+      }
+    }
+
+    for (const video of Array.from<HTMLVideoElement>(doc.getElementsByTagName('video'))) {
+      const posterSrc = video.getAttribute('poster')
+      const width = this.getPositiveIntegerAttribute(video, 'width')
+      if (!posterSrc || !width) {
+        continue
+      }
+      try {
+        setRequestedWidth(getFullUrl(posterSrc, MediaWiki.baseUrl), width)
+      } catch {
+        continue
+      }
+    }
+
+    return requestedWidths
+  }
+
   // TODO: The first part of this method is common for all renders
   public async processHtml(processHtmlOpts: ProcessHtmlOpts) {
     const { html, dump, articleId, articleDetail, displayTitle, moduleDependencies, callback } = processHtmlOpts
     let { articleSubtitle } = processHtmlOpts
-    let imageDependencies: Array<{ url: string; path: string }> = []
+    let imageDependencies: Array<{ url: string; path: string; width?: number }> = []
     let videoDependencies: Array<{ url: string; path: string }> = []
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
@@ -504,6 +545,7 @@ export abstract class Renderer {
         }),
     )
     doc = this.applyOtherTreatments(doc, dump, articleId)
+    const imageRequestedWidths = this.getRequestedImageWidths(doc)
 
     const tmRet = await this.treatMedias(doc, dump, articleId)
 
@@ -522,7 +564,8 @@ export abstract class Renderer {
         .filter((a) => a)
         .map((url) => {
           const path = getMediaBase(url, false)
-          return { url, path }
+          const width = imageRequestedWidths[url]
+          return width ? { url, path, width } : { url, path }
         }),
     )
 
@@ -531,7 +574,8 @@ export abstract class Renderer {
         .filter((a) => a)
         .map((url) => {
           const path = getMediaBase(url, false)
-          return { url, path }
+          const width = imageRequestedWidths[url]
+          return width ? { url, path, width } : { url, path }
         }),
     )
 
