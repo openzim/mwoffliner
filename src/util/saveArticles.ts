@@ -440,10 +440,9 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
             jsConfigVars = moduleDependencies.jsConfigVars || ''
 
             /*
-             * getModuleDependencies and downloader.getArticle are
-             * network heavy while parsing and saving is I/O.
-             * To parse and download simultaniously, we don't await on save,
-             * but instead cache the promise in a queue and check it later
+             * downloader.getArticle is network heavy while parsing and saving is I/O.
+             * To parse and download simultaniously, we don't await on save, but instead
+             * cache the promise in a queue and check it later
              */
             promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle)])
           }

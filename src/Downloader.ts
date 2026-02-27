@@ -1,6 +1,6 @@
 import * as backoff from 'backoff'
 import { config } from './config.js'
-import { contains, normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
+import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import { Readable } from 'stream'
 import deepmerge from 'deepmerge'
 import * as domino from 'domino'
@@ -832,52 +832,6 @@ class Downloader {
     call.failAfter(this.backoffOptions.failAfter)
     call.on('backoff', this.backoffOptions.backoffHandler)
     call.start()
-  }
-
-  public async getModuleDependencies(title: string) {
-    const genericJsModules = config.output.mw.js
-    const genericCssModules = config.output.mw.css
-
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-
-    const articleApiUrl = apiUrlDirector.buildArticleApiURL(title)
-
-    const articleData = await this.getJSON<any>(articleApiUrl)
-
-    if (articleData.error) {
-      const errorMessage = `Unable to retrieve js/css dependencies for article '${title}': ${articleData.error.code}`
-      logger.error(errorMessage)
-
-      /* If article is missing (for example because it just has been deleted) or access is denied */
-      if (articleData.error.code === 'missingtitle' || articleData.error.code === 'permissiondenied') {
-        return { jsConfigVars: '', jsDependenciesList: [], styleDependenciesList: [] }
-      }
-
-      /* Something went wrong in modules retrieval at app level (no HTTP error) */
-      throw new Error(errorMessage)
-    }
-
-    const {
-      parse: { modules, modulescripts, modulestyles, headhtml },
-    } = articleData
-
-    const jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
-
-    const styleDependenciesList = []
-      .concat(modules, modulestyles, genericCssModules)
-      .filter((a) => a)
-      .filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
-
-    logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
-    logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
-
-    const jsConfigVars = Downloader.extractJsConfigVars(headhtml)
-
-    return {
-      jsConfigVars,
-      jsDependenciesList,
-      styleDependenciesList,
-    }
   }
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877

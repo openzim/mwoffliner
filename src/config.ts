@@ -68,36 +68,10 @@ const config = {
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: [
-        [
-          'skins.minerva.base.reset',
-          'skins.minerva.content.styles',
-          'ext.cite.style',
-          'site.styles',
-          'mobile.app.pagestyles.android',
-          'mediawiki.page.gallery.styles',
-          'mediawiki.skinning.content.parsoid',
-        ].join('|'),
-      ],
-      js: [
-        'startup',
-        'jquery,mediawiki',
-        'mediawiki.base',
-        'mediawiki.util',
-        'site',
-        'mediawiki.page.ready',
-
-        // Gadget resources are not shared by Parsoid API https://phabricator.wikimedia.org/T161278
-        'jquery.cookie',
-        'mediawiki.cookie',
-        'mediawiki.storage',
-        'ext.gadget.VisibilityToggles',
-        'ext.gadget.defaultVisibilityToggles',
-      ],
-      css_simplified: [
         'site.styles', // always needed
         'noscript', // recommended until we solve https://github.com/openzim/mwoffliner/issues/2310
       ],
-      js_simplified: [
+      js: [
         // base JS scripts always needed / never returned on API calls
         'startup',
       ],

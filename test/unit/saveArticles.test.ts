@@ -216,36 +216,4 @@ describe('saveArticles', () => {
       expect(articleDoc.querySelector('#Drink')).toBeTruthy()
     })
   }
-
-  test('Load inline js from HTML', async () => {
-    await setupScrapeClasses() // en wikipedia
-
-    const _moduleDependencies = await Downloader.getModuleDependencies('Potato')
-
-    let RLCONF: any
-    let RLSTATE: any
-    let RLPAGEMODULES: any
-
-    const document: any = { documentElement: { className: '' }, cookie: '' }
-
-    // Create a new function that sets the values
-    const setJsConfigVars = new Function(`
-        return function(RLCONF, RLSTATE, RLPAGEMODULES, document) {
-            ${_moduleDependencies.jsConfigVars}
-            return { RLCONF, RLSTATE, RLPAGEMODULES };
-        };
-    `)()
-
-    // Execute the created function
-    const { RLCONF: updatedRLCONF } = setJsConfigVars(RLCONF, RLSTATE, RLPAGEMODULES, document)
-
-    expect(updatedRLCONF).toMatchObject({
-      wgPageName: 'Potato',
-      wgTitle: 'Potato',
-      wgPageContentLanguage: 'en',
-      wgPageContentModel: 'wikitext',
-      wgRelevantPageName: 'Potato',
-      wgRelevantArticleId: 23501,
-    })
-  })
 })
