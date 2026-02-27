@@ -225,17 +225,16 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
   )
 }
 
-async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, mainPageRenderer: Renderer, articlesRenderer: Renderer) {
+async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       let rets: any
       try {
         const mainPage = isMainPage(articleId)
-        const renderer = mainPage ? mainPageRenderer : articlesRenderer
         const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
-        const articleUrl = mainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+        const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
 
-        rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail)
+        rets = await Downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, dump, articleDetail)
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -370,7 +369,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   dump.maxHardFailedArticles = Math.max(5, Math.floor(articlesTotal / 100000))
 
   if (dump.customProcessor?.shouldKeepArticle) {
-    await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.mainPageRenderer, RenderingContext.articlesRenderer)
+    await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.articlesRenderer)
   }
 
   const stages = ['Download Article and dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
@@ -405,12 +404,10 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
 
         let rets: any
         try {
-          const mainPage = isMainPage(articleId)
-          const renderer = mainPage ? RenderingContext.mainPageRenderer : RenderingContext.articlesRenderer
           const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
-          const articleUrl = mainPage ? Downloader.getMainPageUrl(articleId) : Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+          const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
 
-          rets = await Downloader.getArticle(articleId, articleDetailXId, renderer, articleUrl, dump, articleDetail)
+          rets = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 
           curStage += 1
           for (const {

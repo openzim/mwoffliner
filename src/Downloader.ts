@@ -129,7 +129,6 @@ class Downloader {
   private cookierJar: CookieJar
 
   private articleUrlDirector: URLDirector
-  private mainPageUrlDirector: URLDirector
   private insecure: boolean = false
 
   get speed() {
@@ -280,7 +279,6 @@ class Downloader {
     this.cssDependenceUrls = {}
 
     this.articleUrlDirector = undefined
-    this.mainPageUrlDirector = undefined
   }
 
   /**
@@ -316,17 +314,12 @@ class Downloader {
     }
   }
 
-  public setUrlsDirectors(mainPageRenderer: Renderer, articlesRenderer: Renderer): void {
+  public setUrlsDirectors(articlesRenderer: Renderer): void {
     this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
-    this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
   }
 
   public getArticleUrl(articleId: string, articleUrlOpts: RendererArticleOpts = {}): string {
     return this.articleUrlDirector.buildArticleURL(articleId, articleUrlOpts)
-  }
-
-  public getMainPageUrl(articleId: string): string {
-    return this.mainPageUrlDirector.buildArticleURL(articleId)
   }
 
   public removeEtagWeakPrefix(etag: string): string {
