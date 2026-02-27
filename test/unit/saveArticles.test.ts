@@ -21,7 +21,7 @@ describe('saveArticles', () => {
   for (const renderer of RENDERERS_LIST) {
     test(`Article html processing using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
 
       const _articlesDetail = await Downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -60,7 +60,7 @@ describe('saveArticles', () => {
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Canada'
       const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: '0' })
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -83,7 +83,7 @@ describe('saveArticles', () => {
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Main_Page'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -98,7 +98,7 @@ describe('saveArticles', () => {
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
@@ -162,7 +162,7 @@ describe('saveArticles', () => {
 
     test(`Removes inline JS using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Potato'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -181,7 +181,7 @@ describe('saveArticles', () => {
 
     test(`Remove empty sections for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Western_Greenland'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -200,7 +200,7 @@ describe('saveArticles', () => {
     test(`Keep empty sections for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
       dump.opts.keepEmptySections = true
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Western_Greenland'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
