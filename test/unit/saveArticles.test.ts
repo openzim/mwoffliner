@@ -215,5 +215,50 @@ describe('saveArticles', () => {
       expect(articleDoc.querySelector('#Eat')).toBeTruthy()
       expect(articleDoc.querySelector('#Drink')).toBeTruthy()
     })
+
+    // to be added back in https://github.com/openzim/mwoffliner/pull/2483, once we retrieve JS Config Vars again
+    test.skip(`Load inline js from HTML for ${renderer} renderer`, async () => {
+      await setupScrapeClasses() // en wikipedia
+
+      await RenderingContext.createRenderers(renderer as renderName)
+      const articleId = 'Potato'
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
+      articleDetailXId.setMany(articlesDetail)
+      const { moduleDependencies } = await RenderingContext.articlesRenderer.download({
+        articleId,
+        articleUrl,
+        articleDetail,
+      })
+
+      let RLCONF: any
+      let RLSTATE: any
+      let RLPAGEMODULES: any
+
+      const document: any = { documentElement: { className: '' }, cookie: '' }
+
+      // Create a new function that sets the values
+      const setJsConfigVars = new Function(`
+          return function(RLCONF, RLSTATE, RLPAGEMODULES, document) {
+              ${moduleDependencies.jsConfigVars}
+              return { RLCONF, RLSTATE, RLPAGEMODULES };
+          };
+      `)()
+
+      // Execute the created function
+      const { RLCONF: updatedRLCONF } = setJsConfigVars(RLCONF, RLSTATE, RLPAGEMODULES, document)
+
+      expect(updatedRLCONF).toMatchObject({
+        wgPageName: 'Potato',
+        wgTitle: 'Potato',
+        wgPageContentLanguage: 'en',
+        wgPageContentModel: 'wikitext',
+        wgRelevantPageName: 'Potato',
+        wgRelevantArticleId: 23501,
+      })
+    })
   }
 })
