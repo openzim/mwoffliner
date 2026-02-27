@@ -28,8 +28,8 @@ describe('forceRender', () => {
     expect(redisScan.stdout).toEqual('')
   })
 
-  test('Scrape article from bm.wikipedia.org using WikimediaDesktop render', async () => {
-    const forceRender = 'WikimediaDesktop'
+  test('Scrape article from bm.wikipedia.org using ActionParse render', async () => {
+    const forceRender = 'ActionParse'
     const outFiles = await mwoffliner.execute({ ...parameters, forceRender })
 
     if (await zimcheckAvailable()) {

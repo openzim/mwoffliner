@@ -22,14 +22,6 @@ const subCategoriesTemplate = swig.compile(readTemplate(config.output.templates.
 const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPages))
 const downloadErrorPlaceholderTemplate = swig.compile(readTemplate(config.output.templates.downloadErrorPlaceholder))
 
-const htmlWikimediaMobileTemplateCode = () => {
-  return readTemplate(config.output.templates.pageWikimediaMobile)
-}
-
-const htmlWikimediaDesktopTemplateCode = () => {
-  return readTemplate(config.output.templates.pageWikimediaDesktop)
-}
-
 const htmlVectorLegacyTemplateCode = () => {
   return readTemplate(config.output.templates.pageVectorLegacy)
 }
@@ -53,8 +45,6 @@ export {
   leadSectionTemplate,
   sectionTemplate,
   subSectionTemplate,
-  htmlWikimediaMobileTemplateCode,
-  htmlWikimediaDesktopTemplateCode,
   htmlVectorLegacyTemplateCode,
   htmlVector2022TemplateCode,
   htmlFallbackTemplateCode,

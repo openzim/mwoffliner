@@ -11,8 +11,6 @@ import * as FileType from 'file-type'
 import { jest } from '@jest/globals'
 import { setTimeout } from 'timers/promises'
 import domino from 'domino'
-import { WikimediaDesktopRenderer } from '../../src/renderers/wikimedia-desktop.renderer.js'
-import { WikimediaMobileRenderer } from '../../src/renderers/wikimedia-mobile.renderer.js'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
 import { renderName } from 'src/renderers/abstract.renderer.js'
@@ -31,10 +29,6 @@ describe('Downloader class - wikipedia EN', () => {
 
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasRestApi()
-    await MediaWiki.hasVisualEditorApi()
   })
 
   test('Test Action API version 2 response in comparison with version 1', async () => {
@@ -137,58 +131,12 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   describe('getArticle method', () => {
-    let dump: Dump
-    const wikimediaMobileRenderer = new WikimediaMobileRenderer()
-
-    beforeAll(async () => {
-      const mwMetadata = await MediaWiki.getMwMetaData()
-      dump = new Dump('', {} as any, mwMetadata)
-    })
-
-    test('getArticle of "London" returns one article for WikimediaMobileRenderer render', async () => {
-      const articleId = 'London'
-      RenderingContext.articlesRenderer = wikimediaMobileRenderer
-      RenderingContext.mainPageRenderer = wikimediaMobileRenderer
-      Downloader.setUrlsDirectors(wikimediaMobileRenderer, wikimediaMobileRenderer)
-      const articleUrl = Downloader.getArticleUrl(articleId)
-      const articleDetail = {
-        title: articleId,
-        thumbnail: {
-          width: 50,
-          height: 28,
-          source: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_Skyline_%28125508655%29.jpeg/50px-London_Skyline_%28125508655%29.jpeg',
-        },
-        revisionId: 1171340841,
-        timestamp: '2023-08-20T14:54:01Z',
-        coordinates: '51.50722222;-0.1275',
-      }
-      const LondonArticle = await Downloader.getArticle(articleId, RedisStore.articleDetailXId, wikimediaMobileRenderer, articleUrl, dump, articleDetail)
-      expect(LondonArticle).toHaveLength(1)
-    })
-
-    test('Categories with many subCategories are paginated for WikimediaDesktop render', async () => {
-      const articleId = 'Category:Container_categories'
-      const wikimediaDesktopRenderer = new WikimediaDesktopRenderer()
-      const articleDetail = {
-        title: articleId,
-        ns: 14,
-        revisionId: 1168361498,
-        timestamp: '2023-08-02T09:57:11Z',
-      }
-      // Enforce desktop url here as this test desktop API-specific
-      const articleUrl = `https://en.wikipedia.org/api/rest_v1/page/html/${articleId}`
-      const PaginatedArticle = await Downloader.getArticle(articleId, RedisStore.articleDetailXId, wikimediaDesktopRenderer, articleUrl, dump, articleDetail)
-      expect(PaginatedArticle.length).toBeGreaterThan(100)
-    })
-  })
-
-  describe('getArticle method', () => {
     for (const renderer of RENDERERS_LIST) {
       let dump: Dump
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
         dump = new Dump('', {} as any, mwMetadata)
-        await RenderingContext.createRenderers(renderer as renderName, true)
+        await RenderingContext.createRenderers(renderer as renderName)
       })
 
       test(`getArticle response content for non-existent article id is placeholder for ${renderer} render`, async () => {
@@ -310,10 +258,6 @@ describe('Downloader class - wikipedia ES', () => {
 
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()
-    await MediaWiki.hasWikimediaDesktopApi()
-    await MediaWiki.hasWikimediaMobileApi()
-    await MediaWiki.hasRestApi()
-    await MediaWiki.hasVisualEditorApi()
   })
 
   describe('getArticle response content for moved article id with redirect', () => {
@@ -323,15 +267,10 @@ describe('Downloader class - wikipedia ES', () => {
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
         dump = new Dump('', {} as any, mwMetadata)
-        await RenderingContext.createRenderers(renderer as renderName, true)
+        await RenderingContext.createRenderers(renderer as renderName)
       })
 
       test(`for ${renderer} render`, async () => {
-        // This test is KO with VisualEditor, we "skip" it
-        if (renderer == 'VisualEditor') {
-          return
-        }
-
         // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when
         // listing articles and getting their details, but the article has then been moved (with a redirect)
         // to 'Vicente_Alejandro_González_y_Robleto'
@@ -377,7 +316,7 @@ describe('Downloader class - wikipedia ES', () => {
 
     const mwMetadata = await MediaWiki.getMwMetaData()
     const dump = new Dump('', {} as any, mwMetadata)
-    await RenderingContext.createRenderers(renderer as renderName, true)
+    await RenderingContext.createRenderers(renderer as renderName)
 
     // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when
     // listing articles and getting their details, but the article has then been moved (with a redirect)

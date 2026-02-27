@@ -12,8 +12,6 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "Den begärda artikeln '${articleTitle}' är inte tillgänglig i denna ZIM, det gick inte att hämta den från ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Den här artikeln raderades efter att vi sammanställde listan över artiklar att hämta, men innan vi hämtade den för att bygga den ZIM du tittar på.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "När ZIM-filen du tittar på skapades misslyckades ${server}-servern med att ge information om den här artikelns HTML-kod i tid.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "När ZIM-filen du tittar på skapades misslyckades ${server}-servern med att rendera HTML-innehållet i den här artikeln och returnerade ett HTTP 500-fel.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "När ZIM-filen du tittar på skapades, övergick ${server}-servern till timeout när den renderade HTML-innehållet i artikeln och returnerade ett HTTP 504-fel.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "När ZIM-filen du tittar på skapades, överskred ${server}-serverns ActionParse API tidsgränsen vid bearbetning av den här artikeln och returnerade ett HTTP 504-fel.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett HTTP 503-fel när information om den här artikelns HTML-kod angavs.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett oväntat felaktigt revisions-ID-fel när information om den här artikelns HTML-kod angavs.",

@@ -63,47 +63,15 @@ const config = {
     cssResourcesCommon: ['style', 'mobile_main_page', 'footer'],
     jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
 
-    cssResources: ['content.parsoid', 'inserted_style'],
-    jsResources: ['../node_modules/details-element-polyfill/dist/details-element-polyfill'],
-
-    wikimediaMobileCssResources: ['wm_mobile_override_style'],
-    wikimediaMobileJsResources: ['wm_mobile_override_script'],
-
     downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
       css: [
-        [
-          'skins.minerva.base.reset',
-          'skins.minerva.content.styles',
-          'ext.cite.style',
-          'site.styles',
-          'mobile.app.pagestyles.android',
-          'mediawiki.page.gallery.styles',
-          'mediawiki.skinning.content.parsoid',
-        ].join('|'),
-      ],
-      js: [
-        'startup',
-        'jquery,mediawiki',
-        'mediawiki.base',
-        'mediawiki.util',
-        'site',
-        'mediawiki.page.ready',
-
-        // Gadget resources are not shared by Parsoid API https://phabricator.wikimedia.org/T161278
-        'jquery.cookie',
-        'mediawiki.cookie',
-        'mediawiki.storage',
-        'ext.gadget.VisibilityToggles',
-        'ext.gadget.defaultVisibilityToggles',
-      ],
-      css_simplified: [
         'site.styles', // always needed
         'noscript', // recommended until we solve https://github.com/openzim/mwoffliner/issues/2310
       ],
-      js_simplified: [
+      js: [
         // base JS scripts always needed / never returned on API calls
         'startup',
       ],
@@ -124,8 +92,6 @@ const config = {
        * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
-      pageWikimediaDesktop: './templates/pageWikimediaDesktop.html',
-      pageWikimediaMobile: './templates/pageWikimediaMobile.html',
       pageVectorLegacy: './templates/pageVectorLegacy.html',
       pageVector2022: './templates/pageVector2022.html',
       pageFallback: './templates/pageFallback.html',

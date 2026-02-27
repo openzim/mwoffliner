@@ -8,10 +8,6 @@ import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
-import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
-import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
-import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import RestApiURLDirector from './util/builders/url/rest-api.director.js'
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
@@ -116,32 +112,18 @@ class MediaWiki {
   #indexPhpPath: string
   #actionApiPath: string
   #modulePathOpt: string
-  #restApiPath: string
   #username: string
   #password: string
   #domain: string
 
-  public wikimediaDesktopUrlDirector: WikimediaDesktopURLDirector
-  public wikimediaMobileUrlDirector: WikimediaMobileURLDirector
-  public visualEditorUrlDirector: VisualEditorURLDirector
-  public restApiUrlDirector: RestApiURLDirector
   public actionParseUrlDirector: ActionParseURLDirector
 
-  public visualEditorApiUrl: URL
   public actionApiUrl: URL
-  public restApiUrl: URL
   public webUrl: URL
-  public wikimediaDesktopApiUrl: URL
-  public wikimediaMobileApiUrl: URL
 
   public modulePath: string // only for reading
-  public mobileModulePath: string
 
   #apiUrlDirector: ApiURLDirector
-  #hasWikimediaDesktopApi: boolean | null
-  #hasWikimediaMobileApi: boolean | null
-  #hasVisualEditorApi: boolean | null
-  #hasRestApi: boolean | null
   #hasActionParseApi: boolean | null
   #hasCoordinates: boolean | null
   #hasModuleApi: boolean | null
@@ -162,14 +144,7 @@ class MediaWiki {
     if (value) {
       this.#actionApiPath = value
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
-      this.setVisualEditorURL()
-    }
-  }
-
-  set restApiPath(value: string) {
-    if (value) {
-      this.#restApiPath = value
-      this.setRestApiURL()
+      this.#apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
     }
   }
 
@@ -197,12 +172,8 @@ class MediaWiki {
       this.urlDirector = new BaseURLDirector(this.baseUrl.href)
       this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
-      this.setWikimediaDesktopApiUrl()
-      this.setWikimediaMobileApiUrl()
-      this.setRestApiURL()
-      this.setVisualEditorURL()
+      this.#apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
       this.setModuleURL()
-      this.setMobileModuleUrl()
     }
   }
 
@@ -225,7 +196,6 @@ class MediaWiki {
     this.getCategories = false
 
     this.#actionApiPath = '/w/api.php'
-    this.#restApiPath = '/w/rest.php'
     this.#wikiPath = '/wiki/'
     this.#indexPhpPath = '/w/index.php'
     this.#modulePathOpt = '/w/load.php'
@@ -248,10 +218,6 @@ class MediaWiki {
       maxlag: config.defaults.maxlag,
     }
 
-    this.#hasWikimediaDesktopApi = null
-    this.#hasWikimediaMobileApi = null
-    this.#hasVisualEditorApi = null
-    this.#hasRestApi = null
     this.#hasActionParseApi = null
     this.#hasCoordinates = null
     this.#hasModuleApi = null
@@ -262,49 +228,9 @@ class MediaWiki {
     this.initializeMediaWikiDefaults()
   }
 
-  public async hasWikimediaDesktopApi(): Promise<boolean> {
-    if (this.#hasWikimediaDesktopApi === null) {
-      this.wikimediaDesktopUrlDirector = new WikimediaDesktopURLDirector(this.wikimediaDesktopApiUrl.href)
-      const checkUrl = this.wikimediaDesktopUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasWikimediaDesktopApi = await checkApiAvailability(checkUrl)
-      logger.log('Checked for WikimediaDesktopApi at', checkUrl, '-- result is: ', this.#hasWikimediaDesktopApi)
-    }
-    return this.#hasWikimediaDesktopApi
-  }
-
-  public async hasWikimediaMobileApi(): Promise<boolean> {
-    if (this.#hasWikimediaMobileApi === null) {
-      this.wikimediaMobileUrlDirector = new WikimediaMobileURLDirector(this.wikimediaMobileApiUrl.href)
-      const checkUrl = this.wikimediaMobileUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasWikimediaMobileApi = await checkApiAvailability(checkUrl)
-      logger.log('Checked for WikimediaMobileApi at', checkUrl, '-- result is: ', this.#hasWikimediaMobileApi)
-    }
-    return this.#hasWikimediaMobileApi
-  }
-
-  public async hasVisualEditorApi(): Promise<boolean> {
-    if (this.#hasVisualEditorApi === null) {
-      this.visualEditorUrlDirector = new VisualEditorURLDirector(this.visualEditorApiUrl.href)
-      const checkUrl = this.visualEditorUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasVisualEditorApi = await checkApiAvailability(checkUrl, this.visualEditorUrlDirector.validMimeTypes)
-      logger.log('Checked for VisualEditorApi at', checkUrl, '-- result is: ', this.#hasVisualEditorApi)
-    }
-    return this.#hasVisualEditorApi
-  }
-
-  public async hasRestApi(): Promise<boolean> {
-    if (this.#hasRestApi === null) {
-      this.restApiUrlDirector = new RestApiURLDirector(this.restApiUrl.href)
-      const checkUrl = this.restApiUrlDirector.buildArticleURL(this.apiCheckArticleId)
-      this.#hasRestApi = await checkApiAvailability(checkUrl)
-      logger.log('Checked for RestApi at', checkUrl, '-- result is: ', this.#hasRestApi)
-    }
-    return this.#hasRestApi
-  }
-
   public async hasActionParseApi(): Promise<boolean> {
     if (this.#hasActionParseApi === null) {
-      this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin, this.metaData.langVar)
+      this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin, this.metaData?.langVar)
       const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasActionParseApi = await checkApiAvailability(checkUrl)
       logger.log(`Checked for ActionParseApi at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
@@ -338,34 +264,13 @@ class MediaWiki {
       // startup JS module is supposed to be available on all Mediawikis
       const checkUrl = `${this.modulePath}lang=en&modules=startup&only=scripts`
       this.#hasModuleApi = await checkApiAvailability(checkUrl)
-      logger.log('Checked for Module API at', checkUrl, '-- result is: ', this.#hasRestApi)
+      logger.log('Checked for Module API at', checkUrl, '-- result is: ', this.#hasModuleApi)
     }
     return this.#hasModuleApi
   }
 
-  private setWikimediaDesktopApiUrl() {
-    this.wikimediaDesktopApiUrl = this.urlDirector.buildWikimediaDesktopApiUrl()
-  }
-
-  private setWikimediaMobileApiUrl() {
-    this.wikimediaMobileApiUrl = this.urlDirector.buildWikimediaMobileApiUrl()
-  }
-
-  private setRestApiURL() {
-    this.restApiUrl = this.urlDirector.buildRestApiUrl(this.#restApiPath)
-  }
-
-  private setVisualEditorURL() {
-    this.#apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
-    this.visualEditorApiUrl = this.#apiUrlDirector.buildVisualEditorURL()
-  }
-
   private setModuleURL() {
     this.modulePath = this.urlDirector.buildModuleURL(this.#modulePathOpt)
-  }
-
-  private setMobileModuleUrl() {
-    this.mobileModulePath = this.urlDirector.buildMobileModuleURL()
   }
 
   public async login() {
@@ -514,7 +419,7 @@ class MediaWiki {
     return defaultSkins[0]
   }
 
-  public async getSiteInfo({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwRestApiPath, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
+  public async getSiteInfo({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
@@ -580,7 +485,6 @@ class MediaWiki {
       logger.warn(`mwIndexPhpPath [${mwIndexPhpPath}] does not match the path [${generalEntries.script}] returned by the wiki.`)
     }
     this.indexPhpPath = mwIndexPhpPath || generalEntries.script
-    this.restApiPath = mwRestApiPath || generalEntries.scriptpath + '/rest.php'
     this.modulePathOpt = mwModulePath || generalEntries.scriptpath + '/load.php'
 
     const skins: SiteInfoSkin[] = body.query.skins.filter((skin) => !skin.unusable)
@@ -623,16 +527,13 @@ class MediaWiki {
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
       actionApiUrl: this.actionApiUrl.href,
-      restApiUrl: this.restApiUrl.href,
       modulePathOpt: this.#modulePathOpt,
       modulePath: this.modulePath,
-      mobileModulePath: this.mobileModulePath,
       webUrlPath: this.webUrl.pathname,
       wikiPath: this.#wikiPath,
       indexPhpPath: this.#indexPhpPath,
       baseUrl: this.baseUrl.href,
       actionApiPath: this.#actionApiPath,
-      restApiPath: this.#restApiPath,
       domain: this.#domain,
 
       textDir: textDir as TextDirection,

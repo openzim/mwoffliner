@@ -21,7 +21,7 @@ describe('saveArticles', () => {
   for (const renderer of RENDERERS_LIST) {
     test(`Article html processing using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
 
       const _articlesDetail = await Downloader.getArticleDetailsIds(['London'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
@@ -60,7 +60,7 @@ describe('saveArticles', () => {
 
     test(`Check nodet article for en.wikipedia.org using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org', format: 'nodet' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Canada'
       const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: '0' })
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -68,7 +68,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -83,7 +83,7 @@ describe('saveArticles', () => {
 
     test(`Load main page and check that it is without header using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Main_Page'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -91,14 +91,14 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
 
     test(`--customFlavour using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       class CustomFlavour implements CustomProcessor {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         public async shouldKeepArticle(articleId: string, doc: Document) {
@@ -162,7 +162,7 @@ describe('saveArticles', () => {
 
     test(`Removes inline JS using ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikipedia.org' }) // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Potato'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -170,7 +170,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 
       const articleDoc = domino.createDocument(result[0].html)
 
@@ -181,7 +181,7 @@ describe('saveArticles', () => {
 
     test(`Remove empty sections for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Western_Greenland'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -189,7 +189,7 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('#Get_around')).toBeTruthy()
       expect(articleDoc.querySelector('#Do')).toBeFalsy()
@@ -200,7 +200,7 @@ describe('saveArticles', () => {
     test(`Keep empty sections for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
       dump.opts.keepEmptySections = true
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const articleId = 'Western_Greenland'
       const articleUrl = Downloader.getArticleUrl(articleId)
       const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
@@ -208,44 +208,57 @@ describe('saveArticles', () => {
       const { articleDetailXId } = RedisStore
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
-      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.mainPageRenderer, articleUrl, dump, articleDetail)
+      const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
       const articleDoc = domino.createDocument(result[0].html)
       expect(articleDoc.querySelector('#Get_around')).toBeTruthy()
       expect(articleDoc.querySelector('#Do')).toBeTruthy()
       expect(articleDoc.querySelector('#Eat')).toBeTruthy()
       expect(articleDoc.querySelector('#Drink')).toBeTruthy()
     })
-  }
 
-  test('Load inline js from HTML', async () => {
-    await setupScrapeClasses() // en wikipedia
+    // to be added back in https://github.com/openzim/mwoffliner/pull/2483, once we retrieve JS Config Vars again
+    test.skip(`Load inline js from HTML for ${renderer} renderer`, async () => {
+      await setupScrapeClasses() // en wikipedia
 
-    const _moduleDependencies = await Downloader.getModuleDependencies('Potato')
+      await RenderingContext.createRenderers(renderer as renderName)
+      const articleId = 'Potato'
+      const articleUrl = Downloader.getArticleUrl(articleId)
+      const _articleDetailsRet = await Downloader.getArticleDetailsIds([articleId])
+      const articlesDetail = mwRetToArticleDetail(_articleDetailsRet)
+      const { articleDetailXId } = RedisStore
+      const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
+      articleDetailXId.setMany(articlesDetail)
+      const { moduleDependencies } = await RenderingContext.articlesRenderer.download({
+        articleId,
+        articleUrl,
+        articleDetail,
+      })
 
-    let RLCONF: any
-    let RLSTATE: any
-    let RLPAGEMODULES: any
+      let RLCONF: any
+      let RLSTATE: any
+      let RLPAGEMODULES: any
 
-    const document: any = { documentElement: { className: '' }, cookie: '' }
+      const document: any = { documentElement: { className: '' }, cookie: '' }
 
-    // Create a new function that sets the values
-    const setJsConfigVars = new Function(`
-        return function(RLCONF, RLSTATE, RLPAGEMODULES, document) {
-            ${_moduleDependencies.jsConfigVars}
-            return { RLCONF, RLSTATE, RLPAGEMODULES };
-        };
-    `)()
+      // Create a new function that sets the values
+      const setJsConfigVars = new Function(`
+          return function(RLCONF, RLSTATE, RLPAGEMODULES, document) {
+              ${moduleDependencies.jsConfigVars}
+              return { RLCONF, RLSTATE, RLPAGEMODULES };
+          };
+      `)()
 
-    // Execute the created function
-    const { RLCONF: updatedRLCONF } = setJsConfigVars(RLCONF, RLSTATE, RLPAGEMODULES, document)
+      // Execute the created function
+      const { RLCONF: updatedRLCONF } = setJsConfigVars(RLCONF, RLSTATE, RLPAGEMODULES, document)
 
-    expect(updatedRLCONF).toMatchObject({
-      wgPageName: 'Potato',
-      wgTitle: 'Potato',
-      wgPageContentLanguage: 'en',
-      wgPageContentModel: 'wikitext',
-      wgRelevantPageName: 'Potato',
-      wgRelevantArticleId: 23501,
+      expect(updatedRLCONF).toMatchObject({
+        wgPageName: 'Potato',
+        wgTitle: 'Potato',
+        wgPageContentLanguage: 'en',
+        wgPageContentModel: 'wikitext',
+        wgRelevantPageName: 'Potato',
+        wgRelevantArticleId: 23501,
+      })
     })
-  })
+  }
 })

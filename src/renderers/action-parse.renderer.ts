@@ -118,8 +118,8 @@ export class ActionParseRenderer extends Renderer {
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310
       jsConfigVars: '', // DownloaderClass.extractJsConfigVars(data.parse.headhtml),
-      jsDependenciesList: [], // config.output.mw.js_simplified.concat(jsDependenciesList),
-      styleDependenciesList: config.output.mw.css_simplified.concat(styleDependenciesList),
+      jsDependenciesList: [], // config.output.mw.js.concat(jsDependenciesList),
+      styleDependenciesList: config.output.mw.css.concat(styleDependenciesList),
     }
 
     const normalizedRedirects = data.parse.redirects.map((redirect) => {

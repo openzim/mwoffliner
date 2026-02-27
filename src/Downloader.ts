@@ -1,6 +1,6 @@
 import * as backoff from 'backoff'
 import { config } from './config.js'
-import { contains, normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
+import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import { Readable } from 'stream'
 import deepmerge from 'deepmerge'
 import * as domino from 'domino'
@@ -24,10 +24,7 @@ import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
 
-import WikimediaDesktopURLDirector from './util/builders/url/desktop.director.js'
-import WikimediaMobileURLDirector from './util/builders/url/mobile.director.js'
-import VisualEditorURLDirector from './util/builders/url/visual-editor.director.js'
-import RestApiURLDirector from './util/builders/url/rest-api.director.js'
+import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
@@ -103,7 +100,7 @@ export interface DownloadErrorContext {
   responseData: any
 }
 
-type URLDirector = WikimediaDesktopURLDirector | WikimediaMobileURLDirector | VisualEditorURLDirector | RestApiURLDirector
+type URLDirector = ActionParseURLDirector
 /**
  * Downloader is a class providing content retrieval functionalities for both Mediawiki and S3 remote instances.
  */
@@ -123,8 +120,6 @@ class Downloader {
   private _arrayBufferRequestOptions: AxiosRequestConfig
   private _jsonRequestOptions: AxiosRequestConfig
   private _streamRequestOptions: AxiosRequestConfig
-  public wikimediaMobileJsDependenciesList: string[] = []
-  public wikimediaMobileStyleDependenciesList: string[] = []
 
   private uaString: string
   private backoffOptions: BackoffOptions
@@ -134,7 +129,6 @@ class Downloader {
   private cookierJar: CookieJar
 
   private articleUrlDirector: URLDirector
-  private mainPageUrlDirector: URLDirector
   private insecure: boolean = false
 
   get speed() {
@@ -284,23 +278,34 @@ class Downloader {
 
     this.cssDependenceUrls = {}
 
-    this.wikimediaMobileJsDependenciesList = []
-    this.wikimediaMobileStyleDependenciesList = []
-
     this.articleUrlDirector = undefined
-    this.mainPageUrlDirector = undefined
   }
 
-  private getUrlDirector(renderer: object) {
+  /**
+   * Destroys HTTP agents to properly close all connections.
+   * This is required for tests to prevent "Jest environment has been torn down" errors.
+   * Safe to call multiple times (idempotent).
+   */
+  public async destroy(): Promise<void> {
+    try {
+      if (this._basicRequestOptions?.httpAgent && typeof this._basicRequestOptions.httpAgent.destroy === 'function') {
+        this._basicRequestOptions.httpAgent.destroy()
+      }
+    } catch {
+      // Ignore errors from destroying agents
+    }
+
+    try {
+      if (this._basicRequestOptions?.httpsAgent && typeof this._basicRequestOptions.httpsAgent.destroy === 'function') {
+        this._basicRequestOptions.httpsAgent.destroy()
+      }
+    } catch {
+      // Ignore errors from destroying agents
+    }
+  }
+
+  private getUrlDirector(renderer: object): URLDirector {
     switch (renderer.constructor.name) {
-      case 'WikimediaDesktopRenderer':
-        return MediaWiki.wikimediaDesktopUrlDirector
-      case 'VisualEditorRenderer':
-        return MediaWiki.visualEditorUrlDirector
-      case 'WikimediaMobileRenderer':
-        return MediaWiki.wikimediaMobileUrlDirector
-      case 'RestApiRenderer':
-        return MediaWiki.restApiUrlDirector
       case 'ActionParseRenderer':
         return MediaWiki.actionParseUrlDirector
       /* istanbul ignore next */
@@ -309,17 +314,12 @@ class Downloader {
     }
   }
 
-  public setUrlsDirectors(mainPageRenderer: Renderer, articlesRenderer: Renderer): void {
+  public setUrlsDirectors(articlesRenderer: Renderer): void {
     this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
-    this.mainPageUrlDirector = this.getUrlDirector(mainPageRenderer)
   }
 
   public getArticleUrl(articleId: string, articleUrlOpts: RendererArticleOpts = {}): string {
     return this.articleUrlDirector.buildArticleURL(articleId, articleUrlOpts)
-  }
-
-  public getMainPageUrl(articleId: string): string {
-    return this.mainPageUrlDirector.buildArticleURL(articleId)
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -832,68 +832,6 @@ class Downloader {
     call.failAfter(this.backoffOptions.failAfter)
     call.on('backoff', this.backoffOptions.backoffHandler)
     call.start()
-  }
-
-  public async getModuleDependencies(title: string) {
-    const genericJsModules = config.output.mw.js
-    const genericCssModules = config.output.mw.css
-
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
-
-    const articleApiUrl = apiUrlDirector.buildArticleApiURL(title)
-
-    const articleData = await this.getJSON<any>(articleApiUrl)
-
-    if (articleData.error) {
-      const errorMessage = `Unable to retrieve js/css dependencies for article '${title}': ${articleData.error.code}`
-      logger.error(errorMessage)
-
-      /* If article is missing (for example because it just has been deleted) or access is denied */
-      if (articleData.error.code === 'missingtitle' || articleData.error.code === 'permissiondenied') {
-        return { jsConfigVars: '', jsDependenciesList: [], styleDependenciesList: [] }
-      }
-
-      /* Something went wrong in modules retrieval at app level (no HTTP error) */
-      throw new Error(errorMessage)
-    }
-
-    const {
-      parse: { modules, modulescripts, modulestyles, headhtml },
-    } = articleData
-
-    const jsDependenciesList = genericJsModules.concat(modules, modulescripts).filter((a) => a)
-
-    const styleDependenciesList = []
-      .concat(modules, modulestyles, genericCssModules)
-      .filter((a) => a)
-      .filter((oneStyleDep) => !contains(config.filters.blackListCssModules, oneStyleDep))
-
-    logger.info(`Js dependencies of ${title} : ${jsDependenciesList}`)
-    logger.info(`Css dependencies of ${title} : ${styleDependenciesList}`)
-
-    const jsConfigVars = Downloader.extractJsConfigVars(headhtml)
-
-    // Download mobile page dependencies only once
-    if ((await MediaWiki.hasWikimediaMobileApi()) && this.wikimediaMobileJsDependenciesList.length === 0 && this.wikimediaMobileStyleDependenciesList.length === 0) {
-      try {
-        // TODO: An arbitrary title can be placed since all Wikimedia wikis have the same mobile offline resources
-        const mobileModulesData = await this.getJSON<any>(`${MediaWiki.mobileModulePath}Test`)
-        mobileModulesData.forEach((module: string) => {
-          if (module.includes('javascript')) {
-            this.wikimediaMobileJsDependenciesList.push(module)
-          } else if (module.includes('css')) {
-            this.wikimediaMobileStyleDependenciesList.push(module)
-          }
-        })
-      } catch (err) {
-        throw new Error(`Error getting mobile modules ${err.message}`)
-      }
-    }
-    return {
-      jsConfigVars,
-      jsDependenciesList: jsDependenciesList.concat(this.wikimediaMobileJsDependenciesList),
-      styleDependenciesList: styleDependenciesList.concat(this.wikimediaMobileStyleDependenciesList),
-    }
   }
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
