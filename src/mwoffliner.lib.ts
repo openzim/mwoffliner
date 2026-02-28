@@ -23,6 +23,7 @@ import {
   MAX_CPU_CORES,
   MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
   downloadAndSaveModule,
+  downloadAndSaveCustomCss,
   genCanonicalLink,
   genHeaderCSSLink,
   genHeaderScript,
@@ -54,6 +55,7 @@ import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.j
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import urlHelper from './util/url.helper.js'
+import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -101,6 +103,7 @@ async function execute(argv: any) {
     forceRender,
     forceSkin,
     langVariant,
+    customCss,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -112,6 +115,14 @@ async function execute(argv: any) {
   // TODO: Move it to sanitaze method
   if (articleList) articleList = String(articleList)
   if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
+
+  // Parse --customCss and populate Downloader so renderers can use the list
+  if (customCss) {
+    Downloader.customCssUrls = parseCustomCssUrls(String(customCss))
+    if (Downloader.customCssUrls.length > 0) {
+      logger.log(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
+    }
+  }
   const publisher = _publisher || config.defaults.publisher
 
   // TODO: Move it to sanitaze method
@@ -454,6 +465,15 @@ async function execute(argv: any) {
         )
       }),
     )
+
+    // Download and save custom CSS files
+    if (Downloader.customCssUrls.length > 0) {
+      logger.log(`Downloading ${Downloader.customCssUrls.length} custom CSS file(s)`)
+      for (const cssUrl of Downloader.customCssUrls) {
+        const filename = customCssUrlToFilename(cssUrl)
+        await downloadAndSaveCustomCss(zimCreator, cssUrl, filename)
+      }
+    }
 
     await downloadFiles(filesToDownloadXPath, zimCreator, dump)
 
