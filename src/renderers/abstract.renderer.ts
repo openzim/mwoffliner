@@ -15,7 +15,7 @@ import { processStylesheetContent } from '../util/dump.js'
 import { isMainPage, isSubpage } from '../util/articles.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
-export type renderName = 'VisualEditor' | 'WikimediaDesktop' | 'WikimediaMobile' | 'RestApi' | 'ActionParse'
+export type renderName = 'ActionParse'
 
 interface RendererBuilderOptionsBase {
   renderType: renderType

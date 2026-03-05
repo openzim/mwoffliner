@@ -6,7 +6,6 @@ import * as logger from '../Logger.js'
 class RenderingContext {
   private static instance: RenderingContext
 
-  public mainPageRenderer: Renderer
   public articlesRenderer: Renderer
 
   public static getInstance(): RenderingContext {
@@ -16,26 +15,19 @@ class RenderingContext {
     return RenderingContext.instance
   }
 
-  public async createRenderers(forceRender: renderName | null, hasWikimediaMobileApi: boolean) {
+  public async createRenderers(forceRender: renderName | null) {
     const rendererBuilder = new RendererBuilder()
 
     if (forceRender) {
-      // All articles and main page will use the same renderer if 'forceRender' is specified
-      const renderer = await rendererBuilder.createRenderer({
+      this.articlesRenderer = await rendererBuilder.createRenderer({
         renderType: 'specific',
         renderName: forceRender,
       })
-      this.mainPageRenderer = renderer
-      this.articlesRenderer = renderer
     } else {
-      this.mainPageRenderer = await rendererBuilder.createRenderer({ renderType: 'desktop' })
-      this.articlesRenderer = await rendererBuilder.createRenderer({
-        renderType: hasWikimediaMobileApi ? 'mobile' : 'auto',
-      })
+      this.articlesRenderer = await rendererBuilder.createRenderer({ renderType: 'auto' })
     }
-    logger.log(`Using ${this.mainPageRenderer.constructor.name} for main page renderer`)
     logger.log(`Using ${this.articlesRenderer.constructor.name} for articles renderer`)
-    Downloader.setUrlsDirectors(this.mainPageRenderer, this.articlesRenderer)
+    Downloader.setUrlsDirectors(this.articlesRenderer)
   }
 }
 

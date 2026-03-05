@@ -15,8 +15,6 @@
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "此条目在待检索条目的列表编译之后、获取此条目以构建您浏览的 ZIM 之前被删除。",
 	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "在${server}服务器上访问此条目受到限制。其所需要的特殊权限在ZIM抓取过程中无法获得。",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "当您正在浏览的ZIM文件被创建时，${server}服务器未能及时提供此文章HTML的详细信息。",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器无法渲染此条目的 HTML 内容，并返回 HTTP 500 错误。",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，${server} 服务器在渲染此条目 HTML 内容时超时，并返回 HTTP 504 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在处理此条目时超时，并返回 HTTP 504 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供此关于此条目 HTML 的详细信息时引发 HTTP 503 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "在构建您浏览的 ZIM 时，${server} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时，引发意外的修订版本 ID 不合法的错误。",

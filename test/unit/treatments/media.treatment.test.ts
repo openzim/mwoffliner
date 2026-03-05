@@ -42,7 +42,7 @@ describe('MediaTreatment', () => {
       const htmlDoc = domino.createDocument(htmlStr.data)
       const contentRes = await testableRenderer.testTreatSubtitle(htmlDoc.querySelector('track'), 'Mechanical energy')
       // Converted wikicode to HTML for one subtitle
-      testHtmlRewritingE2e(wikicode, htmlStr.data)
+      await testHtmlRewritingE2e(wikicode, htmlStr.data)
       // Video subtitle rewriting matches
       expect(contentRes).toEqual('https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3APhysicsworks.ogv&lang=en&trackformat=vtt&origin=*')
     })
@@ -59,7 +59,7 @@ describe('MediaTreatment', () => {
       const htmlDoc = domino.createDocument(htmlStr.data)
       const contentRes = await testableRenderer.testTreatVideo(dump, {}, 'User:Charliechlorine/sandbox', htmlDoc.querySelector('video'))
       // Converted wikicode to HTML for multiple subtitle
-      testHtmlRewritingE2e(wikicode, htmlStr.data)
+      await testHtmlRewritingE2e(wikicode, htmlStr.data)
       // Video multiple subtitles rewriting matches
       expect(contentRes.subtitles).toEqual([
         'https://commons.wikimedia.org/w/api.php?action=timedtext&title=File%3AVideoonwikipedia.ogv&lang=en&trackformat=vtt&origin=*',

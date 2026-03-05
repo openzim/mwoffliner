@@ -11,8 +11,6 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "El artículo solicitado ${articleTitle}' no esta disponible dentro de este ZIM, no ha sido posible obtenerlo de ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Este artículo fue eliminado después de compilar la lista de artículos para obtener, pero antes de que lo obtuviéramos para compilar el ZIM que está navegando.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Cuando se creó el ZIM que está buscando, el servidor ${server} no pudo proporcionar detalles sobre este artículo HTML en un tiempo.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_500_ERROR": "Cuando se creó el ZIM que está buscando, el servidor ${server} falló al renderizar el contenido HTML del artículo y devolvió un error HTTP 500.",
-	"DOWNLOAD_ERRORS_LINE1_WIKIMEDIA_DESKTOP_API_HTML_504_UPSTREAM_TIMEOUT": "Cuando se creó el ZIM que está bucando, se agotó el tiempo de espera del servidor ${server} mientras representaba el contenido HTML de este artículo y devolvió un error HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Cuando se creó el ZIM que está buscando, la API de ActionParse del servidor ${server} agotó el tiempo de espera mientras procesaba este artículo y devolvió un error HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Cuando se creó el ZIM que está buscando, la API ActionParse del servidor ${server} generó un error HTTP 503 mientras proporcionaba detalles sobre este artículo HTML.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Cuando se creó el ZIM que está buscando, la API ActionParse del servidor ${server} generó un error inesperado revisión de ID incorrecta al proporcionar detalles sobre este artículo HTML.",
