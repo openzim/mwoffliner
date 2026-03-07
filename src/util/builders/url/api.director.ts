@@ -58,11 +58,4 @@ export default class ApiURLDirector {
       .setQueryParams({ action: 'query', list: 'logevents', letype: letype, letitle: articleId, format: 'json', maxlag: config.defaults.maxlag })
       .build()
   }
-
-  buildArticleApiURL(articleId: string) {
-    return urlBuilder
-      .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'parse', format: 'json', prop: 'modules|jsconfigvars|headhtml', formatversion: '2', page: articleId, maxlag: config.defaults.maxlag })
-      .build()
-  }
 }

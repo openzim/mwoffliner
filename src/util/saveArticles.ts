@@ -7,7 +7,6 @@ import pmap from 'p-map'
 import * as domino from 'domino'
 import { Dump } from '../Dump.js'
 import Timer from './Timer.js'
-import { jsPath } from './index.js'
 import { config } from '../config.js'
 import { getSizeFromUrl, parseRetryAfterHeader } from './misc.js'
 import { FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK, FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
@@ -360,7 +359,6 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
   const staticFilesList = new Set<string>()
-  let jsConfigVars = ''
   let prevPercentProgress: string
   const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
@@ -437,8 +435,6 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
               staticFilesList.add(file)
             }
 
-            jsConfigVars = moduleDependencies.jsConfigVars || ''
-
             /*
              * downloader.getArticle is network heavy while parsing and saving is I/O.
              * To parse and download simultaniously, we don't await on save, but instead
@@ -511,11 +507,6 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   })
 
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
-
-  if (jsConfigVars) {
-    const jsConfigVarArticle = new StringItem(jsPath('jsConfigVars', config.output.dirs.mediawiki), 'application/javascript', null, { FRONT_ARTICLE: 0 }, jsConfigVars)
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(jsConfigVarArticle))
-  }
 
   return {
     staticFilesList,

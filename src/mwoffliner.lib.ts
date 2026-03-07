@@ -23,6 +23,8 @@ import {
   MAX_CPU_CORES,
   MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
   downloadAndSaveModule,
+  downloadAndSaveStartupModule,
+  getModuleDependencies,
   genCanonicalLink,
   genHeaderCSSLink,
   genHeaderScript,
@@ -94,6 +96,8 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     addNamespaces: _addNamespaces,
+    javaScript: _javaScript,
+    addModules: _addModules,
     customZimFavicon,
     optimisationCacheUrl,
     customFlavour,
@@ -162,6 +166,10 @@ async function execute(argv: any) {
   MediaWiki.password = mwPassword
   MediaWiki.username = mwUsername
 
+  const javaScript = _javaScript || 'trusted'
+  const addModules = _addModules ? String(_addModules).split(',') : []
+  const trustedJs = javaScript === 'none' ? null : javaScript === 'trusted' ? config.output.mw.js_trusted.concat(addModules) : []
+
   /* Download helpers; TODO: Merge with something else / expand this. */
   Downloader.init = {
     uaString: `${config.userAgent} (${adminEmail})`,
@@ -170,6 +178,7 @@ async function execute(argv: any) {
     optimisationCacheUrl,
     s3,
     webp,
+    trustedJs,
     insecure: argv.insecure,
   }
 
@@ -426,11 +435,47 @@ async function execute(argv: any) {
     const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
     logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
-    logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
-    logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
-
     logger.info('Copying Static Resource Files')
     await saveStaticFiles(staticFilesList, zimCreator)
+
+    if (javaScript === 'none') {
+      jsModuleDependencies.clear()
+    } else {
+      // Get list of all possible modules from startup
+      const allModules = await downloadAndSaveStartupModule(zimCreator)
+      addModules.forEach((oneModule) => {
+        jsModuleDependencies.add(oneModule)
+      })
+      // Include known dynamic dependencies
+      const dynamicJsDeps = config.output.mw.js_dynamic_dependencies
+      Object.keys(dynamicJsDeps).forEach((oneDep: keyof typeof dynamicJsDeps) => {
+        if (jsModuleDependencies.has(oneDep)) {
+          dynamicJsDeps[oneDep].forEach((extraDep) => {
+            jsModuleDependencies.add(extraDep)
+          })
+        }
+      })
+      // Include all dependencies of the dependencies
+      jsModuleDependencies.forEach((oneDep) => {
+        const oneModule = allModules.find((oneModule) => oneModule[0] === oneDep)
+        if (!oneModule) {
+          jsModuleDependencies.delete(oneDep)
+          return logger.warn(`Unknown JS module [${oneDep}] removed`)
+        }
+        getModuleDependencies(oneModule, allModules).forEach((extraDep) => {
+          jsModuleDependencies.add(extraDep)
+        })
+      })
+      // Don't store JS for CSS modules
+      cssModuleDependencies.forEach((oneModule) => {
+        if (!addModules.includes(oneModule)) {
+          jsModuleDependencies.delete(oneModule)
+        }
+      })
+    }
+
+    logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
+    logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
 
     const allDependenciesWithType = [
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },
@@ -443,6 +488,9 @@ async function execute(argv: any) {
         return pmap(
           moduleList,
           (oneModule) => {
+            if (oneModule.startsWith('user')) {
+              return
+            }
             return downloadAndSaveModule(zimCreator, oneModule, type as any)
           },
           { concurrency: Downloader.speed },

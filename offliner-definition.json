@@ -270,6 +270,23 @@
       "title": "Language Variant",
       "description": "Use a specific language variant, only for wikis supporting language conversion",
       "required": false
+    },
+    "javaScript": {
+      "type": "string-enum",
+      "title": "JavaScript",
+      "description": "Amount of JavaScript being allowed in pages (default: trusted)",
+      "required": false,
+      "choices": [
+        { "title": "NONE", "value": "none" },
+        { "title": "TRUSTED", "value": "trusted" },
+        { "title": "ALL", "value": "all" }
+      ]
+    },
+    "addModules": {
+      "type": "string",
+      "title": "Additional modules",
+      "description": "Add additional ResourceLoader modules for dynamic loading (comma separated list)",
+      "required": false
     }
   }
 }

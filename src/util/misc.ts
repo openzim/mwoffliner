@@ -379,6 +379,25 @@ export function sanitizeString(str: string) {
   return str.replace(/[&<>"'*=//]/g, ' ')
 }
 
+const unsafeJsCharMap = {
+  '<': '\\u003C',
+  '>': '\\u003E',
+  '&': '\\u0026',
+  '\\': '\\\\',
+  '\b': '\\b',
+  '\f': '\\f',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
+  '\0': '\\0',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+}
+/** Escaped JSON.stringify for usage in inline scripts */
+export function jsonStringify(data: any) {
+  return JSON.stringify(data).replace(/[<>&\\\b\f\n\r\t\0\u2028\u2029]/g, (char) => unsafeJsCharMap[char] || char)
+}
+
 // We will need the encoded URL on article load so that we can set the hrefs of anchor tag correctly,
 // but we must not encode the '/' character or else relative links may fail
 export function encodeArticleIdForZimHtmlUrl(articleId: string) {
