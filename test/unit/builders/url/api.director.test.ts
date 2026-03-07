@@ -21,14 +21,6 @@ describe('ApiURLDirector', () => {
     })
   })
 
-  describe('buildArticleApiURL', () => {
-    it('should return a string URL with predefined query params and provided page for retrieving article', () => {
-      const url = apiUrlDirector.buildArticleApiURL('article-123')
-
-      expect(url).toBe('https://en.wikipedia.org/w/api.php?action=parse&format=json&prop=modules%7Cjsconfigvars%7Cheadhtml&formatversion=2&page=article-123&maxlag=5')
-    })
-  })
-
   describe('buildSiteInfoURL', () => {
     it('should return a string URL with predefined query params for retrieving site info', () => {
       const url = apiUrlDirector.buildSiteInfoURL()
