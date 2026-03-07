@@ -821,7 +821,7 @@ export abstract class Renderer {
       }),
       strings: dump.strings,
     })
-    htmlTemplateDoc.getElementById('mw-content-text').appendChild(div)
+    mwContentText.appendChild(div)
     this.addNoIndexCommentToElement(div)
 
     /* Geo-coordinates */
