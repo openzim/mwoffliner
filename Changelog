@@ -1,5 +1,6 @@
 Unreleased:
 * CHANGED: Keep only ActionParse renderer (@benoit74 #2210)
+* NEW: Add support for category pages without pagination (@Markus-Rost #2245)
 
 1.17.5:
 * NEW: Add validation for internationalization (i18n) files (@ShreyashSri #2563)
