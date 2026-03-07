@@ -10,7 +10,7 @@ import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
 import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&useskin=vector-2022&redirects=1&formatversion=2'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle|categorieshtml&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&useskin=vector-2022&redirects=1&formatversion=2'
 export interface ActionParseResult {
   parse: {
     title: string
@@ -179,7 +179,7 @@ export class ActionParseRenderer extends Renderer {
     const htmlCssClass = extractHtmlCssClass(data.parse.headhtml)
 
     return {
-      data: data.parse.text,
+      data: data.parse.text + data.parse.categorieshtml,
       moduleDependencies,
       redirects: normalizedRedirects,
       displayTitle: data.parse.displaytitle,
