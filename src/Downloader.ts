@@ -354,14 +354,11 @@ class Downloader {
 
       Downloader.handleMWWarningsAndErrors(resp)
 
-      let processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
+      const processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
       if (resp.continue) {
         continuation = resp.continue
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (MediaWiki.getCategories) {
-          processedResponse = await this.setArticleSubCategories(processedResponse)
-        }
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
       }
@@ -405,7 +402,7 @@ class Downloader {
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
 
-      let processedResponse = normalizeMwResponse(resp.query)
+      const processedResponse = normalizeMwResponse(resp.query)
 
       gCont = resp['query-continue']?.allpages?.gapcontinue ?? gCont
 
@@ -416,10 +413,6 @@ class Downloader {
 
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
       } else {
-        if (MediaWiki.getCategories) {
-          processedResponse = await this.setArticleSubCategories(processedResponse)
-        }
-
         finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
         break
       }
@@ -447,7 +440,16 @@ class Downloader {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
-      const { data, moduleDependencies, redirects, displayTitle, articleSubtitle, bodyCssClass, htmlCssClass } = await articleRenderer.download({
+      const {
+        data,
+        moduleDependencies,
+        redirects,
+        displayTitle,
+        articleSubtitle,
+        categoriesHtml = '',
+        bodyCssClass,
+        htmlCssClass,
+      } = await articleRenderer.download({
         articleId,
         articleUrl,
         articleDetail,
@@ -465,6 +467,13 @@ class Downloader {
         }
       }
 
+      const categoryMembers = articleDetail.categoryinfo && articleDetail.categoryinfo.size && (await this.getCategoryMembers(articleId))
+      if (categoryMembers && MediaWiki.getCategories) {
+        articleDetail.categoryinfo.subcats = categoryMembers.subcats.length
+        articleDetail.categoryinfo.pages = categoryMembers.pages.length
+        articleDetail.categoryinfo.files = categoryMembers.files.length
+      }
+
       return await articleRenderer.render({
         data,
         moduleDependencies,
@@ -473,6 +482,8 @@ class Downloader {
         articleDetail,
         displayTitle,
         articleSubtitle,
+        categoryMembers,
+        categoriesHtml,
         bodyCssClass,
         htmlCssClass,
         dump,
@@ -632,18 +643,6 @@ class Downloader {
       formatversion: '2',
       redirects: followRedirects ? true : undefined,
     }
-  }
-
-  private async setArticleSubCategories(articleDetails: QueryMwRet) {
-    logger.info('Getting subCategories')
-    for (const [articleId, articleDetail] of Object.entries(articleDetails)) {
-      const isCategoryArticle = articleDetail.ns === 14
-      if (isCategoryArticle) {
-        const categoryMembers = await this.getSubCategories(articleId)
-        ;(articleDetails[articleId] as any).subCategories = categoryMembers.slice()
-      }
-    }
-    return articleDetails
   }
 
   private getJSONCb = <T>(url: string, kind: DonwloadKind, handler: (...args: any[]) => any): void => {
@@ -810,17 +809,29 @@ class Downloader {
     handler(err)
   }
 
-  private async getSubCategories(articleId: string, continueStr = ''): Promise<Array<{ pageid: number; ns: number; title: string }>> {
+  private async getCategoryMembers(articleId: string, continueStr = ''): Promise<GroupedCategoryMembers> {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
-    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildSubCategoriesURL(articleId, continueStr))
-    const items = query.categorymembers.filter((a: any) => a && a.title)
+    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(articleId, continueStr))
+    const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
+      const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':')[1]) || a.title)
+      a.sortkeyprefix = [...sortkey][0]
+      return a && a.title
+    })
+    const articlesMirrored = MediaWiki.getCategories ? await RedisStore.articleDetailXId.existsMany(items.map((a) => a.title)) : null
+    const subcats = items.filter((a) => a.type === 'subcat' && (articlesMirrored ? articlesMirrored[a.title] : true))
+    const pages = items.filter((a) => a.type === 'page' && (articlesMirrored ? articlesMirrored[a.title] : true))
+    const files = items.filter((a) => a.type === 'file' && (articlesMirrored ? articlesMirrored[a.title] : true))
 
     if (cont && cont.cmcontinue) {
-      const nextItems = await this.getSubCategories(articleId, cont.cmcontinue)
-      return items.concat(nextItems)
+      const nextItems = await this.getCategoryMembers(articleId, cont.cmcontinue)
+      return {
+        subcats: subcats.concat(nextItems.subcats),
+        pages: pages.concat(nextItems.pages),
+        files: files.concat(nextItems.files),
+      }
     } else {
-      return items
+      return { subcats, pages, files }
     }
   }
 
