@@ -339,7 +339,7 @@ export abstract class Renderer {
   private treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
 
-    if (!this.shouldKeepNode(dump, imageNode, image)) {
+    if (!this.shouldKeepNode(imageNode, image)) {
       DOMUtils.deleteNode(imageNode)
       return
     }
@@ -376,8 +376,13 @@ export abstract class Renderer {
   private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ imageDependencies: string[] }> {
     const imageDependencies: string[] = []
 
-    if (!this.shouldKeepImage(dump, img)) {
+    if (!this.shouldKeepImage(img)) {
       DOMUtils.deleteNode(img)
+      return { imageDependencies }
+    }
+
+    if (dump.nopic && !this.isMathFallbackImage(img)) {
+      this.convertImageToPlaceholder(img)
       return { imageDependencies }
     }
 
@@ -413,14 +418,113 @@ export abstract class Renderer {
     return { imageDependencies }
   }
 
-  private shouldKeepImage(dump: Dump, img: DominoElement) {
+  private convertImageToPlaceholder(img: DominoElement) {
+    const width = this.getImageDimension(img, 'width')
+    const height = this.getImageDimension(img, 'height')
+    const meaningfulAlt = this.getMeaningfulAltText(img)
+    const svgPayload = this.getPlaceholderSvgPayload(width, height, meaningfulAlt, this.shouldRenderVisibleAlt(width, height))
+
+    if (!img.getAttribute('width') && width) {
+      img.setAttribute('width', `${width}`)
+    }
+    if (!img.getAttribute('height') && height) {
+      img.setAttribute('height', `${height}`)
+    }
+
+    img.setAttribute('src', `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgPayload)}`)
+    img.removeAttribute('resource')
+    img.removeAttribute('srcset')
+    img.setAttribute('loading', 'lazy')
+  }
+
+  private getImageDimension(img: DominoElement, attrName: 'width' | 'height'): number | null {
+    const attrValue = Number(img.getAttribute(attrName))
+    if (Number.isFinite(attrValue) && attrValue > 0) {
+      return attrValue
+    }
+
+    const styleValue = this.getImageDimensionFromStyle(img, attrName)
+    if (styleValue) {
+      return styleValue
+    }
+
+    const dataAttrName = attrName === 'width' ? 'data-file-width' : 'data-file-height'
+    const dataAttrValue = Number(img.getAttribute(dataAttrName))
+    if (Number.isFinite(dataAttrValue) && dataAttrValue > 0) {
+      return dataAttrValue
+    }
+
+    return null
+  }
+
+  private getImageDimensionFromStyle(img: DominoElement, attrName: 'width' | 'height'): number | null {
+    const style = img.getAttribute('style')
+    if (!style) {
+      return null
+    }
+
+    const regex = new RegExp(`(?:^|;)\\s*${attrName}\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)\\s*(?:px)?\\s*(?:;|$)`, 'i')
+    const match = style.match(regex)
+    if (!match) {
+      return null
+    }
+
+    const value = Math.round(Number(match[1]))
+    return Number.isFinite(value) && value > 0 ? value : null
+  }
+
+  private shouldRenderVisibleAlt(width: number | null, height: number | null) {
+    return !!width && !!height && width >= 48 && height >= 24
+  }
+
+  private getPlaceholderSvgPayload(width: number | null, height: number | null, meaningfulAlt: string | null, shouldRenderVisibleAlt: boolean) {
+    const safeWidth = width || 1
+    const safeHeight = height || 1
+    const title = meaningfulAlt ? `<title>${this.escapeXml(meaningfulAlt)}</title>` : ''
+    const defs = shouldRenderVisibleAlt ? '<defs><clipPath id="alt-text-clip"><rect x="0" y="0" width="100%" height="100%" /></clipPath></defs>' : ''
+    let text = ''
+
+    if (meaningfulAlt && shouldRenderVisibleAlt) {
+      const fontSize = Math.max(10, Math.min(16, Math.floor(safeHeight / 3)))
+      text =
+        `<g clip-path="url(#alt-text-clip)">` +
+        `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#54595d" font-size="${fontSize}" font-family="sans-serif">${this.escapeXml(meaningfulAlt)}</text>` +
+        '</g>'
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${safeWidth}" height="${safeHeight}" viewBox="0 0 ${safeWidth} ${safeHeight}" preserveAspectRatio="none">${title}${defs}<rect width="100%" height="100%" fill="transparent"/>${text}</svg>`
+  }
+
+  private getMeaningfulAltText(img: DominoElement) {
+    const alt = img.getAttribute('alt')
+    if (!alt) {
+      return null
+    }
+    const compactAlt = alt.replace(/\u00a0/g, ' ').trim()
+    return compactAlt.length > 0 ? compactAlt : null
+  }
+
+  private escapeXml(input: string) {
+    return input.replace(/[<>&"']/g, (char) => {
+      const entities: KVS<string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;',
+        "'": '&apos;',
+      }
+      return entities[char]
+    })
+  }
+
+  private isMathFallbackImage(img: DominoElement) {
     const imageNodeClass = img.getAttribute('class') || ''
+    return imageNodeClass.includes('mwe-math-fallback-image-inline') || img.getAttribute('typeof') === 'mw:Extension/math'
+  }
+
+  private shouldKeepImage(img: DominoElement) {
     const src = img.getAttribute('src')
-    return (
-      (!dump.nopic || imageNodeClass.includes('mwe-math-fallback-image-inline') || img.getAttribute('typeof') === 'mw:Extension/math') &&
-      src &&
-      !src.includes('./Special:FilePath/')
-    )
+    return !!src && !src.includes('./Special:FilePath/')
   }
 
   protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
@@ -460,8 +564,8 @@ export abstract class Renderer {
     return image && image.parentNode && image.parentNode.tagName === 'A'
   }
 
-  private shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
-    return !dump.nopic && imageNode && image
+  private shouldKeepNode(imageNode: DominoElement, image: DominoElement) {
+    return !!(imageNode && image)
   }
 
   private makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
