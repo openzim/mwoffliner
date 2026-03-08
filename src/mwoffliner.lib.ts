@@ -229,6 +229,22 @@ async function execute(argv: any) {
     }
   }
 
+  let defaultLongDescription = ''
+  if (!customZimLongDescription && mainPage) {
+    const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
+    try {
+      const { content } = await Downloader.downloadContent(mainPageUrl, 'data')
+      const htmlStr = typeof content === 'string' ? content : content.toString()
+      const doc = domino.createDocument(htmlStr)
+      const metaDesc = doc.querySelector('meta[name="description"]')
+      if (metaDesc) {
+        defaultLongDescription = metaDesc.getAttribute('content') || ''
+      }
+    } catch (err: any) {
+      logger.warn(`Failed to fetch main page to extract description: ${err.message}`)
+    }
+  }
+
   MediaWiki.apiCheckArticleId = mwMetaData.mainPage
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasActionParseApi()
@@ -387,7 +403,7 @@ async function execute(argv: any) {
       Flavour: dump.computeFlavour(),
       Scraper: `mwoffliner ${packageJSON.version}`,
       Source: MediaWiki.webUrl.hostname,
-      ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
+      ...(dump.opts.customZimLongDescription || defaultLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription || defaultLongDescription}` } : {}),
     }
     validateMetadata(metadata)
 
