@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: In nopic mode, fixed layout issues by preserving image layout using SVG placeholders (@kunalsiyag #1004)
 * NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
 * CHANGED: Keep only ActionParse renderer (@benoit74 #2210)
 
