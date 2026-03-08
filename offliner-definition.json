@@ -134,6 +134,12 @@
       "title": "Add Namespaces",
       "description": "Include addional namespaces (comma separated numbers)"
     },
+    "addContentModels": {
+      "type": "string",
+      "required": false,
+      "title": "Add Content Models",
+      "description": "Include additional content models besides wikitext (comma separated). By default, only wikitext articles are scraped."
+    },
     "getCategories": {
       "type": "boolean",
       "required": false,
