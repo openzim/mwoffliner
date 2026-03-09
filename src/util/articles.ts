@@ -40,7 +40,9 @@ export function getNamespaceName(namespace: number) {
  * Extract the JS config variables from its headHtml, typically returned by MW API call when fetching article content
  */
 export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any> = {}): KVS<any> {
-  const jsConfigVars = JSON.parse(headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/)[1])
+  const match = headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/) || headHtml.match(/{mw\.config\.set\(({".*?})\);mw\.loader\.state\(/)
+  if (!match) return Object.assign({}, extraJsConfigVars, { wgBreakFrames: false })
+  const jsConfigVars = JSON.parse(match[1])
   delete jsConfigVars.wgRequestId
   delete jsConfigVars.wgTempUserName
   delete jsConfigVars.wgUserId
@@ -48,6 +50,7 @@ export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any
   delete jsConfigVars.wgUserEditCount
   delete jsConfigVars.wgUserRegistration
   delete jsConfigVars.wgUserFirstRegistration
+  if (jsConfigVars.wgAction === 'nosuchaction') jsConfigVars.wgAction = 'view'
   return Object.assign(jsConfigVars, extraJsConfigVars, {
     wgBreakFrames: false,
     wgUserName: null,
@@ -63,9 +66,14 @@ export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any
 export function extractBodyCssClass(headHtml: string): string {
   const document = domino.createDocument(headHtml)
   let cssClass = document.body.className
-  // drop some known classes which do not makes sense in a ZIM
-  for (const blacklistedClass of ['mw-editable']) {
-    cssClass = cssClass.replace(blacklistedClass, '')
+  // replace some known classes which do not makes sense in a ZIM
+  for (const [oldClass, newClass] of [
+    // fix action class from API output in older MW versions
+    ['action-nosuchaction', 'action-view'],
+    // drop some known classes which do not makes sense in a ZIM
+    ['mw-editable', ''],
+  ]) {
+    cssClass = cssClass.replace(oldClass, newClass)
   }
   // drop repetitions of two spaces
   return cssClass
