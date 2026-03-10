@@ -95,10 +95,15 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
       new Map([
         // Load modules one at a time
         [/,maxQueryLength:\d+,/, ',maxQueryLength:0,'],
+        [/,"wgResourceLoaderMaxQueryLength":\d+,/, ',"wgResourceLoaderMaxQueryLength":0,'],
         // Load modules from the ZIM
         [
-          /addScript\(sourceLoadScript\+'\?'\+makeQueryString\(query\),null,packed\.list\);/,
-          'addScript(RLCONF.zimRelativeFilePath+"' + jsPath('"+query.modules+"', config.output.dirs.mediawiki) + '",null,packed.list);',
+          /addScript\(sourceLoadScript\+'\?'\+makeQueryString\(query\)(,null,packed\.list)?\);/,
+          'addScript(RLCONF.zimRelativeFilePath+"' + jsPath('"+query.modules+"', config.output.dirs.mediawiki) + '"$1);',
+        ],
+        [
+          /addScript\(sourceLoadScript\+'\?'\+\$\.param\(request\)\);/,
+          'addScript(RLCONF.zimRelativeFilePath+"' + jsPath('"+request.modules+"', config.output.dirs.mediawiki) + '");',
         ],
         // Load modules from local storage with source like from the ZIM
         [
@@ -108,6 +113,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
         // Avoid loading modules from other ZIM through local storage
         // https://github.com/kiwix/overview/issues/127
         [/,(key:"MediaWikiModuleStore:[^"]+?",vary:"[^"]+?)",/, `,$1:${Date.now()}",`],
+        [/,"wgResourceLoaderStorageVersion":"/, `,"wgResourceLoaderStorageVersion":"${Date.now()}:`],
         // Never load the source map in dev tools
         [/\/\/# sourceMappingURL=/, '// sourceMappingURL='],
       ]),
@@ -132,6 +138,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
   if (type === 'js') {
     switch (module) {
       case 'startup':
+      case 'mediawiki':
         text = hackStartUpModule(text)
         break
       case 'mediawiki.base':
@@ -204,7 +211,7 @@ export async function downloadAndSaveStartupModule(zimCreator: Creator): Promise
     const mimetype = 'text/javascript'
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
     logger.info(`Saved module [${module}] at ${modulePath}`)
-    return JSON.parse(text.match(/;mw\.loader\.register\((\[\[.*?\]\])\);\s?mw\./)[1])
+    return JSON.parse(text.match(/;mw\.loader\.register\((\[\[.*?\]\])\);+\s?mw\./s)[1])
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
     throw e
