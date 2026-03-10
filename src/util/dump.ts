@@ -1,9 +1,8 @@
 import { fileURLToPath } from 'url'
-import * as pathParser from 'path'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import RedisStore from '../RedisStore.js'
-import { getFullUrl, jsPath, cssPath, getRelativeFilePath } from './index.js'
+import { getFullUrl, jsPath, cssPath, getRelativeFilePath, getMediaBase } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
@@ -33,43 +32,22 @@ export function processStylesheetContent(cssUrl: string, linkMedia: string, body
   let match: any
   // tslint:disable-next-line:no-conditional-assignment
   while ((match = cssUrlRegexp.exec(body))) {
-    let url = match[1]
+    const url = match[1]
 
     /* Avoid 'data', so no URL dependency */
     if (url && !url.match('^data')) {
-      const filePathname = new URL(url, cssUrl).pathname
-      if (filePathname) {
-        const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
+      const fullurl = getFullUrl(url, cssUrl)
+      const filepath = getMediaBase(fullurl, true)
 
-        /* Rewrite the CSS */
-        const relativePath = articleId
-          ? getRelativeFilePath(articleId, `${config.output.dirs.mediawiki}/${filename}`)
-          : isJs
-            ? `__RELATIVE_FILE_PATH__${config.output.dirs.mediawiki}/${filename}`
-            : filename
-        rewrittenCss = rewrittenCss.replace(url, relativePath)
+      /* Rewrite the CSS */
+      const relativePath = articleId ? getRelativeFilePath(articleId, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
+      rewrittenCss = rewrittenCss.replace(url, relativePath.replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29'))
 
-        /* Need a rewrite if url doesn't include protocol */
-        url = getFullUrl(url, cssUrl)
-        url = url.indexOf('%') < 0 ? encodeURI(url) : url
-
-        let decodedFilename = filename
-        if (filename.indexOf('%') >= 0) {
-          try {
-            decodedFilename = decodeURIComponent(filename)
-          } catch {
-            decodedFilename = filename
-          }
-        }
-
-        /* Download CSS dependency, but avoid duplicate calls */
-        // eslint-disable-next-line no-prototype-builtins
-        if (!Downloader.cssDependenceUrls.hasOwnProperty(url) && decodedFilename) {
-          Downloader.cssDependenceUrls[url] = true
-          filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + decodedFilename, { url: urlHelper.serializeUrl(url), kind: 'media' })
-        }
-      } else {
-        logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
+      /* Download CSS dependency, but avoid duplicate calls */
+      // eslint-disable-next-line no-prototype-builtins
+      if (!Downloader.cssDependenceUrls.hasOwnProperty(fullurl) && filepath) {
+        Downloader.cssDependenceUrls[fullurl] = true
+        filesToDownloadXPath.set(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
       }
     }
   }

@@ -246,7 +246,7 @@ describe('Utils', () => {
         'https://maps.wikimedia.org/img/osm-intl,9,52.2789,8.0431,300x300.png?lang=ar&amp;domain=ar.wikipedia.org&amp;title=%D8%A3%D9%88%D8%B3%D9%86%D8%A7%D8%A8%D8%B1%D9%88%D9%83&amp;groups=_0a30d0118ec7c477895dffb596ad2b875958c8fe',
         true,
       ),
-    ).toEqual('_assets_/589fd4e3821c15d4fcebcedf2effd5b0.png')
+    ).toEqual('_assets_/589fd4e3821c15d4fcebcedf2effd5b0_osm-intl%2C9%2C52.2789%2C8.0431%2C300x300.png')
   })
 
   test('isWebpCandidate by mime type', async () => {
