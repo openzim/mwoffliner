@@ -8,6 +8,7 @@ import DOMUtils from '../DOMUtils.js'
 import DU from '../DOMUtils.js'
 import { config } from '../config.js'
 import { Dump } from '../Dump.js'
+import Downloader from '../Downloader.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
@@ -858,11 +859,13 @@ export abstract class Renderer {
     })
 
     /*
-     * Because of CSP, some ZIM reader environments do not allow inline JS. See issues/2096.
+     * We can't trust the content of inline scripts, only keep when all JavaScript is allowed
      */
-    const scripts = Array.from(parsoidDoc.getElementsByTagName('script')) as DominoElement[]
-    for (const script of scripts) {
-      script.parentNode.removeChild(script)
+    if (!Downloader.trustedJs || Downloader.trustedJs.length) {
+      const scripts = Array.from(parsoidDoc.getElementsByTagName('script')) as DominoElement[]
+      for (const script of scripts) {
+        script.parentNode.removeChild(script)
+      }
     }
 
     /* Force display of element with that CSS class */
