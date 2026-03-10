@@ -74,8 +74,6 @@ async function execute(argv: any) {
     minifyHtml,
     keepEmptySections,
     mwUrl,
-    mwWikiPath,
-    mwIndexPhpPath,
     mwActionApiPath,
     mwModulePath,
     mwDomain,
@@ -201,7 +199,7 @@ async function execute(argv: any) {
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwModulePath, forceSkin, langVariant })
+    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, mwModulePath, forceSkin, langVariant })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -345,7 +343,7 @@ async function execute(argv: any) {
         withoutZimFullTextIndex,
         resume,
         minifyHtml,
-        keepEmptySections: keepEmptySections ?? argv.keepEmptyParagraphs,
+        keepEmptySections,
         tags: customZimTags,
         filenameDate,
       },

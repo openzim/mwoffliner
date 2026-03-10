@@ -23,9 +23,6 @@ Usage: npm run mwoffliner -- --help`,
   )
   .describe(parameterDescriptions)
   .demandOption(requiredParams)
-  .deprecateOption('mwWikiPath')
-  .deprecateOption('mwIndexPhpPath')
-  .deprecateOption('keepEmptyParagraphs', 'use --keepEmptySections instead')
   .strict().argv
 
 /* ***********************************/
