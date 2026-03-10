@@ -681,12 +681,105 @@ export abstract class Renderer {
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
   }
 
-  private removeIframeTags(parsoidDoc: DominoElement) {
-    // Remove all <iframe> tags
+  // Rewrite iframe tags into external placeholders
+  private processIframeTags(parsoidDoc: DominoElement) {
     const iframes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('iframe'))
+
     for (const iframe of iframes) {
-      DU.deleteNode(iframe)
+      const src = iframe.getAttribute('src')
+      if (!src) {
+        DU.deleteNode(iframe)
+        continue
+      }
+
+      let fullSrc = src
+      try {
+        fullSrc = getFullUrl(src, MediaWiki.baseUrl)
+      } catch {
+        // Keep original src when URL parsing fails
+      }
+
+      const placeholder = this.isYouTubeIframeUrl(fullSrc)
+        ? this.createYouTubePlaceholder(parsoidDoc, iframe, fullSrc, this.extractYouTubeVideoId(fullSrc))
+        : this.createExternalIframePlaceholder(parsoidDoc, iframe, fullSrc)
+      if (iframe.parentNode) {
+        iframe.parentNode.replaceChild(placeholder, iframe)
+      } else {
+        DU.deleteNode(iframe)
+      }
     }
+  }
+  private isYouTubeIframeUrl(url: string) {
+    const lowerUrl = url.toLowerCase()
+    return (
+      lowerUrl.includes('youtube.com/embed/') ||
+      lowerUrl.includes('youtube-nocookie.com/embed/') ||
+      lowerUrl.includes('youtu.be/') ||
+      lowerUrl.includes('youtube.com/watch')
+    )
+  }
+
+  private extractYouTubeVideoId(url: string): string | null {
+    const match = url.match(/(?:embed\/|v=|\.be\/)([a-zA-Z0-9_-]+)/)
+    return match ? match[1] : null
+  }
+
+  private createExternalIframePlaceholder(parsoidDoc: DominoElement, iframe: DominoElement, originalUrl: string): DominoElement {
+    const card = parsoidDoc.createElement('div')
+    this.copyNodeAttributes(iframe, card)
+    const iframeClass = card.getAttribute('class')
+    card.setAttribute('class', iframeClass ? `${iframeClass} mwo-external-video-card` : 'mwo-external-video-card')
+
+    const link = parsoidDoc.createElement('a')
+    link.setAttribute('class', 'external mwo-external-video-link')
+    link.setAttribute('href', originalUrl)
+    link.textContent = 'Open embedded content (external)'
+    card.appendChild(link)
+    return card
+  }
+
+  private copyNodeAttributes(sourceNode: DominoElement, targetNode: DominoElement) {
+    for (let attributeIndex = 0; attributeIndex < sourceNode.attributes.length; attributeIndex++) {
+      const attribute = sourceNode.attributes.item(attributeIndex)
+      if (!attribute) {
+        continue
+      }
+      targetNode.setAttribute(attribute.name, attribute.value)
+    }
+  }
+
+  private createYouTubePlaceholder(parsoidDoc: DominoElement, iframe: DominoElement, originalUrl: string, videoId: string | null): DominoElement {
+    const card = parsoidDoc.createElement('div')
+    this.copyNodeAttributes(iframe, card)
+    const iframeClass = card.getAttribute('class')
+    card.setAttribute('class', iframeClass ? `${iframeClass} mwo-external-video-card` : 'mwo-external-video-card')
+
+    const link = parsoidDoc.createElement('a')
+    link.setAttribute('class', 'external mwo-external-video-link')
+    link.setAttribute('href', videoId ? `https://www.youtube.com/watch?v=${videoId}` : originalUrl)
+
+    if (!videoId) {
+      card.setAttribute('class', iframeClass
+        ? `${iframeClass} mwo-external-video-card mwo-external-video-fallback`
+        : 'mwo-external-video-card mwo-external-video-fallback')
+      link.textContent = 'View this content externally'
+      link.setAttribute('aria-label', 'View this content externally')
+      card.appendChild(link)
+      return card
+    }
+
+    const thumbnailWrapper = parsoidDoc.createElement('div')
+    thumbnailWrapper.setAttribute('class', 'mwo-external-video-thumbnail')
+
+    const thumbnail = parsoidDoc.createElement('img')
+    thumbnail.setAttribute('src', `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`)
+    thumbnail.setAttribute('alt', 'Video thumbnail')
+    thumbnail.setAttribute('loading', 'lazy')
+    thumbnailWrapper.appendChild(thumbnail)
+
+    link.appendChild(thumbnailWrapper)
+    card.appendChild(link)
+    return card
   }
 
   private removeCitations(parsoidDoc: DominoElement) {
@@ -813,7 +906,7 @@ export abstract class Renderer {
   }
 
   private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
-    this.removeIframeTags(parsoidDoc)
+    this.processIframeTags(parsoidDoc)
 
     if (dump.nodet) {
       this.removeCitations(parsoidDoc)
