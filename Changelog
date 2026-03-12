@@ -5,6 +5,7 @@ Unreleased:
 * CHANGED: Keep inline scripts if all JS is allowed (@Markus-Rost #2555)
 * FIX: retry malformed JSON API responses (@kunalsiyag #2609)
 * FIX: Make processStylesheetContent use getMediaBase (@Markus-Rost #2647)
+* FIX: Recursively resolve CSS @import statements (@triemerge #2649)
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 
 1.17.5:

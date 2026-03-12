@@ -504,7 +504,7 @@ export abstract class Renderer {
           return { url, path }
         }),
     )
-    doc = this.applyOtherTreatments(doc, dump, articleId)
+    doc = await this.applyOtherTreatments(doc, dump, articleId)
 
     const tmRet = await this.treatMedias(doc, dump, articleId)
 
@@ -812,7 +812,7 @@ export abstract class Renderer {
     }
   }
 
-  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+  private async applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
     this.removeIframeTags(parsoidDoc)
 
     if (dump.nodet) {
@@ -847,7 +847,7 @@ export abstract class Renderer {
       // We use MediaWiki.baseUrl which is an approximation but it is deemed sufficient because
       // all non-absolute URL found in inline CSS are expected to be relative to the root, not to
       // current web URL which is "moving" (could use something like /w/index.php?title=... or /wiki/...)
-      style.textContent = processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, articleId)
+      style.textContent = await processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, articleId)
     }
 
     /* Remove element with id in the blacklist */
