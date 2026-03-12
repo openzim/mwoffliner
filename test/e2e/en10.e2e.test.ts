@@ -24,8 +24,8 @@ await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
         if (dump.nopic) {
           // nopic has enough files (this is just an estimate and can change
           // with time, as new Mediwiki versions are released).
-          expect(dump.status.files.success).toBeGreaterThan(2)
-          expect(dump.status.files.success).toBeLessThan(60)
+          expect(dump.status.files.success).toBeGreaterThan(82)
+          expect(dump.status.files.success).toBeLessThan(110)
           // nopic has enough redirects
           expect(dump.status.redirects.written).toBeGreaterThan(500)
           // nopic has 10 articles
@@ -36,21 +36,21 @@ await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
           expect(dump.status.files.fail).toEqual(0)
         } else if (dump.novid) {
           // novid has enough files
-          expect(dump.status.files.success).toBeGreaterThan(314)
+          expect(dump.status.files.success).toBeGreaterThan(394)
           // novid has enough redirects
           expect(dump.status.redirects.written).toBeGreaterThan(314)
           // novid has 10 articles
           expect(dump.status.articles.success).toEqual(10)
         } else if (dump.nopdf) {
           // nopdf has enough files
-          expect(dump.status.files.success).toBeGreaterThan(340)
+          expect(dump.status.files.success).toBeGreaterThan(420)
           // nopdf has enough redirects
           expect(dump.status.redirects.written).toBeGreaterThan(314)
           // nopdf has 10 articles
           expect(dump.status.articles.success).toEqual(10)
         } else if (dump.nodet) {
           // nodet has enough files
-          expect(dump.status.files.success).toBeGreaterThan(50)
+          expect(dump.status.files.success).toBeGreaterThan(130)
           // nodet has enough redirects
           expect(dump.status.redirects.written).toBeGreaterThan(314)
           // nodet has 10 articles

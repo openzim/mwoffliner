@@ -24,7 +24,7 @@ describe('Download CSS or JS Module', () => {
     expect(moduleApiUrl).toBe('https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector')
 
     // Check if CSS module still contain this background image
-    expect(content).toContain(`background-image:url(link.ernal-small-ltr-progressive.svg`)
+    expect(content).toContain(`background-image:url(../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg`)
 
     // One SVG (among others) expected to be used inside the CSS
     expect(Object.keys(Downloader.cssDependenceUrls)).toContain(
@@ -39,9 +39,9 @@ describe('Download CSS or JS Module', () => {
       'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d); }',
       '',
     )
-    expect(rewrittenCSS).toContain('a.external { background-image: url(link.ernal-small-ltr-progressive.svg); }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/link.ernal-small-ltr-progressive.svg'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/link.ernal-small-ltr-progressive.svg')
+    expect(rewrittenCSS).toContain('a.external { background-image: url(../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg); }')
+    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg'])
+    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe(
       'https://en.wikipedia.org/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d',
     )
@@ -54,9 +54,9 @@ describe('Download CSS or JS Module', () => {
       'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d); }',
       'article/with/slashes',
     )
-    expect(rewrittenCSS).toContain('a.external { background-image: url(../../_mw_/link.ernal-small-ltr-progressive.svg); }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/link.ernal-small-ltr-progressive.svg'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/link.ernal-small-ltr-progressive.svg')
+    expect(rewrittenCSS).toContain('a.external { background-image: url(../../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg); }')
+    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg'])
+    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe(
       'https://en.wikipedia.org/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d',
     )
@@ -69,9 +69,9 @@ describe('Download CSS or JS Module', () => {
       'a.external { background-image: url(//upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png); }',
       'articleTitle',
     )
-    expect(rewrittenCSS).toContain('a.external { background-image: url(./_mw_/64px-Commons-logo.svg.png); }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/64px-Commons-logo.svg.png'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/64px-Commons-logo.svg.png')
+    expect(rewrittenCSS).toContain('a.external { background-image: url(./_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png); }')
+    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png'])
+    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png')
   })
 
@@ -82,9 +82,9 @@ describe('Download CSS or JS Module', () => {
       '.mcui-arrow { background: url(/images/Grid_layout_Arrow_%28small%29.png?a4894) no-repeat; }',
       '',
     )
-    expect(rewrittenCSS).toContain('.mcui-arrow { background: url(Grid_layout_Arrow_%28small%29.png) no-repeat; }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_mw_/Grid_layout_Arrow_(small).png'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_mw_/Grid_layout_Arrow_(small).png')
+    expect(rewrittenCSS).toContain('.mcui-arrow { background: url(../_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_%28small%29.png) no-repeat; }')
+    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_(small).png'])
+    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_(small).png')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe('https://minecraft.wiki/images/Grid_layout_Arrow_%28small%29.png?a4894')
   })
 })

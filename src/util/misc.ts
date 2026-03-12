@@ -295,7 +295,14 @@ export function getMediaBase(url: string, escape: boolean) {
 
   // Default behaviour (make a hash of the URL)
   else {
-    filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + path.extname(new URL(url).pathname)
+    const { pathname, searchParams } = new URL(url)
+    filename = crypto.createHash('md5').update(decodedUrl).digest('hex') + '_'
+    if (pathname.endsWith('/load.php') && searchParams.has('modules') && searchParams.has('image')) {
+      const variant = searchParams.has('variant') ? '_' + searchParams.get('variant') : ''
+      filename += 'load.php_' + searchParams.get('modules') + '_' + searchParams.get('image') + variant + '.svg'
+    } else {
+      filename += path.basename(pathname)
+    }
   }
 
   if (filedir) {
