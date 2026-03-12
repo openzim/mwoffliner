@@ -96,7 +96,7 @@ async function saveToStore(
   }
 }
 
-export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], continueLimit?: number): Promise<void> {
+export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], allowedContentModels: string[] = ['wikitext'], continueLimit?: number): Promise<void> {
   // eslint-disable-next-line no-async-promise-executor
   return new Promise(async (resolve, reject) => {
     let totalArticles = 0
@@ -139,6 +139,20 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], conti
             articleIdsToIgnore = []
           }
           articleIdsToIgnore.push(...newArticlesToIgnore)
+        }
+
+        // Filter articles by content model (#2445)
+        if (allowedContentModels) {
+          const articlesWithWrongModel = Object.values(chunk.articleDetails)
+            .filter((a) => !allowedContentModels.includes(a.contentmodel))
+            .map((article) => article.title)
+          if (articlesWithWrongModel.length > 0) {
+            logger.info(`Skipping articles with non-matching content model: ${articlesWithWrongModel.join(', ')}`)
+            if (!articleIdsToIgnore) {
+              articleIdsToIgnore = []
+            }
+            articleIdsToIgnore.push(...articlesWithWrongModel)
+          }
         }
 
         if (articleIdsToIgnore) {
@@ -340,7 +354,7 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
   }
 }
 
-export async function getArticleIds(mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[]) {
+export async function getArticleIds(mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[], allowedContentModels: string[] = ['wikitext']) {
   if (mainPage) {
     await getArticlesByIds([mainPage])
   }
@@ -351,7 +365,7 @@ export async function getArticleIds(mainPage?: string, articleIds?: string[], ar
     await pmap(
       MediaWiki.namespacesToMirror,
       (namespace: string) => {
-        return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore)
+        return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore, allowedContentModels)
       },
       { concurrency: Downloader.speed },
     )

@@ -62,7 +62,7 @@ describe('mwApi', () => {
   })
 
   test('MWApi NS', async () => {
-    await getArticlesByNS(0, undefined, 5) // Get 5 continues/pages of NSes
+    await getArticlesByNS(0, undefined, ['wikitext'], 5) // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"Khan_gizi"_spring']
     const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
     const ArticleWithRevisionsAndCategory = articles['"...And_Ladies_of_the_Club"']

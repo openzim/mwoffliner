@@ -94,6 +94,7 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     addNamespaces: _addNamespaces,
+    addContentModels: _addContentModels,
     javaScript: _javaScript,
     addModules: _addModules,
     customZimFavicon,
@@ -194,6 +195,12 @@ async function execute(argv: any) {
     ? String(_addNamespaces)
         .split(',')
         .map((a: string) => Number(a))
+    : []
+
+  const addContentModels = _addContentModels
+    ? String(_addContentModels)
+        .split(',')
+        .map((a: string) => a.trim())
     : []
 
   /* Get MediaWiki Info */
@@ -297,9 +304,11 @@ async function execute(argv: any) {
     }
   }
 
+  const allowedContentModels = ['wikitext', ...addContentModels]
+
   logger.info('Getting article ids')
   let stime = Date.now()
-  await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null, allowedContentModels)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
   if (MediaWiki.getCategories) {
