@@ -15,7 +15,6 @@ await testRenders(
     adminEmail: 'test@kiwix.org',
     mwActionApiPath: '/api.php',
     mwModulePath: '/load.php',
-    mwWikiPath: '/w/',
   },
   async (outFiles) => {
     const mainPageFromDump = await zimdump(`show --url "Minecraft_Wiki" ${outFiles[0].outFile}`)
