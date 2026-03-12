@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'url'
 import pathParser from 'path'
 import * as logger from './Logger.js'
 import fs from 'fs'
-import { isValidEmail } from './util/index.js'
+import { isValidEmail,isValidUrl } from './util/index.js'
 import * as path from 'path'
 import { parameterDescriptions } from './parameterList.js'
 import { RENDERERS_LIST } from './util/const.js'
@@ -25,6 +25,7 @@ export async function sanitize_all(argv: any) {
     addNamespaces,
     speed,
     adminEmail,
+    mwUrl,
     verbose,
     customZimLongDescription,
     customZimDescription,
@@ -76,10 +77,20 @@ export async function sanitize_all(argv: any) {
   if (argv.customMainPage) {
     argv.customMainPage = argv.customMainPage.replace(/ /g, '_')
   }
-
+if(!(mwUrl&&adminEmail)){
+  if(!(mwUrl)){
+    throw new Error("mwUrl is empty!!")
+  }
+  else if(!adminEmail){
+    throw new Error("adminEmail is empty!! ")
+  }}
+  else{
   // sanitizing adminEmail
   sanitize_adminEmail(adminEmail)
-
+  //sanitizing mwUrl
+  sanitize_mwUrl(mwUrl)
+}
+ 
   // sanitizing renderer
   if (forceRender) {
     sanitize_forceRender(forceRender)
@@ -171,6 +182,12 @@ export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: st
   const contentType = value.headers['content-type']
   if (!contentType.includes('application/json')) {
     throw new Error(`Mediawiki API is returning '${contentType}' Content-Type instead of 'application/json' with ${apiQueryUrl}`)
+  }
+}
+
+export function sanitize_mwUrl(mwUrl: string) {
+  if (!isValidUrl(mwUrl)) {
+    throw new Error(`mwUrl [${mwUrl}] is not valid.`)
   }
 }
 
