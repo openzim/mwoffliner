@@ -74,8 +74,6 @@ async function execute(argv: any) {
     minifyHtml,
     keepEmptySections,
     mwUrl,
-    mwWikiPath,
-    mwIndexPhpPath,
     mwActionApiPath,
     mwModulePath,
     mwDomain,
@@ -96,6 +94,7 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     addNamespaces: _addNamespaces,
+    addContentModels: _addContentModels,
     javaScript: _javaScript,
     addModules: _addModules,
     customZimFavicon,
@@ -198,10 +197,16 @@ async function execute(argv: any) {
         .map((a: string) => Number(a))
     : []
 
+  const addContentModels = _addContentModels
+    ? String(_addContentModels)
+        .split(',')
+        .map((a: string) => a.trim())
+    : []
+
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwModulePath, forceSkin, langVariant })
+    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, mwModulePath, forceSkin, langVariant })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -299,9 +304,11 @@ async function execute(argv: any) {
     }
   }
 
+  const allowedContentModels = ['wikitext', ...addContentModels]
+
   logger.info('Getting article ids')
   let stime = Date.now()
-  await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null)
+  await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null, allowedContentModels)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
   if (MediaWiki.getCategories) {
@@ -345,7 +352,7 @@ async function execute(argv: any) {
         withoutZimFullTextIndex,
         resume,
         minifyHtml,
-        keepEmptySections: keepEmptySections ?? argv.keepEmptyParagraphs,
+        keepEmptySections,
         tags: customZimTags,
         filenameDate,
       },

@@ -4,5 +4,8 @@
       RLSTATE = __ARTICLE_CSS_STATE__;
       RLPAGEMODULES = __ARTICLE_JS_MODULES__;
       
-      (RLQ=window.RLQ||[]).push(function(){mw.loader.impl(function(){return["user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});}];});});
+      (RLQ=window.RLQ||[]).push(function(){
+        mw.config.set(RLCONF);mw.loader.state(RLSTATE);mw.loader.load(RLPAGEMODULES);
+        (mw.loader.impl||mw.loader.implement)(function(){return["user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});}];});
+      });
     </script>

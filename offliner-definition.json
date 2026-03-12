@@ -134,29 +134,29 @@
       "title": "Add Namespaces",
       "description": "Include addional namespaces (comma separated numbers)"
     },
+    "addContentModels": {
+      "type": "string",
+      "required": false,
+      "title": "Add Content Models",
+      "description": "Include additional content models besides wikitext (comma separated). By default, only wikitext articles are scraped."
+    },
     "getCategories": {
       "type": "boolean",
       "required": false,
       "title": "Add categories",
       "description": "[WIP] Download category pages"
     },
-    "keepEmptyParagraphs": {
+    "keepEmptySections": {
       "type": "boolean",
       "required": false,
-      "title": "Keep empty paragraphs",
-      "description": "Keep all paragraphs, even empty ones."
+      "title": "Keep empty sections",
+      "description": "Keep all sections, even empty ones."
     },
     "minifyHtml": {
       "type": "boolean",
       "required": false,
       "title": "Minify HTML",
       "description": "Try to reduce the size of the HTML"
-    },
-    "mwWikiPath": {
-      "type": "string",
-      "required": false,
-      "title": "Wiki Path",
-      "description": "Mediawiki wiki base path. Otherwise `/wiki/`."
     },
     "mwActionApiPath": {
       "type": "string",
@@ -169,12 +169,6 @@
       "required": false,
       "title": "Module Path",
       "description": "Mediawiki module load path. Otherwise `/w/load.php`."
-    },
-    "mwIndexPhpPath": {
-      "type": "string",
-      "required": false,
-      "title": "index.php Path",
-      "description": "Path to Mediawiki index.php. Otherwise `/w/index.php`."
     },
     "mwDomain": {
       "type": "string",

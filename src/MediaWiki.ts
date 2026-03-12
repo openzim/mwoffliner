@@ -419,7 +419,7 @@ class MediaWiki {
     return defaultSkins[0]
   }
 
-  public async getSiteInfo({ mwWikiPath, mwIndexPhpPath, addNamespaces, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
+  public async getSiteInfo({ addNamespaces, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
@@ -470,21 +470,12 @@ class MediaWiki {
     })
 
     // Use CLI parameter and set MediaWiki config
-    if (mwWikiPath) {
-      mwWikiPath = mwWikiPath + '$1'
-      if (mwWikiPath !== generalEntries.articlepath) {
-        logger.warn(`mwWikiPath [${mwWikiPath}] does not match the path [${generalEntries.articlepath}] returned by the wiki.`)
-      }
-    }
-    const articlepath = mwWikiPath || generalEntries.articlepath
+    const articlepath = generalEntries.articlepath
     if (articlepath.includes('?') || !articlepath.endsWith('$1')) {
       throw new Error(`Article path [${articlepath}] is not supported`)
     }
     this.wikiPath = articlepath.replace('$1', '')
-    if (mwIndexPhpPath && mwIndexPhpPath !== generalEntries.script) {
-      logger.warn(`mwIndexPhpPath [${mwIndexPhpPath}] does not match the path [${generalEntries.script}] returned by the wiki.`)
-    }
-    this.indexPhpPath = mwIndexPhpPath || generalEntries.script
+    this.indexPhpPath = generalEntries.script
     this.modulePathOpt = mwModulePath || generalEntries.scriptpath + '/load.php'
 
     const skins: SiteInfoSkin[] = body.query.skins.filter((skin) => !skin.unusable)

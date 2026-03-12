@@ -15,10 +15,7 @@ export const parameterDescriptions = {
   filenamePrefix: 'Part of the ZIM filename which is before the format & date parts.',
   format:
     'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
-  keepEmptyParagraphs: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
   keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
-  mwWikiPath: 'MediaWiki article path (by default fetched from the wiki)',
-  mwIndexPhpPath: 'MediaWiki index.php path (by default fetched from the wiki)',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
   mwModulePath: 'MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise.',
   mwDomain: 'MediaWiki user domain (thought for private wikis)',
@@ -36,6 +33,8 @@ export const parameterDescriptions = {
   withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
+  addContentModels: 'Include additional content models besides wikitext (comma separated, e.g. "Scribunto,json"). By default, only wikitext articles are scraped.',
+
   javaScript: 'Amount of JavaScript being allowed in pages, one of the following values can be given: "none", "trusted" or "all" (default being "trusted").',
   addModules: 'Add additional ResourceLoader modules for dynamic loading (comma separated list)',
   osTmpDir: 'Override default operating system temporary directory path environment variable',

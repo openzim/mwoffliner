@@ -1,9 +1,8 @@
 import { fileURLToPath } from 'url'
-import * as pathParser from 'path'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import RedisStore from '../RedisStore.js'
-import { getFullUrl, jsPath, cssPath, getRelativeFilePath } from './index.js'
+import { getFullUrl, jsPath, cssPath, getRelativeFilePath, getMediaBase } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
@@ -33,43 +32,22 @@ export function processStylesheetContent(cssUrl: string, linkMedia: string, body
   let match: any
   // tslint:disable-next-line:no-conditional-assignment
   while ((match = cssUrlRegexp.exec(body))) {
-    let url = match[1]
+    const url = match[1]
 
     /* Avoid 'data', so no URL dependency */
     if (url && !url.match('^data')) {
-      const filePathname = new URL(url, cssUrl).pathname
-      if (filePathname) {
-        const filename = pathParser.basename(filePathname).replace(/-.*x./, '.')
+      const fullurl = getFullUrl(url, cssUrl)
+      const filepath = getMediaBase(fullurl, true)
 
-        /* Rewrite the CSS */
-        const relativePath = articleId
-          ? getRelativeFilePath(articleId, `${config.output.dirs.mediawiki}/${filename}`)
-          : isJs
-            ? `__RELATIVE_FILE_PATH__${config.output.dirs.mediawiki}/${filename}`
-            : filename
-        rewrittenCss = rewrittenCss.replace(url, relativePath)
+      /* Rewrite the CSS */
+      const relativePath = articleId ? getRelativeFilePath(articleId, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
+      rewrittenCss = rewrittenCss.replace(url, relativePath.replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29'))
 
-        /* Need a rewrite if url doesn't include protocol */
-        url = getFullUrl(url, cssUrl)
-        url = url.indexOf('%') < 0 ? encodeURI(url) : url
-
-        let decodedFilename = filename
-        if (filename.indexOf('%') >= 0) {
-          try {
-            decodedFilename = decodeURIComponent(filename)
-          } catch {
-            decodedFilename = filename
-          }
-        }
-
-        /* Download CSS dependency, but avoid duplicate calls */
-        // eslint-disable-next-line no-prototype-builtins
-        if (!Downloader.cssDependenceUrls.hasOwnProperty(url) && decodedFilename) {
-          Downloader.cssDependenceUrls[url] = true
-          filesToDownloadXPath.set(config.output.dirs.mediawiki + '/' + decodedFilename, { url: urlHelper.serializeUrl(url), kind: 'media' })
-        }
-      } else {
-        logger.warn(`Skipping CSS [url(${url})] because the pathname could not be found [${filePathname}]`)
+      /* Download CSS dependency, but avoid duplicate calls */
+      // eslint-disable-next-line no-prototype-builtins
+      if (!Downloader.cssDependenceUrls.hasOwnProperty(fullurl) && filepath) {
+        Downloader.cssDependenceUrls[fullurl] = true
+        filesToDownloadXPath.set(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
       }
     }
   }
@@ -95,10 +73,15 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
       new Map([
         // Load modules one at a time
         [/,maxQueryLength:\d+,/, ',maxQueryLength:0,'],
+        [/,"wgResourceLoaderMaxQueryLength":\d+,/, ',"wgResourceLoaderMaxQueryLength":0,'],
         // Load modules from the ZIM
         [
-          /addScript\(sourceLoadScript\+'\?'\+makeQueryString\(query\),null,packed\.list\);/,
-          'addScript(RLCONF.zimRelativeFilePath+"' + jsPath('"+query.modules+"', config.output.dirs.mediawiki) + '",null,packed.list);',
+          /addScript\(sourceLoadScript\+'\?'\+makeQueryString\(query\)(,null,packed\.list)?\);/,
+          'addScript(RLCONF.zimRelativeFilePath+"' + jsPath('"+query.modules+"', config.output.dirs.mediawiki) + '"$1);',
+        ],
+        [
+          /addScript\(sourceLoadScript\+'\?'\+\$\.param\(request\)\);/,
+          'addScript(RLCONF.zimRelativeFilePath+"' + jsPath('"+request.modules+"', config.output.dirs.mediawiki) + '");',
         ],
         // Load modules from local storage with source like from the ZIM
         [
@@ -108,6 +91,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
         // Avoid loading modules from other ZIM through local storage
         // https://github.com/kiwix/overview/issues/127
         [/,(key:"MediaWikiModuleStore:[^"]+?",vary:"[^"]+?)",/, `,$1:${Date.now()}",`],
+        [/,"wgResourceLoaderStorageVersion":"/, `,"wgResourceLoaderStorageVersion":"${Date.now()}:`],
         // Never load the source map in dev tools
         [/\/\/# sourceMappingURL=/, '// sourceMappingURL='],
       ]),
@@ -132,6 +116,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
   if (type === 'js') {
     switch (module) {
       case 'startup':
+      case 'mediawiki':
         text = hackStartUpModule(text)
         break
       case 'mediawiki.base':
@@ -204,7 +189,7 @@ export async function downloadAndSaveStartupModule(zimCreator: Creator): Promise
     const mimetype = 'text/javascript'
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
     logger.info(`Saved module [${module}] at ${modulePath}`)
-    return JSON.parse(text.match(/;mw\.loader\.register\((\[\[.*?\]\])\);\s?mw\./)[1])
+    return JSON.parse(text.match(/;mw\.loader\.register\((\[\[.*?\]\])\);+\s?mw\./s)[1])
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
     throw e

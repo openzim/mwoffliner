@@ -1,7 +1,12 @@
 Unreleased:
 * NEW: Detect image size from HTML attribute instead of URL regex and recompress (@kunalsiyag #2192)
+* NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)
 * NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
 * CHANGED: Keep only ActionParse renderer (@benoit74 #2210)
+* CHANGED: Keep inline scripts if all JS is allowed (@Markus-Rost #2555)
+* FIX: retry malformed JSON API responses (@kunalsiyag #2609)
+* FIX: Make processStylesheetContent use getMediaBase (@Markus-Rost #2647)
+* DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 
 
 1.17.5:

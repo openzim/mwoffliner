@@ -31,8 +31,6 @@ export async function sanitize_all(argv: any) {
     forceRender,
     javaScript,
     addModules,
-    mwWikiPath,
-    mwIndexPhpPath,
     mwActionApiPath,
     mwModulePath,
   } = argv
@@ -63,16 +61,6 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing javaScript
   sanitize_javaScript_addModules(javaScript, addModules)
-
-  // sanitizing mwWikiPath
-  if (mwWikiPath) {
-    argv.mwWikiPath = sanitizeWikiPath(mwWikiPath)
-  }
-
-  // sanitizing mwIndexPhpPath
-  if (mwIndexPhpPath) {
-    argv.mwIndexPhpPath = sanitizeApiPathParam(mwIndexPhpPath)
-  }
 
   // sanitizing mwActionApiPath
   if (mwActionApiPath) {
@@ -117,22 +105,6 @@ export async function check_all(argv: any) {
   if (customZimFavicon) {
     await check_customZimFavicon(customZimFavicon)
   }
-}
-
-export function sanitizeWikiPath(mwWikiPath = '') {
-  mwWikiPath = sanitizeApiPathParam(mwWikiPath)
-
-  // Remove trailing $1 since we don't need it
-  if (mwWikiPath?.endsWith('$1')) {
-    mwWikiPath = mwWikiPath.substring(0, mwWikiPath.length - 3)
-  }
-
-  // Make sure wikiPath always has forward slash at the end for the correct URL building
-  if (!mwWikiPath?.endsWith('/')) {
-    mwWikiPath += '/'
-  }
-
-  return mwWikiPath
 }
 
 export function sanitizeApiPathParam(apiPathParam: string) {
