@@ -132,5 +132,23 @@ describe('ErrorRenderer', () => {
       expect(matchingRule.detailsMessageKey).toBe('PERMISSION_DENIED')
       expect(matchingRule.isHardFailure).toBe(false)
     })
+    it('should handle category lockdown error', async () => {
+      const matchingRule = findFirstMatchingRule({
+        urlCalled: 'https://www.appropedia.org/w/api.php?action=parse&format=json&page=Osteomyelitis',
+        errorCode: null,
+        httpReturnCode: 200,
+        responseContentType: 'application/json',
+        responseData: {
+          error: {
+            code: 'categorylockdown-error',
+            info: 'You need the "categorylockdown-read" right to view pages in this category.',
+          },
+        },
+      })
+      expect(matchingRule).not.toBeNull()
+      expect(matchingRule.name).toBe('category lockdown error')
+      expect(matchingRule.detailsMessageKey).toBe('CATEGORY_LOCKDOWN')
+      expect(matchingRule.isHardFailure).toBe(false)
+    })
   })
 })
