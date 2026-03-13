@@ -77,19 +77,20 @@ export async function sanitize_all(argv: any) {
   if (argv.customMainPage) {
     argv.customMainPage = argv.customMainPage.replace(/ /g, '_')
   }
-if(!(mwUrl&&adminEmail)){
-  if(!(mwUrl)){
-    throw new Error("mwUrl is empty!!")
+  
+  if (!mwUrl || mwUrl.trim()==='') {
+  throw new Error('Option --mwUrl is required and cannot be empty')
   }
-  else if(!adminEmail){
-    throw new Error("adminEmail is empty!! ")
-  }}
-  else{
-  // sanitizing adminEmail
-  sanitize_adminEmail(adminEmail)
+
+  if (!adminEmail || adminEmail.trim()==='') {
+  throw new Error('Option --adminEmail is required and cannot be empty')
+  }
+
   //sanitizing mwUrl
   sanitize_mwUrl(mwUrl)
-}
+  // sanitizing adminEmail
+  sanitize_adminEmail(adminEmail)
+
  
   // sanitizing renderer
   if (forceRender) {
@@ -187,7 +188,7 @@ export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: st
 
 export function sanitize_mwUrl(mwUrl: string) {
   if (!isValidUrl(mwUrl)) {
-    throw new Error(`mwUrl [${mwUrl}] is not valid.`)
+    throw new Error(`mwUrl is not a valid URL.`)
   }
 }
 

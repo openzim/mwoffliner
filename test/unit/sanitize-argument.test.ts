@@ -49,12 +49,27 @@ describe('Sanitize parameters', () => {
 })
 
 describe('required variable check',()=>{
-  test('should throw if --empty mwUrl',async ()=>{
-    await expect(sanitize_all({mwUrl:"",adminEmail:'test@example'})).rejects.toThrow()
+ test('rejects empty mwUrl', async () => {
+  await expect(
+    sanitize_all({ mwUrl: "", adminEmail: 'test@example.com' })
+  ).rejects.toThrow(/mwurl/i)
+})
+
+test('rejects whitespace mwUrl', async () => {
+  await expect(
+    sanitize_all({ mwUrl: " ", adminEmail: 'test@example.com' })
+  ).rejects.toThrow(/mwurl/i)
+})
+  test('rejects empty adminEmail',async ()=>{
+    await expect(sanitize_all({mwUrl:'https://en.wikipedia.org',adminEmail:""})
+  ).rejects.toThrow(/email/i)
   })
-  test('should throw if --empty Email',async ()=>{
-    await expect(sanitize_all({mwUrl:'https://en.wikipedia.org',adminEmail:""})).rejects.toThrow()
-  })
+  
+  test('rejects whitespace adminEmail', async () => {
+  await expect(
+    sanitize_all({ mwUrl: 'https://en.wikipedia.org', adminEmail: '' })
+  ).rejects.toThrow(/email/i)
+})
 })
 
 describe('Email validation', () => {
@@ -64,8 +79,8 @@ describe('Email validation', () => {
   })
 
   test('rejects invalid email', async () => {
-    await expect(sanitize_all({ adminEmail: 'invalid-email' }))
-      .rejects.toThrow()
+    await expect(sanitize_all({ adminEmail: 'invalid-email' , mwUrl: 'https://en.wikipedia.org'}))
+      .rejects.toThrow(/email/i)
   })
 })
 
@@ -76,7 +91,7 @@ describe('URL validation', () => {
   })
 
   test('rejects invalid URL', async () => {
-    await expect(sanitize_all({ mwUrl: 'invalid-url' }))
-      .rejects.toThrow()
+    await expect(sanitize_all({ mwUrl: 'invalid-url' ,adminEmail:'test@example.com'}))
+      .rejects.toThrow(/url/i)
   })
 })

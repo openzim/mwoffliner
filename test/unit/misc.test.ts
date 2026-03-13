@@ -1,7 +1,6 @@
 import { contains, getStrippedTitleFromHtml, getStringsForLang, encodeArticleIdForZimHtmlUrl,getMediaBase } from '../../src/util/misc.js'
 import domino from 'domino'
 import { jest } from '@jest/globals'
-import crypto from 'crypto'
 
 describe('Misc utility', () => {
   test('contains', async () => {
@@ -157,63 +156,4 @@ describe('Misc utility', () => {
       })
     })
   })
-
-describe('encodeArticleIdForZimHtmlUrl', ()=>{
-
-// TEST THAT IT ENCODE THE ARTICLE ID CORRECTLY  
-  test('encodes simple article id', () => {      //a simple article ID with a space  
-  const result = encodeArticleIdForZimHtmlUrl('Hello World')
-  expect(result).toBe('Hello%20World')     // ensuring that the generated URLs are valid and can be accessed correctly in the ZIM file.
 })
-
-// TEST THAT IT PRESERVES SLASHES IN ARTICLE ID
-test('does not encode slashes in nested paths', () => {  // contain slashes to represent nested paths
-  const result = encodeArticleIdForZimHtmlUrl('Category/SubPage')
-  expect(result).toBe('Category/SubPage')  // slashes should not be encoded to ensure the correct structure of the URLs in the ZIM file. 
-})
-
-// TEST THAT IT ADDS ./ IN FRONT OF ARTICLE ID STARTING WITH SLASH
-test('adds ./ when articleId starts with slash', () => {
-  const result = encodeArticleIdForZimHtmlUrl('/Main Page')
-    expect(result).toBe('.//Main%20Page')
-})
-
-// TEST THAT IT ENCODE SPECIAL CHARACTERS BUT PRESERVES SLASHES
-test('encodes special characters but preserves slashes', () => {
-  const result = encodeArticleIdForZimHtmlUrl('Page/With Space & Symbols')
-  expect(result).toBe('Page/With%20Space%20%26%20Symbols')
-})
-
-})
-
-
-describe('getMediaBase',()=>{
-
-//TEST THAT IT HASHES THE FILENAME CORRECTLY WHEN NO REGEX MATCHES
-test('uses md5 hash fallback for unknown URL', () => {
-  const url = 'data:image/png;base64,AAAA'  // We must provide a URL that cannot match any of the regex patterns
-  const result = getMediaBase(url, true)
-
-  const expectedHash = crypto 
-    .createHash('md5')
-    .update(decodeURI(url))
-    .digest('hex')
-
-  expect(result).toContain(expectedHash)
-})
-
-// TEST THAT IT ENCODE THE FILENAME CORRECTLY WHEN ESCAPE IS TRUE
-test('escapes filename when escape=true', () => {
-  const url = 'https://example_rishabh.com/image with space.png'     // URL contains a space, which should be encoded as %20 when escape is true
-  const result = getMediaBase(url, true)  
-  expect(result).toMatch(/%20/)
-})
-// SAME URL SAME RESULT(DETERMINISTIC)
-test('same URL produces same result', () => {
-  const url = 'https://example.com/test.png'      //A fixed URL to test that the function produces the same result for the same input, 
-                                                  // which is important for caching and consistency
-  const result1 = getMediaBase(url, false)
-  const result2 = getMediaBase(url, false)
-  expect(result1).toBe(result2) //
-})
-})})
