@@ -15,44 +15,166 @@ import { zimCreatorMutex } from '../mutex.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export function processStylesheetContent(cssUrl: string, linkMedia: string, body: string, articleId?: string, isJs?: boolean) {
+export async function processStylesheetContent(cssUrl: string, linkMedia: string, body: string, articleId?: string, isJs?: boolean) {
   // articleId is supposed to be passed only when we rewrite inline CSS for a given article and we hence have
   // to compute relative path to assets
 
   const { filesToDownloadXPath } = RedisStore
+  const importRegexp = /@import\s+(?:url\(\s*(['"]?)(.*?)\1\s*\)|(['"])(.*?)\3)\s*([^;]*);/gi
   const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.*?)[\'"]{0,1}\\)', 'gi')
 
-  let rewrittenCss = `\n/* start ${cssUrl} */\n\n`
-  rewrittenCss += linkMedia ? `@media ${linkMedia}  {\n` : '\n'
-  rewrittenCss += `${body}\n`
-  rewrittenCss += linkMedia ? `} /* @media ${linkMedia} */\n` : '\n'
-  rewrittenCss += `\n/* end   ${cssUrl} */\n`
+  type CssPart = { type: 'css'; text: string }
+  type ImportPart = { type: 'import'; url: string; conditions: string }
+  type StylesheetParts = Array<CssPart | ImportPart>
 
-  /* Downloading CSS dependencies */
-  let match: any
-  // tslint:disable-next-line:no-conditional-assignment
-  while ((match = cssUrlRegexp.exec(body))) {
-    const url = match[1]
-
-    /* Avoid 'data', so no URL dependency */
-    if (url && !url.match('^data')) {
-      const fullurl = getFullUrl(url, cssUrl)
-      const filepath = getMediaBase(fullurl, true)
-
-      /* Rewrite the CSS */
-      const relativePath = articleId ? getRelativeFilePath(articleId, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
-      rewrittenCss = rewrittenCss.replace(url, relativePath.replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29'))
-
-      /* Download CSS dependency, but avoid duplicate calls */
-      // eslint-disable-next-line no-prototype-builtins
-      if (!Downloader.cssDependenceUrls.hasOwnProperty(fullurl) && filepath) {
-        Downloader.cssDependenceUrls[fullurl] = true
-        filesToDownloadXPath.set(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
-      }
+  const applyImportConditions = (css: string, conditions: string) => {
+    let wrappedCss = css
+    const rawConditions = conditions.trim()
+    if (!rawConditions) {
+      return wrappedCss
     }
+
+    const supportsMatch = rawConditions.match(/supports\s*\((.*?)\)/i)
+    const supportsCondition = supportsMatch?.[1]?.trim()
+    const mediaCondition = rawConditions.replace(/supports\s*\((.*?)\)/i, '').trim()
+
+    if (supportsCondition) {
+      wrappedCss = `@supports (${supportsCondition}) {\n${wrappedCss}\n}\n`
+    }
+    if (mediaCondition) {
+      wrappedCss = `@media ${mediaCondition} {\n${wrappedCss}\n}\n`
+    }
+
+    return wrappedCss
   }
 
-  return rewrittenCss
+  const rewriteCssDependencies = (sourceCss: string, sourceUrl: string) => {
+    let rewrittenCss = sourceCss
+    let match: any
+
+    // tslint:disable-next-line:no-conditional-assignment
+    while ((match = cssUrlRegexp.exec(sourceCss))) {
+      const url = match[1]
+
+      /* Avoid 'data', so no URL dependency */
+      if (url && !url.match('^data')) {
+        const fullurl = getFullUrl(url, sourceUrl)
+        const filepath = getMediaBase(fullurl, true)
+
+        /* Rewrite the CSS */
+        const relativePath = articleId ? getRelativeFilePath(articleId, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
+        rewrittenCss = rewrittenCss.replace(url, relativePath.replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29'))
+
+        /* Download CSS dependency, but avoid duplicate calls */
+        // eslint-disable-next-line no-prototype-builtins
+        if (!Downloader.cssDependenceUrls.hasOwnProperty(fullurl) && filepath) {
+          Downloader.cssDependenceUrls[fullurl] = true
+          filesToDownloadXPath.set(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
+        }
+      }
+    }
+
+    cssUrlRegexp.lastIndex = 0
+    return rewrittenCss
+  }
+
+  // Iterative worklist to resolve @import statements (no depth limit).
+  // Each entry carries its own URL so that url() references are resolved relative to each stylesheet.
+  const processedImportUrls = new Set<string>()
+  const worklist: Array<{ url: string; body: string }> = [{ url: cssUrl, body }]
+  const stylesheetParts = new Map<string, StylesheetParts>()
+
+  while (worklist.length > 0) {
+    const current = worklist.shift()!
+    const currentBody = current.body
+
+    const parts: StylesheetParts = []
+    let startIdx = 0
+
+    /* Find and queue @import URLs */
+    let importMatch: RegExpExecArray | null
+    const importRe = new RegExp(importRegexp.source, importRegexp.flags)
+    while ((importMatch = importRe.exec(currentBody)) !== null) {
+      if (importMatch.index > startIdx) {
+        parts.push({ type: 'css', text: currentBody.substring(startIdx, importMatch.index) })
+      }
+
+      const importUrl = importMatch[2] || importMatch[4]
+      const importConditions = (importMatch[5] || '').trim()
+
+      if (importUrl) {
+        const fullUrl = getFullUrl(importUrl, current.url)
+        parts.push({ type: 'import', url: fullUrl, conditions: importConditions })
+
+        if (!processedImportUrls.has(fullUrl)) {
+          processedImportUrls.add(fullUrl)
+          try {
+            const { content } = await Downloader.downloadContent(fullUrl, 'css')
+            worklist.push({ url: fullUrl, body: content.toString() })
+          } catch {
+            logger.warn(`Failed to download imported CSS: ${fullUrl}`)
+          }
+        }
+      }
+
+      startIdx = importRe.lastIndex
+    }
+
+    if (startIdx < currentBody.length) {
+      parts.push({ type: 'css', text: currentBody.substring(startIdx) })
+    }
+
+    stylesheetParts.set(current.url, parts)
+  }
+
+  const renderedImportedUrls = new Set<string>()
+  const renderStack = new Set<string>()
+
+  const renderStylesheet = (url: string, isMain: boolean, importConditions = ''): string => {
+    if (!isMain && renderedImportedUrls.has(url)) {
+      return ''
+    }
+    if (renderStack.has(url)) {
+      return ''
+    }
+
+    const parts = stylesheetParts.get(url)
+    if (!parts) {
+      return ''
+    }
+
+    if (!isMain) {
+      renderedImportedUrls.add(url)
+    }
+
+    renderStack.add(url)
+    let currentBody = ''
+    for (const part of parts) {
+      if (part.type === 'css') {
+        currentBody += part.text
+      } else {
+        currentBody += renderStylesheet(part.url, false, part.conditions)
+      }
+    }
+    renderStack.delete(url)
+
+    currentBody = rewriteCssDependencies(currentBody, url)
+
+    /* Build CSS with comment markers */
+    let rewrittenCss = `\n/* start ${url} */\n\n`
+    rewrittenCss += isMain && linkMedia ? `@media ${linkMedia}  {\n` : '\n'
+    rewrittenCss += `${currentBody}\n`
+    rewrittenCss += isMain && linkMedia ? `} /* @media ${linkMedia} */\n` : '\n'
+    rewrittenCss += `\n/* end   ${url} */\n`
+
+    if (!isMain && importConditions) {
+      rewrittenCss = applyImportConditions(rewrittenCss, importConditions)
+    }
+
+    return rewrittenCss
+  }
+
+  return renderStylesheet(cssUrl, true)
 }
 
 export async function downloadModule(module: string, type: 'js' | 'css') {
@@ -140,9 +262,11 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
       try {
         const cssParts: string[] = JSON.parse(embeddedCss[1])
         const processedCss = JSON.stringify(
-          cssParts.map((cssPart) => {
-            return processStylesheetContent(moduleApiUrl, '', cssPart, '', true)
-          }),
+          await Promise.all(
+            cssParts.map((cssPart) => {
+              return processStylesheetContent(moduleApiUrl, '', cssPart, '', true)
+            }),
+          ),
         ).replace(/__RELATIVE_FILE_PATH__/g, '"+RLCONF.zimRelativeFilePath+"')
         text = text.replace(embeddedCss[0], `,{"css":${processedCss}}`)
       } catch (e) {
@@ -152,7 +276,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
   }
 
   if (type === 'css') {
-    text = processStylesheetContent(moduleApiUrl, '', text, '')
+    text = await processStylesheetContent(moduleApiUrl, '', text, '')
   }
 
   // Zimcheck complains about empty files, and it is too late to decide to not create this file
