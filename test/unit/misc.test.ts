@@ -1,4 +1,4 @@
-import { contains, getStrippedTitleFromHtml, getStringsForLang } from '../../src/util/misc.js'
+import { contains, getStrippedTitleFromHtml, getStringsForLang,} from '../../src/util/misc.js'
 import domino from 'domino'
 import { jest } from '@jest/globals'
 
