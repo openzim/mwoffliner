@@ -131,6 +131,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
           ]),
         )
         break
+      case 'mediawiki.page.startup':
       case 'mediawiki.page.ready':
         text = replaceCodeByRegex(text, new Map([[RULE_TO_REDIRECT, 'false']]))
         break
