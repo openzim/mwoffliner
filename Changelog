@@ -6,6 +6,7 @@ Unreleased:
 * FIX: retry malformed JSON API responses (@kunalsiyag #2609)
 * FIX: Make processStylesheetContent use getMediaBase (@Markus-Rost #2647)
 * FIX: Handle categorylockdown error with placeholder instead of crashing (@triemerge #2150)
+* FIX: Improve mwUrl and adminEmail input validation and expanding test coverage for input sanitation (@RishabhThakur-19 #2657)
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 
 1.17.5:
