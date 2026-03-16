@@ -169,6 +169,7 @@ async function execute(argv: any) {
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
+  MediaWiki.getCategories = !!argv.getCategories
   MediaWiki.actionApiPath = mwActionApiPath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword

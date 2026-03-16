@@ -25,6 +25,7 @@ describe('mwApi', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
@@ -58,7 +59,7 @@ describe('mwApi', () => {
   })
 
   test('MWApi NS', async () => {
-    await getArticlesByNS(0, undefined, ['wikitext'], 5) // Get 5 continues/pages of NSes
+    await getArticlesByNS(0, undefined, ['wikitext'], new Set(), 5) // Get 5 continues/pages of NSes
     const interestingAIds = ['"...And_Ladies_of_the_Club"', '"Khan_gizi"_spring']
     const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
     const ArticleWithRevisions = articles['"...And_Ladies_of_the_Club"']
@@ -129,6 +130,7 @@ describe('Test blacklisted NSs', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://id.wikipedia.org'
+    MediaWiki.getCategories = true
 
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
