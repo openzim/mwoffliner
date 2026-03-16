@@ -71,6 +71,10 @@ interface CompressionData {
   data: any
 }
 
+function isJsonContentType(contentType: string | null): boolean {
+  return typeof contentType === 'string' && /\b(?:application\/json|[\w.-]+\+json)\b/i.test(contentType)
+}
+
 function isMalformedJsonResponseError(err: unknown): boolean {
   if (err instanceof SyntaxError) {
     return true
@@ -81,6 +85,22 @@ function isMalformedJsonResponseError(err: unknown): boolean {
   }
 
   return err.cause instanceof SyntaxError
+}
+
+function parseJsonResponse<T>(url: string, status: number, contentType: string | null, body: unknown): T {
+  if (body !== null && typeof body === 'object') {
+    return body as T
+  }
+
+  if (typeof body !== 'string') {
+    return body as T
+  }
+
+  if (!isJsonContentType(contentType)) {
+    throw new DownloadError('Unexpected non-JSON response while calling API', url, status, contentType, body)
+  }
+
+  return JSON.parse(body) as T
 }
 
 export class DownloadError extends Error {
@@ -263,12 +283,7 @@ class Downloader {
         accept: 'application/json',
         'accept-encoding': 'gzip, deflate',
       },
-      responseType: 'json',
-      transitional: {
-        // Parse failures must throw so backoff retries can be triggered.
-        silentJSONParsing: false,
-        forcedJSONParsing: true,
-      },
+      responseType: 'text',
       method: 'GET',
     }
 
@@ -675,10 +690,13 @@ class Downloader {
     logger.info(`Getting JSON from [${url}]`)
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((val) => {
-        if ((val.data as any).error) {
-          handler(new DownloadError(`Error returned while calling API`, url, val.status, val.headers['content-type'].toString(), val.data))
+        const contentType = val.headers['content-type']?.toString() || null
+        const data = parseJsonResponse<T>(url, val.status, contentType, val.data)
+
+        if ((data as any).error) {
+          handler(new DownloadError(`Error returned while calling API`, url, val.status, contentType, data))
         } else {
-          handler(null, val.data)
+          handler(null, data)
         }
       })
       .catch((err) => {
