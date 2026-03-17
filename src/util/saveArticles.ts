@@ -458,7 +458,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
            */
           const err = await parsePromise
           if (err) {
-            console.log(err)
+            logger.error(err)
 
             logger.error(`Error parsing article ${articleId}`)
             timer.clear()
