@@ -11,7 +11,7 @@ export const DELETED_ARTICLE_ERROR = 'Article has been deleted.'
 export const WEAK_ETAG_REGEX = /^(W\/)/
 export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|gif)$/
 export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png)/
-export const RULE_TO_REDIRECT = /window\.top !== window\.self/
+export const RULE_TO_REDIRECT = /window\.top!==window\.self/
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK = 50 // minimum number of files failing download before starting to consider for failing the scrape
 export const FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND = 10 // 10 = 0.1%

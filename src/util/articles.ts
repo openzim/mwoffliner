@@ -1,5 +1,6 @@
 import MediaWiki from '../MediaWiki.js'
 import Downloader from '../Downloader.js'
+import * as logger from '../Logger.js'
 import * as domino from 'domino'
 
 /**
@@ -41,8 +42,20 @@ export function getNamespaceName(namespace: number) {
  */
 export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any> = {}): KVS<any> {
   const match = headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/) || headHtml.match(/{mw\.config\.set\(({".*?})\);mw\.loader\.state\(/)
-  if (!match) return Object.assign({}, extraJsConfigVars, { wgBreakFrames: false })
-  const jsConfigVars = JSON.parse(match[1])
+  let jsConfigVars: KVS<any> = {}
+  if (match) {
+    try {
+      let jsonString = match[1]
+      if (jsonString.includes('"wgBreakFrames":!')) {
+        jsonString = jsonString.replace(/":!0([,}])/g, '":true$1').replace(/":!1([,}])/g, '":false$1')
+      }
+      jsConfigVars = JSON.parse(jsonString)
+    } catch (e) {
+      logger.warn('Unable to parse jsConfigVars', e)
+    }
+  } else {
+    logger.warn('Unable to get jsConfigVars')
+  }
   delete jsConfigVars.wgRequestId
   delete jsConfigVars.wgTempUserName
   delete jsConfigVars.wgUserId
