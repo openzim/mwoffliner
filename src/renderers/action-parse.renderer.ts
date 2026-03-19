@@ -10,7 +10,7 @@ import Downloader, { DownloadError } from '../Downloader.js'
 import Gadgets from '../Gadgets.js'
 import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&useskin=vector-2022&redirects=1&formatversion=2'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle|categorieshtml&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&useskin=vector-2022&redirects=1&formatversion=2'
 export interface ActionParseResult {
   parse: {
     title: string
@@ -22,6 +22,7 @@ export interface ActionParseResult {
     text: string
     displaytitle: string
     subtitle: string
+    categorieshtml: string
     headhtml: string
     modules: string[]
     modulestyles: string[]
@@ -184,6 +185,7 @@ export class ActionParseRenderer extends Renderer {
       redirects: normalizedRedirects,
       displayTitle: data.parse.displaytitle,
       articleSubtitle: data.parse.subtitle,
+      categoriesHtml: data.parse.categorieshtml,
       bodyCssClass,
       htmlCssClass,
     }
@@ -191,7 +193,7 @@ export class ActionParseRenderer extends Renderer {
 
   public async render(renderOpts: RenderOpts): Promise<any> {
     const result: RenderOutput = []
-    const { data, articleId, articleSubtitle, moduleDependencies, bodyCssClass, htmlCssClass, dump } = renderOpts
+    const { data, articleId, articleSubtitle, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
     let { displayTitle } = renderOpts
 
     if (!data) {
@@ -244,6 +246,8 @@ export class ActionParseRenderer extends Renderer {
       articleDetail,
       displayTitle,
       articleSubtitle,
+      categoryMembers,
+      categoriesHtml,
       moduleDependencies,
       callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
     })
