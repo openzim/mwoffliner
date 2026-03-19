@@ -2,7 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Beta16",
-			"Clorofolle"
+			"Clorofolle",
+			"FL2226"
 		]
 	},
 	"DISCLAIMER": "Questa voce è stata pubblicata da ${creator}. Il testo è rilasciato in base alla licenza ${license}, salvo diversa indicazione. Potrebbero essere applicate clausole aggiuntive per i file multimediali.",
@@ -10,5 +11,6 @@
 	"LICENSE_UNKNOWN": "una licenza sconosciuta",
 	"DOWNLOAD_ERRORS_HEADING": "Oops. Voce non trovata.",
 	"DOWNLOAD_ERRORS_MESSAGE": "La voce richiesta '${articleTitle}' non è disponibile in questo ZIM. Non è stato possibile recuperarla da ${server}.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "L'accesso a questo articolo è limitato da un blocco sul server ${server} basato su categorie. Le autorizzazioni di categoria richieste non sono disponibili durante il processo di scraping ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Durante la creazione dello ZIM che stai navigando, l'API ActionParse del server ${server} ha registrato un timeout durante l'elaborazione di questa voce ed ha restituito un errore HTTP 504."
 }
