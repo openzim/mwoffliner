@@ -147,7 +147,7 @@ describe('Misc utility', () => {
 
     test('falls back to specified fallback language', () => {
       const strings = getStringsForLang('XX', 'de')
-      console.log(JSON.stringify(strings))
+
       expect(strings).toMatchObject({
         DISCLAIMER:
           'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist unter ${license} verfügbar, sofern nicht anders angegeben. Für die Mediendateien können zusätzliche Bedingungen gelten.',
