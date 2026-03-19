@@ -165,12 +165,13 @@ describe('Downloader class - wikipedia EN', () => {
 
   describeIf('Downloader class with optimisation', () => {
     let s3: S3
-    const s3UrlObj = new URL(`${process.env.S3_URL}`)
+    let s3UrlObj: URL
 
     beforeAll(async () => {
       MediaWiki.base = 'https://en.wikipedia.org'
       MediaWiki.getCategories = true
 
+      s3UrlObj = new URL(`${process.env.S3_URL}`)
       s3 = new S3(
         `${s3UrlObj.protocol}//${s3UrlObj.host}/`,
         new URLSearchParams({
