@@ -73,6 +73,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         'vector-feature-appearance-pinned-clientpref-0',
         'vector-feature-custom-font-size-clientpref-1',
         'vector-feature-language-in-header-enabled',
+        'vector-feature-language-in-main-menu-disabled',
         'vector-feature-language-in-main-page-header-disabled',
         'vector-feature-limited-width-clientpref-1',
         'vector-feature-limited-width-content-enabled',
