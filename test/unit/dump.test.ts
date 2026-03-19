@@ -1,10 +1,6 @@
-import { startRedis, stopRedis } from './bootstrap.js'
 import { Dump } from '../../src/Dump.js'
 
 describe('Dump filename radical', () => {
-  beforeAll(startRedis)
-  afterAll(stopRedis)
-
   describe('Based on format', () => {
     const formatTests = {
       '': '',

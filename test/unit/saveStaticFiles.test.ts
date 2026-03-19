@@ -1,4 +1,3 @@
-import { startRedis, stopRedis } from './bootstrap.js'
 import { jest } from '@jest/globals'
 import { ActionParseRenderer } from '../../src/renderers/action-parse.renderer.js'
 import MediaWiki from '../../src/MediaWiki.js'
@@ -6,9 +5,6 @@ import MediaWiki from '../../src/MediaWiki.js'
 jest.setTimeout(10000)
 
 describe('saveStaticFiles', () => {
-  beforeAll(startRedis)
-  afterAll(stopRedis)
-
   beforeEach(() => {
     MediaWiki.reset()
   })
