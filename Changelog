@@ -1,5 +1,6 @@
 Unreleased:
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)
+* FIX: In nopic mode, fixed layout issues by preserving image layout using SVG placeholders (@kunalsiyag #1004)
 * NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
 * CHANGED: Keep only ActionParse renderer (@benoit74 #2210)
 * CHANGED: Keep inline scripts if all JS is allowed (@Markus-Rost #2555)

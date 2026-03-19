@@ -22,8 +22,15 @@ await testAllRenders('format-params-nopic', { ...parameters, format: 'nopic', ar
       const articleDoc = domino.createDocument(articleFromDump)
 
       const imgElements = Array.from(articleDoc.querySelectorAll('img'))
+      const nonMathImages = imgElements.filter((img) => {
+        const className = img.getAttribute('class') || ''
+        return !className.includes('mwe-math-fallback-image-inline') && img.getAttribute('typeof') !== 'mw:Extension/math'
+      })
 
-      expect(imgElements).toHaveLength(0)
+      expect(imgElements.length).toBeGreaterThan(0)
+      expect(nonMathImages.length).toBeGreaterThan(0)
+      expect(nonMathImages.every((img) => (img.getAttribute('src') || '').startsWith('data:image/svg+xml'))).toBe(true)
+      expect(nonMathImages.every((img) => !(img.getAttribute('src') || '').includes('_assets_/'))).toBe(true)
       if (!process.env.KEEP_ZIMS) {
         rimraf.sync(`./${outFiles[0].testId}`)
       }
