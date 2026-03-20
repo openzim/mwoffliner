@@ -409,13 +409,26 @@ class MediaWiki {
   }
 
   public getDefaultSkin(skins: SiteInfoSkin[]) {
-    const defaultSkins = skins.filter((skin) => skin.default).map((skin) => skin.code)
-    if (defaultSkins.length == 0) {
-      throw new Error(`This wiki has no default skin:\n${JSON.stringify(skins)}`)
+    // Warn if any default skins are marked unusable
+    const unusableDefaults = skins.filter((s) => s.default && s.unusable)
+    if (unusableDefaults.length > 0) {
+      logger.warn(`Ignoring unusable default skin(s): ${unusableDefaults.map((s) => s.code).join(', ')}`)
     }
+
+    // Filter usable skins first
+    const usableSkins = skins.filter((skin) => !skin.unusable)
+
+    // Get defaults only from usable skins
+    const defaultSkins = usableSkins.filter((skin) => skin.default).map((skin) => skin.code)
+
+    if (defaultSkins.length === 0) {
+      throw new Error(`This wiki has no usable default skin:\n${JSON.stringify(skins)}`)
+    }
+
     if (defaultSkins.length > 1) {
       logger.warn('Multiple default skins found, defaulting to first default one')
     }
+
     return defaultSkins[0]
   }
 
