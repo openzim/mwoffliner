@@ -14,6 +14,7 @@ Unreleased:
 * FIX: Handle categorylockdown error with placeholder instead of crashing (@triemerge #2150)
 * FIX: Improve mwUrl and adminEmail input validation and expanding test coverage for input sanitation (@RishabhThakur-19 #2657)
 * FIX: Recursively resolve CSS @import statements (@triemerge #2649)
+* FIX: Improve test coverage for MediaWiki.extractPageTitleFromHref and Rediscompression, also add unit tests for RedisStore.articleDetailXId (@RishabhThakur-19 #2663)
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 * NEW: Add `--customCss` CLI option to inject custom stylesheets
 
