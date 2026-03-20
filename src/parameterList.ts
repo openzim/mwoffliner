@@ -9,6 +9,7 @@ export const parameterDescriptions = {
   customZimTitle: 'ZIM custom title metadata (30 characters max)',
   customZimDescription: 'ZIM custom description (80 characters max)',
   customZimLongDescription: 'ZIM custom long description (4000 characters max)',
+  mainPageLongDescription: 'Populate ZIM LongDescription from the Wikidata description of the primary article (or wiki main page for full-wiki scrapes). Disabled by default.',
   customZimTags: 'ZIM tags metadata (semi-colon separated)',
   customZimLanguage: 'ZIM ISO 639-3 content language code',
   customMainPage: 'Custom page to be used as welcome page.',

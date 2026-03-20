@@ -84,6 +84,7 @@ async function execute(argv: any) {
     customZimTitle,
     customZimDescription,
     customZimLongDescription,
+    mainPageLongDescription,
     customZimTags,
     customZimLanguage,
     withoutZimFullTextIndex,
@@ -238,6 +239,35 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasActionParseApi()
   await MediaWiki.hasModuleApi()
+
+  // Fetch LongDescription from the Wikidata description of the primary article.
+  let autoLongDescription = ''
+  if (mainPageLongDescription && !customZimLongDescription) {
+    const isSimpleTitle = articleList && !articleList.startsWith('http') && !articleList.includes('/') && !articleList.includes('\n')
+    const descriptionTarget = isSimpleTitle ? articleList.split(',')[0].trim().replace(/ /g, '_') : mwMetaData.mainPage
+    if (descriptionTarget) {
+      try {
+        const resp = await Downloader.getJSON<any>(
+          Downloader.apiUrlDirector.buildQueryURL({ action: 'query', prop: 'description', titles: descriptionTarget, format: 'json', formatversion: '2', maxlag: config.defaults.maxlag }),
+        )
+        autoLongDescription = resp?.query?.pages?.[0]?.description || ''
+        // HTML Fallback for non-Wikimedia wikis
+        if (!autoLongDescription) {
+          const mainPageUrl = MediaWiki.webUrl.href + encodeURIComponent(descriptionTarget)
+          const { content } = await Downloader.downloadContent(mainPageUrl, 'data')
+          const htmlStr = typeof content === 'string' ? content : content.toString()
+          const doc = domino.createDocument(htmlStr)
+          const metaDesc = doc.querySelector('meta[name="description"]')
+          if (metaDesc) {
+            autoLongDescription = metaDesc.getAttribute('content') || ''
+          }
+        }
+        if (autoLongDescription) logger.log(`LongDescription from "${descriptionTarget}": "${autoLongDescription}"`)
+      } catch (err: any) {
+        logger.warn(`Could not fetch LongDescription from "${descriptionTarget}": ${err.message}`)
+      }
+    }
+  }
 
   await RenderingContext.createRenderers(forceRender)
 
@@ -394,7 +424,7 @@ async function execute(argv: any) {
       Flavour: dump.computeFlavour(),
       Scraper: `mwoffliner ${packageJSON.version}`,
       Source: MediaWiki.webUrl.hostname,
-      ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
+      ...(dump.opts.customZimLongDescription || autoLongDescription ? { LongDescription: dump.opts.customZimLongDescription || autoLongDescription } : {}),
     }
     validateMetadata(metadata)
 
