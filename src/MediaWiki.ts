@@ -409,14 +409,30 @@ class MediaWiki {
   }
 
   public getDefaultSkin(skins: SiteInfoSkin[]) {
-    const defaultSkins = skins.filter((skin) => skin.default).map((skin) => skin.code)
-    if (defaultSkins.length == 0) {
-      throw new Error(`This wiki has no default skin:\n${JSON.stringify(skins)}`)
+    // Get all default skins
+    const defaultSkins = skins.filter((s) => s.default)
+
+    // No default skin, throw error
+    if (defaultSkins.length === 0) {
+      throw new Error(`No default skin found. Invalid MediaWiki configuration:\n${JSON.stringify(skins)}`)
     }
+
+    //  Multiple defaults
     if (defaultSkins.length > 1) {
       logger.warn('Multiple default skins found, defaulting to first default one')
     }
-    return defaultSkins[0]
+
+    // Prefer first usable default skin
+    const usableDefault = defaultSkins.find((s) => !s.unusable)
+
+    if (usableDefault) {
+      return usableDefault.code
+    }
+
+    //  All defaults unusable → fallback
+    logger.warn(`All default skins are unusable, falling back to: ${defaultSkins[0].code}`)
+
+    return defaultSkins[0].code
   }
 
   public async getSiteInfo({ addNamespaces, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {

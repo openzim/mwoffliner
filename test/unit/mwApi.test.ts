@@ -128,6 +128,18 @@ describe('mwApi', () => {
     const absoluteIndexPathNoTitle = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&redlink=1')
     // An index.php link missing the article title
     expect(absoluteIndexPathNoTitle).toBeNull()
+
+    const fullUrl = MediaWiki.extractPageTitleFromHref('https://en.wikipedia.org/wiki/Blue_whale')
+    // Full absolute URL
+    expect(fullUrl).toBe('Blue_whale')
+
+    const encodedUrl = MediaWiki.extractPageTitleFromHref('/wiki/Blue%20whale')
+    // URL with encoded space
+    expect(encodedUrl).toBe('Blue whale')
+
+    const emptyInput = MediaWiki.extractPageTitleFromHref('')
+    // Empty input should return null
+    expect(emptyInput).toBeNull()
   })
 })
 
@@ -197,6 +209,22 @@ describe('Mediawiki utils', () => {
       ],
       'vector-2022',
     ],
+    [
+      // Ignore unusable default, pick valid one
+      [
+        { code: 'vector-2022', name: 'Vector (2022)', default: true, unusable: true },
+        { code: 'vector', name: 'Vector Legacy', default: true },
+      ],
+      'vector',
+    ],
+    [
+      // Default exists but is unusable
+      [
+        { code: 'vector-2022', name: 'Vector (2022)', default: true, unusable: true },
+        { code: 'vector', name: 'Vector Legacy' },
+      ],
+      'vector-2022',
+    ],
   ])('Get skin', (skins: SiteInfoSkin[], defaultSkin: string) => {
     expect(MediaWiki.getDefaultSkin(skins)).toBe(defaultSkin)
   })
@@ -210,7 +238,27 @@ describe('Mediawiki utils', () => {
         { code: 'modern', name: 'Modern', unusable: true },
       ],
     ],
-  ])('Get skin', (skins: SiteInfoSkin[]) => {
+    [
+      // All skins unusable
+      [
+        { code: 'modern', name: 'Modern', unusable: true },
+        { code: 'vector-2022', name: 'Vector (2022)', unusable: true },
+        { code: 'legacy', name: 'Legacy', unusable: true },
+      ],
+    ],
+    [
+      // Empty array
+      [],
+    ],
+  ])('Get skin (error cases)', (skins: SiteInfoSkin[]) => {
+    expect(() => MediaWiki.getDefaultSkin(skins)).toThrow()
+  })
+  test('no default but usable skins exist', () => {
+    const skins = [
+      { code: 'vector', name: 'Vector' },
+      { code: 'modern', name: 'Modern' },
+    ]
+
     expect(() => MediaWiki.getDefaultSkin(skins)).toThrow()
   })
 })
