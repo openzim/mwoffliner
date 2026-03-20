@@ -138,6 +138,36 @@ describe('processHtml', () => {
     })
   })
 
+  describe('image tags', () => {
+    const imageSrc = '//upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Dendritic_cell_revealed.jpg/250px-Dendritic_cell_revealed.jpg'
+
+    it('captures requested width from the img width attribute', async () => {
+      const { imageDependencies } = await testProcessHtml(`<img src="${imageSrc}" width="180" height="135">`)
+      // console.log('debug imageDependencies single', imageDependencies)
+
+      expect(imageDependencies).toHaveLength(1)
+      expect(imageDependencies[0].url).toEqual(`https:${imageSrc}`)
+      expect(imageDependencies[0].width).toEqual(180)
+    })
+
+    it('keeps the maximum requested width for duplicate image URLs', async () => {
+      const { imageDependencies } = await testProcessHtml(`<img src="${imageSrc}" width="180"><img src="${imageSrc}" width="320">`)
+      // console.log('debug imageDependencies dup', imageDependencies)
+
+      expect(imageDependencies).toHaveLength(1)
+      expect(imageDependencies[0].url).toEqual(`https:${imageSrc}`)
+      expect(imageDependencies[0].width).toEqual(320)
+    })
+
+    it('missing width attribute still produces dependency without width (URL fallback)', async () => {
+      const { imageDependencies } = await testProcessHtml(`<img src="${imageSrc}">`)
+
+      expect(imageDependencies).toHaveLength(1)
+      expect(imageDependencies[0].url).toEqual(`https:${imageSrc}`)
+      expect(imageDependencies[0].width).toBeUndefined()
+    })
+  })
+
   describe('iframe', () => {
     it('remove empty iframe', async () => {
       const { finalHTML } = await testProcessHtml(`<div id="foo"><iframe></iframe></div>`)
