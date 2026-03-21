@@ -277,13 +277,13 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
         matchingRule.httpReturnCodes.findIndex((httpReturnCode) => err.httpReturnCode >= httpReturnCode.min && err.httpReturnCode <= httpReturnCode.max) >= 0) &&
       (!matchingRule.contentTypes ||
         matchingRule.contentTypes.findIndex((contentType) => (err.responseContentType || '').toLowerCase().includes(contentType.toLowerCase())) >= 0) &&
-      (!matchingRule.responseIsEmpty || err.responseData == '') &&
+      (!matchingRule.responseIsEmpty || err.responseData === '') &&
       (!matchingRule.rawResponseDataContains ||
-        matchingRule.rawResponseDataContains.findIndex((rawResponseDataContain) => typeof err.responseData == 'string' && err.responseData.includes(rawResponseDataContain)) >=
+        matchingRule.rawResponseDataContains.findIndex((rawResponseDataContain) => typeof err.responseData === 'string' && err.responseData.includes(rawResponseDataContain)) >=
           0) &&
       (!matchingRule.jsonResponseDataContains ||
         matchingRule.jsonResponseDataContains.findIndex(
-          (jsonResponseDataContain) => typeof err.responseData == 'object' && jsonMatch(err.responseData, jsonResponseDataContain.key, jsonResponseDataContain.valueContains),
+          (jsonResponseDataContain) => typeof err.responseData === 'object' && jsonMatch(err.responseData, jsonResponseDataContain.key, jsonResponseDataContain.valueContains),
         ) >= 0)
     ) {
       return matchingRule
