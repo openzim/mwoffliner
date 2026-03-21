@@ -71,7 +71,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
           }
         }
         const keys = Object.keys(articleDetails)
-        if (keys.length == 0) {
+        if (keys.length === 0) {
           return
         }
         const existingArticleDetails = await articleDetailXId.getMany(keys)

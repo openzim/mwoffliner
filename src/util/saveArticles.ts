@@ -99,7 +99,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
       const completedHosts = hostValues.reduce((buf, host) => {
         return host.downloadsComplete ? buf + 1 : 0
       }, 0)
-      if (completedHosts == hostValues.length) {
+      if (completedHosts === hostValues.length) {
         return null
       }
 
@@ -167,7 +167,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
         }
       })
       .catch(async (err) => {
-        if (fileToDownload.downloadAttempts > MAX_FILE_DOWNLOAD_RETRIES || (err.response && err.response.status == 404)) {
+        if (fileToDownload.downloadAttempts > MAX_FILE_DOWNLOAD_RETRIES || (err.response && err.response.status === 404)) {
           logger.warn(`Error downloading file [${urlHelper.deserializeUrl(fileToDownload.url)}] [status=${err.response?.status}], skipping`)
           dump.status.files.fail += 1
           hostData.downloadFailure += 1
