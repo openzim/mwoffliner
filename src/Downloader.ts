@@ -221,7 +221,7 @@ class Downloader {
           logger.log(`Retrying ${requestedUrl} URL due to ${err.code} error`)
           return true // retry all connection issues
         }
-        if (err.responseData?.error?.code == 'maxlag') {
+        if (err.responseData?.error?.code === 'maxlag') {
           logger.log(`Mediawiki server is lagging ${err.responseData?.error?.lag}s; retrying in few seconds`)
           return true // note that we do not honor Retry-After header value because it is not possible in current code architecture
         }

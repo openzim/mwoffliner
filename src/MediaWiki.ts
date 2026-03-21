@@ -410,7 +410,7 @@ class MediaWiki {
 
   public getDefaultSkin(skins: SiteInfoSkin[]) {
     const defaultSkins = skins.filter((skin) => skin.default).map((skin) => skin.code)
-    if (defaultSkins.length == 0) {
+    if (defaultSkins.length === 0) {
       throw new Error(`This wiki has no default skin:\n${JSON.stringify(skins)}`)
     }
     if (defaultSkins.length > 1) {
