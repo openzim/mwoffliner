@@ -77,12 +77,22 @@ interface RKVS<T> {
   flush: () => Promise<number>
 }
 
+interface RSET {
+  add: (value: string) => Promise<boolean>
+  has: (value: string) => Promise<boolean>
+  remove: (value: string) => Promise<number>
+  deleteMany: (values: string[]) => Promise<number>
+  len: () => Promise<number>
+  flush: () => Promise<number>
+}
+
 // RedisStore Interface
 interface RS {
   readonly client: any // RedisClientType
   readonly filesToDownloadXPath: RKVS<FileDetail>
   readonly articleDetailXId: RKVS<ArticleDetail>
   readonly redirectsXId: RKVS<ArticleRedirect>
+  readonly queuedFilePathsSet: RSET
   connect: (populateStores?: boolean) => Promise<void>
   close: () => Promise<void>
   createRedisKvs: (dbName: string, keyMapping?: KVS<string>) => RKVS<any>

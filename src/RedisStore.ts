@@ -3,6 +3,7 @@ import type { RedisClientType } from 'redis'
 import RedisKvs from './util/RedisKvs.js'
 import * as logger from './Logger.js'
 import RedisQueue from './util/RedisQueue.js'
+import RedisSet from './util/RedisSet.js'
 
 class RedisStore implements RS {
   private static instance: RedisStore
@@ -12,6 +13,7 @@ class RedisStore implements RS {
   #filesToDownloadXPath: RKVS<FileDetail>
   #articleDetailXId: RKVS<ArticleDetail>
   #redirectsXId: RKVS<ArticleRedirect>
+  #queuedFilePathsSet: RSET
   #filesQueues: RedisQueue<FileToDownload>[]
 
   private constructor() {
@@ -32,6 +34,10 @@ class RedisStore implements RS {
 
   public get redirectsXId(): RKVS<ArticleRedirect> {
     return this.#redirectsXId
+  }
+
+  public get queuedFilePathsSet(): RSET {
+    return this.#queuedFilePathsSet
   }
 
   public get filesQueues(): RedisQueue<FileToDownload>[] {
@@ -88,7 +94,13 @@ class RedisStore implements RS {
   public async close() {
     if (this.#client.isReady && this.#storesReady) {
       logger.log('Flushing Redis DBs')
-      await Promise.all([this.#filesToDownloadXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush(), ...this.#filesQueues.map((queue) => queue.flush)])
+      await Promise.all([
+        this.#filesToDownloadXPath.flush(),
+        this.#articleDetailXId.flush(),
+        this.#redirectsXId.flush(),
+        this.#queuedFilePathsSet.flush(),
+        ...this.#filesQueues.map((queue) => queue.flush()),
+      ])
     }
     if (this.#client.isOpen) {
       await this.#client.quit()
@@ -96,22 +108,35 @@ class RedisStore implements RS {
   }
 
   public async checkForExistingStores() {
-    const patterns = ['*-media', '*-detail', '*-redirect', '*-files']
+    const patterns = ['*-media', '*-detail', '*-redirect', '*-queued-paths', '*-files']
     let keys: string[] = []
     for (const pattern of patterns) {
       keys = keys.concat(await this.#client.keys(pattern))
     }
 
-    keys.forEach(async (key) => {
+    for (const key of keys) {
       try {
-        const length = await this.#client.hLen(key)
-        const time = new Date(Number(key.slice(0, key.indexOf('-'))))
-        logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key} with length ${length}`)
-        this.#client.del(key)
+        let length: number
+        if (key.endsWith('-files')) {
+          length = await this.#client.lLen(key)
+        } else if (key.endsWith('-queued-paths')) {
+          length = await this.#client.sCard(key)
+        } else {
+          length = await this.#client.hLen(key)
+        }
+        const firstDashIdx = key.indexOf('-')
+        const maybeTimestamp = firstDashIdx > 0 ? Number(key.slice(0, firstDashIdx)) : Number.NaN
+        if (Number.isFinite(maybeTimestamp)) {
+          const time = new Date(maybeTimestamp)
+          logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key} with length ${length}`)
+        } else {
+          logger.warn(`Deleting store from previous run with non-timestamped key: ${key} with length ${length}`)
+        }
+        await this.#client.del(key)
       } catch {
         logger.error(`Key ${key} exists in DB, and is no hash.`)
       }
-    })
+    }
   }
 
   private async populateStores() {
@@ -137,6 +162,7 @@ class RedisStore implements RS {
       t: 'targetId',
       n: 'title',
     })
+    this.#queuedFilePathsSet = new RedisSet(this.#client, `${Date.now()}-queued-paths`)
   }
 
   public createRedisKvs(...args: [string, KVS<string>?]): RKVS<any> {

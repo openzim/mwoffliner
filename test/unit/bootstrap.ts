@@ -9,8 +9,8 @@ RedisStore.setOptions(process.env.REDIS || config.defaults.redisPath, { quitOnEr
 
 export const startRedis = async () => {
   await RedisStore.connect()
-  const { articleDetailXId, redirectsXId, filesToDownloadXPath, filesQueues } = RedisStore
-  await Promise.all([articleDetailXId.flush(), redirectsXId.flush(), filesToDownloadXPath.flush(), ...filesQueues.map((queue) => queue.flush())])
+  const { articleDetailXId, redirectsXId, filesToDownloadXPath, queuedFilePathsSet, filesQueues } = RedisStore
+  await Promise.all([articleDetailXId.flush(), redirectsXId.flush(), filesToDownloadXPath.flush(), queuedFilePathsSet.flush(), ...filesQueues.map((queue) => queue.flush())])
 }
 
 export const stopRedis = async () => {
