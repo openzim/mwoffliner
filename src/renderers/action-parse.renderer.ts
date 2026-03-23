@@ -7,6 +7,7 @@ import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, ge
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode, javaScriptTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
+import { customCssUrlToFilename } from '../util/customCss.js'
 import Gadgets from '../Gadgets.js'
 import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
 
@@ -85,6 +86,14 @@ export class ActionParseRenderer extends Renderer {
       .replace('__ARTICLE_JS_MODULES__', jsonStringify(jsDependenciesList))
       .replace('__ARTICLE_CSS_STATE__', jsonStringify(articleCssState))
 
+    // Generate custom CSS links from --customCss option
+    const customCssLinks = (Downloader.customCssUrls || [])
+      .map((cssUrl: string) => {
+        const filename = customCssUrlToFilename(cssUrl)
+        return genHeaderCSSLink(config, filename, articleId, config.output.dirs.res)
+      })
+      .join('\n    ')
+
     const htmlTemplateString = this.#htmlTemplateCode()
       .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
       .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
@@ -94,6 +103,7 @@ export class ActionParseRenderer extends Renderer {
       .replace('__ARTICLE_JS_STARTUP__', articleJsStartup)
       .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
       .replace('__ARTICLE_CSS_NOSCRIPT__', articleCssNoscript)
+      .replace('__CUSTOM_CSS__', customCssLinks)
       .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
       .replace(/__RES_DIR__/g, config.output.dirs.res)
       .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
