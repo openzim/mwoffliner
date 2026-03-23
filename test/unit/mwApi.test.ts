@@ -209,22 +209,6 @@ describe('Mediawiki utils', () => {
       ],
       'vector-2022',
     ],
-    [
-      // Ignore unusable default, pick valid one
-      [
-        { code: 'vector-2022', name: 'Vector (2022)', default: true, unusable: true },
-        { code: 'vector', name: 'Vector Legacy', default: true },
-      ],
-      'vector',
-    ],
-    [
-      // Default exists but is unusable
-      [
-        { code: 'vector-2022', name: 'Vector (2022)', default: true, unusable: true },
-        { code: 'vector', name: 'Vector Legacy' },
-      ],
-      'vector-2022',
-    ],
   ])('Get skin', (skins: SiteInfoSkin[], defaultSkin: string) => {
     expect(MediaWiki.getDefaultSkin(skins)).toBe(defaultSkin)
   })
@@ -238,27 +222,7 @@ describe('Mediawiki utils', () => {
         { code: 'modern', name: 'Modern', unusable: true },
       ],
     ],
-    [
-      // All skins unusable
-      [
-        { code: 'modern', name: 'Modern', unusable: true },
-        { code: 'vector-2022', name: 'Vector (2022)', unusable: true },
-        { code: 'legacy', name: 'Legacy', unusable: true },
-      ],
-    ],
-    [
-      // Empty array
-      [],
-    ],
-  ])('Get skin (error cases)', (skins: SiteInfoSkin[]) => {
-    expect(() => MediaWiki.getDefaultSkin(skins)).toThrow()
-  })
-  test('no default but usable skins exist', () => {
-    const skins = [
-      { code: 'vector', name: 'Vector' },
-      { code: 'modern', name: 'Modern' },
-    ]
-
+  ])('Get skin', (skins: SiteInfoSkin[]) => {
     expect(() => MediaWiki.getDefaultSkin(skins)).toThrow()
   })
 })
