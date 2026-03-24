@@ -21,12 +21,12 @@ const createDownloader = () => {
 }
 
 const stubImmediateBackoff = (downloader: DownloaderClass) => {
-  ;(downloader as any).backoffCall = (handler: any, url: string, kind: any, cb: any) => {
+  ;(downloader as any).backoffCall = (handler: any, url: string, kind: any, requestedWidth: any, cb: any) => {
     const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
     let attempts = 0
     const run = () => {
       attempts += 1
-      handler(url, kind, (err: any, val: any) => {
+      handler(url, kind, requestedWidth, (err: any, val: any) => {
         if (err && attempts < 3 && retryIf(err)) {
           run()
           return
