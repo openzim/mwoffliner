@@ -281,6 +281,12 @@
       "title": "Additional modules",
       "description": "Add additional ResourceLoader modules for dynamic loading (comma separated list)",
       "required": false
+    },
+    "customCss": {
+      "type": "string",
+      "required": false,
+      "title": "Custom CSS",
+      "description": "Comma-separated list of CSS URLs to inject into all rendered pages. Alternatively, a path to a local file containing one URL per line."
     }
   }
 }

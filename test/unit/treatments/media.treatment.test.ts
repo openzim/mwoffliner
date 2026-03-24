@@ -181,8 +181,10 @@ describe('MediaTreatment', () => {
 
       // Video element removed in nopic
       expect(videoEl).toBeUndefined()
-      // Img element removed in nopic
-      expect(imgEl).toBeUndefined()
+      // Img element replaced by placeholder in nopic
+      expect(imgEl).toBeDefined()
+      expect(imgEl.getAttribute('src')).toMatch(/^data:image\/svg\+xml/)
+      expect(ret.imageDependencies).toHaveLength(0)
     })
 
     test('treatMedias format="novid"', async () => {
@@ -199,6 +201,93 @@ describe('MediaTreatment', () => {
       expect(videoEl).toBeUndefined()
       // Img element not removed in novid
       expect(imgEl).toBeDefined()
+    })
+
+    test('treatMedias format="nopic" preserves filename-like alt text as-is in placeholder title', async () => {
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const doc = domino.createDocument('<img src="//upload.wikimedia.org/fake.png" width="250" height="25" alt="Heavyrespawns.png">')
+
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Mechanical_energy')
+      const imgEl = ret.doc.querySelector('img')
+      const imgSrc = imgEl.getAttribute('src')
+      const encodedSvg = imgSrc.split(',')[1]
+      const svg = decodeURIComponent(encodedSvg)
+
+      expect(imgSrc).toMatch(/^data:image\/svg\+xml/)
+      expect(svg).toContain('<title>Heavyrespawns.png</title>')
+      expect(svg).toContain('>Heavyrespawns.png</text>')
+      expect(ret.imageDependencies).toHaveLength(0)
+    })
+
+    test('treatMedias format="nopic" uses style-only image dimensions in placeholder', async () => {
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const doc = domino.createDocument('<img src="//upload.wikimedia.org/fake.png" style="width:100px;height:80px">')
+
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'style_dimensions')
+      const imgEl = ret.doc.querySelector('img')
+      const imgSrc = imgEl.getAttribute('src')
+      const encodedSvg = imgSrc.split(',')[1]
+      const svg = decodeURIComponent(encodedSvg)
+
+      expect(imgEl.getAttribute('width')).toEqual('100')
+      expect(imgEl.getAttribute('height')).toEqual('80')
+      expect(svg).toContain('width="100"')
+      expect(svg).toContain('height="80"')
+      expect(svg).toContain('viewBox="0 0 100 80"')
+      expect(ret.imageDependencies).toHaveLength(0)
+    })
+
+    test('treatMedias format="nopic" hides visible text for small placeholders but keeps title metadata', async () => {
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const doc = domino.createDocument('<img src="//upload.wikimedia.org/fake.png" width="16" height="16" alt="Heavyrespawns.png">')
+
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'small_placeholder')
+      const imgEl = ret.doc.querySelector('img')
+      const imgSrc = imgEl.getAttribute('src')
+      const encodedSvg = imgSrc.split(',')[1]
+      const svg = decodeURIComponent(encodedSvg)
+
+      expect(svg).toContain('<title>Heavyrespawns.png</title>')
+      expect(svg).not.toContain('<text ')
+      expect(svg).not.toContain('<clipPath')
+      expect(ret.imageDependencies).toHaveLength(0)
+    })
+
+    test('treatMedias format="nopic" clips long visible alt text inside the placeholder box', async () => {
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const doc = domino.createDocument('<img src="//upload.wikimedia.org/fake.png" width="250" height="25" alt="Lecture demonstrating conservation of mechanical energy">')
+
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'long_alt')
+      const imgEl = ret.doc.querySelector('img')
+      const imgSrc = imgEl.getAttribute('src')
+      const encodedSvg = imgSrc.split(',')[1]
+      const svg = decodeURIComponent(encodedSvg)
+
+      expect(svg).toContain('<title>Lecture demonstrating conservation of mechanical energy</title>')
+      expect(svg).toContain('<clipPath id="alt-text-clip">')
+      expect(svg).toContain('<g clip-path="url(#alt-text-clip)">')
+      expect(svg).toContain('>Lecture demonstrating conservation of mechanical energy</text>')
+      expect(ret.imageDependencies).toHaveLength(0)
+    })
+
+    test('treatMedias format="nopic" uses 1x1 fallback when dimensions are missing', async () => {
+      const { dump } = await setupScrapeClasses({ format: 'nopic' }) // en wikipedia
+      const doc = domino.createDocument('<img src="//upload.wikimedia.org/fake.png" alt="No dimensions">')
+
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'missing_dimensions')
+      const imgEl = ret.doc.querySelector('img')
+      const imgSrc = imgEl.getAttribute('src')
+      const encodedSvg = imgSrc.split(',')[1]
+      const svg = decodeURIComponent(encodedSvg)
+
+      expect(imgEl.getAttribute('width')).toBeNull()
+      expect(imgEl.getAttribute('height')).toBeNull()
+      expect(svg).toContain('width="1"')
+      expect(svg).toContain('height="1"')
+      expect(svg).toContain('viewBox="0 0 1 1"')
+      expect(svg).toContain('<title>No dimensions</title>')
+      expect(svg).not.toContain('<text ')
+      expect(ret.imageDependencies).toHaveLength(0)
     })
   })
 })

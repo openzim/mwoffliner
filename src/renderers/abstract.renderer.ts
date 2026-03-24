@@ -339,7 +339,7 @@ export abstract class Renderer {
   private treatImageFrames(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
     const image = imageNode.getElementsByTagName('img')[0] || imageNode.getElementsByTagName('video')[0]
 
-    if (!this.shouldKeepNode(dump, imageNode, image)) {
+    if (!this.shouldKeepNode(imageNode, image)) {
       DOMUtils.deleteNode(imageNode)
       return
     }
@@ -376,8 +376,13 @@ export abstract class Renderer {
   private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ imageDependencies: string[] }> {
     const imageDependencies: string[] = []
 
-    if (!this.shouldKeepImage(dump, img)) {
+    if (!this.shouldKeepImage(img)) {
       DOMUtils.deleteNode(img)
+      return { imageDependencies }
+    }
+
+    if (dump.nopic && !this.isMathFallbackImage(img)) {
+      this.convertImageToPlaceholder(img)
       return { imageDependencies }
     }
 
@@ -413,14 +418,113 @@ export abstract class Renderer {
     return { imageDependencies }
   }
 
-  private shouldKeepImage(dump: Dump, img: DominoElement) {
+  private convertImageToPlaceholder(img: DominoElement) {
+    const width = this.getImageDimension(img, 'width')
+    const height = this.getImageDimension(img, 'height')
+    const meaningfulAlt = this.getMeaningfulAltText(img)
+    const svgPayload = this.getPlaceholderSvgPayload(width, height, meaningfulAlt, this.shouldRenderVisibleAlt(width, height))
+
+    if (!img.getAttribute('width') && width) {
+      img.setAttribute('width', `${width}`)
+    }
+    if (!img.getAttribute('height') && height) {
+      img.setAttribute('height', `${height}`)
+    }
+
+    img.setAttribute('src', `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgPayload)}`)
+    img.removeAttribute('resource')
+    img.removeAttribute('srcset')
+    img.setAttribute('loading', 'lazy')
+  }
+
+  private getImageDimension(img: DominoElement, attrName: 'width' | 'height'): number | null {
+    const attrValue = Number(img.getAttribute(attrName))
+    if (Number.isFinite(attrValue) && attrValue > 0) {
+      return attrValue
+    }
+
+    const styleValue = this.getImageDimensionFromStyle(img, attrName)
+    if (styleValue) {
+      return styleValue
+    }
+
+    const dataAttrName = attrName === 'width' ? 'data-file-width' : 'data-file-height'
+    const dataAttrValue = Number(img.getAttribute(dataAttrName))
+    if (Number.isFinite(dataAttrValue) && dataAttrValue > 0) {
+      return dataAttrValue
+    }
+
+    return null
+  }
+
+  private getImageDimensionFromStyle(img: DominoElement, attrName: 'width' | 'height'): number | null {
+    const style = img.getAttribute('style')
+    if (!style) {
+      return null
+    }
+
+    const regex = new RegExp(`(?:^|;)\\s*${attrName}\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)\\s*(?:px)?\\s*(?:;|$)`, 'i')
+    const match = style.match(regex)
+    if (!match) {
+      return null
+    }
+
+    const value = Math.round(Number(match[1]))
+    return Number.isFinite(value) && value > 0 ? value : null
+  }
+
+  private shouldRenderVisibleAlt(width: number | null, height: number | null) {
+    return !!width && !!height && width >= 48 && height >= 24
+  }
+
+  private getPlaceholderSvgPayload(width: number | null, height: number | null, meaningfulAlt: string | null, shouldRenderVisibleAlt: boolean) {
+    const safeWidth = width || 1
+    const safeHeight = height || 1
+    const title = meaningfulAlt ? `<title>${this.escapeXml(meaningfulAlt)}</title>` : ''
+    const defs = shouldRenderVisibleAlt ? '<defs><clipPath id="alt-text-clip"><rect x="0" y="0" width="100%" height="100%" /></clipPath></defs>' : ''
+    let text = ''
+
+    if (meaningfulAlt && shouldRenderVisibleAlt) {
+      const fontSize = Math.max(10, Math.min(16, Math.floor(safeHeight / 3)))
+      text =
+        `<g clip-path="url(#alt-text-clip)">` +
+        `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#54595d" font-size="${fontSize}" font-family="sans-serif">${this.escapeXml(meaningfulAlt)}</text>` +
+        '</g>'
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${safeWidth}" height="${safeHeight}" viewBox="0 0 ${safeWidth} ${safeHeight}" preserveAspectRatio="none">${title}${defs}<rect width="100%" height="100%" fill="transparent"/>${text}</svg>`
+  }
+
+  private getMeaningfulAltText(img: DominoElement) {
+    const alt = img.getAttribute('alt')
+    if (!alt) {
+      return null
+    }
+    const compactAlt = alt.replace(/\u00a0/g, ' ').trim()
+    return compactAlt.length > 0 ? compactAlt : null
+  }
+
+  private escapeXml(input: string) {
+    return input.replace(/[<>&"']/g, (char) => {
+      const entities: KVS<string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;',
+        "'": '&apos;',
+      }
+      return entities[char]
+    })
+  }
+
+  private isMathFallbackImage(img: DominoElement) {
     const imageNodeClass = img.getAttribute('class') || ''
+    return imageNodeClass.includes('mwe-math-fallback-image-inline') || img.getAttribute('typeof') === 'mw:Extension/math'
+  }
+
+  private shouldKeepImage(img: DominoElement) {
     const src = img.getAttribute('src')
-    return (
-      (!dump.nopic || imageNodeClass.includes('mwe-math-fallback-image-inline') || img.getAttribute('typeof') === 'mw:Extension/math') &&
-      src &&
-      !src.includes('./Special:FilePath/')
-    )
+    return !!src && !src.includes('./Special:FilePath/')
   }
 
   protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
@@ -460,8 +564,8 @@ export abstract class Renderer {
     return image && image.parentNode && image.parentNode.tagName === 'A'
   }
 
-  private shouldKeepNode(dump: Dump, imageNode: DominoElement, image: DominoElement) {
-    return !dump.nopic && imageNode && image
+  private shouldKeepNode(imageNode: DominoElement, image: DominoElement) {
+    return !!(imageNode && image)
   }
 
   private makeThumbDiv(dump: Dump, parsoidDoc: DominoElement, imageNode: DominoElement) {
@@ -504,7 +608,10 @@ export abstract class Renderer {
           return { url, path }
         }),
     )
-    doc = this.applyOtherTreatments(doc, dump, articleId)
+    // applyOtherTreatments must run before treatMedias so that iframe
+    // placeholders (e.g. YouTube thumbnails) are already in the DOM
+    // when treatMedias processes <img> tags for download into the ZIM.
+    doc = await this.applyOtherTreatments(doc, dump, articleId)
 
     const tmRet = await this.treatMedias(doc, dump, articleId)
 
@@ -681,12 +788,89 @@ export abstract class Renderer {
     element.parentElement.innerHTML = `${slices[0]}<!--htdig_noindex-->${element.outerHTML}<!--/htdig_noindex-->${slices[1]}`
   }
 
-  private removeIframeTags(parsoidDoc: DominoElement) {
-    // Remove all <iframe> tags
+  // Rewrite iframe tags into external placeholders
+  private processIframeTags(parsoidDoc: DominoElement) {
     const iframes: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('iframe'))
+
     for (const iframe of iframes) {
-      DU.deleteNode(iframe)
+      const src = iframe.getAttribute('src')
+      if (!src) {
+        DU.deleteNode(iframe)
+        continue
+      }
+
+      let fullSrc = src
+      try {
+        fullSrc = getFullUrl(src, MediaWiki.baseUrl)
+      } catch {
+        // Keep original src when URL parsing fails
+      }
+
+      const placeholder = this.isYouTubeIframeUrl(fullSrc)
+        ? this.createYouTubePlaceholder(parsoidDoc, iframe, fullSrc, this.extractYouTubeVideoId(fullSrc))
+        : this.createExternalIframePlaceholder(parsoidDoc, iframe, fullSrc)
+      if (iframe.parentNode) {
+        iframe.parentNode.replaceChild(placeholder, iframe)
+      } else {
+        DU.deleteNode(iframe)
+      }
     }
+  }
+  private isYouTubeIframeUrl(url: string) {
+    const lowerUrl = url.toLowerCase()
+    return lowerUrl.includes('youtube.com/embed/') || lowerUrl.includes('youtube-nocookie.com/embed/') || lowerUrl.includes('youtu.be/') || lowerUrl.includes('youtube.com/watch')
+  }
+
+  private extractYouTubeVideoId(url: string): string | null {
+    const match = url.match(/(?:embed\/|v=|\.be\/)([a-zA-Z0-9_-]+)/)
+    return match ? match[1] : null
+  }
+
+  private createExternalIframePlaceholder(parsoidDoc: DominoElement, iframe: DominoElement, originalUrl: string): DominoElement {
+    const card = parsoidDoc.createElement('div')
+    this.copyNodeAttributes(iframe, card)
+    const iframeClass = card.getAttribute('class')
+    card.setAttribute('class', iframeClass ? `${iframeClass} mwo-external-video-card` : 'mwo-external-video-card')
+
+    const link = parsoidDoc.createElement('a')
+    link.setAttribute('class', 'external')
+    link.setAttribute('href', originalUrl)
+    link.textContent = 'Open embedded content (external)'
+    card.appendChild(link)
+    return card
+  }
+
+  private copyNodeAttributes(sourceNode: DominoElement, targetNode: DominoElement) {
+    for (let attributeIndex = 0; attributeIndex < sourceNode.attributes.length; attributeIndex++) {
+      const attribute = sourceNode.attributes.item(attributeIndex)
+      if (!attribute) {
+        continue
+      }
+      targetNode.setAttribute(attribute.name, attribute.value)
+    }
+  }
+
+  private createYouTubePlaceholder(parsoidDoc: DominoElement, iframe: DominoElement, originalUrl: string, videoId: string | null): DominoElement {
+    const link = parsoidDoc.createElement('a')
+    link.setAttribute('class', 'external')
+    link.setAttribute('href', videoId ? `https://www.youtube.com/watch?v=${videoId}` : originalUrl)
+
+    if (!videoId) {
+      link.textContent = 'View this content externally'
+      link.setAttribute('aria-label', 'View this content externally')
+      return link
+    }
+
+    const thumbnail = parsoidDoc.createElement('img')
+    this.copyNodeAttributes(iframe, thumbnail)
+    // Set the online thumbnail URL here; treatMedias will process this
+    // <img> tag later to download the image and rewrite src to a local path in the ZIM.
+    thumbnail.setAttribute('src', `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`)
+    thumbnail.setAttribute('alt', 'Video thumbnail')
+    thumbnail.setAttribute('loading', 'lazy')
+
+    link.appendChild(thumbnail)
+    return link
   }
 
   private removeCitations(parsoidDoc: DominoElement) {
@@ -812,8 +996,8 @@ export abstract class Renderer {
     }
   }
 
-  private applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
-    this.removeIframeTags(parsoidDoc)
+  private async applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+    this.processIframeTags(parsoidDoc)
 
     if (dump.nodet) {
       this.removeCitations(parsoidDoc)
@@ -847,7 +1031,7 @@ export abstract class Renderer {
       // We use MediaWiki.baseUrl which is an approximation but it is deemed sufficient because
       // all non-absolute URL found in inline CSS are expected to be relative to the root, not to
       // current web URL which is "moving" (could use something like /w/index.php?title=... or /wiki/...)
-      style.textContent = processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, articleId)
+      style.textContent = await processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, articleId)
     }
 
     /* Remove element with id in the blacklist */

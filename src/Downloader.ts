@@ -153,6 +153,7 @@ class Downloader {
   private _jsonRequestOptions: AxiosRequestConfig
   private _streamRequestOptions: AxiosRequestConfig
   public trustedJs: string[] = []
+  public customCssUrls: string[] = []
 
   private uaString: string
   private backoffOptions: BackoffOptions
