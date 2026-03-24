@@ -16,6 +16,7 @@ Unreleased:
 * FIX: Recursively resolve CSS @import statements (@triemerge #2649)
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 * NEW: Add `--customCss` CLI option to inject custom stylesheets
+* FIX: Detect continuation cycles in article pagination (@triemerge #2532)
 
 
 1.17.5:
