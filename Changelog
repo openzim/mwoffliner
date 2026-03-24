@@ -17,6 +17,7 @@ Unreleased:
 * FIX: Improve test coverage for MediaWiki.extractPageTitleFromHref and Rediscompression, also add unit tests for RedisStore.articleDetailXId (@RishabhThakur-19 #2663)
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 * NEW: Add `--customCss` CLI option to inject custom stylesheets
+* FIX: Detect continuation cycles in article pagination (@triemerge #2532)
 
 
 1.17.5:
