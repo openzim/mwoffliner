@@ -59,7 +59,9 @@ describe('Extra', () => {
 
       // Scraped customMainPage
       // TODO: clear test dir
-      rimraf.sync(testId)
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(testId)
+      }
 
       const redisScan = await execa('redis-cli --scan', { shell: true })
       // Redis has been cleared
