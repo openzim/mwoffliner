@@ -381,6 +381,13 @@ export abstract class Renderer {
       return { imageDependencies }
     }
 
+    /* Preserve inline data: URL images (e.g. from mw.svg) as-is */
+    const imgSrc = img.getAttribute('src')
+    if (imgSrc.startsWith('data:')) {
+      img.setAttribute('loading', 'lazy')
+      return { imageDependencies }
+    }
+
     if (dump.nopic && !this.isMathFallbackImage(img)) {
       this.convertImageToPlaceholder(img)
       return { imageDependencies }
@@ -488,7 +495,9 @@ export abstract class Renderer {
       const fontSize = Math.max(10, Math.min(16, Math.floor(safeHeight / 3)))
       text =
         `<g clip-path="url(#alt-text-clip)">` +
-        `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#54595d" font-size="${fontSize}" font-family="sans-serif">${this.escapeXml(meaningfulAlt)}</text>` +
+        `<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#54595d" font-size="${fontSize}" font-family="sans-serif">${this.escapeXml(
+          meaningfulAlt,
+        )}</text>` +
         '</g>'
     }
 

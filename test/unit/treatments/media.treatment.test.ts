@@ -289,5 +289,19 @@ describe('MediaTreatment', () => {
       expect(svg).not.toContain('<text ')
       expect(ret.imageDependencies).toHaveLength(0)
     })
+
+    test('data: URL images are preserved as-is', async () => {
+      const { dump } = await setupScrapeClasses({ format: '' })
+      const dataUrl = 'data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjMwIiB3aWR0aD0iMzAiPjwvc3ZnPg=='
+      const testHtml = `<img src="${dataUrl}">`
+      const doc = domino.createDocument(testHtml)
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Test_Article')
+
+      const imgEl = doc.querySelector('img')
+      expect(imgEl).not.toBeNull()
+      expect(imgEl.getAttribute('src')).toEqual(dataUrl)
+      expect(imgEl.getAttribute('loading')).toEqual('lazy')
+      expect(ret.imageDependencies.length).toEqual(0)
+    })
   })
 })
