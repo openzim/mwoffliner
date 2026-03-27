@@ -4,6 +4,7 @@
 import 'dotenv/config'
 import RedisStore from '../../src/RedisStore.js'
 import { config } from '../../src/config.js'
+import FileManager from '../../src/util/FileManager.js'
 
 RedisStore.setOptions(process.env.REDIS || config.defaults.redisPath, { quitOnError: false })
 
@@ -11,6 +12,7 @@ export const startRedis = async () => {
   await RedisStore.connect()
   const { articleDetailXId, redirectsXId, filesToDownloadXPath, filesQueues } = RedisStore
   await Promise.all([articleDetailXId.flush(), redirectsXId.flush(), filesToDownloadXPath.flush(), ...filesQueues.map((queue) => queue.flush())])
+  FileManager.reset()
 }
 
 export const stopRedis = async () => {
