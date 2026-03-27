@@ -22,14 +22,13 @@ interface KVS<T> {
 }
 
 type ArticleDetail = PageInfo & {
-  subCategories?: PageInfo[]
-  categories?: PageInfo[]
   pages?: PageInfo[]
   thumbnail?: {
     source: string
     height: number
     width: number
   }
+  categoryinfo?: CategoryInfo
   coordinates?: string // coordinates.0.lat;coordinates.0.lon
   timestamp?: string // revisions.0.timestamp
   revisionId?: number // revisions.0.revid
@@ -112,10 +111,30 @@ type QueryRedirectsRet = Array<
   }
 >
 
+type CategoryInfo = {
+  size: number
+  pages: number
+  files: number
+  subcats: number
+  hidden: boolean
+  nogallery: boolean
+}
+
+type GroupedCategoryMembers = {
+  subcats: Array<CategoryMember>
+  pages: Array<CategoryMember>
+  files: Array<CategoryMember>
+  categoryinfo: CategoryInfo
+}
+
+type CategoryMember = PageInfo & {
+  sortkeyprefix: string
+  type: 'subcat' | 'page' | 'file'
+}
+
 type TextDirection = 'ltr' | 'rtl'
 
 interface QueryRet {
-  subCategories?: PageInfo[] // :(
   categories?: QueryCategoriesRet
   revisions?: QueryRevisionsRet
   coordinates?: QueryCoordinatesRet
@@ -123,6 +142,17 @@ interface QueryRet {
   pagelanguagehtmlcode?: string
   pagelanguagedir?: TextDirection
   contentmodel: string
+
+  categoryinfo?: {
+    size: number
+    pages: number
+    files: number
+    subcats: number
+    hidden: boolean
+  }
+  pageprops?: {
+    nogallery?: ''
+  }
 
   thumbnail?: {
     source: string
@@ -179,6 +209,7 @@ interface MWMetaData {
   logo: string
   licenseName: string
   licenseUrl: string
+  categoryCollation: string
 
   baseUrl: string
   wikiPath: string
