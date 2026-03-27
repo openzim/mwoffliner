@@ -88,7 +88,7 @@ class RedisStore implements RS {
   public async close() {
     if (this.#client.isReady && this.#storesReady) {
       logger.log('Flushing Redis DBs')
-      await Promise.all([this.#filesToDownloadXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush(), ...this.#filesQueues.map((queue) => queue.flush)])
+      await Promise.all([this.#filesToDownloadXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush(), ...this.#filesQueues.map((queue) => queue.flush())])
     }
     if (this.#client.isOpen) {
       await this.#client.quit()
@@ -102,16 +102,18 @@ class RedisStore implements RS {
       keys = keys.concat(await this.#client.keys(pattern))
     }
 
-    keys.forEach(async (key) => {
-      try {
-        const length = await this.#client.hLen(key)
-        const time = new Date(Number(key.slice(0, key.indexOf('-'))))
-        logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key} with length ${length}`)
-        this.#client.del(key)
-      } catch {
-        logger.error(`Key ${key} exists in DB, and is no hash.`)
-      }
-    })
+    await Promise.all(
+      keys.map(async (key) => {
+        try {
+          const length = await this.#client.hLen(key)
+          const time = new Date(Number(key.slice(0, key.indexOf('-'))))
+          logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key} with length ${length}`)
+          await this.#client.del(key)
+        } catch {
+          logger.error(`Key ${key} exists in DB, and is no hash.`)
+        }
+      }),
+    )
   }
 
   private async populateStores() {

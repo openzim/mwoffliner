@@ -325,14 +325,16 @@ export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: stri
 
 // URLs should be kept the same as Kiwix JS relies on it.
 export async function addWebpJsScripts(zimCreator: Creator) {
-  ;[
-    { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
-    { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
-    { name: 'webpHandler', path: path.join(__dirname, '../../res/webpHandler.js') },
-  ].forEach(async ({ name, path }) => {
-    const item = new StringItem(`${config.output.dirs.webp}/${jsPath(name)}`, 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(path, 'utf8').toString())
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
-  })
+  await Promise.all(
+    [
+      { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
+      { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
+      { name: 'webpHandler', path: path.join(__dirname, '../../res/webpHandler.js') },
+    ].map(async ({ name, path: scriptPath }) => {
+      const item = new StringItem(`${config.output.dirs.webp}/${jsPath(name)}`, 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(scriptPath, 'utf8').toString())
+      await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
+    }),
+  )
 }
 
 export interface ResourceLoaderModule extends Array<any> {
