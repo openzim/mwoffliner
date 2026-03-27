@@ -171,7 +171,7 @@ export abstract class Renderer {
     const originalSrc = videoEl.getAttribute('src')
 
     // Take into account the rare edge case where <video> has no <source> child
-    if (videoSourceEls.length == 0) {
+    if (videoSourceEls.length === 0) {
       if (originalSrc && originalSrc.endsWith('.webm')) {
         // If video has a webm `src` attribute, this is an acceptable src
         return videoEl
@@ -260,7 +260,7 @@ export abstract class Renderer {
     audioEl.removeAttribute('resource')
 
     // Take into account the standard case where <audio> has no <source> child
-    if (audioSourceEls.length == 0) {
+    if (audioSourceEls.length === 0) {
       if (originalSrc) {
         // If audio has a single `src` or `resource` attribute, this is an acceptable src
         // Set this source back in `src`, no matter where it originally was
