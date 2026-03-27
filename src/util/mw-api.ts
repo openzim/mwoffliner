@@ -101,6 +101,7 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], allow
   return new Promise(async (resolve, reject) => {
     let totalArticles = 0
     let chunk: { articleDetails: QueryMwRet; gapContinue: string }
+    const seenGapContinueValues: string[] = []
 
     const { articleDetailXId, redirectsXId } = RedisStore
 
@@ -128,6 +129,16 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], allow
         timer.reset()
         curStage = 0
         chunk = await Downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
+
+        if (chunk.gapContinue) {
+          if (seenGapContinueValues.includes(chunk.gapContinue)) {
+            throw new Error(
+              `Detected continuation cycle while fetching articles in namespace ${ns}. ` +
+                `Repeated gapContinue=${chunk.gapContinue} after visiting: [${seenGapContinueValues.join(', ')}]`,
+            )
+          }
+          seenGapContinueValues.push(chunk.gapContinue)
+        }
 
         // Filter articles without revisions (#2238)
         const newArticlesToIgnore = Object.values(chunk.articleDetails)

@@ -374,6 +374,7 @@ class Downloader {
   public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
     let continuation: ContinueOpts
     let finalProcessedResp: QueryMwRet
+    const visitedUrls = new Set<string>()
 
     while (true) {
       const queryOpts: KVS<any> = {
@@ -390,6 +391,13 @@ class Downloader {
       }
 
       const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
+      if (visitedUrls.has(reqUrl)) {
+        throw new Error(
+          `Detected continuation cycle while fetching article details by IDs. ` +
+            `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`,
+        )
+      }
+      visitedUrls.add(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
 
@@ -415,6 +423,7 @@ class Downloader {
     let queryContinuation: QueryContinueOpts
     let finalProcessedResp: QueryMwRet
     let gCont: string = null
+    const visitedUrls = new Set<string>()
 
     while (true) {
       const queryOpts: KVS<any> = {
@@ -442,6 +451,13 @@ class Downloader {
       }
 
       const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
+      if (visitedUrls.has(reqUrl)) {
+        throw new Error(
+          `Detected continuation cycle while fetching article details in namespace ${ns}. ` +
+            `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`,
+        )
+      }
+      visitedUrls.add(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
