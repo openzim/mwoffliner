@@ -45,7 +45,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
       if (!hosts.has(hostname)) {
         const filesToDownload = new RedisQueue<FileToDownload>(RedisStore.client, `${hostname}-files`)
         RedisStore.filesQueues.push(filesToDownload)
-        filesToDownload.flush()
+        await filesToDownload.flush()
         hosts.set(hostname, {
           filesToDownload,
           requestInterval: 30, // initial request interval is 30 ms
@@ -85,6 +85,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
           while (await hostData.filesToDownload.pop()) {
             dump.status.files.fail += 1
             if (
+              filesTotal > 0 &&
               dump.status.files.fail > FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK &&
               (dump.status.files.fail * 10000) / filesTotal > FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND
             ) {
@@ -97,7 +98,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
       // check if all donwloads have completed and exit
       const hostValues = Array.from(hosts.values())
       const completedHosts = hostValues.reduce((buf, host) => {
-        return host.downloadsComplete ? buf + 1 : 0
+        return host.downloadsComplete ? buf + 1 : buf
       }, 0)
       if (completedHosts === hostValues.length) {
         return null
@@ -146,7 +147,11 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
         prevPercentProgress = percentProgress
         logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`)
       }
-      if (dump.status.files.fail > FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK && (dump.status.files.fail * 10000) / filesTotal > FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND) {
+      if (
+        filesTotal > 0 &&
+        dump.status.files.fail > FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK &&
+        (dump.status.files.fail * 10000) / filesTotal > FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND
+      ) {
         throw new Error(`Too many files failed to download: [${dump.status.files.fail}/${filesTotal}]`)
       }
     }
