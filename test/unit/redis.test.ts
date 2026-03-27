@@ -153,7 +153,8 @@ describe('RedisStore: articleDetailXId', () => {
     expect(newLen).toBe(0)
   })
 
-  test('edge cases: non-existent keys', async () => { // edge case 
+  test('edge cases: non-existent keys', async () => {
+    // if it fails that means error in fucntion's logic
     const kvs = RedisStore.articleDetailXId
 
     const result = await kvs.get('DoesNotExist')
@@ -163,8 +164,8 @@ describe('RedisStore: articleDetailXId', () => {
     expect(many.Nope1).toBeNull()
     expect(many.Nope2).toBeNull()
 
-    await kvs.delete('Nope1') // should not crash
-    await kvs.deleteMany(['Nope2']) // should not crash
+    await kvs.delete('Nope1')
+    await kvs.deleteMany(['Nope2'])
   })
 
   test('overwrite existing article', async () => {
