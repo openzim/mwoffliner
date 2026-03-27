@@ -44,6 +44,7 @@ export const parameterDescriptions = {
   langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
   insecure: 'Skip HTTPS server authenticity verification step',
   customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
+  userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',
 }
 
 // TODO: Add an interface based on the object above

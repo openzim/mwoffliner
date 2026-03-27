@@ -106,6 +106,7 @@ async function execute(argv: any) {
     forceSkin,
     langVariant,
     customCss,
+    userAgent: _userAgent,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -180,9 +181,13 @@ async function execute(argv: any) {
   const addModules = _addModules ? String(_addModules).split(',') : []
   const trustedJs = javaScript === 'none' ? null : javaScript === 'trusted' ? config.output.mw.js_trusted.concat(addModules) : []
 
+  /* HTTP user-agent string */
+  const uaString = `${_userAgent || config.userAgent} (${adminEmail})`
+  logger.log(`Using User-Agent: ${uaString}`)
+
   /* Download helpers; TODO: Merge with something else / expand this. */
   Downloader.init = {
-    uaString: `${config.userAgent} (${adminEmail})`,
+    uaString,
     speed,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
     optimisationCacheUrl,
