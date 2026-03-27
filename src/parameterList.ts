@@ -25,7 +25,7 @@ export const parameterDescriptions = {
   outputDirectory: 'Directory to write the downloaded content',
   publisher: "ZIM publisher meta data, by default 'Kiwix'",
   redis: 'Redis path (redis:// URL or path to UNIX socket)',
-  requestTimeout: 'Request timeout in seconds (defaultis 120s)',
+  requestTimeout: 'Request timeout in seconds (default: 60s)',
   resume: 'Skip already existing/created ZIM files',
   speed: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (by default the number of CPU cores). The default value is 1.',
   verbose:

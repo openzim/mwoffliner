@@ -6,7 +6,7 @@ const config = {
   defaults: {
     publisher: 'openZIM',
     redisPath: 'redis://127.0.0.1:6379',
-    requestTimeout: 120 * 1000,
+    requestTimeout: 60 * 1000,
     maxlag: '5',
   },
 

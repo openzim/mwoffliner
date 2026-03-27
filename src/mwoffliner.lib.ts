@@ -159,7 +159,7 @@ async function execute(argv: any) {
     // Decompose the url with path and other S3 creds
     const s3UrlObj = new URL(optimisationCacheUrl)
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
-    s3Obj = new S3(s3Url, s3UrlObj.searchParams, requestTimeout * 1000 || config.defaults.requestTimeout, argv.insecure)
+    s3Obj = new S3(s3Url, s3UrlObj.searchParams, (requestTimeout ?? 60) * 1000, argv.insecure)
     await s3Obj.initialise().then(() => {
       logger.log('Successfully logged in S3')
     })
@@ -184,7 +184,7 @@ async function execute(argv: any) {
   Downloader.init = {
     uaString: `${config.userAgent} (${adminEmail})`,
     speed,
-    reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
+    reqTimeout: (requestTimeout ?? 60) * 1000,
     optimisationCacheUrl,
     s3,
     webp,

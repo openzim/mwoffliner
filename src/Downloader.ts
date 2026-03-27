@@ -195,7 +195,7 @@ class Downloader {
     this.reset()
     this.uaString = uaString
     this._speed = speed
-    this._requestTimeout = reqTimeout
+    this._requestTimeout = reqTimeout ?? 60_000
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
     this.trustedJs = trustedJs

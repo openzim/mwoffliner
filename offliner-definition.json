@@ -206,8 +206,9 @@
       "type": "integer",
       "required": false,
       "title": "Request Timeout",
-      "description": "Request timeout (in seconds)",
-      "min": 1
+      "description": "Request timeout (in seconds). Defaults to 60.",
+      "min": 1,
+      "default": 60
     },
     "speed": {
       "type": "float",
