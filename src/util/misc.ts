@@ -177,28 +177,30 @@ export function interpolateTranslationString(str: string, parameters: { [key: st
 
 export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Creator) {
   try {
-    staticFiles.forEach(async (file) => {
-      const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
+    await Promise.all(
+      Array.from(staticFiles).map(async (file) => {
+        const staticFilesContent = await readFilePromise(pathParser.resolve(__dirname, `../../res/${file}`))
 
-      let zimPath: string
-      let mimetype: string
-      if (file.endsWith('.ttf')) {
-        zimPath = anyPath('ttf', file)
-        mimetype = 'font/ttf'
-      } else if (file.endsWith('.svg')) {
-        zimPath = anyPath('svg', file)
-        mimetype = 'image/svg+xml'
-      } else if (file.endsWith('.css')) {
-        zimPath = cssPath(file)
-        mimetype = 'text/css'
-      } else {
-        zimPath = jsPath(file)
-        mimetype = 'application/javascript'
-      }
+        let zimPath: string
+        let mimetype: string
+        if (file.endsWith('.ttf')) {
+          zimPath = anyPath('ttf', file)
+          mimetype = 'font/ttf'
+        } else if (file.endsWith('.svg')) {
+          zimPath = anyPath('svg', file)
+          mimetype = 'image/svg+xml'
+        } else if (file.endsWith('.css')) {
+          zimPath = cssPath(file)
+          mimetype = 'text/css'
+        } else {
+          zimPath = jsPath(file)
+          mimetype = 'application/javascript'
+        }
 
-      const article = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
-      await zimCreatorMutex.runExclusive(() => zimCreator.addItem(article))
-    })
+        const article = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
+        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(article))
+      }),
+    )
   } catch (err) {
     logger.error(err)
   }
