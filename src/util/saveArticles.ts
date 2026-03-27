@@ -97,7 +97,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
       // check if all donwloads have completed and exit
       const hostValues = Array.from(hosts.values())
       const completedHosts = hostValues.reduce((buf, host) => {
-        return host.downloadsComplete ? buf + 1 : 0
+        return host.downloadsComplete ? buf + 1 : buf
       }, 0)
       if (completedHosts === hostValues.length) {
         return null
