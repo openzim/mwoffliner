@@ -162,6 +162,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
           await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
           dump.status.files.success += 1
           hostData.downloadSuccess += 1
+          hostData.requestInterval = Math.max(30, hostData.requestInterval * 0.9) // gradually recover interval on success
         } else {
           throw new Error(`Bad response received: ${resp}`)
         }
@@ -188,7 +189,7 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
               }
             }
           }
-          // slow down except for wikimedia thumbnails whose server is known to be lying (see https://github.com/openzim/mwoffliner/issues/2572)
+          // slow down on 429/503/524, except for wikimedia thumbnails whose server is known to be lying
           if (
             err.response &&
             [429, 503, 524].includes(err.response.status) &&
