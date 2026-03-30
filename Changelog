@@ -1,5 +1,6 @@
 Unreleased:
 * FIX: Fix fire-and-forget async patterns and file download accounting bugs (@triemerge #2681)
+* FIX: Avoid retrying non-transport processing errors (@triemerge #2685)
 * FIX: Preserve inline data: URL images instead of rewriting them (@nishantharkut #2670)
 * FIX: Replace loose equality with strict equality (@nishantharkut #2669)
 * DEL: Remove unused mocha from production dependencies (@nishantharkut #2668)

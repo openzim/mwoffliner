@@ -172,6 +172,13 @@ export async function downloadFiles(fileStore: RKVS<FileDetail>, zimCreator: Cre
         }
       })
       .catch(async (err) => {
+        const isRetriableTransportError = !!(err?.response || err?.code)
+        if (!isRetriableTransportError) {
+          logger.warn(`Error processing file [${urlHelper.deserializeUrl(fileToDownload.url)}], skipping without retry`, err)
+          dump.status.files.fail += 1
+          hostData.downloadFailure += 1
+          return
+        }
         if (fileToDownload.downloadAttempts > MAX_FILE_DOWNLOAD_RETRIES || (err.response && err.response.status === 404)) {
           logger.warn(`Error downloading file [${urlHelper.deserializeUrl(fileToDownload.url)}] [status=${err.response?.status}], skipping`)
           dump.status.files.fail += 1
