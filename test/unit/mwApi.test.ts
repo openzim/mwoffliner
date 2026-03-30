@@ -128,6 +128,18 @@ describe('mwApi', () => {
     const absoluteIndexPathNoTitle = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&redlink=1')
     // An index.php link missing the article title
     expect(absoluteIndexPathNoTitle).toBeNull()
+
+    const fullUrl = MediaWiki.extractPageTitleFromHref('https://en.wikipedia.org/wiki/Blue_whale')
+    // test for a complete  URL
+    expect(fullUrl).toBe('Blue_whale')
+
+    const encodedUrl = MediaWiki.extractPageTitleFromHref('/wiki/Radio_Rom%C3%A2nia_Actualit%C4%83%C8%9Bi')
+    // URL with special encoded characters
+    expect(encodedUrl).toBe('Radio_România_Actualități')
+
+    const emptyInput = MediaWiki.extractPageTitleFromHref('')
+    // Empty input should return null
+    expect(emptyInput).toBeNull()
   })
 })
 
