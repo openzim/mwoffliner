@@ -98,15 +98,10 @@
       "description": "Which flavours to build, as `<flavour>:<custom-suffix>`. Empty option is full without suffix.",
       "alias": "format",
       "choices": [
-        { "title": "NODET_NOPIC_MINI", "value": "nodet,nopic:mini" },
-        { "title": "NODET_MINI", "value": "nodet:mini" },
-        { "title": "NOPIC_NOPIC", "value": "nopic:nopic" },
-        { "title": "NOVID_MAXI", "value": "novid:maxi" },
-        { "title": "EMPTY", "value": "" },
-        { "title": "NODET", "value": "nodet" },
-        { "title": "NOPIC", "value": "nopic" },
-        { "title": "NOVID", "value": "novid" },
-        { "title": "NODET_NOPIC", "value": "nodet,nopic" }
+        { "title": "mini: no article details or pictures or videos", "value": "nodet,nopic:mini" },
+        { "title": "nopic: no article pictures or videos", "value": "nopic:nopic" },
+        { "title": "maxi: all except article videos", "value": "novid:maxi" },
+        { "title": "all: everything including videos", "value": "" }
       ]
     },
     "customFlavour": {
