@@ -774,7 +774,7 @@ async function execute(argv: any) {
   }
 
   MediaWiki.reset()
-  RedisStore.close()
+  await RedisStore.close()
 
   return dumps
 }
