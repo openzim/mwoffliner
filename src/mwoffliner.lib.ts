@@ -318,6 +318,14 @@ async function execute(argv: any) {
       logger.error(`Failed to read articleList from [${articleList}]`, err)
       throw err
     }
+
+    // When the article list contains exactly one article and no custom main
+    // page was provided, use that article as the ZIM main page directly
+    //(#1891)
+    if (articleListLines.length === 1 && !customMainPage) {
+      mainPage = articleListLines[0].replace(/ /g, '_')
+      logger.log(`Using single article list entry as main page: ${mainPage}`)
+    }
   }
 
   const allowedContentModels = ['wikitext', ...addContentModels]
