@@ -16,13 +16,15 @@
       "description": "Email of the mwoffliner user which will be put in the HTTP user-agent string"
     },
     "articleList": {
-      "type": "string",
+      "type": "blob",
+      "kind": "txt",
       "required": false,
       "title": "Article List",
       "description": "List of articles to include. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line"
     },
     "articleListToIgnore": {
-      "type": "string",
+      "type": "blob",
+      "kind": "txt",
       "required": false,
       "title": "Article List to ignore",
       "description": "List of articles to ignore. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line"
