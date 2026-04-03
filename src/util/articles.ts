@@ -41,7 +41,7 @@ export function getNamespaceName(namespace: number) {
  * Extract the JS config variables from its headHtml, typically returned by MW API call when fetching article content
  */
 export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any> = {}): KVS<any> {
-  const match = headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/) || headHtml.match(/{mw\.config\.set\(({".*?})\);mw\.loader\.state\(/)
+  const match = headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/s) || headHtml.match(/{mw\.config\.set\(({".*?})\);mw\.loader\.state\(/s)
   let jsConfigVars: KVS<any> = {}
   if (match) {
     try {
