@@ -21,6 +21,7 @@ Unreleased:
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 * NEW: Add `--customCss` CLI option to inject custom stylesheets
 * FIX: Detect continuation cycles in article pagination (@triemerge #2532)
+* FIX: Remove Jest stack trace decoration from E2E test logs (@triemerge #2038)
 
 
 1.17.5:
