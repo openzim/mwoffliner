@@ -107,6 +107,7 @@ async function execute(argv: any) {
     langVariant,
     customCss,
     userAgent: _userAgent,
+    useLatestRevision,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -254,6 +255,7 @@ async function execute(argv: any) {
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasActionParseApi()
   await MediaWiki.hasModuleApi()
+  await MediaWiki.hasFlaggedRevs()
 
   await RenderingContext.createRenderers(forceRender)
 
@@ -379,11 +381,18 @@ async function execute(argv: any) {
         keepEmptySections,
         tags: customZimTags,
         filenameDate,
+        useLatestRevision,
       },
       { ...mwMetaData, mainPage },
       customProcessor,
     )
     dumps.push(dump)
+
+    // Set FlaggedRevs preference on Dump for tag generation
+    if ((await MediaWiki.hasFlaggedRevs()) && !dump.opts.useLatestRevision) {
+      dump.preferStableRevisions = true
+    }
+
     logger.log('Doing dump')
     let shouldSkip = false
     try {

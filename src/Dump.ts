@@ -23,6 +23,7 @@ interface DumpOpts {
   keepEmptySections: boolean
   tags?: string
   filenameDate: string
+  useLatestRevision?: boolean
 }
 
 export class Dump {
@@ -31,6 +32,7 @@ export class Dump {
   public novid: boolean
   public nopdf: boolean
   public nodet: boolean
+  public preferStableRevisions: boolean = false
   public opts: DumpOpts
   public strings: KVS<string>
   public mwMetaData: MWMetaData
@@ -179,6 +181,11 @@ export class Dump {
 
     /* Add proper _ftindex tag */
     addTagWithoutDuplicate('_ftindex:' + (this.opts.withoutZimFullTextIndex ? 'no' : 'yes'))
+
+    /* Add FlaggedRevs stable revision tag */
+    if (this.preferStableRevisions) {
+      addTagWithoutDuplicate('flaggedrevs:stable')
+    }
 
     /* Remove empty tags */
     tags = tags.filter((x) => x)

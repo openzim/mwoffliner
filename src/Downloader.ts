@@ -681,7 +681,7 @@ class Downloader {
   }
 
   private async getArticleQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
-    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}`
+    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}${(await MediaWiki.hasFlaggedRevs()) ? '|flagged' : ''}`
     return {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
