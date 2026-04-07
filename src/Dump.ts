@@ -23,6 +23,7 @@ interface DumpOpts {
   keepEmptySections: boolean
   tags?: string
   filenameDate: string
+  stableRevision?: boolean
 }
 
 export class Dump {
