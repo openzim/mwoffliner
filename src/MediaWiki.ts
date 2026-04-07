@@ -127,6 +127,7 @@ class MediaWiki {
   #hasActionParseApi: boolean | null
   #hasCoordinates: boolean | null
   #hasModuleApi: boolean | null
+  #hasFlaggedRevs: boolean | null
 
   set username(value: string) {
     this.#username = value
@@ -221,6 +222,7 @@ class MediaWiki {
     this.#hasActionParseApi = null
     this.#hasCoordinates = null
     this.#hasModuleApi = null
+    this.#hasFlaggedRevs = null
     this.metaData = null
   }
 
@@ -267,6 +269,25 @@ class MediaWiki {
       logger.log('Checked for Module API at', checkUrl, '-- result is: ', this.#hasModuleApi)
     }
     return this.#hasModuleApi
+  }
+
+  public async hasFlaggedRevs(): Promise<boolean> {
+    if (this.#hasFlaggedRevs === null) {
+      const reqOpts = {
+        ...this.queryOpts,
+        prop: 'info|flagged',
+        titles: this.apiCheckArticleId,
+      }
+      const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
+      const isFlaggedWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('flagged')
+      if (isFlaggedWarning) {
+        logger.log('FlaggedRevs not available on this wiki')
+        return (this.#hasFlaggedRevs = false)
+      }
+      logger.log('FlaggedRevs available on this wiki')
+      return (this.#hasFlaggedRevs = true)
+    }
+    return this.#hasFlaggedRevs
   }
 
   private setModuleURL() {

@@ -2,7 +2,7 @@ import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki, { SiteInfoSkin } from '../../src/MediaWiki.js'
 import RedisStore from '../../src/RedisStore.js'
-import { getArticleIds } from '../../src/util/mw-api.js'
+import { getArticleIds, mwRetToArticleDetail } from '../../src/util/mw-api.js'
 import { getArticlesByNS } from '../../src/util/index.js'
 import { config } from '../../src/config.js'
 import { jest } from '@jest/globals'
@@ -224,5 +224,109 @@ describe('Mediawiki utils', () => {
     ],
   ])('Get skin', (skins: SiteInfoSkin[]) => {
     expect(() => MediaWiki.getDefaultSkin(skins)).toThrow()
+  })
+})
+
+describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () => {
+  test('extracts stableRevisionId when flagged.stable_revid is present', () => {
+    const mockQueryRet: QueryMwRet = {
+      Berlin: {
+        title: 'Berlin',
+        ns: 0,
+        contentmodel: 'wikitext',
+        revisions: [{ revid: 200, parentid: 199, minor: '', user: 'TestUser', timestamp: '2024-01-01T00:00:00Z', comment: '' }],
+        flagged: {
+          stable_revid: 180,
+          level: 0,
+          level_text: 'stable',
+        },
+      } as any,
+    }
+
+    const result = mwRetToArticleDetail(mockQueryRet)
+
+    expect(result.Berlin).toBeDefined()
+    expect(result.Berlin.revisionId).toBe(200)
+    expect(result.Berlin.stableRevisionId).toBe(180)
+  })
+
+  test('does not include stableRevisionId when flagged data is absent', () => {
+    const mockQueryRet: QueryMwRet = {
+      London: {
+        title: 'London',
+        ns: 0,
+        contentmodel: 'wikitext',
+        revisions: [{ revid: 100, parentid: 99, minor: '', user: 'SomeUser', timestamp: '2024-01-01T00:00:00Z', comment: '' }],
+      } as any,
+    }
+
+    const result = mwRetToArticleDetail(mockQueryRet)
+
+    expect(result.London).toBeDefined()
+    expect(result.London.revisionId).toBe(100)
+    expect(result.London.stableRevisionId).toBeUndefined()
+  })
+
+  test('does not include stableRevisionId when flagged exists but stable_revid is missing', () => {
+    const mockQueryRet: QueryMwRet = {
+      Paris: {
+        title: 'Paris',
+        ns: 0,
+        contentmodel: 'wikitext',
+        revisions: [{ revid: 300, parentid: 299, minor: '', user: 'Editor', timestamp: '2024-06-01T00:00:00Z', comment: '' }],
+        flagged: {
+          level: 1,
+          level_text: 'quality',
+        },
+      } as any,
+    }
+
+    const result = mwRetToArticleDetail(mockQueryRet)
+
+    expect(result.Paris).toBeDefined()
+    expect(result.Paris.revisionId).toBe(300)
+    expect(result.Paris.stableRevisionId).toBeUndefined()
+  })
+
+  test('handles mix of articles with and without FlaggedRevs data', () => {
+    const mockQueryRet: QueryMwRet = {
+      München: {
+        title: 'München',
+        ns: 0,
+        contentmodel: 'wikitext',
+        revisions: [{ revid: 500, parentid: 499, minor: '', user: 'DEUser', timestamp: '2024-03-01T00:00:00Z', comment: '' }],
+        flagged: { stable_revid: 490 },
+      } as any,
+      Tokyo: {
+        title: 'Tokyo',
+        ns: 0,
+        contentmodel: 'wikitext',
+        revisions: [{ revid: 600, parentid: 599, minor: '', user: 'JPUser', timestamp: '2024-03-01T00:00:00Z', comment: '' }],
+      } as any,
+    }
+
+    const result = mwRetToArticleDetail(mockQueryRet)
+
+    expect(result['München'].stableRevisionId).toBe(490)
+    expect(result['München'].revisionId).toBe(500)
+    expect(result.Tokyo.stableRevisionId).toBeUndefined()
+    expect(result.Tokyo.revisionId).toBe(600)
+  })
+
+  test('handles stableRevisionId equal to latest revisionId (both should be set)', () => {
+    const mockQueryRet: QueryMwRet = {
+      Hamburg: {
+        title: 'Hamburg',
+        ns: 0,
+        contentmodel: 'wikitext',
+        revisions: [{ revid: 400, parentid: 399, minor: '', user: 'User1', timestamp: '2024-02-01T00:00:00Z', comment: '' }],
+        flagged: { stable_revid: 400 },
+      } as any,
+    }
+
+    const result = mwRetToArticleDetail(mockQueryRet)
+
+    expect(result.Hamburg.revisionId).toBe(400)
+    expect(result.Hamburg.stableRevisionId).toBe(400)
   })
 })
