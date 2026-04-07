@@ -15,6 +15,12 @@
       "title": "Admin Email",
       "description": "Email of the mwoffliner user which will be put in the HTTP user-agent string"
     },
+    "userAgent": {
+      "type": "string",
+      "required": false,
+      "title": "User Agent",
+      "description": "Custom User-Agent header for all HTTP requests. Defaults to 'MWOffliner/<version> (<adminEmail>)'"
+    },
     "articleList": {
       "type": "string",
       "required": false,
