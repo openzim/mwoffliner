@@ -24,6 +24,7 @@ describe('Downloader class - wikipedia EN', () => {
   beforeAll(async () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
+    MediaWiki.getCategories = true
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     await MediaWiki.getMwMetaData()
@@ -168,6 +169,7 @@ describe('Downloader class - wikipedia EN', () => {
 
     beforeAll(async () => {
       MediaWiki.base = 'https://en.wikipedia.org'
+      MediaWiki.getCategories = true
 
       s3UrlObj = new URL(`${process.env.S3_URL}`)
       s3 = new S3(

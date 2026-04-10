@@ -10,6 +10,7 @@ Unreleased:
 * FIX: In nopic mode, fixed layout issues by preserving image layout using SVG placeholders (@kunalsiyag #1004)
 * NEW: Detect image size from HTML attribute instead of URL regex and recompress (@kunalsiyag #2192)
 * NEW: Add support for ResourceLoader based JavaScript (@Markus-Rost #2310)
+* NEW: Add support for category pages without pagination (@Markus-Rost #2245)
 * CHANGED: Keep only ActionParse renderer (@benoit74 #2210)
 * CHANGED: Keep inline scripts if all JS is allowed (@Markus-Rost #2555)
 * FIX: retry malformed JSON API responses (@kunalsiyag #2609)
