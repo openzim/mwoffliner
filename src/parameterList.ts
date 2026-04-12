@@ -45,6 +45,7 @@ export const parameterDescriptions = {
   insecure: 'Skip HTTPS server authenticity verification step',
   customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
   userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',
+  useLatestRevision: 'Always use the latest revision of each article instead of the stable (FlaggedRevs-reviewed) revision when available. Default is to prefer stable.',
 }
 
 // TODO: Add an interface based on the object above

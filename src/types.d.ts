@@ -33,6 +33,7 @@ type ArticleDetail = PageInfo & {
   coordinates?: string // coordinates.0.lat;coordinates.0.lon
   timestamp?: string // revisions.0.timestamp
   revisionId?: number // revisions.0.revid
+  stableRevisionId?: number // flagged.stable_revid (FlaggedRevs)
   internalThumbnailUrl?: string // internalThumbnailUrl
   nextArticleId?: string
   prevArticleId?: string
@@ -120,6 +121,11 @@ interface QueryRet {
   revisions?: QueryRevisionsRet
   coordinates?: QueryCoordinatesRet
   redirects?: QueryRedirectsRet
+  flagged?: {
+    stable_revid?: number
+    level?: number
+    level_text?: string
+  }
   pagelanguagehtmlcode?: string
   pagelanguagedir?: TextDirection
   contentmodel: string
@@ -237,6 +243,7 @@ interface QueryContinueOpts {
 
 interface RendererArticleOpts {
   sectionId?: string
+  oldid?: number
 }
 
 interface PageInfo {
