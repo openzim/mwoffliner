@@ -145,7 +145,7 @@
       "type": "boolean",
       "required": false,
       "title": "Add categories",
-      "description": "[WIP] Download category pages"
+      "description": "Download category pages"
     },
     "keepEmptySections": {
       "type": "boolean",

@@ -55,7 +55,6 @@ import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { downloadFiles, saveArticles } from './util/saveArticles.js'
-import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
 
@@ -334,20 +333,6 @@ async function execute(argv: any) {
   let stime = Date.now()
   await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null, allowedContentModels)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
-
-  if (MediaWiki.getCategories) {
-    await getCategoriesForArticles(articleDetailXId)
-
-    while ((await trimUnmirroredPages()) > 0) {
-      // Remove unmirrored pages, categories, subCategories
-      // trimUnmirroredPages returns number of modified articles
-    }
-
-    // while ((await simplifyGraph(downloader, redisStore)).deletedNodes !== 0) {
-    //   // keep simplifying graph
-    // }
-    // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
-  }
 
   const filenameDate = new Date().toISOString().slice(0, 7)
 
