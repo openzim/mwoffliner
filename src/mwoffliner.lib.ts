@@ -65,10 +65,6 @@ const __dirname = path.dirname(__filename)
 const packageJSON = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'))
 
 async function execute(argv: any) {
-  /* ********************************* */
-  /* CUSTOM VARIABLE SECTION ********* */
-  /* ********************************* */
-
   const {
     speed: _speed,
     adminEmail,
@@ -110,6 +106,17 @@ async function execute(argv: any) {
   } = argv
 
   let { articleList, articleListToIgnore } = argv
+
+  /* *********************************** */
+  /*       SYSTEM VARIABLE SECTION       */
+  /* *********************************** */
+
+  const dumpFormats = getDumps(format)
+  const langVariants: string[] = getDumps(langVariant)
+
+  /* ********************************* */
+  /* CUSTOM VARIABLE SECTION ********* */
+  /* ********************************* */
 
   logger.setVerboseLevel(verbose ? verbose : 'log') // Default log level is 'log'
 
@@ -222,7 +229,7 @@ async function execute(argv: any) {
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, mwModulePath, forceSkin, langVariant })
+    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, mwModulePath, forceSkin, langVariants })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err
@@ -284,12 +291,6 @@ async function execute(argv: any) {
     await RedisStore.close()
     process.exit(128 + 2)
   })
-
-  /* *********************************** */
-  /*       SYSTEM VARIABLE SECTION       */
-  /* *********************************** */
-
-  const dumpFormats = getDumps(format)
 
   /* ********************************* */
   /* GET CONTENT ********************* */
@@ -356,49 +357,52 @@ async function execute(argv: any) {
 
   const dumps: Dump[] = []
 
-  for (const dumpFormat of dumpFormats) {
-    const dump = new Dump(
-      dumpFormat,
-      {
-        tmpDir: tmpDirectory,
-        username: mwUsername,
-        password: mwPassword,
-        outputDirectory,
-        mainPage,
-        filenamePrefix,
-        articleList,
-        publisher,
-        customZimDescription,
-        customZimLongDescription,
-        customZimTags,
-        customZimTitle,
-        customZimLanguage,
-        withoutZimFullTextIndex,
-        resume,
-        minifyHtml,
-        keepEmptySections,
-        tags: customZimTags,
-        filenameDate,
-      },
-      { ...mwMetaData, mainPage },
-      customProcessor,
-    )
-    dumps.push(dump)
-    logger.log('Doing dump')
-    let shouldSkip = false
-    try {
-      dump.checkResume()
-    } catch {
-      shouldSkip = true
-    }
+  for (const langVar of langVariants) {
+    for (const dumpFormat of dumpFormats) {
+      const dump = new Dump(
+        dumpFormat,
+        langVar,
+        {
+          tmpDir: tmpDirectory,
+          username: mwUsername,
+          password: mwPassword,
+          outputDirectory,
+          mainPage,
+          filenamePrefix,
+          articleList,
+          publisher,
+          customZimDescription,
+          customZimLongDescription,
+          customZimTags,
+          customZimTitle,
+          customZimLanguage,
+          withoutZimFullTextIndex,
+          resume,
+          minifyHtml,
+          keepEmptySections,
+          tags: customZimTags,
+          filenameDate,
+        },
+        { ...mwMetaData, mainPage },
+        customProcessor,
+      )
+      dumps.push(dump)
+      logger.log('Doing dump')
+      let shouldSkip = false
+      try {
+        dump.checkResume()
+      } catch {
+        shouldSkip = true
+      }
 
-    if (shouldSkip) {
-      logger.log('Skipping dump')
-    } else {
-      await doDump(dump)
-      await filesToDownloadXPath.flush()
-      Downloader.cssDependenceUrls = {}
-      logger.log('Finished dump')
+      if (shouldSkip) {
+        logger.log('Skipping dump')
+      } else {
+        await doDump(dump)
+        await filesToDownloadXPath.flush()
+        Downloader.cssDependenceUrls = {}
+        logger.log('Finished dump')
+      }
     }
   }
 
@@ -490,7 +494,7 @@ async function execute(argv: any) {
       jsModuleDependencies.clear()
     } else {
       // Get list of all possible modules from startup
-      const allModules = await downloadAndSaveStartupModule(zimCreator)
+      const allModules = await downloadAndSaveStartupModule(zimCreator, dump.langVar)
       addModules.forEach((oneModule) => {
         jsModuleDependencies.add(oneModule)
       })
@@ -539,7 +543,7 @@ async function execute(argv: any) {
             if (oneModule.startsWith('user')) {
               return
             }
-            return downloadAndSaveModule(zimCreator, oneModule, type as any)
+            return downloadAndSaveModule(zimCreator, oneModule, type as any, dump.langVar)
           },
           { concurrency: Downloader.speed },
         )

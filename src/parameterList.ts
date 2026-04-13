@@ -41,7 +41,7 @@ export const parameterDescriptions = {
   optimisationCacheUrl: 'Object Storage URL (including credentials and bucket name) to cache optimised media files',
   forceRender: 'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ ActionParse ]',
   forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
-  langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
+  langVariant: 'Use a specific language variant, only for wikis supporting language conversion. Each --langVariant argument will cause a new local file to be created.',
   insecure: 'Skip HTTPS server authenticity verification step',
   customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
   userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',

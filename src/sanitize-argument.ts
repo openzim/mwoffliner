@@ -14,7 +14,7 @@ import { config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const parametersWithArrayType = ['format']
+const parametersWithArrayType = ['format', 'langVariant']
 
 // Perform "static check" of arguments not depending on external connectivity
 // Stack is not yet sufficiently ready to perform live external connectivity checks

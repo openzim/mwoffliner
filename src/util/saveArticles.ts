@@ -243,7 +243,7 @@ async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump:
       try {
         const mainPage = isMainPage(articleId)
         const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
-        const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+        const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId, langVar: dump.langVar })
 
         rets = await Downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, dump, articleDetail)
         for (const { articleId, html } of rets) {
@@ -417,7 +417,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
         let rets: any
         try {
           const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
-          const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+          const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId, langVar: dump.langVar })
 
           rets = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 

@@ -502,6 +502,7 @@ class Downloader {
         articleId,
         articleUrl,
         articleDetail,
+        langVar: dump.langVar,
       })
 
       // Cope with the fact that the page we are fetching might have been moved and replaced by a redirect

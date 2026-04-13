@@ -261,9 +261,9 @@
       "required": false
     },
     "langVariant": {
-      "type": "string",
-      "title": "Language Variant",
-      "description": "Use a specific language variant, only for wikis supporting language conversion",
+      "type": "list-of-string",
+      "title": "Language Variants",
+      "description": "Use specific language variants, only for wikis supporting language conversion. Each variant will cause a new local file to be created.",
       "required": false
     },
     "javaScript": {
