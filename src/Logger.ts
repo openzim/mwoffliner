@@ -1,3 +1,5 @@
+import { format } from 'util'
+
 export const logLevels = ['info', 'log', 'warn', 'error', 'quiet']
 export type LogLevel = (typeof logLevels)[number]
 
@@ -15,7 +17,7 @@ const isVerbose = (level: LogLevel) => {
 
 const doLog = (type: LogLevel, args: any[]) => {
   if (isVerbose(type)) {
-    console[type](`[${type}] [${getTs()}]`, ...args)
+    process.stdout.write(format(`[${type}] [${getTs()}]`, ...args) + '\n')
   }
 }
 

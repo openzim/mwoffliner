@@ -2,28 +2,14 @@ import * as logger from '../../src/Logger.js'
 import { jest } from '@jest/globals'
 
 describe('Logger', () => {
-  let info
-  let log
-  let warn
-  let error
+  let stdoutSpy: ReturnType<typeof jest.spyOn>
 
   afterEach(() => {
     jest.clearAllMocks()
   })
 
   beforeEach(() => {
-    info = jest.spyOn(console, 'info').mockImplementation(() => {
-      return
-    })
-    log = jest.spyOn(console, 'log').mockImplementation(() => {
-      return
-    })
-    warn = jest.spyOn(console, 'warn').mockImplementation(() => {
-      return
-    })
-    error = jest.spyOn(console, 'error').mockImplementation(() => {
-      return
-    })
+    stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true)
   })
 
   test('logger info level', async () => {
@@ -34,10 +20,11 @@ describe('Logger', () => {
     logger.warn('test warn', 'warn test message')
     logger.error('test error', 'error test message')
 
-    expect(info).toBeCalledWith(expect.any(String), 'test info', 'info test message')
-    expect(log).toBeCalledWith(expect.any(String), 'test log', 'log test message')
-    expect(warn).toBeCalledWith(expect.any(String), 'test warn', 'warn test message')
-    expect(error).toBeCalledWith(expect.any(String), 'test error', 'error test message')
+    expect(stdoutSpy).toHaveBeenCalledTimes(4)
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[info]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[log]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
   })
 
   test('logger log level', async () => {
@@ -48,10 +35,11 @@ describe('Logger', () => {
     logger.warn('test warn', 'warn test message')
     logger.error('test error', 'error test message')
 
-    expect(info).not.toBeCalled()
-    expect(log).toBeCalledWith(expect.any(String), 'test log', 'log test message')
-    expect(warn).toBeCalledWith(expect.any(String), 'test warn', 'warn test message')
-    expect(error).toBeCalledWith(expect.any(String), 'test error', 'error test message')
+    expect(stdoutSpy).toHaveBeenCalledTimes(3)
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[info]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[log]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
   })
 
   test('logger warn level', async () => {
@@ -62,10 +50,11 @@ describe('Logger', () => {
     logger.warn('test warn', 'warn test message')
     logger.error('test error', 'error test message')
 
-    expect(info).not.toBeCalled()
-    expect(log).not.toBeCalled()
-    expect(warn).toBeCalledWith(expect.any(String), 'test warn', 'warn test message')
-    expect(error).toBeCalledWith(expect.any(String), 'test error', 'error test message')
+    expect(stdoutSpy).toHaveBeenCalledTimes(2)
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[info]'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[log]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
   })
 
   test('logger error level', async () => {
@@ -76,10 +65,11 @@ describe('Logger', () => {
     logger.warn('test warn', 'warn test message')
     logger.error('test error', 'error test message')
 
-    expect(info).not.toBeCalled()
-    expect(log).not.toBeCalled()
-    expect(warn).not.toBeCalled()
-    expect(error).toBeCalledWith(expect.any(String), 'test error', 'error test message')
+    expect(stdoutSpy).toHaveBeenCalledTimes(1)
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[info]'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[log]'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[warn]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
   })
 
   test('logger verbose true', async () => {
@@ -90,10 +80,11 @@ describe('Logger', () => {
     logger.warn('test warn', 'warn test message')
     logger.error('test error', 'error test message')
 
-    expect(info).toBeCalledWith(expect.any(String), 'test info', 'info test message')
-    expect(log).toBeCalledWith(expect.any(String), 'test log', 'log test message')
-    expect(warn).toBeCalledWith(expect.any(String), 'test warn', 'warn test message')
-    expect(error).toBeCalledWith(expect.any(String), 'test error', 'error test message')
+    expect(stdoutSpy).toHaveBeenCalledTimes(4)
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[info]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[log]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
   })
 
   test('logger verbose empty', async () => {
@@ -104,9 +95,15 @@ describe('Logger', () => {
     logger.warn('test warn', 'warn test message')
     logger.error('test error', 'error test message')
 
-    expect(info).not.toBeCalled()
-    expect(log).not.toBeCalled()
-    expect(warn).not.toBeCalled()
-    expect(error).not.toBeCalled()
+    expect(stdoutSpy).not.toHaveBeenCalled()
+  })
+
+  test('logger message format includes args', async () => {
+    logger.setVerboseLevel('info')
+
+    logger.info('test info', 'info test message')
+
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('test info'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('info test message'))
   })
 })
