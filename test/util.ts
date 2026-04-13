@@ -29,7 +29,7 @@ export function makeLink($doc: Document, href: string, rel: string, title: strin
   return $link
 }
 
-export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '' } = {}) {
+export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', format = '', langVar = '' } = {}) {
   MediaWiki.reset()
   MediaWiki.base = mwUrl
 
@@ -39,7 +39,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasModuleApi()
 
-  const dump = new Dump(format, {} as any, MediaWiki.metaData)
+  const dump = new Dump(format, langVar, {} as any, MediaWiki.metaData)
 
   return {
     dump,
