@@ -83,7 +83,7 @@ describe('ErrorRenderer', () => {
         },
       })
       expect(matchingRule).not.toBeNull()
-      const rendererError = renderDownloadError(matchingRule, new Dump('', {} as any, {} as any), 'My_Article_Title', 'My Article Title')
+      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any), 'My_Article_Title', 'My Article Title')
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')
@@ -103,7 +103,7 @@ describe('ErrorRenderer', () => {
         responseData: 'any response data',
       })
       expect(matchingRule).not.toBeNull()
-      const rendererError = renderDownloadError(matchingRule, new Dump('', {} as any, {} as any), 'My/Article/Title', 'My Article Title')
+      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any), 'My/Article/Title', 'My Article Title')
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')

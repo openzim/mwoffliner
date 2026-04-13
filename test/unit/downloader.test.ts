@@ -135,7 +135,7 @@ describe('Downloader class - wikipedia EN', () => {
       let dump: Dump
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
-        dump = new Dump('', {} as any, mwMetadata)
+        dump = new Dump('', '', {} as any, mwMetadata)
         await RenderingContext.createRenderers(renderer as renderName)
       })
 
@@ -267,7 +267,7 @@ describe('Downloader class - wikipedia ES', () => {
       let dump: Dump
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
-        dump = new Dump('', {} as any, mwMetadata)
+        dump = new Dump('', '', {} as any, mwMetadata)
         await RenderingContext.createRenderers(renderer as renderName)
       })
 
@@ -316,7 +316,7 @@ describe('Downloader class - wikipedia ES', () => {
     const renderer = ''
 
     const mwMetadata = await MediaWiki.getMwMetaData()
-    const dump = new Dump('', {} as any, mwMetadata)
+    const dump = new Dump('', '', {} as any, mwMetadata)
     await RenderingContext.createRenderers(renderer as renderName)
 
     // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when

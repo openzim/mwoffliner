@@ -175,7 +175,6 @@ interface MWMetaData {
   mainPageIsDomainRoot: boolean
   textDir: TextDirection
   langMw: string
-  langVar: string | null
   logo: string
   licenseName: string
   licenseUrl: string
@@ -237,6 +236,7 @@ interface QueryContinueOpts {
 
 interface RendererArticleOpts {
   sectionId?: string
+  langVar?: string
 }
 
 interface PageInfo {
@@ -259,6 +259,6 @@ interface SiteInfoArgv {
   addNamespaces?: number[]
   mwModulePath?: string
   forceSkin?: string
-  langVariant?: string
+  langVariants?: string[]
   customCss?: string
 }

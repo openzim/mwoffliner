@@ -153,7 +153,7 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
   return await renderStylesheet(cssUrl, linkMedia)
 }
 
-export async function downloadModule(module: string, type: 'js' | 'css') {
+export async function downloadModule(module: string, type: 'js' | 'css', langVar?: string) {
   const replaceCodeByRegex = (sourceText: string, replaceMap: Map<RegExp, string>) => {
     let text = sourceText
     replaceMap.forEach((textToReplace, regEx) => {
@@ -196,7 +196,7 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
     )
   }
 
-  const moduleLang = MediaWiki.metaData?.langVar || MediaWiki.metaData?.langMw || 'en'
+  const moduleLang = langVar || MediaWiki.metaData?.langMw || 'en'
   let apiParameterOnly = ''
   if (module === 'startup') {
     apiParameterOnly = '&only=scripts&raw=1'
@@ -264,8 +264,8 @@ export async function downloadModule(module: string, type: 'js' | 'css') {
   return { text, moduleApiUrl }
 }
 
-export async function downloadAndSaveModule(zimCreator: Creator, module: string, type: 'js' | 'css') {
-  const { text, moduleApiUrl } = await downloadModule(module, type)
+export async function downloadAndSaveModule(zimCreator: Creator, module: string, type: 'js' | 'css', langVar?: string) {
+  const { text, moduleApiUrl } = await downloadModule(module, type, langVar)
 
   try {
     if (!['js', 'css'].includes(type)) {
@@ -281,9 +281,9 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
   }
 }
 
-export async function downloadAndSaveStartupModule(zimCreator: Creator): Promise<ResourceLoaderModule[]> {
+export async function downloadAndSaveStartupModule(zimCreator: Creator, langVar?: string): Promise<ResourceLoaderModule[]> {
   const module = 'startup'
-  const { text, moduleApiUrl } = await downloadModule(module, 'js')
+  const { text, moduleApiUrl } = await downloadModule(module, 'js', langVar)
 
   try {
     const modulePath = jsPath(module, config.output.dirs.mediawiki)

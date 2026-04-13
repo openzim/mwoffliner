@@ -9,14 +9,13 @@ export default class ActionParseURLDirector {
   skin: string
   variant?: string
 
-  constructor(baseDomain: string, skin: string, variant?: string) {
+  constructor(baseDomain: string, skin: string) {
     this.baseDomain = baseDomain
     this.skin = skin
-    this.variant = variant
   }
 
   buildArticleURL(articleId: string, articleUrlOpts: RendererArticleOpts = {}) {
-    const { sectionId } = articleUrlOpts
+    const { sectionId, langVar } = articleUrlOpts
     return urlBuilder
       .setDomain(this.baseDomain)
       .setQueryParams(
@@ -30,7 +29,7 @@ export default class ActionParseURLDirector {
           disablelimitreport: '1',
           page: articleId,
           useskin: this.skin,
-          variant: this.variant,
+          variant: langVar || undefined,
           redirects: '1',
           formatversion: '2',
           section: sectionId,

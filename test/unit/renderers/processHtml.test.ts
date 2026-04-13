@@ -26,7 +26,7 @@ describe('processHtml', () => {
     const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
     const opts: ProcessHtmlOpts = {
       html,
-      dump: new Dump('', {} as any, MediaWiki.metaData),
+      dump: new Dump('', '', {} as any, MediaWiki.metaData),
       articleId,
       articleDetail,
       moduleDependencies: {},
