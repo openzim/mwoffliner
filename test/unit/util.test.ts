@@ -164,6 +164,13 @@ describe('Utils', () => {
     expect(getMediaBase('https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/VFPt_Solenoid_correct2.svg/120px-VFPt_Solenoid_correct2.svg.png', true)).toEqual(
       '_assets_/0c70a452f799bfe840676ee341124611/VFPt_Solenoid_correct2.svg.png',
     )
+    // SVG PNG thumb with utm_ query
+    expect(
+      getMediaBase(
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Loudspeaker.svg/20px-Loudspeaker.svg.png?utm_source=de.wiktionary.org&utm_campaign=parser&utm_content=thumbnail',
+        true,
+      ),
+    ).toEqual('_assets_/0c70a452f799bfe840676ee341124611/Loudspeaker.svg.png')
     // Video poster
     expect(
       getMediaBase(

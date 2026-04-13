@@ -1,6 +1,6 @@
 export const MAX_CPU_CORES = 8
 export const IMAGE_THUMB_URL_REGEX =
-  /^(.*?\/)(transcoded\/|thumb\/)?([0-9a-fA-F]{1}\/[0-9a-fA-F]{2}\/)?([^/]+\.[A-Za-z0-9]{2,6}\/)?(\d+px[-]+)?([^/]+?\.[A-Za-z0-9]{2,6}(\.[A-Za-z0-9]{2,6})?)(\?[0-9a-fA-F]+)?$/
+  /^(.*?\/)(transcoded\/|thumb\/)?([0-9a-fA-F]{1}\/[0-9a-fA-F]{2}\/)?([^/]+\.[A-Za-z0-9]{2,6}\/)?(\d+px[-]+)?([^/]+?\.[A-Za-z0-9]{2,6}(\.[A-Za-z0-9]{2,6})?)(\?[0-9a-fA-F]+|\?utm_.+)?$/
 export const LATEX_IMAGE_URL_REGEX = /^(.*\/math\/render\/svg\/)([A-Za-z0-9]+)$/
 export const FANDOM_IMAGE_URL_REGEX = /^(.*\/)[0-9a-fA-F]{1}\/[0-9a-fA-F]{2}\/([^/]+)\/revision\//i
 export const MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE = 10
