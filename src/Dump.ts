@@ -31,6 +31,7 @@ export class Dump {
   public novid: boolean
   public nopdf: boolean
   public nodet: boolean
+  public langVar: string
   public opts: DumpOpts
   public strings: KVS<string>
   public mwMetaData: MWMetaData
@@ -55,7 +56,7 @@ export class Dump {
 
   private formatFlavour: string
 
-  constructor(format: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor?: CustomProcessor) {
+  constructor(format: string, langVar: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor?: CustomProcessor) {
     this.mwMetaData = mwMetaData
     this.opts = opts
     this.customProcessor = customProcessor
@@ -66,6 +67,7 @@ export class Dump {
     this.nopdf = formatStr.includes('nopdf')
     this.nodet = formatStr.includes('nodet')
     this.formatFlavour = formatFlavour
+    this.langVar = langVar
     /* Get language specific strings */
     this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en')
   }
@@ -103,6 +105,9 @@ export class Dump {
           langSuffix = part
           break
         }
+      }
+      if (this.langVar) {
+        langSuffix = this.langVar
       }
       radical += langSuffix
     }

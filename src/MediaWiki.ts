@@ -230,7 +230,7 @@ class MediaWiki {
 
   public async hasActionParseApi(): Promise<boolean> {
     if (this.#hasActionParseApi === null) {
-      this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin, this.metaData?.langVar)
+      this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin)
       const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasActionParseApi = await checkApiAvailability(checkUrl)
       logger.log(`Checked for ActionParseApi at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
@@ -419,7 +419,7 @@ class MediaWiki {
     return defaultSkins[0]
   }
 
-  public async getSiteInfo({ addNamespaces, mwModulePath, forceSkin, langVariant }: SiteInfoArgv = {}) {
+  public async getSiteInfo({ addNamespaces, mwModulePath, forceSkin, langVariants }: SiteInfoArgv = {}) {
     logger.log('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
@@ -484,11 +484,13 @@ class MediaWiki {
     }
     this.skin = forceSkin || this.getDefaultSkin(skins)
 
-    const validLangVars = (generalEntries.variants || []).map((e: any) => e.code)
-    if (langVariant && !validLangVars.includes(langVariant)) {
-      throw new Error(`Language variant [${langVariant}] is not available on the wiki`)
+    if (langVariants) {
+      const validLangVars = (generalEntries.variants || []).map((e: any) => e.code)
+      const invalidLangVars = langVariants.filter((langVariant) => langVariant && !validLangVars.includes(langVariant))
+      if (invalidLangVars.length) {
+        throw new Error(`Language variants [${invalidLangVars.join(', ')}] is not available on the wiki`)
+      }
     }
-    const langVar = langVariant || null
 
     return {
       mainPage,
@@ -496,7 +498,6 @@ class MediaWiki {
       siteName,
       textDir,
       langMw,
-      langVar,
       langIso2,
       langIso3,
       logo,
@@ -513,7 +514,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const { langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, langVar, textDir, licenseName, licenseUrl, subTitle } = await this.getSiteInfo(argvOpts)
+    const { langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, textDir, licenseName, licenseUrl, subTitle } = await this.getSiteInfo(argvOpts)
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -529,7 +530,6 @@ class MediaWiki {
 
       textDir: textDir as TextDirection,
       langMw,
-      langVar,
       langIso2,
       langIso3,
       title: siteName,

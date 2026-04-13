@@ -14,7 +14,7 @@ export const parameterDescriptions = {
   customMainPage: 'Custom page to be used as welcome page.',
   filenamePrefix: 'Part of the ZIM filename which is before the format & date parts.',
   format:
-    'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new local file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
+    'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
   keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
   mwModulePath: 'MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise.',
@@ -41,7 +41,7 @@ export const parameterDescriptions = {
   optimisationCacheUrl: 'Object Storage URL (including credentials and bucket name) to cache optimised media files',
   forceRender: 'Force the usage of a specific API end-point/render, automatically chosen otherwise. Accepted values: [ ActionParse ]',
   forceSkin: 'Force the usage of a specific skin, automatically chosen otherwise.',
-  langVariant: 'Use a specific language variant, only for wikis supporting language conversion.',
+  langVariant: 'Use a specific language variant, only for wikis supporting language conversion. Each --langVariant argument will cause a new ZIM file to be created.',
   insecure: 'Skip HTTPS server authenticity verification step',
   customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
   userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',

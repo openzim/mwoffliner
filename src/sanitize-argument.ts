@@ -14,7 +14,7 @@ import { config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const parametersWithArrayType = ['format']
+const parametersWithArrayType = ['format', 'langVariant']
 
 // Perform "static check" of arguments not depending on external connectivity
 // Stack is not yet sufficiently ready to perform live external connectivity checks
@@ -32,11 +32,15 @@ export async function sanitize_all(argv: any) {
     forceRender,
     javaScript,
     addModules,
+    langVariant,
+    filenamePrefix,
     mwActionApiPath,
     mwModulePath,
   } = argv
 
   sanitizeDoubleUsedParameters(argv)
+
+  sanitize_filenamePrefix_langVariant(filenamePrefix, langVariant)
 
   sanitize_articlesList_addNamespaces(articleList, addNamespaces)
 
@@ -140,6 +144,15 @@ export function sanitizeStringMaxLength(text: string, key: string, length: numbe
 export function sanitize_verbose(verbose: logger.LogLevel | true) {
   if (verbose && verbose !== true && !logger.logLevels.includes(verbose)) {
     throw new Error(`"${verbose}" is not a valid value for option verbose. It should be empty or one of [info, log, warn, error, quiet].`)
+  }
+}
+
+export function sanitize_filenamePrefix_langVariant(filenamePrefix: string, langVariant: string | string[]) {
+  /* if (filenamePrefix && Array.isArray(langVariant) && !filenamePrefix.includes('{lang}')) {
+    throw new Error('option --filenamePrefix needs to include the {lang} placeholder when using multiple --langVariant')
+  } */
+  if (filenamePrefix && Array.isArray(langVariant)) {
+    throw new Error('options --filenamePrefix and multiple --langVariant cannot be used together currently to avoid filename conflicts')
   }
 }
 
