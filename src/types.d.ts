@@ -42,7 +42,7 @@ type ArticleDetail = PageInfo & {
   contentmodel?: string
 }
 
-type FileToDownload = FileDetail & {
+type FileToDownload = {
   path: string
   downloadAttempts: number
 }

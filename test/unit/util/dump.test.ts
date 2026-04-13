@@ -6,14 +6,16 @@ import { downloadModule, processStylesheetContent } from '../../../src/util/dump
 import RedisStore from '../../../src/RedisStore.js'
 import urlHelper from '../../../src/util/url.helper.js'
 import { jest } from '@jest/globals'
+import FileManager from '../../../src/util/FileManager.js'
 
 describe('Download CSS or JS Module', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
-  beforeEach(() => {
+  beforeEach(async () => {
     const { filesToDownloadXPath } = RedisStore
-    filesToDownloadXPath.flush()
+    await filesToDownloadXPath.flush()
+    FileManager.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
   })
@@ -27,10 +29,9 @@ describe('Download CSS or JS Module', () => {
     // Check if CSS module still contain this background image
     expect(content).toContain(`background-image:url(../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg`)
 
-    // One SVG (among others) expected to be used inside the CSS
-    expect(Object.keys(Downloader.cssDependenceUrls)).toContain(
-      'https://en.wikipedia.org/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d',
-    )
+    // One SVG (among others) expected to be tracked in filesToDownloadXPath
+    const keys = await RedisStore.filesToDownloadXPath.keys()
+    expect(keys).toContain('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
   })
 
   test('rewrite standalone CSS', async () => {
@@ -209,7 +210,8 @@ describe('Download CSS or JS Module', () => {
     // The url(images/icon.png) in imported.css should be resolved relative to
     // https://example.wiki/css/imported.css, giving https://example.wiki/css/images/icon.png
     expect(rewrittenCSS).toContain('_assets_/')
-    expect(Object.keys(Downloader.cssDependenceUrls)).toContain('https://example.wiki/css/images/icon.png')
+    const keys = await RedisStore.filesToDownloadXPath.keys()
+    expect(keys.some((k) => k.includes('icon.png'))).toBe(true)
 
     downloadSpy.mockRestore()
   })

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'url'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
-import RedisStore from '../RedisStore.js'
+import FileManager from './FileManager.js'
 import { getFullUrl, jsPath, cssPath, getRelativeFilePath, getMediaBase } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
@@ -19,7 +19,6 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
   // articleId is supposed to be passed only when we rewrite inline CSS for a given article and we hence have
   // to compute relative path to assets
 
-  const { filesToDownloadXPath } = RedisStore
   const importRegexp = /@import\s+(?:url\(\s*(['"]?)(.*?)\1\s*\)|(['"])(.*?)\3)\s*([^;]*);/gi
   const cssUrlRegexp = new RegExp('url\\([\'"]{0,1}(.*?)[\'"]{0,1}\\)', 'gi')
 
@@ -47,7 +46,7 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
     return `\n/* start ${url} */\n\n${wrappedCss}\n/* end   ${url} */\n`
   }
 
-  const rewriteCssDependencies = (sourceCss: string, sourceUrl: string) => {
+  const rewriteCssDependencies = async (sourceCss: string, sourceUrl: string) => {
     let rewrittenCss = sourceCss
     let match: any
 
@@ -63,11 +62,7 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
         const relativePath = articleId ? getRelativeFilePath(articleId, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
         rewrittenCss = rewrittenCss.replace(url, relativePath.replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29'))
 
-        /* Download CSS dependency, but avoid duplicate calls */
-        if (!Object.prototype.hasOwnProperty.call(Downloader.cssDependenceUrls, fullurl) && filepath) {
-          Downloader.cssDependenceUrls[fullurl] = true
-          filesToDownloadXPath.set(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
-        }
+        await FileManager.addFileToProcess(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
       }
     }
 
@@ -127,7 +122,7 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
   const renderedImportedUrls = new Set<string>()
   const renderStack = new Set<string>()
 
-  const renderStylesheet = (url: string, conditions = ''): string => {
+  const renderStylesheet = async (url: string, conditions = ''): Promise<string> => {
     if (renderedImportedUrls.has(url)) {
       return ''
     }
@@ -145,9 +140,9 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
     let currentBody = ''
     for (const part of parts) {
       if (part.type === 'css') {
-        currentBody += rewriteCssDependencies(part.text, url)
+        currentBody += await rewriteCssDependencies(part.text, url)
       } else {
-        currentBody += renderStylesheet(part.url, part.conditions)
+        currentBody += await renderStylesheet(part.url, part.conditions)
       }
     }
     renderStack.delete(url)
@@ -155,7 +150,7 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
     return wrapStylesheetContent(currentBody, url, conditions)
   }
 
-  return renderStylesheet(cssUrl, linkMedia)
+  return await renderStylesheet(cssUrl, linkMedia)
 }
 
 export async function downloadModule(module: string, type: 'js' | 'css') {

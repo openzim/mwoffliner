@@ -54,10 +54,11 @@ import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
-import { downloadFiles, saveArticles } from './util/saveArticles.js'
+import { saveArticles } from './util/saveArticles.js'
 import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
+import FileManager from './util/FileManager.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -397,7 +398,6 @@ async function execute(argv: any) {
     } else {
       await doDump(dump)
       await filesToDownloadXPath.flush()
-      Downloader.cssDependenceUrls = {}
       logger.log('Finished dump')
     }
   }
@@ -410,6 +410,9 @@ async function execute(argv: any) {
     const outZim = path.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim')
     logger.log(`Writing ZIM to [${outZim}]`)
     dump.outFile = outZim
+
+    // Reset FileManager for the new dump
+    FileManager.reset()
 
     const metadata = {
       ...metaDataRequiredKeys,
@@ -546,7 +549,7 @@ async function execute(argv: any) {
       }),
     )
 
-    await downloadFiles(filesToDownloadXPath, zimCreator, dump)
+    await FileManager.startDownloading(zimCreator, dump)
 
     logger.log('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)
@@ -752,7 +755,7 @@ async function execute(argv: any) {
     articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true))
 
     await Promise.all([
-      filesToDownloadXPath.set(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),
+      FileManager.addFileToProcess(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),
       articleDetailXId.set(articleId, articleDetail),
     ])
   }
