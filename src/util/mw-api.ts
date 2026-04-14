@@ -11,7 +11,10 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
   let from = 0
   let numThumbnails = 0
   const MAX_BATCH_SIZE = 50
-  const MAX_URL_SIZE = 7900 // in bytes, approx.
+  // HTTP servers typically limit URLs to ~8000 bytes. The full URL includes the
+  // base URL, other query params, and continuation params (~500-600 bytes overhead).
+  // This limit applies to the "titles=<encoded>" portion of the query string.
+  const MAX_TITLES_PARAM_SIZE = 7400
 
   const { articleDetailXId, redirectsXId } = RedisStore
 
@@ -25,9 +28,12 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
       while (from < articleIds.length) {
         // Secure the request has the max articleIds as possible (within boudaries)
         const articleIdsBatch = articleIds.slice(from, from + MAX_BATCH_SIZE)
-        let urlSize = encodeURIComponent(articleIdsBatch.join('|')).length
-        while (urlSize > MAX_URL_SIZE) {
-          urlSize -= encodeURIComponent(articleIdsBatch.pop()).length + 1
+        // Use URLSearchParams for size estimation to match the encoding used by
+        // buildQueryURL (which differs from encodeURIComponent for chars like parentheses)
+        let titlesParamSize = new URLSearchParams({ titles: articleIdsBatch.join('|') }).toString().length
+        while (titlesParamSize > MAX_TITLES_PARAM_SIZE && articleIdsBatch.length > 1) {
+          articleIdsBatch.pop()
+          titlesParamSize = new URLSearchParams({ titles: articleIdsBatch.join('|') }).toString().length
         }
 
         // Udpate articleIds slicing boundaries
