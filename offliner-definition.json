@@ -37,20 +37,20 @@
       "type": "string",
       "required": false,
       "title": "Main Page",
-      "description": "Article Name to use as home page. Automatically built or guessed otherwise."
+      "description": "Custom page to be used as welcome page."
     },
     "customZimTitle": {
       "type": "string",
       "required": false,
       "title": "ZIM Title",
-      "description": "Custom ZIM title. Wiki name otherwise.",
+      "description": "ZIM custom title metadata.",
       "minLength": 1,
       "maxLength": 30
     },
     "customZimDescription": {
       "type": "string",
       "required": false,
-      "title": "ZIM Description",
+      "title": "ZIM custom description",
       "description": "Max length is 80 chars",
       "minLength": 1,
       "maxLength": 80
@@ -58,7 +58,7 @@
     "customZimLongDescription": {
       "type": "string",
       "required": false,
-      "title": "ZIM Long Description",
+      "title": "ZIM custom long description",
       "description": "Max length is 4000 chars",
       "minLength": 1,
       "maxLength": 4000
@@ -68,7 +68,7 @@
       "kind": "image",
       "required": false,
       "title": "ZIM favicon",
-      "description": "URL to a png to use as favicon. Will be resized to 48x48px."
+      "description": "URL to a PNG to use as favicon. Will be resized to 48x48px."
     },
     "customZimTags": {
       "type": "string",
@@ -95,13 +95,13 @@
       "type": "string",
       "required": false,
       "title": "Filename prefix",
-      "description": "Custome filename up to the formats and date parts."
+      "description": "Custom filename up to the formats and date parts."
     },
     "formats": {
       "type": "list-of-string-enum",
       "required": false,
       "title": "Formats",
-      "description": "Which flavours to build, as `<flavour>:<custom-suffix>`. Empty option is full without suffix.",
+      "description": "Which flavours to build. Empty option is will scrape all article contents, including videos.",
       "alias": "format",
       "choices": [
         { "title": "mini: no article details or pictures or videos", "value": "nodet,nopic:mini" },
@@ -126,20 +126,20 @@
       "type": "url",
       "required": false,
       "title": "Optimisation Cache URL",
-      "description": "S3 Storage URL including credentials and bucket",
+      "description": "Object Storage URL (including credentials and bucket name) to cache optimised media files.",
       "secret": true
     },
     "addNamespaces": {
       "type": "string",
       "required": false,
       "title": "Add Namespaces",
-      "description": "Include addional namespaces (comma separated numbers)"
+      "description": "Force addional namespaces (comma separated numbers)"
     },
     "addContentModels": {
       "type": "string",
       "required": false,
       "title": "Add Content Models",
-      "description": "Include additional content models besides wikitext (comma separated). By default, only wikitext articles are scraped."
+      "description": "Include additional content models besides wikitext (comma separated, e.g 'Scribunto,json'). By default, only wikitext articles are scraped."
     },
     "getCategories": {
       "type": "boolean",
@@ -151,7 +151,7 @@
       "type": "boolean",
       "required": false,
       "title": "Keep empty sections",
-      "description": "Keep all sections, even empty ones."
+      "description": "Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure."
     },
     "minifyHtml": {
       "type": "boolean",
@@ -163,13 +163,13 @@
       "type": "string",
       "required": false,
       "title": "API Path",
-      "description": "Mediawiki API path. Otherwise `/w/api.php`."
+      "description": "Mediawiki API path. (by default `/w/api.php`)."
     },
     "mwModulePath": {
       "type": "string",
       "required": false,
       "title": "Module Path",
-      "description": "Mediawiki module load path. Otherwise `/w/load.php`."
+      "description": "MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise."
     },
     "mwDomain": {
       "type": "string",
@@ -207,7 +207,7 @@
       "type": "integer",
       "required": false,
       "title": "Request Timeout",
-      "description": "Request timeout (in seconds)",
+      "description": "Request timeout in seconds (default is 120s)",
       "min": 1
     },
     "speed": {
@@ -238,7 +238,7 @@
     "webp": {
       "type": "boolean",
       "title": "Webp",
-      "description": "Convert images to Webp",
+      "description": "Convert all jpeg, png and gif images to webp format",
       "required": false
     },
     "forceRender": {
@@ -287,7 +287,7 @@
       "type": "string",
       "required": false,
       "title": "Custom CSS",
-      "description": "Comma-separated list of CSS URLs to inject into all rendered pages. Alternatively, a path to a local file containing one URL per line."
+      "description": "Comma-separated list of CSS URLs to inject into all rendered pages."
     }
   }
 }
