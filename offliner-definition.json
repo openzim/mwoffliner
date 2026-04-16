@@ -101,25 +101,13 @@
       "type": "list-of-string-enum",
       "required": false,
       "title": "Formats",
-      "description": "Which flavours to build. Empty option is will scrape all article contents, including videos.",
+      "description": "Which flavours to build. Empty option will scrape all article contents, including videos.",
       "alias": "format",
       "choices": [
         { "title": "mini: no article details or pictures or videos", "value": "nodet,nopic:mini" },
         { "title": "nopic: no article pictures or videos", "value": "nopic:nopic" },
         { "title": "maxi: all except article videos", "value": "novid:maxi" },
         { "title": "all: everything including videos", "value": "" }
-      ]
-    },
-    "customFlavour": {
-      "type": "string-enum",
-      "required": false,
-      "title": "Custom Flavour",
-      "description": "Custom processor to filter and process articles (see extensions/*.js)",
-      "choices": [
-        {
-          "title": "WIKTIONARY_FR",
-          "value": "/tmp/mwoffliner/extensions/wiktionary_fr.js"
-        }
       ]
     },
     "optimisationCacheUrl": {
@@ -140,12 +128,6 @@
       "required": false,
       "title": "Add Content Models",
       "description": "Include additional content models besides wikitext (comma separated, e.g 'Scribunto,json'). By default, only wikitext articles are scraped."
-    },
-    "getCategories": {
-      "type": "boolean",
-      "required": false,
-      "title": "Add categories",
-      "description": "[WIP] Download category pages"
     },
     "keepEmptySections": {
       "type": "boolean",
@@ -214,7 +196,7 @@
       "type": "float",
       "title": "Speed",
       "required": false,
-      "description": "Multiplicator for the number of parallel HTTP requests on Parsoid backend. Otherwise `1`. Reduce on throttled Wikis."
+      "description": "Multiplicator for the number of parallel HTTP requests on Parsoid backend (default is the number of CPU cores). Reduce on throttled Wikis."
     },
     "withoutZimFullTextIndex": {
       "type": "boolean",
