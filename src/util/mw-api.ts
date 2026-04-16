@@ -11,11 +11,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
   let from = 0
   let numThumbnails = 0
   const MAX_BATCH_SIZE = 50
-  const MAX_URL_SIZE = 7900 // in bytes, approx.
-  // Budget for the base API URL + all fixed query params (action, format, formatversion,
-  // prop, redirects, maxlag, colimit, cllimit, clshow, etc.) that are NOT counted below
-  // but are always present in the final request URL.
-  const FIXED_QUERY_OVERHEAD = 500
+  const MAX_TITLES_QUERY_SIZE = 7900 // budget in bytes for the titles portion of the URL (fixed overhead already excluded)
 
   const { articleDetailXId, redirectsXId } = RedisStore
 
@@ -27,20 +23,11 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
       .map((_, i) => i),
     async (workerId: number) => {
       while (from < articleIds.length) {
-        // Secure the request has the max articleIds as possible (within boundaries).
-        // Non-Latin titles encode to multi-byte %XX sequences, so we must measure the
-        // encoded length of the *entire* titles string on every iteration rather than
-        // subtracting individual title lengths, which can be inaccurate. We also add
-        // FIXED_QUERY_OVERHEAD to account for the parts of the URL that are not titles.
         const articleIdsBatch = articleIds.slice(from, from + MAX_BATCH_SIZE)
-        while (
-          articleIdsBatch.length > 1 &&
-          encodeURIComponent(articleIdsBatch.join('|')).length + FIXED_QUERY_OVERHEAD > MAX_URL_SIZE
-        ) {
+        while (articleIdsBatch.length > 1 && encodeURIComponent(articleIdsBatch.join('|')).length > MAX_TITLES_QUERY_SIZE) {
           articleIdsBatch.pop()
         }
 
-        // Udpate articleIds slicing boundaries
         const to = from + articleIdsBatch.length
         if (log) {
           const progressPercent = Math.floor((to / articleIds.length) * 100)
