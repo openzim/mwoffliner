@@ -37,7 +37,7 @@ await testAllRenders('multimedia-content', parameters, async (outFiles) => {
           '_assets_/0c70a452f799bfe840676ee341124611/Kiwix_icon.svg.png',
           '_assets_/0c70a452f799bfe840676ee341124611/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
           '_assets_/0c70a452f799bfe840676ee341124611/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-          '_assets_/0c70a452f799bfe840676ee341124611/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+          '_assets_/0c70a452f799bfe840676ee341124611/page1-1280px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
           '_res_/favicon.png',
         ].sort(),
       )
@@ -81,7 +81,7 @@ await testAllRenders('multimedia-content', { ...parameters, format: ['nopic', 'n
               // '_assets_/0c70a452f799bfe840676ee341124611/Kiwix_icon.svg.png',
               // '_assets_/0c70a452f799bfe840676ee341124611/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
               // '_assets_/0c70a452f799bfe840676ee341124611/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-              // '_assets_/0c70a452f799bfe840676ee341124611/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+              // '_assets_/0c70a452f799bfe840676ee341124611/page1-1280px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
               '_res_/favicon.png',
             ].sort(),
           )
@@ -96,7 +96,7 @@ await testAllRenders('multimedia-content', { ...parameters, format: ['nopic', 'n
               '_assets_/0c70a452f799bfe840676ee341124611/Kiwix_icon.svg.png',
               // '_assets_/0c70a452f799bfe840676ee341124611/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
               '_assets_/0c70a452f799bfe840676ee341124611/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-              '_assets_/0c70a452f799bfe840676ee341124611/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+              '_assets_/0c70a452f799bfe840676ee341124611/page1-1280px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
               '_res_/favicon.png',
             ].sort(),
           )
@@ -111,7 +111,7 @@ await testAllRenders('multimedia-content', { ...parameters, format: ['nopic', 'n
               '_assets_/0c70a452f799bfe840676ee341124611/Kiwix_icon.svg.png',
               '_assets_/0c70a452f799bfe840676ee341124611/Local_Forecast_-_Elevator_(ISRC_USUAN1300012).mp3.ogg',
               '_assets_/0c70a452f799bfe840676ee341124611/page1-120px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
-              '_assets_/0c70a452f799bfe840676ee341124611/page1-1500px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
+              '_assets_/0c70a452f799bfe840676ee341124611/page1-1280px-Kiwix_-_WikiArabia_Cairo_2017.pdf.jpg',
               '_res_/favicon.png',
             ].sort(),
           )
