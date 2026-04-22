@@ -279,7 +279,7 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
         .map((redirect) => {
           // The API returns the redirect title (!?), we fake the
           // redirectId by putting the underscore. That way we
-          // secure the URL rewritting works fine.
+          // secure the URL rewriting works fine.
           redirect.title = String(redirect.title).replace(/ /g, '_')
 
           return redirect
