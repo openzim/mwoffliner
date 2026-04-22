@@ -7,7 +7,7 @@ At a high level, mwoffliner is divided into following sequence of actions.
 - retrieve Mediawiki info
 - retrieve list of articles to include and their metadata
 - for every article:
-  - retrieve its parsed HTML (Wikitext transformed into HTML) and JS/CSS dependencie
+  - retrieve its parsed HTML (Wikitext transformed into HTML) and JS/CSS dependencies
   - adapt / render it for proper operation within the ZIM file (includes detection of media dependencies)
   - save rendered article HTML into the ZIM
 - for every file dependency (JS/CSS/media)
@@ -28,7 +28,7 @@ Currently, scrape uses this call to retrieve:
 - from `siteinfo`: `general` info (language, title, mainPage, site name, logo, text direction, ...), `skins` (to detect default skin), `rightsinfo` (to extract the license), `namespaces` and `namespacealiases` to build the list of namespaces
 - from `allmessages`: the `tagline` (subtitle)
 
-## Retrive list of articles to include and their metadata
+## Retrieve list of articles to include and their metadata
 
 First, the scraper needs a list of article IDs and their details (redirects, ...).
 
@@ -63,13 +63,13 @@ When using ActionParse renderer, we pass `usearticle=1`, which means that we ask
 
 ### Skins
 
-In Mediawikis, rendering of Wikitext into HTML works around a concept of skin. A skin is a mix of HTML template and CSS+JS dependencies. It defines both the visual appareance of the rendered Wikitext but also everything "around it".
+In Mediawikis, rendering of Wikitext into HTML works around a concept of skin. A skin is a mix of HTML template and CSS+JS dependencies. It defines both the visual appearance of the rendered Wikitext but also everything "around it".
 
-Since most wikis have adapted their content to their skin (and vice versa), it is mostly mandatory to use the skin inside the ZIM, both for proper rendering and for a visual appareance similar to online website (users don't mind about technical details, they want the wiki to be the same inside the ZIM than online).
+Since most wikis have adapted their content to their skin (and vice versa), it is mostly mandatory to use the skin inside the ZIM, both for proper rendering and for a visual appearance similar to online website (users don't mind about technical details, they want the wiki to be the same inside the ZIM than online).
 
 Skin detection is automated in mwoffliner for now (see https://github.com/openzim/mwoffliner/issues/2213).
 
-For now, only `vector` (legacy) and `vector-2022` are supported, and only with ActionParse renderer. Only `vector-2022` is the truely responsive skin, providing ultimate rendering on mostly all screen sizes.
+For now, only `vector` (legacy) and `vector-2022` are supported, and only with ActionParse renderer. Only `vector-2022` is the truly responsive skin, providing ultimate rendering on mostly all screen sizes.
 
 With ActionParse renderer, other skins have a `fallback` skin implemented in the scraper. This means that the scraper will render the article HTML inside an HTML structure which looks like an expected structure (which comes from `vector` legacy). The consequence is that if the skins uses only article HTML structure to attach CSS rules or JS code, then everything will render fine. If the skins uses HTML structures coming from the "surrounding HTML" (headers, ...) then things will not apply 100% correctly.
 

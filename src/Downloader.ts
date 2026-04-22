@@ -255,13 +255,13 @@ class Downloader {
 
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
-      // Set cookie jar and use special Http(s)CookieAgent so that cookies are automatically intercepted and persited across calls
+      // Set cookie jar and use special Http(s)CookieAgent so that cookies are automatically intercepted and persisted across calls
       httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookierJar }, keepAlive: true }),
       httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookierJar }, keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
       timeout: this.requestTimeout,
       headers: {
         // Use the base domain of the wiki being scraped as the Referer header, so that we can
-        // successfully scrap WMF map tiles.
+        // successfully scrape WMF map tiles.
         Referer: MediaWiki.baseUrl.href,
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
@@ -630,7 +630,7 @@ class Downloader {
 
   public async downloadContent(
     _url: string,
-    kind: DonwloadKind,
+    kind: DownloadKind,
     retry = true,
     requestedWidth?: number,
   ): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
@@ -702,7 +702,7 @@ class Downloader {
     return articleDetails
   }
 
-  private getJSONCb = <T>(url: string, kind: DonwloadKind, _requestedWidth: number | undefined, handler: (...args: any[]) => any): void => {
+  private getJSONCb = <T>(url: string, kind: DownloadKind, _requestedWidth: number | undefined, handler: (...args: any[]) => any): void => {
     logger.info(`Getting JSON from [${url}]`)
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((val) => {
@@ -786,7 +786,7 @@ class Downloader {
     }
   }
 
-  private getContentCb = async (url: string, kind: DonwloadKind, requestedWidth: number | undefined, handler: any): Promise<void> => {
+  private getContentCb = async (url: string, kind: DownloadKind, requestedWidth: number | undefined, handler: any): Promise<void> => {
     logger.info(`Downloading [${url}]`)
     try {
       if (this.optimisationCacheUrl && kind === 'image') {
@@ -831,7 +831,7 @@ class Downloader {
             this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
           // Use the base domain of the wiki being scraped as the Referer header, so that we can
-          // successfully scrap WMF map tiles.
+          // successfully scrape WMF map tiles.
           const mwResp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
 
           // Most of the images, after having been uploaded once to the
@@ -909,7 +909,7 @@ class Downloader {
   private backoffCall(
     handler: (...args: any[]) => void,
     url: string,
-    kind: DonwloadKind,
+    kind: DownloadKind,
     requestedWidth: number | undefined,
     callback: (...args: any[]) => void | Promise<void>,
   ): void {
