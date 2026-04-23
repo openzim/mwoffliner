@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Bananax47",
+			"Chpol",
 			"Derugon",
 			"Verdy p"
 		]
@@ -12,6 +13,8 @@
 	"DOWNLOAD_ERRORS_HEADING": "Oups. Article non trouvé.",
 	"DOWNLOAD_ERRORS_MESSAGE": "L'article demandé « ${articleTitle} » n’est pas disponible dans ce ZIM, il n’a pas été possible de le récupérer depuis ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Cet article a été supprimé après que la liste des articles à récupérer ait été compliée, mais avant qu’il ait été récupéré pour créer le ZIM que vous parcourez.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "L'accès à cet article sur le serveur ${server} est restreint. Il nécessite des autorisations spéciales qui ne sont pas disponibles lors du processus d'extraction de données ZIM.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "L'accès à cet article est restreint par un verrouillage par catégorie sur le serveur ${server}. Les autorisations de catégorie requises ne sont pas disponibles lors du processus d'extraction de données ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Lorsque le ZIM que vous parcourez a été créé, le serveur ${server} n’a pas réussi à fournir des détails sur l’HTML de cet article dans les délais impartis.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Lorsque le ZIM que vous parcourez a été créé, la connexion à l’API ActionParse du serveur ${server} a expiré pendant le traitement de cet article et le serveur a renvoyé une erreur HTTP 504.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur ${server} a renvoyé une erreur HTTP 503 pendant qu’elle donnait des détails sur l’HTML de cet article.",
