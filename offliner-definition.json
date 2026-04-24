@@ -84,6 +84,18 @@
       "pattern": "^[a-z]{3}(,[a-z]{3})*$",
       "customValidator": "language_code"
     },
+    "customZimName": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Name",
+      "description": "Custom ZIM Name template. Placeholders: {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {flavour_suffix}, {period}."
+    },
+    "customZimFilename": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM filename",
+      "description": "Custom ZIM filename template, without the .zim extension. Placeholders: {zim_name}, {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {flavour_suffix}, {period}."
+    },
     "publisher": {
       "type": "string",
       "required": false,
