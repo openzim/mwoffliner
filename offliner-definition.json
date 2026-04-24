@@ -88,18 +88,24 @@
       "pattern": "^[a-z]{3}(,[a-z]{3})*$",
       "customValidator": "language_code"
     },
+    "customZimName": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM Name",
+      "description": "Custom ZIM Name template. Placeholders: {domain}, {lang}, {lang_or_variant}, {selection}."
+    },
+    "customZimFilename": {
+      "type": "string",
+      "required": false,
+      "title": "ZIM filename",
+      "description": "Custom ZIM filename template, with the .zim extension. Placeholders: {zim_name}, {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {period}."
+    },
     "publisher": {
       "type": "string",
       "required": false,
       "title": "Publisher",
       "isPublisher": true,
       "description": "ZIM publisher metadata. `openZIM` otherwise."
-    },
-    "filenamePrefix": {
-      "type": "string",
-      "required": false,
-      "title": "Filename prefix",
-      "description": "Custom filename up to the formats and date parts."
     },
     "formats": {
       "type": "list-of-string-enum",
@@ -294,7 +300,7 @@
   "zimMetadata": [
     {
       "metadata": "Name",
-      "flag": "filenamePrefix"
+      "flag": "customZimName"
     },
     {
       "metadata": "Title",

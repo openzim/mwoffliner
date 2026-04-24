@@ -29,11 +29,12 @@ export async function sanitize_all(argv: any) {
     logLevel,
     customZimLongDescription,
     customZimDescription,
+    customZimName,
+    customZimFilename,
     forceRender,
     javaScript,
     addModules,
     langVariant,
-    filenamePrefix,
     mwActionApiPath,
     mwModulePath,
     categoriesPageSize,
@@ -41,7 +42,7 @@ export async function sanitize_all(argv: any) {
 
   sanitizeDoubleUsedParameters(argv)
 
-  sanitize_filenamePrefix_langVariant(filenamePrefix, langVariant)
+  sanitize_customName_langVariant(customZimName, customZimFilename, langVariant)
 
   sanitize_pageList_addNamespaces(pageList, addNamespaces)
 
@@ -150,12 +151,12 @@ export function sanitize_logLevel(logLevel: string | undefined) {
   }
 }
 
-export function sanitize_filenamePrefix_langVariant(filenamePrefix: string, langVariant: string | string[]) {
-  /* if (filenamePrefix && Array.isArray(langVariant) && !filenamePrefix.includes('{lang}')) {
-    throw new Error('option --filenamePrefix needs to include the {lang} placeholder when using multiple --langVariant')
-  } */
-  if (filenamePrefix && Array.isArray(langVariant)) {
-    throw new Error('options --filenamePrefix and multiple --langVariant cannot be used together currently to avoid filename conflicts')
+export function sanitize_customName_langVariant(customZimName: string, customZimFilename: string, langVariant: string | string[]) {
+  if (customZimName && Array.isArray(langVariant) && !customZimName.includes('{lang_or_variant}')) {
+    throw new Error('option --customZimName needs to include the {lang_or_variant} placeholder when using multiple --langVariant')
+  }
+  if (customZimFilename && Array.isArray(langVariant) && !customZimFilename.includes('{lang_or_variant}')) {
+    throw new Error('option --customZimFilename needs to include the {lang_or_variant} placeholder when using multiple --langVariant')
   }
 }
 

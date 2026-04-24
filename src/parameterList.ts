@@ -11,8 +11,9 @@ export const parameterDescriptions = {
   customZimLongDescription: 'ZIM custom long description (4000 characters max)',
   customZimTags: 'ZIM tags metadata (semi-colon separated)',
   customZimLanguage: 'ZIM ISO 639-3 content language code',
+  customZimName: 'Custom ZIM Name template. Placeholders: {domain}, {lang}, {lang_or_variant}, {selection}.',
+  customZimFilename: 'Custom ZIM filename template, with the .zim extension. Placeholders: {zim_name}, {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {period}.',
   customMainPage: 'Custom page to be used as welcome page.',
-  filenamePrefix: 'Part of the ZIM filename which is before the format & date parts.',
   format:
     'Flavour for the scraping. If missing, scrape all page contents. Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
   getCategories: 'Include the categories of all included pages.',

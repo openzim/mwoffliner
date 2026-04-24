@@ -85,10 +85,11 @@ async function execute(argv: any) {
     customZimLongDescription,
     customZimTags,
     customZimLanguage,
+    customZimName,
+    customZimFilename,
     withoutZimFullTextIndex,
     webp,
     format,
-    filenamePrefix,
     resume,
     publisher: _publisher,
     outputDirectory: _outputDirectory,
@@ -357,14 +358,14 @@ async function execute(argv: any) {
           password: mwPassword,
           outputDirectory,
           mainPage,
-          filenamePrefix,
           pageList,
           publisher,
           customZimDescription,
           customZimLongDescription,
           customZimTags,
           customZimTitle,
-          customZimLanguage,
+          customZimName,
+          customZimFilename,
           withoutZimFullTextIndex,
           resume,
           minifyHtml,
@@ -403,9 +404,8 @@ async function execute(argv: any) {
   logger.info('All dumping(s) finished with success.')
 
   async function doDump(dump: Dump) {
-    const outZim = path.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim')
-    logger.info(`Writing ZIM to [${outZim}]`)
-    dump.outFile = outZim
+    dump.outFile = dump.computeZimFullPath()
+    logger.info(`Writing ZIM to ${dump.outFile}`)
 
     // Reset FileManager for the new dump
     FileManager.reset()
@@ -417,7 +417,7 @@ async function execute(argv: any) {
     const metadata = {
       ...metaDataRequiredKeys,
       Tags: dump.computeZimTags(),
-      Name: dump.computeFilenameRadical(false, true, true),
+      Name: dump.computeZimName(),
       Flavour: dump.computeFlavour(),
       Scraper: `mwoffliner ${packageJSON.version}`,
       Source: MediaWiki.webUrl.hostname,
@@ -429,7 +429,7 @@ async function execute(argv: any) {
     if (!dump.opts.withoutZimFullTextIndex) {
       zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
     }
-    zimCreator.startZimCreation(outZim)
+    zimCreator.startZimCreation(dump.outFile)
 
     // Helper function to transform a Buffer into a libzim ContentProvider
     const createBufferContentProvider = (buffer: Buffer): ContentProvider => {
@@ -561,7 +561,7 @@ async function execute(argv: any) {
     await zimCreator.finishZimCreation()
 
     logger.info('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
-    logger.info(`ZIM is ready at [${outZim}]`)
+    logger.info(`ZIM is ready at ${dump.outFile}`)
   }
 
   /* ********************************* */
