@@ -12,9 +12,11 @@ interface DumpOpts {
   withoutZimFullTextIndex: boolean
   customZimTags?: string
   customZimLanguage?: string
+  customZimName?: string
   customZimTitle?: string
   customZimDescription?: string
   customZimLongDescription?: string
+  customZimFilename?: string
   mainPage?: string
   filenamePrefix?: string
   articleList?: string
@@ -87,42 +89,110 @@ export class Dump {
         flavour.push('nodet')
       }
     }
-    return flavour.join('_')
+    return flavour.join('-')
+  }
+
+  private computeDomain() {
+    return this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)
+  }
+
+  private computeLang() {
+    const hostParts = new URL(this.mwMetaData.webUrl).hostname.split('.')
+    let langSuffix = this.mwMetaData.langIso2
+    for (const part of hostParts) {
+      if (part === this.mwMetaData.langIso3) {
+        langSuffix = part
+        break
+      }
+    }
+    return langSuffix
+  }
+
+  private computeSelection() {
+    if (this.opts.articleList) {
+      let filenamePostfix = pathParser
+        .basename(this.opts.articleList)
+        .toLowerCase()
+        .replace(/\.\w{3}$/, '')
+        .replace(/[^a-z0-9-]+/g, '-')
+      if (filenamePostfix.length > 50) {
+        filenamePostfix = filenamePostfix.slice(0, 50)
+      }
+      return filenamePostfix
+    }
+    return 'all'
+  }
+
+  private computePlaceholders(zimName?: string): KVS<string> {
+    const flavour = this.computeFlavour()
+    const lang = this.computeLang()
+    const placeholders: KVS<string> = {
+      domain: this.computeDomain(),
+      lang,
+      lang_or_variant: this.mwMetaData.langVar || lang,
+      selection: this.computeSelection(),
+      flavour,
+      flavour_suffix: flavour ? `_${flavour}` : '',
+      period: this.opts.filenameDate,
+    }
+    return zimName ? { ...placeholders, zim_name: zimName } : placeholders
+  }
+
+  private formatTemplate(template: string, placeholders: KVS<string>, optionName: string) {
+    const formatted = template.replace(/\{([^{}]+)\}/g, (match, key) => {
+      if (typeof placeholders[key] !== 'string') {
+        const validPlaceholders = Object.keys(placeholders).sort().join(', ')
+        throw new Error(`Invalid placeholder ${match} in option --${optionName}. Valid placeholders are: ${validPlaceholders}`)
+      }
+      return placeholders[key]
+    })
+    if (/[{}]/.test(formatted)) {
+      const validPlaceholders = Object.keys(placeholders).sort().join(', ')
+      throw new Error(`Invalid placeholder in option --${optionName}. Valid placeholders are: ${validPlaceholders}`)
+    }
+    return formatted
+  }
+
+  private checkFilenameRadical(filenameRadical: string, optionName: string) {
+    if (filenameRadical.includes('/') || filenameRadical.includes('\\')) {
+      throw new Error(`option --${optionName} must be a filename, not a path`)
+    }
+    if (filenameRadical.endsWith('.zim')) {
+      throw new Error(`option --${optionName} must not include the .zim extension`)
+    }
+  }
+
+  public computeZimName() {
+    if (this.opts.customZimName) {
+      return this.formatTemplate(this.opts.customZimName, this.computePlaceholders(), 'customZimName')
+    }
+    if (this.opts.filenamePrefix) {
+      return this.opts.filenamePrefix
+    }
+    const placeholders = this.computePlaceholders()
+    return `${placeholders.domain}_${placeholders.lang_or_variant}_${placeholders.selection}`
   }
 
   public computeFilenameRadical(withoutSelection?: boolean, withoutFlavour?: boolean, withoutDate?: boolean) {
+    const placeholders = this.computePlaceholders()
+
+    if (!withoutSelection && !withoutFlavour && !withoutDate && this.opts.customZimFilename) {
+      const filenameRadical = this.formatTemplate(this.opts.customZimFilename, { ...placeholders, zim_name: this.computeZimName() }, 'customZimFilename')
+      this.checkFilenameRadical(filenameRadical, 'customZimFilename')
+      return filenameRadical
+    }
+
     let radical
     if (this.opts.filenamePrefix) {
       radical = this.opts.filenamePrefix
     } else {
-      radical = `${this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)}_`
-      const hostParts = new URL(this.mwMetaData.webUrl).hostname.split('.')
-      let langSuffix = this.mwMetaData.langIso2
-      for (const part of hostParts) {
-        if (part === this.mwMetaData.langIso3) {
-          langSuffix = part
-          break
-        }
-      }
-      radical += langSuffix
+      radical = `${placeholders.domain}_${placeholders.lang_or_variant}`
     }
     if (!withoutSelection && !this.opts.filenamePrefix) {
-      if (this.opts.articleList) {
-        let filenamePostfix = pathParser
-          .basename(this.opts.articleList)
-          .toLowerCase()
-          .replace(/\.\w{3}$/, '')
-          .replace(/[^a-z0-9-]+/g, '-')
-        if (filenamePostfix.length > 50) {
-          filenamePostfix = filenamePostfix.slice(0, 50)
-        }
-        radical += `_${filenamePostfix}`
-      } else {
-        radical += '_all'
-      }
+      radical += `_${placeholders.selection}`
     }
-    if (!withoutFlavour && this.computeFlavour()) {
-      radical += `_${this.computeFlavour()}`
+    if (!withoutFlavour && placeholders.flavour) {
+      radical += `_${placeholders.flavour}`
     }
     if (!withoutDate) {
       radical += `_${this.opts.filenameDate}`
