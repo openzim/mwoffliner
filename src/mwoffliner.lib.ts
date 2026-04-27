@@ -107,6 +107,7 @@ async function execute(argv: any) {
     langVariant,
     customCss,
     userAgent: _userAgent,
+    stableRevision,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -255,6 +256,10 @@ async function execute(argv: any) {
   await MediaWiki.hasActionParseApi()
   await MediaWiki.hasModuleApi()
 
+  if (stableRevision && !(await MediaWiki.hasFlaggedRevs())) {
+    throw new Error('--stableRevision was specified but this wiki does not support stable revisions (FlaggedRevs extension not found)')
+  }
+
   await RenderingContext.createRenderers(forceRender)
 
   await RedisStore.connect()
@@ -379,11 +384,13 @@ async function execute(argv: any) {
         keepEmptySections,
         tags: customZimTags,
         filenameDate,
+        stableRevision,
       },
       { ...mwMetaData, mainPage },
       customProcessor,
     )
     dumps.push(dump)
+
     logger.log('Doing dump')
     let shouldSkip = false
     try {
