@@ -22,6 +22,7 @@ Unreleased:
 * DEL: Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 * NEW: Add `--customCss` CLI option to inject custom stylesheets
 * FIX: Detect continuation cycles in article pagination (@triemerge #2532)
+* FIX: Refactor file download pipeline to inline host queueing (@triemerge #2689)
 
 
 1.17.5:

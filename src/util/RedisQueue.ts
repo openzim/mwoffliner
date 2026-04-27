@@ -25,7 +25,7 @@ export default class RedisQueue<T> {
   }
 
   public len(): Promise<number> {
-    return this.redisClient.hLen(this.dbName)
+    return this.redisClient.lLen(this.dbName)
   }
 
   public flush(): Promise<number> {

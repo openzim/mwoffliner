@@ -105,12 +105,11 @@ class RedisStore implements RS {
     await Promise.all(
       keys.map(async (key) => {
         try {
-          const length = await this.#client.hLen(key)
           const time = new Date(Number(key.slice(0, key.indexOf('-'))))
-          logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key} with length ${length}`)
+          logger.warn(`Deleting store from previous run from ${time} that was still in Redis: ${key}`)
           await this.#client.del(key)
-        } catch {
-          logger.error(`Key ${key} exists in DB, and is no hash.`)
+        } catch (err) {
+          logger.error(`Failed to delete stale key ${key}:`, err)
         }
       }),
     )
@@ -121,6 +120,7 @@ class RedisStore implements RS {
       u: 'url',
       m: 'mult',
       w: 'width',
+      k: 'kind',
     })
     this.#articleDetailXId = new RedisKvs(this.#client, `${Date.now()}-detail`, {
       s: 'subCategories',

@@ -145,7 +145,6 @@ class Downloader {
     return Downloader.instance
   }
   private _speed: number
-  public cssDependenceUrls: KVS<boolean> = {}
   private _webp: boolean = false
   private _requestTimeout: number
   private _basicRequestOptions: AxiosRequestConfig
@@ -316,8 +315,6 @@ class Downloader {
     this._arrayBufferRequestOptions = undefined
     this._jsonRequestOptions = undefined
     this._streamRequestOptions = undefined
-
-    this.cssDependenceUrls = {}
 
     this.articleUrlDirector = undefined
   }
