@@ -63,6 +63,7 @@ export async function testRenders(testName: string, parameters: Parameters, call
     try {
       const now = new Date()
       const testId = `mwo-test-${testName}-${renderer}-${+now}`
+      process.stdout.write(`\n${'='.repeat(60)}\n  TEST: ${testName} [${renderer}]\n${'='.repeat(60)}\n`)
       const outFiles = (await getOutFiles(renderer, testId, parameters)) as TestDump[]
       outFiles[0].testId = testId
       outFiles[0].renderer = renderer

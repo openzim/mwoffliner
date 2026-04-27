@@ -425,7 +425,7 @@ async function execute(argv: any) {
     }
     validateMetadata(metadata)
 
-    const zimCreator = new Creator().configCompression(Compression.Zstd)
+    const zimCreator = new Creator().configCompression(Compression.Zstd).configVerbose(verbose === 'info' || verbose === true)
     if (!dump.opts.withoutZimFullTextIndex) {
       zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
     }

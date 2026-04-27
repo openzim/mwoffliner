@@ -23,6 +23,7 @@ Unreleased:
 * NEW: Add `--customCss` CLI option to inject custom stylesheets
 * FIX: Detect continuation cycles in article pagination (@triemerge #2532)
 * FIX: Refactor file download pipeline to inline host queueing (@triemerge #2689)
+* FIX: Remove Jest stack trace decoration from E2E test logs (@triemerge #2038)
 
 
 1.17.5:
