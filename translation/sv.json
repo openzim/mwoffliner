@@ -13,6 +13,7 @@
 	"DOWNLOAD_ERRORS_MESSAGE": "Den begärda artikeln '${articleTitle}' är inte tillgänglig i denna ZIM, det gick inte att hämta den från ${server}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Den här artikeln raderades efter att vi sammanställde listan över artiklar att hämta, men innan vi hämtade den för att bygga den ZIM du tittar på.",
 	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Åtkomst till denna artikel är begränsad på ${server} servern. Den kräver särskilda behörigheter som inte är tillgängliga under ZIM-skrapningsprocessen.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "Åtkomst till den här artikeln är begränsad efter en kategoribaserad låsning på ${server}-servern. De krävda kategoribehörigheterna är inte tillgängliga under ZIM-skrapningsprocessen.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "När ZIM-filen du tittar på skapades misslyckades ${server}-servern med att ge information om den här artikelns HTML-kod i tid.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "När ZIM-filen du tittar på skapades, överskred ${server}-serverns ActionParse API tidsgränsen vid bearbetning av den här artikeln och returnerade ett HTTP 504-fel.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "När ZIM-filen du tittar på skapades, genererade ${server}-serverns ActionParse API ett HTTP 503-fel när information om den här artikelns HTML-kod angavs.",
