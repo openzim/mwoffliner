@@ -7,11 +7,34 @@ import RedisStore from '../RedisStore.js'
 import MediaWiki from '../MediaWiki.js'
 import { cleanupAxiosError } from './misc.js'
 
+// HTTP servers typically limit URLs to ~8000 bytes. The full URL includes
+// the base URL, other query params, and continuation params (~500-600 bytes
+// overhead). This limit applies only to the "titles=" portion of the query.
+const MAX_TITLES_PARAM_SIZE = 7400
+const MAX_BATCH_SIZE = 50
+
+/**
+ * Trims a batch of article IDs so the encoded "titles" query parameter
+ * stays within MAX_TITLES_PARAM_SIZE bytes.
+ *
+ * Uses URLSearchParams (not encodeURIComponent) because that is what
+ * buildQueryURL uses internally — they differ for characters like
+ * `(`, `)`, `!`, `~`, `'` which URLSearchParams encodes as 3 bytes
+ * while encodeURIComponent leaves them as 1 byte.
+ *
+ * Exported so unit tests can import and exercise the real function.
+ */
+export function trimArticleBatch(articleIds: string[]): string[] {
+  const batch = articleIds.slice(0, MAX_BATCH_SIZE)
+  while (batch.length > 1 && new URLSearchParams({ titles: batch.join('|') }).toString().length > MAX_TITLES_PARAM_SIZE) {
+    batch.pop()
+  }
+  return batch
+}
+
 export async function getArticlesByIds(articleIds: string[], log = true): Promise<void> {
   let from = 0
   let numThumbnails = 0
-  const MAX_BATCH_SIZE = 50
-  const MAX_URL_SIZE = 7900 // in bytes, approx.
 
   const { articleDetailXId, redirectsXId } = RedisStore
 
@@ -23,14 +46,8 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
       .map((_, i) => i),
     async (workerId: number) => {
       while (from < articleIds.length) {
-        // Secure the request has the max articleIds as possible (within boudaries)
-        const articleIdsBatch = articleIds.slice(from, from + MAX_BATCH_SIZE)
-        let urlSize = encodeURIComponent(articleIdsBatch.join('|')).length
-        while (urlSize > MAX_URL_SIZE) {
-          urlSize -= encodeURIComponent(articleIdsBatch.pop()).length + 1
-        }
+        const articleIdsBatch = trimArticleBatch(articleIds.slice(from))
 
-        // Udpate articleIds slicing boundaries
         const to = from + articleIdsBatch.length
         if (log) {
           const progressPercent = Math.floor((to / articleIds.length) * 100)
