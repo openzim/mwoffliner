@@ -26,7 +26,7 @@ describe('mwApi', () => {
 
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
   })
@@ -150,7 +150,7 @@ describe('Test blacklisted NSs', () => {
     MediaWiki.base = 'https://id.wikipedia.org'
     MediaWiki.getCategories = true
 
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
   })
@@ -168,7 +168,7 @@ describe('Test moved page with redirect', () => {
     await RedisStore.articleDetailXId.flush()
 
     MediaWiki.base = 'https://es.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
     await initMW()
   })

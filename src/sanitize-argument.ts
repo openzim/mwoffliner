@@ -159,8 +159,14 @@ export function sanitizeDoubleUsedParameters(options: object) {
 }
 
 export function sanitize_speed(_speed: any) {
-  if (_speed && isNaN(_speed)) {
-    throw new Error('speed is not a number, please give a number value to --speed.')
+  if (_speed !== undefined && _speed !== null) {
+    const numSpeed = Number(_speed)
+    if (isNaN(numSpeed) || numSpeed <= 0) {
+      throw new Error('speed must be a positive number. Values >= 1 set the number of parallel workers (integer). Values < 1 slow down the scraper.')
+    }
+    if (numSpeed >= 1 && !Number.isInteger(numSpeed)) {
+      throw new Error('speed values >= 1 must be integers (number of parallel workers).')
+    }
   }
 }
 

@@ -25,7 +25,7 @@ describe('Downloader class - wikipedia EN', () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
     MediaWiki.getCategories = true
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()
@@ -184,7 +184,7 @@ describe('Downloader class - wikipedia EN', () => {
       )
       Downloader.init = {
         uaString: `${config.userAgent} (contact@kiwix.org)`,
-        speed: 1,
+        workers: 1,
         reqTimeout: 1000 * 60,
         webp: false,
         optimisationCacheUrl: 'random-string',
@@ -255,7 +255,7 @@ describe('Downloader class - wikipedia ES', () => {
   beforeAll(async () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://es.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
 
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()

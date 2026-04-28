@@ -15,7 +15,7 @@ describe('RendererBuilder', () => {
   beforeEach(() => {
     rendererBuilder = new RendererBuilder()
     MediaWiki.base = 'https://en.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
   })
 
   it('should create a ActionParseRenderer for desktop mode', async () => {
