@@ -33,7 +33,7 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   MediaWiki.reset()
   MediaWiki.base = mwUrl
 
-  Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
+  Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
   await MediaWiki.getMwMetaData()
   await MediaWiki.hasCoordinates()

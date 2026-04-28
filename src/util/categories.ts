@@ -9,7 +9,7 @@ export async function getCategoriesForArticles(articleStore: RKVS<ArticleDetail>
   const nextCategoriesBatch: RKVS<ArticleDetail> = RedisStore.createRedisKvs(`${Date.now()}-request`)
   logger.log(`Fetching categories for [${await articleStore.len()}] articles`)
 
-  await articleStore.iterateItems(Downloader.speed, async (articleKeyValuePairs: KVS<ArticleDetail>, runningWorkers: number) => {
+  await articleStore.iterateItems(Downloader.workers, async (articleKeyValuePairs: KVS<ArticleDetail>, runningWorkers: number) => {
     const articleKeys = Object.keys(articleKeyValuePairs)
     logger.log(`Worker getting categories for articles [${logger.logifyArray(articleKeys)}] - ${runningWorkers} worker(s) running`)
 
@@ -72,7 +72,7 @@ export async function trimUnmirroredPages() {
   let processedArticles = 0
   let modifiedArticles = 0
 
-  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
+  await articleDetailXId.iterateItems(Downloader.workers, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       processedArticles += 1
       if (typeof (articleDetail as any).missing === 'string') {
@@ -158,7 +158,7 @@ export async function simplifyGraph() {
   let processedArticles = 0
   let deletedNodes = 0
 
-  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
+  await articleDetailXId.iterateItems(Downloader.workers, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       processedArticles += 1
 

@@ -50,7 +50,8 @@ imageminOptions.get('webp').set('image/jpeg', {
 
 interface DownloaderOpts {
   uaString: string
-  speed: number
+  workers: number
+  articleRequestInterval?: number
   reqTimeout: number
   optimisationCacheUrl: string
   s3?: S3
@@ -144,7 +145,8 @@ class Downloader {
     }
     return Downloader.instance
   }
-  private _speed: number
+  private _workers: number
+  private _articleRequestInterval: number
   private _webp: boolean = false
   private _requestTimeout: number
   private _basicRequestOptions: AxiosRequestConfig
@@ -164,8 +166,12 @@ class Downloader {
   private articleUrlDirector: URLDirector
   private insecure: boolean = false
 
-  get speed() {
-    return this._speed
+  get workers() {
+    return this._workers
+  }
+
+  get articleRequestInterval() {
+    return this._articleRequestInterval
   }
 
   get webp() {
@@ -190,10 +196,22 @@ class Downloader {
     return this._apiUrlDirector
   }
 
-  set init({ uaString, speed, reqTimeout, optimisationCacheUrl, s3, webp, trustedJs = config.output.mw.js_trusted.slice(), backoffOptions, insecure }: DownloaderOpts) {
+  set init({
+    uaString,
+    workers,
+    articleRequestInterval,
+    reqTimeout,
+    optimisationCacheUrl,
+    s3,
+    webp,
+    trustedJs = config.output.mw.js_trusted.slice(),
+    backoffOptions,
+    insecure,
+  }: DownloaderOpts) {
     this.reset()
     this.uaString = uaString
-    this._speed = speed
+    this._workers = workers
+    this._articleRequestInterval = articleRequestInterval
     this._requestTimeout = reqTimeout
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
@@ -301,7 +319,8 @@ class Downloader {
 
   private reset() {
     this.uaString = undefined
-    this._speed = undefined
+    this._workers = undefined
+    this._articleRequestInterval = undefined
     this._requestTimeout = undefined
     this.optimisationCacheUrl = undefined
     this._webp = false
