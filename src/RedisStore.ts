@@ -133,11 +133,13 @@ class RedisStore implements RS {
       i: 'internalThumbnailUrl',
       m: 'missing',
       n: 'title',
+      v: 'variantTitles',
     })
     this.#redirectsXId = new RedisKvs(this.#client, `${Date.now()}-redirect`, {
       f: 'fragment',
       t: 'targetId',
       n: 'title',
+      v: 'variantTitles',
     })
   }
 

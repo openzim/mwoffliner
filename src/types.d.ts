@@ -40,6 +40,7 @@ type ArticleDetail = PageInfo & {
   pagelang?: string
   pagedir?: TextDirection
   contentmodel?: string
+  variantTitles?: string[]
 }
 
 type FileToDownload = {
@@ -55,9 +56,10 @@ type FileDetail = {
 }
 
 type ArticleRedirect = {
-  targetId: string
+  targetId?: string
   title: string
   fragment?: string
+  variantTitles?: string[]
 }
 
 // RedisKvs interface
@@ -109,6 +111,7 @@ type QueryCoordinatesRet = Array<{
 type QueryRedirectsRet = Array<
   PageInfo & {
     fragment?: string
+    pageid?: number
   }
 >
 
@@ -123,6 +126,10 @@ interface QueryRet {
   pagelanguagehtmlcode?: string
   pagelanguagedir?: TextDirection
   contentmodel: string
+  redirect?: boolean
+  varianttitles?: {
+    [variant: string]: string
+  }
 
   thumbnail?: {
     source: string
