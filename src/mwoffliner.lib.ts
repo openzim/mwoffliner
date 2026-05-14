@@ -351,6 +351,11 @@ async function execute(argv: any) {
     // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
   }
 
+  if (MediaWiki.validLangVars.length) {
+    logger.log('Setting variant redirects')
+    await setVariantRedirects()
+  }
+
   const filenameDate = new Date().toISOString().slice(0, 7)
 
   // Getting total number of articles from Redis
@@ -574,6 +579,52 @@ async function execute(argv: any) {
   /* ********************************* */
   /* FUNCTIONS *********************** */
   /* ********************************* */
+
+  async function setVariantRedirects() {
+    await redirectsXId.iterateItems(Downloader.speed, async (redirects) => {
+      const newRedirects: KVS<ArticleRedirect> = {}
+      const deleteRedirects: string[] = []
+      for (const [redirectId, { variantTitles, ...value }] of Object.entries(redirects)) {
+        if (!variantTitles) continue
+        if (!value.targetId) {
+          // Cross namespace redirects
+          deleteRedirects.push(redirectId)
+          continue
+        }
+        newRedirects[redirectId] = value
+        for (const variantTitle of variantTitles) {
+          if (!newRedirects[variantTitle] && !(await RedisStore.redirectsXId.exists(variantTitle)) && !(await RedisStore.articleDetailXId.exists(variantTitle))) {
+            newRedirects[variantTitle] = {
+              ...value,
+              title: variantTitle,
+            }
+          }
+        }
+      }
+      if (deleteRedirects.length) await RedisStore.redirectsXId.deleteMany(deleteRedirects)
+      await RedisStore.redirectsXId.setMany(newRedirects)
+    })
+    await articleDetailXId.iterateItems(Downloader.speed, async (articles) => {
+      const newRedirects: KVS<ArticleRedirect> = {}
+      for (const [articleId, { variantTitles }] of Object.entries(articles)) {
+        if (!variantTitles) continue
+        for (const variantTitle of variantTitles) {
+          if (
+            variantTitle !== articleId &&
+            !newRedirects[variantTitle] &&
+            !(await RedisStore.redirectsXId.exists(variantTitle)) &&
+            !(await RedisStore.articleDetailXId.exists(variantTitle))
+          ) {
+            newRedirects[variantTitle] = {
+              title: variantTitle,
+              targetId: articleId,
+            }
+          }
+        }
+      }
+      await RedisStore.redirectsXId.setMany(newRedirects)
+    })
+  }
 
   async function writeArticleRedirects(dump: Dump, zimCreator: Creator) {
     let processed = -1

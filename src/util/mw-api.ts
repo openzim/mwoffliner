@@ -13,14 +13,12 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
   const MAX_BATCH_SIZE = 50
   const MAX_URL_SIZE = 7900 // in bytes, approx.
 
+  const redirectIds = []
   const { articleDetailXId, redirectsXId } = RedisStore
 
   // using async iterator to spawn workers
   await pmap(
-    ','
-      .repeat(Downloader.speed)
-      .split(',')
-      .map((_, i) => i),
+    Array.from({ length: Downloader.speed + 1 }, (_, i) => i),
     async (workerId: number) => {
       while (from < articleIds.length) {
         // Secure the request has the max articleIds as possible (within boudaries)
@@ -68,6 +66,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
                 return acc
               }, {}),
             )
+            redirectIds.push(...articleDetail.redirects.map(({ title }) => title))
           }
         }
         const keys = Object.keys(articleDetails)
@@ -76,6 +75,49 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
         }
         const existingArticleDetails = await articleDetailXId.getMany(keys)
         await articleDetailXId.setMany(deepmerge(existingArticleDetails, articleDetails))
+      }
+    },
+    { concurrency: Downloader.speed },
+  )
+  if (!MediaWiki.validLangVars.length) return
+  from = 0
+  await pmap(
+    Array.from({ length: Downloader.speed + 1 }, (_, i) => i),
+    async (workerId: number) => {
+      while (from < redirectIds.length) {
+        // Secure the request has the max redirectIds as possible (within boudaries)
+        const redirectIdsBatch = redirectIds.slice(from, from + MAX_BATCH_SIZE)
+        let urlSize = encodeURIComponent(redirectIdsBatch.join('|')).length
+        while (urlSize > MAX_URL_SIZE) {
+          urlSize -= encodeURIComponent(redirectIdsBatch.pop()).length + 1
+        }
+
+        // Udpate redirectIds slicing boundaries
+        const to = from + redirectIdsBatch.length
+        if (log) {
+          const progressPercent = Math.floor((to / redirectIds.length) * 100)
+          logger.log(`Worker [${workerId}] getting redirect variants range [${from}-${to}] of [${redirectIds.length}] [${progressPercent}%]`)
+        }
+        from = to
+
+        // Nothing to do
+        if (!redirectIdsBatch.length) {
+          continue
+        }
+
+        const redirectVariants = Object.fromEntries(
+          Object.entries(await Downloader.getRedirectVariantsIds(redirectIdsBatch)).map(([redirectId, { varianttitles }]) => [
+            redirectId,
+            { variantTitles: Object.values(varianttitles) },
+          ]),
+        )
+
+        const keys = Object.keys(redirectVariants)
+        if (keys.length === 0) {
+          return
+        }
+        const existingRedirects = await redirectsXId.getMany(keys)
+        await redirectsXId.setMany(deepmerge(existingRedirects, redirectVariants))
       }
     },
     { concurrency: Downloader.speed },
@@ -89,7 +131,10 @@ async function saveToStore(
   redirectsXId: RKVS<ArticleRedirect>,
 ): Promise<[number, Error?]> {
   try {
-    const [numArticles] = await Promise.all([articleDetailXId.setMany(articleDetails), redirectsXId.setMany(redirects)])
+    const [numArticles] = await Promise.all([
+      articleDetailXId.setMany(articleDetails),
+      MediaWiki.validLangVars.length ? async () => redirectsXId.setMany(deepmerge(await redirectsXId.getMany(Object.keys(redirects)), redirects)) : redirectsXId.setMany(redirects),
+    ])
     return [numArticles]
   } catch (err) {
     return [0, err]
@@ -179,7 +224,13 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], allow
         curStage += 1
         const redirects: KVS<ArticleRedirect> = {}
         for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
-          if (articleDetail.redirects) {
+          if (articleDetail.redirect) {
+            redirects[articleId] = {
+              ...redirects[articleId],
+              title: articleId,
+              variantTitles: Object.values(articleDetail.varianttitles),
+            }
+          } else if (articleDetail.redirects) {
             for (const target of articleDetail.redirects) {
               const targetExistsAsArticle = (await RedisStore.articleDetailXId.exists(target.title)) || Object.keys(chunk.articleDetails).includes(target.title)
               if (targetExistsAsArticle) {
@@ -285,6 +336,9 @@ export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
           return redirect
         })
     }
+    if (page.varianttitles) {
+      page.varianttitles = Object.fromEntries(Object.entries(page.varianttitles).map(([variant, title]) => [variant, title.replace(/ /g, '_')]))
+    }
     if (articleId) {
       return {
         ...acc,
@@ -300,6 +354,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
   const ret: KVS<ArticleDetail> = {}
   for (const key of Object.keys(obj)) {
     const val = obj[key]
+    if (val.redirect) continue
     const rev = val.revisions && val.revisions[0]
     const geo = val.coordinates && val.coordinates[0]
     let newThumbnail
@@ -322,6 +377,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
       ...(val.contentmodel !== 'wikitext' ? { contentmodel: val.contentmodel } : {}),
       ...(rev ? { revisionId: rev.revid, timestamp: rev.timestamp } : {}),
       ...(geo ? { coordinates: `${geo.lat};${geo.lon}` } : {}),
+      ...(val.varianttitles ? { variantTitles: Object.values(val.varianttitles) } : {}),
     }
   }
   return ret
