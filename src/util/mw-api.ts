@@ -232,7 +232,9 @@ export function getArticlesByNS(ns: number, articleIdsToIgnore?: string[], allow
             }
           } else if (articleDetail.redirects) {
             for (const target of articleDetail.redirects) {
-              const targetExistsAsArticle = (await RedisStore.articleDetailXId.exists(target.title)) || Object.keys(chunk.articleDetails).includes(target.title)
+              const targetExistsAsArticle =
+                (await RedisStore.articleDetailXId.exists(target.title)) ||
+                (Object.keys(chunk.articleDetails).includes(target.title) && !chunk.articleDetails[target.title].redirect)
               if (targetExistsAsArticle) {
                 logger.warn(
                   `Article '${target.title}' found in redirects of '${articleId}' while it is also listed among articles to fetch ; scraper will automatically recover from this edge case`,
