@@ -21,14 +21,14 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
     Array.from({ length: Downloader.speed + 1 }, (_, i) => i),
     async (workerId: number) => {
       while (from < articleIds.length) {
-        // Secure the request has the max articleIds as possible (within boudaries)
+        // Secure the request has the max articleIds as possible (within boundaries)
         const articleIdsBatch = articleIds.slice(from, from + MAX_BATCH_SIZE)
         let urlSize = encodeURIComponent(articleIdsBatch.join('|')).length
         while (urlSize > MAX_URL_SIZE) {
           urlSize -= encodeURIComponent(articleIdsBatch.pop()).length + 1
         }
 
-        // Udpate articleIds slicing boundaries
+        // Update articleIds slicing boundaries
         const to = from + articleIdsBatch.length
         if (log) {
           const progressPercent = Math.floor((to / articleIds.length) * 100)
@@ -85,14 +85,14 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
     Array.from({ length: Downloader.speed + 1 }, (_, i) => i),
     async (workerId: number) => {
       while (from < redirectIds.length) {
-        // Secure the request has the max redirectIds as possible (within boudaries)
+        // Secure the request has the max redirectIds as possible (within boundaries)
         const redirectIdsBatch = redirectIds.slice(from, from + MAX_BATCH_SIZE)
         let urlSize = encodeURIComponent(redirectIdsBatch.join('|')).length
         while (urlSize > MAX_URL_SIZE) {
           urlSize -= encodeURIComponent(redirectIdsBatch.pop()).length + 1
         }
 
-        // Udpate redirectIds slicing boundaries
+        // Update redirectIds slicing boundaries
         const to = from + redirectIdsBatch.length
         if (log) {
           const progressPercent = Math.floor((to / redirectIds.length) * 100)
@@ -133,7 +133,14 @@ async function saveToStore(
   try {
     const [numArticles] = await Promise.all([
       articleDetailXId.setMany(articleDetails),
-      MediaWiki.validLangVars.length ? async () => redirectsXId.setMany(deepmerge(await redirectsXId.getMany(Object.keys(redirects)), redirects)) : redirectsXId.setMany(redirects),
+      MediaWiki.validLangVars.length
+        ? (async () => {
+          const keys = Object.keys(redirects)
+          if (keys.length === 0) return 0
+          const existingRedirects = await redirectsXId.getMany(keys)
+          return await redirectsXId.setMany(deepmerge(existingRedirects, redirects))
+        })()
+        : redirectsXId.setMany(redirects),
     ])
     return [numArticles]
   } catch (err) {
