@@ -270,10 +270,12 @@
       "required": false
     },
     "customCss": {
-      "type": "string",
+      "type": "blob",
+      "kind": "css",
       "required": false,
       "title": "Custom CSS",
-      "description": "Comma-separated list of CSS URLs to inject into all rendered pages."
+      "description": "Custom CSS to inject into all rendered pages.",
+      "allowRemoteUrl": true
     }
   }
 }
