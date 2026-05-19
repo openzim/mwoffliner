@@ -177,7 +177,7 @@ export class ActionParseRenderer extends Renderer {
       styleDependenciesList: config.output.mw.css.concat(styleDependenciesList),
     }
 
-    const normalizedRedirects = data.parse.redirects.map((redirect) => {
+    const normalizedRedirects = (data.parse.redirects || []).map((redirect) => {
       // The API returns the redirect title (!?), we fake the
       // redirectId by putting the underscore.
       redirect.from = String(redirect.from).replace(/ /g, '_')

@@ -16,7 +16,7 @@ export default class ActionParseURLDirector {
   }
 
   buildArticleURL(articleId: string, articleUrlOpts: RendererArticleOpts = {}) {
-    const { sectionId } = articleUrlOpts
+    const { sectionId, oldid } = articleUrlOpts
     return urlBuilder
       .setDomain(this.baseDomain)
       .setQueryParams(
@@ -28,7 +28,8 @@ export default class ActionParseURLDirector {
           disabletoc: '1',
           disableeditsection: '1',
           disablelimitreport: '1',
-          page: articleId,
+          page: oldid ? undefined : articleId,
+          oldid: oldid ? String(oldid) : undefined,
           useskin: this.skin,
           variant: this.variant,
           redirects: '1',

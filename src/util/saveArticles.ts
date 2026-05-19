@@ -16,14 +16,19 @@ import FileManager from './FileManager.js'
 import { truncateUtf8Bytes } from './misc.js'
 import { isMainPage } from './articles.js'
 
+function getArticleRenderUrl(articleId: string, articleDetail: ArticleDetail, dump: Dump): string {
+  const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
+  const oldid = dump.opts.stableRevision && articleDetail.stableRevisionId !== undefined ? articleDetail.stableRevisionId : undefined
+  return Downloader.getArticleUrl(articleId, { sectionId: leadSectionId, oldid })
+}
+
 async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       let rets: any
       try {
         const mainPage = isMainPage(articleId)
-        const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
-        const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+        const articleUrl = getArticleRenderUrl(articleId, articleDetail, dump)
 
         rets = await Downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, dump, articleDetail)
         for (const { articleId, html } of rets) {
@@ -163,8 +168,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
 
         let rets: any
         try {
-          const leadSectionId = dump.nodet && !articleDetail.contentmodel && !articleDetail.missing ? config.filters.leadSectionId : ''
-          const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
+          const articleUrl = getArticleRenderUrl(articleId, articleDetail, dump)
 
           rets = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 

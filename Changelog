@@ -1,5 +1,6 @@
 Unreleased:
 * FIX: Fix file name detection for Wikimedia image urls (@Markus-Rost #2701)
+* NEW: Prefer stable (FlaggedRevs-reviewed) revisions when scraping with --stableRevision opt-in (@kunalsiyag #1587 #2072)
 * FIX: Use single article as ZIM main page when articleList contains only one entry (@kunalsiyag #1891)
 * FIX: Fix fire-and-forget async patterns and file download accounting bugs (@triemerge #2681)
 * FIX: Avoid retrying non-transport processing errors (@triemerge #2685)
