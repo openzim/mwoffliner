@@ -11,6 +11,9 @@ export const parameterDescriptions = {
   customZimLongDescription: 'ZIM custom long description (4000 characters max)',
   customZimTags: 'ZIM tags metadata (semi-colon separated)',
   customZimLanguage: 'ZIM ISO 639-3 content language code',
+  customZimName: 'Custom ZIM Name template. Placeholders: {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {flavour_suffix}, {period}.',
+  customZimFilename:
+    'Custom ZIM filename template, without the .zim extension. Placeholders: {zim_name}, {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {flavour_suffix}, {period}.',
   customMainPage: 'Custom page to be used as welcome page.',
   filenamePrefix: 'Part of the ZIM filename which is before the format & date parts.',
   format:
