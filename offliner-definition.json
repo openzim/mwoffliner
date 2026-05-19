@@ -274,7 +274,7 @@
       "kind": "css",
       "required": false,
       "title": "Custom CSS",
-      "description": "Custom CSS to inject into all rendered pages.",
+      "description": "Custom CSS to inject into all rendered pages ; remote value can be a comma-separated list of CSS URLs.",
       "allowRemoteUrl": true
     }
   }
