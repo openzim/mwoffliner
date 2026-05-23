@@ -22,16 +22,20 @@
       "description": "Custom User-Agent header for all HTTP requests. Defaults to 'MWOffliner/<version> (<adminEmail>)'"
     },
     "articleList": {
-      "type": "string",
+      "type": "blob",
+      "kind": "txt",
       "required": false,
       "title": "Article List",
-      "description": "List of articles to include. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line"
+      "description": "List of articles to include. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line",
+      "allowRemoteUrl": true
     },
     "articleListToIgnore": {
-      "type": "string",
+      "type": "blob",
+      "kind": "txt",
       "required": false,
       "title": "Article List to ignore",
-      "description": "List of articles to ignore. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line"
+      "description": "List of articles to ignore. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line",
+      "allowRemoteUrl": true
     },
     "customMainPage": {
       "type": "string",
@@ -44,24 +48,24 @@
       "required": false,
       "title": "ZIM Title",
       "description": "ZIM custom title metadata.",
-      "minLength": 1,
-      "maxLength": 30
+      "minGraphemes": 1,
+      "maxGraphemes": 30
     },
     "customZimDescription": {
       "type": "string",
       "required": false,
       "title": "ZIM custom description",
       "description": "Max length is 80 chars",
-      "minLength": 1,
-      "maxLength": 80
+      "minGraphemes": 1,
+      "maxGraphemes": 80
     },
     "customZimLongDescription": {
       "type": "string",
       "required": false,
       "title": "ZIM custom long description",
       "description": "Max length is 4000 chars",
-      "minLength": 1,
-      "maxLength": 4000
+      "minGraphemes": 1,
+      "maxGraphemes": 4000
     },
     "customZimFavicon": {
       "type": "blob",
@@ -266,10 +270,12 @@
       "required": false
     },
     "customCss": {
-      "type": "string",
+      "type": "blob",
+      "kind": "css",
       "required": false,
       "title": "Custom CSS",
-      "description": "Comma-separated list of CSS URLs to inject into all rendered pages."
+      "description": "Custom CSS to inject into all rendered pages ; remote value can be a comma-separated list of CSS URLs.",
+      "allowRemoteUrl": true
     }
   }
 }
