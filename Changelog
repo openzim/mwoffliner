@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Fix URL size estimation to prevent 414 Request-URI Too Long on non-Latin wikis (@paratha14 #2705)
 * FIX: Fix file name detection for Wikimedia image urls (@Markus-Rost #2701)
 * FIX: Use single article as ZIM main page when articleList contains only one entry (@kunalsiyag #1891)
 * FIX: Fix fire-and-forget async patterns and file download accounting bugs (@triemerge #2681)
