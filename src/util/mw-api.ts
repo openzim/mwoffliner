@@ -18,7 +18,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
   // using async iterator to spawn workers
   await pmap(
     ','
-      .repeat(Downloader.speed)
+      .repeat(Downloader.workers)
       .split(',')
       .map((_, i) => i),
     async (workerId: number) => {
@@ -78,7 +78,7 @@ export async function getArticlesByIds(articleIds: string[], log = true): Promis
         await articleDetailXId.setMany(deepmerge(existingArticleDetails, articleDetails))
       }
     },
-    { concurrency: Downloader.speed },
+    { concurrency: Downloader.workers },
   )
 }
 
@@ -378,7 +378,7 @@ export async function getArticleIds(mainPage?: string, articleIds?: string[], ar
       (namespace: string) => {
         return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore, allowedContentModels)
       },
-      { concurrency: Downloader.speed },
+      { concurrency: Downloader.workers },
     )
   }
 }

@@ -200,7 +200,7 @@
       "type": "float",
       "title": "Speed",
       "required": false,
-      "description": "Multiplicator for the number of parallel HTTP requests on Parsoid backend (default is the number of CPU cores). Reduce on throttled Wikis."
+      "description": "Controls scraping speed. 1 is the default, 0.1 makes it ten times slower, 10 makes it ten times faster. Values above 1 must be integers (number of parallel workers)."
     },
     "withoutZimFullTextIndex": {
       "type": "boolean",

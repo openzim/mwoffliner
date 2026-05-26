@@ -11,7 +11,7 @@ const createDownloader = () => {
   const downloader = new DownloaderClass()
   downloader.init = {
     uaString: 'mwoffliner-test-agent',
-    speed: 1,
+    workers: 1,
     reqTimeout: 1000,
     optimisationCacheUrl: '',
     webp: false,

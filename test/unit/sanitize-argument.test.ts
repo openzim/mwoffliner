@@ -80,3 +80,51 @@ describe('URL validation', () => {
     await expect(sanitize_all({ mwUrl: 'invalid-url', adminEmail: 'test@example.com' })).rejects.toThrow(/url/i)
   })
 })
+
+describe('Speed validation', () => {
+  const baseValidParams = {
+    _: [],
+    verbose: true,
+    mwUrl: 'https://en.wikipedia.org',
+    'mw-url': 'https://en.wikipedia.org',
+    adminEmail: 'test@test.test',
+    'admin-email': 'test@test.test',
+    $0: 'node_modules/ts-node/dist/child/child-entrypoint.js',
+  }
+
+  test('accepts positive integer speed', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: 4 })).resolves.toBeUndefined()
+  })
+
+  test('accepts integer string speed', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: '4' })).resolves.toBeUndefined()
+  })
+
+  test('accepts undefined speed (default)', async () => {
+    await expect(sanitize_all({ ...baseValidParams })).resolves.toBeUndefined()
+  })
+
+  test('accepts float speed below 1', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: 0.1 })).resolves.toBeUndefined()
+  })
+
+  test('accepts string float speed below 1', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: '0.1' })).resolves.toBeUndefined()
+  })
+
+  test('rejects zero speed', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: 0 })).rejects.toThrow(/positive number/)
+  })
+
+  test('rejects negative speed', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: -1 })).rejects.toThrow(/positive number/)
+  })
+
+  test('rejects float speed above 1', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: 1.5 })).rejects.toThrow(/integers/)
+  })
+
+  test('rejects non-numeric speed', async () => {
+    await expect(sanitize_all({ ...baseValidParams, speed: 'abc' })).rejects.toThrow(/positive number/)
+  })
+})

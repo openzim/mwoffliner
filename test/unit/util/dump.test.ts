@@ -17,7 +17,7 @@ describe('Download CSS or JS Module', () => {
     await filesToDownloadXPath.flush()
     FileManager.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
   })
 
   test('download skins.vector.styles CSS', async () => {

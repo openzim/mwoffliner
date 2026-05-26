@@ -17,7 +17,7 @@ import { truncateUtf8Bytes } from './misc.js'
 import { isMainPage } from './articles.js'
 
 async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, articlesRenderer: Renderer) {
-  await articleDetailXId.iterateItems(Downloader.speed, async (articleKeyValuePairs) => {
+  await articleDetailXId.iterateItems(Downloader.workers, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
       let rets: any
       try {
@@ -26,6 +26,7 @@ async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump:
         const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
 
         rets = await Downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, dump, articleDetail)
+        await new Promise((resolve) => setTimeout(resolve, Downloader.articleRequestInterval))
         for (const { articleId, html } of rets) {
           if (!html) {
             continue
@@ -137,7 +138,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   // retry interval is an exponentional value from 1 to 60s
   // we assume rest of processing is "fast" and takes at most 1 minute
   const timeout = 2 * (Downloader.requestTimeout * 10 + (1 + 2 + 4 + 8 + 16 + 32 + 60 * 4) * 1000) + 60000
-  await articleDetailXId.iterateItems(Downloader.speed, (articleKeyValuePairs, runningWorkers) => {
+  await articleDetailXId.iterateItems(Downloader.workers, (articleKeyValuePairs, runningWorkers) => {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       /*
@@ -167,6 +168,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
           const articleUrl = Downloader.getArticleUrl(articleId, { sectionId: leadSectionId })
 
           rets = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
+          await new Promise((resolve) => setTimeout(resolve, Downloader.articleRequestInterval))
 
           curStage += 1
           for (const {
