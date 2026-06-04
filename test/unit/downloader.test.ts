@@ -62,20 +62,20 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('downloader.downloadContent returns', async () => {
-    const contentRes = await Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/275px-London_Montage_L.jpg', 'image')
+    const contentRes = await Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/London_Montage_L.jpg/250px-London_Montage_L.jpg', 'image')
     expect(contentRes.contentType).toBeDefined()
   })
 
   test('Webp compression working for cmyk color-space images', async () => {
-    const { content } = await Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/550px-LOGO_HAEMMERLIN.jpg', 'image')
+    const { content } = await Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/LOGO_HAEMMERLIN.jpg/500px-LOGO_HAEMMERLIN.jpg', 'image')
     const fileType = await FileType.fileTypeFromBuffer(Buffer.from(content))
     expect(fileType?.mime).toEqual('image/webp')
   })
 
   test('downloader.downloadContent throws on non-existant url', async () => {
-    await expect(Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg', 'image')).rejects.toThrowError(
-      new Error('Request failed with status code 404'),
-    )
+    await expect(
+      Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg/500px-thisdoesnotexist.jpg', 'image'),
+    ).rejects.toThrowError(new Error('Request failed with status code 404'))
   })
 
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
