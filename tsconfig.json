@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "isolatedModules": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -10,21 +10,14 @@
     "noImplicitAny": false,
     "sourceMap": true,
     "declaration": true,
-    "baseUrl": ".",
+    "rootDir": "./src",
     "outDir": "./lib/",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "types": [
-      "node", "jest"
-    ],
-    "typeRoots": [
-      "node_modules/@types/",
-      "./src/"
-    ],
-    "lib": [
-      "ES2022.Intl", "DOM"
-    ],
+    "types": ["node", "jest"],
+    "typeRoots": ["node_modules/@types/", "./src/"],
+    "lib": ["ES2022.Intl", "DOM"],
     "plugins": [
       {
         "name": "typescript-tslint-plugin",
@@ -32,14 +25,10 @@
       }
     ],
     "paths": {
-      "#test*": [
-        "test/*"
-      ]
+      "@/*": ["./src/*"],
+      "#test*": ["./test/*"]
     }
   },
   "include": ["src/**/*", "test/**/*"],
-  "exclude": [
-    "node_modules",
-    "bin"
-  ]
+  "exclude": ["node_modules", "bin"]
 }
