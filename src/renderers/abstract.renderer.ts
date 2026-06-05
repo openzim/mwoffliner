@@ -38,6 +38,7 @@ export interface DownloadOpts {
   articleId: string
   articleUrl: string
   articleDetail: ArticleDetail
+  langVar?: string
 }
 
 export interface Redirect {

@@ -116,7 +116,7 @@ export class ActionParseRenderer extends Renderer {
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
-    const { articleId, articleUrl } = downloadOpts
+    const { articleId, articleUrl, langVar } = downloadOpts
 
     let data: ActionParseResult
     try {
@@ -137,11 +137,11 @@ export class ActionParseRenderer extends Renderer {
         if (!Object.keys(logEvent.params).includes('suppressredirect')) {
           throw err
         }
-        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(logEvent.params.target_title))
+        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(logEvent.params.target_title, { langVar }))
       } else if (err instanceof DownloadError && err.responseData.error?.code === 'nosuchsection') {
         // For articles without the specified section, get the whole article instead
         logger.warn(`Can't get a specific section of article "${articleId}", getting the complete article instead.`)
-        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(articleId))
+        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(articleId, { langVar }))
       } else {
         throw err
       }
