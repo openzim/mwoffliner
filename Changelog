@@ -26,6 +26,7 @@ Unreleased:
 * FIX: Detect continuation cycles in article pagination (@triemerge #2532)
 * FIX: Refactor file download pipeline to inline host queueing (@triemerge #2689)
 * FIX: Remove Jest stack trace decoration from E2E test logs (@triemerge #2038)
+* UPDATE: Use node-libzim 4.3.0 and Node.JS 26, update dependencies (@benoit74 #2743)
 
 
 1.17.5:
