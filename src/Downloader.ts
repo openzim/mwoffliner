@@ -431,7 +431,8 @@ class Downloader {
           : {}),
         rawcontinue: 'true',
         generator: 'allpages',
-        gapfilterredir: 'nonredirects',
+        // Record the variant titles of redirects at the same time
+        gapfilterredir: MediaWiki.validLangVars.length ? 'all' : 'nonredirects',
         gaplimit: 'max',
         gapnamespace: String(ns),
         gapcontinue,
@@ -476,6 +477,41 @@ class Downloader {
     return {
       articleDetails: finalProcessedResp,
       gapContinue: gCont,
+    }
+  }
+
+  public async getRedirectVariantsIds(redirectIds: string[]): Promise<QueryMwRet> {
+    let continuation: ContinueOpts
+    let finalProcessedResp: QueryMwRet
+    const visitedUrls = new Set<string>()
+
+    while (true) {
+      const queryOpts: KVS<any> = {
+        titles: redirectIds.join('|'),
+        action: 'query',
+        format: 'json',
+        prop: 'info',
+        inprop: 'varianttitles',
+        redirects: false,
+        formatversion: '2',
+        maxlag: config.defaults.maxlag,
+        ...continuation,
+      }
+
+      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
+      if (visitedUrls.has(reqUrl)) {
+        throw new Error(`Detected continuation cycle while fetching redirect variants by IDs. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
+      }
+      visitedUrls.add(reqUrl)
+
+      const resp = await this.getJSON<MwApiResponse>(reqUrl)
+
+      Downloader.handleMWWarningsAndErrors(resp)
+
+      const processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
+      finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
+      if (!resp.continue) return finalProcessedResp
+      continuation = resp.continue
     }
   }
 
@@ -683,8 +719,9 @@ class Downloader {
     return {
       ...MediaWiki.queryOpts,
       prop: MediaWiki.queryOpts.prop.concat(prop),
-      formatversion: '2',
+      inprop: MediaWiki.validLangVars.length ? 'varianttitles' : undefined,
       redirects: followRedirects ? true : undefined,
+      converttitles: followRedirects && MediaWiki.validLangVars.length ? true : undefined,
     }
   }
 

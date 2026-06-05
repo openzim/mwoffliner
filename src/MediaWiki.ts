@@ -17,10 +17,12 @@ export interface QueryOpts {
   action: string
   format: string
   prop: string
+  inprop?: string
   rdlimit: string
   rdnamespace: string | number
   rdprop: string
   redirects?: boolean
+  converttitles?: boolean
   formatversion: string
   maxlag: string
 }
@@ -107,6 +109,7 @@ class MediaWiki {
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
   public skin = 'vector' // Default fallback
+  public validLangVars: string[] = []
 
   #wikiPath: string
   #indexPhpPath: string
@@ -486,6 +489,7 @@ class MediaWiki {
 
     if (langVariants) {
       const validLangVars = (generalEntries.variants || []).map((e: any) => e.code)
+      this.validLangVars = validLangVars
       const invalidLangVars = langVariants.filter((langVariant) => langVariant && !validLangVars.includes(langVariant))
       if (invalidLangVars.length) {
         throw new Error(`Language variants [${invalidLangVars.join(', ')}] is not available on the wiki`)
