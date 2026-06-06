@@ -52,12 +52,12 @@ describe('articles utility', () => {
   })
 
   test.each(['Foo_Bar', 'Foo Bar'])('article is main page', (articleTitle) => {
-    MediaWiki.metaData = { mainPage: 'Foo_Bar' }
+    MediaWiki.metaData = { mainPage: 'Foo_Bar' } as any
     expect(isMainPage(articleTitle)).toBe(true)
   })
 
   test.each(['Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('article is not main page', (articleTitle) => {
-    MediaWiki.metaData = { mainPage: 'Foo_Bar' }
+    MediaWiki.metaData = { mainPage: 'Foo_Bar' } as any
     expect(isMainPage(articleTitle)).toBe(false)
   })
 

@@ -17,7 +17,7 @@ export default class RedisQueue<T> {
 
   public async pop(): Promise<T> {
     const val = await this.redisClient.rPop(this.dbName)
-    return this.hydrateObject(val)
+    return this.hydrateObject(val as string)
   }
 
   public push(val: T): Promise<number> {

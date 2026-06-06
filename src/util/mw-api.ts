@@ -92,7 +92,7 @@ async function saveToStore(
     const [numArticles] = await Promise.all([articleDetailXId.setMany(articleDetails), redirectsXId.setMany(redirects)])
     return [numArticles]
   } catch (err) {
-    return [0, err]
+    return [0, err as Error]
   }
 }
 
@@ -351,7 +351,7 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
       validMimeType = true
     } else {
       for (const mimeType of allowedMimeTypes) {
-        if (resp.headers['content-type'].includes(mimeType)) {
+        if ((resp.headers['content-type'] as string).includes(mimeType)) {
           validMimeType = true
           break
         }
@@ -360,7 +360,7 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
 
     return isSuccess && validMimeType
   } catch (err) {
-    logger.info('checkApiAvailability failed: ', cleanupAxiosError(err))
+    logger.info('checkApiAvailability failed: ', cleanupAxiosError(err as any))
     return false
   }
 }

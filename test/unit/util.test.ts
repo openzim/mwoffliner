@@ -300,7 +300,7 @@ describe('Utils', () => {
       await Downloader.get('https://en.wikibooks.org/api/rest_v1/page/html/World_History%2FThe_Rise_of_Dictatorship_and_Totalitarianism%2FQuick_Quiz/4225685')
       fail('it should not reach here')
     } catch (err) {
-      const cleanupedError = cleanupAxiosError(err)
+      const cleanupedError = cleanupAxiosError(err as any)
       expect(cleanupedError).toEqual(result)
     }
   })
@@ -399,7 +399,7 @@ describe('Utils', () => {
     }
 
     test('validate valid metadata', () => {
-      expect(() => validateMetadata(minimumValidMetadata)).not.toThrowError()
+      expect(() => validateMetadata(minimumValidMetadata)).not.toThrow()
     })
 
     test('validate with unicode chars', () => {
@@ -407,7 +407,7 @@ describe('Utils', () => {
         ...minimumValidMetadata,
         Description: '😎 Emoji, ❤ Hearts, 💲 Currencies, → Arrows, ☆ Stars',
       }
-      expect(() => validateMetadata(metaData)).not.toThrowError()
+      expect(() => validateMetadata(metaData)).not.toThrow()
     })
 
     test('validate empty string', () => {
@@ -449,7 +449,7 @@ describe('Utils', () => {
         Description
         test`,
       }
-      expect(() => validateMetadata(metaData)).not.toThrowError()
+      expect(() => validateMetadata(metaData)).not.toThrow()
     })
 
     test('validate null value', () => {

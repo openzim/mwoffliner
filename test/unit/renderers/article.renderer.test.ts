@@ -16,7 +16,7 @@ describe('ArticleRenderer', () => {
       Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
       await MediaWiki.getMwMetaData()
       await MediaWiki.hasActionParseApi()
-      Downloader.setUrlsDirectors(actionParseRenderer, actionParseRenderer)
+      Downloader.setUrlsDirectors(actionParseRenderer)
     })
 
     it('regular page has content', async () => {

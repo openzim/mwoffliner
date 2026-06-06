@@ -61,7 +61,7 @@ await testRenders(
       test(`test article header for ${outFiles[0].renderer} renderer`, async () => {
         const articleTitle = mainPageArticleDoc.querySelector('h1#firstHeading')
         expect(articleTitle).toBeTruthy()
-        expect(articleTitle.style.display).toBe('none')
+        expect((articleTitle as HTMLElement).style.display).toBe('none')
       })
     })
 

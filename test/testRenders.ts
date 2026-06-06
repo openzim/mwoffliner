@@ -69,7 +69,7 @@ export async function testRenders(testName: string, parameters: Parameters, call
       outFiles[0].renderer = renderer
       await callback(outFiles)
     } catch (err) {
-      logger.error(err.message)
+      logger.error((err as any).message)
       return
     }
   }

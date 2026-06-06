@@ -8,7 +8,6 @@ const DOMUtils = {
     } else {
       node.outerHTML = ''
     }
-    node = undefined
   },
 
   appendToAttr(node: DominoElement, attr: string, val: any) {

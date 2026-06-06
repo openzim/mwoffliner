@@ -26,11 +26,11 @@ await testRenders(
     })
 
     test(`test article skin for ${outFiles[0].renderer} renderer`, async () => {
-      expect(articleDoc.body.classList).toContain('skin-monobook')
+      expect(articleDoc.body.classList.contains('skin-monobook')).toBe(true)
     })
 
     test(`test article template for ${outFiles[0].renderer} renderer`, async () => {
-      expect(articleDoc.body.classList).toContain('mwoffliner-fallback')
+      expect(articleDoc.body.classList.contains('mwoffliner-fallback')).toBe(true)
     })
 
     afterAll(() => {

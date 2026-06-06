@@ -199,7 +199,7 @@ export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: st
     throw new Error(`Mediawiki API is not reachable with ${apiQueryUrl}\n${err}`)
   })
   const contentType = value.headers['content-type']
-  if (!contentType.includes('application/json')) {
+  if (!(contentType as string).includes('application/json')) {
     throw new Error(`Mediawiki API is returning '${contentType}' Content-Type instead of 'application/json' with ${apiQueryUrl}`)
   }
 }

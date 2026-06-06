@@ -10,7 +10,7 @@
     "noImplicitAny": false,
     "sourceMap": true,
     "declaration": true,
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./lib/",
     "resolveJsonModule": true,
     "esModuleInterop": true,

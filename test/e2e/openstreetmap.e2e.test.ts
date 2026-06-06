@@ -31,7 +31,7 @@ await testAllRenders('openstreetmap', parameters, async (outFiles) => {
     const articleDoc = domino.createDocument(articleFromDump)
 
     test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
     })
 
     test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {

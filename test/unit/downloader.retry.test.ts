@@ -81,7 +81,7 @@ describe('Downloader malformed JSON retry strategy', () => {
 
   test('getJSON parses successful raw string JSON responses', async () => {
     const downloader = createDownloader()
-    ;(downloader as any).request = jest.fn().mockResolvedValue({
+    ;(downloader as any).request = (jest.fn() as any).mockResolvedValue({
       data: '{"ok":true}',
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -93,8 +93,7 @@ describe('Downloader malformed JSON retry strategy', () => {
 
   test('getJSON retries once and succeeds after malformed JSON', async () => {
     const downloader = createDownloader()
-    ;(downloader as any).request = jest
-      .fn()
+    ;(downloader as any).request = (jest.fn() as any)
       .mockResolvedValueOnce({
         data: '{"ok":',
         status: 200,
@@ -120,7 +119,7 @@ describe('Downloader malformed JSON retry strategy', () => {
       headers: { 'content-type': 'text/html' },
     }
     ;(err as any).config = { url: 'https://example.org/api' }
-    ;(downloader as any).request = jest.fn().mockRejectedValue(err)
+    ;(downloader as any).request = (jest.fn() as any).mockRejectedValue(err)
     stubImmediateBackoff(downloader)
 
     const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean

@@ -33,7 +33,7 @@ describe('forceRender', () => {
     const outFiles = await mwoffliner.execute({ ...parameters, forceRender })
 
     if (await zimcheckAvailable()) {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
     } else {
       console.log('Zimcheck not installed, skipping test')
     }

@@ -63,7 +63,7 @@ await testAllRenders('multimedia-content', { ...parameters, format: ['nopic', 'n
         expect(dump.status.articles.hardFail).toEqual(0)
         expect(dump.status.articles.softFail).toEqual(0)
 
-        await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
+        await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 
         const allFiles = await zimdump(`list ${dump.outFile}`)
         const allFilesArr = allFiles.split('\n')

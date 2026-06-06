@@ -17,20 +17,20 @@ export default class RedisKvs<T> implements RKVS<T> {
 
   public async get(prop: string): Promise<T> {
     const val = await this.redisClient.hGet(this.dbName, prop)
-    return this.hydrateObject(val)
+    return this.hydrateObject(val as string)
   }
 
   public async getMany(prop: string[]): Promise<KVS<T>> {
     const replies = await this.redisClient.hmGet(this.dbName, prop)
     const result: KVS<T> = {}
     for (let u = 0; u < prop.length; u += 1) {
-      result[prop[u]] = this.hydrateObject(replies[u])
+      result[prop[u]] = this.hydrateObject(replies[u] as string)
     }
     return result
   }
 
   public exists(prop: string): Promise<boolean> {
-    return this.redisClient.hExists(this.dbName, prop)
+    return this.redisClient.hExists(this.dbName, prop).then((v) => v === 1)
   }
 
   public async existsMany(prop: string[], blocking = false): Promise<KVS<boolean>> {
@@ -152,13 +152,13 @@ export default class RedisKvs<T> implements RKVS<T> {
     cursor: number
     items: KVS<T>
   }> {
-    const { cursor, tuples } = await this.redisClient.hScan(this.dbName, scanCursor)
+    const { cursor, entries } = await this.redisClient.hScan(this.dbName, String(scanCursor))
     const items: KVS<T> = {}
-    for (const { field, value } of tuples) {
+    for (const { field, value } of entries) {
       items[field] = this.hydrateObject(value)
     }
     return {
-      cursor,
+      cursor: Number(cursor),
       items,
     }
   }

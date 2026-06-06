@@ -110,7 +110,7 @@ async function saveArticle(
 
     return null
   } catch (err) {
-    return err
+    return err as Error
   }
 }
 

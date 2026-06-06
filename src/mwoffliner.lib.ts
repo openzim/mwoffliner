@@ -501,7 +501,7 @@ async function execute(argv: any) {
       })
       // Include known dynamic dependencies
       const dynamicJsDeps = config.output.mw.js_dynamic_dependencies
-      Object.keys(dynamicJsDeps).forEach((oneDep: keyof typeof dynamicJsDeps) => {
+      Object.keys(dynamicJsDeps).forEach((oneDep) => {
         if (jsModuleDependencies.has(oneDep)) {
           dynamicJsDeps[oneDep].forEach((extraDep) => {
             jsModuleDependencies.add(extraDep)

@@ -1,4 +1,4 @@
-import { Dump } from 'src/Dump.js'
+import { Dump } from './Dump.js'
 import { downloadErrorPlaceholderTemplate } from './Templates.js'
 import { getRelativeFilePath, interpolateTranslationString } from './util/misc.js'
 import MediaWiki from './MediaWiki.js'

@@ -31,7 +31,7 @@ await testAllRenders('api-path-params', parameters, async (outFiles) => {
     })
 
     test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
     })
 
     afterAll(() => {

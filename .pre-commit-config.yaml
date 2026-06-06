@@ -6,15 +6,17 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+  - repo: local
     hooks:
       - id: prettier
-        language_version: system
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.26.0
+        name: prettier (system)
+        entry: prettier --write --ignore-unknown
+        language: node
+  - repo: local
     hooks:
       - id: eslint
-        language_version: system
-        args: [--config, eslint.config.js]
+        name: eslint (system)
+        entry: npx eslint
+        language: system
         types: [file]
+        files: \.[jt]sx?$
