@@ -21,7 +21,7 @@ const parameters = {
 await testAllRenders('download-image', parameters, async (outFiles) => {
   describeIf('Check image downloading from S3 using optimisationCacheUrl parameter', () => {
     test(`right scrapping from fr.wikipedia.org with optimisationCacheUrl parameter for ${outFiles[0]?.renderer} renderer`, async () => {
-      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrowError()
+      await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
       await execa('redis-cli flushall', { shell: true })
 
       const redisScan = await execa('redis-cli --scan', { shell: true })

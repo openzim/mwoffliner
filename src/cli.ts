@@ -80,9 +80,9 @@ if (!('toJSON' in Error.prototype)) {
     value() {
       const alt = {} as any
 
-      Object.getOwnPropertyNames(this).forEach(function (key) {
-        alt[key] = this[key]
-      }, this)
+      Object.getOwnPropertyNames(this).forEach((key) => {
+        alt[key] = (this as any)[key]
+      })
 
       return alt
     },

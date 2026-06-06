@@ -273,8 +273,8 @@ class Downloader {
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
       // Set cookie jar and use special Http(s)CookieAgent so that cookies are automatically intercepted and persisted across calls
-      httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookierJar }, keepAlive: true }),
-      httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookierJar }, keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
+      httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookierJar as any }, keepAlive: true }),
+      httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookierJar as any }, keepAlive: true, rejectUnauthorized: !this.insecure }), // rejectUnauthorized: false disables TLS
       timeout: this.requestTimeout,
       headers: {
         // Use the base domain of the wiki being scraped as the Referer header, so that we can
@@ -584,7 +584,7 @@ class Downloader {
         dump.status.articles.hardFail += 1
         dump.status.articles.hardFailedArticleIds.push(articleId)
         if (dump.maxHardFailedArticles > 0 && dump.status.articles.hardFail > dump.maxHardFailedArticles) {
-          throw new Error('Too many articles failed to download')
+          throw new Error('Too many articles failed to download') // eslint-disable-line preserve-caught-error
         }
       } else {
         logger.log(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
@@ -676,7 +676,8 @@ class Downloader {
         }
       })
     } catch (err) {
-      const httpStatus = err.response && err.response.status
+      const e = err as any
+      const httpStatus = e.response && e.response.status
       logger.warn(`Failed to get [${url}] [status=${httpStatus}]`)
       throw err
     }
@@ -762,7 +763,7 @@ class Downloader {
             dataToCompress = await sharp(input.data).resize({ width: requestedWidth, withoutEnlargement: true }).toBuffer()
           }
         } catch (err) {
-          logger.warn(`Failed to resize image to ${requestedWidth}px, proceeding without resize: ${err.message}`)
+          logger.warn(`Failed to resize image to ${requestedWidth}px, proceeding without resize: ${(err as any).message}`)
         }
       }
 

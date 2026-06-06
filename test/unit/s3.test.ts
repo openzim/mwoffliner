@@ -29,7 +29,7 @@ describeIf('S3', () => {
     expect(bucketExists).toBeDefined()
 
     // Given bucket does not exists in S3
-    await expect(s3.bucketExists('random-string')).rejects.toThrowError()
+    await expect(s3.bucketExists('random-string')).rejects.toThrow()
 
     const s3TestKey = `bm.wikipedia.org/static/images/project-logos/${Math.random().toString(36).slice(2, 7)}.png`
     // Image uploaded to S3

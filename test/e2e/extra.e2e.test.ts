@@ -49,7 +49,7 @@ describe('Extra', () => {
         }
 
         if (await zimcheckAvailable()) {
-          await expect(zimcheck(dump.outFile)).resolves.not.toThrowError()
+          await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
         } else {
           console.log('Zimcheck not installed, skipping test')
         }

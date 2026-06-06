@@ -9,7 +9,8 @@ describe('miscelenaous utility functions tests', () => {
     ['fÖo', 3, 'fÖ'],
     ['fÖo', 4, 'fÖo'],
   ]
-  test.each(cases)('truncateUtf8Bytes', (value: string, length: number, expected: string) => {
+  test.each(cases)('truncateUtf8Bytes', (...args) => {
+    const [value, length, expected] = args as [string, number, string]
     expect(truncateUtf8Bytes(value, length)).toBe(expected)
   })
 })

@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../src/types.d.ts" />
 
-import packageJSON from '../../package.json'
+import packageJSON from '../../package.json' with { type: 'json' }
 import { execa } from 'execa'
 
 const mwo = 'node lib/cli.js'

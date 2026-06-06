@@ -13,7 +13,7 @@ import { setTimeout } from 'timers/promises'
 import domino from 'domino'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
-import { renderName } from 'src/renderers/abstract.renderer.js'
+import { renderName } from '../../src/renderers/abstract.renderer.js'
 
 jest.setTimeout(200000)
 
@@ -58,7 +58,7 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('getJSON response status for non-existant url is 404', async () => {
-    await expect(Downloader.getJSON('https://en.wikipedia.org/w/thisisa404')).rejects.toThrowError(new Error('Request failed with status code 404'))
+    await expect(Downloader.getJSON('https://en.wikipedia.org/w/thisisa404')).rejects.toThrow(new Error('Request failed with status code 404'))
   })
 
   test('downloader.downloadContent returns', async () => {
@@ -73,9 +73,9 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('downloader.downloadContent throws on non-existant url', async () => {
-    await expect(
-      Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg/500px-thisdoesnotexist.jpg', 'image'),
-    ).rejects.toThrowError(new Error('Request failed with status code 404'))
+    await expect(Downloader.downloadContent('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/thisdoesnotexist.jpg/500px-thisdoesnotexist.jpg', 'image')).rejects.toThrow(
+      new Error('Request failed with status code 404'),
+    )
   })
 
   test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
@@ -101,7 +101,7 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('downloadContent throws when empty string is passed', async () => {
-    await expect(Downloader.downloadContent('', 'image')).rejects.toThrowError()
+    await expect(Downloader.downloadContent('', 'image')).rejects.toThrow()
   })
 
   test('downloadContent successfully downloaded an image', async () => {

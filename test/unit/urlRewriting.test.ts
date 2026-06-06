@@ -181,7 +181,7 @@ describe('Styles', () => {
     await RedisStore.redirectsXId.flush()
     const { dump } = await setupScrapeClasses() // en wikipedia
 
-    await RenderingContext.createRenderers(null, true)
+    await RenderingContext.createRenderers(null)
 
     await getArticleIds('', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
 

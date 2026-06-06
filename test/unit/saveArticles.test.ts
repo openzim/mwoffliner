@@ -8,7 +8,7 @@ import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import { RENDERERS_LIST } from '../../src/util/const.js'
-import { renderName } from 'src/renderers/abstract.renderer.js'
+import { renderName } from '../../src/renderers/abstract.renderer.js'
 import Downloader from '../../src/Downloader.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
 

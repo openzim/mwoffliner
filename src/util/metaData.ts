@@ -1,5 +1,5 @@
 import AjvModule from 'ajv'
-import type { KeywordCxt } from 'ajv'
+import { KeywordErrorCxt } from 'ajv/dist/types/index.js'
 import { byGrapheme } from 'split-by-grapheme'
 
 const Ajv = AjvModule.default
@@ -27,7 +27,7 @@ ajv.addKeyword({
     return value.split(byGrapheme).length <= max_length
   },
   error: {
-    message: (cxt: KeywordCxt): string => {
+    message: (cxt: KeywordErrorCxt): string => {
       return `must NOT have more than ${cxt.schemaValue} graphemes`
     },
   },

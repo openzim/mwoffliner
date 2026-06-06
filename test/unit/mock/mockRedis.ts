@@ -1,4 +1,4 @@
-import data from './sg.json'
+import data from './sg.json' with { type: 'json' }
 
 /*
  * get mock data
@@ -41,21 +41,22 @@ export class MockRedis {
     return 1
   }
 
-  async hScan(dbName: string, cursor: number): Promise<{ cursor: number; tuples: { field: string; value: string }[] }> {
+  async hScan(dbName: string, cursor: string): Promise<{ cursor: string; entries: { field: string; value: string }[] }> {
     let amount = 9 + Math.floor(Math.random() * 3)
     const maxLength = await this.hLen('')
+    const cursorNum = Number(cursor)
     let curCursor = this.nextCursor
 
-    if (cursor < 0 || cursor >= maxLength) {
+    if (cursorNum < 0 || cursorNum >= maxLength) {
       throw new Error(`Cursor ${cursor} is out of range`)
     }
     if (!curCursor) {
-      if (cursor !== 0) {
+      if (cursorNum !== 0) {
         throw new Error(`No running iteration, ${cursor} ${curCursor}`)
       }
       curCursor = 0
       amount = Math.min(amount, maxLength)
-    } else if (curCursor !== cursor) {
+    } else if (curCursor !== cursorNum) {
       throw new Error(`Invalid cursor ${cursor}`)
     } else {
       amount = Math.min(curCursor + amount, maxLength) - curCursor
@@ -63,7 +64,7 @@ export class MockRedis {
 
     const nextCursor = curCursor + amount
 
-    const tuples = Object.keys(this.data)
+    const entries = Object.keys(this.data)
       .slice(curCursor, nextCursor)
       .map((key) => {
         return { field: key, value: this.data[key] }
@@ -73,8 +74,8 @@ export class MockRedis {
     await new Promise((res) => setTimeout(res, Math.floor(Math.random() * 10)))
 
     return {
-      cursor: this.nextCursor,
-      tuples,
+      cursor: String(this.nextCursor),
+      entries,
     }
   }
 }

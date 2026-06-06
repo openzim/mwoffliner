@@ -30,28 +30,28 @@ describe('Misc utility', () => {
       const createDocumentSpy = jest.spyOn(domino, 'createDocument')
       const title = getStrippedTitleFromHtml('')
       expect(title).toBe('')
-      expect(createDocumentSpy).toBeCalledTimes(1)
+      expect(createDocumentSpy).toHaveBeenCalledTimes(1)
     })
 
     test('not valid html', async () => {
       const createDocumentSpy = jest.spyOn(domino, 'createDocument')
       const title = getStrippedTitleFromHtml('this is not valid HTML')
       expect(title).toBe('')
-      expect(createDocumentSpy).toBeCalledTimes(1)
+      expect(createDocumentSpy).toHaveBeenCalledTimes(1)
     })
 
     test('empty title', async () => {
       const createDocumentSpy = jest.spyOn(domino, 'createDocument')
       const title = getStrippedTitleFromHtml(html(''))
       expect(title).toBe('')
-      expect(createDocumentSpy).toBeCalledTimes(1)
+      expect(createDocumentSpy).toHaveBeenCalledTimes(1)
     })
 
     test('title as plain text', async () => {
       const createDocumentSpy = jest.spyOn(domino, 'createDocument')
       const title = getStrippedTitleFromHtml(html())
       expect(title).toBe('Example')
-      expect(createDocumentSpy).not.toBeCalled()
+      expect(createDocumentSpy).not.toHaveBeenCalled()
     })
 
     test('title with different tags', async () => {
@@ -65,7 +65,7 @@ describe('Misc utility', () => {
       const title3 = getStrippedTitleFromHtml(html('Example<script\r>alert(test)</script\r>'))
       expect(title3).toBe('Examplealert(test)')
 
-      expect(createDocumentSpy).toBeCalledTimes(1) // only last one can't be parsed with regex
+      expect(createDocumentSpy).toHaveBeenCalledTimes(1) // only last one can't be parsed with regex
     })
   })
 

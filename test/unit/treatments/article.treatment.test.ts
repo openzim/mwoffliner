@@ -9,7 +9,7 @@ import { jest } from '@jest/globals'
 import { RENDERERS_LIST } from '../../../src/util/const.js'
 import Downloader from '../../../src/Downloader.js'
 import RenderingContext from '../../../src/renderers/rendering.context.js'
-import { renderName } from 'src/renderers/abstract.renderer.js'
+import { renderName } from '../../../src/renderers/abstract.renderer.js'
 
 jest.setTimeout(10000)
 
@@ -20,7 +20,7 @@ describe('ArticleTreatment', () => {
   for (const renderer of RENDERERS_LIST) {
     test(`Article html processing for ${renderer} render`, async () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
-      await RenderingContext.createRenderers(renderer as renderName, true)
+      await RenderingContext.createRenderers(renderer as renderName)
       const _articlesDetail = await Downloader.getArticleDetailsIds(['London', 'non-existent-article'])
       const articlesDetail = mwRetToArticleDetail(_articlesDetail)
       const { articleDetailXId } = RedisStore
