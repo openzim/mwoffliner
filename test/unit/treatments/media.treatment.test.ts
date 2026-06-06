@@ -120,6 +120,21 @@ describe('MediaTreatment', () => {
       expect(ret.imageDependencies).toHaveLength(0)
     })
 
+    test('keeps mp4 video sources with cache-busting query strings', async () => {
+      const { dump } = await setupScrapeClasses({ format: '' })
+      const htmlStr = `<video poster="/images/thumb/TrainWhistle.mp4/120px--TrainWhistle.mp4.jpg?9b2674" controls="" preload="metadata" width="120" height="68" data-mwtitle="TrainWhistle.mp4">
+        <source src="/images/TrainWhistle.mp4?9b2674" type="video/mp4; codecs=&quot;avc1.42E01E, mp4a.40.2&quot;" data-width="120" data-height="68" data-title="Original MP4 file">
+      </video>`
+      const htmlDoc = domino.createDocument(htmlStr)
+
+      const ret = await testableRenderer.testTreatVideo(dump, {}, 'Electric_Locomotive', htmlDoc.querySelector('video'))
+
+      expect(ret.videoDependencies).toEqual(['https://en.wikipedia.org/images/TrainWhistle.mp4?9b2674'])
+      expect(ret.imageDependencies).toEqual(['https://en.wikipedia.org/images/thumb/TrainWhistle.mp4/120px--TrainWhistle.mp4.jpg?9b2674'])
+      expect(htmlDoc.querySelector('video')).toBeDefined()
+      expect(htmlDoc.querySelector('source')).toBeDefined()
+    })
+
     test('Ogg audio retrival', async () => {
       const { dump } = await setupScrapeClasses({ format: '' })
       const htmlStr = `<audio controls="" preload="none" height="32" width="200" resource="./File:William_Shakespeare_(Spoken_Article).ogg">
