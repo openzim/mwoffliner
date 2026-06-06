@@ -27,7 +27,7 @@ export const parameterDescriptions = {
   redis: 'Redis path (redis:// URL or path to UNIX socket)',
   requestTimeout: 'Request timeout in seconds (default is 120s)',
   resume: 'Skip already existing/created ZIM files',
-  speed: 'Multiplicator for the number of parallel HTTP requests on Parsoid backend (by default the number of CPU cores). Reduce on throttled Wikis.',
+  speed: 'Controls scraping speed. 1 is the default, 0.1 makes it ten times slower, 10 makes it ten times faster. Values above 1 must be integers (number of parallel workers).',
   verbose:
     'Print logging information to standard streams. To filter messages, one of the following values can be given: "info", "log", "warn", "error" or "quiet" (default level being "error"). All messages are printed from the given value and higher/worse.',
   withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",

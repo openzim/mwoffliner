@@ -176,7 +176,7 @@ class FileManager {
     }
 
     async function workerDownloadFile(fileToDownload: FileToDownload, hostname: string, hostData: HostData, workerId: number) {
-      if ((dump.status.files.success + dump.status.files.fail) % (10 * Downloader.speed) === 0) {
+      if ((dump.status.files.success + dump.status.files.fail) % (10 * Downloader.workers) === 0) {
         const percentProgress = (((dump.status.files.success + dump.status.files.fail) / filesTotal) * 100).toFixed(1)
         if (percentProgress !== prevPercentProgress) {
           prevPercentProgress = percentProgress
@@ -258,7 +258,7 @@ class FileManager {
     }
 
     await pmap(
-      Array.from({ length: Downloader.speed }, (_, i) => i),
+      Array.from({ length: Downloader.workers }, (_, i) => i),
       async (workerId: number) => {
         while (true) {
           const nextFileData = await fileDownloadMutex.runExclusive(getNextFileToDownload)
@@ -267,7 +267,7 @@ class FileManager {
           await workerDownloadFile(fileToDownload, hostname, hostData, workerId)
         }
       },
-      { concurrency: Downloader.speed },
+      { concurrency: Downloader.workers },
     )
 
     logger.log(

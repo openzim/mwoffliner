@@ -13,7 +13,7 @@ describe('ArticleRenderer', () => {
     beforeAll(async () => {
       MediaWiki.base = 'https://zh.wikipedia.org'
       MediaWiki.getCategories = true
-      Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, speed: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+      Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
       await MediaWiki.getMwMetaData()
       await MediaWiki.hasActionParseApi()
       Downloader.setUrlsDirectors(actionParseRenderer, actionParseRenderer)
