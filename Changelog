@@ -1,6 +1,7 @@
 Unreleased:
 * CHANGED: Create multiple files for language variants, similar to different formats (@Markus-Rost #2691)
 * CHANGED: Redesign speed to handle both worker count and request pacing (@triemerge #2393)
+* FIX: Fix URL size estimation to prevent 414 Request-URI Too Long on non-Latin wikis (@paratha14 #2705)
 * FIX: Fix file name detection for Wikimedia image urls (@Markus-Rost #2701)
 * NEW: Prefer stable (FlaggedRevs-reviewed) revisions when scraping with --stableRevision opt-in (@kunalsiyag #1587 #2072)
 * FIX: Use single article as ZIM main page when articleList contains only one entry (@kunalsiyag #1891)
