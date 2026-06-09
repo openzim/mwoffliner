@@ -30,7 +30,7 @@ class Gadgets {
       if (settings.actions && settings.actions.length && !settings.actions.includes('view')) return false
       if (settings.namespaces && settings.namespaces.length && !settings.namespaces.includes(articleDetail.ns || 0)) return false
       if (settings.contentModels && settings.contentModels.length && !settings.contentModels.includes(articleDetail.contentmodel || 'wikitext')) return false
-      if (settings.categories && settings.categories.length && !settings.categories.some((category) => articleDetail.categories.includes(category))) return false
+      if (settings.categories && settings.categories.length && !settings.categories.some((category) => (articleDetail.categories || []).includes(category))) return false
       return true
     })
 

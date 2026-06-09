@@ -18,7 +18,7 @@ export function trimArticleBatch(articleIds: string[]): string[] {
   return batch
 }
 
-export async function getArticlesByIds(articleIds: string[], categoryIds = new Set<string>(), log = true): Promise<void> {
+export async function getArticlesByIds(articleIds: string[], purpose: string, categoryIds = new Set<string>(), log = true): Promise<void> {
   let from = 0
   let numThumbnails = 0
 
@@ -37,7 +37,7 @@ export async function getArticlesByIds(articleIds: string[], categoryIds = new S
         const to = from + articleIdsBatch.length
         if (log) {
           const progressPercent = Math.floor((to / articleIds.length) * 100)
-          logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${articleIds.length}] [${progressPercent}%]`)
+          logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${articleIds.length}] for ${purpose} [${progressPercent}%]`)
         }
         from = to
 
@@ -396,11 +396,11 @@ export async function getArticleIds(mainPage?: string, articleIds?: string[], ar
   const categorySet = new Set<string>()
 
   if (mainPage) {
-    await getArticlesByIds([mainPage], categorySet)
+    await getArticlesByIds([mainPage], 'mainPage', categorySet)
   }
 
   if (articleIds) {
-    await getArticlesByIds(articleIds, categorySet)
+    await getArticlesByIds(articleIds, 'articles', categorySet)
   } else {
     await pmap(
       MediaWiki.namespacesToMirror,
@@ -413,6 +413,6 @@ export async function getArticleIds(mainPage?: string, articleIds?: string[], ar
 
   if (MediaWiki.getCategories) {
     const categoryIds = articleIdsToIgnore ? [...categorySet].filter((title: string) => !articleIdsToIgnore.includes(title)) : [...categorySet]
-    await getArticlesByIds(categoryIds)
+    await getArticlesByIds(categoryIds, 'categories')
   }
 }

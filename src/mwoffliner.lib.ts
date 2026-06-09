@@ -103,6 +103,7 @@ async function execute(argv: any) {
     customCss,
     userAgent: _userAgent,
     stableRevision,
+    getCategories,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -173,7 +174,7 @@ async function execute(argv: any) {
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
-  MediaWiki.getCategories = !!argv.getCategories
+  MediaWiki.getCategories = !!getCategories
   MediaWiki.actionApiPath = mwActionApiPath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword
@@ -377,7 +378,7 @@ async function execute(argv: any) {
       let logStr = 'Doing dump:'
       if (langVar) logStr += ' variant=' + langVar
       logStr += ` format=${dumpFormat || 'all'}`
-      logger.log(`********************\n\n${logStr}\n\n********************`)
+      logger.log(`******************** ${logStr} ********************`)
       let shouldSkip = false
       try {
         dump.checkResume()
