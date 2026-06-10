@@ -117,10 +117,6 @@ const config = {
       pageVector2022: './templates/pageVector2022.html',
       pageFallback: './templates/pageFallback.html',
 
-      categories: './templates/categories.html',
-
-      subCategories: './templates/subcategories.html',
-
       subPages: './templates/subpages.html',
 
       javaScript: './templates/javaScript.html',

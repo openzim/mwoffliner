@@ -54,7 +54,6 @@ import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { saveArticles } from './util/saveArticles.js'
 import { ARTICLE_REQUEST_INTERVAL } from './util/const.js'
-import { getCategoriesForArticles, trimUnmirroredPages } from './util/categories.js'
 import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
 import FileManager from './util/FileManager.js'
@@ -104,6 +103,7 @@ async function execute(argv: any) {
     customCss,
     userAgent: _userAgent,
     stableRevision,
+    getCategories,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -174,7 +174,7 @@ async function execute(argv: any) {
 
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
-  MediaWiki.getCategories = !!argv.getCategories
+  MediaWiki.getCategories = !!getCategories
   MediaWiki.actionApiPath = mwActionApiPath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword
@@ -337,20 +337,6 @@ async function execute(argv: any) {
   await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null, allowedContentModels)
   logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
-  if (MediaWiki.getCategories) {
-    await getCategoriesForArticles(articleDetailXId)
-
-    while ((await trimUnmirroredPages()) > 0) {
-      // Remove unmirrored pages, categories, subCategories
-      // trimUnmirroredPages returns number of modified articles
-    }
-
-    // while ((await simplifyGraph(downloader, redisStore)).deletedNodes !== 0) {
-    //   // keep simplifying graph
-    // }
-    // await trimUnmirroredPages(downloader); // TODO: improve simplify graph to remove the need for a second trim
-  }
-
   const filenameDate = new Date().toISOString().slice(0, 7)
 
   // Getting total number of articles from Redis
@@ -392,7 +378,7 @@ async function execute(argv: any) {
       let logStr = 'Doing dump:'
       if (langVar) logStr += ' variant=' + langVar
       logStr += ` format=${dumpFormat || 'all'}`
-      logger.log(`********************\n\n${logStr}\n\n********************`)
+      logger.log(`******************** ${logStr} ********************`)
       let shouldSkip = false
       try {
         dump.checkResume()

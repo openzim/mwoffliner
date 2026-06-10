@@ -20,6 +20,9 @@ export interface QueryOpts {
   rdlimit: string
   rdnamespace: string | number
   rdprop: string
+  ppprop: string
+  clprop: string
+  cllimit: string
   redirects?: boolean
   formatversion: string
   maxlag: string
@@ -79,6 +82,7 @@ export interface SiteInfoGeneral {
   variants?: {
     code: string
   }[]
+  categorycollation: string
 }
 
 export interface SiteInfoSkin {
@@ -208,12 +212,15 @@ class MediaWiki {
     this.queryOpts = {
       action: 'query',
       format: 'json',
-      prop: 'info|redirects|revisions',
+      prop: 'info|redirects|revisions|categoryinfo|pageprops|categories',
       rdlimit: 'max',
       rdnamespace: '0',
       // pageid in rdprop is not mandatory in general, but required for proper
       // mdwiki API operation
       rdprop: 'pageid|title|fragment',
+      ppprop: 'nogallery',
+      clprop: 'hidden',
+      cllimit: 'max',
       redirects: false,
       formatversion: '2',
       maxlag: config.defaults.maxlag,
@@ -461,6 +468,7 @@ class MediaWiki {
     const mainPage = generalEntries.mainpage.replace(/ /g, '_')
     const mainPageIsDomainRoot = generalEntries.mainpageisdomainroot
     const siteName = generalEntries.sitename
+    const categoryCollation = generalEntries.categorycollation
     const logo = generalEntries.logo
     const langMw = generalEntries.lang
     const textDir = generalEntries.rtl ? 'rtl' : 'ltr'
@@ -525,6 +533,7 @@ class MediaWiki {
       licenseName,
       licenseUrl,
       subTitle,
+      categoryCollation,
     }
   }
 
@@ -535,7 +544,8 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const { langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, textDir, licenseName, licenseUrl, subTitle } = await this.getSiteInfo(argvOpts)
+    const { langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, textDir, licenseName, licenseUrl, subTitle, categoryCollation } =
+      await this.getSiteInfo(argvOpts)
 
     const mwMetaData: MWMetaData = {
       webUrl: this.webUrl.href,
@@ -561,6 +571,7 @@ class MediaWiki {
       logo,
       licenseName,
       licenseUrl,
+      categoryCollation,
     }
 
     this.metaData = mwMetaData

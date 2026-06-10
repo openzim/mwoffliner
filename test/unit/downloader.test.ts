@@ -24,9 +24,7 @@ describe('Downloader class - wikipedia EN', () => {
   beforeAll(async () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
-    MediaWiki.getCategories = true
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
-
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()
   })
