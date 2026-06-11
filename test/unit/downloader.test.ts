@@ -152,9 +152,12 @@ describe('Downloader class - wikipedia EN', () => {
           dump,
           articleDetail,
         )
-        expect(neverExistingArticleResult).toHaveLength(1)
-        expect(neverExistingArticleResult[0].articleId).toBe('NeverExistingArticle')
-        expect(neverExistingArticleResult[0].html).toContain('Oops. Article not found.')
+        expect(neverExistingArticleResult.items).toHaveLength(1)
+        expect(neverExistingArticleResult.needsDownloadErrorStaticFiles).toBe(true)
+        expect(neverExistingArticleResult.items[0].articleId).toBe('NeverExistingArticle')
+        expect(neverExistingArticleResult.items[0].zimPath).toBe('NeverExistingArticle')
+        expect(neverExistingArticleResult.items[0].zimTitle).toBe('')
+        expect(neverExistingArticleResult.items[0].htmlContent).toContain('Oops. Article not found.')
       })
     }
   })
@@ -298,9 +301,12 @@ describe('Downloader class - wikipedia ES', () => {
           dump,
           articleDetails[articleId],
         )
-        expect(articleResult).toHaveLength(1)
-        expect(articleResult[0].articleId).toBe('Alejandro_González_y_Robleto')
-        expect(articleResult[0].html).toContain('Datos biográficos')
+        expect(articleResult.items).toHaveLength(1)
+        expect(articleResult.needsDownloadErrorStaticFiles).toBe(false)
+        expect(articleResult.items[0].articleId).toBe('Alejandro_González_y_Robleto')
+        expect(articleResult.items[0].zimPath).toBe('Alejandro_González_y_Robleto')
+        expect(articleResult.items[0].zimTitle).toBe('Alejandro González y Robleto')
+        expect(articleResult.items[0].htmlContent).toContain('Datos biográficos')
 
         // Only ActionParse API gives sufficient information so that we automatically add missing redirects
         if (renderer == 'ActionParse') {
@@ -341,9 +347,12 @@ describe('Downloader class - wikipedia ES', () => {
       dump,
       articleDetails[articleId],
     )
-    expect(articleResult).toHaveLength(1)
-    expect(articleResult[0].articleId).toBe('Alejandro_González_y_Robleto')
-    expect(articleResult[0].html).toContain('Datos biográficos')
+    expect(articleResult.items).toHaveLength(1)
+    expect(articleResult.needsDownloadErrorStaticFiles).toBe(false)
+    expect(articleResult.items[0].articleId).toBe('Alejandro_González_y_Robleto')
+    expect(articleResult.items[0].zimPath).toBe('Alejandro_González_y_Robleto')
+    expect(articleResult.items[0].zimTitle).toBe('Alejandro González y Robleto')
+    expect(articleResult.items[0].htmlContent).toContain('Datos biográficos')
 
     const redirectArticleResult = await Downloader.getArticle(
       redirectArticleId,
@@ -353,9 +362,12 @@ describe('Downloader class - wikipedia ES', () => {
       dump,
       articleDetails[redirectArticleId],
     )
-    expect(redirectArticleResult).toHaveLength(1)
-    expect(redirectArticleResult[0].articleId).toBe('Vicente_Alejandro_González_y_Robleto')
-    expect(redirectArticleResult[0].html).toContain('Datos biográficos')
+    expect(redirectArticleResult.items).toHaveLength(1)
+    expect(redirectArticleResult.needsDownloadErrorStaticFiles).toBe(false)
+    expect(redirectArticleResult.items[0].articleId).toBe('Vicente_Alejandro_González_y_Robleto')
+    expect(redirectArticleResult.items[0].zimPath).toBe('Vicente_Alejandro_González_y_Robleto')
+    expect(redirectArticleResult.items[0].zimTitle).toBe('Vicente Alejandro González y Robleto')
+    expect(redirectArticleResult.items[0].htmlContent).toContain('Datos biográficos')
 
     // both redirects have been added by 'mistake' ; it will be the responsibility of code handling
     // redirects rewrite to recover from this situation

@@ -11,6 +11,9 @@ describe('processHtml', () => {
     render(): Promise<any> {
       throw new Error('Method not implemented.')
     }
+    getStaticFilesList(): Set<string> {
+      throw new Error('Method not implemented.')
+    }
   }
 
   const testRenderer = new TestRender()
@@ -34,7 +37,14 @@ describe('processHtml', () => {
         return domino.createDocument('<html><head><title></title></head><body><div id="mw-content-text"></div></body></html>')
       },
     }
-    return await testRenderer.processHtml(opts)
+    const result = await testRenderer.processHtml(opts)
+    expect(result.items.length).toBe(1)
+    return {
+      // Hack to match older simpler format
+      finalHTML: result.items[0].htmlContent,
+      imageDependencies: result.imageDependencies,
+      videoDependencies: result.videoDependencies,
+    }
   }
 
   describe('audio tags', () => {

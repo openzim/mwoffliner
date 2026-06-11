@@ -70,7 +70,7 @@ describe('saveArticles', () => {
       articleDetailXId.setMany(articlesDetail)
       const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 
-      const articleDoc = domino.createDocument(result[0].html)
+      const articleDoc = domino.createDocument(result.items[0].htmlContent)
 
       const headings = Array.from(articleDoc.querySelectorAll('.mw-heading'))
       const infoboxes = Array.from(articleDoc.querySelectorAll('table.infobox'))
@@ -92,7 +92,7 @@ describe('saveArticles', () => {
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
       const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
-      const articleDoc = domino.createDocument(result[0].html)
+      const articleDoc = domino.createDocument(result.items[0].htmlContent)
       expect(articleDoc.querySelector('h1.article-header')).toBeFalsy()
     })
 
@@ -172,7 +172,7 @@ describe('saveArticles', () => {
       articleDetailXId.setMany(articlesDetail)
       const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
 
-      const articleDoc = domino.createDocument(result[0].html)
+      const articleDoc = domino.createDocument(result.items[0].htmlContent)
 
       // Document has scripts that we added, but shouldn't have any without a `src` (inline).
       const remainingInlineScripts = Array.from(articleDoc.querySelectorAll('script:not([src]):not(#mwoffliner-jsConfigVars)'))
@@ -190,7 +190,7 @@ describe('saveArticles', () => {
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
       const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
-      const articleDoc = domino.createDocument(result[0].html)
+      const articleDoc = domino.createDocument(result.items[0].htmlContent)
       expect(articleDoc.querySelector('#Get_around')).toBeTruthy()
       expect(articleDoc.querySelector('#Do')).toBeFalsy()
       expect(articleDoc.querySelector('#Eat')).toBeTruthy()
@@ -209,7 +209,7 @@ describe('saveArticles', () => {
       const articleDetail = { title: articleId, timestamp: '2023-08-20T14:54:01Z' }
       articleDetailXId.setMany(articlesDetail)
       const result = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
-      const articleDoc = domino.createDocument(result[0].html)
+      const articleDoc = domino.createDocument(result.items[0].htmlContent)
       expect(articleDoc.querySelector('#Get_around')).toBeTruthy()
       expect(articleDoc.querySelector('#Do')).toBeTruthy()
       expect(articleDoc.querySelector('#Eat')).toBeTruthy()

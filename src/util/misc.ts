@@ -206,12 +206,6 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
   }
 }
 
-export function getStaticFiles(jsStaticFiles: string[], cssStaticFiles: string[]): string[] {
-  jsStaticFiles = jsStaticFiles.map((jsFile) => jsFile.concat('.js'))
-  cssStaticFiles = cssStaticFiles.map((cssFile) => cssFile.concat('.css'))
-  return jsStaticFiles.concat(cssStaticFiles)
-}
-
 export function anyPath(ext: string, path: string, subDirectory = '') {
   const regex = new RegExp(`(\\.${ext})?$`)
   return `${subDirectory ? `${subDirectory}/` : ''}${path.replace(regex, '')}.${ext}`

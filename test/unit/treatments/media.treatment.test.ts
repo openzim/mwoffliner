@@ -12,6 +12,9 @@ describe('MediaTreatment', () => {
     public render() {
       return null
     }
+    getStaticFilesList(): Set<string> {
+      return new Set()
+    }
     public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement) {
       return this.treatAudioVideo(dump, srcCache, articleId, videoEl)
     }
