@@ -11,7 +11,7 @@ import { Dump } from '../Dump.js'
 import Downloader from '../Downloader.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
-import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl, getStaticFiles } from '../util/misc.js'
+import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
 import { isMainPage, isSubpage } from '../util/articles.js'
 import { buildCategoryMemberList } from '../util/categories.js'
@@ -92,26 +92,33 @@ export interface ProcessHtmlOpts {
   callback: any
 }
 
-export interface RenderSingleOutput {
+export type RenderSingleOutput = {
   articleId: string
-  displayTitle: string
-  html: string
+  zimPath: string
+  zimTitle?: string
+  htmlContent: string
+}
+
+export type RenderOutput = {
+  items: RenderSingleOutput[]
   imageDependencies: any
   videoDependencies: any
   mediaDependencies: any
   moduleDependencies: any
-  staticFiles: string[]
   subtitles: any
+  needsDownloadErrorStaticFiles: boolean
 }
 
-export type RenderOutput = RenderSingleOutput[]
-
 export abstract class Renderer {
-  public staticFilesListCommon: string[] = []
+  public staticFilesListCommon: Set<string> = new Set()
   constructor() {
-    if (this.staticFilesListCommon.length === 0) {
-      this.staticFilesListCommon = getStaticFiles(config.output.jsResourcesCommon, config.output.cssResourcesCommon)
+    if (this.staticFilesListCommon.size === 0) {
+      this.staticFilesListCommon = new Set([...config.output.jsResourcesCommon, ...config.output.cssResourcesCommon])
     }
+  }
+
+  public addDownloadErrorStaticFiles() {
+    this.staticFilesListCommon = new Set([...this.staticFilesListCommon, ...config.output.downloadErrorResources])
   }
 
   protected async treatAudioVideo(
@@ -646,7 +653,7 @@ export abstract class Renderer {
   }
 
   // TODO: The first part of this method is common for all renders
-  public async processHtml(processHtmlOpts: ProcessHtmlOpts) {
+  public async processHtml(processHtmlOpts: ProcessHtmlOpts): Promise<RenderOutput> {
     const { html, dump, articleId, articleDetail, displayTitle, categoryMembers, categoriesHtml, moduleDependencies, callback } = processHtmlOpts
     let { articleSubtitle } = processHtmlOpts
     let imageDependencies: Array<{ url: string; path: string; width?: number }> = []
@@ -809,11 +816,20 @@ export abstract class Renderer {
     const finalHTML = '<!DOCTYPE html>\n' + outHtml
 
     return {
-      finalHTML,
+      items: [
+        {
+          articleId: articleId,
+          zimPath: articleId,
+          zimTitle: articleId.replace(/_/g, ' '),
+          htmlContent: finalHTML,
+        },
+      ],
       mediaDependencies,
       imageDependencies,
       videoDependencies,
+      moduleDependencies,
       subtitles,
+      needsDownloadErrorStaticFiles: false,
     }
   }
 
@@ -1233,5 +1249,6 @@ export abstract class Renderer {
   }
 
   abstract download(downloadOpts: DownloadOpts): Promise<DownloadRes>
-  abstract render(renderOpts: RenderOpts): Promise<any>
+  abstract render(renderOpts: RenderOpts): Promise<RenderOutput>
+  abstract getStaticFilesList(): Set<string>
 }

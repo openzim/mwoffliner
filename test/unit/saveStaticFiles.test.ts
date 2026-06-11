@@ -16,7 +16,7 @@ describe('saveStaticFiles', () => {
   for (const skin of ['vector', 'vector-2022', 'fandomdesktop']) {
     test(`Compare ${skin} skin static files list`, async () => {
       MediaWiki.skin = skin
-      const desktopAndCommonStaticFiles = [
+      const desktopAndCommonStaticFiles = new Set([
         'masonry.min.js',
         'article_list_home.js',
         'images_loaded.min.js',
@@ -26,10 +26,10 @@ describe('saveStaticFiles', () => {
         ...(skin === 'vector' ? ['vector.css'] : []),
         ...(skin === 'vector-2022' ? ['vector-2022.css'] : []),
         'external-link.svg',
-      ]
+      ])
 
       const actionParseRenderer = new ActionParseRenderer()
-      const staticFilesFromRenderer = actionParseRenderer.staticFilesList
+      const staticFilesFromRenderer = actionParseRenderer.getStaticFilesList()
 
       expect(desktopAndCommonStaticFiles).toEqual(staticFilesFromRenderer)
     })

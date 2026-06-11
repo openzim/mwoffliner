@@ -25,19 +25,18 @@ function getArticleRenderUrl(articleId: string, articleDetail: ArticleDetail, du
 async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump: Dump, articlesRenderer: Renderer) {
   await articleDetailXId.iterateItems(Downloader.workers, async (articleKeyValuePairs) => {
     for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
-      let rets: any
       try {
         const mainPage = isMainPage(articleId)
         const articleUrl = getArticleRenderUrl(articleId, articleDetail, dump)
 
-        rets = await Downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, dump, articleDetail)
+        const rendererOutput = await Downloader.getArticle(articleId, articleDetailXId, articlesRenderer, articleUrl, dump, articleDetail)
         await new Promise((resolve) => setTimeout(resolve, Downloader.articleRequestInterval))
-        for (const { articleId, html } of rets) {
-          if (!html) {
+        for (const { articleId, htmlContent } of rendererOutput.items) {
+          if (!htmlContent) {
             continue
           }
 
-          const doc = domino.createDocument(html)
+          const doc = domino.createDocument(htmlContent)
           if (!mainPage && !(await dump.customProcessor.shouldKeepArticle(articleId, doc))) {
             articleDetailXId.delete(articleId)
           }
@@ -50,32 +49,24 @@ async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump:
   })
 }
 
-function flattenPromises(promisArr: [string, Promise<Error>][]): [string, Promise<Error>] {
-  return [
-    // first articleId
-    promisArr[0][0],
-    // promise resolving to first error or void
-    (async () => {
-      const resolved = await Promise.all(promisArr.map((p) => p[1]))
-      return resolved.find((err) => err)
-    })(),
-  ]
-}
-
 /*
  * Parse fetched article HTML, store files
  * and dependencies and save in Zim
  */
-async function saveArticle(
-  zimCreator: Creator,
-  finalHTML: string,
-  mediaDependencies: any,
-  imageDependencies: any,
-  videoDependencies: any,
-  subtitles: any,
-  articleId: string,
-  articleTitle: string,
-): Promise<Error> {
+async function saveArticle(zimCreator: Creator, htmlContent: string, zimPath: string, zimTitle: string): Promise<Error> {
+  try {
+    const zimArticle = zimTitle
+      ? new StringItem(zimPath, 'text/html', truncateUtf8Bytes(zimTitle, 245), { FRONT_ARTICLE: 1 }, htmlContent)
+      : new StringItem(zimPath, 'text/html', '', {}, htmlContent)
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(zimArticle))
+
+    return null
+  } catch (err) {
+    return err as Error
+  }
+}
+
+async function saveArticleFiles(mediaDependencies: any, imageDependencies: any, videoDependencies: any, subtitles: any): Promise<Error> {
   try {
     const articleFiles: KVS<FileDetail> = {}
 
@@ -110,9 +101,6 @@ async function saveArticle(
 
     await FileManager.addManyFilesToProcess(articleFiles)
 
-    const zimArticle = new StringItem(articleId, 'text/html', truncateUtf8Bytes(articleTitle, 245), { FRONT_ARTICLE: 1 }, finalHTML)
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(zimArticle))
-
     return null
   } catch (err) {
     return err as Error
@@ -125,7 +113,6 @@ async function saveArticle(
 export async function saveArticles(zimCreator: Creator, dump: Dump) {
   const jsModuleDependencies = new Set<string>()
   const cssModuleDependencies = new Set<string>()
-  const staticFilesList = new Set<string>()
   let prevPercentProgress: string
   const { articleDetailXId } = RedisStore
   const articlesTotal = await articleDetailXId.len()
@@ -137,7 +124,6 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
     await getAllArticlesToKeep(articleDetailXId, dump, RenderingContext.articlesRenderer)
   }
 
-  const stages = ['Download Article and dependencies', 'Parse and Save to ZIM', 'Await left-over promises']
   // depending on which renderer we use, we can have up to 2 requests to make to download article details
   // each request we need to make can be retried 10 times. Each retry attempttakes at most requestTimeout + retry interval
   // retry interval is an exponentional value from 1 to 60s
@@ -149,97 +135,20 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
       /*
        * timer to detect freezes
        */
-      let curStage = 0
       let curArticle = ''
       const timer = new Timer(() => {
-        const errorMessage = `Worker timed out after ${timeout} ms at ${stages[curStage]} ${curArticle}`
+        const errorMessage = `Worker timed out after ${timeout} ms at ${curArticle}`
         logger.error(errorMessage)
         reject(new Error(errorMessage))
       }, timeout)
 
       logger.info(`Worker processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}] - ${runningWorkers} worker(s) running`)
 
-      const parsePromiseQueue: [string, Promise<Error>][] = []
-
       for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
         timer.reset()
-        curStage = 0
         curArticle = articleId
-        const promises: [string, Promise<Error>][] = []
 
-        let rets: any
-        try {
-          const articleUrl = getArticleRenderUrl(articleId, articleDetail, dump)
-
-          rets = await Downloader.getArticle(articleId, articleDetailXId, RenderingContext.articlesRenderer, articleUrl, dump, articleDetail)
-          await new Promise((resolve) => setTimeout(resolve, Downloader.articleRequestInterval))
-
-          curStage += 1
-          for (const {
-            articleId,
-            displayTitle: articleTitle,
-            html: finalHTML,
-            mediaDependencies,
-            imageDependencies,
-            videoDependencies,
-            moduleDependencies,
-            staticFiles,
-            subtitles,
-          } of rets) {
-            if (!finalHTML) {
-              logger.warn(`No HTML returned for article [${articleId}], skipping`)
-              continue
-            }
-
-            for (const dep of moduleDependencies.jsDependenciesList || []) {
-              jsModuleDependencies.add(dep)
-            }
-            for (const dep of moduleDependencies.styleDependenciesList || []) {
-              cssModuleDependencies.add(dep)
-            }
-
-            for (const file of staticFiles) {
-              staticFilesList.add(file)
-            }
-
-            /*
-             * downloader.getArticle is network heavy while parsing and saving is I/O.
-             * To parse and download simultaniously, we don't await on save, but instead
-             * cache the promise in a queue and check it later
-             */
-            promises.push([articleId, saveArticle(zimCreator, finalHTML, mediaDependencies, imageDependencies, videoDependencies, subtitles, articleId, articleTitle)])
-          }
-        } catch (err) {
-          logger.error(`Error downloading/rendering article ${articleId}`)
-          reject(err)
-          return
-        }
-
-        curStage += 1
-        if (parsePromiseQueue.length) {
-          const [articleId, parsePromise] = parsePromiseQueue.shift()
-          curArticle = articleId
-          /*
-           * in normal circumstances, where downloading is slower than
-           * saving, this promise will always be resolved here already
-           */
-          const err = await parsePromise
-          if (err) {
-            logger.error(err)
-
-            logger.error(`Error parsing article ${articleId}`)
-            timer.clear()
-            reject(err)
-            return
-          }
-          dump.status.articles.success += 1
-        }
-
-        if (promises.length) {
-          parsePromiseQueue.push(flattenPromises(promises))
-        }
-
-        if ((dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail) % 10 === 0) {
+        if (dump.status.articles.success > 0 && (dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail) % 10 === 0) {
           const percentProgress = (((dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail) / articlesTotal) * 100).toFixed(1)
           if (percentProgress !== prevPercentProgress) {
             prevPercentProgress = percentProgress
@@ -250,22 +159,52 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
             )
           }
         }
-      }
 
-      /*
-       * clear up potentially still pending promises
-       */
-      curStage += 1
-      if (parsePromiseQueue.length) {
-        const [articleId, parsePromise] = flattenPromises(parsePromiseQueue)
-        curArticle = articleId
-        const err = await parsePromise
-        if (err) {
-          timer.clear()
+        try {
+          const articleUrl = getArticleRenderUrl(articleId, articleDetail, dump)
+
+          const { items, moduleDependencies, mediaDependencies, imageDependencies, videoDependencies, subtitles, needsDownloadErrorStaticFiles } = await Downloader.getArticle(
+            articleId,
+            articleDetailXId,
+            RenderingContext.articlesRenderer,
+            articleUrl,
+            dump,
+            articleDetail,
+          )
+          await new Promise((resolve) => setTimeout(resolve, Downloader.articleRequestInterval))
+
+          if (items.length == 0) {
+            logger.warn(`No HTML items returned for article [${articleId}], skipping`)
+            continue
+          }
+
+          if (needsDownloadErrorStaticFiles) {
+            RenderingContext.articlesRenderer.addDownloadErrorStaticFiles()
+          }
+
+          for (const dep of moduleDependencies.jsDependenciesList || []) {
+            jsModuleDependencies.add(dep)
+          }
+          for (const dep of moduleDependencies.styleDependenciesList || []) {
+            cssModuleDependencies.add(dep)
+          }
+
+          saveArticleFiles(mediaDependencies, imageDependencies, videoDependencies, subtitles)
+
+          for (const { htmlContent, zimPath, zimTitle } of items) {
+            if (!htmlContent) {
+              logger.warn(`No HTML content returned for article [${articleId}] path [${zimPath}], skipping`)
+              continue
+            }
+            saveArticle(zimCreator, htmlContent, zimPath, zimTitle)
+          }
+
+          dump.status.articles.success += 1
+        } catch (err) {
+          logger.error(`Error downloading/rendering article ${articleId}`)
           reject(err)
           return
         }
-        dump.status.articles.success += parsePromiseQueue.length
       }
 
       timer.clear()
@@ -276,7 +215,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
   logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
 
   return {
-    staticFilesList,
+    staticFilesList: RenderingContext.articlesRenderer.getStaticFilesList(),
     jsModuleDependencies,
     cssModuleDependencies,
   }
