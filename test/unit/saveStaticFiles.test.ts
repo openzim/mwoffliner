@@ -17,7 +17,6 @@ describe('saveStaticFiles', () => {
     test(`Compare ${skin} skin static files list`, async () => {
       MediaWiki.skin = skin
       const desktopAndCommonStaticFiles = [
-        'script.js',
         'masonry.min.js',
         'article_list_home.js',
         'images_loaded.min.js',
