@@ -45,10 +45,11 @@ describe('ArticleTreatment', () => {
       // Successfully scrapped existent articles + placeholder for deleted article
       expect(addedArticles).toHaveLength(2)
 
-      expect([addedArticles[0].title, addedArticles[1].title]).toEqual(expect.arrayContaining(['London', 'non-existent-article']))
+      expect([addedArticles[0].title, addedArticles[1].title]).toEqual(expect.arrayContaining(['London', '']))
+      expect([addedArticles[0].path, addedArticles[1].path]).toEqual(expect.arrayContaining(['London', 'non-existent-article']))
 
       for (let i = 0; i <= 1; i++) {
-        if (addedArticles[i].title === 'London') {
+        if (addedArticles[i].path === 'London') {
           const articleDoc = domino.createDocument(addedArticles[i].getContentProvider().feed().toString())
 
           // Successfully scrapped existent articles
@@ -57,7 +58,7 @@ describe('ArticleTreatment', () => {
           expect(articleDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
         }
 
-        if (addedArticles[i].title === 'non-existent-article') {
+        if (addedArticles[i].path === 'non-existent-article') {
           expect(addedArticles[i].getContentProvider().feed().toString()).toContain('Oops. Article not found.')
         }
       }

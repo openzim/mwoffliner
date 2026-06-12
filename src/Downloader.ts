@@ -24,7 +24,7 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
 
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
-import { Renderer } from './renderers/abstract.renderer.js'
+import { Renderer, RenderOutput } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
 
@@ -503,7 +503,7 @@ class Downloader {
     articleUrl,
     dump: Dump,
     articleDetail?: ArticleDetail,
-  ): Promise<any> {
+  ): Promise<RenderOutput> {
     logger.info(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
@@ -608,19 +608,22 @@ class Downloader {
       RedisStore.articleDetailXId.delete(articleId) // Remove article from list so that we stop creating links to this placeholder
       const articleTitle = articleId.replace(/_/g, ' ')
       const errorPlaceholderHtml = renderDownloadError(errorRule, dump, articleId, articleTitle)
-      return [
-        {
-          articleId,
-          displayTitle: articleTitle,
-          html: errorPlaceholderHtml,
-          imageDependencies: [],
-          videoDependencies: [],
-          mediaDependencies: [],
-          moduleDependencies: [],
-          staticFiles: config.output.downloadErrorResources,
-          subtitles: [],
-        },
-      ]
+      return {
+        items: [
+          {
+            articleId: articleId,
+            zimPath: articleId,
+            zimTitle: '', // we do not want these failed downloads to end-up in suggestion search
+            htmlContent: errorPlaceholderHtml,
+          },
+        ],
+        mediaDependencies: [],
+        imageDependencies: [],
+        videoDependencies: [],
+        moduleDependencies: [],
+        subtitles: [],
+        needsDownloadErrorStaticFiles: true,
+      }
     }
   }
 
