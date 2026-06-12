@@ -120,6 +120,7 @@ class FileManager {
    * Start download workers. Queues are already populated via addFileToProcess/addManyFilesToProcess.
    */
   public async startDownloading(zimCreator: Creator, dump: Dump): Promise<void> {
+    return
     const filesTotal = await this.filesToDownloadXPath.len()
     let prevPercentProgress: string
 

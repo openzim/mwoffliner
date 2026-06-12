@@ -14,7 +14,7 @@ import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
 import { isMainPage, isSubpage } from '../util/articles.js'
-import { buildCategoryMemberList } from '../util/categories.js'
+import { buildCategoryTypeItems } from '../util/categories.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
 export type renderName = 'ActionParse'
@@ -662,6 +662,11 @@ export abstract class Renderer {
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
 
+    // Simplification for now, ZIM path = articleId
+    const articleZimPath = articleId
+
+    const articleItems: Array<RenderSingleOutput> = []
+
     const ruRet = await rewriteUrlsOfDoc(doc, articleId, dump)
     doc = ruRet.doc
     mediaDependencies = mediaDependencies.concat(
@@ -689,42 +694,51 @@ export abstract class Renderer {
         const categoryCollation = MediaWiki.metaData.categoryCollation
         const numericSorting = categoryCollation === 'numeric' || (categoryCollation.startsWith('uca-') && categoryCollation.endsWith('-u-kn'))
         moduleDependencies.styleDependenciesList.push('mediawiki.action.styles')
-        if (categoryinfo.subcats) {
-          if (categoryinfo.subcats > 200) {
-            // TODO: pagination iframe #2620
-            // TEMP: List only first 200 subcategories
-            const subcatsSection = buildCategoryMemberList('subcats', categoryMembers.subcats.slice(0, 200), categoryinfo, articleDetail, doc, dump, numericSorting)
-            categoryContent.appendChild(subcatsSection)
-          } else {
-            const subcatsSection = buildCategoryMemberList('subcats', categoryMembers.subcats, categoryinfo, articleDetail, doc, dump, numericSorting)
-            categoryContent.appendChild(subcatsSection)
-          }
-        }
-        if (categoryinfo.pages) {
-          if (categoryinfo.pages > 200) {
-            // TODO: pagination iframe #2620
-            // TEMP: List only first 200 pages
-            const pagesSection = buildCategoryMemberList('pages', categoryMembers.pages.slice(0, 200), categoryinfo, articleDetail, doc, dump, numericSorting)
-            categoryContent.appendChild(pagesSection)
-          } else {
-            const pagesSection = buildCategoryMemberList('pages', categoryMembers.pages, categoryinfo, articleDetail, doc, dump, numericSorting)
-            categoryContent.appendChild(pagesSection)
-          }
-        }
-        if (categoryinfo.files) {
-          if (!categoryinfo.nogallery) {
-            moduleDependencies.styleDependenciesList.push('mediawiki.page.gallery.styles')
-          }
-          if (categoryinfo.files > 200) {
-            // TODO: pagination iframe #2620
-            // TEMP: List onst first 200 files
-            const filesSection = buildCategoryMemberList('files', categoryMembers.files.slice(0, 200), categoryinfo, articleDetail, doc, dump, numericSorting)
-            categoryContent.appendChild(filesSection)
-          } else {
-            const filesSection = buildCategoryMemberList('files', categoryMembers.files, categoryinfo, articleDetail, doc, dump, numericSorting)
-            categoryContent.appendChild(filesSection)
-          }
-        }
+        await buildCategoryTypeItems(
+          'subcats',
+          categoryinfo,
+          categoryMembers,
+          articleZimPath,
+          articleDetail,
+          doc,
+          dump,
+          numericSorting,
+          moduleDependencies,
+          callback,
+          articleId,
+          categoryContent,
+          articleItems,
+        )
+        await buildCategoryTypeItems(
+          'pages',
+          categoryinfo,
+          categoryMembers,
+          articleZimPath,
+          articleDetail,
+          doc,
+          dump,
+          numericSorting,
+          moduleDependencies,
+          callback,
+          articleId,
+          categoryContent,
+          articleItems,
+        )
+        await buildCategoryTypeItems(
+          'files',
+          categoryinfo,
+          categoryMembers,
+          articleZimPath,
+          articleDetail,
+          doc,
+          dump,
+          numericSorting,
+          moduleDependencies,
+          callback,
+          articleId,
+          categoryContent,
+          articleItems,
+        )
         if (MediaWiki.getCategories) {
           const p = doc.createElement('p')
           p.innerHTML = dump.strings.categoryLimited
@@ -793,14 +807,15 @@ export abstract class Renderer {
       doc = await dump.customProcessor.preProcessArticle(articleId, doc)
     }
 
-    let templatedDoc = callback(moduleDependencies, articleId)
-    templatedDoc = await this.mergeTemplateDoc(templatedDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId, displayTitle, articleSubtitle)
+    const templateDoc = callback(moduleDependencies, articleId)
+    const articleFinalDoc = domino.createDocument(templateDoc.documentElement.outerHTML)
+    await this.mergeTemplateDoc(articleFinalDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId, displayTitle, articleSubtitle)
 
     if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
-      templatedDoc = await dump.customProcessor.postProcessArticle(articleId, templatedDoc)
+      await dump.customProcessor.postProcessArticle(articleId, articleFinalDoc)
     }
 
-    let outHtml = templatedDoc.documentElement.outerHTML
+    let outHtml = articleFinalDoc.documentElement.outerHTML
 
     if (dump.opts.minifyHtml) {
       outHtml = await htmlMinifier.minify(outHtml, {
@@ -813,17 +828,15 @@ export abstract class Renderer {
       })
     }
 
-    const finalHTML = '<!DOCTYPE html>\n' + outHtml
+    articleItems.push({
+      articleId: articleId,
+      zimPath: articleZimPath,
+      zimTitle: articleId.replace(/_/g, ' '),
+      htmlContent: '<!DOCTYPE html>\n' + outHtml,
+    })
 
     return {
-      items: [
-        {
-          articleId: articleId,
-          zimPath: articleId,
-          zimTitle: articleId.replace(/_/g, ' '),
-          htmlContent: finalHTML,
-        },
-      ],
+      items: articleItems,
       mediaDependencies,
       imageDependencies,
       videoDependencies,

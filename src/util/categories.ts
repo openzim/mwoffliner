@@ -1,6 +1,36 @@
+import * as domino from 'domino'
 import MediaWiki from '../MediaWiki.js'
 import { Dump } from '../Dump.js'
 import { interpolateTranslationString } from './misc.js'
+import { rewriteUrlsOfDoc } from './rewriteUrls.js'
+import { CATEGORIES_PAGE_SIZE } from './const.js'
+
+export function buildCategoryIframe(type: 'subcats' | 'pages' | 'files', zimPath: string, articleDetail: ArticleDetail, doc: Document, dump: Dump): DominoElement {
+  let idName, headerText
+  if (type === 'subcats') {
+    idName = 'mw-subcategories'
+    headerText = dump.strings.subcategories
+  } else if (type === 'pages') {
+    idName = 'mw-pages'
+    headerText = dump.strings.categoryHeader
+  } else if (type === 'files') {
+    idName = 'mw-category-media'
+    headerText = dump.strings.categoryMediaHeader
+  }
+  const section = doc.createElement('div')
+  section.id = idName
+  const header = doc.createElement('h2')
+  header.textContent = interpolateTranslationString(headerText, {
+    pageName: articleDetail.title.split(':').slice(1).join(':'),
+  })
+  section.appendChild(header)
+  const iframe = doc.createElement('iframe')
+  iframe.src = `./${zimPath}`
+  iframe.style = 'border-style: none; height: 100%; width:100%; overflow: hidden;'
+  iframe.setAttribute('onload', 'attachIframe(this)')
+  section.appendChild(iframe)
+  return section
+}
 
 export function buildCategoryMemberList(
   type: 'subcats' | 'pages' | 'files',
@@ -10,33 +40,23 @@ export function buildCategoryMemberList(
   doc: Document,
   dump: Dump,
   numericSorting: boolean,
-): DominoElement {
-  let idName, headerText, descText
+  page: number,
+  isLastPage: boolean,
+): HTMLElement {
+  let descText
   if (type === 'subcats') {
-    idName = 'mw-subcategories'
-    headerText = dump.strings.subcategories
     descText = dump.strings.categorySubcatCount
   } else if (type === 'pages') {
-    idName = 'mw-pages'
-    headerText = dump.strings.categoryHeader
     descText = dump.strings.categoryArticleCount
   } else if (type === 'files') {
-    idName = 'mw-category-media'
-    headerText = dump.strings.categoryMediaHeader
     descText = dump.strings.categoryFileCount
   }
   const section = doc.createElement('div')
-  section.id = idName
-  const header = doc.createElement('h2')
-  header.textContent = interpolateTranslationString(headerText, {
-    pageName: articleDetail.title.split(':').slice(1).join(':'),
-  })
-  section.appendChild(header)
   const desc = doc.createElement('p')
   desc.textContent = parsePlural(
     parsePlural(
       interpolateTranslationString(descText, {
-        curPageCount: String(categoryinfo[type]),
+        curPageCount: String(categoryMembers.length),
         totalCount: String(categoryinfo[type]),
       }),
     ),
@@ -79,6 +99,7 @@ export function buildCategoryMemberList(
       const span = doc.createElement('span')
       span.setAttribute('typeof', 'mw:File')
       const filelink = doc.createElement('a')
+      filelink.target = '_parent'
       filelink.classList.add('mw-file-description')
       filelink.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title.replace(/ /g, '_')))
       const file = doc.createElement('img')
@@ -97,6 +118,7 @@ export function buildCategoryMemberList(
       const text = doc.createElement('div')
       text.classList.add('gallerytext')
       const link = doc.createElement('a')
+      link.target = '_parent'
       link.classList.add('galleryfilename', 'galleryfilename-truncate')
       link.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title.replace(/ /g, '_')))
       link.setAttribute('title', categoryMember.title)
@@ -107,6 +129,7 @@ export function buildCategoryMemberList(
     } else {
       const member = doc.createElement('li')
       const link = doc.createElement('a')
+      link.target = '_parent'
       link.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title.replace(/ /g, '_')))
       link.setAttribute('title', categoryMember.title)
       link.textContent = type === 'subcats' ? categoryMember.title.split(':').slice(1).join(':') : categoryMember.title
@@ -119,8 +142,97 @@ export function buildCategoryMemberList(
     columns.appendChild(column)
   }
   content.appendChild(columns)
+  section.appendChild(buildPaginationLinks(doc, page, isLastPage, dump))
   section.appendChild(content)
+  section.appendChild(buildPaginationLinks(doc, page, isLastPage, dump))
   return section
+}
+
+export async function buildCategoryTypeItems(
+  type: 'subcats' | 'pages' | 'files',
+  categoryinfo: CategoryInfo,
+  categoryMembers: GroupedCategoryMembers,
+  articleZimPath: string,
+  articleDetail: ArticleDetail,
+  doc: Document,
+  dump: Dump,
+  numericSorting: boolean,
+  moduleDependencies: { styleDependenciesList: string[] },
+  callback: (moduleDependencies: any, zimPath: string) => any,
+  articleId: string,
+  categoryContent: HTMLElement,
+  articleItems: Array<{ articleId: string; zimPath: string; zimTitle?: string; htmlContent: string }>,
+): Promise<void> {
+  if (!categoryinfo[type]) return
+  if (type === 'files' && !categoryinfo.nogallery) {
+    moduleDependencies.styleDependenciesList.push('mediawiki.page.gallery.styles')
+  }
+  let page = 1
+  for (let start = 0; start < categoryinfo[type]; start += CATEGORIES_PAGE_SIZE) {
+    const zimPath = `_categories_/${articleZimPath}/${type}/${page}`
+    if (page === 1) {
+      categoryContent.appendChild(buildCategoryIframe(type, zimPath, articleDetail, doc, dump))
+    }
+    const end = Math.min(start + CATEGORIES_PAGE_SIZE, categoryinfo[type] + 1)
+    const section = buildCategoryMemberList(
+      type,
+      categoryMembers[type].slice(start, end),
+      categoryinfo,
+      articleDetail,
+      doc,
+      dump,
+      numericSorting,
+      page,
+      end == categoryinfo[type] + 1,
+    )
+    const templateDoc = callback(moduleDependencies, zimPath)
+    const typeDoc = domino.createDocument(templateDoc.documentElement.outerHTML)
+    const mwContentText = typeDoc.getElementById('mw-content-text')
+    mwContentText.lang = articleDetail.pagelang
+    mwContentText.dir = articleDetail.pagedir
+    mwContentText.classList.add('mw-content-' + articleDetail.pagedir)
+    await rewriteUrlsOfDoc(section, zimPath, dump)
+    mwContentText.innerHTML = section.innerHTML
+    articleItems.push({
+      articleId,
+      zimPath,
+      zimTitle: '',
+      htmlContent: '<!DOCTYPE html>\n' + typeDoc.documentElement.outerHTML,
+    })
+    page++
+  }
+}
+
+function buildPaginationLinks(doc: Document, page: number, isLastPage: boolean, dump: Dump): DocumentFragment {
+  const fragment = doc.createDocumentFragment()
+  if (page == 1 && isLastPage) {
+    // No need for pagination links if there is only one page
+    return fragment
+  }
+  fragment.appendChild(doc.createTextNode('('))
+  if (page == 1) {
+    fragment.appendChild(doc.createTextNode(dump.strings.categoryPreviousPage))
+  } else {
+    const link = doc.createElement('a')
+    link.target = '_self'
+    link.href = `./${page - 1}`
+    link.textContent = dump.strings.categoryPreviousPage
+    link.classList.add('mwo-norewrite')
+    fragment.appendChild(link)
+  }
+  fragment.appendChild(doc.createTextNode(') ('))
+  if (isLastPage) {
+    fragment.appendChild(doc.createTextNode(dump.strings.categoryNextPage))
+  } else {
+    const link = doc.createElement('a')
+    link.target = '_self'
+    link.href = `./${page + 1}`
+    link.textContent = dump.strings.categoryNextPage
+    link.classList.add('mwo-norewrite')
+    fragment.appendChild(link)
+  }
+  fragment.appendChild(doc.createTextNode(')'))
+  return fragment
 }
 
 function parsePlural(text: string) {

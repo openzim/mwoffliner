@@ -11,6 +11,13 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
   let href = linkNode.getAttribute('href') || ''
   let hrefProtocol
 
+  // Exclude links already written appropriately
+  if (classList.includes('mwo-norewrite')) {
+    // Remove class we appended for internal norewrite logic
+    linkNode.classList.remove('mwo-norewrite')
+    return null
+  }
+
   // Always keep selflinks
   if (classList.includes('mw-selflink') && !href) {
     return null

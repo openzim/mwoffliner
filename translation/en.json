@@ -5,6 +5,8 @@
 	"categoryArticleCount": "{{PLURAL:${totalCount}|This category contains only the following page.|The following {{PLURAL:${curPageCount}|page is|${curPageCount} pages are}} in this category, out of ${totalCount} total.}}",
 	"categoryHeader": "Pages in category \"${pageName}\"",
 	"categorySubcatCount": "{{PLURAL:${totalCount}|This category has only the following subcategory.|This category has the following {{PLURAL:${curPageCount}|subcategory|${curPageCount} subcategories}}, out of ${totalCount} total.}}",
+	"categoryPreviousPage": "previous page",
+	"categoryNextPage": "next page",
 	"subcategories": "Subcategories",
 	"categoryEmpty": "<em>This category currently contains no pages or media.</em>",
 	"categoryLimited": "<em>This contents of this category have been reduced to only include pages inside the ZIM.</em>",
