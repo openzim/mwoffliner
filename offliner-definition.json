@@ -139,6 +139,13 @@
       "title": "Add categories",
       "description": "Download category pages"
     },
+    "categoriesPageSize": {
+      "type": "integer",
+      "required": false,
+      "title": "Categories page size",
+      "description": "Number of items (subcategories, pages, files) to display per page on category articles (default is 200)",
+      "min": 1
+    },
     "keepEmptySections": {
       "type": "boolean",
       "required": false,

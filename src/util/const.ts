@@ -17,3 +17,4 @@ export const FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK = 50 // minimum number of 
 export const FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND = 10 // 10 = 0.1%
 export const BLACKLISTED_NS = ['Story'] // 'Story' Wikipedia namespace is content, but not indgestable by Parsoid https://github.com/openzim/mwoffliner/issues/1853
 export const RENDERERS_LIST = ['ActionParse']
+export const CATEGORIES_PAGE_SIZE = 200

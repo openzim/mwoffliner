@@ -105,6 +105,7 @@ class MediaWiki {
   public metaData: MWMetaData
   public baseUrl: URL
   public getCategories: boolean
+  public categoriesPageSize: number
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
   public apiCheckArticleId: string

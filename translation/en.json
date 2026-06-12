@@ -26,6 +26,9 @@
 		"one": "subcategory",
 		"other": "{{count}} subcategories"
 	},
+	"categoryPreviousPage": "previous page",
+	"categoryNextPage": "next page",
+	"categoryNoPagination": "Next items are not visible in browsers without Javascript",
 	"subcategories": "Subcategories",
 	"categoryEmpty": "<em>This category currently contains no pages or media.</em>",
 	"categoryLimited": "<em>This contents of this category have been reduced to only include pages inside the ZIM.</em>",

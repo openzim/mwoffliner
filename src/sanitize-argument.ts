@@ -36,6 +36,7 @@ export async function sanitize_all(argv: any) {
     filenamePrefix,
     mwActionApiPath,
     mwModulePath,
+    categoriesPageSize,
   } = argv
 
   sanitizeDoubleUsedParameters(argv)
@@ -49,6 +50,8 @@ export async function sanitize_all(argv: any) {
 
   // sanitizing speed
   sanitize_speed(speed)
+
+  sanitizeCategoriesPageSize(categoriesPageSize)
 
   // sanitizing longDescription
   sanitizeStringMaxLength(customZimLongDescription, 'customZimLongDescription', 4000)
@@ -179,6 +182,21 @@ export function sanitize_speed(_speed: any) {
     }
     if (numSpeed >= 1 && !Number.isInteger(numSpeed)) {
       throw new Error('speed values >= 1 must be integers (number of parallel workers).')
+    }
+  }
+}
+
+export function sanitizeCategoriesPageSize(categoriesPageSize: any) {
+  if (categoriesPageSize !== undefined && categoriesPageSize !== null) {
+    const numCategoriesPageSize = Number(categoriesPageSize)
+    if (isNaN(numCategoriesPageSize)) {
+      throw new Error('categoriesPageSize must be a number.')
+    }
+    if (numCategoriesPageSize <= 0) {
+      throw new Error('categoriesPageSize must be a positive.')
+    }
+    if (!Number.isInteger(numCategoriesPageSize)) {
+      throw new Error('categoriesPageSize must be integer.')
     }
   }
 }

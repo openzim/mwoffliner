@@ -61,7 +61,7 @@ const config = {
   output: {
     // CSS and JS resources added by Kiwix
     cssResourcesCommon: ['style.css', 'mobile_main_page.css', 'footer.css'],
-    jsResourcesCommon: ['masonry.min.js', 'article_list_home.js', 'images_loaded.min.js'],
+    jsResourcesCommon: ['script.js', 'masonry.min.js', 'article_list_home.js', 'images_loaded.min.js'],
 
     downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
 
@@ -104,6 +104,7 @@ const config = {
       webp: '_webp_', // webp polyfills
       assets: '_assets_', // images, videos and other assets
       res: '_res_', // additional resources from mwoffliner
+      categories_partials: '_categories_partials_', // HTML partials for category pagination
     },
 
     // Output templates (TODO: Needs more docs)

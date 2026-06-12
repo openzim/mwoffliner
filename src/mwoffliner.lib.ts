@@ -54,7 +54,7 @@ import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { saveArticles } from './util/saveArticles.js'
-import { ARTICLE_REQUEST_INTERVAL } from './util/const.js'
+import { ARTICLE_REQUEST_INTERVAL, CATEGORIES_PAGE_SIZE } from './util/const.js'
 import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
 import FileManager from './util/FileManager.js'
@@ -105,6 +105,7 @@ async function execute(argv: any) {
     userAgent: _userAgent,
     stableRevision,
     getCategories,
+    categoriesPageSize,
   } = argv
 
   let { articleList, articleListToIgnore } = argv
@@ -176,6 +177,7 @@ async function execute(argv: any) {
   /* Wikipedia/... URL; Normalize by adding trailing / as necessary */
   MediaWiki.base = mwUrl
   MediaWiki.getCategories = !!getCategories
+  MediaWiki.categoriesPageSize = categoriesPageSize || CATEGORIES_PAGE_SIZE
   MediaWiki.actionApiPath = mwActionApiPath
   MediaWiki.domain = mwDomain
   MediaWiki.password = mwPassword

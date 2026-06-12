@@ -7,7 +7,7 @@ import domino from 'domino'
 
 jest.setTimeout(200000)
 
-const parameters = {
+const parametersWithoutPagination = {
   mwUrl: 'https://bm.wikipedia.org',
   articleList: 'Bamanankan,Dibo,Kulibali,Dogoso,Espankan,Esperanto',
   adminEmail: 'test@kiwix.org',
@@ -16,12 +16,21 @@ const parameters = {
   getCategories: true,
 }
 
-await testAllRenders('categories', parameters, async (outFiles) => {
-  test(`test one ZIM created for ${outFiles[0]?.renderer} renderer`, async () => {
+const parametersWithPagination = {
+  ...parametersWithoutPagination,
+  categoriesPageSize: 2, // artificially low page size to "force" pagination
+}
+
+const perform_categories_tests = async (name, outFiles, expected_result) => {
+  /**
+   * Generic function to test a give ZIM categories handling
+   */
+
+  test(`${name} - test one ZIM created for ${outFiles[0]?.renderer} renderer`, async () => {
     expect(outFiles).toHaveLength(1)
   })
 
-  test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+  test(`${name} - test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
     await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
   })
 
@@ -33,7 +42,7 @@ await testAllRenders('categories', parameters, async (outFiles) => {
     { article: 'Dibo', expectedCategory: 'Jamu' },
     { article: 'Kulibali', expectedCategory: 'Jamu' },
   ]) {
-    test(`check ${article} article for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`${name} - check ${article} article for ${outFiles[0]?.renderer} renderer`, async () => {
       const allFiles = (await zimdump(`list ${outFiles[0].outFile}`)).split('\n')
       expect(allFiles).toContain(article)
       const content = await zimdump(`show --url ${article} ${outFiles[0].outFile}`)
@@ -45,36 +54,126 @@ await testAllRenders('categories', parameters, async (outFiles) => {
     })
   }
 
-  for (const { category, expectedCategoryGroups, expectedPages, expectedSubCats } of [
-    { category: 'Kan', expectedCategoryGroups: 3, expectedPages: 4, expectedSubCats: 1 },
-    { category: 'Jamu', expectedCategoryGroups: 2, expectedPages: 2, expectedSubCats: 0 },
-  ]) {
-    test(`check ${category} category for ${outFiles[0]?.renderer} renderer`, async () => {
-      const allFiles = (await zimdump(`list ${outFiles[0].outFile}`)).split('\n')
-      const categoryPath = `Catégorie:${category}`
+  const allFiles = (await zimdump(`list ${outFiles[0].outFile}`)).split('\n')
+
+  for (const { category, subcats, pages, files } of expected_result) {
+    const categoryPath = `Catégorie:${category}`
+
+    test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer has item`, async () => {
       expect(allFiles).toContain(categoryPath)
-      const content = await zimdump(`show --url ${categoryPath} ${outFiles[0].outFile}`)
-      const document = domino.createDocument(content)
-
-      const mwSubCatEl = document.querySelectorAll('#mw-subcategories')
-      expect(mwSubCatEl.length).toBe(expectedSubCats > 0 ? 1 : 0)
-      if (expectedSubCats > 0) {
-        const subcatGroupsEl = Array.from(mwSubCatEl)[0].querySelectorAll('.mw-category-group')
-        expect(subcatGroupsEl.length).toBe(expectedSubCats)
-        const subCatsPagesEl = Array.from(mwSubCatEl)[0].querySelectorAll('li')
-        expect(subCatsPagesEl.length).toBe(expectedSubCats)
-      }
-
-      const mwPagesEl = document.querySelectorAll('#mw-pages')
-      expect(mwPagesEl.length).toBe(1)
-      const catGroupsEl = Array.from(mwPagesEl)[0].querySelectorAll('.mw-category-group')
-      expect(catGroupsEl.length).toBe(expectedCategoryGroups)
-      const listsEl = Array.from(mwPagesEl)[0].querySelectorAll('ul')
-      expect(listsEl.length).toBe(expectedCategoryGroups)
-      const pagesEl = Array.from(mwPagesEl)[0].querySelectorAll('li')
-      expect(pagesEl.length).toBe(expectedPages)
     })
+
+    const content = await zimdump(`show --url ${categoryPath} ${outFiles[0].outFile}`)
+    const document = domino.createDocument(content)
+
+    for (const type of ['subcats', 'pages', 'files']) {
+      const idName = type == 'subcats' ? 'mw-subcategories' : type == 'pages' ? 'mw-pages' : type == 'files' ? 'mw-category-media' : undefined
+      const config = type == 'subcats' ? subcats : type == 'pages' ? pages : type == 'files' ? files : undefined
+      const mwEl = document.querySelectorAll(`#${idName}`)
+
+      test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} parent HTML element`, () => {
+        expect(mwEl.length).toBe(config ? 1 : 0)
+      })
+
+      const unexpectedPartial = config ? config.partials.length + 1 : 1
+      test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} has no unexpected partial`, () => {
+        const categoryPath = `_categories_partials_Catégorie:${category}_${type}_${unexpectedPartial}`
+        expect(allFiles).not.toContain(categoryPath)
+      })
+
+      if (!config) continue
+
+      test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} expected category groups`, () => {
+        const catGroupsEl = Array.from(mwEl)[0].querySelectorAll('.mw-category-group')
+        expect(catGroupsEl.length).toBe(config.nbGroups)
+      })
+      test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} expected ul`, () => {
+        const listsEl = Array.from(mwEl)[0].querySelectorAll('ul')
+        expect(listsEl.length).toBe(config.nbGroups)
+      })
+      test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} expected li`, () => {
+        const pagesEl = Array.from(mwEl)[0].querySelectorAll('li')
+        expect(pagesEl.length).toBe(config.nbLinks)
+      })
+      test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} expected nextPrev`, () => {
+        const nextPrevLink = Array.from(mwEl)[0].querySelectorAll('a.mwo-norewrite')
+        expect(nextPrevLink.length).toBe(config.partials.length ? 2 : 0)
+      })
+
+      for (const { page, nbGroups, nbLinks } of config.partials) {
+        test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer ${type} partial page ${page}`, async () => {
+          const categoryPath = `_categories_partials_Catégorie:${category}_${type}_${page}`
+          const content = await zimdump(`show --url ${categoryPath} ${outFiles[0].outFile}`)
+          const document = domino.createDocument(content)
+          const mwPagesEl = document.querySelectorAll(`#${idName}`)
+          expect(mwPagesEl.length).toBe(1)
+          const catGroupsEl = Array.from(mwPagesEl)[0].querySelectorAll('.mw-category-group')
+          expect(catGroupsEl.length).toBe(nbGroups)
+          const listsEl = Array.from(mwPagesEl)[0].querySelectorAll('ul')
+          expect(listsEl.length).toBe(nbGroups)
+          const pagesEl = Array.from(mwPagesEl)[0].querySelectorAll('li')
+          expect(pagesEl.length).toBe(nbLinks)
+        })
+      }
+    }
   }
+}
+
+await testAllRenders('categories-without-pagination', parametersWithoutPagination, async (outFiles) => {
+  // Run tests without pagination (all category have a single page, no pagination needed)
+
+  const expected_result = [
+    {
+      category: 'Kan',
+      subcats: {
+        nbGroups: 1,
+        nbLinks: 1,
+        partials: [],
+      },
+      pages: {
+        nbGroups: 3,
+        nbLinks: 4,
+        partials: [],
+      },
+      files: undefined,
+    },
+    { category: 'Jamu', subcats: undefined, pages: { nbGroups: 2, nbLinks: 2, partials: [] }, files: undefined },
+  ]
+
+  await perform_categories_tests('categories-without-pagination', outFiles, expected_result)
+
+  afterAll(() => {
+    if (!process.env.KEEP_ZIMS) {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    }
+  })
+})
+
+await testAllRenders('categories-with-pagination', parametersWithPagination, async (outFiles) => {
+  // Run tests with pagination (one category has a single page, the other one need pagination for some element)
+
+  const expected_result = [
+    {
+      category: 'Kan',
+      subcats: {
+        nbGroups: 1,
+        nbLinks: 1,
+        partials: [],
+      },
+      pages: {
+        nbGroups: 2,
+        nbLinks: 2,
+        partials: [
+          { page: 1, nbGroups: 2, nbLinks: 2 },
+          { page: 2, nbGroups: 1, nbLinks: 2 },
+        ],
+      },
+      files: undefined,
+    },
+    { category: 'Jamu', subcats: undefined, pages: { nbGroups: 2, nbLinks: 2, partials: [] }, files: undefined },
+  ]
+
+  await perform_categories_tests('categories-with-pagination', outFiles, expected_result)
 
   afterAll(() => {
     if (!process.env.KEEP_ZIMS) {
