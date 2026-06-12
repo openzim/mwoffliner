@@ -61,7 +61,7 @@ const config = {
   output: {
     // CSS and JS resources added by Kiwix
     cssResourcesCommon: ['style', 'mobile_main_page', 'footer'],
-    jsResourcesCommon: ['script', 'masonry.min', 'article_list_home', 'images_loaded.min'],
+    jsResourcesCommon: ['masonry.min', 'article_list_home', 'images_loaded.min'],
 
     downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
 
@@ -117,23 +117,12 @@ const config = {
       pageVector2022: './templates/pageVector2022.html',
       pageFallback: './templates/pageFallback.html',
 
-      subPages: './templates/subpages.html',
-
       javaScript: './templates/javaScript.html',
 
       articleListHomeTemplate: './templates/article_list_home.html',
 
       /* License footer template code */
       footer: './templates/footer.html',
-
-      /* Template for wrapping lead section content */
-      lead_section_wrapper: './templates/lead_section_wrapper.html',
-
-      /* Template for wrapping all other toplevel sections */
-      section_wrapper: './templates/section_wrapper.html',
-
-      /* Template for wrapping subsections */
-      subsection_wrapper: './templates/subsection_wrapper.html',
 
       /* Template for article download error */
       downloadErrorPlaceholder: './templates/download_error_placeholder.html',

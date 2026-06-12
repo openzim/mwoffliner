@@ -14,10 +14,6 @@ function readTemplate(t: string): string {
 
 /* Compile templates */
 const footerTemplate = swig.compile(readTemplate(config.output.templates.footer))
-const leadSectionTemplate = swig.compile(readTemplate(config.output.templates.lead_section_wrapper))
-const sectionTemplate = swig.compile(readTemplate(config.output.templates.section_wrapper))
-const subSectionTemplate = swig.compile(readTemplate(config.output.templates.subsection_wrapper))
-const subPagesTemplate = swig.compile(readTemplate(config.output.templates.subPages))
 const downloadErrorPlaceholderTemplate = swig.compile(readTemplate(config.output.templates.downloadErrorPlaceholder))
 
 const htmlVectorLegacyTemplateCode = () => {
@@ -44,15 +40,11 @@ const articleListHomeTemplate = readTemplate(config.output.templates.articleList
 
 export {
   footerTemplate,
-  leadSectionTemplate,
-  sectionTemplate,
-  subSectionTemplate,
   htmlVectorLegacyTemplateCode,
   htmlVector2022TemplateCode,
   htmlFallbackTemplateCode,
   htmlRedirectTemplateCode,
   javaScriptTemplateCode,
   articleListHomeTemplate,
-  subPagesTemplate,
   downloadErrorPlaceholderTemplate,
 }
