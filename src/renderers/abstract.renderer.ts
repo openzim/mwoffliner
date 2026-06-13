@@ -169,6 +169,11 @@ export abstract class Renderer {
     videoEl.setAttribute('controls', '40')
   }
 
+  private isSupportedVideoSource(src: string): boolean {
+    const srcWithoutQuery = src.split(/[?#]/)[0]
+    return srcWithoutQuery.endsWith('.webm') || srcWithoutQuery.endsWith('.mp4')
+  }
+
   private chooseBestVideoSource(videoEl: DominoElement): DominoElement | null {
     /* Choose best fiting resolution <source> video node */
     if (videoEl.tagName !== 'VIDEO') {
@@ -179,8 +184,8 @@ export abstract class Renderer {
 
     // Take into account the rare edge case where <video> has no <source> child
     if (videoSourceEls.length === 0) {
-      if (originalSrc && originalSrc.endsWith('.webm')) {
-        // If video has a webm `src` attribute, this is an acceptable src
+      if (originalSrc && this.isSupportedVideoSource(originalSrc)) {
+        // If video has a supported `src` attribute, this is an acceptable src
         return videoEl
       } else {
         return null
@@ -196,8 +201,8 @@ export abstract class Renderer {
     let bestWidthDiff = 424242
     let chosenVideoSourceEl: DominoElement = null
     videoSourceEls.forEach((videoSourceEl: DominoElement) => {
-      // Ignore non-webm sources
-      if (!videoSourceEl.getAttribute('src').endsWith('.webm')) {
+      // Ignore non-supported video sources
+      if (!this.isSupportedVideoSource(videoSourceEl.getAttribute('src'))) {
         DOMUtils.deleteNode(videoSourceEl)
         return
       }
