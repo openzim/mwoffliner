@@ -4,6 +4,11 @@
 			"Kly"
 		]
 	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryMediaHeader": "在分類「${pageName}」的媒體",
+	"categoryHeader": "在分類「${pageName}」的頁面",
+	"subcategories": "子分類",
+	"categoryEmpty": "<em>此分類目前未包含頁面或媒體。</em>",
 	"DISCLAIMER": "此條目由${creator}發布。除非另有說明，否則內容文字基於${license}之下可用。媒體檔案部份可能適用於額外條款。",
 	"LAST_EDITED_ON": "最後編輯於${date}",
 	"LICENSE_UNKNOWN": "未知授權條款",
