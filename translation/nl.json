@@ -6,6 +6,15 @@
 			"Siebrand"
 		]
 	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": "{{PLURAL:${totalCount}|Deze categorie bevat alleen het volgende bestand.|{{PLURAL:${curPageCount}|Het volgende bestand is|De volgende ${curPageCount} bestanden zijn}} onderdeel van deze categorie, van totaal ${totalCount}.}}",
+	"categoryMediaHeader": "Media in categorie \"${pageName}\"",
+	"categoryArticleCount": "{{PLURAL:${totalCount}|Deze categorie bevat alleen de volgende pagina.|{{PLURAL:${curPageCount}|De volgende pagina is|De volgende ${curPageCount} pagina zijn}} onderdeel van deze categorie, van totaal ${totalCount}.}}",
+	"categoryHeader": "Pagina's in categorie \"${pageName}\"",
+	"categorySubcatCount": "{{PLURAL:${totalCount}|Deze categorie heeft slechts de volgende subcategorie.|Deze categorie heeft de volgende {{PLURAL:${curPageCount}|subcategorie|${curPageCount} subcategorieën}}, van in totaal ${totalCount}.}}",
+	"subcategories": "Ondercategorieën",
+	"categoryEmpty": "<em>Deze categorie bevat geen pagina’s of media.</em>",
+	"categoryLimited": "<em>De inhoud van deze categorie is beperkt tot alleen pagina's binnen het ZIM-bestand.</em>",
 	"DISCLAIMER": "Dit artikel is uitgegeven door ${creator}. De tekst is beschikbaar onder ${license}, tenzij anders vermeld. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
 	"LAST_EDITED_ON": "Laatst bewerkt op ${date}",
 	"LICENSE_UNKNOWN": "een onbekende licentie",
