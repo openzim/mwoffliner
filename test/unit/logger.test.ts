@@ -4,106 +4,100 @@ import { jest } from '@jest/globals'
 describe('Logger', () => {
   let stdoutSpy: ReturnType<typeof jest.spyOn>
 
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
-
   beforeEach(() => {
     stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true)
   })
 
-  test('logger info level', async () => {
-    logger.setVerboseLevel('info')
-
-    logger.info('test info', 'info test message')
-    logger.log('test log', 'log test message')
-    logger.warn('test warn', 'warn test message')
-    logger.error('test error', 'error test message')
-
-    expect(stdoutSpy).toHaveBeenCalledTimes(4)
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[info]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[log]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
+  afterEach(() => {
+    jest.clearAllMocks()
+    logger.setLogLevel('silent')
   })
 
-  test('logger log level', async () => {
-    logger.setVerboseLevel('log')
+  test('debug level logs everything', async () => {
+    logger.setLogLevel('debug')
 
-    logger.info('test info', 'info test message')
-    logger.log('test log', 'log test message')
-    logger.warn('test warn', 'warn test message')
-    logger.error('test error', 'error test message')
+    logger.debug('msg', 'a')
+    logger.info('msg', 'b')
+    logger.warn('msg', 'c')
+    logger.error('msg', 'd')
+
+    expect(stdoutSpy).toHaveBeenCalledTimes(4)
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('DEBUG'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('INFO'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('WARN'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR'))
+  })
+
+  test('info level suppresses debug', async () => {
+    logger.setLogLevel('info')
+
+    logger.debug('msg', 'a')
+    logger.info('msg', 'b')
+    logger.warn('msg', 'c')
+    logger.error('msg', 'd')
 
     expect(stdoutSpy).toHaveBeenCalledTimes(3)
-    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[info]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[log]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('DEBUG'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('INFO'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('WARN'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR'))
   })
 
-  test('logger warn level', async () => {
-    logger.setVerboseLevel('warn')
+  test('warn level suppresses debug and info', async () => {
+    logger.setLogLevel('warn')
 
-    logger.info('test info', 'info test message')
-    logger.log('test log', 'log test message')
-    logger.warn('test warn', 'warn test message')
-    logger.error('test error', 'error test message')
+    logger.debug('msg', 'a')
+    logger.info('msg', 'b')
+    logger.warn('msg', 'c')
+    logger.error('msg', 'd')
 
     expect(stdoutSpy).toHaveBeenCalledTimes(2)
-    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[info]'))
-    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[log]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('DEBUG'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('INFO'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('WARN'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR'))
   })
 
-  test('logger error level', async () => {
-    logger.setVerboseLevel('error')
+  test('error level logs only errors', async () => {
+    logger.setLogLevel('error')
 
-    logger.info('test info', 'info test message')
-    logger.log('test log', 'log test message')
-    logger.warn('test warn', 'warn test message')
-    logger.error('test error', 'error test message')
+    logger.debug('msg', 'a')
+    logger.info('msg', 'b')
+    logger.warn('msg', 'c')
+    logger.error('msg', 'd')
 
     expect(stdoutSpy).toHaveBeenCalledTimes(1)
-    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[info]'))
-    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[log]'))
-    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('[warn]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('DEBUG'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('INFO'))
+    expect(stdoutSpy).not.toHaveBeenCalledWith(expect.stringContaining('WARN'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('ERROR'))
   })
 
-  test('logger verbose true', async () => {
-    logger.setVerboseLevel('true')
+  test('silent level suppresses all output', async () => {
+    logger.setLogLevel('silent')
 
-    logger.info('test info', 'info test message')
-    logger.log('test log', 'log test message')
-    logger.warn('test warn', 'warn test message')
-    logger.error('test error', 'error test message')
-
-    expect(stdoutSpy).toHaveBeenCalledTimes(4)
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[info]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[log]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[warn]'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('[error]'))
-  })
-
-  test('logger verbose empty', async () => {
-    logger.setVerboseLevel(null)
-
-    logger.info('test info', 'info test message')
-    logger.log('test log', 'log test message')
-    logger.warn('test warn', 'warn test message')
-    logger.error('test error', 'error test message')
+    logger.debug('msg', 'a')
+    logger.info('msg', 'b')
+    logger.warn('msg', 'c')
+    logger.error('msg', 'd')
 
     expect(stdoutSpy).not.toHaveBeenCalled()
   })
 
-  test('logger message format includes args', async () => {
-    logger.setVerboseLevel('info')
+  test('message content appears in output', async () => {
+    logger.setLogLevel('debug')
 
-    logger.info('test info', 'info test message')
+    logger.debug('hello world')
 
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('test info'))
-    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('info test message'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('hello world'))
+  })
+
+  test('variadic args are concatenated in output', async () => {
+    logger.setLogLevel('debug')
+
+    logger.debug('prefix:', 'suffix')
+
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('prefix:'))
+    expect(stdoutSpy).toHaveBeenCalledWith(expect.stringContaining('suffix'))
   })
 })

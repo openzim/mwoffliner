@@ -25,6 +25,11 @@ Usage: npm run mwoffliner -- --help`,
   .demandOption(requiredParams)
   .strict().argv
 
+// Set log level as early as possible so sanitize errors and fatal errors are visible.
+// If the value is not a valid level, default to 'info' and let sanitize_all report it.
+const earlyLogLevel = argv.logLevel
+logger.setLogLevel(logger.logLevels.includes(earlyLogLevel) ? earlyLogLevel : 'info')
+
 /* ***********************************/
 /* TMPDIR OVERRIDE HAS TO BE HANDLED */
 /* AT THE REALLY BEGIN               */
@@ -62,7 +67,7 @@ sanitize_all(argv)
     mwofflinerLib
       .execute(argv)
       .then(() => {
-        logger.info(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`)
+        logger.debug(`Finished running mwoffliner after [${Math.round((Date.now() - execStartTime) / 1000)}s]`)
         process.exit(0)
       })
       .catch((err) => {

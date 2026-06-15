@@ -1,49 +1,40 @@
 import { format } from 'util'
+import pino from 'pino'
+import pinoPretty from 'pino-pretty'
 
-export const logLevels = ['info', 'log', 'warn', 'error', 'quiet']
+export const logLevels = ['debug', 'info', 'warn', 'error', 'silent'] as const
 export type LogLevel = (typeof logLevels)[number]
 
-let verboseLevel = 'error'
+// Passing process.stdout as destination makes pino-pretty write via process.stdout.write()
+// rather than via sonic-boom / fs.writeSync, which keeps jest spies working in tests.
+const stream = pinoPretty({
+  colorize: process.stdout.isTTY ?? false,
+  destination: process.stdout,
+  ignore: 'pid,hostname',
+  translateTime: 'UTC:yyyy-mm-dd HH:MM:ss.l',
+})
+const _pino = pino({ level: 'silent' }, stream)
 
-const isVerbose = (level: LogLevel) => {
-  if (!verboseLevel) {
-    return false
+export const setLogLevel = (level: LogLevel) => {
+  _pino.level = level
+}
+
+const makeLogFn = (pinoLevel: 'debug' | 'info' | 'warn' | 'error') => {
+  return (msg: string, ...args: any[]) => {
+    if (args.length === 1 && args[0] instanceof Error) {
+      _pino[pinoLevel]({ err: args[0] }, msg)
+    } else if (args.length > 0) {
+      _pino[pinoLevel](format(msg, ...args))
+    } else {
+      _pino[pinoLevel](msg)
+    }
   }
-
-  const verboseLevelIndex = logLevels.indexOf(verboseLevel)
-  const logLevelIndex = logLevels.indexOf(level)
-  return logLevelIndex >= verboseLevelIndex ? true : false
 }
 
-const doLog = (type: LogLevel, args: any[]) => {
-  if (isVerbose(type)) {
-    process.stdout.write(format(`[${type}] [${getTs()}]`, ...args) + '\n')
-  }
-}
-
-const getTs = () => {
-  return new Date().toISOString()
-}
-
-export const setVerboseLevel = (level: LogLevel | true) => {
-  verboseLevel = level === true ? 'info' : level
-}
-
-export const info = (...args: any[]) => {
-  doLog('info', args)
-}
-
-export const log = (...args: any[]) => {
-  doLog('log', args)
-}
-
-export const warn = (...args: any[]) => {
-  doLog('warn', args)
-}
-
-export const error = (...args: any[]) => {
-  doLog('error', args)
-}
+export const debug = makeLogFn('debug')
+export const info = makeLogFn('info')
+export const warn = makeLogFn('warn')
+export const error = makeLogFn('error')
 
 export const logifyArray = (arr: any[]) => {
   if (arr.length < 3) {

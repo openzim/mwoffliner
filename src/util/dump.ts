@@ -206,7 +206,7 @@ export async function downloadModule(module: string, type: 'js' | 'css', langVar
 
   const moduleApiUrl = encodeURI(`${MediaWiki.modulePath}lang=${moduleLang}&modules=${module}${apiParameterOnly}&skin=${MediaWiki.skin}`)
 
-  logger.info(`Getting [${type}] module [${moduleApiUrl}]`)
+  logger.debug(`Getting [${type}] module [${moduleApiUrl}]`)
 
   const { content } = await Downloader.downloadContent(moduleApiUrl, 'module')
   let text = content.toString()
@@ -274,7 +274,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
     const modulePath = type === 'js' ? jsPath(module + '.js', config.output.dirs.mediawiki) : cssPath(module + '.css', config.output.dirs.mediawiki)
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
-    logger.info(`Saved module [${module}] at ${modulePath}`)
+    logger.debug(`Saved module [${module}] at ${modulePath}`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
     throw e
@@ -289,7 +289,7 @@ export async function downloadAndSaveStartupModule(zimCreator: Creator, langVar?
     const modulePath = jsPath(module, config.output.dirs.mediawiki)
     const mimetype = 'text/javascript'
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
-    logger.info(`Saved module [${module}] at ${modulePath}`)
+    logger.debug(`Saved module [${module}] at ${modulePath}`)
     return JSON.parse(text.match(/;mw\.loader\.register\((\[\[.*?\]\])\);+\s?mw\./s)[1])
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
@@ -310,12 +310,12 @@ export function getModuleDependencies(oneModule: ResourceLoaderModule, allModule
 
 // Download a custom CSS file and save it into the ZIM.
 export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: string, filename: string): Promise<void> {
-  logger.log(`Downloading custom CSS [${cssUrl}]`)
+  logger.info(`Downloading custom CSS [${cssUrl}]`)
   const { content: cssBody } = await Downloader.downloadContent(cssUrl, 'css')
   const processedCss = await processStylesheetContent(cssUrl, '', cssBody.toString())
   const zimPath = cssPath(filename, config.output.dirs.res)
   await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/css', null, { FRONT_ARTICLE: 0 }, processedCss)))
-  logger.log(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
+  logger.info(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
 }
 
 // URLs should be kept the same as Kiwix JS relies on it.

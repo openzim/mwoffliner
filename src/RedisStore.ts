@@ -87,7 +87,7 @@ class RedisStore implements RS {
 
   public async close() {
     if (this.#client.isReady && this.#storesReady) {
-      logger.log('Flushing Redis DBs')
+      logger.info('Flushing Redis DBs')
       await Promise.all([this.#filesToDownloadXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush(), ...this.#filesQueues.map((queue) => queue.flush())])
     }
     if (this.#client.isOpen) {

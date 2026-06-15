@@ -37,7 +37,7 @@ export async function getArticlesByIds(articleIds: string[], purpose: string, ca
         const to = from + articleIdsBatch.length
         if (log) {
           const progressPercent = Math.floor((to / articleIds.length) * 100)
-          logger.log(`Worker [${workerId}] getting article range [${from}-${to}] of [${articleIds.length}] for ${purpose} [${progressPercent}%]`)
+          logger.info(`Worker [${workerId}] getting article range [${from}-${to}] of [${articleIds.length}] for ${purpose} [${progressPercent}%]`)
         }
         from = to
 
@@ -170,7 +170,7 @@ export function getArticlesByNS(
             .filter((a) => !allowedContentModels.includes(a.contentmodel))
             .map((article) => article.title)
           if (articlesWithWrongModel.length > 0) {
-            logger.info(`Skipping articles with non-matching content model: ${articlesWithWrongModel.join(', ')}`)
+            logger.debug(`Skipping articles with non-matching content model: ${articlesWithWrongModel.join(', ')}`)
             if (!articleIdsToIgnore) {
               articleIdsToIgnore = []
             }
@@ -183,7 +183,7 @@ export function getArticlesByNS(
             const articleTitle = chunk.articleDetails[articleId].title
             if (articleIdsToIgnore.includes(articleTitle)) {
               delete chunk.articleDetails[articleId]
-              logger.info(`Excluded article ${articleTitle}`)
+              logger.debug(`Excluded article ${articleTitle}`)
             }
           })
         }
@@ -238,7 +238,7 @@ export function getArticlesByNS(
             return
           }
           totalArticles += numArticles
-          logger.log(`Got [${numArticles} / ${totalArticles}] articles chunk from namespace [${ns}]`)
+          logger.info(`Got [${numArticles} / ${totalArticles}] articles chunk from namespace [${ns}]`)
         }
 
         saveStorePromisQueue.push(newSavePromise)
@@ -265,7 +265,7 @@ export function getArticlesByNS(
       timer.clear()
     }
 
-    logger.log(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`)
+    logger.info(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`)
     resolve()
   })
 }
@@ -387,7 +387,7 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
 
     return isSuccess && validMimeType
   } catch (err) {
-    logger.info('checkApiAvailability failed: ', cleanupAxiosError(err as any))
+    logger.debug('checkApiAvailability failed: ', cleanupAxiosError(err as any))
     return false
   }
 }

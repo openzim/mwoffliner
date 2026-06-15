@@ -180,7 +180,7 @@ class FileManager {
         const percentProgress = (((dump.status.files.success + dump.status.files.fail) / filesTotal) * 100).toFixed(1)
         if (percentProgress !== prevPercentProgress) {
           prevPercentProgress = percentProgress
-          logger.log(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`)
+          logger.info(`Progress downloading files [${dump.status.files.success + dump.status.files.fail}/${filesTotal}] [${percentProgress}%]`)
         }
         if (
           filesTotal > 0 &&
@@ -207,7 +207,7 @@ class FileManager {
       const downloadKind = latestDetail.kind
       const downloadWidth = latestDetail.width
 
-      logger.info(`Worker ${workerId} downloading ${urlHelper.deserializeUrl(downloadUrl)} (${downloadKind})`)
+      logger.debug(`Worker ${workerId} downloading ${urlHelper.deserializeUrl(downloadUrl)} (${downloadKind})`)
       await Downloader.downloadContent(downloadUrl, downloadKind, false, downloadWidth)
         .then(async (resp) => {
           if (resp && resp.content && resp.contentType) {
@@ -238,10 +238,10 @@ class FileManager {
                 const retryDate = parseRetryAfterHeader(retryAfterHeader)
                 if (retryDate) {
                   if (retryDate > Date.now() + MAXIMUM_FILE_DOWNLOAD_DELAY) {
-                    logger.log(`Received a [Retry-After=${retryAfterHeader}] on ${hostname} but this is too far away, ignoring`)
+                    logger.info(`Received a [Retry-After=${retryAfterHeader}] on ${hostname} but this is too far away, ignoring`)
                   } else {
                     hostData.notBeforeDate = retryDate
-                    logger.log(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
+                    logger.info(`Received a [Retry-After=${retryAfterHeader}], pausing down ${hostname} until ${hostData.notBeforeDate}`)
                   }
                 } else {
                   logger.warn(`Received a [Retry-After=${retryAfterHeader}] from ${hostname} but failed to interpret it`)
@@ -250,7 +250,7 @@ class FileManager {
             }
             if (err.response && [429, 503, 524].includes(err.response.status) && !urlHelper.deserializeUrl(downloadUrl).match(/^https?:\/\/upload\.wikimedia\.org\/.*\/thumb\//)) {
               hostData.requestInterval = Math.min(MAXIMUM_FILE_DOWNLOAD_DELAY, hostData.requestInterval * 1.2)
-              logger.log(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
+              logger.info(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
             }
             await hostData.queue.push(fileToDownload)
           }
@@ -270,7 +270,7 @@ class FileManager {
       { concurrency: Downloader.workers },
     )
 
-    logger.log(
+    logger.info(
       `Done with downloading ${filesTotal} files: ${dump.status.files.success} success, ${dump.status.files.fail} fail: `,
       JSON.stringify(Object.fromEntries([...hosts].map(([hostname, hostData]) => [hostname, { success: hostData.downloadSuccess, fail: hostData.downloadFailure }])), null, '\t'),
     )

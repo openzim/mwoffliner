@@ -230,21 +230,21 @@ class Downloader {
       retryIf: (err: any) => {
         const requestedUrl = err.urlCalled || err.config?.url || 'unknown'
         if (isMalformedJsonResponseError(err)) {
-          logger.log(`Retrying ${requestedUrl} due to malformed JSON response`)
+          logger.info(`Retrying ${requestedUrl} due to malformed JSON response`)
           return true
         }
 
         if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE'].includes(err.code)) {
-          logger.log(`Retrying ${requestedUrl} URL due to ${err.code} error`)
+          logger.info(`Retrying ${requestedUrl} URL due to ${err.code} error`)
           return true // retry all connection issues
         }
         if (err.responseData?.error?.code === 'maxlag') {
-          logger.log(`Mediawiki server is lagging ${err.responseData?.error?.lag}s; retrying in few seconds`)
+          logger.info(`Mediawiki server is lagging ${err.responseData?.error?.lag}s; retrying in few seconds`)
           return true // note that we do not honor Retry-After header value because it is not possible in current code architecture
         }
         const httpReturnCode = err.response?.status || err.httpReturnCode
         if ([429, 500, 502, 503, 504, 524].includes(httpReturnCode)) {
-          logger.log(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
+          logger.info(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
           return true // retry these HTTP status codes
         }
         if (
@@ -259,13 +259,13 @@ class Downloader {
             'internal_api_error_Wikimedia\\Parsoid\\Core\\ResourceLimitExceededException',
           ].includes(err.responseData?.error?.code)
         ) {
-          logger.log(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
+          logger.info(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
           return true // retry these Mediawiki codes which are known to be transient
         }
         return false // don't retry other errors
       },
       backoffHandler: (number: number, delay: number) => {
-        logger.info(`[backoff] #${number} after ${delay} ms`)
+        logger.debug(`[backoff] #${number} after ${delay} ms`)
       },
       ...backoffOptions,
     }
@@ -504,7 +504,7 @@ class Downloader {
     dump: Dump,
     articleDetail?: ArticleDetail,
   ): Promise<RenderOutput> {
-    logger.info(`Getting article [${articleId}] from ${articleUrl}`)
+    logger.debug(`Getting article [${articleId}] from ${articleUrl}`)
 
     try {
       const {
@@ -594,14 +594,14 @@ class Downloader {
         throw err
       }
       if (errorRule.isHardFailure) {
-        logger.log(`This is a hard ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
+        logger.info(`This is a hard ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
         dump.status.articles.hardFail += 1
         dump.status.articles.hardFailedArticleIds.push(articleId)
         if (dump.maxHardFailedArticles > 0 && dump.status.articles.hardFail > dump.maxHardFailedArticles) {
           throw new Error('Too many articles failed to download') // eslint-disable-line preserve-caught-error
         }
       } else {
-        logger.log(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
+        logger.info(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
         dump.status.articles.softFail += 1
         dump.status.articles.softFailedArticleIds.push(articleId)
       }
@@ -633,7 +633,7 @@ class Downloader {
       this.backoffCall(this.getJSONCb, url, 'json', undefined, (err: any, val: any) => {
         if (err) {
           const httpStatus = (err.response && err.response.status) || err.httpReturnCode
-          logger.info(`Failed to get [${url}] [status=${httpStatus}]`)
+          logger.debug(`Failed to get [${url}] [status=${httpStatus}]`)
           reject(err)
         } else {
           resolve(val)
@@ -712,7 +712,7 @@ class Downloader {
   private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
     if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
     if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`)
-    if (resp.error) logger.log(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
+    if (resp.error) logger.info(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
   }
 
   private async getArticleQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
@@ -726,7 +726,7 @@ class Downloader {
   }
 
   private getJSONCb = <T>(url: string, kind: DownloadKind, _requestedWidth: number | undefined, handler: (...args: any[]) => any): void => {
-    logger.info(`Getting JSON from [${url}]`)
+    logger.debug(`Getting JSON from [${url}]`)
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((val) => {
         const contentType = val.headers['content-type']?.toString() || null
@@ -810,7 +810,7 @@ class Downloader {
   }
 
   private getContentCb = async (url: string, kind: DownloadKind, requestedWidth: number | undefined, handler: any): Promise<void> => {
-    logger.info(`Downloading [${url}]`)
+    logger.debug(`Downloading [${url}]`)
     try {
       if (this.optimisationCacheUrl && kind === 'image') {
         this.downloadImage(url, handler, requestedWidth)
@@ -866,7 +866,7 @@ class Downloader {
             // Proceed with image
             const data = (await this.streamToBuffer(s3Resp.Body as Readable)) as any
             const contentType = await this.getImageMimeType(data)
-            logger.info(`Using S3-cached image for ${url} (contentType: ${contentType})`)
+            logger.debug(`Using S3-cached image for ${url} (contentType: ${contentType})`)
             handler(null, {
               contentType,
               content: data,
@@ -891,9 +891,9 @@ class Downloader {
           // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
           const contentType = (await this.getImageMimeType(compressedData)) || mwResp.headers['content-type']
           if (s3Resp) {
-            logger.info(`Using image downloaded from upstream for ${url} (S3-cached image is outdated, contentType: ${contentType})`)
+            logger.debug(`Using image downloaded from upstream for ${url} (S3-cached image is outdated, contentType: ${contentType})`)
           } else {
-            logger.info(`Using image downloaded from upstream for ${url} (no S3-cached image found, contentType: ${contentType})`)
+            logger.debug(`Using image downloaded from upstream for ${url} (no S3-cached image found, contentType: ${contentType})`)
           }
 
           // Proceed with image
@@ -911,7 +911,7 @@ class Downloader {
   }
 
   private errHandler(err: any, url: string, handler: any): void {
-    logger.info(`Error while downloading content for ${url} due to ${err} ; might be retried`)
+    logger.debug(`Error while downloading content for ${url} due to ${err} ; might be retried`)
     handler(err)
   }
 

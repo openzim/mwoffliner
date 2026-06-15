@@ -214,17 +214,17 @@
       "required": false,
       "description": "Don't include a fulltext search index to the ZIM"
     },
-    "verbose": {
+    "logLevel": {
       "type": "string-enum",
       "required": false,
       "title": "Verbose",
-      "description": "Level of log verbosity, one of info, log, warn, error or quiet. Default is error.",
+      "description": "Set the log level. One of: \"debug\", \"info\", \"warn\", \"error\", \"silent\" (default: \"info\").",
       "choices": [
+        { "title": "DEBUG", "value": "debug " },
         { "title": "INFO", "value": "info" },
-        { "title": "LOG", "value": "log" },
         { "title": "WARN", "value": "warn" },
         { "title": "ERROR", "value": "error" },
-        { "title": "QUIET", "value": "quiet" }
+        { "title": "SILENT", "value": "silent" }
       ]
     },
     "webp": {

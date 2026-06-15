@@ -67,7 +67,7 @@ async function execute(argv: any) {
   const {
     speed: _speed,
     adminEmail,
-    verbose,
+    logLevel,
     minifyHtml,
     keepEmptySections,
     mwUrl,
@@ -119,9 +119,9 @@ async function execute(argv: any) {
   /* CUSTOM VARIABLE SECTION ********* */
   /* ********************************* */
 
-  logger.setVerboseLevel(verbose ? verbose : 'log') // Default log level is 'log'
+  logger.setLogLevel(logLevel ?? 'info')
 
-  logger.log(`Starting mwoffliner v${packageJSON.version}...`)
+  logger.debug(`Starting mwoffliner v${packageJSON.version}...`)
 
   // TODO: Move it to sanitize method
   if (articleList) articleList = String(articleList)
@@ -131,7 +131,7 @@ async function execute(argv: any) {
   if (customCss) {
     Downloader.customCssUrls = parseCustomCssUrls(String(customCss))
     if (Downloader.customCssUrls.length > 0) {
-      logger.log(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
+      logger.info(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
     }
   }
   const publisher = _publisher || config.defaults.publisher
@@ -154,7 +154,7 @@ async function execute(argv: any) {
   }
 
   /* Instantiate custom flavour module */
-  logger.info(`Using custom flavour: ${customFlavour || 'no'}`)
+  logger.debug(`Using custom flavour: ${customFlavour || 'no'}`)
   const customProcessor = customFlavour ? new (await import(customFlavour))() : null
 
   let s3Obj
@@ -165,7 +165,7 @@ async function execute(argv: any) {
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
     s3Obj = new S3(s3Url, s3UrlObj.searchParams, requestTimeout * 1000 || config.defaults.requestTimeout, argv.insecure)
     await s3Obj.initialise().then(() => {
-      logger.log('Successfully logged in S3')
+      logger.info('Successfully logged in S3')
     })
   }
 
@@ -186,7 +186,7 @@ async function execute(argv: any) {
 
   /* HTTP user-agent string */
   const uaString = `${_userAgent || config.userAgent} (${adminEmail})`
-  logger.log(`Using User-Agent: ${uaString}`)
+  logger.info(`Using User-Agent: ${uaString}`)
 
   /* Download helpers; TODO: Merge with something else / expand this. */
   Downloader.init = {
@@ -270,25 +270,25 @@ async function execute(argv: any) {
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
   await mkdirPromise(outputDirectory)
-  logger.log(`Using output directory ${outputDirectory}`)
+  logger.info(`Using output directory ${outputDirectory}`)
 
   // Temporary directory
   const tmpDirectory = await getTmpDirectory()
-  logger.log(`Using temporary directory ${tmpDirectory}`)
+  logger.info(`Using temporary directory ${tmpDirectory}`)
 
   process.on('exit', async (code) => {
-    logger.log(`Exiting with code [${code}]`)
-    logger.log(`Deleting temporary directory [${tmpDirectory}]`)
+    logger.info(`Exiting with code [${code}]`)
+    logger.info(`Deleting temporary directory [${tmpDirectory}]`)
     rimraf.sync(tmpDirectory)
   })
 
   process.on('SIGTERM', async () => {
-    logger.log('SIGTERM')
+    logger.info('SIGTERM')
     await RedisStore.close()
     process.exit(128 + 15)
   })
   process.on('SIGINT', async () => {
-    logger.log('SIGINT')
+    logger.info('SIGINT')
     await RedisStore.close()
     process.exit(128 + 2)
   })
@@ -301,7 +301,7 @@ async function execute(argv: any) {
   if (articleListToIgnore) {
     try {
       articleListToIgnoreLines = await extractArticleList(articleListToIgnore)
-      logger.info(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
+      logger.debug(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
       throw err
@@ -315,7 +315,7 @@ async function execute(argv: any) {
       if (articleListToIgnore) {
         articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
       }
-      logger.info(`ArticleList has [${articleListLines.length}] items`)
+      logger.debug(`ArticleList has [${articleListLines.length}] items`)
     } catch (err) {
       logger.error(`Failed to read articleList from [${articleList}]`, err)
       throw err
@@ -326,21 +326,21 @@ async function execute(argv: any) {
     //(#1891)
     if (articleListLines.length === 1 && !customMainPage) {
       mainPage = articleListLines[0].replace(/ /g, '_')
-      logger.log(`Using single article list entry as main page: ${mainPage}`)
+      logger.info(`Using single article list entry as main page: ${mainPage}`)
     }
   }
 
   const allowedContentModels = ['wikitext', ...addContentModels]
 
-  logger.info('Getting article ids')
+  logger.debug('Getting article ids')
   let stime = Date.now()
   await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null, allowedContentModels)
-  logger.log(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
+  logger.info(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
 
   const filenameDate = new Date().toISOString().slice(0, 7)
 
   // Getting total number of articles from Redis
-  logger.log(`Total articles found in Redis: ${await articleDetailXId.len()}`)
+  logger.info(`Total articles found in Redis: ${await articleDetailXId.len()}`)
 
   const dumps: Dump[] = []
 
@@ -378,7 +378,7 @@ async function execute(argv: any) {
       let logStr = 'Doing dump:'
       if (langVar) logStr += ' variant=' + langVar
       logStr += ` format=${dumpFormat || 'all'}`
-      logger.log(`******************** ${logStr} ********************`)
+      logger.info(`******************** ${logStr} ********************`)
       let shouldSkip = false
       try {
         dump.checkResume()
@@ -386,22 +386,22 @@ async function execute(argv: any) {
         shouldSkip = true
       }
       if (shouldSkip) {
-        logger.log('Skipping dump')
+        logger.info('Skipping dump')
       } else {
         await doDump(dump)
         await filesToDownloadXPath.flush()
-        logger.log('Finished dump')
+        logger.info('Finished dump')
       }
     }
   }
 
-  logger.log('Closing HTTP agents...')
+  logger.info('Closing HTTP agents...')
 
-  logger.log('All dumping(s) finished with success.')
+  logger.info('All dumping(s) finished with success.')
 
   async function doDump(dump: Dump) {
     const outZim = path.resolve(dump.opts.outputDirectory, dump.computeFilenameRadical() + '.zim')
-    logger.log(`Writing ZIM to [${outZim}]`)
+    logger.info(`Writing ZIM to [${outZim}]`)
     dump.outFile = outZim
 
     // Reset FileManager for the new dump
@@ -418,7 +418,7 @@ async function execute(argv: any) {
     }
     validateMetadata(metadata)
 
-    const zimCreator = new Creator().configCompression(Compression.Zstd).configVerbose(verbose === 'info' || verbose === true)
+    const zimCreator = new Creator().configCompression(Compression.Zstd).configVerbose(logLevel === 'debug')
     if (!dump.opts.withoutZimFullTextIndex) {
       zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
     }
@@ -446,20 +446,20 @@ async function execute(argv: any) {
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
 
     if (Downloader.webp) {
-      logger.log('Adding webp polyfilling JS scripts')
+      logger.info('Adding webp polyfilling JS scripts')
       await addWebpJsScripts(zimCreator)
     }
 
     await getThumbnailsData()
 
     if (!mainPage) {
-      logger.log('Checking Main Page rendering')
+      logger.info('Checking Main Page rendering')
       await createIndexPage(dump, zimCreator, true)
     }
 
     // Download and save custom CSS files
     if (Downloader.customCssUrls.length > 0) {
-      logger.log(`Downloading ${Downloader.customCssUrls.length} custom CSS file(s)`)
+      logger.info(`Downloading ${Downloader.customCssUrls.length} custom CSS file(s)`)
       const cssErrors: string[] = []
       for (const cssUrl of Downloader.customCssUrls) {
         try {
@@ -474,12 +474,12 @@ async function execute(argv: any) {
       }
     }
 
-    logger.log('Getting articles')
+    logger.info('Getting articles')
     stime = Date.now()
     const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
-    logger.log(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
+    logger.info(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
 
-    logger.info('Copying Static Resource Files')
+    logger.debug('Copying Static Resource Files')
     await saveStaticFiles(staticFilesList, zimCreator)
 
     if (javaScript === 'none') {
@@ -518,15 +518,15 @@ async function execute(argv: any) {
       })
     }
 
-    logger.log(`Found [${jsModuleDependencies.size}] js module dependencies`)
-    logger.log(`Found [${cssModuleDependencies.size}] style module dependencies`)
+    logger.info(`Found [${jsModuleDependencies.size}] js module dependencies`)
+    logger.info(`Found [${cssModuleDependencies.size}] style module dependencies`)
 
     const allDependenciesWithType = [
       { type: 'js', moduleList: Array.from(jsModuleDependencies) },
       { type: 'css', moduleList: Array.from(cssModuleDependencies) },
     ]
 
-    logger.log('Downloading module dependencies')
+    logger.info('Downloading module dependencies')
     await Promise.all(
       allDependenciesWithType.map(({ type, moduleList }) => {
         return pmap(
@@ -544,17 +544,17 @@ async function execute(argv: any) {
 
     await FileManager.startDownloading(zimCreator, dump)
 
-    logger.log('Writing Article Redirects')
+    logger.info('Writing Article Redirects')
     await writeArticleRedirects(dump, zimCreator)
 
     const mainPath = mainPage ? mainPage : await createIndexPage(dump, zimCreator, false)
     zimCreator.setMainPath(mainPath)
 
-    logger.log('Finishing ZIM Creation')
+    logger.info('Finishing ZIM Creation')
     await zimCreator.finishZimCreation()
 
-    logger.log('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
-    logger.log(`ZIM is ready at [${outZim}]`)
+    logger.info('Summary of scrape actions:', JSON.stringify(dump.status, null, '\t'))
+    logger.info(`ZIM is ready at [${outZim}]`)
   }
 
   /* ********************************* */
@@ -564,12 +564,12 @@ async function execute(argv: any) {
   async function writeArticleRedirects(dump: Dump, zimCreator: Creator) {
     let processed = -1
     const total = await redirectsXId.len()
-    logger.log(`${total} redirects to process`)
+    logger.info(`${total} redirects to process`)
     await redirectsXId.iterateItems(Downloader.workers, async (redirects) => {
       for (const [redirectId, { targetId, fragment }] of Object.entries(redirects)) {
         processed += 1
         if (processed > 0 && processed % 5000 === 0) {
-          logger.log(`${processed} redirects have been processed (${Math.round((processed / total) * 1000) / 10} %)`)
+          logger.info(`${processed} redirects have been processed (${Math.round((processed / total) * 1000) / 10} %)`)
         }
         if (await RedisStore.articleDetailXId.exists(redirectId)) {
           logger.warn(`Skipping redirect of '${redirectId}' because it already exists as an article`)
@@ -611,7 +611,7 @@ async function execute(argv: any) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
       if (faviconIsRemote) {
-        logger.log(`Downloading remote ZIM favicon from [${customZimFavicon}]`)
+        logger.info(`Downloading remote ZIM favicon from [${customZimFavicon}]`)
         content = await Downloader.request({ url: customZimFavicon, method: 'GET', ...Downloader.arrayBufferRequestOptions })
           .then((a) => a.data)
           .catch(() => {
@@ -642,7 +642,7 @@ async function execute(argv: any) {
   }
 
   async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
-    logger.log('Saving favicon.png...')
+    logger.info('Saving favicon.png...')
     try {
       return zimCreator.addItem(new StringItem(`${config.output.dirs.res}/favicon.png`, 'image/png', null, { FRONT_ARTICLE: 0 }, data))
     } catch {
@@ -756,7 +756,7 @@ async function execute(argv: any) {
   async function getThumbnailsData(): Promise<void> {
     if (customMainPage || !articleList || articleListLines.length <= MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) return
 
-    logger.log('Updating article thumbnails for articles')
+    logger.info('Updating article thumbnails for articles')
 
     let articleIndex = 0
     let articlesWithImages = 0

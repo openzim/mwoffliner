@@ -24,9 +24,9 @@ describe('Exec Command With Bash', () => {
       )
     })
 
-    test('Exec Command With --verbose option', async () => {
-      await expect(execa(`${mwo} --verbose=anyString --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test"`, { shell: true })).rejects.toThrow(
-        /"anyString" is not a valid value for option verbose. It should be empty or one of \[info, log, warn, error, quiet\]/,
+    test('Exec Command With --log-level option', async () => {
+      await expect(execa(`${mwo} --log-level=anyString --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test"`, { shell: true })).rejects.toThrow(
+        /"anyString" is not a valid value for option --log-level. It should be one of \[debug, info, warn, error, silent\]/,
       )
     })
   })

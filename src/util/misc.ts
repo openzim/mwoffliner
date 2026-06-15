@@ -58,7 +58,7 @@ function _decodeURIComponent(uri: string) {
   try {
     return decodeURIComponent(uri)
   } catch (error) {
-    logger.warn(error)
+    logger.warn(`Failed to decode URI component: ${uri}`, error)
     return uri
   }
 }
@@ -202,7 +202,7 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
       }),
     )
   } catch (err) {
-    logger.error(err)
+    logger.error('Failed to save static files to ZIM', err)
   }
 }
 
@@ -496,7 +496,7 @@ export async function getTmpDirectory() {
   if (!tmpDirectory) {
     tmpDirectory = path.resolve(os.tmpdir(), `mwoffliner-${Date.now()}`)
     try {
-      logger.info(`Creating temporary directory [${tmpDirectory}]`)
+      logger.debug(`Creating temporary directory [${tmpDirectory}]`)
       await mkdirPromise(tmpDirectory)
     } catch (err) {
       logger.error('Failed to create temporary directory, exiting', err)
