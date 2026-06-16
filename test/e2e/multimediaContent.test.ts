@@ -50,7 +50,6 @@ await testAllRenders('multimedia-content', parameters, async (outFiles) => {
   })
 })
 
-// TODO: is this really testing all formats one by one??? I don't think so
 await testAllRenders('multimedia-content', { ...parameters, format: ['nopic', 'novid', 'nopdf', 'nodet'] }, async (outFiles) => {
   describe('Multimedia for different formats', () => {
     test(`check multimedia content from wikipedia test page with different formats for ${outFiles[0]?.renderer} renderer`, async () => {
