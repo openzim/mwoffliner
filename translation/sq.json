@@ -4,6 +4,6 @@
 			"Besnik b"
 		]
 	},
-	"DISCLAIMER": "Ky artikull është botuar nga ${creator}. Teksti licencohet sipar ${license}. Mbi kartelat media mund të ketë kushte shtesë.",
-	"LAST_EDITED_ON": "Përpunuar së fundi më ${date}"
+	"DISCLAIMER": "Ky artikull është botuar nga {{creator}}. Teksti licencohet sipar {{license}}. Mbi kartelat media mund të ketë kushte shtesë.",
+	"LAST_EDITED_ON": "Përpunuar së fundi më {{date}}"
 }

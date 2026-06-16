@@ -1,6 +1,5 @@
 import MediaWiki from '../MediaWiki.js'
 import { Dump } from '../Dump.js'
-import { interpolateTranslationString } from './misc.js'
 
 export function buildCategoryMemberList(
   type: 'subcats' | 'pages' | 'files',
@@ -11,36 +10,34 @@ export function buildCategoryMemberList(
   dump: Dump,
   numericSorting: boolean,
 ): DominoElement {
-  let idName, headerText, descText
+  const count = categoryinfo[type]
+  const pageName = articleDetail.title.split(':').slice(1).join(':')
+
+  let idName: string
+  let headerContent: string
+  let descContent: string
+
   if (type === 'subcats') {
     idName = 'mw-subcategories'
-    headerText = dump.strings.subcategories
-    descText = dump.strings.categorySubcatCount
+    headerContent = dump.t('subcategories')
+    descContent = dump.t('categorySubcatCount', { count, curPageCount: count })
   } else if (type === 'pages') {
     idName = 'mw-pages'
-    headerText = dump.strings.categoryHeader
-    descText = dump.strings.categoryArticleCount
-  } else if (type === 'files') {
+    headerContent = dump.t('categoryHeader', { pageName })
+    descContent = dump.t('categoryArticleCount', { count, curPageCount: count })
+  } else {
     idName = 'mw-category-media'
-    headerText = dump.strings.categoryMediaHeader
-    descText = dump.strings.categoryFileCount
+    headerContent = dump.t('categoryMediaHeader', { pageName })
+    descContent = dump.t('categoryFileCount', { count, curPageCount: count })
   }
+
   const section = doc.createElement('div')
   section.id = idName
   const header = doc.createElement('h2')
-  header.textContent = interpolateTranslationString(headerText, {
-    pageName: articleDetail.title.split(':').slice(1).join(':'),
-  })
+  header.textContent = headerContent
   section.appendChild(header)
   const desc = doc.createElement('p')
-  desc.textContent = parsePlural(
-    parsePlural(
-      interpolateTranslationString(descText, {
-        curPageCount: String(categoryinfo[type]),
-        totalCount: String(categoryinfo[type]),
-      }),
-    ),
-  )
+  desc.textContent = descContent
   section.appendChild(desc)
   const content = doc.createElement('div')
   content.lang = articleDetail.pagelang
@@ -51,7 +48,7 @@ export function buildCategoryMemberList(
   if (categoryMembers.length > 6) columns.classList.add('mw-category-columns')
   let lastPrefix, column, list
   for (const categoryMember of categoryMembers) {
-    const sortkeyPrefix = numericSorting && /^\d/.test(categoryMember.sortkeyprefix) ? dump.strings.categoryHeaderNumerals : categoryMember.sortkeyprefix
+    const sortkeyPrefix = numericSorting && /^\d/.test(categoryMember.sortkeyprefix) ? dump.t('categoryHeaderNumerals') : categoryMember.sortkeyprefix
     if (lastPrefix !== sortkeyPrefix) {
       lastPrefix = sortkeyPrefix
       if (column) {
@@ -61,7 +58,7 @@ export function buildCategoryMemberList(
       column = doc.createElement('div')
       column.classList.add('mw-category-group')
       const groupHeader = doc.createElement('h3')
-      groupHeader.textContent = sortkeyPrefix === ' ' ? '\u00A0' : sortkeyPrefix
+      groupHeader.textContent = sortkeyPrefix === ' ' ? ' ' : sortkeyPrefix
       column.appendChild(groupHeader)
       list = doc.createElement('ul')
       if (type === 'files' && !categoryinfo.nogallery) {
@@ -121,13 +118,4 @@ export function buildCategoryMemberList(
   content.appendChild(columns)
   section.appendChild(content)
   return section
-}
-
-function parsePlural(text: string) {
-  if (!text.includes('PLURAL:')) return text
-  return text.replace(/{{\s*PLURAL:\s*[+-]?(\d+)\s*\|\s*([^{}]*?)\s*}}/g, (m, number: string, cases: string) => {
-    const args = cases.split(/\s*\|\s*/)
-    if (parseInt(number, 10) === 1) return args[0]
-    else return args.length > 1 ? args[1] : args[args.length - 1]
-  })
 }

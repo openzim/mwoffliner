@@ -1,4 +1,5 @@
-import { contains, getStrippedTitleFromHtml, getStringsForLang } from '../../src/util/misc.js'
+import { contains, getStrippedTitleFromHtml } from '../../src/util/misc.js'
+import { createTranslator } from '../../src/i18n.js'
 import domino from 'domino'
 import { jest } from '@jest/globals'
 
@@ -69,91 +70,49 @@ describe('Misc utility', () => {
     })
   })
 
-  describe('getStringsForLang', () => {
-    test('skips missing files without error', () => {
-      const strings = getStringsForLang('XX', 'XX')
-      expect(strings).toEqual({})
+  describe('createTranslator', () => {
+    test('falls back to en when lang file is missing', async () => {
+      const t = await createTranslator('XX')
+      expect(t('DISCLAIMER')).toContain('{{creator}}')
+      expect(t('LAST_EDITED_ON', { date: '2024-01-01' })).toBe('Last edited on 2024-01-01')
+      expect(t('LICENSE_UNKNOWN')).toBe('an unknown license')
     })
 
-    test('returns en strings if lang file is missing completely', () => {
-      const strings = getStringsForLang('XX')
-      expect(strings).toMatchObject({
-        DISCLAIMER: 'This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.',
-        LAST_EDITED_ON: 'Last edited on ${date}',
-        LICENSE_UNKNOWN: 'an unknown license',
-        DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
-        DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
-        DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
-          'This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an HTTP 503 error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected bad revision ID error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unreachable exception error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an invariant exception error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API type error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an argument exception error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API failed to give details about this article HTML because this article is way too big. Someone should probably split this article into multiple smaller articles on ${server} server.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API failed to give details about this article HTML returning an empty response.',
-        DOWNLOAD_ERRORS_LINE2: 'The missing article was replaced by the placeholder page you are currently seeing.',
-        DOWNLOAD_ERRORS_LINE3: "Let's hope the issue will be solved on ${server} server and our next version of this ZIM will contain this article.",
-      })
+    test('falls back to en for missing keys in partial translation', async () => {
+      const t = await createTranslator('bn')
+      expect(t('LAST_EDITED_ON', { date: '2024-01-01' })).toContain('2024-01-01')
+      expect(t('LICENSE_UNKNOWN')).toBe('an unknown license')
     })
 
-    test('falls back to en strings if lang file is missing certain fields', () => {
-      const strings = getStringsForLang('bn')
-      expect(strings).toMatchObject({
-        DISCLAIMER: 'This article is issued from ${creator}. The text is available under ${license} unless otherwise noted. Additional terms may apply for the media files.',
-        LAST_EDITED_ON: '${date} তারিখে সর্বশেষ সম্পাদিত',
-        LICENSE_UNKNOWN: 'an unknown license',
-        DOWNLOAD_ERRORS_HEADING: 'Oops. Article not found.',
-        DOWNLOAD_ERRORS_MESSAGE: "The requested article '${articleTitle}' is not available inside this ZIM, it was not possible to retrieve it from ${server}.",
-        DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE:
-          'This article was deleted after we compiled the list of articles to retrieve but before we fetched it to build the ZIM you are browsing.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API timed-out while processing this article and returned an HTTP 504 error.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an HTTP 503 error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unexpected bad revision ID error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an unreachable exception error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an invariant exception error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an internal API type error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API raised an argument exception error while giving details about this article HTML.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API failed to give details about this article HTML because this article is way too big. Someone should probably split this article into multiple smaller articles on ${server} server.',
-        DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE:
-          'When the ZIM you are browsing was built, ${server} server ActionParse API failed to give details about this article HTML returning an empty response.',
-        DOWNLOAD_ERRORS_LINE2: 'The missing article was replaced by the placeholder page you are currently seeing.',
-        DOWNLOAD_ERRORS_LINE3: "Let's hope the issue will be solved on ${server} server and our next version of this ZIM will contain this article.",
-      })
+    test('uses specified fallback language', async () => {
+      const t = await createTranslator('XX', 'de')
+      expect(t('LAST_EDITED_ON', { date: '2024-01-01' })).toContain('2024-01-01')
+      expect(t('LICENSE_UNKNOWN')).toBe('einer unbekannten Lizenz')
     })
 
-    test('falls back to specified fallback language', () => {
-      const strings = getStringsForLang('XX', 'de')
+    test('interpolates variables', async () => {
+      const t = await createTranslator('en')
+      expect(t('LAST_EDITED_ON', { date: '2024-06-15' })).toBe('Last edited on 2024-06-15')
+      expect(t('DOWNLOAD_ERRORS_MESSAGE', { articleTitle: 'Foo', server: 'example.org' })).toContain('Foo')
+      expect(t('DOWNLOAD_ERRORS_MESSAGE', { articleTitle: 'Foo', server: 'example.org' })).toContain('example.org')
+    })
 
-      expect(strings).toMatchObject({
-        DISCLAIMER:
-          'Dieser Artikel wurde von ${creator} herausgegeben. Der Text ist unter ${license} verfügbar, sofern nicht anders angegeben. Für die Mediendateien können zusätzliche Bedingungen gelten.',
-        LAST_EDITED_ON: 'Zuletzt bearbeitet am ${date}',
-        LICENSE_UNKNOWN: 'einer unbekannten Lizenz',
-      })
+    test('handles plurals correctly for English', async () => {
+      const t = await createTranslator('en')
+      expect(t('categoryArticleCount', { count: 1, curPageCount: 1 })).toBe('This category contains only the following page.')
+      expect(t('categoryArticleCount', { count: 5, curPageCount: 5 })).toBe('The following 5 pages are in this category, out of 5 total.')
+      expect(t('categoryFileCount', { count: 1, curPageCount: 1 })).toBe('This category contains only the following file.')
+      expect(t('categoryFileCount', { count: 3, curPageCount: 3 })).toBe('The following 3 files are in this category, out of 3 total.')
+    })
+
+    test('handles plurals correctly for German', async () => {
+      const t = await createTranslator('de')
+      expect(t('categoryArticleCount', { count: 1, curPageCount: 1 })).toBe('Diese Kategorie enthält nur die folgende Seite.')
+      expect(t('categoryArticleCount', { count: 5, curPageCount: 5 })).toBe('Folgende 5 Seiten sind in dieser Kategorie, von 5 insgesamt.')
+    })
+
+    test('skips missing lang without error', async () => {
+      await expect(createTranslator('XX', 'XX')).resolves.not.toThrow()
     })
   })
 })

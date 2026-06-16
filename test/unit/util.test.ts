@@ -4,7 +4,6 @@ import pathParser from 'path'
 import { sanitize_customFlavour } from '../../src/sanitize-argument.js'
 import {
   encodeArticleIdForZimHtmlUrl,
-  interpolateTranslationString,
   getFullUrl,
   getMediaBase,
   normalizeMwResponse,
@@ -33,17 +32,6 @@ describe('Utils', () => {
   MediaWiki.base = 'https://en.wikipedia.org' // Mandatory setting for proper downloader initialization
   beforeAll(async () => {
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
-  })
-
-  test('util -> interpolateTranslationString', async () => {
-    expect(interpolateTranslationString('Hello world', {})).toEqual('Hello world')
-    expect(interpolateTranslationString('Hello ${name}', { name: 'John' })).toEqual('Hello John')
-    expect(
-      interpolateTranslationString('Hello ${name} ${lastname}, bye ${name}', {
-        name: 'John',
-        lastname: 'Smith',
-      }),
-    ).toEqual('Hello John Smith, bye John')
   })
 
   test('Encoding ArticleId for Zim HTML Url', async () => {

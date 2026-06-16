@@ -4,6 +4,6 @@
 			"Sekhomba"
 		]
 	},
-	"DISCLAIMER": "Padi ye e gatisitswe gotswa ko ${creator}. Mokwalo o gatisitswe kafa tlase ga ${license}. Melawana ya tlaleletsa e ka diragala mo ditseleng tsa media.",
-	"LAST_EDITED_ON": "E gatisitswe la bofelo ka ${date}"
+	"DISCLAIMER": "Padi ye e gatisitswe gotswa ko {{creator}}. Mokwalo o gatisitswe kafa tlase ga {{license}}. Melawana ya tlaleletsa e ka diragala mo ditseleng tsa media.",
+	"LAST_EDITED_ON": "E gatisitswe la bofelo ka {{date}}"
 }

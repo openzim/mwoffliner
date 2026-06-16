@@ -1,6 +1,6 @@
 import { Dump } from './Dump.js'
 import { downloadErrorPlaceholderTemplate } from './Templates.js'
-import { getRelativeFilePath, interpolateTranslationString } from './util/misc.js'
+import { getRelativeFilePath } from './util/misc.js'
 import MediaWiki from './MediaWiki.js'
 import { DownloadErrorContext } from './Downloader.js'
 import { DELETED_ARTICLE_ERROR } from './util/const.js'
@@ -294,20 +294,12 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
 
 export function renderDownloadError(matchingRule: MatchingRule, dump: Dump, articleId: string, articleTitle: string): string | null {
   return downloadErrorPlaceholderTemplate({
-    heading: dump.strings.DOWNLOAD_ERRORS_HEADING,
+    heading: dump.t('DOWNLOAD_ERRORS_HEADING'),
     relative_file_path: getRelativeFilePath(articleId, ''),
-    message: interpolateTranslationString(dump.strings.DOWNLOAD_ERRORS_MESSAGE, {
-      articleTitle: articleTitle,
-      server: MediaWiki.baseUrl.hostname,
-    }),
-    advice_line1: interpolateTranslationString(dump.strings[`DOWNLOAD_ERRORS_LINE1_${matchingRule.detailsMessageKey}`], {
-      server: MediaWiki.baseUrl.hostname,
-    }),
-    advice_line2: dump.strings.DOWNLOAD_ERRORS_LINE2,
-    advice_line3: interpolateTranslationString(dump.strings.DOWNLOAD_ERRORS_LINE3, {
-      server: MediaWiki.baseUrl.hostname,
-    }),
+    message: dump.t('DOWNLOAD_ERRORS_MESSAGE', { articleTitle, server: MediaWiki.baseUrl.hostname }),
+    advice_line1: dump.t(`DOWNLOAD_ERRORS_LINE1_${matchingRule.detailsMessageKey}`, { server: MediaWiki.baseUrl.hostname }),
+    advice_line2: dump.t('DOWNLOAD_ERRORS_LINE2'),
+    advice_line3: dump.t('DOWNLOAD_ERRORS_LINE3', { server: MediaWiki.baseUrl.hostname }),
     display_third_line: matchingRule.displayThirdLine,
-    strings: dump.strings,
   })
 }

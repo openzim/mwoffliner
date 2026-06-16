@@ -1,6 +1,7 @@
 import MediaWiki from '../src/MediaWiki.js'
 import Downloader from '../src/Downloader.js'
 import { Dump } from '../src/Dump.js'
+import { createTranslator } from '../src/i18n.js'
 import { config } from '../src/config.js'
 import { execa } from 'execa'
 import * as logger from '../src/Logger.js'
@@ -39,7 +40,8 @@ export async function setupScrapeClasses({ mwUrl = 'https://en.wikipedia.org', f
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasModuleApi()
 
-  const dump = new Dump(format, langVar, {} as any, MediaWiki.metaData)
+  const t = await createTranslator(MediaWiki.metaData.langIso2 || 'en', 'en')
+  const dump = new Dump(format, langVar, {} as any, MediaWiki.metaData, undefined, t)
 
   return {
     dump,

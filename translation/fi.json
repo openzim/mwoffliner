@@ -5,7 +5,7 @@
 			"Samoasambia"
 		]
 	},
-	"LAST_EDITED_ON": "Viimeksi muokattu ${date}",
+	"LAST_EDITED_ON": "Viimeksi muokattu {{date}}",
 	"LICENSE_UNKNOWN": "tuntematon lisenssi",
 	"DOWNLOAD_ERRORS_HEADING": "Hupsista. Artikkelia ei löytynyt."
 }

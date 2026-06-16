@@ -150,31 +150,6 @@ export function migrateChildren(from: any, to: any, beforeNode: any) {
   }
 }
 
-export function getStringsForLang(language: string, fallbackLanguage = 'en') {
-  let strings: { [id: string]: string } = {}
-  // Read fallbackLanguage first, so it initially populates the strings. Then, read the primary language file,
-  // overridding default strings with the values from the primary language.
-  for (const lang of [fallbackLanguage, language]) {
-    try {
-      const fileContents = fs.readFileSync(path.join(__dirname, `../../translation/${lang}.json`)).toString()
-      const langStrings = JSON.parse(fileContents)
-      delete langStrings['@metadata']
-      strings = { ...strings, ...langStrings }
-    } catch {
-      logger.warn(`Couldn't find strings file for [${lang}]`)
-    }
-  }
-  return strings
-}
-
-export function interpolateTranslationString(str: string, parameters: { [key: string]: string }) {
-  let newString = str
-  for (const key of Object.keys(parameters)) {
-    newString = newString.replace(new RegExp(`\\$\\{${key}\\}`, 'g'), parameters[key])
-  }
-  return newString
-}
-
 export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Creator) {
   try {
     await Promise.all(

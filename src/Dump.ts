@@ -1,7 +1,7 @@
 import * as pathParser from 'path'
 import { existsSync } from 'fs'
 import * as logger from './Logger.js'
-import { getStringsForLang } from './util/index.js'
+import { type Translator } from './i18n.js'
 
 interface DumpOpts {
   tmpDir: string
@@ -34,7 +34,7 @@ export class Dump {
   public nodet: boolean
   public langVar: string
   public opts: DumpOpts
-  public strings: KVS<string>
+  public t: Translator
   public mwMetaData: MWMetaData
   public outFile: string
   public maxHardFailedArticles: number = 0
@@ -57,7 +57,7 @@ export class Dump {
 
   private formatFlavour: string
 
-  constructor(format: string, langVar: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor?: CustomProcessor) {
+  constructor(format: string, langVar: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor: CustomProcessor | undefined, t: Translator) {
     this.mwMetaData = mwMetaData
     this.opts = opts
     this.customProcessor = customProcessor
@@ -69,8 +69,7 @@ export class Dump {
     this.nodet = formatStr.includes('nodet')
     this.formatFlavour = formatFlavour
     this.langVar = langVar
-    /* Get language specific strings */
-    this.strings = getStringsForLang(mwMetaData.langIso2 || 'en', 'en')
+    this.t = t
   }
 
   public computeFlavour() {

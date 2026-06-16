@@ -1,6 +1,12 @@
 import { renderDownloadError, findFirstMatchingRule } from '../../../src/error.manager.js'
 import { Dump } from '../../../src/Dump.js'
 import MediaWiki from '../../../src/MediaWiki.js'
+import { createTranslator, type Translator } from '../../../src/i18n.js'
+
+let translator: Translator
+beforeAll(async () => {
+  translator = await createTranslator('en')
+})
 
 describe('ErrorRenderer', () => {
   describe('findFirstMatchingRule', () => {
@@ -83,7 +89,7 @@ describe('ErrorRenderer', () => {
         },
       })
       expect(matchingRule).not.toBeNull()
-      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any), 'My_Article_Title', 'My Article Title')
+      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any, undefined, translator), 'My_Article_Title', 'My Article Title')
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')
@@ -103,7 +109,7 @@ describe('ErrorRenderer', () => {
         responseData: 'any response data',
       })
       expect(matchingRule).not.toBeNull()
-      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any), 'My/Article/Title', 'My Article Title')
+      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any, undefined, translator), 'My/Article/Title', 'My Article Title')
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')
