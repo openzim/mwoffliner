@@ -92,21 +92,3 @@ await testAllRenders('format-params-novid-2', { ...parameters, format: 'novid', 
     })
   })
 })
-
-// TODO: blocked by issues/1928
-/*
-await testRenders({ ...parameters, format: 'nopdf', articleList: 'PDF' }, async (outFiles) => {
-  describe('format:pdf to check no internal links pdf files', () => {
-    test(`Test en.wikipedia.org using format:nopdf for ${outFiles[0]?.renderer} renderer`, async () => {
-      await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url PDF ${outFiles[0].outFile}`)
-      const articleDoc = domino.createDocument(articleFromDump)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const anchorElements = Array.from(articleDoc.querySelectorAll('a'))
-      if (!process.env.KEEP_ZIMS) {
-        rimraf.sync(`./${outFiles[0].testId}`)
-      }
-    })
-  })
-})
-*/
