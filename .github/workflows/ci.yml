@@ -160,6 +160,31 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  unit-tests-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Download codebase
+        uses: actions/checkout@v6
+
+      - name: Installing Node.JS
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+
+      - name: Installing Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: '6.x'
+
+      - name: Installing other dependencies
+        run: |
+          npm install
+          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-aarch64.tar.gz | tar xvz
+
+      - name: Running unit tests (no coverage)
+        run: npm run test:unit
+
   code-quality:
     runs-on: ubuntu-24.04
 
@@ -187,8 +212,22 @@ jobs:
       - name: Validate Translations
         run: npm run test:i18n
 
-  build-docker:
+  build-docker-amd64:
     runs-on: ubuntu-24.04
+    steps:
+      - name: Download codebase
+        uses: actions/checkout@v6
+
+      - name: Ensure we can build the Docker image
+        run: |
+          docker build -t local-mwoffliner .
+
+      - name: Ensure we can start the Docker image and display help
+        run: |
+          docker run --rm local-mwoffliner mwoffliner --help
+
+  build-docker-arm64:
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Download codebase
         uses: actions/checkout@v6

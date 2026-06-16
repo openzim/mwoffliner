@@ -31,7 +31,7 @@ Run `mwoffliner --help` to see all available options.
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/engine/install/) (or Docker-based engine)
-- amd64 architecture
+- amd64 or arm64 architecture
 
 ## Installation
 
@@ -46,7 +46,7 @@ docker pull ghcr.io/openzim/mwoffliner
 
 ### Prerequisites for local execution
 
-- *NIX Operating System (GNU/Linux, macOS, etc.)
+- \*NIX Operating System (GNU/Linux, macOS, etc.)
 - [Redis](https://redis.io/) — in-memory data store
 - [Node.js](https://nodejs.org/en/) version 24 (we support only one single Node.js version; other versions might work or might not)
 - [Libzim](https://github.com/openzim/libzim) — C++ library for creating ZIM files (automatically downloaded on GNU/Linux & macOS)
@@ -122,11 +122,13 @@ MWoffliner uses [node-gyp](https://github.com/nodejs/node-gyp), which enforces s
 ##### Additional troubleshooting steps if errors persist:
 
 1. **Clear npm cache** — a corrupted cache can cause cryptic install failures:
+
    ```sh
    npm cache clean --force
    ```
 
 2. **Delete node_modules and reinstall** — stale or partially installed dependencies are a common source of errors:
+
    ```sh
    rm -rf node_modules package-lock.json
    npm install
@@ -135,6 +137,7 @@ MWoffliner uses [node-gyp](https://github.com/nodejs/node-gyp), which enforces s
 3. **Check that all environment variables are set** — especially on Windows, `PATH`, `INCLUDE`, and `LIB` must point to the correct Visual Studio and libzim directories. Reopen your terminal after installing new tools.
 
 4. **Verify Redis is running before starting MWoffliner** — MWoffliner will fail immediately if it cannot connect to Redis:
+
    ```sh
    redis-cli ping   # expected output: PONG
    ```
@@ -146,12 +149,12 @@ MWoffliner uses [node-gyp](https://github.com/nodejs/node-gyp), which enforces s
 
 ##### 5. Common Errors & Troubleshooting
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| Node.js version error | Node.js version incompatible | Install [Node 24 with nvm](https://github.com/nvm-sh/nvm) |
-| Cannot find module @openzim/libzim | libzim not installed | Follow [libzim installation guide](https://github.com/openzim/libzim); Windows users must install manually |
-| node-gyp rebuild failed | Wrong Node or compiler version | Check [Node.js version](https://nodejs.org/en/), [Visual Studio version](https://visualstudio.microsoft.com/downloads/), [Python 3.x](https://www.python.org/downloads/) |
-| zim/archive.h not found | C++ headers missing | Install [libzim](https://github.com/openzim/libzim) system-wide, verify include paths |
+| Error                              | Cause                          | Solution                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Node.js version error              | Node.js version incompatible   | Install [Node 24 with nvm](https://github.com/nvm-sh/nvm)                                                                                                                |
+| Cannot find module @openzim/libzim | libzim not installed           | Follow [libzim installation guide](https://github.com/openzim/libzim); Windows users must install manually                                                               |
+| node-gyp rebuild failed            | Wrong Node or compiler version | Check [Node.js version](https://nodejs.org/en/), [Visual Studio version](https://visualstudio.microsoft.com/downloads/), [Python 3.x](https://www.python.org/downloads/) |
+| zim/archive.h not found            | C++ headers missing            | Install [libzim](https://github.com/openzim/libzim) system-wide, verify include paths                                                                                    |
 
 > [!NOTE]
 > Even with these steps, other setup errors may occur. Using Docker is strongly recommended for a smoother experience.
@@ -219,17 +222,17 @@ Detailed [contribution documentation and guidelines](CONTRIBUTING.md) are availa
 MWoffliner provides an API and can be used as a Node.js library. Here's a stub example for your `index.mjs` file:
 
 ```javascript
-import * as mwoffliner from 'mwoffliner';
+import * as mwoffliner from 'mwoffliner'
 
 const parameters = {
-  mwUrl: "https://es.wikipedia.org",
-  adminEmail: "foo@bar.net",
+  mwUrl: 'https://es.wikipedia.org',
+  adminEmail: 'foo@bar.net',
   verbose: true,
-  format: "nopic",
-  articleList: "./articleList"
-};
+  format: 'nopic',
+  articleList: './articleList',
+}
 
-mwoffliner.execute(parameters); // returns a Promise
+mwoffliner.execute(parameters) // returns a Promise
 ```
 
 ## Background
