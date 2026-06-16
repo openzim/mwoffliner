@@ -301,7 +301,7 @@ class MediaWiki {
     this.modulePath = this.urlDirector.buildModuleURL(this.#modulePathOpt)
   }
 
-  public async login() {
+  public async login(mightBeAlreadyLoggedIn: boolean = false) {
     if (this.#username && this.#password) {
       let url = this.actionApiUrl.href + '?'
 
@@ -331,9 +331,15 @@ class MediaWiki {
         if (resp.data.login?.result !== 'Success') {
           const reason = resp.data.login?.reason
           if (reason) {
-            logger.error(reason)
+            if (mightBeAlreadyLoggedIn && reason.includes('Cannot log in when using MediaWiki\\Session\\BotPasswordSessionProvider sessions')) {
+              logger.info('Already logged in')
+            } else {
+              logger.error(reason)
+              throw new Error('Login Failed')
+            }
+          } else {
+            throw new Error('Login Failed')
           }
-          throw new Error('Login Failed')
         } else {
           logger.info('Login Success')
         }

@@ -407,6 +407,10 @@ async function execute(argv: any) {
     // Reset FileManager for the new dump
     FileManager.reset()
 
+    // Check scraper is still logged-in (session from previous dump might have expired
+    // due to inactivity when downloading files)
+    await MediaWiki.login(true)
+
     const metadata = {
       ...metaDataRequiredKeys,
       Tags: dump.computeZimTags(),
