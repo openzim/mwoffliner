@@ -2,6 +2,7 @@ import { Dump } from '../../../src/Dump.js'
 import { DownloadRes, ProcessHtmlOpts, Renderer } from '../../../src/renderers/abstract.renderer.js'
 import MediaWiki from '../../../src/MediaWiki.js'
 import domino from 'domino'
+import { createTranslator } from '../../../src/i18n.js'
 
 describe('processHtml', () => {
   class TestRender extends Renderer {
@@ -25,11 +26,12 @@ describe('processHtml', () => {
     MediaWiki.webUrl = new URL('https://en.wikipedia.org')
     MediaWiki.baseUrl = MediaWiki.webUrl
     MediaWiki.metaData = { mainPage: 'Main_Page' } as any
+    const t = await createTranslator('en')
     const articleId = 'Test'
     const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
     const opts: ProcessHtmlOpts = {
       html,
-      dump: new Dump('', '', {} as any, MediaWiki.metaData),
+      dump: new Dump('', '', {} as any, MediaWiki.metaData, undefined, t),
       articleId,
       articleDetail,
       moduleDependencies: {},

@@ -11,7 +11,7 @@ import { Dump } from '../Dump.js'
 import Downloader from '../Downloader.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
-import { getFullUrl, getMediaBase, getRelativeFilePath, interpolateTranslationString, encodeArticleIdForZimHtmlUrl } from '../util/misc.js'
+import { getFullUrl, getMediaBase, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
 import { isMainPage, isSubpage } from '../util/articles.js'
 import { buildCategoryMemberList } from '../util/categories.js'
@@ -727,12 +727,12 @@ export abstract class Renderer {
         }
         if (MediaWiki.getCategories) {
           const p = doc.createElement('p')
-          p.innerHTML = dump.strings.categoryLimited
+          p.innerHTML = dump.t('categoryLimited')
           categoryContent.appendChild(p)
         }
       } else {
         const p = doc.createElement('p')
-        p.innerHTML = dump.strings.categoryEmpty
+        p.innerHTML = dump.t('categoryEmpty')
         categoryContent.appendChild(p)
       }
       const ruRetCategoryContent = await rewriteUrlsOfDoc(categoryContent, articleId, dump)
@@ -889,11 +889,7 @@ export abstract class Renderer {
 
     /* Revision date */
     const date = new Date(articleDetail.timestamp)
-    const lastEditedOnString = date
-      ? interpolateTranslationString(dump.strings.LAST_EDITED_ON, {
-          date: date.toISOString().substring(0, 10),
-        })
-      : null
+    const lastEditedOnString = date ? dump.t('LAST_EDITED_ON', { date: date.toISOString().substring(0, 10) }) : null
 
     const creatorLink =
       '<a class="external text" ' +
@@ -903,15 +899,11 @@ export abstract class Renderer {
 
     const licenseLink =
       (dump.mwMetaData.licenseUrl ? `<a class="external text" href="${dump.mwMetaData.licenseUrl}">` : '') +
-      (dump.mwMetaData.licenseName || dump.mwMetaData.licenseUrl || dump.strings.LICENSE_UNKNOWN).replace(/</g, '&lt;') +
+      (dump.mwMetaData.licenseName || dump.mwMetaData.licenseUrl || dump.t('LICENSE_UNKNOWN')).replace(/</g, '&lt;') +
       (dump.mwMetaData.licenseUrl ? `</a>` : '')
 
     div.innerHTML = footerTemplate({
-      disclaimer: interpolateTranslationString(dump.strings.DISCLAIMER, {
-        creator: creatorLink,
-        license: licenseLink,
-      }),
-      strings: dump.strings,
+      disclaimer: dump.t('DISCLAIMER', { creator: creatorLink, license: licenseLink }),
     })
     mwContentText.appendChild(div)
     this.addNoIndexCommentToElement(div)

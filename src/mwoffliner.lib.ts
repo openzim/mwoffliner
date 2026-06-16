@@ -15,6 +15,7 @@ import semver from 'semver'
 import * as path from 'path'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
 import { checkApiAvailability, getArticleIds } from './util/mw-api.js'
+import { createTranslator } from './i18n.js'
 import { zimCreatorMutex } from './mutex.js'
 import { check_all } from './sanitize-argument.js'
 
@@ -344,6 +345,8 @@ async function execute(argv: any) {
 
   const dumps: Dump[] = []
 
+  const t = await createTranslator(mwMetaData.langIso2 || 'en', 'en')
+
   for (const langVar of langVariants) {
     for (const dumpFormat of dumpFormats) {
       const dump = new Dump(
@@ -373,6 +376,7 @@ async function execute(argv: any) {
         },
         { ...mwMetaData, mainPage },
         customProcessor,
+        t,
       )
       dumps.push(dump)
       let logStr = 'Doing dump:'

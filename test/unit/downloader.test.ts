@@ -5,6 +5,7 @@ import RedisStore from '../../src/RedisStore.js'
 import { mwRetToArticleDetail, stripHttpFromUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
+import { createTranslator } from '../../src/i18n.js'
 import { config } from '../../src/config.js'
 import 'dotenv/config.js'
 import * as FileType from 'file-type'
@@ -133,7 +134,8 @@ describe('Downloader class - wikipedia EN', () => {
       let dump: Dump
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
-        dump = new Dump('', '', {} as any, mwMetadata)
+        const t = await createTranslator(mwMetadata.langIso2 || 'en', 'en')
+        dump = new Dump('', '', {} as any, mwMetadata, undefined, t)
         await RenderingContext.createRenderers(renderer as renderName)
       })
 
@@ -268,7 +270,8 @@ describe('Downloader class - wikipedia ES', () => {
       let dump: Dump
       beforeAll(async () => {
         const mwMetadata = await MediaWiki.getMwMetaData()
-        dump = new Dump('', '', {} as any, mwMetadata)
+        const t = await createTranslator(mwMetadata.langIso2 || 'en', 'en')
+        dump = new Dump('', '', {} as any, mwMetadata, undefined, t)
         await RenderingContext.createRenderers(renderer as renderName)
       })
 
@@ -320,7 +323,8 @@ describe('Downloader class - wikipedia ES', () => {
     const renderer = ''
 
     const mwMetadata = await MediaWiki.getMwMetaData()
-    const dump = new Dump('', '', {} as any, mwMetadata)
+    const t = await createTranslator(mwMetadata.langIso2 || 'en', 'en')
+    const dump = new Dump('', '', {} as any, mwMetadata, undefined, t)
     await RenderingContext.createRenderers(renderer as renderName)
 
     // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when

@@ -4,5 +4,5 @@
 			"Adriendelucca"
 		]
 	},
-	"LAST_EDITED_ON": "Kemm diwezhañ d'an ${date}"
+	"LAST_EDITED_ON": "Kemm diwezhañ d'an {{date}}"
 }

@@ -1,3 +1,4 @@
+import { createTranslator } from '../../src/i18n.js'
 import { Dump } from '../../src/Dump.js'
 
 describe('Dump filename radical', () => {
@@ -17,7 +18,8 @@ describe('Dump filename radical', () => {
 
     for (const [format, expectedFormatTags] of Object.entries(formatTests)) {
       test(`tag [${expectedFormatTags}] is correct`, async () => {
-        const dump = new Dump(format, '', {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any)
+        const t = await createTranslator('en')
+        const dump = new Dump(format, '', {} as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: '' } as any, undefined, t)
         const outFormat = dump.computeFilenameRadical(true, false, true)
 
         expect(outFormat).toEqual(`_${expectedFormatTags}`)
@@ -36,7 +38,8 @@ describe('Dump filename radical', () => {
 
     for (const [articleList, expectedRadicalSuffix] of Object.entries(radicalTests)) {
       test(`radical for article list [${articleList}] is correct`, async () => {
-        const dump = new Dump('', '', { articleList } as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: 'en' } as any)
+        const t = await createTranslator('en')
+        const dump = new Dump('', '', { articleList } as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: 'en' } as any, undefined, t)
         const outFormat = dump.computeFilenameRadical(false, false, true)
         expect(outFormat).toEqual(`_en_${expectedRadicalSuffix}`)
       })
