@@ -142,7 +142,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
         reject(new Error(errorMessage))
       }, timeout)
 
-      logger.info(`Worker processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}] - ${runningWorkers} worker(s) running`)
+      logger.debug(`Worker processing batch of article ids [${logger.logifyArray(Object.keys(articleKeyValuePairs))}] - ${runningWorkers} worker(s) running`)
 
       for (const [articleId, articleDetail] of Object.entries(articleKeyValuePairs)) {
         timer.reset()
@@ -152,7 +152,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
           const percentProgress = (((dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail) / articlesTotal) * 100).toFixed(1)
           if (percentProgress !== prevPercentProgress) {
             prevPercentProgress = percentProgress
-            logger.log(
+            logger.info(
               `Progress downloading articles [${
                 dump.status.articles.success + dump.status.articles.hardFail + dump.status.articles.softFail
               }/${articlesTotal}] [${percentProgress}%]`,
@@ -212,7 +212,7 @@ export async function saveArticles(zimCreator: Creator, dump: Dump) {
     })
   })
 
-  logger.log(`Done with downloading a total of [${articlesTotal}] articles`)
+  logger.info(`Done with downloading a total of [${articlesTotal}] articles`)
 
   return {
     staticFilesList: RenderingContext.articlesRenderer.getStaticFilesList(),

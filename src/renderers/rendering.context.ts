@@ -26,7 +26,7 @@ class RenderingContext {
     } else {
       this.articlesRenderer = await rendererBuilder.createRenderer({ renderType: 'auto' })
     }
-    logger.log(`Using ${this.articlesRenderer.constructor.name} for articles renderer`)
+    logger.info(`Using ${this.articlesRenderer.constructor.name} for articles renderer`)
     Downloader.setUrlsDirectors(this.articlesRenderer)
   }
 }

@@ -14,7 +14,7 @@ class Gadgets {
 
   public setGadgets(gadgets: Gadget[]) {
     this.gadgets = gadgets
-    logger.info(this.gadgets === undefined ? 'Gadgets are not supported on this wiki' : `${this.gadgets.length} gadgets retrieved`)
+    logger.debug(this.gadgets === undefined ? 'Gadgets are not supported on this wiki' : `${this.gadgets.length} gadgets retrieved`)
   }
 
   /*

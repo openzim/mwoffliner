@@ -161,7 +161,7 @@ class MediaWiki {
     if (value) {
       this.#wikiPath = value
       this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
-      logger.log(`webUrl: ${this.webUrl}`)
+      logger.info(`webUrl: ${this.webUrl}`)
     }
   }
 
@@ -242,7 +242,7 @@ class MediaWiki {
       this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin)
       const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
       this.#hasActionParseApi = await checkApiAvailability(checkUrl)
-      logger.log(`Checked for ActionParseApi at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
+      logger.info(`Checked for ActionParseApi at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
     }
     return this.#hasActionParseApi
   }
@@ -259,10 +259,10 @@ class MediaWiki {
       const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
       const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
       if (isCoordinateWarning) {
-        logger.log('Coordinates not available on this wiki')
+        logger.info('Coordinates not available on this wiki')
         return (this.#hasCoordinates = false)
       }
-      logger.log('Coordinates available on this wiki')
+      logger.info('Coordinates available on this wiki')
       return (this.#hasCoordinates = true)
     }
     return this.#hasCoordinates
@@ -273,7 +273,7 @@ class MediaWiki {
       // startup JS module is supposed to be available on all Mediawikis
       const checkUrl = `${this.modulePath}lang=en&modules=startup&only=scripts`
       this.#hasModuleApi = await checkApiAvailability(checkUrl)
-      logger.log('Checked for Module API at', checkUrl, '-- result is: ', this.#hasModuleApi)
+      logger.info('Checked for Module API at', checkUrl, '-- result is: ', this.#hasModuleApi)
     }
     return this.#hasModuleApi
   }
@@ -288,10 +288,10 @@ class MediaWiki {
       const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
       const isFlaggedWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('flagged')
       if (isFlaggedWarning) {
-        logger.log('FlaggedRevs not available on this wiki')
+        logger.info('FlaggedRevs not available on this wiki')
         return (this.#hasFlaggedRevs = false)
       }
-      logger.log('FlaggedRevs available on this wiki')
+      logger.info('FlaggedRevs available on this wiki')
       return (this.#hasFlaggedRevs = true)
     }
     return this.#hasFlaggedRevs
@@ -335,7 +335,7 @@ class MediaWiki {
           }
           throw new Error('Login Failed')
         } else {
-          logger.log('Login Success')
+          logger.info('Login Success')
         }
       })
     }
@@ -448,7 +448,7 @@ class MediaWiki {
   }
 
   public async getSiteInfo({ addNamespaces, mwModulePath, forceSkin, langVariants }: SiteInfoArgv = {}) {
-    logger.log('Getting site info...')
+    logger.info('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
     const generalEntries = body.query.general
@@ -472,7 +472,7 @@ class MediaWiki {
     const logo = generalEntries.logo
     const langMw = generalEntries.lang
     const textDir = generalEntries.rtl ? 'rtl' : 'ltr'
-    logger.log(`Text direction is [${textDir}]`)
+    logger.info(`Text direction is [${textDir}]`)
 
     // Gather languages codes (en remove the 'dialect' part)
     const langs: string[] = [langMw].concat(generalEntries.fallback.map((e: any) => e.code)).map(function (e) {

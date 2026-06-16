@@ -26,7 +26,7 @@ export async function sanitize_all(argv: any) {
     speed,
     adminEmail,
     mwUrl,
-    verbose,
+    logLevel,
     customZimLongDescription,
     customZimDescription,
     forceRender,
@@ -44,8 +44,8 @@ export async function sanitize_all(argv: any) {
 
   sanitize_articlesList_addNamespaces(articleList, addNamespaces)
 
-  // sanitizing verbose
-  sanitize_verbose(verbose)
+  // sanitizing logLevel
+  sanitize_logLevel(logLevel)
 
   // sanitizing speed
   sanitize_speed(speed)
@@ -141,9 +141,9 @@ export function sanitizeStringMaxLength(text: string, key: string, length: numbe
   }
 }
 
-export function sanitize_verbose(verbose: logger.LogLevel | true) {
-  if (verbose && verbose !== true && !logger.logLevels.includes(verbose)) {
-    throw new Error(`"${verbose}" is not a valid value for option verbose. It should be empty or one of [info, log, warn, error, quiet].`)
+export function sanitize_logLevel(logLevel: string | undefined) {
+  if (logLevel !== undefined && !logger.logLevels.includes(logLevel as logger.LogLevel)) {
+    throw new Error(`"${logLevel}" is not a valid value for option --log-level. It should be one of [${logger.logLevels.join(', ')}].`)
   }
 }
 
@@ -218,7 +218,7 @@ export function sanitize_adminEmail(adminEmail: any) {
 
 export async function check_redis() {
   await RedisStore.connect(false)
-  logger.log('closing sanitize redis DB')
+  logger.info('closing sanitize redis DB')
   await RedisStore.close()
 }
 
@@ -242,7 +242,7 @@ export async function check_s3(optimisationCacheUrl: string, insecure: boolean) 
     const s3Url = (s3UrlObj.protocol || 'https:') + '//' + (s3UrlObj.host || '') + (s3UrlObj.pathname || '')
     const s3Obj = new S3(s3Url, s3UrlObj.searchParams, 1000 * 60, insecure)
     await s3Obj.initialise().then(() => {
-      logger.log('Successfully logged in S3')
+      logger.info('Successfully logged in S3')
     })
   }
 }

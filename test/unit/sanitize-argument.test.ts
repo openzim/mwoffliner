@@ -3,7 +3,7 @@ import { sanitize_all } from '../../src/sanitize-argument.js'
 describe('Sanitize parameters', () => {
   const baseValidParams = {
     _: [],
-    verbose: true,
+    logLevel: 'info',
     mwUrl: 'https://en.wikipedia.org',
     'mw-url': 'https://en.wikipedia.org',
     adminEmail: 'test@test.test',
@@ -12,13 +12,13 @@ describe('Sanitize parameters', () => {
   }
 
   describe('Duplicate parameter validation', () => {
-    test('should throw if --verbose is used more than once', async () => {
+    test('should throw if --log-level is used more than once', async () => {
       const params = {
         ...baseValidParams,
-        verbose: [true, 'info'],
+        logLevel: ['info', 'debug'],
       }
 
-      await expect(sanitize_all(params)).rejects.toThrow(/Parameter '--verbose' can only be used once/)
+      await expect(sanitize_all(params)).rejects.toThrow(/Parameter '--logLevel' can only be used once/)
     })
 
     test('should throw if --mwUrl is used more than once', async () => {
@@ -84,7 +84,7 @@ describe('URL validation', () => {
 describe('Speed validation', () => {
   const baseValidParams = {
     _: [],
-    verbose: true,
+    logLevel: 'info',
     mwUrl: 'https://en.wikipedia.org',
     'mw-url': 'https://en.wikipedia.org',
     adminEmail: 'test@test.test',
