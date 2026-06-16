@@ -32,7 +32,7 @@ Unreleased:
 * UPDATE: Use node-libzim 4.3.0 and Node.JS 26, update dependencies (@benoit74 #2743)
 * FIX: Remove now unused resource files (@benoit74 #2748)
 * CHANGED: *** Breaking *** Use Pino log library, change log level values and CLI argument controlling log level (@benoit74 #2122)
-
+* FIX: Login again at every dump start to workaround issue of expired logins (@benoit74, related to #2761)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
