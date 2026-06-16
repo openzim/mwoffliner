@@ -34,7 +34,8 @@ Unreleased:
 * CHANGED: *** Breaking *** Use Pino log library, change log level values and CLI argument controlling log level (@benoit74 #2122)
 * FIX: Login again at every dump start to workaround issue of expired logins (@benoit74, related to #2761)
 * CHANGED: Use i18next library to handle internationalization (@benoit74 #2614 #2750)
-* CHANGED: Drop imagemin dependency and use sharp for image compression (@benoit74 #xxxx)
+* CHANGED: Drop imagemin dependency and use sharp for image compression (@benoit74 #2765)
+* CHANGED: Upgrade title truncation logic to match libzim 9.4.0 constraints (@benoit74 #2318)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)

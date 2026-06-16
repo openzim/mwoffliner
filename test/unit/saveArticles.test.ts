@@ -3,7 +3,7 @@ import domino from 'domino'
 import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
 import { setupScrapeClasses } from '../util.js'
-import { saveArticles } from '../../src/util/saveArticles.js'
+import { saveArticles, saveArticle } from '../../src/util/saveArticles.js'
 import { StringItem } from '@openzim/libzim'
 import { mwRetToArticleDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
@@ -216,4 +216,29 @@ describe('saveArticles', () => {
       expect(articleDoc.querySelector('#Drink')).toBeTruthy()
     })
   }
+})
+
+describe('saveArticles', () => {
+  test('Too long article title is truncated', async () => {
+    const addedArticles: StringItem[] = []
+
+    const MAX_WORD_LENGTH = 240
+
+    await saveArticle(
+      {
+        addItem(article: StringItem) {
+          if (article.mimeType === 'text/html') {
+            addedArticles.push(article)
+          }
+          return Promise.resolve(null)
+        },
+      } as any,
+      'any content',
+      'a path',
+      `${'a'.repeat(MAX_WORD_LENGTH)} ${'f'.repeat(MAX_WORD_LENGTH - 1)}Ö ${'c'.repeat(MAX_WORD_LENGTH + 1)} ${'d'.repeat(MAX_WORD_LENGTH)}`,
+    )
+
+    expect(addedArticles.length).toBe(1)
+    expect(addedArticles[0].title).toBe(`${'a'.repeat(MAX_WORD_LENGTH)} ${'f'.repeat(MAX_WORD_LENGTH - 1)} ${'c'.repeat(MAX_WORD_LENGTH)} ${'d'.repeat(MAX_WORD_LENGTH)}`)
+  })
 })

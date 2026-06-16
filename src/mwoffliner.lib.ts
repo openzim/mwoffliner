@@ -42,7 +42,7 @@ import {
   extractArticleList,
   getTmpDirectory,
   validateMetadata,
-  truncateUtf8Bytes,
+  truncateZimArticleTitleWords,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -592,7 +592,7 @@ async function execute(argv: any) {
           continue
         }
         // We fake a title, by just removing the underscores
-        const redirectTitle = truncateUtf8Bytes(String(redirectId).replace(/_/g, ' '), 245)
+        const redirectTitle = truncateZimArticleTitleWords(String(redirectId).replace(/_/g, ' '))
         if (fragment) {
           // Should we have a fragment (i.e. we redirect to a section of an article), this is not (yet) supported by libzim
           // (to have such a redirect with a fragment inside the path), so we create a "fake" entry with only an HTML-based
