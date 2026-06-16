@@ -481,6 +481,17 @@ export async function getTmpDirectory() {
   return tmpDirectory
 }
 
+export function truncateZimArticleTitleWords(title: string) {
+  // Truncate each title words to 240 bytes, as mandated by libzim since 9.4.0
+  // - 240 bytes = MAX_INDEXABLE_TITLE_WORD_SIZE in libzim src/constants.h
+  // - https://github.com/openzim/libzim/pull/1004
+  // - https://github.com/openzim/libzim/issues/1033
+  return title
+    .split(' ')
+    .map((word: string) => truncateUtf8Bytes(word, 240))
+    .join(' ')
+}
+
 export function truncateUtf8Bytes(text: string, maxBytes: number) {
   // Truncate text to maxBytes bytes once encoded to UTF-8 ; takes into account multi-bytes characters, avoiding to split
   // in the middle of a character, trying to do this in an efficient manner with binary search

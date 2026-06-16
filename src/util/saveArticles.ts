@@ -13,7 +13,7 @@ import { Renderer } from '../renderers/abstract.renderer.js'
 import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
 import FileManager from './FileManager.js'
-import { truncateUtf8Bytes } from './misc.js'
+import { truncateZimArticleTitleWords } from './misc.js'
 import { isMainPage } from './articles.js'
 
 function getArticleRenderUrl(articleId: string, articleDetail: ArticleDetail, dump: Dump): string {
@@ -53,10 +53,10 @@ async function getAllArticlesToKeep(articleDetailXId: RKVS<ArticleDetail>, dump:
  * Parse fetched article HTML, store files
  * and dependencies and save in Zim
  */
-async function saveArticle(zimCreator: Creator, htmlContent: string, zimPath: string, zimTitle: string): Promise<Error> {
+export async function saveArticle(zimCreator: Creator, htmlContent: string, zimPath: string, zimTitle: string): Promise<Error> {
   try {
     const zimArticle = zimTitle
-      ? new StringItem(zimPath, 'text/html', truncateUtf8Bytes(zimTitle, 245), { FRONT_ARTICLE: 1 }, htmlContent)
+      ? new StringItem(zimPath, 'text/html', truncateZimArticleTitleWords(zimTitle), { FRONT_ARTICLE: 1 }, htmlContent)
       : new StringItem(zimPath, 'text/html', '', {}, htmlContent)
     await zimCreatorMutex.runExclusive(() => zimCreator.addItem(zimArticle))
 
