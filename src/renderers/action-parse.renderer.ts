@@ -3,7 +3,7 @@ import { DownloadOpts, DownloadRes, Renderer, RenderOptsModules } from './abstra
 import { RenderOpts, RenderOutput } from './abstract.renderer.js'
 import * as logger from '../Logger.js'
 import { config } from '../config.js'
-import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getStaticFiles, getRelativeFilePath, jsonStringify } from '../util/misc.js'
+import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePath, jsonStringify } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode, javaScriptTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
@@ -32,16 +32,15 @@ export interface ActionParseResult {
 }
 
 export class ActionParseRenderer extends Renderer {
-  public staticFilesList: string[] = []
+  #staticFilesList: Set<string> = new Set()
   #htmlTemplateCode: () => string
   constructor() {
     super()
-    if (this.staticFilesList.length === 0) {
-      let cssResourcesCommon = config.output.cssResourcesCommon
+    if (this.#staticFilesList.size === 0) {
+      this.#staticFilesList.add('external-link.svg')
       if (['vector', 'vector-2022'].includes(MediaWiki.skin)) {
-        cssResourcesCommon = cssResourcesCommon.concat(MediaWiki.skin)
+        this.#staticFilesList.add(`${MediaWiki.skin}.css`)
       }
-      this.staticFilesList = getStaticFiles(config.output.jsResourcesCommon, cssResourcesCommon).concat('external-link.svg')
     }
     this.#htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : htmlFallbackTemplateCode
     if (this.#htmlTemplateCode === htmlFallbackTemplateCode) {
@@ -201,8 +200,7 @@ export class ActionParseRenderer extends Renderer {
     }
   }
 
-  public async render(renderOpts: RenderOpts): Promise<any> {
-    const result: RenderOutput = []
+  public async render(renderOpts: RenderOpts): Promise<RenderOutput> {
     const { data, articleId, articleSubtitle, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
     let { displayTitle } = renderOpts
 
@@ -249,7 +247,7 @@ export class ActionParseRenderer extends Renderer {
       })
     }
 
-    const { finalHTML, mediaDependencies, videoDependencies, imageDependencies, subtitles } = await super.processHtml({
+    return super.processHtml({
       html: htmlDocument.documentElement.outerHTML,
       dump,
       articleId,
@@ -261,18 +259,9 @@ export class ActionParseRenderer extends Renderer {
       moduleDependencies,
       callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
     })
+  }
 
-    result.push({
-      articleId,
-      displayTitle: articleId.replace(/_/g, ' '),
-      html: finalHTML,
-      mediaDependencies,
-      videoDependencies,
-      imageDependencies,
-      moduleDependencies,
-      staticFiles: this.staticFilesList,
-      subtitles,
-    })
-    return result
+  public getStaticFilesList(): Set<string> {
+    return new Set([...this.#staticFilesList, ...this.staticFilesListCommon])
   }
 }

@@ -60,8 +60,8 @@ const config = {
 
   output: {
     // CSS and JS resources added by Kiwix
-    cssResourcesCommon: ['style', 'mobile_main_page', 'footer'],
-    jsResourcesCommon: ['masonry.min', 'article_list_home', 'images_loaded.min'],
+    cssResourcesCommon: ['style.css', 'mobile_main_page.css', 'footer.css'],
+    jsResourcesCommon: ['masonry.min.js', 'article_list_home.js', 'images_loaded.min.js'],
 
     downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
 
