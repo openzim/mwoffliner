@@ -3,14 +3,8 @@ import { config } from './config.js'
 import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
 import { Readable } from 'stream'
 import deepmerge from 'deepmerge'
-import { default as imagemin } from 'imagemin'
-import imageminAdvPng from 'imagemin-advpng'
 import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { default as imageminPngquant } from 'imagemin-pngquant'
-import imageminGifsicle from 'imagemin-gifsicle'
-import imageminJpegoptim from 'imagemin-jpegoptim'
-import imageminWebp from 'imagemin-webp'
 import sharp from 'sharp'
 import { fileTypeFromBuffer } from 'file-type'
 import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
@@ -27,26 +21,6 @@ import ActionParseURLDirector from './util/builders/url/action-parse.director.js
 import { Renderer, RenderOutput } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
-
-const imageminOptions = new Map()
-imageminOptions.set('default', new Map())
-imageminOptions.set('webp', new Map())
-
-imageminOptions.get('default').set('image/png', {
-  plugins: [(imageminPngquant as any)({ speed: 3, strip: true, dithering: 0 }), imageminAdvPng({ optimizationLevel: 4, iterations: 5 })],
-})
-imageminOptions.get('default').set('image/jpeg', {
-  plugins: [imageminJpegoptim({ max: 60, stripAll: true })],
-})
-imageminOptions.get('default').set('image/gif', {
-  plugins: [imageminGifsicle({ optimizationLevel: 3, colors: 64 })],
-})
-imageminOptions.get('webp').set('image/png', {
-  plugins: [imageminWebp({ quality: 50, method: 6 })],
-})
-imageminOptions.get('webp').set('image/jpeg', {
-  plugins: [imageminWebp({ quality: 50, method: 6 })],
-})
 
 interface DownloaderOpts {
   uaString: string
@@ -755,6 +729,16 @@ class Downloader {
     return fileType ? fileType.mime : null
   }
 
+  private async compressDefault(data: Buffer, contentType: string): Promise<Buffer> {
+    if (contentType === 'image/png') {
+      return await sharp(data).png({ palette: true, quality: 60, effort: 7 }).toBuffer()
+    } else if (contentType === 'image/jpeg') {
+      return await sharp(data).jpeg({ quality: 60, mozjpeg: true }).toBuffer()
+    } else if (contentType === 'image/gif') {
+      return await sharp(data, { animated: true }).gif({ colours: 64, effort: 7 }).toBuffer()
+    }
+  }
+
   private async getCompressedBody(input: CompressionData, requestedWidth?: number): Promise<CompressionData> {
     const contentType = await this.getImageMimeType(input.data)
     if (isBitmapImageMimeType(contentType)) {
@@ -773,35 +757,13 @@ class Downloader {
       }
 
       if (this.webp && isWebpCandidateImageMimeType(contentType)) {
-        return {
-          data: await (imagemin as any)
-            .buffer(dataToCompress, imageminOptions.get('webp').get(contentType))
-            .catch(async (err) => {
-              if (/Unsupported color conversion request/.test(err.stderr)) {
-                return (imagemin as any)
-                  .buffer(await sharp(dataToCompress).toColorspace('srgb').toBuffer(), imageminOptions.get('webp').get(contentType))
-                  .catch(() => {
-                    return dataToCompress
-                  })
-                  .then((data) => {
-                    return data
-                  })
-              } else {
-                return (imagemin as any).buffer(dataToCompress, imageminOptions.get('default').get(contentType)).catch(() => {
-                  return dataToCompress
-                })
-              }
-            })
-            .then((data) => {
-              return data
-            }),
+        try {
+          return { data: await sharp(dataToCompress).webp({ quality: 50, effort: 6 }).toBuffer() }
+        } catch {
+          return { data: await this.compressDefault(dataToCompress, contentType) }
         }
       } else {
-        return {
-          data: await (imagemin as any).buffer(dataToCompress, imageminOptions.get('default').get(contentType)).catch(() => {
-            return dataToCompress
-          }),
-        }
+        return { data: await this.compressDefault(dataToCompress, contentType) }
       }
     }
     return {

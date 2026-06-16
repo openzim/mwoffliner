@@ -8,9 +8,6 @@ declare module 'utf8-binary-cutter'
 declare module 'expand-home-dir'
 declare module 'swig-templates'
 declare module 'mkdirp'
-declare module 'imagemin-advpng'
-declare module 'imagemin-jpegoptim'
-declare module 'imagemin-webp'
 
 type DominoElement = any
 
