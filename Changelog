@@ -36,6 +36,7 @@ Unreleased:
 * CHANGED: Use i18next library to handle internationalization (@benoit74 #2614 #2750)
 * CHANGED: Drop imagemin dependency and use sharp for image compression (@benoit74 #2765)
 * CHANGED: Upgrade title truncation logic to match libzim 9.4.0 constraints (@benoit74 #2318)
+* CHANGED: Upgrade dependencies especially node-libzim 4.4.0 / libzim 9.8.0 (@benoit74 #2770)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
