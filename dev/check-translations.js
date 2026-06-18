@@ -90,6 +90,23 @@ function walkDir(dir, ext) {
   return results
 }
 
+function extractNestedTranslationKeys(data) {
+  const keys = new Set()
+  function scanValues(obj) {
+    for (const value of Object.values(obj)) {
+      if (typeof value === 'string') {
+        for (const match of value.matchAll(/\$t\(([a-zA-Z0-9_]+)/g)) {
+          keys.add(match[1])
+        }
+      } else if (value && typeof value === 'object') {
+        scanValues(value)
+      }
+    }
+  }
+  scanValues(data)
+  return keys
+}
+
 function extractKeysFromCode(dir) {
   const files = walkDir(dir, '.ts')
   const usedKeys = new Set()
@@ -200,6 +217,8 @@ function main() {
   // Code Usage Check
   printHeader('3. Checking Code Usage')
   const { usedKeys, keyLocations, foundPrefixes } = extractKeysFromCode(CONFIG.SRC_DIR)
+  // Also treat keys referenced via $t() nesting inside translation values as "used"
+  extractNestedTranslationKeys(sourceData).forEach((k) => usedKeys.add(k))
   console.log(`Found ${C.Bold}${usedKeys.size}${C.Reset} unique translation keys in source code.`)
 
   // Check 1: Keys in Code but missing in Source

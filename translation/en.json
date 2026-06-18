@@ -2,17 +2,29 @@
 	"categoryHeaderNumerals": "0–9",
 	"categoryFileCount": {
 		"one": "This category contains only the following file.",
-		"other": "The following {{curPageCount}} files are in this category, out of {{count}} total."
+		"other": "The following $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) in this category, out of {{count}} total."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "file is",
+		"other": "{{count}} files are"
 	},
 	"categoryMediaHeader": "Media in category \"{{pageName}}\"",
 	"categoryArticleCount": {
 		"one": "This category contains only the following page.",
-		"other": "The following {{curPageCount}} pages are in this category, out of {{count}} total."
+		"other": "The following $t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) in this category, out of {{count}} total."
+	},
+	"categoryCurrentPageArticleCount": {
+		"one": "page is",
+		"other": "{{count}} pages are"
 	},
 	"categoryHeader": "Pages in category \"{{pageName}}\"",
 	"categorySubcatCount": {
 		"one": "This category has only the following subcategory.",
-		"other": "This category has the following {{curPageCount}} subcategories, out of {{count}} total."
+		"other": "This category has the following $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }), out of {{count}} total."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "subcategory",
+		"other": "{{count}} subcategories"
 	},
 	"subcategories": "Subcategories",
 	"categoryEmpty": "<em>This category currently contains no pages or media.</em>",

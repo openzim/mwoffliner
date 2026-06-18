@@ -7,17 +7,29 @@
 	"categoryHeaderNumerals": "A header for all pages whose titles start with a number. This is used on category pages. This should only be translated if your language uses a different method to indicate a range of numbers.",
 	"categoryFileCount": {
 		"one": "This message is displayed at the top of a category page showing the number of pages in the category (singular form, for count=1).",
-		"other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1)."
+		"other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1). Uses $t(categoryCurrentPageFileCount) to agree with {{curPageCount}}."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "Nested translation used inside categoryFileCount (plural form) when curPageCount=1. Should read as \"[one file] is\".",
+		"other": "Nested translation used inside categoryFileCount (plural form) when curPageCount>1. Should read as \"[N files] are\"."
 	},
 	"categoryMediaHeader": "In category description page. Note that \"media\" is short for \"multimedia\". It doesn't mean \"journalism\".",
 	"categoryArticleCount": {
 		"one": "This message is used on category pages (singular form, for count=1).",
-		"other": "This message is used on category pages (plural form, for count>1)."
+		"other": "This message is used on category pages (plural form, for count>1). Uses $t(categoryCurrentPageArticleCount) to agree with {{curPageCount}}."
+	},
+	"categoryCurrentPageArticleCount": {
+		"one": "Nested translation used inside categoryArticleCount (plural form) when curPageCount=1. Should read as \"[one page] is\".",
+		"other": "Nested translation used inside categoryArticleCount (plural form) when curPageCount>1. Should read as \"[N pages] are\"."
 	},
 	"categoryHeader": "In category description page, be aware that this is not about biology, but about bibliography.",
 	"categorySubcatCount": {
-		"one": "This message is displayed at the top of a category page showing the number of pages in the category (singular form, for count=1)",
-		"other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1)."
+		"one": "This message is displayed at the top of a category page showing the number of subcategories (singular form, for count=1)",
+		"other": "This message is displayed at the top of a category page showing the number of subcategories (plural form, for count>1). Uses $t(categoryCurrentPageSubcatCount) to agree with {{curPageCount}}."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "Nested translation used inside categorySubcatCount (plural form) when curPageCount=1. Should read as \"[one subcategory]\".",
+		"other": "Nested translation used inside categorySubcatCount (plural form) when curPageCount>1. Should read as \"[N subcategories]\"."
 	},
 	"subcategories": "Used as a header on category pages that have subcategories.",
 	"categoryEmpty": "The text displayed in category page when that category is empty.",

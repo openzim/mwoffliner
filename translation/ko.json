@@ -10,17 +10,29 @@
 	"categoryHeaderNumerals": "0–9",
 	"categoryFileCount": {
 		"one": "이 분류에는 다음 파일만이 속해 있습니다.",
-		"other": "다음은 이 분류에 속하는 파일 {{curPageCount}}개 가운데 {{curPageCount}}개입니다."
+		"other": "다음은 이 분류에 속하는 $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) 가운데 {{count}}개입니다."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "파일",
+		"other": "파일 {{count}}개"
 	},
 	"categoryMediaHeader": "\"{{pageName}}\" 분류에 속하는 미디어",
 	"categoryArticleCount": {
 		"one": "이 분류에는 다음 문서만이 속해 있습니다.",
-		"other": "다음은 이 분류에 속하는 문서 {{curPageCount}}개 가운데 {{curPageCount}}개입니다."
+		"other": "다음은 이 분류에 속하는 $t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) 가운데 {{count}}개입니다."
+	},
+	"categoryCurrentPageArticleCount": {
+		"one": "문서",
+		"other": "문서 {{count}}개"
 	},
 	"categoryHeader": "\"{{pageName}}\" 분류에 속하는 문서",
 	"categorySubcatCount": {
 		"one": "이 분류에는 다음 하위 분류만이 속해 있습니다.",
-		"other": "다음은 이 분류에 속하는 하위 분류 {{curPageCount}}개 가운데 {{curPageCount}}개입니다."
+		"other": "다음은 이 분류에 속하는 $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) 가운데 {{count}}개입니다."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "하위 분류",
+		"other": "하위 분류 {{count}}개"
 	},
 	"subcategories": "하위 분류",
 	"categoryEmpty": "현재 이 분류에는 문서나 미디어가 하나도 없습니다.",
