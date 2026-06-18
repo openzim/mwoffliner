@@ -10,14 +10,20 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount_one": "Diese Kategorie enthält nur folgende Datei.",
-	"categoryFileCount_other": "Folgende {{curPageCount}} Dateien sind in dieser Kategorie, von {{count}} insgesamt.",
+	"categoryFileCount": {
+		"one": "Diese Kategorie enthält nur folgende Datei.",
+		"other": "Folgende {{curPageCount}} Dateien sind in dieser Kategorie, von {{count}} insgesamt."
+	},
 	"categoryMediaHeader": "Medien in der Kategorie „{{pageName}}“",
-	"categoryArticleCount_one": "Diese Kategorie enthält nur die folgende Seite.",
-	"categoryArticleCount_other": "Folgende {{curPageCount}} Seiten sind in dieser Kategorie, von {{count}} insgesamt.",
+	"categoryArticleCount": {
+		"one": "Diese Kategorie enthält nur die folgende Seite.",
+		"other": "Folgende {{curPageCount}} Seiten sind in dieser Kategorie, von {{count}} insgesamt."
+	},
 	"categoryHeader": "Seiten in der Kategorie „{{pageName}}“",
-	"categorySubcatCount_one": "Diese Kategorie enthält nur die folgende Unterkategorie:",
-	"categorySubcatCount_other": "Diese Kategorie enthält die folgenden {{curPageCount}} Unterkategorien ({{count}} insgesamt):",
+	"categorySubcatCount": {
+		"one": "Diese Kategorie enthält nur die folgende Unterkategorie:",
+		"other": "Diese Kategorie enthält die folgenden {{curPageCount}} Unterkategorien ({{count}} insgesamt):"
+	},
 	"subcategories": "Unterkategorien",
 	"categoryEmpty": "<em>Diese Kategorie enthält zurzeit keine Seiten oder Medien.</em>",
 	"DISCLAIMER": "Dieser Artikel wurde von {{creator}} herausgegeben. Der Text ist unter {{license}} verfügbar, sofern nicht anders angegeben. Für die Mediendateien können zusätzliche Bedingungen gelten.",

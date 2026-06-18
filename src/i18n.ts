@@ -7,12 +7,32 @@ import * as logger from './Logger.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const PLURAL_CATEGORIES = new Set(['zero', 'one', 'two', 'few', 'many', 'other'])
+
+function flattenPlurals(data: Record<string, unknown>): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      const nested = value as Record<string, unknown>
+      const nestedKeys = Object.keys(nested)
+      if (nestedKeys.length > 0 && nestedKeys.every((k) => PLURAL_CATEGORIES.has(k))) {
+        for (const [pluralKey, pluralValue] of Object.entries(nested)) {
+          result[`${key}_${pluralKey}`] = String(pluralValue)
+        }
+        continue
+      }
+    }
+    result[key] = String(value)
+  }
+  return result
+}
+
 function loadTranslation(lang: string): Record<string, string> {
   try {
     const fileContents = fs.readFileSync(path.join(__dirname, `../translation/${lang}.json`)).toString()
     const data = JSON.parse(fileContents)
     delete data['@metadata']
-    return data
+    return flattenPlurals(data)
   } catch {
     logger.warn(`Couldn't find strings file for [${lang}]`)
     return {}

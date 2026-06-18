@@ -7,22 +7,28 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount_one": "Deze categorie bevat alleen het volgende bestand.",
-	"categoryFileCount_other": "De volgende {{curPageCount}} bestanden zijn onderdeel van deze categorie, van totaal {{count}}.",
+	"categoryFileCount": {
+		"one": "Deze categorie bevat alleen het volgende bestand.",
+		"other": "De volgende {{curPageCount}} bestanden zijn onderdeel van deze categorie, van totaal {{count}}."
+	},
 	"categoryMediaHeader": "Media in categorie \"{{pageName}}\"",
-	"categoryArticleCount_one": "Deze categorie bevat alleen de volgende pagina.",
-	"categoryArticleCount_other": "De volgende {{curPageCount}} pagina zijn onderdeel van deze categorie, van totaal {{count}}.",
+	"categoryArticleCount": {
+		"one": "Deze categorie bevat alleen de volgende pagina.",
+		"other": "De volgende {{curPageCount}} pagina zijn onderdeel van deze categorie, van totaal {{count}}."
+	},
 	"categoryHeader": "Pagina's in categorie \"{{pageName}}\"",
-	"categorySubcatCount_one": "Deze categorie heeft slechts de volgende subcategorie.",
-	"categorySubcatCount_other": "Deze categorie heeft de volgende {{curPageCount}} subcategorieën, van in totaal {{count}}.",
+	"categorySubcatCount": {
+		"one": "Deze categorie heeft slechts de volgende subcategorie.",
+		"other": "Deze categorie heeft de volgende {{curPageCount}} subcategorieën, van in totaal {{count}}."
+	},
 	"subcategories": "Ondercategorieën",
-	"categoryEmpty": "<em>Deze categorie bevat geen pagina’s of media.</em>",
+	"categoryEmpty": "<em>Deze categorie bevat geen pagina's of media.</em>",
 	"categoryLimited": "<em>De inhoud van deze categorie is beperkt tot alleen pagina's binnen het ZIM-bestand.</em>",
 	"DISCLAIMER": "Dit artikel is uitgegeven door {{creator}}. De tekst is beschikbaar onder {{license}}, tenzij anders vermeld. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
 	"LAST_EDITED_ON": "Laatst bewerkt op {{date}}",
 	"LICENSE_UNKNOWN": "een onbekende licentie",
 	"DOWNLOAD_ERRORS_HEADING": "Oeps. Artikel niet gevonden.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel ‘{{articleTitle}}’ is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van {{server}}.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel '{{articleTitle}}' is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van {{server}}.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dit artikel is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
 	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "De toegang tot dit artikel is op de server {{server}} beperkt. Er zijn speciale machtigingen vereist die niet beschikbaar zijn tijdens het scrapen van ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "De toegang tot deze pagina is beperkt door een categoriegebaseerde vergrendeling op de server {{server}}. De vereiste categorierechten zijn niet beschikbaar tijdens het ZIM-scrapingproces.",

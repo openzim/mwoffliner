@@ -19,9 +19,10 @@ const CONFIG = {
   DOC_LANG: 'qqq.json',
   IGNORE_KEYS: ['@metadata', 'language'],
   DYNAMIC_KEYS_PREFIXES: ['DOWNLOAD_ERRORS_LINE1_'],
-  // i18next plural suffixes: keys with these suffixes are covered by the base key in code
-  PLURAL_SUFFIXES: ['_one', '_other', '_zero', '_two', '_few', '_many'],
 }
+
+// CLDR plural categories used as nested sub-keys in translation files
+const PLURAL_CATEGORIES = new Set(['zero', 'one', 'two', 'few', 'many', 'other'])
 
 // Colors for Output
 const C = {
@@ -202,8 +203,8 @@ function main() {
   console.log(`Found ${C.Bold}${usedKeys.size}${C.Reset} unique translation keys in source code.`)
 
   // Check 1: Keys in Code but missing in Source
-  // A key K is satisfied if en.json has K directly, or has K + a plural suffix (e.g. K_one / K_other)
-  const isKeyInSource = (k) => sourceKeys.has(k) || CONFIG.PLURAL_SUFFIXES.some((s) => sourceKeys.has(k + s))
+  // A key K is satisfied if en.json has K directly, or has nested plural sub-keys (e.g. K.one / K.other)
+  const isKeyInSource = (k) => sourceKeys.has(k) || [...PLURAL_CATEGORIES].some((cat) => sourceKeys.has(`${k}.${cat}`))
 
   const missingInSource = [...usedKeys].filter((k) => !isKeyInSource(k))
   if (missingInSource.length > 0) {
@@ -222,11 +223,11 @@ function main() {
   }
 
   // Check 2: Keys in Source but not found in Code (Unused?)
-  // Plural variant keys (e.g. categoryArticleCount_one) are covered when their base key is used in code
+  // Plural sub-keys (e.g. categoryArticleCount.one) are covered when their base key is used in code
   const unusedInSource = [...sourceKeys].filter((k) => {
     if (usedKeys.has(k)) return false
-    const pluralBase = CONFIG.PLURAL_SUFFIXES.map((s) => (k.endsWith(s) ? k.slice(0, -s.length) : null)).find(Boolean)
-    if (pluralBase && usedKeys.has(pluralBase)) return false
+    const dotIdx = k.lastIndexOf('.')
+    if (dotIdx !== -1 && PLURAL_CATEGORIES.has(k.slice(dotIdx + 1)) && usedKeys.has(k.slice(0, dotIdx))) return false
     return true
   })
   const unused = unusedInSource.filter((k) => !CONFIG.DYNAMIC_KEYS_PREFIXES.some((prefix) => k.startsWith(prefix)))
