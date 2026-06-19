@@ -9,17 +9,29 @@
 	"categoryHeaderNumerals": "0–9",
 	"categoryFileCount": {
 		"one": "Deze categorie bevat alleen het volgende bestand.",
-		"other": "De volgende {{curPageCount}} bestanden zijn onderdeel van deze categorie, van totaal {{count}}."
+		"other": "$t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) onderdeel van deze categorie, van totaal {{count}}."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "Het volgende bestand is",
+		"other": "De volgende {{count}} bestanden zijn"
 	},
 	"categoryMediaHeader": "Media in categorie \"{{pageName}}\"",
 	"categoryArticleCount": {
 		"one": "Deze categorie bevat alleen de volgende pagina.",
-		"other": "De volgende {{curPageCount}} pagina zijn onderdeel van deze categorie, van totaal {{count}}."
+		"other": "$t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) onderdeel van deze categorie, van totaal {{count}}."
+	},
+	"categoryCurrentPageArticleCount": {
+		"one": "De volgende pagina is",
+		"other": "De volgende {{count}} pagina zijn"
 	},
 	"categoryHeader": "Pagina's in categorie \"{{pageName}}\"",
 	"categorySubcatCount": {
 		"one": "Deze categorie heeft slechts de volgende subcategorie.",
-		"other": "Deze categorie heeft de volgende {{curPageCount}} subcategorieën, van in totaal {{count}}."
+		"other": "Deze categorie heeft de volgende $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }), van in totaal {{count}}."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "subcategorie",
+		"other": "{{count}} subcategorieën"
 	},
 	"subcategories": "Ondercategorieën",
 	"categoryEmpty": "<em>Deze categorie bevat geen pagina's of media.</em>",

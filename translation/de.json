@@ -12,17 +12,29 @@
 	"categoryHeaderNumerals": "0–9",
 	"categoryFileCount": {
 		"one": "Diese Kategorie enthält nur folgende Datei.",
-		"other": "Folgende {{curPageCount}} Dateien sind in dieser Kategorie, von {{count}} insgesamt."
+		"other": "Die $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) in dieser Kategorie, von {{count}} insgesamt."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "folgende Datei ist",
+		"other": "folgenden {{count}} Dateien sind"
 	},
 	"categoryMediaHeader": "Medien in der Kategorie „{{pageName}}“",
 	"categoryArticleCount": {
 		"one": "Diese Kategorie enthält nur die folgende Seite.",
-		"other": "Folgende {{curPageCount}} Seiten sind in dieser Kategorie, von {{count}} insgesamt."
+		"other": "Folgende $t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) in dieser Kategorie, von {{count}} insgesamt."
+	},
+	"categoryCurrentPageArticleCount": {
+		"one": "Seite ist",
+		"other": "{{count}} Seiten sind"
 	},
 	"categoryHeader": "Seiten in der Kategorie „{{pageName}}“",
 	"categorySubcatCount": {
 		"one": "Diese Kategorie enthält nur die folgende Unterkategorie:",
-		"other": "Diese Kategorie enthält die folgenden {{curPageCount}} Unterkategorien ({{count}} insgesamt):"
+		"other": "Diese Kategorie enthält die $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) ({{count}} insgesamt):"
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "folgende Unterkategorie",
+		"other": "folgenden {{count}} Unterkategorien"
 	},
 	"subcategories": "Unterkategorien",
 	"categoryEmpty": "<em>Diese Kategorie enthält zurzeit keine Seiten oder Medien.</em>",
