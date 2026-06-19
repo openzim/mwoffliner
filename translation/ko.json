@@ -8,14 +8,20 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount_one": "이 분류에는 다음 파일만이 속해 있습니다.",
-	"categoryFileCount_other": "다음은 이 분류에 속하는 파일 {{curPageCount}}개 가운데 {{curPageCount}}개입니다.",
+	"categoryFileCount": {
+		"one": "이 분류에는 다음 파일만이 속해 있습니다.",
+		"other": "다음은 이 분류에 속하는 파일 {{curPageCount}}개 가운데 {{curPageCount}}개입니다."
+	},
 	"categoryMediaHeader": "\"{{pageName}}\" 분류에 속하는 미디어",
-	"categoryArticleCount_one": "이 분류에는 다음 문서만이 속해 있습니다.",
-	"categoryArticleCount_other": "다음은 이 분류에 속하는 문서 {{curPageCount}}개 가운데 {{curPageCount}}개입니다.",
+	"categoryArticleCount": {
+		"one": "이 분류에는 다음 문서만이 속해 있습니다.",
+		"other": "다음은 이 분류에 속하는 문서 {{curPageCount}}개 가운데 {{curPageCount}}개입니다."
+	},
 	"categoryHeader": "\"{{pageName}}\" 분류에 속하는 문서",
-	"categorySubcatCount_one": "이 분류에는 다음 하위 분류만이 속해 있습니다.",
-	"categorySubcatCount_other": "다음은 이 분류에 속하는 하위 분류 {{curPageCount}}개 가운데 {{curPageCount}}개입니다.",
+	"categorySubcatCount": {
+		"one": "이 분류에는 다음 하위 분류만이 속해 있습니다.",
+		"other": "다음은 이 분류에 속하는 하위 분류 {{curPageCount}}개 가운데 {{curPageCount}}개입니다."
+	},
 	"subcategories": "하위 분류",
 	"categoryEmpty": "현재 이 분류에는 문서나 미디어가 하나도 없습니다.",
 	"categoryLimited": "이 분류의 내용은 ZIM 내부에 있는 문서만 포함하도록 축소되었습니다.",

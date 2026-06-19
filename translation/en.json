@@ -1,13 +1,19 @@
 {
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount_one": "This category contains only the following file.",
-	"categoryFileCount_other": "The following {{curPageCount}} files are in this category, out of {{count}} total.",
+	"categoryFileCount": {
+		"one": "This category contains only the following file.",
+		"other": "The following {{curPageCount}} files are in this category, out of {{count}} total."
+	},
 	"categoryMediaHeader": "Media in category \"{{pageName}}\"",
-	"categoryArticleCount_one": "This category contains only the following page.",
-	"categoryArticleCount_other": "The following {{curPageCount}} pages are in this category, out of {{count}} total.",
+	"categoryArticleCount": {
+		"one": "This category contains only the following page.",
+		"other": "The following {{curPageCount}} pages are in this category, out of {{count}} total."
+	},
 	"categoryHeader": "Pages in category \"{{pageName}}\"",
-	"categorySubcatCount_one": "This category has only the following subcategory.",
-	"categorySubcatCount_other": "This category has the following {{curPageCount}} subcategories, out of {{count}} total.",
+	"categorySubcatCount": {
+		"one": "This category has only the following subcategory.",
+		"other": "This category has the following {{curPageCount}} subcategories, out of {{count}} total."
+	},
 	"subcategories": "Subcategories",
 	"categoryEmpty": "<em>This category currently contains no pages or media.</em>",
 	"categoryLimited": "<em>This contents of this category have been reduced to only include pages inside the ZIM.</em>",

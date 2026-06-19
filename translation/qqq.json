@@ -5,14 +5,20 @@
 		]
 	},
 	"categoryHeaderNumerals": "A header for all pages whose titles start with a number. This is used on category pages. This should only be translated if your language uses a different method to indicate a range of numbers.",
-	"categoryFileCount_one": "This message is displayed at the top of a category page showing the number of pages in the category (singular form, for count=1).",
-	"categoryFileCount_other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1).",
+	"categoryFileCount": {
+		"one": "This message is displayed at the top of a category page showing the number of pages in the category (singular form, for count=1).",
+		"other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1)."
+	},
 	"categoryMediaHeader": "In category description page. Note that \"media\" is short for \"multimedia\". It doesn't mean \"journalism\".",
-	"categoryArticleCount_one": "This message is used on category pages (singular form, for count=1).",
-	"categoryArticleCount_other": "This message is used on category pages (plural form, for count>1).",
+	"categoryArticleCount": {
+		"one": "This message is used on category pages (singular form, for count=1).",
+		"other": "This message is used on category pages (plural form, for count>1)."
+	},
 	"categoryHeader": "In category description page, be aware that this is not about biology, but about bibliography.",
-	"categorySubcatCount_one": "This message is displayed at the top of a category page showing the number of pages in the category (singular form, for count=1)",
-	"categorySubcatCount_other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1).",
+	"categorySubcatCount": {
+		"one": "This message is displayed at the top of a category page showing the number of pages in the category (singular form, for count=1)",
+		"other": "This message is displayed at the top of a category page showing the number of pages in the category (plural form, for count>1)."
+	},
 	"subcategories": "Used as a header on category pages that have subcategories.",
 	"categoryEmpty": "The text displayed in category page when that category is empty.",
 	"categoryLimited": "The text displayed in category page when that category contents have been limited.",
