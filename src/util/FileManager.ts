@@ -34,7 +34,7 @@ class FileManager {
   private hosts: Map<string, HostData> = new Map()
 
   private get filesToDownloadXPath(): RKVS<FileDetail> {
-    return RedisStore.filesToDownloadXPath
+    return RedisStore.filesStore
   }
 
   private constructor() {}

@@ -89,7 +89,7 @@ export async function convertWikicodeToHtml(wikicode: string, baseUrl: string): 
       body_only: true,
     })
   } catch (err) {
-    logger.log(`Got error during conversion of wikicode to HTML due to ${err}`)
+    logger.info(`Got error during conversion of wikicode to HTML due to ${err}`)
     return err
   }
 }

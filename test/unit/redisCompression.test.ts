@@ -2,7 +2,7 @@ import RedisKvs from '../../src/util/RedisKvs.js'
 import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
 
-describe('RedisKvs Compression Mapping (ArticleDetail)', () => {
+describe('RedisKvs Compression Mapping (PageDetail)', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
@@ -20,7 +20,7 @@ describe('RedisKvs Compression Mapping (ArticleDetail)', () => {
   }
 
   test('compression -> decompression is lossless (full object)', async () => {
-    const kvs = new RedisKvs<any>(RedisStore.client, 'article-test', mapping)
+    const kvs = new RedisKvs<any>(RedisStore.client, 'page-test', mapping)
 
     const input = {
       title: 'London',
@@ -39,7 +39,7 @@ describe('RedisKvs Compression Mapping (ArticleDetail)', () => {
   })
 
   test('handles missing optional fields correctly', async () => {
-    const kvs = new RedisKvs<any>(RedisStore.client, 'article-test-2', mapping)
+    const kvs = new RedisKvs<any>(RedisStore.client, 'page-test-2', mapping)
     const input = {
       title: 'Paris',
       revisionId: 456,
@@ -56,26 +56,26 @@ describe('RedisKvs Compression Mapping (ArticleDetail)', () => {
   })
 
   test('handles "missing" flag correctly', async () => {
-    const kvs = new RedisKvs<any>(RedisStore.client, 'article-test-3', mapping)
+    const kvs = new RedisKvs<any>(RedisStore.client, 'page-test-3', mapping)
     const input = {
-      title: 'FakeArticle',
+      title: 'FakePage',
       missing: true,
     }
 
-    await kvs.set('FakeArticle', input)
-    const result = await kvs.get('FakeArticle')
+    await kvs.set('FakePage', input)
+    const result = await kvs.get('FakePage')
     expect(result.missing).toBe(true)
   })
 
   test('empty object does not break compression', async () => {
-    const kvs = new RedisKvs<any>(RedisStore.client, 'article-test-4', mapping)
+    const kvs = new RedisKvs<any>(RedisStore.client, 'page-test-4', mapping)
     await kvs.set('Empty', {})
     const result = await kvs.get('Empty')
     expect(result).toEqual({})
   })
 
   test('overwrite maintains correct mapping', async () => {
-    const kvs = new RedisKvs<any>(RedisStore.client, 'article-test-5', mapping)
+    const kvs = new RedisKvs<any>(RedisStore.client, 'page-test-5', mapping)
     await kvs.set('London', { title: 'Old', revisionId: 1 })
     await kvs.set('London', {
       title: 'New',

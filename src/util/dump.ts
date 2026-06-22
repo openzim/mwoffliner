@@ -15,8 +15,8 @@ import { zimCreatorMutex } from '../mutex.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export async function processStylesheetContent(cssUrl: string, linkMedia: string, body: string, articleId?: string, isJs?: boolean) {
-  // articleId is supposed to be passed only when we rewrite inline CSS for a given article and we hence have
+export async function processStylesheetContent(cssUrl: string, linkMedia: string, body: string, pagePath?: ZimPath, isJs?: boolean) {
+  // pagePath is supposed to be passed only when we rewrite inline CSS for a given page and we hence have
   // to compute relative path to assets
 
   const importRegexp = /@import\s+(?:url\(\s*(['"]?)(.*?)\1\s*\)|(['"])(.*?)\3)\s*([^;]*);/gi
@@ -59,7 +59,7 @@ export async function processStylesheetContent(cssUrl: string, linkMedia: string
         const filepath = getMediaBase(fullurl, true)
 
         /* Rewrite the CSS */
-        const relativePath = articleId ? getRelativeFilePath(articleId, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
+        const relativePath = pagePath ? getRelativeFilePath(pagePath, filepath) : isJs ? `__RELATIVE_FILE_PATH__${filepath}` : `../${filepath}`
         rewrittenCss = rewrittenCss.replace(url, relativePath.replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29'))
 
         await FileManager.addFileToProcess(filepath, { url: urlHelper.serializeUrl(fullurl), kind: 'media' })
@@ -241,7 +241,7 @@ export async function downloadModule(module: string, type: 'js' | 'css', langVar
         const processedCss = JSON.stringify(
           await Promise.all(
             cssParts.map((cssPart) => {
-              return processStylesheetContent(moduleApiUrl, '', cssPart, '', true)
+              return processStylesheetContent(moduleApiUrl, '', cssPart, null, true)
             }),
           ),
         ).replace(/__RELATIVE_FILE_PATH__/g, '"+RLCONF.zimRelativeFilePath+"')
@@ -253,11 +253,11 @@ export async function downloadModule(module: string, type: 'js' | 'css', langVar
   }
 
   if (type === 'css') {
-    text = await processStylesheetContent(moduleApiUrl, '', text, '')
+    text = await processStylesheetContent(moduleApiUrl, '', text, null)
   }
 
   // Zimcheck complains about empty files, and it is too late to decide to not create this file
-  // since it has been referenced in all articles HTML, hence creating broken links if we do not
+  // since it has been referenced in all pages HTML, hence creating broken links if we do not
   // include this file in the ZIM, so let's create a minimal file content
   text = text || `/* ${module} is an empty file */`
 

@@ -9,7 +9,7 @@ jest.setTimeout(200000)
 
 const parametersWithoutPagination = {
   mwUrl: 'https://bm.wikipedia.org',
-  articleList: 'Bamanankan,Dibo,Kulibali,Dogoso,Espankan,Esperanto',
+  pageList: 'Bamanankan,Dibo,Kulibali,Dogoso,Espankan,Esperanto',
   adminEmail: 'test@kiwix.org',
   redis: process.env.REDIS,
   format: ['nopic'],
@@ -34,18 +34,18 @@ const perform_categories_tests = async (name, outFiles, expected_result) => {
     await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
   })
 
-  for (const { article, expectedCategory } of [
-    { article: 'Bamanankan', expectedCategory: 'Kan' },
-    { article: 'Dogoso', expectedCategory: 'Kan' },
-    { article: 'Espankan', expectedCategory: 'Kan' },
-    { article: 'Esperanto', expectedCategory: 'Kan' },
-    { article: 'Dibo', expectedCategory: 'Jamu' },
-    { article: 'Kulibali', expectedCategory: 'Jamu' },
+  for (const { page, expectedCategory } of [
+    { page: 'Bamanankan', expectedCategory: 'Kan' },
+    { page: 'Dogoso', expectedCategory: 'Kan' },
+    { page: 'Espankan', expectedCategory: 'Kan' },
+    { page: 'Esperanto', expectedCategory: 'Kan' },
+    { page: 'Dibo', expectedCategory: 'Jamu' },
+    { page: 'Kulibali', expectedCategory: 'Jamu' },
   ]) {
-    test(`${name} - check ${article} article for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`${name} - check ${page} page for ${outFiles[0]?.renderer} renderer`, async () => {
       const allFiles = (await zimdump(`list ${outFiles[0].outFile}`)).split('\n')
-      expect(allFiles).toContain(article)
-      const content = await zimdump(`show --url ${article} ${outFiles[0].outFile}`)
+      expect(allFiles).toContain(page)
+      const content = await zimdump(`show --url ${page} ${outFiles[0].outFile}`)
       const document = domino.createDocument(content)
       const catlinksEl = document.querySelectorAll('.catlinks')
       expect(catlinksEl.length).toBe(1)

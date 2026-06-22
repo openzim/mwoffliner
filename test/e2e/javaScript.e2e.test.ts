@@ -16,7 +16,7 @@ describe('javaScript', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
-    articleList: 'France',
+    pageList: 'France',
     mwActionApiPath: '/w/api.php',
   }
 
@@ -28,15 +28,15 @@ describe('javaScript', () => {
     expect(redisScan.stdout).toEqual('')
   })
 
-  test('Scrape article from en.wikipedia.org without JavaScript', async () => {
+  test('Scrape page from en.wikipedia.org without JavaScript', async () => {
     const javaScript = 'none'
     const filenamePrefix = `javaScript_${javaScript}`
     const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript })
     const dump = outFiles[0]
 
-    expect(dump.status.articles.success).toEqual(1)
-    expect(dump.status.articles.hardFail).toEqual(0)
-    expect(dump.status.articles.softFail).toEqual(0)
+    expect(dump.status.pages.success).toEqual(1)
+    expect(dump.status.pages.hardFail).toEqual(0)
+    expect(dump.status.pages.softFail).toEqual(0)
 
     await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 
@@ -47,15 +47,15 @@ describe('javaScript', () => {
     expect(jsFiles).toHaveLength(0)
   })
 
-  test('Scrape article from en.wikipedia.org with trusted JavaScript', async () => {
+  test('Scrape page from en.wikipedia.org with trusted JavaScript', async () => {
     const javaScript = 'trusted'
     const filenamePrefix = `javaScript_${javaScript}`
     const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript })
     const dump = outFiles[0]
 
-    expect(dump.status.articles.success).toEqual(1)
-    expect(dump.status.articles.hardFail).toEqual(0)
-    expect(dump.status.articles.softFail).toEqual(0)
+    expect(dump.status.pages.success).toEqual(1)
+    expect(dump.status.pages.hardFail).toEqual(0)
+    expect(dump.status.pages.softFail).toEqual(0)
 
     await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 
@@ -103,16 +103,16 @@ describe('javaScript', () => {
     )
   })
 
-  test('Scrape article from en.wikipedia.org with trusted JavaScript and extra modules', async () => {
+  test('Scrape page from en.wikipedia.org with trusted JavaScript and extra modules', async () => {
     const javaScript = 'trusted'
     const addModules = 'site,ext.gadget.ReferenceTooltips'
     const filenamePrefix = `javaScript_${javaScript}_addModules`
     const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript, addModules })
     const dump = outFiles[0]
 
-    expect(dump.status.articles.success).toEqual(1)
-    expect(dump.status.articles.hardFail).toEqual(0)
-    expect(dump.status.articles.softFail).toEqual(0)
+    expect(dump.status.pages.success).toEqual(1)
+    expect(dump.status.pages.hardFail).toEqual(0)
+    expect(dump.status.pages.softFail).toEqual(0)
 
     await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 
@@ -162,15 +162,15 @@ describe('javaScript', () => {
     )
   })
 
-  test('Scrape article from en.wikipedia.org with all JavaScript', async () => {
+  test('Scrape page from en.wikipedia.org with all JavaScript', async () => {
     const javaScript = 'all'
     const filenamePrefix = `javaScript_${javaScript}`
     const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript })
     const dump = outFiles[0]
 
-    expect(dump.status.articles.success).toEqual(1)
-    expect(dump.status.articles.hardFail).toEqual(0)
-    expect(dump.status.articles.softFail).toEqual(0)
+    expect(dump.status.pages.success).toEqual(1)
+    expect(dump.status.pages.hardFail).toEqual(0)
+    expect(dump.status.pages.softFail).toEqual(0)
 
     await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 
@@ -181,14 +181,14 @@ describe('javaScript', () => {
     expect(jsFiles.length).toBeGreaterThan(45)
   })
 
-  test('Scrape article from minecraft.wiki with trusted JavaScript and extra modules', async () => {
+  test('Scrape page from minecraft.wiki with trusted JavaScript and extra modules', async () => {
     const parameters = {
       mwUrl: 'https://minecraft.wiki',
       adminEmail: 'test@kiwix.org',
       outputDirectory: testId,
       redis: process.env.REDIS,
       format: ['nopic'],
-      articleList: 'Zombie',
+      pageList: 'Zombie',
       mwActionApiPath: '/api.php',
     }
     const javaScript = 'trusted'
@@ -197,9 +197,9 @@ describe('javaScript', () => {
     const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript, addModules })
     const dump = outFiles[0]
 
-    expect(dump.status.articles.success).toEqual(1)
-    expect(dump.status.articles.hardFail).toEqual(0)
-    expect(dump.status.articles.softFail).toEqual(0)
+    expect(dump.status.pages.success).toEqual(1)
+    expect(dump.status.pages.hardFail).toEqual(0)
+    expect(dump.status.pages.softFail).toEqual(0)
 
     await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 

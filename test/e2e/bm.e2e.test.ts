@@ -19,7 +19,7 @@ await testAllRenders('bm-wikipedia', parameters, async (outFiles) => {
     await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
   })
 
-  test(`Simple articleList for ${outFiles[0]?.renderer} renderer for bm.wikipedia.org`, async () => {
+  test(`test dump statistics for ${outFiles[0]?.renderer} renderer`, async () => {
     await execa('redis-cli flushall', { shell: true })
     // Created 1 output
     expect(outFiles).toHaveLength(1)
@@ -32,8 +32,8 @@ await testAllRenders('bm-wikipedia', parameters, async (outFiles) => {
         expect(dump.status.files.success).toBeLessThan(120)
         // nopic has enough redirects
         expect(dump.status.redirects.written).toBeGreaterThan(170)
-        // nopic has enough articles
-        expect(dump.status.articles.success).toBeGreaterThan(700)
+        // nopic has enough pages
+        expect(dump.status.pages.success).toBeGreaterThan(700)
       }
     }
   })
@@ -84,9 +84,9 @@ await testAllRenders('bm-wikipedia-with-ns-1', { ...parameters, addNamespaces: 1
 
     // Created 1 output
     expect(outFiles).toHaveLength(1)
-    const discussionArticlesStr = await zimdump(`list ${outFiles[0].outFile}`)
-    const discussionArticlesList = discussionArticlesStr.match(/Discussion:/g)
-    expect(discussionArticlesList.length).toBeGreaterThan(30)
+    const discussionPagesStr = await zimdump(`list ${outFiles[0].outFile}`)
+    const discussionPagesList = discussionPagesStr.match(/Discussion:/g)
+    expect(discussionPagesList.length).toBeGreaterThan(30)
   })
   afterAll(() => {
     if (!process.env.KEEP_ZIMS) {

@@ -3,13 +3,12 @@ import tmp from 'tmp'
 import pathParser from 'path'
 import { sanitize_customFlavour } from '../../src/sanitize-argument.js'
 import {
-  encodeArticleIdForZimHtmlUrl,
+  encodePageTitleForZimHtmlUrl,
   getFullUrl,
   getMediaBase,
-  normalizeMwResponse,
   isWebpCandidateImageMimeType,
   cleanupAxiosError,
-  extractArticleList,
+  extractPageList,
   mkdirPromise,
   writeFilePromise,
   validateMetadata,
@@ -34,8 +33,8 @@ describe('Utils', () => {
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
   })
 
-  test('Encoding ArticleId for Zim HTML Url', async () => {
-    const articles = [
+  test('Encoding Page Title for Zim HTML Url', async () => {
+    const titles = [
       'Que_faire_?',
       'Que_faire_%3F',
       'Que_faire_?_(Lénine)',
@@ -47,11 +46,11 @@ describe('Utils', () => {
       'Avanti!',
       'Avanti!',
       'McCormick_Tribune_Plaza_&_Ice Rink',
-      'McCormick_Tribune_Plaza_%26_Ice%20Rink',
+      'McCormick_Tribune_Plaza_%26_Ice_Rink',
       '2_+_2_=_5',
       '2_%2B_2_%3D_5',
       "Guidelines:Règles d'édition",
-      "Guidelines%3AR%C3%A8gles%20d'%C3%A9dition",
+      "Guidelines%3AR%C3%A8gles_d'%C3%A9dition",
       'something/random/todo',
       'something/random/todo',
       'Michael_Jackson',
@@ -66,10 +65,10 @@ describe('Utils', () => {
       null,
     ]
 
-    while (articles.length) {
-      const unencoded = articles.shift()
-      const encoded = articles.shift()
-      expect(`${encoded}`).toEqual(encodeArticleIdForZimHtmlUrl(`${unencoded}`))
+    while (titles.length) {
+      const unencoded = titles.shift()
+      const encoded = titles.shift()
+      expect(encodePageTitleForZimHtmlUrl(`${unencoded}` as PageTitle)).toEqual(`${encoded}`)
     }
   })
 
@@ -253,16 +252,6 @@ describe('Utils', () => {
     expect(isWebpCandidateImageMimeType('image/svg')).toBeFalsy()
   })
 
-  test('No title normalisation', async () => {
-    const resp = await Downloader.get<MwApiResponse>(
-      'https://en.wiktionary.org/w/api.php?action=query&format=json&prop=redirects|revisions|pageimages&rdlimit=max&rdnamespace=0&redirects=true&titles=constructor&formatversion=2',
-      { responseType: 'json' },
-    )
-    const normalizedObject = normalizeMwResponse(resp.data.query)
-    // normalizeMwResponse returns title constructor
-    expect(Object.keys(normalizedObject)[0]).toEqual('constructor')
-  })
-
   test('Cleanup AxiosError function', async () => {
     const result = {
       name: 'AxiosError',
@@ -293,14 +282,14 @@ describe('Utils', () => {
     }
   })
 
-  describe('extractArticleList', () => {
+  describe('extractPageList', () => {
     const now = new Date()
     const dirname = path.join(process.cwd(), `mwo-test-${+now}`)
 
     const argumentsList = ['testString1', 'testString2', 'testString3']
     const anotherArgumentsList = ['testString4', 'testString5', 'testString6']
-    const filePath = path.join(dirname, 'articles1.txt')
-    const anotherFilePath = path.join(dirname, 'articles2.txt')
+    const filePath = path.join(dirname, 'list1.txt')
+    const anotherFilePath = path.join(dirname, 'list2.txt')
 
     beforeAll(async () => {
       await mkdirPromise(dirname)
@@ -313,22 +302,22 @@ describe('Utils', () => {
     })
 
     test('One string as parameter', async () => {
-      const result: string[] = await extractArticleList('testString')
+      const result: string[] = await extractPageList('testString')
       expect(result).toEqual(['testString'])
     })
 
     test('Comma separated strings as parameter', async () => {
-      const result: string[] = await extractArticleList(argumentsList.join(','))
+      const result: string[] = await extractPageList(argumentsList.join(','))
       expect(result).toEqual(argumentsList)
     })
 
     test('Filename string as parameter', async () => {
-      const result: string[] = await extractArticleList(filePath)
+      const result: string[] = await extractPageList(filePath)
       expect(result).toEqual(argumentsList)
     })
 
     test('Comma separated filenames string as parameter', async () => {
-      const result: string[] = await extractArticleList(`${filePath},${anotherFilePath}`)
+      const result: string[] = await extractPageList(`${filePath},${anotherFilePath}`)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
@@ -340,7 +329,7 @@ describe('Utils', () => {
         headers: null,
         config: null,
       })
-      const result: string[] = await extractArticleList('http://test.com/strings')
+      const result: string[] = await extractPageList('http://test.com/strings')
       expect(result).toEqual(argumentsList)
     })
 
@@ -359,18 +348,18 @@ describe('Utils', () => {
         headers: null,
         config: null,
       })
-      const result: string[] = await extractArticleList('http://test.com/strings,http://test.com/another-strings')
+      const result: string[] = await extractPageList('http://test.com/strings,http://test.com/another-strings')
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
     })
 
     test('The parameter starts from HTTP but it is not the URL', async () => {
-      const result: string[] = await extractArticleList('http-test')
+      const result: string[] = await extractPageList('http-test')
       expect(result).toEqual(['http-test'])
     })
 
-    test('Error if trying to get articleList from wrong URL ', async () => {
+    test('Error if trying to get pageList from wrong URL ', async () => {
       jest.spyOn(Downloader, 'request').mockRejectedValue({})
-      await expect(extractArticleList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read articleList from URL: http://valid-wrong-url.com/')
+      await expect(extractPageList('http://valid-wrong-url.com/')).rejects.toThrow('Failed to read pageList from URL: http://valid-wrong-url.com/')
     })
   })
 

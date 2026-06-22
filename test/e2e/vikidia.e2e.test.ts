@@ -17,8 +17,8 @@ const parameters = {
   mwUrl: 'https://en.vikidia.org',
   adminEmail: 'test@kiwix.org',
   redis: process.env.REDIS,
-  articleList: 'Alaska',
-  customZimDescription: 'Alaska article',
+  pageList: 'Alaska',
+  customZimDescription: 'Alaska page',
 }
 
 await testRenders(

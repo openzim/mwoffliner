@@ -10,10 +10,10 @@ export default class WebURLDirector {
     this.baseDomain = baseDomain
   }
 
-  buildArticleRawURL(articleId: string) {
+  buildPageRawURL(pageTitle: string) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({ title: encodeURIComponent(articleId), action: 'raw' })
+      .setQueryParams({ title: encodeURIComponent(pageTitle), action: 'raw' })
       .build()
   }
 }

@@ -18,7 +18,7 @@ interface KVS<T> {
   [key: string]: T
 }
 
-type ArticleDetail = PageInfo & {
+type PageDetail = PageInfo & {
   pages?: PageInfo[]
   thumbnail?: {
     source: string
@@ -32,8 +32,6 @@ type ArticleDetail = PageInfo & {
   revisionId?: number // revisions.0.revid
   stableRevisionId?: number // flagged.stable_revid (FlaggedRevs)
   internalThumbnailUrl?: string // internalThumbnailUrl
-  nextArticleId?: string
-  prevArticleId?: string
   missing?: string
   pagelang?: string
   pagedir?: TextDirection
@@ -52,9 +50,9 @@ type FileDetail = {
   kind: DownloadKind
 }
 
-type ArticleRedirect = {
-  targetId: string
-  title: string
+type PageRedirect = {
+  to: PageTitle
+  from: PageTitle
   fragment?: string
 }
 
@@ -78,9 +76,9 @@ interface RKVS<T> {
 // RedisStore Interface
 interface RS {
   readonly client: any // RedisClientType
-  readonly filesToDownloadXPath: RKVS<FileDetail>
-  readonly articleDetailXId: RKVS<ArticleDetail>
-  readonly redirectsXId: RKVS<ArticleRedirect>
+  readonly filesStore: RKVS<FileDetail>
+  readonly pagesStore: RKVS<PageDetail>
+  readonly redirectsStore: RKVS<PageRedirect>
   connect: (populateStores?: boolean) => Promise<void>
   close: () => Promise<void>
   createRedisKvs: (dbName: string, keyMapping?: KVS<string>) => RKVS<any>
@@ -191,14 +189,12 @@ interface MwApiResponse {
   error?: any
 }
 
-interface QueryMwRet {
-  [articleId: string]: PageInfo & QueryRet
-}
+type QueryMwRet = (PageInfo & QueryRet)[]
 
 interface CustomProcessor {
-  shouldKeepArticle?: (articleId: string, doc: Document) => Promise<boolean>
-  preProcessArticle?: (articleId: string, doc: Document) => Promise<Document>
-  postProcessArticle?: (articleId: string, doc: Document) => Promise<Document>
+  shouldKeepPage?: (pageTitle: PageTitle, doc: Document) => Promise<boolean>
+  preProcessPage?: (pageTitle: PageTitle, doc: Document) => Promise<Document>
+  postProcessPage?: (pageTitle: PageTitle, doc: Document) => Promise<Document>
 }
 
 interface MWMetaData {
@@ -271,7 +267,7 @@ interface QueryContinueOpts {
   }
 }
 
-interface RendererArticleOpts {
+interface PageUrlOpts {
   sectionId?: string
   langVar?: string
   oldid?: number
@@ -279,18 +275,30 @@ interface RendererArticleOpts {
 
 interface PageInfo {
   ns?: number
-  title: string
+  title: PageTitle
 }
 
-interface PageRef {
-  name: string
-  url: string
+type Brand<T, B> = T & { readonly __brand: B }
+
+type ZimPath = Brand<string, 'ZimPath'>
+type PageTitle = Brand<string, 'PageTitle'>
+type PageId = Brand<string, 'PageId'>
+
+type RenderSingleOutput = {
+  pageTitle: PageTitle
+  zimPath: ZimPath
+  zimTitle: string
+  htmlContent: string
 }
 
-interface RenderedArticle {
-  articleId: string
-  displayTitle: string
-  html: string
+type RenderOutput = {
+  items: RenderSingleOutput[]
+  imageDependencies: any
+  videoDependencies: any
+  mediaDependencies: any
+  moduleDependencies: any
+  subtitles: any
+  needsDownloadErrorStaticFiles: boolean
 }
 
 interface SiteInfoArgv {

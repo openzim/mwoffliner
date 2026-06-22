@@ -14,14 +14,14 @@ const parameters = {
   redis: process.env.REDIS,
 }
 
-await testAllRenders('format-params-nopic', { ...parameters, format: 'nopic', articleList: 'BMW' }, async (outFiles) => {
+await testAllRenders('format-params-nopic', { ...parameters, format: 'nopic', pageList: 'BMW' }, async (outFiles) => {
   describe('format:nopic', () => {
     test(`Test en.wikipedia.org using format:nopic for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
-      const articleDoc = domino.createDocument(articleFromDump)
+      const pageFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
+      const pageDoc = domino.createDocument(pageFromDump)
 
-      const imgElements = Array.from(articleDoc.querySelectorAll('img'))
+      const imgElements = Array.from(pageDoc.querySelectorAll('img'))
       const nonMathImages = imgElements.filter((img) => {
         const className = img.getAttribute('class') || ''
         return !className.includes('mwe-math-fallback-image-inline') && img.getAttribute('typeof') !== 'mw:Extension/math'
@@ -38,16 +38,16 @@ await testAllRenders('format-params-nopic', { ...parameters, format: 'nopic', ar
   })
 })
 
-await testAllRenders('format-params-nodet', { ...parameters, format: 'nodet', articleList: 'BMW' }, async (outFiles) => {
+await testAllRenders('format-params-nodet', { ...parameters, format: 'nodet', pageList: 'BMW' }, async (outFiles) => {
   describe('format:nodet', () => {
     test(`Test en.wikipedia.org using format:nodet for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
-      const articleDoc = domino.createDocument(articleFromDump)
+      const pageFromDump = await zimdump(`show --url BMW ${outFiles[0].outFile}`)
+      const pageDoc = domino.createDocument(pageFromDump)
 
-      const headings = Array.from(articleDoc.querySelectorAll('.mw-heading'))
-      const infoboxes = Array.from(articleDoc.querySelectorAll('table.infobox'))
-      const paragraphs = Array.from(articleDoc.querySelectorAll('p'))
+      const headings = Array.from(pageDoc.querySelectorAll('.mw-heading'))
+      const infoboxes = Array.from(pageDoc.querySelectorAll('table.infobox'))
+      const paragraphs = Array.from(pageDoc.querySelectorAll('p'))
 
       expect(headings).toHaveLength(0)
       expect(infoboxes).toHaveLength(1)
@@ -59,14 +59,14 @@ await testAllRenders('format-params-nodet', { ...parameters, format: 'nodet', ar
   })
 })
 
-await testAllRenders('format-params-novid-1', { ...parameters, format: 'novid', articleList: 'Animation' }, async (outFiles) => {
+await testAllRenders('format-params-novid-1', { ...parameters, format: 'novid', pageList: 'Animation' }, async (outFiles) => {
   describe('format:novid to check no video tags', () => {
     test(`Test en.wikipedia.org using format:novid for ${outFiles[0]?.renderer} renderer (no video)`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url Animation ${outFiles[0].outFile}`)
-      const articleDoc = domino.createDocument(articleFromDump)
+      const pageFromDump = await zimdump(`show --url Animation ${outFiles[0].outFile}`)
+      const pageDoc = domino.createDocument(pageFromDump)
 
-      const audioElements = Array.from(articleDoc.querySelectorAll('audio'))
+      const audioElements = Array.from(pageDoc.querySelectorAll('audio'))
 
       expect(audioElements).toHaveLength(0)
       if (!process.env.KEEP_ZIMS) {
@@ -76,14 +76,14 @@ await testAllRenders('format-params-novid-1', { ...parameters, format: 'novid', 
   })
 })
 
-await testAllRenders('format-params-novid-2', { ...parameters, format: 'novid', articleList: 'English_alphabet' }, async (outFiles) => {
+await testAllRenders('format-params-novid-2', { ...parameters, format: 'novid', pageList: 'English_alphabet' }, async (outFiles) => {
   describe('format:novid to check no audio tags', () => {
     test(`Test en.wikipedia.org using format:novid for ${outFiles[0]?.renderer} renderer (no audio)`, async () => {
       await execa('redis-cli flushall', { shell: true })
-      const articleFromDump = await zimdump(`show --url English_alphabet ${outFiles[0].outFile}`)
-      const articleDoc = domino.createDocument(articleFromDump)
+      const pageFromDump = await zimdump(`show --url English_alphabet ${outFiles[0].outFile}`)
+      const pageDoc = domino.createDocument(pageFromDump)
 
-      const videoElements = Array.from(articleDoc.querySelectorAll('video'))
+      const videoElements = Array.from(pageDoc.querySelectorAll('video'))
 
       expect(videoElements).toHaveLength(0)
       if (!process.env.KEEP_ZIMS) {

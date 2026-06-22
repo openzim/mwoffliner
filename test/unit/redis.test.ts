@@ -62,54 +62,54 @@ describe('Redis', () => {
   })
 })
 
-describe('RedisStore: articleDetailXId', () => {
+describe('RedisStore: pageDetailStore', () => {
   beforeAll(startRedis)
   afterAll(stopRedis)
 
-  const mockArticles = {
+  const mockPages = {
     London: {
-      title: 'London',
-      categories: [{ title: 'City' }],
+      title: 'London' as PageTitle,
+      categories: ['City'],
       revisionId: 123,
       coordinates: '51.5074,0.1278',
     },
     UK: {
-      title: 'United_Kingdom',
-      categories: [{ title: 'Country' }],
+      title: 'United_Kingdom' as PageTitle,
+      categories: ['Country'],
       revisionId: 456,
       thumbnail: { source: 'uk.png', height: 200, width: 200 },
     },
-    TestArticle: {
-      title: 'TestArticle',
+    TestPage: {
+      title: 'TestPage' as PageTitle,
       categories: [],
       revisionId: 789,
     },
   }
 
   beforeEach(async () => {
-    await RedisStore.articleDetailXId.flush()
+    await RedisStore.pagesStore.flush()
   })
   //
-  test('set and get single article', async () => {
+  test('set and get single page', async () => {
     // if it fails that means serialization/deserialization is broken
-    const kvs = RedisStore.articleDetailXId
+    const kvs = RedisStore.pagesStore
 
-    await kvs.set('London', mockArticles.London)
+    await kvs.set('London', mockPages.London)
     const result = await kvs.get('London')
 
     expect(result).toBeDefined()
     expect(result?.title).toBe('London')
-    expect(result?.categories?.[0]?.title).toBe('City')
+    expect(result?.categories?.[0]).toBe('City')
     expect(result?.revisionId).toBe(123)
     expect(result?.coordinates).toBe('51.5074,0.1278')
   })
 
-  test('set and get multiple articles', async () => {
+  test('set and get multiple pages', async () => {
     // if it fails that means bulk retrieval is broken
-    const kvs = RedisStore.articleDetailXId
+    const kvs = RedisStore.pagesStore
 
-    await kvs.set('London', mockArticles.London)
-    await kvs.set('UK', mockArticles.UK)
+    await kvs.set('London', mockPages.London)
+    await kvs.set('UK', mockPages.UK)
 
     const results = await kvs.getMany(['London', 'UK'])
 
@@ -118,12 +118,12 @@ describe('RedisStore: articleDetailXId', () => {
     expect(results.UK?.thumbnail?.source).toBe('uk.png')
   })
 
-  test('delete single and multiple articles', async () => {
+  test('delete single and multiple pages', async () => {
     // if it fails that means memory leaks in Redis
-    const kvs = RedisStore.articleDetailXId
+    const kvs = RedisStore.pagesStore
 
-    await kvs.set('London', mockArticles.London)
-    await kvs.set('UK', mockArticles.UK)
+    await kvs.set('London', mockPages.London)
+    await kvs.set('UK', mockPages.UK)
 
     await kvs.delete('London')
     const deleted = await kvs.get('London')
@@ -135,15 +135,15 @@ describe('RedisStore: articleDetailXId', () => {
   })
 
   test('keys, len and flush', async () => {
-    const kvs = RedisStore.articleDetailXId
+    const kvs = RedisStore.pagesStore
 
-    await kvs.set('London', mockArticles.London)
-    await kvs.set('UK', mockArticles.UK)
-    await kvs.set('TestArticle', mockArticles.TestArticle)
+    await kvs.set('London', mockPages.London)
+    await kvs.set('UK', mockPages.UK)
+    await kvs.set('TestPage', mockPages.TestPage)
 
     const keys = await kvs.keys()
     expect(keys.length).toBe(3)
-    expect(keys).toEqual(expect.arrayContaining(['London', 'UK', 'TestArticle']))
+    expect(keys).toEqual(expect.arrayContaining(['London', 'UK', 'TestPage']))
 
     const len = await kvs.len()
     expect(len).toBe(3)
@@ -155,7 +155,7 @@ describe('RedisStore: articleDetailXId', () => {
 
   test('edge cases: non-existent keys', async () => {
     // if it fails that means error in fucntion's logic
-    const kvs = RedisStore.articleDetailXId
+    const kvs = RedisStore.pagesStore
 
     const result = await kvs.get('DoesNotExist')
     expect(result).toBeNull()
@@ -168,22 +168,22 @@ describe('RedisStore: articleDetailXId', () => {
     await kvs.deleteMany(['Nope2'])
   })
 
-  test('overwrite existing article', async () => {
+  test('overwrite existing page', async () => {
     // if this fails this means that updates dont propogate
-    const kvs = RedisStore.articleDetailXId
+    const kvs = RedisStore.pagesStore
 
-    await kvs.set('London', mockArticles.London)
+    await kvs.set('London', mockPages.London)
 
     await kvs.set('London', {
-      title: 'London Updated',
-      categories: [{ title: 'Capital' }],
+      title: 'London Updated' as PageTitle,
+      categories: ['Capital'],
       revisionId: 999,
     })
 
     const updated = await kvs.get('London')
 
     expect(updated?.title).toBe('London Updated')
-    expect(updated?.categories?.[0]?.title).toBe('Capital')
+    expect(updated?.categories?.[0]).toBe('Capital')
     expect(updated?.revisionId).toBe(999)
   })
 })

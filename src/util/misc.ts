@@ -163,8 +163,8 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
           mimetype = 'application/javascript'
         }
 
-        const article = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
-        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(article))
+        const page = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
+        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(page))
       }),
     )
   } catch (err) {
@@ -183,19 +183,19 @@ export function jsPath(js: string, subDirectory = '') {
   const path = isNodeModule(js) ? normalizeModule(js) : js
   return `${subDirectory ? `${subDirectory}/` : ''}${path.replace(/(\.js)?$/, '')}.js`
 }
-export function genHeaderCSSLink(config: Config, css: string, articleId: string, subDirectory = '') {
-  const slashesInUrl = articleId.split('/').length - 1
+export function genHeaderCSSLink(config: Config, css: string, pagePath: ZimPath, subDirectory = '') {
+  const slashesInUrl = pagePath.split('/').length - 1
   const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
   return `<link href="${upStr}${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`
 }
-export function genHeaderScript(config: Config, js: string, articleId: string, subDirectory = '', attributes = '') {
-  const slashesInUrl = articleId.split('/').length - 1
+export function genHeaderScript(config: Config, js: string, pagePath: ZimPath, subDirectory = '', attributes = '') {
+  const slashesInUrl = pagePath.split('/').length - 1
   const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
   const path = isNodeModule(js) ? normalizeModule(js) : js
   return `<script ${attributes} src="${upStr}${jsPath(path, subDirectory)}"></script>`
 }
-export function genCanonicalLink(config: Config, webUrl: string, articleId: string) {
-  return `<link rel="canonical" href="${webUrl}${encodeURIComponent(articleId)}" />`
+export function genCanonicalLink(config: Config, webUrl: string, pagePath: ZimPath) {
+  return `<link rel="canonical" href="${webUrl}${encodeURIComponent(pagePath)}" />`
 }
 
 export function getDumps(format: boolean | boolean[]) {
@@ -328,8 +328,8 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
   })
 }
 
-export function getRelativeFilePath(parentArticleId: string, fileBase: string) {
-  const slashesInUrl = parentArticleId.split('/').length - 1
+export function getRelativeFilePath(parentPagePath: ZimPath, fileBase: string) {
+  const slashesInUrl = parentPagePath.split('/').length - 1
   const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
   return upStr + fileBase
 }
@@ -376,10 +376,11 @@ export function jsonStringify(data: any) {
   return JSON.stringify(data).replace(/[<>&\\\b\f\n\r\t\0\u2028\u2029]/g, (char) => unsafeJsCharMap[char] || char)
 }
 
-// We will need the encoded URL on article load so that we can set the hrefs of anchor tag correctly,
+// We will need the encoded URL on page load so that we can set the hrefs of anchor tag correctly,
 // but we must not encode the '/' character or else relative links may fail
-export function encodeArticleIdForZimHtmlUrl(articleId: string) {
-  return articleId && encodeURIComponent(articleId.startsWith('/') ? `./${articleId}` : articleId).replace(/%2F/g, '/')
+export function encodePageTitleForZimHtmlUrl(pageTitle: PageTitle) {
+  const pageLink = pageTitle && pageTitle.replace(/ /g, '_')
+  return pageLink && encodeURIComponent(pageLink.startsWith('/') ? `./${pageLink}` : pageLink).replace(/%2F/g, '/')
 }
 
 export function ensureTrailingChar(input: string, trailingChar: string) {
@@ -422,9 +423,9 @@ async function downloadListByUrl(url: string): Promise<string> {
   return filePath
 }
 
-export async function extractArticleList(articleList: string): Promise<string[]> {
+export async function extractPageList(pageList: string): Promise<PageTitle[]> {
   const list = await Promise.all(
-    articleList
+    pageList
       .split(',')
       .filter((n) => n)
       .map(async (part) => {
@@ -440,7 +441,7 @@ export async function extractArticleList(articleList: string): Promise<string[]>
             try {
               item = await downloadListByUrl(url.href)
             } catch {
-              throw new Error(`Failed to read articleList from URL: ${url.href}`)
+              throw new Error(`Failed to read pageList from URL: ${url.href}`)
             }
           }
         }
@@ -455,7 +456,7 @@ export async function extractArticleList(articleList: string): Promise<string[]>
         return item
       }),
   )
-  return list.flat(1)
+  return list.flat(1).map((page) => page as PageTitle)
 }
 
 export async function getTmpDirectory() {
@@ -472,7 +473,7 @@ export async function getTmpDirectory() {
   return tmpDirectory
 }
 
-export function truncateZimArticleTitleWords(title: string) {
+export function truncateZimEntryTitleWords(title: string) {
   // Truncate each title words to 240 bytes, as mandated by libzim since 9.4.0
   // - 240 bytes = MAX_INDEXABLE_TITLE_WORD_SIZE in libzim src/constants.h
   // - https://github.com/openzim/libzim/pull/1004
@@ -538,4 +539,8 @@ export function parseRetryAfterHeader(headerValue: string) {
 
   // Could not parse
   return null
+}
+
+export function makeZimPath(pageTitle: PageTitle): ZimPath {
+  return (pageTitle as string).replace(/ /g, '_') as ZimPath
 }

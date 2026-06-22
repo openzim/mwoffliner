@@ -1,4 +1,4 @@
-import { truncateUtf8Bytes, truncateZimArticleTitleWords } from '../../../src/util/misc.js'
+import { truncateUtf8Bytes, truncateZimEntryTitleWords } from '../../../src/util/misc.js'
 
 describe('miscelenaous utility functions tests', () => {
   const truncateUtf8BytesCases = [
@@ -16,7 +16,7 @@ describe('miscelenaous utility functions tests', () => {
 
   const MAX_WORD_LENGTH = 240
 
-  const truncateZimArticleTitleWordsCases = [
+  const truncateZimEntryTitleWordsCases = [
     ['f'.repeat(MAX_WORD_LENGTH), undefined],
     ['f'.repeat(MAX_WORD_LENGTH + 1), 'f'.repeat(MAX_WORD_LENGTH)],
     [`${'f'.repeat(MAX_WORD_LENGTH)} ${'f'.repeat(MAX_WORD_LENGTH)}`, undefined],
@@ -27,8 +27,8 @@ describe('miscelenaous utility functions tests', () => {
     [`${'f'.repeat(MAX_WORD_LENGTH - 2)}Ö`, undefined],
     [`${'f'.repeat(MAX_WORD_LENGTH - 1)}Ö`, 'f'.repeat(MAX_WORD_LENGTH - 1)],
   ]
-  test.each(truncateZimArticleTitleWordsCases)('truncateZimArticleTitleWords', (...args) => {
+  test.each(truncateZimEntryTitleWordsCases)('truncateZimEntryTitleWords', (...args) => {
     const [value, expected] = args as [string, string | undefined]
-    expect(truncateZimArticleTitleWords(value)).toBe(expected || value)
+    expect(truncateZimEntryTitleWords(value)).toBe(expected || value)
   })
 })

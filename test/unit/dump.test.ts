@@ -27,7 +27,7 @@ describe('Dump filename radical', () => {
     }
   })
 
-  describe('Based on article list', () => {
+  describe('Based on page list', () => {
     const radicalTests = {
       Brian_May: 'brian-may',
       'Bob:Morane': 'bob-morane',
@@ -36,10 +36,10 @@ describe('Dump filename radical', () => {
       'https://myhost.acme.com/mylist1.tsv,https://myhost.acme.com/mylist2.tsv': 'mylist2',
     }
 
-    for (const [articleList, expectedRadicalSuffix] of Object.entries(radicalTests)) {
-      test(`radical for article list [${articleList}] is correct`, async () => {
+    for (const [pageList, expectedRadicalSuffix] of Object.entries(radicalTests)) {
+      test(`radical for page list [${pageList}] is correct`, async () => {
         const t = await createTranslator('en')
-        const dump = new Dump('', '', { articleList } as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: 'en' } as any, undefined, t)
+        const dump = new Dump('', '', { pageList } as any, { creator: '', webUrl: 'https://en.wikipedia.org', langIso2: 'en' } as any, undefined, t)
         const outFormat = dump.computeFilenameRadical(false, false, true)
         expect(outFormat).toEqual(`_en_${expectedRadicalSuffix}`)
       })

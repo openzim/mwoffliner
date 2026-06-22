@@ -1,11 +1,11 @@
-import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from './misc.js'
+import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodePageTitleForZimHtmlUrl } from './misc.js'
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
 import RedisStore from '../RedisStore.js'
 import DU from '../DOMUtils.js'
 import * as logger from '../Logger.js'
 
-function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): string {
+function rewriteUrlNoContentCheck(pagePath: ZimPath, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): PageTitle {
   const classList: string[] = (linkNode.getAttribute('class') || '').split(' ').filter((cssClass) => cssClass)
   const rel: string[] = (linkNode.getAttribute('rel') || '').split(' ').filter((rel) => rel)
   let href = linkNode.getAttribute('href') || ''
@@ -115,7 +115,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
       if (shouldScrape) {
         try {
           const mediaUrl = getFullUrl(href, MediaWiki.baseUrl)
-          const newHref = getRelativeFilePath(articleId, getMediaBase(mediaUrl, true))
+          const newHref = getRelativeFilePath(pagePath, getMediaBase(mediaUrl, true))
           linkNode.setAttribute('href', newHref)
           if (mediaDependencies) {
             mediaDependencies.push(mediaUrl)
@@ -161,7 +161,7 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
   const title = MediaWiki.extractPageTitleFromHref(href)
   if (title) {
     const localAnchor = href.lastIndexOf('#') === -1 ? '' : href.substr(href.lastIndexOf('#'))
-    linkNode.setAttribute('href', encodeArticleIdForZimHtmlUrl(title) + localAnchor)
+    linkNode.setAttribute('href', encodePageTitleForZimHtmlUrl(title) + localAnchor)
     return title
   }
 
@@ -171,63 +171,63 @@ function rewriteUrlNoArticleCheck(articleId: string, dump: Dump, linkNode: Domin
   return null
 }
 
-async function checkIfArticlesMirrored(articleTitles: string[], articleDetailXId: RKVS<ArticleDetail>): Promise<[string[], string[]]> {
-  const mirrored: string[] = []
-  const unmirrored: string[] = []
-  if (!articleTitles.length) {
+async function checkIfPagesMirrored(pageTitles: PageTitle[]): Promise<[string[], string[]]> {
+  const mirrored: PageTitle[] = []
+  const unmirrored: PageTitle[] = []
+  if (!pageTitles.length) {
     return [mirrored, unmirrored]
   }
 
-  const articlesMirrored = await articleDetailXId.existsMany(articleTitles)
-  for (const articleTitle of articleTitles) {
-    if (articlesMirrored[articleTitle]) {
-      mirrored.push(articleTitle)
+  const pagesMirrored = await RedisStore.pagesStore.existsMany(pageTitles)
+  for (const pageTitle of pageTitles) {
+    if (pagesMirrored[pageTitle]) {
+      mirrored.push(pageTitle)
     } else {
-      unmirrored.push(articleTitle)
+      unmirrored.push(pageTitle)
     }
   }
   return [mirrored, unmirrored]
 }
 
-export async function rewriteUrls(articleId: string, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
+export async function rewriteUrls(pagePath: ZimPath, dump: Dump, linkNodes: DominoElement[]): Promise<{ mediaDependencies: string[] }> {
   const mediaDependencies: string[] = []
 
   /*
-   * key: article title
-   * value: Array of linkNodes linking to article
+   * key: page title
+   * value: Array of linkNodes linking to page
    */
-  const wikilinkMappings: { [title: string]: DominoElement[] } = {}
+  const wikilinkMappings: { [title: PageTitle]: DominoElement[] } = {}
 
   for (const linkNode of linkNodes) {
-    const articleLink = rewriteUrlNoArticleCheck(articleId, dump, linkNode, mediaDependencies)
+    const pageLink = rewriteUrlNoContentCheck(pagePath, dump, linkNode, mediaDependencies)
 
-    if (articleLink) {
-      if (Array.isArray(wikilinkMappings[articleLink])) {
-        wikilinkMappings[articleLink].push(linkNode)
+    if (pageLink) {
+      if (Array.isArray(wikilinkMappings[pageLink])) {
+        wikilinkMappings[pageLink].push(linkNode)
       } else {
-        wikilinkMappings[articleLink] = [linkNode]
+        wikilinkMappings[pageLink] = [linkNode]
       }
     }
   }
 
-  const [, unmirroredTitles] = await checkIfArticlesMirrored(Object.keys(wikilinkMappings), RedisStore.articleDetailXId)
+  const [, unmirroredTitles] = await checkIfPagesMirrored(Object.keys(wikilinkMappings).map((l) => l as PageTitle))
 
   if (unmirroredTitles.length) {
-    const articlesRedirected = await RedisStore.redirectsXId.existsMany(unmirroredTitles)
-    for (const articleTitle of unmirroredTitles) {
-      const redirect = articlesRedirected[articleTitle]
+    const pagesRedirected = await RedisStore.redirectsStore.existsMany(unmirroredTitles)
+    for (const pageTitle of unmirroredTitles) {
+      const redirect = pagesRedirected[pageTitle]
       if (!redirect) {
-        wikilinkMappings[articleTitle].forEach((linkNode: DominoElement) => {
+        wikilinkMappings[pageTitle].forEach((linkNode: DominoElement) => {
           migrateChildren(linkNode, linkNode.parentNode, linkNode)
           linkNode.parentNode.removeChild(linkNode)
         })
-        delete wikilinkMappings[articleTitle]
+        delete wikilinkMappings[pageTitle]
       }
     }
   }
 
-  if (articleId.includes('/')) {
-    const slashesInUrl = articleId.split('/').length - 1
+  if (pagePath.includes('/')) {
+    const slashesInUrl = pagePath.split('/').length - 1
     const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
     Object.values(wikilinkMappings).forEach((linkNodes: DominoElement[]) => {
       for (const linkNode of linkNodes) {
@@ -240,13 +240,13 @@ export async function rewriteUrls(articleId: string, dump: Dump, linkNodes: Domi
   return { mediaDependencies }
 }
 
-export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, articleId: string, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
+export async function rewriteUrlsOfDoc(parsoidDoc: DominoElement, pagePath: ZimPath, dump: Dump): Promise<{ mediaDependencies: string[]; doc: DominoElement }> {
   /* Go through all links */
   const as = parsoidDoc.getElementsByTagName('a')
   const areas = parsoidDoc.getElementsByTagName('area')
   const linkNodes: DominoElement[] = Array.prototype.slice.call(as).concat(Array.prototype.slice.call(areas))
 
-  const ret = await rewriteUrls(articleId, dump, linkNodes)
+  const ret = await rewriteUrls(pagePath, dump, linkNodes)
   return {
     ...ret,
     doc: parsoidDoc,

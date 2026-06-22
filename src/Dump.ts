@@ -17,7 +17,7 @@ interface DumpOpts {
   customZimLongDescription?: string
   mainPage?: string
   filenamePrefix?: string
-  articleList?: string
+  pageList?: string
   resume?: boolean
   minifyHtml: boolean
   keepEmptySections: boolean
@@ -37,18 +37,18 @@ export class Dump {
   public t: Translator
   public mwMetaData: MWMetaData
   public outFile: string
-  public maxHardFailedArticles: number = 0
+  public maxHardFailedPages: number = 0
   public status = {
     files: {
       success: 0,
       fail: 0,
     },
-    articles: {
+    pages: {
       success: 0,
       hardFail: 0,
-      hardFailedArticleIds: [],
+      hardFailedPages: [],
       softFail: 0,
-      softFailedArticleIds: [],
+      softFailedPages: [],
     },
     redirects: {
       written: 0,
@@ -112,9 +112,9 @@ export class Dump {
       radical += langSuffix
     }
     if (!withoutSelection && !this.opts.filenamePrefix) {
-      if (this.opts.articleList) {
+      if (this.opts.pageList) {
         let filenamePostfix = pathParser
-          .basename(this.opts.articleList)
+          .basename(this.opts.pageList)
           .toLowerCase()
           .replace(/\.\w{3}$/, '')
           .replace(/[^a-z0-9-]+/g, '-')

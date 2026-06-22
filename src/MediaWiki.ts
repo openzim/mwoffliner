@@ -108,7 +108,7 @@ class MediaWiki {
   public categoriesPageSize: number
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
-  public apiCheckArticleId: string
+  public apiCheckPageTitle: PageTitle
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
   public skin = 'vector' // Default fallback
@@ -208,7 +208,7 @@ class MediaWiki {
 
     this.namespaces = {}
     this.namespacesToMirror = []
-    this.apiCheckArticleId = 'MediaWiki:Sidebar'
+    this.apiCheckPageTitle = 'MediaWiki:Sidebar' as PageTitle
 
     this.queryOpts = {
       action: 'query',
@@ -241,7 +241,7 @@ class MediaWiki {
   public async hasActionParseApi(): Promise<boolean> {
     if (this.#hasActionParseApi === null) {
       this.actionParseUrlDirector = new ActionParseURLDirector(this.actionApiUrl.href, this.skin)
-      const checkUrl = this.actionParseUrlDirector.buildArticleURL(this.apiCheckArticleId)
+      const checkUrl = this.actionParseUrlDirector.buildPageUrl(this.apiCheckPageTitle)
       this.#hasActionParseApi = await checkApiAvailability(checkUrl)
       logger.info(`Checked for ActionParseApi at ${checkUrl} -- result is: ${this.#hasActionParseApi}`)
     }
@@ -284,7 +284,7 @@ class MediaWiki {
       const reqOpts = {
         ...this.queryOpts,
         prop: 'info|flagged',
-        titles: this.apiCheckArticleId,
+        titles: this.apiCheckPageTitle,
       }
       const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
       const isFlaggedWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('flagged')
@@ -379,48 +379,52 @@ class MediaWiki {
     })
   }
 
-  public extractPageTitleFromHref(href: any) {
-    try {
-      const pathname = new URL(href, this.baseUrl).pathname
+  public extractPageTitleFromHref(href: any): PageTitle {
+    const extractPageTitleOrIdFromHref = (href: any): string => {
+      try {
+        const pathname = new URL(href, this.baseUrl).pathname
 
-      // Link to domain root when main page is domain root
-      if (href === '/' && this.metaData.mainPageIsDomainRoot) {
-        return this.metaData.mainPage
-      }
+        // Link to domain root when main page is domain root
+        if (href === '/' && this.metaData.mainPageIsDomainRoot) {
+          return this.metaData.mainPage
+        }
 
-      // Link to index.php with query parameters like "/w/index.php?title=Blue_whale"
-      if (pathname === this.#indexPhpPath) {
-        const queryString = href.split('?')[1]
-        const params = new URLSearchParams(queryString)
-        return params.get('title')
-      }
+        // Link to index.php with query parameters like "/w/index.php?title=Blue_whale"
+        if (pathname === this.#indexPhpPath) {
+          const queryString = href.split('?')[1]
+          const params = new URLSearchParams(queryString)
+          return params.get('title')
+        }
 
-      // Local relative URL
-      if (href.indexOf('./') === 0) {
-        return util.decodeURIComponent(pathname.substr(1))
-      }
+        // Local relative URL
+        if (href.indexOf('./') === 0) {
+          return util.decodeURIComponent(pathname.substr(1))
+        }
 
-      // Absolute path
-      if (pathname.startsWith(this.webUrl.pathname)) {
-        return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length))
-      }
+        // Absolute path
+        if (pathname.startsWith(this.webUrl.pathname)) {
+          return util.decodeURIComponent(pathname.substr(this.webUrl.pathname.length))
+        }
 
-      const isPaginatedRegExp = /\/[0-9]+(\.|$)/
-      const isPaginated = isPaginatedRegExp.test(href)
-      if (isPaginated) {
-        const withoutDotHtml = href.split('.').slice(0, -1).join('.')
-        const lastTwoSlashes = withoutDotHtml.split('/').slice(-2).join('/')
-        return lastTwoSlashes
-      }
-      if (pathParser.parse(href).dir.includes('../')) {
-        return pathParser.parse(href).name
-      }
+        const isPaginatedRegExp = /\/[0-9]+(\.|$)/
+        const isPaginated = isPaginatedRegExp.test(href)
+        if (isPaginated) {
+          const withoutDotHtml = href.split('.').slice(0, -1).join('.')
+          const lastTwoSlashes = withoutDotHtml.split('/').slice(-2).join('/')
+          return lastTwoSlashes
+        }
+        if (pathParser.parse(href).dir.includes('../')) {
+          return pathParser.parse(href).name
+        }
 
-      return null /* Interwiki link? -- return null */
-    } catch {
-      logger.warn(`Unable to parse href ${href}`)
-      return null
+        return null /* Interwiki link? -- return null */
+      } catch {
+        logger.warn(`Unable to parse href ${href}`)
+        return null
+      }
     }
+    const pageLink = extractPageTitleOrIdFromHref(href)
+    return pageLink && (pageLink.replace(/_/g, ' ') as PageTitle)
   }
 
   public getCreatorName() {
@@ -472,7 +476,7 @@ class MediaWiki {
 
     const { url: licenseUrl, text: licenseName } = body.query.rightsinfo
     const subTitle = body.query.allmessages[0].content || ''
-    const mainPage = generalEntries.mainpage.replace(/ /g, '_')
+    const mainPage = generalEntries.mainpage
     const mainPageIsDomainRoot = generalEntries.mainpageisdomainroot
     const siteName = generalEntries.sitename
     const categoryCollation = generalEntries.categorycollation

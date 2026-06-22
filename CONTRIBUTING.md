@@ -147,7 +147,7 @@ Advices for debugging mwoffliner issues:
       worthwhile.
 4.  Make a small test case to use as you develop rather than
     processing a large wiki. In particular, the argument
-    `--articleList` are useful. Run mwoffliner with `--help` for
+    `--pageList` are useful. Run mwoffliner with `--help` for
     details on those and other flags that may be useful.
 
 ## Releasing and Publishing

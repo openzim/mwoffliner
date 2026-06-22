@@ -1,8 +1,7 @@
 import * as backoff from 'backoff'
 import { config } from './config.js'
-import { normalizeMwResponse, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType } from './util/index.js'
+import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
 import { Readable } from 'stream'
-import deepmerge from 'deepmerge'
 import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import sharp from 'sharp'
@@ -18,14 +17,15 @@ import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
 
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
-import { Renderer, RenderOutput } from './renderers/abstract.renderer.js'
+import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
+import deepmerge from 'deepmerge'
 
 interface DownloaderOpts {
   uaString: string
   workers: number
-  articleRequestInterval?: number
+  pageRequestInterval?: number
   reqTimeout: number
   optimisationCacheUrl: string
   s3?: S3
@@ -120,7 +120,7 @@ class Downloader {
     return Downloader.instance
   }
   private _workers: number
-  private _articleRequestInterval: number
+  private _pageRequestInterval: number
   private _webp: boolean = false
   private _requestTimeout: number
   private _basicRequestOptions: AxiosRequestConfig
@@ -137,15 +137,15 @@ class Downloader {
   private _apiUrlDirector: ApiURLDirector
   private cookierJar: CookieJar
 
-  private articleUrlDirector: URLDirector
+  private pageUrlDirector: URLDirector
   private insecure: boolean = false
 
   get workers() {
     return this._workers
   }
 
-  get articleRequestInterval() {
-    return this._articleRequestInterval
+  get pageRequestInterval() {
+    return this._pageRequestInterval
   }
 
   get webp() {
@@ -173,7 +173,7 @@ class Downloader {
   set init({
     uaString,
     workers,
-    articleRequestInterval,
+    pageRequestInterval,
     reqTimeout,
     optimisationCacheUrl,
     s3,
@@ -185,7 +185,7 @@ class Downloader {
     this.reset()
     this.uaString = uaString
     this._workers = workers
-    this._articleRequestInterval = articleRequestInterval
+    this._pageRequestInterval = pageRequestInterval
     this._requestTimeout = reqTimeout
     this.optimisationCacheUrl = optimisationCacheUrl
     this._webp = webp
@@ -294,7 +294,7 @@ class Downloader {
   private reset() {
     this.uaString = undefined
     this._workers = undefined
-    this._articleRequestInterval = undefined
+    this._pageRequestInterval = undefined
     this._requestTimeout = undefined
     this.optimisationCacheUrl = undefined
     this._webp = false
@@ -309,7 +309,7 @@ class Downloader {
     this._jsonRequestOptions = undefined
     this._streamRequestOptions = undefined
 
-    this.articleUrlDirector = undefined
+    this.pageUrlDirector = undefined
   }
 
   /**
@@ -345,12 +345,12 @@ class Downloader {
     }
   }
 
-  public setUrlsDirectors(articlesRenderer: Renderer): void {
-    this.articleUrlDirector = this.getUrlDirector(articlesRenderer)
+  public setUrlsDirectors(pagesRenderer: Renderer): void {
+    this.pageUrlDirector = this.getUrlDirector(pagesRenderer)
   }
 
-  public getArticleUrl(articleId: string, articleUrlOpts: RendererArticleOpts = {}): string {
-    return this.articleUrlDirector.buildArticleURL(articleId, articleUrlOpts)
+  public getPageUrl(pageTitle: PageTitle, pageUrlOpts: PageUrlOpts = {}): string {
+    return this.pageUrlDirector.buildPageUrl(pageTitle, pageUrlOpts)
   }
 
   public removeEtagWeakPrefix(etag: string): string {
@@ -361,15 +361,15 @@ class Downloader {
     return this.getJSON<SiteInfoResponse>(this.apiUrlDirector.buildSiteInfoURL())
   }
 
-  public async getArticleDetailsIds(articleIds: string[], shouldGetThumbnail = false): Promise<QueryMwRet> {
+  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false): Promise<QueryMwRet> {
     let continuation: ContinueOpts
-    let finalProcessedResp: QueryMwRet
+    let allPages: { [key: string]: PageInfo & QueryRet } = {}
     const visitedUrls = new Set<string>()
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...(await this.getArticleQueryOpts(shouldGetThumbnail, true)),
-        titles: articleIds.join('|'),
+        ...(await this.getPageQueryOpts(shouldGetThumbnail, true)),
+        titles: pageTitles.join('|'),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
@@ -382,36 +382,41 @@ class Downloader {
 
       const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
       if (visitedUrls.has(reqUrl)) {
-        throw new Error(`Detected continuation cycle while fetching article details by IDs. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
+        throw new Error(`Detected continuation cycle while fetching page details by IDs. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
       }
       visitedUrls.add(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
-
       Downloader.handleMWWarningsAndErrors(resp)
+      const pages = Object.values(resp.query?.pages)
+      pages.forEach((page) => filterRedirects(page))
 
-      const processedResponse = resp.query?.pages ? normalizeMwResponse(resp.query) : {}
-      if (resp.continue) {
-        continuation = resp.continue
-        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
-      } else {
-        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
+      /* deepmerge because a single page data might be split over multiple API results pages */
+      allPages = deepmerge(
+        allPages,
+        pages.reduce((acc, page) => {
+          acc[page.title] = page
+          return acc
+        }, {}),
+      )
+
+      continuation = resp.continue
+      if (!continuation) {
         break
       }
     }
 
-    return finalProcessedResp
+    return Object.values(allPages)
   }
 
-  public async getArticleDetailsNS(ns: number, gapcontinue = ''): Promise<{ gapContinue: string; articleDetails: QueryMwRet }> {
-    let queryContinuation: QueryContinueOpts
-    let finalProcessedResp: QueryMwRet
-    let gCont: string = null
+  public async getPagesByNamespace(namespace: number, requestGapcontinue = ''): Promise<{ gapContinue: string; pages: QueryMwRet }> {
+    let queryContinuation: QueryContinueOpts = null
+    let allPages: { [key: string]: PageInfo & QueryRet } = {}
     const visitedUrls = new Set<string>()
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...(await this.getArticleQueryOpts()),
+        ...(await this.getPageQueryOpts()),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
           ? {
@@ -423,8 +428,8 @@ class Downloader {
         generator: 'allpages',
         gapfilterredir: 'nonredirects',
         gaplimit: 'max',
-        gapnamespace: String(ns),
-        gapcontinue,
+        gapnamespace: String(namespace),
+        gapcontinue: requestGapcontinue,
       }
 
       if (queryContinuation) {
@@ -436,49 +441,44 @@ class Downloader {
 
       const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
       if (visitedUrls.has(reqUrl)) {
-        throw new Error(`Detected continuation cycle while fetching article details in namespace ${ns}. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
+        throw new Error(`Detected continuation cycle while fetching pages details in namespace ${namespace}. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
       }
       visitedUrls.add(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
+      const pages = Object.values(resp.query?.pages)
+      pages.forEach((page) => filterRedirects(page))
 
-      const processedResponse = normalizeMwResponse(resp.query)
+      /* deepmerge because a single page data might be split over multiple API results pages */
+      allPages = deepmerge(
+        allPages,
+        pages.reduce((acc, page) => {
+          acc[page.title] = page
+          return acc
+        }, {}),
+      )
 
-      gCont = resp['query-continue']?.allpages?.gapcontinue ?? gCont
-
-      const queryComplete = Object.keys(resp['query-continue'] || {}).filter((key) => key !== 'allpages').length === 0
-
-      if (!queryComplete) {
-        queryContinuation = resp['query-continue']
-
-        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
-      } else {
-        finalProcessedResp = finalProcessedResp === undefined ? processedResponse : deepmerge(finalProcessedResp, processedResponse)
+      queryContinuation = resp['query-continue']
+      const queryComplete = Object.keys(queryContinuation || {}).filter((key) => key !== 'allpages').length === 0
+      if (queryComplete) {
         break
       }
     }
 
     return {
-      articleDetails: finalProcessedResp,
-      gapContinue: gCont,
+      pages: Object.values(allPages),
+      gapContinue: queryContinuation?.allpages?.gapcontinue || null,
     }
   }
 
-  public async getLogEvents(letype: string, articleId: string): Promise<any> {
-    const logEventsData = await this.getJSON<any>(this.apiUrlDirector.buildLogEventsQuery(letype, articleId))
+  public async getLogEvents(letype: string, pageTitle: PageTitle): Promise<any> {
+    const logEventsData = await this.getJSON<any>(this.apiUrlDirector.buildLogEventsQuery(letype, pageTitle))
     return logEventsData.query?.logevents
   }
 
-  public async getArticle(
-    articleId: string,
-    articleDetailXId: RKVS<ArticleDetail>,
-    articleRenderer: Renderer,
-    articleUrl,
-    dump: Dump,
-    articleDetail?: ArticleDetail,
-  ): Promise<RenderOutput> {
-    logger.debug(`Getting article [${articleId}] from ${articleUrl}`)
+  public async getPage(pageTitle: PageTitle, pageRenderer: Renderer, pageUrl, dump: Dump, pageDetail?: PageDetail): Promise<RenderOutput> {
+    logger.debug(`Getting page [${pageTitle}] from ${pageUrl}`)
 
     try {
       const {
@@ -486,32 +486,32 @@ class Downloader {
         moduleDependencies,
         redirects,
         displayTitle,
-        articleSubtitle,
+        subtitle,
         categoriesHtml = '',
         bodyCssClass,
         htmlCssClass,
-      } = await articleRenderer.download({
-        articleId,
-        articleUrl,
-        articleDetail,
+      } = await pageRenderer.download({
+        pageTitle,
+        pageUrl,
+        pageDetail,
         langVar: dump.langVar,
       })
 
       // Cope with the fact that the page we are fetching might have been moved and replaced by a redirect
       // In such a case, the download above is expected to follow the redirect so that we have proper original
-      // content at original article path, but we probably need to add a redirect since new article location
-      // probably did not existed when listing articles (might have existed if the move occured during article
+      // content at original page path, but we probably need to add a redirect since new page location
+      // probably did not existed when listing pages (might have existed if the move occured during page
       // listing). The redirect we add in hence in the "opposite" direction than usual, i.e. it will redirect
       // from new location to original location. Note that only ActionParse API gives proper redirects info.
       for (const redirect of redirects) {
-        if (!(await RedisStore.articleDetailXId.exists(redirect.to)) && !(await RedisStore.redirectsXId.exists(redirect.to))) {
-          RedisStore.redirectsXId.set(redirect.to, { targetId: redirect.from, title: redirect.to, fragment: '' })
+        if (!(await RedisStore.pagesStore.exists(redirect.to)) && !(await RedisStore.redirectsStore.exists(redirect.to))) {
+          await RedisStore.redirectsStore.set(redirect.to, { to: redirect.from, from: redirect.to, fragment: '' })
         }
       }
 
       let categoryMembers: GroupedCategoryMembers = null
-      if (articleDetail.categoryinfo?.size) {
-        categoryMembers = await this.getCategoryMembers(articleId, { ...articleDetail.categoryinfo })
+      if (pageDetail.categoryinfo?.size) {
+        categoryMembers = await this.getCategoryMembers(pageTitle, { ...pageDetail.categoryinfo })
         if (MediaWiki.getCategories) {
           categoryMembers.categoryinfo.subcats = categoryMembers.subcats.length
           categoryMembers.categoryinfo.pages = categoryMembers.pages.length
@@ -519,14 +519,13 @@ class Downloader {
         }
       }
 
-      return await articleRenderer.render({
+      return await pageRenderer.render({
         data,
         moduleDependencies,
-        articleId,
-        articleDetailXId,
-        articleDetail,
+        pageTitle,
+        pageDetail,
         displayTitle,
-        articleSubtitle,
+        subtitle,
         categoryMembers,
         categoriesHtml,
         bodyCssClass,
@@ -556,7 +555,7 @@ class Downloader {
         throw err
       }
       logger.warn(
-        `Article ${articleId} failed to download from '${downloadErrorContext.urlCalled}' with ` +
+        `Page ${pageTitle} failed to download from '${downloadErrorContext.urlCalled}' with ` +
           `'${downloadErrorContext.errorCode}' error code, ` +
           `'${downloadErrorContext.httpReturnCode}' HTTP return code ` +
           `and '${downloadErrorContext.responseContentType}' content-type ` +
@@ -569,24 +568,23 @@ class Downloader {
       }
       if (errorRule.isHardFailure) {
         logger.info(`This is a hard ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
-        dump.status.articles.hardFail += 1
-        dump.status.articles.hardFailedArticleIds.push(articleId)
-        if (dump.maxHardFailedArticles > 0 && dump.status.articles.hardFail > dump.maxHardFailedArticles) {
-          throw new Error('Too many articles failed to download') // eslint-disable-line preserve-caught-error
+        dump.status.pages.hardFail += 1
+        dump.status.pages.hardFailedPages.push(pageTitle)
+        if (dump.maxHardFailedPages > 0 && dump.status.pages.hardFail > dump.maxHardFailedPages) {
+          throw new Error('Too many pages failed to download') // eslint-disable-line preserve-caught-error
         }
       } else {
         logger.info(`This is a soft ${errorRule.detailsMessageKey} error which will be replaced by a placeholder`)
-        dump.status.articles.softFail += 1
-        dump.status.articles.softFailedArticleIds.push(articleId)
+        dump.status.pages.softFail += 1
+        dump.status.pages.softFailedPages.push(pageTitle)
       }
-      RedisStore.articleDetailXId.delete(articleId) // Remove article from list so that we stop creating links to this placeholder
-      const articleTitle = articleId.replace(/_/g, ' ')
-      const errorPlaceholderHtml = renderDownloadError(errorRule, dump, articleId, articleTitle)
+      await RedisStore.pagesStore.delete(pageTitle) // Remove page from list so that we stop creating links to this placeholder
+      const errorPlaceholderHtml = renderDownloadError(errorRule, dump, pageTitle)
       return {
         items: [
           {
-            articleId: articleId,
-            zimPath: articleId,
+            pageTitle,
+            zimPath: makeZimPath(pageTitle),
             zimTitle: '', // we do not want these failed downloads to end-up in suggestion search
             htmlContent: errorPlaceholderHtml,
           },
@@ -689,7 +687,7 @@ class Downloader {
     if (resp.error) logger.info(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
   }
 
-  private async getArticleQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
+  private async getPageQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
     const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}${(await MediaWiki.hasFlaggedRevs()) ? '|flagged' : ''}`
     return {
       ...MediaWiki.queryOpts,
@@ -877,22 +875,22 @@ class Downloader {
     handler(err)
   }
 
-  private async getCategoryMembers(articleId: string, categoryinfo: CategoryInfo, continueStr = ''): Promise<GroupedCategoryMembers> {
+  private async getCategoryMembers(pageTitle: PageTitle, categoryinfo: CategoryInfo, continueStr = ''): Promise<GroupedCategoryMembers> {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
-    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(articleId, continueStr))
+    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
     const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
       const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':').slice(1).join(':')) || a.title)
       a.sortkeyprefix = [...sortkey][0]
       return a && a.title
     })
-    const articlesMirrored = MediaWiki.getCategories ? await RedisStore.articleDetailXId.existsMany(items.map((a) => a.title.replace(/ /g, '_'))) : null
-    const subcats = items.filter((a) => a.type === 'subcat' && (articlesMirrored ? articlesMirrored[a.title.replace(/ /g, '_')] : true))
-    const pages = items.filter((a) => a.type === 'page' && (articlesMirrored ? articlesMirrored[a.title.replace(/ /g, '_')] : true))
-    const files = items.filter((a) => a.type === 'file' && (articlesMirrored ? articlesMirrored[a.title.replace(/ /g, '_')] : true))
+    const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
+    const subcats = items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true))
+    const pages = items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true))
+    const files = items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true))
 
     if (cont && cont.cmcontinue) {
-      const nextItems = await this.getCategoryMembers(articleId, categoryinfo, cont.cmcontinue)
+      const nextItems = await this.getCategoryMembers(pageTitle, categoryinfo, cont.cmcontinue)
       return {
         subcats: subcats.concat(nextItems.subcats),
         pages: pages.concat(nextItems.pages),

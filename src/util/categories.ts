@@ -7,18 +7,18 @@ export function buildCategoryMemberList(
   type: 'subcats' | 'pages' | 'files',
   categoryMembers: Array<CategoryMember>,
   categoryinfo: CategoryInfo,
-  articleDetail: ArticleDetail,
+  pageDetail: PageDetail,
   doc: Document,
   dump: Dump,
   numericSorting: boolean,
   page: number,
   isLastPage: boolean,
-  articleZimPath: string,
+  pagePath: string,
 ): HTMLElement {
   let idName: string
   let headerContent: string
   let descText: string
-  const pageName = articleDetail.title.split(':').slice(1).join(':')
+  const pageName = pageDetail.title.split(':').slice(1).join(':')
   if (type === 'subcats') {
     idName = 'mw-subcategories'
     headerContent = dump.t('subcategories')
@@ -26,7 +26,7 @@ export function buildCategoryMemberList(
   } else if (type === 'pages') {
     idName = 'mw-pages'
     headerContent = dump.t('categoryHeader', { pageName })
-    descText = dump.t('categoryArticleCount', { curPageCount: categoryMembers.length, count: categoryinfo[type] })
+    descText = dump.t('categoryPageCount', { curPageCount: categoryMembers.length, count: categoryinfo[type] })
   } else if (type === 'files') {
     idName = 'mw-category-media'
     headerContent = dump.t('categoryMediaHeader', { pageName })
@@ -41,9 +41,9 @@ export function buildCategoryMemberList(
   desc.textContent = descText
   section.appendChild(desc)
   const content = doc.createElement('div')
-  content.lang = articleDetail.pagelang
-  content.dir = articleDetail.pagedir
-  content.classList.add('mw-content-' + articleDetail.pagedir)
+  content.lang = pageDetail.pagelang
+  content.dir = pageDetail.pagedir
+  content.classList.add('mw-content-' + pageDetail.pagedir)
   const columns = doc.createElement('div')
   columns.classList.add('mw-category')
   if (categoryMembers.length > 6) columns.classList.add('mw-category-columns')
@@ -120,9 +120,9 @@ export function buildCategoryMemberList(
     columns.appendChild(column)
   }
   content.appendChild(columns)
-  section.appendChild(buildPaginationDiv(doc, page, isLastPage, articleZimPath, type, idName, dump))
+  section.appendChild(buildPaginationDiv(doc, page, isLastPage, pagePath, type, idName, dump))
   section.appendChild(content)
-  section.appendChild(buildPaginationDiv(doc, page, isLastPage, articleZimPath, type, idName, dump))
+  section.appendChild(buildPaginationDiv(doc, page, isLastPage, pagePath, type, idName, dump))
   return section
 }
 
@@ -130,16 +130,15 @@ export async function buildCategoryTypeItems(
   type: 'subcats' | 'pages' | 'files',
   categoryinfo: CategoryInfo,
   categoryMembers: GroupedCategoryMembers,
-  articleZimPath: string,
-  articleDetail: ArticleDetail,
+  pagePath: ZimPath,
+  pageDetail: PageDetail,
   doc: Document,
   dump: Dump,
   numericSorting: boolean,
   moduleDependencies: { styleDependenciesList: string[] },
-  callback: (moduleDependencies: any, zimPath: string) => any,
-  articleId: string,
+  pageTitle: PageTitle,
   categoryContent: HTMLElement,
-  articleItems: Array<{ articleId: string; zimPath: string; zimTitle?: string; htmlContent: string }>,
+  pageItems: Array<RenderSingleOutput>,
 ): Promise<void> {
   if (!categoryinfo[type]) return
   if (type === 'files' && !categoryinfo.nogallery) {
@@ -149,27 +148,27 @@ export async function buildCategoryTypeItems(
   for (let start = 0; start < categoryinfo[type]; start += MediaWiki.categoriesPageSize) {
     const end = Math.min(start + MediaWiki.categoriesPageSize, categoryinfo[type])
     const isLastPage = end >= categoryinfo[type]
-    const section = buildCategoryMemberList(type, categoryMembers[type].slice(start, end), categoryinfo, articleDetail, doc, dump, numericSorting, page, isLastPage, articleZimPath)
+    const section = buildCategoryMemberList(type, categoryMembers[type].slice(start, end), categoryinfo, pageDetail, doc, dump, numericSorting, page, isLastPage, pagePath)
     if (page === 1) {
-      // Append section directly to article itself if on first page so that noJS works fine
+      // Append section directly to page itself if on first page so that noJS works fine
       categoryContent.appendChild(section)
     }
 
     if (!(page == 1 && isLastPage)) {
       // Save section in subdoc so that JS can load it (including first page so we can move back to it)
-      // No need to do it if we have only one page, everything will be directly in the article
+      // No need to do it if we have only one page, everything will be directly in the page
 
-      const partialZimPath = `${config.output.dirs.categories_partials}${articleZimPath}_${type}_${page}`
+      const partialZimPath = `${config.output.dirs.categories_partials}${pagePath}_${type}_${page}` as ZimPath
 
-      // Create a copy so we can alter it without altering current article content
+      // Create a copy so we can alter it without altering current page content
       const partial = doc.createElement('div')
       partial.innerHTML = section.outerHTML
 
       // Rewrite URLs in partial
       await rewriteUrlsOfDoc(partial, partialZimPath, dump)
 
-      articleItems.push({
-        articleId,
+      pageItems.push({
+        pageTitle: pageTitle,
         zimPath: partialZimPath,
         zimTitle: '',
         htmlContent: partial.innerHTML,
@@ -190,7 +189,7 @@ function buildPaginationLink(doc: Document, targetPage: number, text: string, id
   return link
 }
 
-function buildPaginationDiv(doc: Document, page: number, isLastPage: boolean, articleZimPath: string, type: string, idName: string, dump: Dump): HTMLElement {
+function buildPaginationDiv(doc: Document, page: number, isLastPage: boolean, pathPath: string, type: string, idName: string, dump: Dump): HTMLElement {
   const section = doc.createElement('div')
   section.classList.add('mwo-cat-pagination')
 
@@ -199,9 +198,9 @@ function buildPaginationDiv(doc: Document, page: number, isLastPage: boolean, ar
   spanNoJS.textContent = dump.t('categoryNoPagination')
   section.appendChild(spanNoJS)
 
-  const slashesInUrl = articleZimPath.split('/').length - 1
+  const slashesInUrl = pathPath.split('/').length - 1
   const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
-  const partialUrl = `${upStr}${config.output.dirs.categories_partials}${articleZimPath}_${type}`
+  const partialUrl = `${upStr}${config.output.dirs.categories_partials}${pathPath}_${type}`
 
   const spanWithJS = doc.createElement('span')
   spanWithJS.classList.add('mwo-js')

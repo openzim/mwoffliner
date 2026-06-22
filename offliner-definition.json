@@ -21,20 +21,20 @@
       "title": "User Agent",
       "description": "Custom User-Agent header for all HTTP requests. Defaults to 'MWOffliner/<version> (<adminEmail>)'"
     },
-    "articleList": {
+    "pageList": {
       "type": "blob",
       "kind": "txt",
       "required": false,
-      "title": "Article List",
-      "description": "List of articles to include. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line",
+      "title": "Page List",
+      "description": "List of pages to include. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line",
       "allowRemoteUrl": true
     },
-    "articleListToIgnore": {
+    "pageListToIgnore": {
       "type": "blob",
       "kind": "txt",
       "required": false,
-      "title": "Article List to ignore",
-      "description": "List of articles to ignore. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line",
+      "title": "Page List to ignore",
+      "description": "List of pages to ignore. Comma separated list of titles or HTTP(S) URL to a file with one title (in UTF8) per line",
       "allowRemoteUrl": true
     },
     "customMainPage": {
@@ -105,12 +105,12 @@
       "type": "list-of-string-enum",
       "required": false,
       "title": "Formats",
-      "description": "Which flavours to build. Empty option will scrape all article contents, including videos.",
+      "description": "Which flavours to build. Empty option will scrape all page contents, including videos.",
       "alias": "format",
       "choices": [
-        { "title": "mini: no article details or pictures or videos", "value": "nodet,nopic:mini" },
-        { "title": "nopic: no article pictures or videos", "value": "nopic:nopic" },
-        { "title": "maxi: all except article videos", "value": "novid:maxi" },
+        { "title": "mini: no page details or pictures or videos", "value": "nodet,nopic:mini" },
+        { "title": "nopic: no page pictures or videos", "value": "nopic:nopic" },
+        { "title": "maxi: all except page videos", "value": "novid:maxi" },
         { "title": "all: everything including videos", "value": "" }
       ]
     },
@@ -131,7 +131,7 @@
       "type": "string",
       "required": false,
       "title": "Add Content Models",
-      "description": "Include additional content models besides wikitext (comma separated, e.g 'Scribunto,json'). By default, only wikitext articles are scraped."
+      "description": "Include additional content models besides wikitext (comma separated, e.g 'Scribunto,json'). By default, only wikitext pages are scraped."
     },
     "getCategories": {
       "type": "boolean",
@@ -143,14 +143,14 @@
       "type": "integer",
       "required": false,
       "title": "Categories page size",
-      "description": "Number of items (subcategories, pages, files) to display per page on category articles (default is 200)",
+      "description": "Number of items (subcategories, pages, files) to display per page on category pages (default is 200)",
       "min": 1
     },
     "keepEmptySections": {
       "type": "boolean",
       "required": false,
       "title": "Keep empty sections",
-      "description": "Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure."
+      "description": "Keep all sections, even empty ones typically used as placeholders in wikis to outline expected page structure."
     },
     "minifyHtml": {
       "type": "boolean",

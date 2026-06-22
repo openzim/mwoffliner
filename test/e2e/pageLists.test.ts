@@ -7,23 +7,23 @@ import { zimcheckAvailable, zimcheck } from '../util.js'
 
 jest.setTimeout(10000)
 
-const articleList = 'Kiwix,Wikipedia,Internet,Real-time computer graphics'
-const articleListToIgnore = 'Wikipedia, Internet'
+const pageList = 'Kiwix,Wikipedia,Internet,Real-time computer graphics,Wars_of_Augustus,Roman emperor'
+const pageListToIgnore = 'Wikipedia, Internet, Wars of Augustus,Roman_emperor'
 
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   adminEmail: 'test@kiwix.org',
-  articleList,
-  articleListToIgnore,
+  pageList,
+  pageListToIgnore,
   redis: process.env.REDIS,
   format: ['nopic'],
 }
 
-await testAllRenders('article-lists', parameters, async (outFiles) => {
-  describe('articleList', () => {
+await testAllRenders('page-lists', parameters, async (outFiles) => {
+  describe('pageList', () => {
     const listMinusIgnore = 2
 
-    test(`articleList and articleListIgnore check using ${outFiles[0].renderer} renderer`, async () => {
+    test(`pageList and pageListIgnore check using ${outFiles[0].renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
 
       // Created 1 output
@@ -31,15 +31,15 @@ await testAllRenders('article-lists', parameters, async (outFiles) => {
 
       for (const dump of outFiles) {
         if (dump.nopic) {
-          // Output has right amount of articles
-          expect(dump.status.articles.success).toEqual(listMinusIgnore)
-          // Output has no failed article
-          expect(dump.status.articles.hardFail).toEqual(0)
-          expect(dump.status.articles.softFail).toEqual(0)
+          // Output has right amount of pages
+          expect(dump.status.pages.success).toEqual(listMinusIgnore)
+          // Output has no failed page
+          expect(dump.status.pages.hardFail).toEqual(0)
+          expect(dump.status.pages.softFail).toEqual(0)
         }
       }
 
-      // Scraped selected articles from wikipedia en');
+      // Scraped selected pages from wikipedia en');
       if (await zimcheckAvailable()) {
         await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
       } else {

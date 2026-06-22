@@ -1,6 +1,6 @@
 import domino from 'domino'
 import { DownloadOpts, DownloadRes, Renderer, RenderOptsModules } from './abstract.renderer.js'
-import { RenderOpts, RenderOutput } from './abstract.renderer.js'
+import { RenderOpts } from './abstract.renderer.js'
 import * as logger from '../Logger.js'
 import { config } from '../config.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePath, jsonStringify } from '../util/misc.js'
@@ -9,9 +9,9 @@ import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackT
 import Downloader, { DownloadError } from '../Downloader.js'
 import { customCssUrlToFilename } from '../util/customCss.js'
 import Gadgets from '../Gadgets.js'
-import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/articles.js'
+import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/pages.js'
 
-// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle|categorieshtml&usearticle=1&disableeditsection=1&disablelimitreport=1&page={article_title}&useskin=vector-2022&redirects=1&formatversion=2'
+// Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle|categorieshtml&usearticle=1&disableeditsection=1&disablelimitreport=1&page={page_title}&useskin=vector-2022&redirects=1&formatversion=2'
 export interface ActionParseResult {
   parse: {
     title: string
@@ -19,6 +19,7 @@ export interface ActionParseResult {
     redirects?: {
       from: string
       to: string
+      fragment?: string
     }[]
     text: string
     displaytitle: string
@@ -48,85 +49,85 @@ export class ActionParseRenderer extends Renderer {
     }
   }
 
-  public templateDesktopArticle(bodyCssClass: string, htmlCssClass: string, hideFirstHeading: boolean, moduleDependencies: RenderOptsModules, articleId: string): Document {
+  public templatePage(bodyCssClass: string, htmlCssClass: string, hideFirstHeading: boolean, moduleDependencies: RenderOptsModules, pagePath: ZimPath): Document {
     const { jsConfigVars, jsDependenciesList, styleDependenciesList } = moduleDependencies
 
-    const articleLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
-    jsConfigVars.zimRelativeFilePath = getRelativeFilePath(articleId, '')
-    const articleJsScripts: string[] = []
+    const pageLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
+    jsConfigVars.zimRelativeFilePath = getRelativeFilePath(pagePath, '')
+    const pageJsScripts: string[] = []
     if (Downloader.webp) {
-      articleJsScripts.push(...['webpHandler'].map((oneJsDep: string) => genHeaderScript(config, oneJsDep, articleId, config.output.dirs.webp)))
+      pageJsScripts.push(...['webpHandler'].map((oneJsDep: string) => genHeaderScript(config, oneJsDep, pagePath, config.output.dirs.webp)))
     }
-    const articleJsStartup = Downloader.trustedJs ? genHeaderScript(config, 'startup', articleId, config.output.dirs.mediawiki, 'async') : ''
-    const articleCssState = { 'user.options': 'loading' }
+    const pageJsStartup = Downloader.trustedJs ? genHeaderScript(config, 'startup', pagePath, config.output.dirs.mediawiki, 'async') : ''
+    const pageCssState = { 'user.options': 'loading' }
     for (const oneCssDep of styleDependenciesList) {
-      articleCssState[oneCssDep] = 'ready'
+      pageCssState[oneCssDep] = 'ready'
     }
-    const articleCssBeforeMeta = styleDependenciesList
+    const pageCssBeforeMeta = styleDependenciesList
       .filter((oneCssDep: string) => {
         return !oneCssDep.startsWith('ext.gadget') && !['site.styles', 'noscript'].includes(oneCssDep)
       })
       .sort()
-      .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki))
+      .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, pagePath, config.output.dirs.mediawiki))
       .join('\n    ')
-    const articleCssAfterMeta = styleDependenciesList
+    const pageCssAfterMeta = styleDependenciesList
       .filter((oneCssDep: string) => {
         return oneCssDep.startsWith('ext.gadget')
       })
       .sort()
-      .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, articleId, config.output.dirs.mediawiki))
+      .map((oneCssDep: string) => genHeaderCSSLink(config, oneCssDep, pagePath, config.output.dirs.mediawiki))
       .join('\n    ')
-    let articleCssNoscript = genHeaderCSSLink(config, 'noscript', articleId, config.output.dirs.mediawiki)
+    let pageCssNoscript = genHeaderCSSLink(config, 'noscript', pagePath, config.output.dirs.mediawiki)
     if (Downloader.trustedJs) {
-      articleCssNoscript = `<noscript>${articleCssNoscript}</noscript>`
+      pageCssNoscript = `<noscript>${pageCssNoscript}</noscript>`
     }
 
     const javaScriptTemplateString = (Downloader.trustedJs ? javaScriptTemplateCode() : '')
-      .replace('__ARTICLE_CONFIGVARS__', jsonStringify(jsConfigVars))
-      .replace('__ARTICLE_JS_MODULES__', jsonStringify(jsDependenciesList))
-      .replace('__ARTICLE_CSS_STATE__', jsonStringify(articleCssState))
+      .replace('__PAGE_CONFIGVARS__', jsonStringify(jsConfigVars))
+      .replace('__PAGE_JS_MODULES__', jsonStringify(jsDependenciesList))
+      .replace('__PAGE_CSS_STATE__', jsonStringify(pageCssState))
 
     // Generate custom CSS links from --customCss option
     const customCssLinks = (Downloader.customCssUrls || [])
       .map((cssUrl: string) => {
         const filename = customCssUrlToFilename(cssUrl)
-        return genHeaderCSSLink(config, filename, articleId, config.output.dirs.res)
+        return genHeaderCSSLink(config, filename, pagePath, config.output.dirs.res)
       })
       .join('\n    ')
 
     const htmlTemplateString = this.#htmlTemplateCode()
-      .replace(/__ARTICLE_LANG_DIR__/g, articleLangDir)
-      .replace('__ARTICLE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, articleId))
-      .replace('__ARTICLE_JS_LIST__', articleJsScripts.join('\n'))
-      .replace('__ARTICLE_JAVASCRIPT__', javaScriptTemplateString)
-      .replace('__ARTICLE_CSS_BEFORE_META__', articleCssBeforeMeta)
-      .replace('__ARTICLE_JS_STARTUP__', articleJsStartup)
-      .replace('__ARTICLE_CSS_AFTER_META__', articleCssAfterMeta)
-      .replace('__ARTICLE_CSS_NOSCRIPT__', articleCssNoscript)
+      .replace(/__PAGE_LANG_DIR__/g, pageLangDir)
+      .replace('__PAGE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, pagePath))
+      .replace('__PAGE_JS_LIST__', pageJsScripts.join('\n'))
+      .replace('__PAGE_JAVASCRIPT__', javaScriptTemplateString)
+      .replace('__PAGE_CSS_BEFORE_META__', pageCssBeforeMeta)
+      .replace('__PAGE_JS_STARTUP__', pageJsStartup)
+      .replace('__PAGE_CSS_AFTER_META__', pageCssAfterMeta)
+      .replace('__PAGE_CSS_NOSCRIPT__', pageCssNoscript)
       .replace('__CUSTOM_CSS__', customCssLinks)
       .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
       .replace(/__RES_DIR__/g, config.output.dirs.res)
       .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
-      .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(articleId, ''))
-      .replace('__ARTICLE_BODY_CSS_CLASS__', bodyCssClass)
-      .replace('__ARTICLE_HTML_CSS_CLASS__', htmlCssClass)
-      .replace('__ARTICLE_FIRST_HEADING_STYLE__', hideFirstHeading ? 'style="display: none;"' : '')
+      .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(pagePath, ''))
+      .replace('__PAGE_BODY_CSS_CLASS__', bodyCssClass)
+      .replace('__PAGE_HTML_CSS_CLASS__', htmlCssClass)
+      .replace('__PAGE_FIRST_HEADING_STYLE__', hideFirstHeading ? 'style="display: none;"' : '')
 
     return domino.createDocument(htmlTemplateString)
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
-    const { articleId, articleUrl, langVar } = downloadOpts
+    const { pageTitle, pageUrl, langVar } = downloadOpts
 
     let data: ActionParseResult
     try {
-      data = await Downloader.getJSON<ActionParseResult>(articleUrl)
+      data = await Downloader.getJSON<ActionParseResult>(pageUrl)
     } catch (err) {
       if (err instanceof DownloadError && err.responseData.error?.code === 'missingtitle') {
-        // For missing articles, query log events searching for a recent move, and if found check
+        // For missing pages, query log events searching for a recent move, and if found check
         // if it has been done without redirect left behind. If so, download content from the new
-        // article location
-        const logEvents = await Downloader.getLogEvents('move', articleId)
+        // page location
+        const logEvents = await Downloader.getLogEvents('move', pageTitle)
         if (!logEvents || !logEvents[0]) {
           throw err
         }
@@ -137,18 +138,18 @@ export class ActionParseRenderer extends Renderer {
         if (!Object.keys(logEvent.params).includes('suppressredirect')) {
           throw err
         }
-        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(logEvent.params.target_title, { langVar }))
+        data = await Downloader.getJSON<any>(Downloader.getPageUrl(logEvent.params.target_title, { langVar }))
       } else if (err instanceof DownloadError && err.responseData.error?.code === 'nosuchsection') {
-        // For articles without the specified section, get the whole article instead
-        logger.warn(`Can't get a specific section of article "${articleId}", getting the complete article instead.`)
-        data = await Downloader.getJSON<any>(Downloader.getArticleUrl(articleId, { langVar }))
+        // For pages without the specified section, get the whole page instead
+        logger.warn(`Can't get a specific section of page "${pageTitle}", getting the complete page instead.`)
+        data = await Downloader.getJSON<any>(Downloader.getPageUrl(pageTitle, { langVar }))
       } else {
         throw err
       }
     }
 
     if (!data.parse) {
-      throw new DownloadError('ActionParse response is empty', articleUrl, null, null, data)
+      throw new DownloadError('ActionParse response is empty', pageUrl, null, null, data)
     }
 
     // Remove user specific module dependencies
@@ -177,23 +178,17 @@ export class ActionParseRenderer extends Renderer {
       styleDependenciesList: config.output.mw.css.concat(styleDependenciesList),
     }
 
-    const normalizedRedirects = (data.parse.redirects || []).map((redirect) => {
-      // The API returns the redirect title (!?), we fake the
-      // redirectId by putting the underscore.
-      redirect.from = String(redirect.from).replace(/ /g, '_')
-      redirect.to = String(redirect.to).replace(/ /g, '_')
-      return redirect
-    })
-
     const bodyCssClass = extractBodyCssClass(data.parse.headhtml)
     const htmlCssClass = extractHtmlCssClass(data.parse.headhtml)
 
     return {
       data: data.parse.text,
       moduleDependencies,
-      redirects: normalizedRedirects,
+      redirects: data.parse.redirects.map((redirect) => {
+        return { from: redirect.from as PageTitle, to: redirect.to as PageTitle, fragment: redirect.fragment }
+      }),
       displayTitle: data.parse.displaytitle,
-      articleSubtitle: data.parse.subtitle,
+      subtitle: data.parse.subtitle,
       categoriesHtml: data.parse.categorieshtml,
       bodyCssClass,
       htmlCssClass,
@@ -201,14 +196,12 @@ export class ActionParseRenderer extends Renderer {
   }
 
   public async render(renderOpts: RenderOpts): Promise<RenderOutput> {
-    const { data, articleId, articleSubtitle, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
+    const { data, pageTitle, pageDetail, subtitle: pageSubtitle, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
     let { displayTitle } = renderOpts
 
     if (!data) {
-      throw new Error('Cannot render missing data into an article')
+      throw new Error('Cannot render missing data into a page')
     }
-
-    const articleDetail = await renderOpts.articleDetailXId.get(articleId)
 
     const htmlDocument = domino.createDocument(data)
 
@@ -230,8 +223,8 @@ export class ActionParseRenderer extends Renderer {
       }
     }
 
-    // Add gadgets which are used on this article
-    const { cssGadgets, jsGadgets } = Gadgets.getActiveGadgetsByType(articleDetail)
+    // Add gadgets which are used on this page
+    const { cssGadgets, jsGadgets } = Gadgets.getActiveGadgetsByType(pageDetail)
     cssGadgets.sort().map((gadgetId) => {
       moduleDependencies.styleDependenciesList.push(`ext.gadget.${gadgetId}`)
     })
@@ -250,14 +243,14 @@ export class ActionParseRenderer extends Renderer {
     return super.processHtml({
       html: htmlDocument.documentElement.outerHTML,
       dump,
-      articleId,
-      articleDetail,
+      pageTitle,
+      pageDetail,
       displayTitle,
-      articleSubtitle,
+      pageSubtitle,
       categoryMembers,
       categoriesHtml,
       moduleDependencies,
-      callback: this.templateDesktopArticle.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
+      callback: this.templatePage.bind(this, bodyCssClass, htmlCssClass, hideFirstHeading),
     })
   }
 

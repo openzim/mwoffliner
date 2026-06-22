@@ -36,7 +36,7 @@ const javaScriptTemplateCode = () => {
   return readTemplate(config.output.templates.javaScript)
 }
 
-const articleListHomeTemplate = readTemplate(config.output.templates.articleListHomeTemplate)
+const pageListHomeTemplate = readTemplate(config.output.templates.pageListHomeTemplate)
 
 export {
   footerTemplate,
@@ -45,6 +45,6 @@ export {
   htmlFallbackTemplateCode,
   htmlRedirectTemplateCode,
   javaScriptTemplateCode,
-  articleListHomeTemplate,
+  pageListHomeTemplate,
   downloadErrorPlaceholderTemplate,
 }

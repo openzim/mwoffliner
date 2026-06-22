@@ -93,22 +93,22 @@ describe('Misc utility', () => {
     test('interpolates variables', async () => {
       const t = await createTranslator('en')
       expect(t('LAST_EDITED_ON', { date: '2024-06-15' })).toBe('Last edited on 2024-06-15')
-      expect(t('DOWNLOAD_ERRORS_MESSAGE', { articleTitle: 'Foo', server: 'example.org' })).toContain('Foo')
-      expect(t('DOWNLOAD_ERRORS_MESSAGE', { articleTitle: 'Foo', server: 'example.org' })).toContain('example.org')
+      expect(t('DOWNLOAD_ERRORS_MESSAGE', { pageTitle: 'Foo', server: 'example.org' })).toContain('Foo')
+      expect(t('DOWNLOAD_ERRORS_MESSAGE', { pageTitle: 'Foo', server: 'example.org' })).toContain('example.org')
     })
 
     test('handles plurals correctly for English', async () => {
       const t = await createTranslator('en')
-      expect(t('categoryArticleCount', { count: 1, curPageCount: 1 })).toBe('This category contains only the following page.')
-      expect(t('categoryArticleCount', { count: 5, curPageCount: 5 })).toBe('The following 5 pages are in this category, out of 5 total.')
+      expect(t('categoryPageCount', { count: 1, curPageCount: 1 })).toBe('This category contains only the following page.')
+      expect(t('categoryPageCount', { count: 5, curPageCount: 5 })).toBe('The following 5 pages are in this category, out of 5 total.')
       expect(t('categoryFileCount', { count: 1, curPageCount: 1 })).toBe('This category contains only the following file.')
       expect(t('categoryFileCount', { count: 3, curPageCount: 3 })).toBe('The following 3 files are in this category, out of 3 total.')
     })
 
     test('handles plurals correctly for German', async () => {
       const t = await createTranslator('de')
-      expect(t('categoryArticleCount', { count: 1, curPageCount: 1 })).toBe('Diese Kategorie enthält nur die folgende Seite.')
-      expect(t('categoryArticleCount', { count: 5, curPageCount: 5 })).toBe('Folgende 5 Seiten sind in dieser Kategorie, von 5 insgesamt.')
+      expect(t('categoryPageCount', { count: 1, curPageCount: 1 })).toBe('Diese Kategorie enthält nur die folgende Seite.')
+      expect(t('categoryPageCount', { count: 5, curPageCount: 5 })).toBe('Folgende 5 Seiten sind in dieser Kategorie, von 5 insgesamt.')
     })
 
     test('skips missing lang without error', async () => {

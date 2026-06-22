@@ -14,8 +14,8 @@ export default class ActionParseURLDirector {
     this.skin = skin
   }
 
-  buildArticleURL(articleId: string, articleUrlOpts: RendererArticleOpts = {}) {
-    const { sectionId, langVar, oldid } = articleUrlOpts
+  buildPageUrl(pageTitle: PageTitle, pageUrlOpts: PageUrlOpts = {}) {
+    const { sectionId, langVar, oldid } = pageUrlOpts
     return urlBuilder
       .setDomain(this.baseDomain)
       .setQueryParams(
@@ -27,7 +27,7 @@ export default class ActionParseURLDirector {
           disabletoc: '1',
           disableeditsection: '1',
           disablelimitreport: '1',
-          page: oldid ? undefined : articleId,
+          page: oldid ? undefined : pageTitle,
           oldid: oldid ? String(oldid) : undefined,
           useskin: this.skin,
           variant: langVar || undefined,

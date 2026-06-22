@@ -10,7 +10,7 @@ jest.setTimeout(20000)
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   adminEmail: 'test@kiwix.org',
-  articleList: 'Read_my_lips:_no_new_taxes',
+  pageList: 'Read_my_lips:_no_new_taxes',
   redis: process.env.REDIS,
 }
 

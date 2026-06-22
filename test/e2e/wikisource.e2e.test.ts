@@ -28,8 +28,8 @@ await testAllRenders('wikisource', parameters, async (outFiles) => {
           expect(dump.status.files.success).toBeGreaterThanOrEqual(2)
           // nopic has enough redirects
           expect(dump.status.redirects.written).toBeGreaterThanOrEqual(16)
-          // nopic has enough articles
-          expect(dump.status.articles.success).toBeGreaterThanOrEqual(61)
+          // nopic has enough pages
+          expect(dump.status.pages.success).toBeGreaterThanOrEqual(61)
         }
       }
     })

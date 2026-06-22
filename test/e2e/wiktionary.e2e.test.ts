@@ -11,18 +11,18 @@ await testAllRenders(
   'wiktionary',
   {
     mwUrl: 'https://en.wiktionary.org',
-    // fetch index article which will cause a conflict with default index page
-    // fetch favicon article which will cause a conflict with former favicon illustration
-    // fetch maison article to test audio behavior
-    articleList: 'index,location,favicon,maison',
+    // fetch index page which will cause a conflict with default index page
+    // fetch favicon page which will cause a conflict with former favicon illustration
+    // fetch maison page to test audio behavior
+    pageList: 'index,location,favicon,maison',
     adminEmail: 'test@kiwix.org',
   },
   async (outFiles) => {
     test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
-      expect(outFiles[0].status.articles.success).toEqual(4)
-      expect(outFiles[0].status.articles.hardFail).toEqual(0)
-      expect(outFiles[0].status.articles.softFail).toEqual(0)
+      expect(outFiles[0].status.pages.success).toEqual(4)
+      expect(outFiles[0].status.pages.hardFail).toEqual(0)
+      expect(outFiles[0].status.pages.softFail).toEqual(0)
     })
 
     test(`test audio files for ${outFiles[0]?.renderer} renderer`, async () => {
@@ -51,20 +51,20 @@ await testAllRenders(
       )
     })
 
-    test(`test maison article content for ${outFiles[0]?.renderer} renderer`, async () => {
-      const maisonArticleContent = await zimdump(`show --url maison ${outFiles[0].outFile}`)
-      const maisonArticleDoc = domino.createDocument(maisonArticleContent)
-      const sourcesEl = maisonArticleDoc.querySelectorAll('source')
+    test(`test maison page content for ${outFiles[0]?.renderer} renderer`, async () => {
+      const maisonPageContent = await zimdump(`show --url maison ${outFiles[0].outFile}`)
+      const maisonPageDoc = domino.createDocument(maisonPageContent)
+      const sourcesEl = maisonPageDoc.querySelectorAll('source')
       expect(sourcesEl.length).toBe(5)
       for (const sourceEl of Array.from(sourcesEl)) {
         expect(sourceEl.getAttribute('src').startsWith('./_assets_/0c70a452f799bfe840676ee341124611/')).toBeTruthy()
       }
     })
 
-    test(`test index article content for ${outFiles[0]?.renderer} renderer`, async () => {
-      const indexArticleContent = await zimdump(`show --url index ${outFiles[0].outFile}`)
-      const indexArticleDoc = domino.createDocument(indexArticleContent)
-      const sourcesEl = indexArticleDoc.querySelectorAll('source')
+    test(`test index page content for ${outFiles[0]?.renderer} renderer`, async () => {
+      const indexPageContent = await zimdump(`show --url index ${outFiles[0].outFile}`)
+      const indexPageDoc = domino.createDocument(indexPageContent)
+      const sourcesEl = indexPageDoc.querySelectorAll('source')
       expect(sourcesEl.length).toBe(6)
       for (const sourceEl of Array.from(sourcesEl)) {
         expect(sourceEl.getAttribute('src').startsWith('./_assets_/0c70a452f799bfe840676ee341124611/')).toBeTruthy()

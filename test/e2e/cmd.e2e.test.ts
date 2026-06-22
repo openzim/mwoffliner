@@ -18,9 +18,9 @@ describe('Exec Command With Bash', () => {
   })
 
   describe('Sanitizing', () => {
-    test('Exec Command With --articlesList and --addNamespaces together', async () => {
-      await expect(execa(`${mwo} --adminEmail=test@test.test --articleList=Portal:Biology --mwUrl=https://en.wikipedia.org/ --addNamespaces=100`, { shell: true })).rejects.toThrow(
-        /options --articlesList and --addNamespaces cannot be used together/,
+    test('Exec Command With --pageList and --addNamespaces together', async () => {
+      await expect(execa(`${mwo} --adminEmail=test@test.test --pageList=Portal:Biology --mwUrl=https://en.wikipedia.org/ --addNamespaces=100`, { shell: true })).rejects.toThrow(
+        /options --pageList and --addNamespaces cannot be used together/,
       )
     })
 

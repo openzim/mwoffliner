@@ -242,7 +242,7 @@ function main() {
   }
 
   // Check 2: Keys in Source but not found in Code (Unused?)
-  // Plural sub-keys (e.g. categoryArticleCount.one) are covered when their base key is used in code
+  // Plural sub-keys (e.g. categoryPageCount.one) are covered when their base key is used in code
   const unusedInSource = [...sourceKeys].filter((k) => {
     if (usedKeys.has(k)) return false
     const dotIdx = k.lastIndexOf('.')

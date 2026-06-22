@@ -7,7 +7,7 @@ import { rimraf } from 'rimraf'
 
 jest.setTimeout(60000)
 
-// Check the integrity of img elements between ZIM file and article html taken from it
+// Check the integrity of img elements between ZIM file and page html taken from it
 const verifyImgElements = (imgFilesArr, imgElements) => {
   for (const img of imgElements) {
     for (const imgFile of imgFilesArr) {
@@ -21,24 +21,24 @@ const verifyImgElements = (imgFilesArr, imgElements) => {
 
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
-  articleList: 'Providence/Stoughton Line', // use article with a slash in its name to check relative links are properly handled
+  pageList: 'Providence/Stoughton Line', // use page with a slash in its name to check relative links are properly handled
   adminEmail: 'test@kiwix.org',
 }
 
 await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
-  const articleFromDump = await zimdump(`show --url ${parameters.articleList.replace(' ', '_')} ${outFiles[0].outFile}`)
+  const pageFromDump = await zimdump(`show --url ${parameters.pageList.replace(' ', '_')} ${outFiles[0].outFile}`)
   describe('e2e test for en.wikipedia.org', () => {
-    const articleDoc = domino.createDocument(articleFromDump)
+    const pageDoc = domino.createDocument(pageFromDump)
 
     test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
     })
 
-    test(`test article header for ${outFiles[0]?.renderer} renderer`, async () => {
-      expect(articleDoc.querySelector('h1#firstHeading, h1.article-header, h1.pcs-edit-section-title')).toBeTruthy()
+    test(`test page header for ${outFiles[0]?.renderer} renderer`, async () => {
+      expect(pageDoc.querySelector('h1#firstHeading, h1.page-header, h1.pcs-edit-section-title')).toBeTruthy()
     })
 
-    test(`test article <body> CSS class for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`test page <body> CSS class for ${outFiles[0]?.renderer} renderer`, async () => {
       // This is implemented correctly only with ActionParse renderer for now
       if (outFiles[0]?.renderer !== 'ActionParse') {
         return
@@ -58,10 +58,10 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         'skin-vector-2022',
         'skin-vector-search-vue',
       ].sort()
-      expect(articleDoc.body.className.split(' ').sort()).toEqual(expectedClasses)
+      expect(pageDoc.body.className.split(' ').sort()).toEqual(expectedClasses)
     })
 
-    test(`test article <html> CSS class for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`test page <html> CSS class for ${outFiles[0]?.renderer} renderer`, async () => {
       // This is implemented correctly only with ActionParse renderer for now
       if (outFiles[0]?.renderer !== 'ActionParse') {
         return
@@ -83,14 +83,14 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         'vector-sticky-header-enabled',
         'vector-toc-not-available',
       ].sort()
-      expect(articleDoc.documentElement.className.split(' ').sort()).toEqual(expectedClasses)
+      expect(pageDoc.documentElement.className.split(' ').sort()).toEqual(expectedClasses)
     })
 
-    test(`test article image integrity for ${outFiles[0]?.renderer} renderer`, async () => {
+    test(`test page image integrity for ${outFiles[0]?.renderer} renderer`, async () => {
       const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
       const allFilesArr = allFiles.split('\n')
       const imgFilesArr = allFilesArr.filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg'))
-      const imgElements = Array.from(articleDoc.querySelectorAll('img'))
+      const imgElements = Array.from(pageDoc.querySelectorAll('img'))
       expect(verifyImgElements(imgFilesArr, imgElements)).toBe(true)
     })
 

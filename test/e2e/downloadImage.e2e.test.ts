@@ -13,7 +13,7 @@ const parameters = {
   mwUrl: 'https://fr.wikipedia.org',
   adminEmail: 'test@kiwix.org',
   redis: process.env.REDIS,
-  articleList: 'Paris',
+  pageList: 'Paris',
   format: ['nodet'],
   optimisationCacheUrl: process.env.S3_URL,
 }

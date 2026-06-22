@@ -1,5 +1,4 @@
 import pmap from 'p-map'
-import deepmerge from 'deepmerge'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
@@ -10,19 +9,23 @@ import { cleanupAxiosError } from './misc.js'
 const MAX_TITLES_PARAM_SIZE = 7400
 const MAX_BATCH_SIZE = 50
 
-export function trimArticleBatch(articleIds: string[]): string[] {
-  const batch = articleIds.slice(0, MAX_BATCH_SIZE)
+export function trimPageTitlesBatch(pageTitles: PageTitle[]): PageTitle[] {
+  const batch = pageTitles.slice(0, MAX_BATCH_SIZE)
   while (batch.length > 1 && new URLSearchParams({ titles: batch.join('|') }).toString().length > MAX_TITLES_PARAM_SIZE) {
     batch.pop()
   }
   return batch
 }
 
-export async function getArticlesByIds(articleIds: string[], purpose: string, categoryIds = new Set<string>(), log = true): Promise<void> {
+export async function getPagesByTitle(
+  pageTitles: PageTitle[],
+  purpose: string,
+  pagesToIgnore?: PageTitle[],
+  allowedContentModels: string[] = ['wikitext'],
+  categoryTitles: Set<PageTitle> = new Set(),
+): Promise<void> {
   let from = 0
   let numThumbnails = 0
-
-  const { articleDetailXId, redirectsXId } = RedisStore
 
   // using async iterator to spawn workers
   await pmap(
@@ -31,290 +34,177 @@ export async function getArticlesByIds(articleIds: string[], purpose: string, ca
       .split(',')
       .map((_, i) => i),
     async (workerId: number) => {
-      while (from < articleIds.length) {
-        const articleIdsBatch = trimArticleBatch(articleIds.slice(from))
+      while (from < pageTitles.length) {
+        const pageTitlesBatch = trimPageTitlesBatch(pageTitles.slice(from))
 
-        const to = from + articleIdsBatch.length
-        if (log) {
-          const progressPercent = Math.floor((to / articleIds.length) * 100)
-          logger.info(`Worker [${workerId}] getting article range [${from}-${to}] of [${articleIds.length}] for ${purpose} [${progressPercent}%]`)
-        }
+        const to = from + pageTitlesBatch.length
+        const progressPercent = Math.floor((to / pageTitles.length) * 100)
+        logger.info(`Worker [${workerId}] getting page range [${from}-${to}] of [${pageTitles.length}] for ${purpose} [${progressPercent}%]`)
         from = to
 
         // Nothing to do
-        if (!articleIdsBatch.length) {
+        if (!pageTitlesBatch.length) {
           continue
         }
 
         // Retrieve the details and save them in Redis
-        const allArticleDetails = await Downloader.getArticleDetailsIds(articleIdsBatch, numThumbnails < 100)
-
-        // Filter articles without revisions (#2091)
-        const articlesIgnored = Object.values(allArticleDetails)
-          .filter((a) => !a.revisions)
-          .map((article) => article.title)
-        if (articlesIgnored.length > 0) {
-          logger.warn(`Ignoring articles without revisions: ${articlesIgnored.join(', ')}`)
-        }
-        const mwArticleDetails = Object.fromEntries(Object.entries(allArticleDetails).filter(([, articleDetail]) => !articlesIgnored.includes(articleDetail.title)))
-
-        const articlesWithThumbnail = Object.values(mwArticleDetails).filter((a) => !!a.thumbnail)
-        numThumbnails += articlesWithThumbnail.length
-
-        const articleDetails = mwRetToArticleDetail(mwArticleDetails)
-
-        for (const [articleId, articleDetail] of Object.entries(mwArticleDetails)) {
-          articleDetail.categories?.forEach((category) => {
-            if (!category.hidden) categoryIds.add(category.title)
-          })
-          if (articleDetail.redirects && articleDetail.redirects.length) {
-            await redirectsXId.setMany(
-              articleDetail.redirects.reduce((acc, redirect) => {
-                acc[redirect.title] = { title: redirect.title, targetId: articleId, fragment: redirect.fragment || '' }
-                return acc
-              }, {}),
-            )
-          }
-        }
-        const keys = Object.keys(articleDetails)
-        if (keys.length === 0) {
-          return
-        }
-        const existingArticleDetails = await articleDetailXId.getMany(keys)
-        await articleDetailXId.setMany(deepmerge(existingArticleDetails, articleDetails))
+        const allMwPages = await Downloader.getPagesByTitle(pageTitlesBatch, numThumbnails < 100)
+        logger.info(`Received ${allMwPages.length} pages`)
+        const { numThumbnails: iterThumbnails } = await processPagesAndSaveToRedis(allMwPages, pagesToIgnore, allowedContentModels, categoryTitles)
+        numThumbnails += iterThumbnails
       }
     },
     { concurrency: Downloader.workers },
   )
 }
 
-async function saveToStore(
-  articleDetails: KVS<ArticleDetail>,
-  redirects: KVS<ArticleRedirect>,
-  articleDetailXId: RKVS<ArticleDetail>,
-  redirectsXId: RKVS<ArticleRedirect>,
-): Promise<[number, Error?]> {
-  try {
-    const [numArticles] = await Promise.all([articleDetailXId.setMany(articleDetails), redirectsXId.setMany(redirects)])
-    return [numArticles]
-  } catch (err) {
-    return [0, err as Error]
+export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[]) {
+  function revisionFilter(page: PageInfo & QueryRet): boolean {
+    return !page.revisions
   }
+
+  function contentModelFilter(page: PageInfo & QueryRet): boolean {
+    return !allowedContentModels.includes(page.contentmodel)
+  }
+
+  function ignoredPagesFilter(page: PageInfo & QueryRet): boolean {
+    return pagesToIgnore.includes(page.title) || pagesToIgnore.includes((page.title as string).replace(/ /g, '_') as PageTitle)
+  }
+
+  // Filter pages without revisions (#2091)
+  const revisionIssues = pages.filter(revisionFilter)
+  if (revisionIssues.length > 0) {
+    logger.debug(`Ignoring pages without revisions: ${revisionIssues.join(', ')}`)
+  }
+
+  // Filter pages with unexpected content model (#2445)
+  const contentModelIssues = pages.filter(contentModelFilter)
+  if (contentModelIssues.length > 0) {
+    logger.debug(`Ignoring pages with unexpected content model: ${contentModelIssues.join(', ')}`)
+  }
+
+  // Filter pages asked for by user
+  const ignoreListIssues = pages.filter(ignoredPagesFilter)
+  if (ignoreListIssues.length > 0) {
+    logger.debug(`Ignoring pages in list: ${ignoreListIssues.join(', ')}`)
+  }
+
+  return pages
+    .filter((p) => !revisionFilter(p))
+    .filter((p) => !contentModelFilter(p))
+    .filter((p) => !ignoredPagesFilter(p))
 }
 
-export function getArticlesByNS(
-  ns: number,
-  articleIdsToIgnore?: string[],
+async function processPagesAndSaveToRedis(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[], categoryTitles: Set<PageTitle> = new Set()) {
+  const redirects: PageRedirect[] = []
+  const pagesToRemove: (PageInfo & QueryRet)[] = []
+  const filteredPages = filterPages(pages, pagesToIgnore, allowedContentModels)
+  for (const page of filteredPages) {
+    page.categories?.forEach((category) => {
+      if (!category.hidden) categoryTitles.add(category.title)
+    })
+    if (page.redirects) {
+      for (const target of page.redirects) {
+        const targetExistsAsPage = (await RedisStore.pagesStore.exists(target.title)) || filteredPages.filter((a) => a.title == target.title).length > 0
+        if (targetExistsAsPage) {
+          logger.warn(
+            `Page '${target.title}' found in redirects of '${page.title}' while it is also listed among titles to fetch ; scraper will automatically recover from this edge case`,
+          )
+          redirects.push({
+            from: page.title,
+            to: target.title,
+          })
+          pagesToRemove.push(page)
+        } else {
+          redirects.push({
+            from: target.title,
+            to: page.title,
+            fragment: target.fragment,
+          })
+        }
+      }
+    }
+  }
+  for (const page of pagesToRemove) {
+    filteredPages.splice(filteredPages.indexOf(page), 1)
+  }
+
+  const numPages = await RedisStore.pagesStore.setMany(mwRetToPageDetail(filteredPages))
+  const numRedirects = await RedisStore.redirectsStore.setMany(
+    redirects.reduce((acc, redirect) => {
+      acc[redirect.from] = { from: redirect.from, to: redirect.to, fragment: redirect.fragment || '' }
+      return acc
+    }, {}),
+  )
+  const numThumbnails = filteredPages.filter((page) => !!page.thumbnail).length
+
+  return { numPages, numRedirects, numThumbnails }
+}
+
+export async function getPagesByNamespace(
+  namespace: number,
+  pagesToIgnore?: PageTitle[],
   allowedContentModels: string[] = ['wikitext'],
-  categoryIds = new Set(),
+  categoryTitles: Set<PageTitle> = new Set(),
   continueLimit?: number,
 ): Promise<void> {
-  // eslint-disable-next-line no-async-promise-executor
-  return new Promise(async (resolve, reject) => {
-    let totalArticles = 0
-    let chunk: { articleDetails: QueryMwRet; gapContinue: string }
-    const seenGapContinueValues: string[] = []
+  let totalPages = 0
+  let gapContinue = ''
+  const seenGapContinueValues: string[] = []
 
-    const { articleDetailXId, redirectsXId } = RedisStore
+  // We don't really know how long this is going to take because we have a query continuation parameter which might induce
+  // more request to make + we also get categories with more requests which is a recursive call
+  const timeout = Math.max(Downloader.requestTimeout * 2, 10 * 60 * 1000)
+  const timer = new Timer(() => {
+    const errorMessage = `Worker timed out after ${timeout} ms`
+    logger.error(errorMessage)
+    throw new Error(errorMessage)
+  }, timeout)
 
-    const saveStorePromisQueue: Promise<[number, Error?]>[] = []
-
+  try {
     /*
-     * timer to detect freezes
+     * fetch page details in chunks and store them in redis
      */
-    const stages = ['Download ArticleDetails', 'Check Redirects', 'Store ArticleDetails in Redis', 'Clean Up left Promises']
-    let curStage = 0
-    // We don't really know how long this is going to take because we have a query continuation parameter which might induce
-    // more request to make + we also get categories with more requests which is a recursive call
-    const timeout = Math.max(Downloader.requestTimeout * 2, 10 * 60 * 1000)
-    const timer = new Timer(() => {
-      const errorMessage = `Worker timed out after ${timeout} ms at ${stages[curStage]}`
-      logger.error(errorMessage)
-      reject(new Error(errorMessage))
-    }, timeout)
+    do {
+      timer.reset()
 
-    try {
-      /*
-       * fetch article details in chunks and store them in redis
-       */
-      do {
-        timer.reset()
-        curStage = 0
-        chunk = await Downloader.getArticleDetailsNS(ns, chunk && chunk.gapContinue)
+      const resp = await Downloader.getPagesByNamespace(namespace, gapContinue)
 
-        if (chunk.gapContinue) {
-          if (seenGapContinueValues.includes(chunk.gapContinue)) {
-            throw new Error(
-              `Detected continuation cycle while fetching articles in namespace ${ns}. ` +
-                `Repeated gapContinue=${chunk.gapContinue} after visiting: [${seenGapContinueValues.join(', ')}]`,
-            )
-          }
-          seenGapContinueValues.push(chunk.gapContinue)
+      gapContinue = resp.gapContinue
+      if (gapContinue) {
+        if (seenGapContinueValues.includes(gapContinue)) {
+          throw new Error(
+            `Detected continuation cycle while fetching pages in namespace ${namespace}. ` +
+              `Repeated gapContinue=${gapContinue} after visiting: [${seenGapContinueValues.join(', ')}]`,
+          )
         }
-
-        // Filter articles without revisions (#2238)
-        const newArticlesToIgnore = Object.values(chunk.articleDetails)
-          .filter((a) => !a.revisions)
-          .map((article) => article.title)
-        if (newArticlesToIgnore.length > 0) {
-          logger.warn(`Ignoring articles without revisions: ${newArticlesToIgnore.join(', ')}`)
-          if (!articleIdsToIgnore) {
-            articleIdsToIgnore = []
-          }
-          articleIdsToIgnore.push(...newArticlesToIgnore)
-        }
-
-        // Filter articles by content model (#2445)
-        if (allowedContentModels) {
-          const articlesWithWrongModel = Object.values(chunk.articleDetails)
-            .filter((a) => !allowedContentModels.includes(a.contentmodel))
-            .map((article) => article.title)
-          if (articlesWithWrongModel.length > 0) {
-            logger.debug(`Skipping articles with non-matching content model: ${articlesWithWrongModel.join(', ')}`)
-            if (!articleIdsToIgnore) {
-              articleIdsToIgnore = []
-            }
-            articleIdsToIgnore.push(...articlesWithWrongModel)
-          }
-        }
-
-        if (articleIdsToIgnore) {
-          Object.keys(chunk.articleDetails).forEach((articleId) => {
-            const articleTitle = chunk.articleDetails[articleId].title
-            if (articleIdsToIgnore.includes(articleTitle)) {
-              delete chunk.articleDetails[articleId]
-              logger.debug(`Excluded article ${articleTitle}`)
-            }
-          })
-        }
-
-        curStage += 1
-        const redirects: KVS<ArticleRedirect> = {}
-        for (const [articleId, articleDetail] of Object.entries(chunk.articleDetails)) {
-          articleDetail.categories?.forEach((category) => {
-            if (!category.hidden) categoryIds.add(category.title)
-          })
-          if (articleDetail.redirects) {
-            for (const target of articleDetail.redirects) {
-              const targetExistsAsArticle = (await RedisStore.articleDetailXId.exists(target.title)) || Object.keys(chunk.articleDetails).includes(target.title)
-              if (targetExistsAsArticle) {
-                logger.warn(
-                  `Article '${target.title}' found in redirects of '${articleId}' while it is also listed among articles to fetch ; scraper will automatically recover from this edge case`,
-                )
-                redirects[articleId] = {
-                  targetId: target.title,
-                  title: articleId,
-                }
-                delete chunk.articleDetails[articleId]
-              } else {
-                redirects[target.title] = {
-                  targetId: articleId,
-                  title: target.title,
-                  fragment: target.fragment,
-                }
-              }
-            }
-          }
-        }
-
-        curStage += 1
-        /*
-         * Don't await redis, push promise into array queue
-         * and check if the oldest promise finished in the meantime.
-         * Like this we can store in redis simultaniously to downloading the
-         * next articles, but also won't run into an ever increasing backlog.
-         */
-        const newSavePromise = saveToStore(mwRetToArticleDetail(chunk.articleDetails), redirects, articleDetailXId, redirectsXId)
-
-        if (saveStorePromisQueue.length) {
-          /*
-           * in normal circumstances, where downloading is slower than storing,
-           * this promise will always be resolved here already
-           */
-          const [numArticles, err] = await saveStorePromisQueue.shift()
-          if (err) {
-            timer.clear()
-            reject(err)
-            return
-          }
-          totalArticles += numArticles
-          logger.info(`Got [${numArticles} / ${totalArticles}] articles chunk from namespace [${ns}]`)
-        }
-
-        saveStorePromisQueue.push(newSavePromise)
-
-        // Only for testing purposes
-        if (--(continueLimit as number) < 0) break
-      } while (chunk.gapContinue)
-
-      /*
-       * clear up potentially still pending promises
-       */
-      curStage = 3
-      const lastPending = await Promise.all(saveStorePromisQueue)
-      const errored = lastPending.find(([, err]) => err)
-      if (errored) {
-        throw errored[1]
+        seenGapContinueValues.push(gapContinue)
       }
-      totalArticles += lastPending.reduce((a, [b]) => a + b, 0)
-    } catch (err) {
-      logger.error(`Error fetching article details at ${stages[curStage]}`)
-      reject(err)
-      return
-    } finally {
-      timer.clear()
-    }
+      const { numPages } = await processPagesAndSaveToRedis(resp.pages, pagesToIgnore, allowedContentModels, categoryTitles)
+      totalPages += numPages
+      logger.info(`Got [${numPages} / ${totalPages}] pages chunk from namespace [${namespace}]`)
 
-    logger.info(`A total of [${totalArticles}] articles has been found in namespace [${ns}]`)
-    resolve()
-  })
-}
-
-export function normalizeMwResponse(response: MwApiQueryResponse): QueryMwRet {
-  if (!response) {
-    return {}
+      // Only for testing purposes
+      if (--(continueLimit as number) < 0) break
+    } while (gapContinue)
+  } finally {
+    timer.clear()
   }
-  const { normalized: _normalized, pages } = response
 
-  const normalized = (_normalized || []).reduce((acc: any, { from, to }) => {
-    acc[to] = from
-    return acc
-  }, {})
-
-  return Object.values(pages).reduce((acc, page) => {
-    const id = normalized.hasOwnProperty(page.title) ? normalized[page.title] : page.title || '' // eslint-disable-line no-prototype-builtins
-    if (typeof id !== 'string' || !id) {
-      logger.warn(`Article Id is invalid - expected a string but got [${id}], converting to string and continuing`)
-    }
-    const articleId = String(id).replace(/ /g, '_')
-    if (page.redirects) {
-      page.redirects = page.redirects
-        // drop redirects from talk (not subject) namespaces and from User namespace, except if namespace has been expressly requested
-        .filter((redirect) => (redirect.ns % 2 === 0 && redirect.ns !== 2) || MediaWiki.namespacesToMirror.some((ns) => MediaWiki.namespaces[ns].num === redirect.ns))
-        .map((redirect) => {
-          // The API returns the redirect title (!?), we fake the
-          // redirectId by putting the underscore. That way we
-          // secure the URL rewriting works fine.
-          redirect.title = String(redirect.title).replace(/ /g, '_')
-
-          return redirect
-        })
-    }
-    if (articleId) {
-      return {
-        ...acc,
-        [articleId]: page,
-      }
-    } else {
-      return acc
-    }
-  }, {})
+  logger.info(`A total of [${totalPages}] pages has been found in namespace [${namespace}]`)
 }
 
-export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
-  const ret: KVS<ArticleDetail> = {}
-  for (const key of Object.keys(obj)) {
-    const val = obj[key]
+export function filterRedirects(mwPage: PageInfo & QueryRet) {
+  if (mwPage.redirects) {
+    mwPage.redirects = mwPage.redirects
+      // drop redirects from talk (not subject) namespaces and from User namespace, except if namespace has been expressly requested
+      .filter((redirect) => (redirect.ns % 2 === 0 && redirect.ns !== 2) || MediaWiki.namespacesToMirror.some((ns) => MediaWiki.namespaces[ns].num === redirect.ns))
+  }
+}
+
+export function mwRetToPageDetail(pages: QueryMwRet): KVS<PageDetail> {
+  const ret: KVS<PageDetail> = {}
+  for (const val of pages) {
     const rev = val.revisions && val.revisions[0]
     const geo = val.coordinates && val.coordinates[0]
     let newThumbnail
@@ -336,7 +226,7 @@ export function mwRetToArticleDetail(obj: QueryMwRet): KVS<ArticleDetail> {
     if (val.categories) {
       allCategories = val.categories.map(({ title }) => title.split(':').slice(1).join(':'))
     }
-    ret[key] = {
+    ret[val.title] = {
       title: val.title,
       thumbnail: newThumbnail,
       categoryinfo: newCategoryinfo,
@@ -392,27 +282,27 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
   }
 }
 
-export async function getArticleIds(mainPage?: string, articleIds?: string[], articleIdsToIgnore?: string[], allowedContentModels: string[] = ['wikitext']) {
-  const categorySet = new Set<string>()
+export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pagesToIgnore: PageTitle[] = [], allowedContentModels: string[] = ['wikitext']) {
+  const categorySet = new Set<PageTitle>()
 
   if (mainPage) {
-    await getArticlesByIds([mainPage], 'mainPage', categorySet)
+    await getPagesByTitle([mainPage], 'mainPage', pagesToIgnore, allowedContentModels, categorySet)
   }
 
-  if (articleIds) {
-    await getArticlesByIds(articleIds, 'articles', categorySet)
+  if (pages.length) {
+    await getPagesByTitle(pages, 'pages', pagesToIgnore, allowedContentModels, categorySet)
   } else {
     await pmap(
       MediaWiki.namespacesToMirror,
       (namespace: string) => {
-        return getArticlesByNS(MediaWiki.namespaces[namespace].num, articleIdsToIgnore, allowedContentModels, categorySet)
+        return getPagesByNamespace(MediaWiki.namespaces[namespace].num, pagesToIgnore, allowedContentModels, categorySet)
       },
       { concurrency: Downloader.workers },
     )
   }
 
   if (MediaWiki.getCategories) {
-    const categoryIds = articleIdsToIgnore ? [...categorySet].filter((title: string) => !articleIdsToIgnore.includes(title)) : [...categorySet]
-    await getArticlesByIds(categoryIds, 'categories')
+    const categoryIds = pagesToIgnore ? [...categorySet].filter((title: PageTitle) => !pagesToIgnore.includes(title)) : [...categorySet]
+    await getPagesByTitle(categoryIds, 'categories', pagesToIgnore, allowedContentModels, new Set())
   }
 }

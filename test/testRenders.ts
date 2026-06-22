@@ -10,8 +10,8 @@ interface Parameters {
   adminEmail: string
   outputDirectory?: string
   addNamespaces?: number
-  articleList?: string
-  articleListToIgnore?: string
+  pageList?: string
+  pageListToIgnore?: string
   redis?: string
   format?: string | string[]
   noLocalParserFallback?: boolean
