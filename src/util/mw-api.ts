@@ -197,8 +197,8 @@ export async function getPagesByNamespace(
 export function filterRedirects(mwPage: PageInfo & QueryRet) {
   if (mwPage.redirects) {
     mwPage.redirects = mwPage.redirects
-      // drop redirects from talk (not subject) namespaces and from User namespace, except if namespace has been expressly requested
-      .filter((redirect) => (redirect.ns % 2 === 0 && redirect.ns !== 2) || MediaWiki.namespacesToMirror.some((ns) => MediaWiki.namespaces[ns].num === redirect.ns))
+      // keep redirects only to current page namespace + other content namespaces
+      .filter((redirect) => redirect.ns == mwPage.ns || MediaWiki.namespacesToMirror.some((ns) => MediaWiki.namespaces[ns].num === redirect.ns))
   }
 }
 
