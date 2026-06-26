@@ -96,12 +96,12 @@ export class ActionParseRenderer extends Renderer {
       .join('\n    ')
 
     // Generate MathJax script tags for pages that need it
-    logger.info(`moduleDependencies.jsDependenciesList: ${JSON.stringify(moduleDependencies.jsDependenciesList)}`)
-    //const needsMathJax = moduleDependencies.jsDependenciesList.some((mod: string) => /mathjax/i.test(mod))
-    const needsMathJax = Downloader.mathJaxSource && Downloader.mathJaxSource.length > 0
     const mathJaxScripts =
-      needsMathJax && Downloader.mathJaxSource
-        ? [Downloader.mathJaxConfigContent, `<script src="__RELATIVE_FILE_PATH__${config.output.dirs.mathjax}/es5/tex-chtml.js"></script>`].join('\n    ')
+      moduleDependencies.needsMathJax && Downloader.mathJaxSource
+        ? [
+            ...(Downloader.mathJaxConfigScript ? [Downloader.mathJaxConfigScript] : []),
+            `<script src="__RELATIVE_FILE_PATH__${config.output.dirs.mathjax}/${Downloader.mathJaxEntryPoint}"></script>`,
+          ].join('\n    ')
         : ''
 
     const htmlTemplateString = this.#htmlTemplateCode()
@@ -181,11 +181,14 @@ export class ActionParseRenderer extends Renderer {
       jsDependenciesList.push('jquery.makeCollapsible')
     }
 
+    const needsMathJax = data.parse.modules.some((mod: string) => /mathjax/i.test(mod))
+
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310
       jsConfigVars: extractJsConfigVars(data.parse.headhtml, data.parse.jsconfigvars),
       jsDependenciesList: config.output.mw.js.concat(jsDependenciesList),
       styleDependenciesList: config.output.mw.css.concat(styleDependenciesList),
+      needsMathJax,
     }
 
     const bodyCssClass = extractBodyCssClass(data.parse.headhtml)

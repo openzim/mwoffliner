@@ -110,6 +110,7 @@ async function execute(argv: any) {
     categoriesPageSize,
     mathJaxSource,
     mathJaxConfig,
+    mathJaxEntryPoint,
   } = argv
 
   let { pageList, pageListToIgnore } = argv
@@ -148,6 +149,9 @@ async function execute(argv: any) {
   if (mathJaxConfig) {
     Downloader.mathJaxConfig = String(mathJaxConfig)
     logger.info(`MathJax config configured: ${Downloader.mathJaxConfig}`)
+  }
+  if (mathJaxEntryPoint) {
+    Downloader.mathJaxEntryPoint = String(mathJaxEntryPoint)
   }
 
   const publisher = _publisher || config.defaults.publisher
@@ -494,14 +498,17 @@ async function execute(argv: any) {
       }
     }
 
-    // Download MathJax config content (stored inline in each page that needs it)
+    // Download MathJax config script and store it for inline injection into each page that needs it
     if (Downloader.mathJaxConfig) {
       logger.info(`Loading MathJax config from [${Downloader.mathJaxConfig}]`)
       if (/^https?:\/\//i.test(Downloader.mathJaxConfig)) {
         const { content } = await Downloader.downloadContent(Downloader.mathJaxConfig, 'data')
-        Downloader.mathJaxConfigContent = content.toString()
+        Downloader.mathJaxConfigScript = content.toString()
       } else {
-        Downloader.mathJaxConfigContent = fs.readFileSync(Downloader.mathJaxConfig, 'utf-8')
+        Downloader.mathJaxConfigScript = fs.readFileSync(Downloader.mathJaxConfig, 'utf-8')
+      }
+      if (!Downloader.mathJaxConfigScript.trimStart().startsWith('<script')) {
+        throw new Error(`MathJax config loaded from [${Downloader.mathJaxConfig}] does not start with a <script tag`)
       }
     }
 

@@ -303,8 +303,14 @@
       "kind": "js",
       "required": false,
       "title": "MathJax Config",
-      "description": "MathJax configuration script (text/x-mathjax-config). Injected inline before the MathJax library on pages that need it.",
+      "description": "MathJax configuration HTML <script>. Its content is injected inline in pages that need MathJax, before the MathJax library.",
       "allowRemoteUrl": true
+    },
+    "mathJaxEntryPoint": {
+      "type": "string",
+      "required": false,
+      "title": "MathJax Entry Point",
+      "description": "Relative path inside the extracted MathJax archive to the main entry-point script. Defaults to MathJax.js (MathJax 2). For MathJax 3 use e.g. es5/tex-chtml.js."
     }
   },
   "zimMetadata": [

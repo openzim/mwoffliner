@@ -62,6 +62,7 @@ export interface RenderOptsModules {
   jsConfigVars: KVS<any>
   jsDependenciesList: string[]
   styleDependenciesList: string[]
+  needsMathJax: boolean
 }
 
 export interface RenderOpts {

@@ -341,6 +341,35 @@ export interface ResourceLoaderModule extends Array<any> {
   4?: string
 }
 
+// Returns the MIME type for a ZIM entry path, or null if the file should be skipped.
+function getMimeTypeForZimEntry(filePath: string): string | null {
+  const ext = path.extname(filePath).toLowerCase()
+  const mimeMap: Record<string, string> = {
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+    '.otf': 'font/otf',
+    '.eot': 'application/vnd.ms-fontobject',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+  }
+  return mimeMap[ext] ?? null
+}
+
+// MathJax 3 ships non-runtime files (TypeScript sources, declaration files,
+// source maps, build tooling) alongside its compiled output in a dedicated
+// subfolder.  When one of these subfolders is present, restrict the copy to
+// that subtree so the non-runtime files are silently ignored rather than
+// counted as skipped.  MathJax 2 and 4 ship only runtime files at the root,
+// so they fall through to "process everything".
+const MATHJAX_RUNTIME_SUBDIRS = ['es5']
+
 export async function downloadAndSaveMathJaxSource(zimCreator: Creator, source: string): Promise<void> {
   logger.info(`Downloading MathJax source [${source}]`)
 
@@ -360,20 +389,37 @@ export async function downloadAndSaveMathJaxSource(zimCreator: Creator, source: 
   const firstSegment = filePaths[0]?.split('/')[0]
   const hasSingleTopDir = !!firstSegment && filePaths.every((p) => p.startsWith(firstSegment + '/'))
 
+  const relativePaths = filePaths.map((p) => (hasSingleTopDir ? p.substring(firstSegment.length + 1) : p))
+  const runtimeSubdir = MATHJAX_RUNTIME_SUBDIRS.find((subdir) => relativePaths.some((p) => p.startsWith(subdir + '/')))
+  if (runtimeSubdir) {
+    logger.info(`MathJax runtime subfolder detected: ${runtimeSubdir}/`)
+  }
+
   let savedCount = 0
+  let skippedCount = 0
   await Promise.all(
     directory.files
       .filter((entry) => entry.type === 'File')
       .map(async (entry) => {
         const relativePath = hasSingleTopDir ? entry.path.substring(firstSegment.length + 1) : entry.path
         if (!relativePath) return
+        // When a dedicated runtime subfolder is found, silently ignore everything outside it.
+        if (runtimeSubdir && !relativePath.startsWith(runtimeSubdir + '/')) return
+        const mimeType = getMimeTypeForZimEntry(relativePath)
+        if (!mimeType) {
+          logger.debug(`Skipped MathJax file at '${relativePath}' because MIME type is not recognized`)
+          skippedCount++
+          return
+        }
         const zimPath = `${config.output.dirs.mathjax}/${relativePath}` as ZimPath
         const content = await entry.buffer()
-        const mimeType = relativePath.endsWith('.css') ? 'text/css' : 'text/javascript'
-        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, mimeType, null, { FRONT_ARTICLE: 0 }, content.toString())))
+        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, mimeType, null, { FRONT_ARTICLE: 0 }, content)))
         savedCount++
       }),
   )
 
+  if (skippedCount > 0) {
+    logger.warn(`Skipped ${skippedCount} MathJax file(s) inside ${runtimeSubdir ?? 'archive root'} with no recognized MIME type`)
+  }
   logger.info(`Saved ${savedCount} MathJax file(s) under ${config.output.dirs.mathjax}/`)
 }
