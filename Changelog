@@ -46,6 +46,7 @@ Unreleased:
 * CHANGED: Drop webp polyfill (@benoit74 #2758)
 * FIX: Fix detection of image size in URL (@benoit74 #2788, #2795)
 * FIX: Fix bug when listing empty namespaces (@benoit74 #2801)
+* NEW: Add MathJax support (@benoit74 #1371)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
