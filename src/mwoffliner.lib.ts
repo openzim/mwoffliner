@@ -25,6 +25,7 @@ import {
   downloadAndSaveStartupModule,
   getModuleDependencies,
   downloadAndSaveCustomCss,
+  downloadAndSaveMathJaxSource,
   genCanonicalLink,
   genHeaderCSSLink,
   genHeaderScript,
@@ -107,6 +108,8 @@ async function execute(argv: any) {
     stableRevision,
     getCategories,
     categoriesPageSize,
+    mathJaxSource,
+    mathJaxConfig,
   } = argv
 
   let { pageList, pageListToIgnore } = argv
@@ -137,6 +140,16 @@ async function execute(argv: any) {
       logger.info(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
     }
   }
+
+  if (mathJaxSource) {
+    Downloader.mathJaxSource = String(mathJaxSource)
+    logger.info(`MathJax source configured: ${Downloader.mathJaxSource}`)
+  }
+  if (mathJaxConfig) {
+    Downloader.mathJaxConfig = String(mathJaxConfig)
+    logger.info(`MathJax config configured: ${Downloader.mathJaxConfig}`)
+  }
+
   const publisher = _publisher || config.defaults.publisher
 
   // TODO: Move it to sanitize method
@@ -479,6 +492,22 @@ async function execute(argv: any) {
       if (cssErrors.length > 0) {
         throw new Error(`Failed to download custom CSS file(s):\n${cssErrors.join('\n')}`)
       }
+    }
+
+    // Download MathJax config content (stored inline in each page that needs it)
+    if (Downloader.mathJaxConfig) {
+      logger.info(`Loading MathJax config from [${Downloader.mathJaxConfig}]`)
+      if (/^https?:\/\//i.test(Downloader.mathJaxConfig)) {
+        const { content } = await Downloader.downloadContent(Downloader.mathJaxConfig, 'data')
+        Downloader.mathJaxConfigContent = content.toString()
+      } else {
+        Downloader.mathJaxConfigContent = fs.readFileSync(Downloader.mathJaxConfig, 'utf-8')
+      }
+    }
+
+    // Download and extract MathJax source ZIP into the ZIM
+    if (Downloader.mathJaxSource) {
+      await downloadAndSaveMathJaxSource(zimCreator, Downloader.mathJaxSource)
     }
 
     logger.info('Getting pages content')

@@ -11,6 +11,7 @@ import { RULE_TO_REDIRECT } from './const.js'
 import * as path from 'path'
 import urlHelper from './url.helper.js'
 import { zimCreatorMutex } from '../mutex.js'
+import * as unzipper from 'unzipper'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -338,4 +339,41 @@ export interface ResourceLoaderModule extends Array<any> {
   2?: number[]
   3?: number
   4?: string
+}
+
+export async function downloadAndSaveMathJaxSource(zimCreator: Creator, source: string): Promise<void> {
+  logger.info(`Downloading MathJax source [${source}]`)
+
+  let zipBuffer: Buffer
+  if (/^https?:\/\//i.test(source)) {
+    const { content } = await Downloader.downloadContent(source, 'data')
+    zipBuffer = content as Buffer
+  } else {
+    zipBuffer = fs.readFileSync(source)
+  }
+
+  const directory = await unzipper.Open.buffer(zipBuffer)
+
+  // Detect a single top-level directory in the ZIP and strip it so all files
+  // land directly under _mathjax_/ regardless of the archive's internal layout.
+  const filePaths = directory.files.filter((e) => e.type === 'File').map((e) => e.path)
+  const firstSegment = filePaths[0]?.split('/')[0]
+  const hasSingleTopDir = !!firstSegment && filePaths.every((p) => p.startsWith(firstSegment + '/'))
+
+  let savedCount = 0
+  await Promise.all(
+    directory.files
+      .filter((entry) => entry.type === 'File')
+      .map(async (entry) => {
+        const relativePath = hasSingleTopDir ? entry.path.substring(firstSegment.length + 1) : entry.path
+        if (!relativePath) return
+        const zimPath = `${config.output.dirs.mathjax}/${relativePath}` as ZimPath
+        const content = await entry.buffer()
+        const mimeType = relativePath.endsWith('.css') ? 'text/css' : 'text/javascript'
+        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, mimeType, null, { FRONT_ARTICLE: 0 }, content.toString())))
+        savedCount++
+      }),
+  )
+
+  logger.info(`Saved ${savedCount} MathJax file(s) under ${config.output.dirs.mathjax}/`)
 }

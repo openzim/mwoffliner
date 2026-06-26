@@ -47,6 +47,10 @@ export const parameterDescriptions = {
   customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
   userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',
   stableRevision: 'Prefer stable pages revisions when available, based on FlaggedRevs extension (which needs to be active on the wiki).',
+  mathJaxSource:
+    'Local path or HTTP(S) URL to a MathJax ZIP archive to extract and push to the ZIM. Enables math rendering on wikis using MathJax. Pages are detected automatically by their JS module list.',
+  mathJaxConfig:
+    'Local path or HTTP(S) URL to a MathJax configuration file. Its content is injected inline (as a text/x-mathjax-config script) in pages that need MathJax, before the MathJax library.',
 }
 
 // TODO: Add an interface based on the object above

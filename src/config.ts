@@ -104,6 +104,7 @@ const config = {
       webp: '_webp_', // webp polyfills
       assets: '_assets_', // images, videos and other assets
       res: '_res_', // additional resources from mwoffliner
+      mathjax: '_mathjax_', // MathJax library files
       categories_partials: '_categories_partials_', // HTML partials for category pagination
     },
 
