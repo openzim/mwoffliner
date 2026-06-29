@@ -289,6 +289,28 @@
       "title": "Custom CSS",
       "description": "Custom CSS to inject into all rendered pages ; remote value can be a comma-separated list of CSS URLs.",
       "allowRemoteUrl": true
+    },
+    "mathJaxSource": {
+      "type": "blob",
+      "kind": "zip",
+      "required": false,
+      "title": "MathJax Source",
+      "description": "MathJax ZIP archive to extract and include in the ZIM. Pages needing MathJax are detected automatically from their JS module list.",
+      "allowRemoteUrl": true
+    },
+    "mathJaxConfig": {
+      "type": "blob",
+      "kind": "js",
+      "required": false,
+      "title": "MathJax Config",
+      "description": "MathJax configuration HTML <script>. Its content is injected inline in pages that need MathJax, before the MathJax library.",
+      "allowRemoteUrl": true
+    },
+    "mathJaxEntryPoint": {
+      "type": "string",
+      "required": false,
+      "title": "MathJax Entry Point",
+      "description": "Relative path inside the extracted MathJax archive to the main entry-point script. Defaults to MathJax.js (MathJax 2). For MathJax 3 use e.g. es5/tex-chtml.js."
     }
   },
   "zimMetadata": [

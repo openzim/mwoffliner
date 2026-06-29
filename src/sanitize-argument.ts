@@ -37,6 +37,9 @@ export async function sanitize_all(argv: any) {
     mwActionApiPath,
     mwModulePath,
     categoriesPageSize,
+    mathJaxSource,
+    mathJaxConfig,
+    mathJaxEntryPoint,
   } = argv
 
   sanitizeDoubleUsedParameters(argv)
@@ -102,6 +105,9 @@ export async function sanitize_all(argv: any) {
   if (forceRender) {
     sanitize_forceRender(forceRender)
   }
+
+  // sanitizing MathJax options
+  sanitize_mathJax(mathJaxSource, mathJaxConfig, mathJaxEntryPoint)
 }
 
 // perform live checks of arguments needing a connection "somewhere"
@@ -295,6 +301,15 @@ export function sanitize_customFlavour(customFlavour: string): string {
       return fs.existsSync(possiblePath)
     }) || null
   )
+}
+
+export function sanitize_mathJax(mathJaxSource: any, mathJaxConfig: any, mathJaxEntryPoint: any) {
+  if (mathJaxConfig && !mathJaxSource) {
+    throw new Error('Option --mathJaxConfig requires --mathJaxSource to also be set')
+  }
+  if (mathJaxEntryPoint && !mathJaxSource) {
+    throw new Error('Option --mathJaxEntryPoint requires --mathJaxSource to also be set')
+  }
 }
 
 export function sanitize_forceRender(renderName: string): string {

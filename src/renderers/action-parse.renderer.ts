@@ -95,6 +95,15 @@ export class ActionParseRenderer extends Renderer {
       })
       .join('\n    ')
 
+    // Generate MathJax script tags for pages that need it
+    const mathJaxScripts =
+      moduleDependencies.needsMathJax && Downloader.mathJaxSource
+        ? [
+            ...(Downloader.mathJaxConfigScript ? [Downloader.mathJaxConfigScript] : []),
+            `<script src="__RELATIVE_FILE_PATH__${config.output.dirs.mathjax}/${Downloader.mathJaxEntryPoint}"></script>`,
+          ].join('\n    ')
+        : ''
+
     const htmlTemplateString = this.#htmlTemplateCode()
       .replace(/__PAGE_LANG_DIR__/g, pageLangDir)
       .replace('__PAGE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, pagePath))
@@ -105,6 +114,7 @@ export class ActionParseRenderer extends Renderer {
       .replace('__PAGE_CSS_AFTER_META__', pageCssAfterMeta)
       .replace('__PAGE_CSS_NOSCRIPT__', pageCssNoscript)
       .replace('__CUSTOM_CSS__', customCssLinks)
+      .replace('__MATHJAX_SCRIPTS__', mathJaxScripts)
       .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
       .replace(/__RES_DIR__/g, config.output.dirs.res)
       .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
@@ -171,11 +181,14 @@ export class ActionParseRenderer extends Renderer {
       jsDependenciesList.push('jquery.makeCollapsible')
     }
 
+    const needsMathJax = data.parse.modules.some((mod: string) => /mathjax/i.test(mod))
+
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310
       jsConfigVars: extractJsConfigVars(data.parse.headhtml, data.parse.jsconfigvars),
       jsDependenciesList: config.output.mw.js.concat(jsDependenciesList),
       styleDependenciesList: config.output.mw.css.concat(styleDependenciesList),
+      needsMathJax,
     }
 
     const bodyCssClass = extractBodyCssClass(data.parse.headhtml)
