@@ -51,14 +51,14 @@ describe('pages utility', () => {
     expect(isSubpage(pageTitle)).toBe(true)
   })
 
-  test.each(['Foo_Bar', 'Foo Bar'])('page is main page', (pageTitle) => {
-    MediaWiki.metaData = { mainPage: 'Foo_Bar' } as any
-    expect(isMainPage(pageTitle)).toBe(true)
+  test.each(['Foo Bar'])('page is main page', (pageTitle) => {
+    MediaWiki.metaData = { mainPage: 'Foo Bar' } as any
+    expect(isMainPage(pageTitle as PageTitle)).toBe(true)
   })
 
-  test.each(['Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('page is not main page', (pageTitle) => {
-    MediaWiki.metaData = { mainPage: 'Foo_Bar' } as any
-    expect(isMainPage(pageTitle)).toBe(false)
+  test.each(['Foo_Bar', 'Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('page is not main page', (pageTitle) => {
+    MediaWiki.metaData = { mainPage: 'Foo Bar' } as any
+    expect(isMainPage(pageTitle as PageTitle)).toBe(false)
   })
 
   test.each([
