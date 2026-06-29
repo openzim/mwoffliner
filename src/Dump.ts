@@ -12,11 +12,12 @@ interface DumpOpts {
   withoutZimFullTextIndex: boolean
   customZimTags?: string
   customZimLanguage?: string
+  customZimName?: string
   customZimTitle?: string
   customZimDescription?: string
   customZimLongDescription?: string
+  customZimFilename?: string
   mainPage?: string
-  filenamePrefix?: string
   pageList?: string
   resume?: boolean
   minifyHtml: boolean
@@ -75,7 +76,7 @@ export class Dump {
   public computeFlavour() {
     const flavour = []
     if (typeof this.formatFlavour === 'string') {
-      flavour.push(this.formatFlavour)
+      return this.formatFlavour
     } else {
       if (this.nopic) {
         flavour.push('nopic')
@@ -89,55 +90,100 @@ export class Dump {
         flavour.push('nodet')
       }
     }
-    return flavour.join('_')
+    return flavour.join('-')
   }
 
-  public computeFilenameRadical(withoutSelection?: boolean, withoutFlavour?: boolean, withoutDate?: boolean) {
-    let radical
-    if (this.opts.filenamePrefix) {
-      radical = this.opts.filenamePrefix
-    } else {
-      radical = `${this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)}_`
-      const hostParts = new URL(this.mwMetaData.webUrl).hostname.split('.')
-      let langSuffix = this.mwMetaData.langIso2
-      for (const part of hostParts) {
-        if (part === this.mwMetaData.langIso3) {
-          langSuffix = part
-          break
-        }
-      }
-      if (this.langVar) {
-        langSuffix = this.langVar
-      }
-      radical += langSuffix
-    }
-    if (!withoutSelection && !this.opts.filenamePrefix) {
-      if (this.opts.pageList) {
-        let filenamePostfix = pathParser
-          .basename(this.opts.pageList)
-          .toLowerCase()
-          .replace(/\.\w{3}$/, '')
-          .replace(/[^a-z0-9-]+/g, '-')
-        if (filenamePostfix.length > 50) {
-          filenamePostfix = filenamePostfix.slice(0, 50)
-        }
-        radical += `_${filenamePostfix}`
-      } else {
-        radical += '_all'
+  private computeDomain() {
+    return this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)
+  }
+
+  private computeLang() {
+    const hostParts = new URL(this.mwMetaData.webUrl).hostname.split('.')
+    let lang = this.mwMetaData.langIso2
+    for (const part of hostParts) {
+      if (part === this.mwMetaData.langIso3) {
+        lang = part
+        break
       }
     }
-    if (!withoutFlavour && this.computeFlavour()) {
-      radical += `_${this.computeFlavour()}`
+    return lang
+  }
+
+  private computeSelection() {
+    if (this.opts.pageList) {
+      let selection = pathParser
+        .basename(this.opts.pageList)
+        .toLowerCase()
+        .replace(/\.\w{3}$/, '')
+        .replace(/[^a-z0-9-]+/g, '-')
+      if (selection.length > 50) {
+        selection = selection.slice(0, 50)
+      }
+      return selection
     }
-    if (!withoutDate) {
-      radical += `_${this.opts.filenameDate}`
+    return 'all'
+  }
+
+  private computeNamePlaceholders(): KVS<string> {
+    const lang = this.computeLang()
+    const placeholders: KVS<string> = {
+      domain: this.computeDomain(),
+      lang,
+      lang_or_variant: this.langVar || lang,
+      selection: this.computeSelection(),
     }
-    return radical
+    return placeholders
+  }
+
+  private computeFilenamePlaceholders(): KVS<string> {
+    const placeholders: KVS<string> = {
+      ...this.computeNamePlaceholders(),
+      flavour: this.computeFlavour(),
+      period: this.opts.filenameDate,
+    }
+    return placeholders
+  }
+
+  private formatTemplate(template: string, placeholders: KVS<string>, optionName: string) {
+    logger.warn(template)
+    const formatted = template.replace(/\{([^{}]+)\}/g, (match, key) => {
+      if (typeof placeholders[key] !== 'string') {
+        const validPlaceholders = Object.keys(placeholders).sort().join(', ')
+        throw new Error(`Invalid placeholder ${match} in option --${optionName}. Valid placeholders are: ${validPlaceholders}`)
+      }
+      return placeholders[key]
+    })
+    if (/[{}]/.test(formatted)) {
+      const validPlaceholders = Object.keys(placeholders).sort().join(', ')
+      throw new Error(`Invalid placeholder in option --${optionName}. Valid placeholders are: ${validPlaceholders}`)
+    }
+    return formatted
+  }
+
+  public computeZimName() {
+    const nameTemplate = this.opts.customZimName || '{domain}_{lang_or_variant}_{selection}'
+    return this.formatTemplate(nameTemplate, this.computeNamePlaceholders(), 'customZimName')
+  }
+
+  public computeFilename() {
+    const filenameTemplate = this.opts.customZimFilename
+      ? this.opts.customZimFilename
+      : this.formatFlavour || (this.formatFlavour === undefined && (this.nodet || this.nopdf || this.nopic || this.novid))
+        ? '{zim_name}_{flavour}_{period}.zim'
+        : '{zim_name}_{period}.zim'
+    const filename = this.formatTemplate(filenameTemplate, { ...this.computeFilenamePlaceholders(), zim_name: this.computeZimName() }, 'customZimFilename')
+    if (filename.includes('/') || filename.includes('\\')) {
+      throw new Error(`option --customZimFilename must be a filename, not a path`)
+    }
+    if (!filename.endsWith('.zim')) {
+      throw new Error(`option --customZimFilename must include the .zim extension`)
+    }
+    return filename
   }
 
   public checkResume() {
     if (this.opts.resume) {
-      const zimPath = this.computeZimRootPath()
+      const zimPath = this.computeZimFullPath()
       if (existsSync(zimPath)) {
         logger.info(`${zimPath} is already done, skip dumping & ZIM file generation`)
         throw new Error('TODO: IMPLEMENT RESUME')
@@ -190,9 +236,12 @@ export class Dump {
     return tags.join(';')
   }
 
-  public computeZimRootPath() {
-    let zimRootPath = this.opts.outputDirectory[0] === '/' ? this.opts.outputDirectory : `${pathParser.resolve(process.cwd(), this.opts.outputDirectory)}/`
-    zimRootPath += `${this.computeFilenameRadical()}.zim`
-    return zimRootPath
+  public computeZimFullPath() {
+    let zimFullPath = this.opts.outputDirectory[0] === '/' ? this.opts.outputDirectory : `${pathParser.resolve(process.cwd(), this.opts.outputDirectory)}`
+    if (!zimFullPath.endsWith('/')) {
+      zimFullPath += '/'
+    }
+    zimFullPath += this.computeFilename()
+    return zimFullPath
   }
 }

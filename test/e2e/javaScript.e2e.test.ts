@@ -30,8 +30,8 @@ describe('javaScript', () => {
 
   test('Scrape page from en.wikipedia.org without JavaScript', async () => {
     const javaScript = 'none'
-    const filenamePrefix = `javaScript_${javaScript}`
-    const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript })
+    const customZimName = `javaScript_${javaScript}`
+    const outFiles = await mwoffliner.execute({ ...parameters, customZimName, javaScript })
     const dump = outFiles[0]
 
     expect(dump.status.pages.success).toEqual(1)
@@ -49,8 +49,8 @@ describe('javaScript', () => {
 
   test('Scrape page from en.wikipedia.org with trusted JavaScript', async () => {
     const javaScript = 'trusted'
-    const filenamePrefix = `javaScript_${javaScript}`
-    const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript })
+    const customZimName = `javaScript_${javaScript}`
+    const outFiles = await mwoffliner.execute({ ...parameters, customZimName, javaScript })
     const dump = outFiles[0]
 
     expect(dump.status.pages.success).toEqual(1)
@@ -106,8 +106,8 @@ describe('javaScript', () => {
   test('Scrape page from en.wikipedia.org with trusted JavaScript and extra modules', async () => {
     const javaScript = 'trusted'
     const addModules = 'site,ext.gadget.ReferenceTooltips'
-    const filenamePrefix = `javaScript_${javaScript}_addModules`
-    const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript, addModules })
+    const customZimName = `javaScript_${javaScript}_addModules`
+    const outFiles = await mwoffliner.execute({ ...parameters, customZimName, javaScript, addModules })
     const dump = outFiles[0]
 
     expect(dump.status.pages.success).toEqual(1)
@@ -164,8 +164,8 @@ describe('javaScript', () => {
 
   test('Scrape page from en.wikipedia.org with all JavaScript', async () => {
     const javaScript = 'all'
-    const filenamePrefix = `javaScript_${javaScript}`
-    const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript })
+    const customZimName = `javaScript_${javaScript}`
+    const outFiles = await mwoffliner.execute({ ...parameters, customZimName, javaScript })
     const dump = outFiles[0]
 
     expect(dump.status.pages.success).toEqual(1)
@@ -193,8 +193,8 @@ describe('javaScript', () => {
     }
     const javaScript = 'trusted'
     const addModules = 'ext.gadget.randomMinceraft,ext.gadget.minceraft,ext.gadget.minceraft-logo'
-    const filenamePrefix = `javaScript_${javaScript}_addModules_minecraft`
-    const outFiles = await mwoffliner.execute({ ...parameters, filenamePrefix, javaScript, addModules })
+    const customZimName = `javaScript_${javaScript}_addModules_minecraft`
+    const outFiles = await mwoffliner.execute({ ...parameters, customZimName, javaScript, addModules })
     const dump = outFiles[0]
 
     expect(dump.status.pages.success).toEqual(1)
