@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
-import { checkApiAvailability, getPages } from './util/mw-api.js'
+import { getPages } from './util/mw-api.js'
 import { createTranslator } from './i18n.js'
 import { zimCreatorMutex } from './mutex.js'
 import { check_all } from './sanitize-argument.js'
@@ -252,10 +252,6 @@ async function execute(argv: any) {
 
   if (customMainPage) {
     mainPage = customMainPage.replace(/_/g, ' ')
-    const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
-    if (!(await checkApiAvailability(mainPageUrl))) {
-      throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
-    }
   }
 
   MediaWiki.apiCheckPageTitle = mwMetaData.mainPage
@@ -341,6 +337,10 @@ async function execute(argv: any) {
 
   // Getting total number of pages from Redis
   logger.info(`Total pages found in Redis: ${await RedisStore.pagesStore.len()}`)
+
+  if (mainPage && !(await RedisStore.pagesStore.exists(mainPage)) && !(await RedisStore.redirectsStore.exists(mainPage))) {
+    throw new Error(`mainPage '${mainPage}' was not found`)
+  }
 
   const dumps: Dump[] = []
 

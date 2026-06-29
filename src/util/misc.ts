@@ -456,7 +456,7 @@ export async function extractPageList(pageList: string): Promise<PageTitle[]> {
         return item
       }),
   )
-  return list.flat(1).map((page) => page as PageTitle)
+  return list.flat(1).map((page) => page.replace(/_/g, ' ') as PageTitle)
 }
 
 export async function getTmpDirectory() {
