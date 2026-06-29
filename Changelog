@@ -39,6 +39,7 @@ Unreleased:
 * CHANGED: Upgrade dependencies especially node-libzim 4.4.0 / libzim 9.8.0 (@benoit74 #2770)
 * CHANGED: Clarify mwUrl sanitize function to avoid weird errors (@benoit74 #2613)
 * CHANGED: *** Breaking *** Use "page" instead of "article" everywhere in the codebase and CLI parameters ; use pageTitle instead of articleId in the codebase (@benoit74 #2697, #2380)
+* FIX: Include page redirects in content namespaces or current article namespace (@benoit74 #2731)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)

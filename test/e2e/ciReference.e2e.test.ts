@@ -15,7 +15,17 @@ const parameters = {
   customZimDescription: 'Example of the description',
 }
 
-await testAllRenders('multimedia-content', parameters, async (outFiles) => {
+await testAllRenders('ci-reference', parameters, async (outFiles) => {
+  describe('Redirects', () => {
+    test(`check redirect is present for ${outFiles[0]?.renderer} renderer`, async () => {
+      const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
+      const allFilesArr = allFiles.split('\n')
+      // even if we are in a non-content namespace, we do have redirects in same namespace as currently asked-for article
+      expect(allFilesArr).toContain('User:Kelson/MWoffliner_CI_reference')
+      expect(allFilesArr).toContain('User:B-root/MWoffliner_CI_reference')
+    })
+  })
+
   describe('Multimedia', () => {
     test(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })

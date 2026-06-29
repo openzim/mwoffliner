@@ -18,7 +18,6 @@ export interface QueryOpts {
   format: string
   prop: string
   rdlimit: string
-  rdnamespace: string | number
   rdprop: string
   ppprop: string
   clprop: string
@@ -215,7 +214,6 @@ class MediaWiki {
       format: 'json',
       prop: 'info|redirects|revisions|categoryinfo|pageprops|categories',
       rdlimit: 'max',
-      rdnamespace: '0',
       // pageid in rdprop is not mandatory in general, but required for proper
       // mdwiki API operation
       rdprop: 'pageid|title|fragment',
@@ -250,11 +248,9 @@ class MediaWiki {
 
   public async hasCoordinates(): Promise<boolean> {
     if (this.#hasCoordinates === null) {
-      const validNamespaceIds = this.namespacesToMirror.map((ns) => this.namespaces[ns].num)
       const reqOpts = {
         ...this.queryOpts,
         prop: this.queryOpts.prop + '|coordinates', // add coordinates for this call to get proper warning if not supported
-        rdnamespace: validNamespaceIds.join('|'),
       }
 
       const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
