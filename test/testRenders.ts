@@ -18,6 +18,7 @@ interface Parameters {
   forceRender?: string
   mwActionApiPath?: string
   mwModulePath?: string
+  customMainPage?: string
 }
 
 /*
@@ -55,26 +56,30 @@ async function getOutFiles(renderName: string, testId: string, parameters: Param
 interface TestDump extends Dump {
   testId: string
   renderer: string
+  error?: Error
 }
 
-export async function testRenders(testName: string, parameters: Parameters, callback: { (outFiles: TestDump[]): any }, renderersList: Array<string>) {
+export async function testRenders(testName: string, parameters: Parameters, callback: { (outFiles: TestDump[]): any }, renderersList: Array<string>, allowError: boolean = false) {
   await checkZimTools()
   for (const renderer of renderersList) {
+    const now = new Date()
+    const testId = `mwo-test-${testName}-${renderer}-${+now}`
+    process.stdout.write(`\n${'='.repeat(60)}\n  TEST: ${testName} [${renderer}]\n${'='.repeat(60)}\n`)
     try {
-      const now = new Date()
-      const testId = `mwo-test-${testName}-${renderer}-${+now}`
-      process.stdout.write(`\n${'='.repeat(60)}\n  TEST: ${testName} [${renderer}]\n${'='.repeat(60)}\n`)
       const outFiles = (await getOutFiles(renderer, testId, parameters)) as TestDump[]
       outFiles[0].testId = testId
       outFiles[0].renderer = renderer
       await callback(outFiles)
     } catch (err) {
       logger.error((err as any).message)
-      return
+      if (!allowError) {
+        return
+      }
+      await callback([{ testId, renderer, error: err as Error } as TestDump])
     }
   }
 }
 
-export async function testAllRenders(testName: string, parameters: Parameters, callback: { (outFiles: TestDump[]): any }) {
-  return testRenders(testName, parameters, callback, RENDERERS_LIST)
+export async function testAllRenders(testName: string, parameters: Parameters, callback: { (outFiles: TestDump[]): any }, allowError: boolean = false) {
+  return testRenders(testName, parameters, callback, RENDERERS_LIST, allowError)
 }
