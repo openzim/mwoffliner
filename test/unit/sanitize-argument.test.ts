@@ -76,8 +76,32 @@ describe('URL validation', () => {
     await expect(sanitize_all({ mwUrl: 'https://en.wikipedia.org', adminEmail: 'test@example.com' })).resolves.toBeUndefined()
   })
 
+  test('accepts valid URL with trailing slash', async () => {
+    await expect(sanitize_all({ mwUrl: 'https://en.wikipedia.org/', adminEmail: 'test@example.com' })).resolves.toBeUndefined()
+  })
+
+  test('accepts valid http URL', async () => {
+    await expect(sanitize_all({ mwUrl: 'http://en.wikipedia.org', adminEmail: 'test@example.com' })).resolves.toBeUndefined()
+  })
+
+  test('accepts valid URL with IP address', async () => {
+    await expect(sanitize_all({ mwUrl: 'http://192.168.1.1', adminEmail: 'test@example.com' })).resolves.toBeUndefined()
+  })
+
   test('rejects invalid URL', async () => {
     await expect(sanitize_all({ mwUrl: 'invalid-url', adminEmail: 'test@example.com' })).rejects.toThrow(/url/i)
+  })
+
+  test('rejects URL with non-http protocol', async () => {
+    await expect(sanitize_all({ mwUrl: 'ftp://en.wikipedia.org', adminEmail: 'test@example.com' })).rejects.toThrow(/protocol/)
+  })
+
+  test('rejects URL with path', async () => {
+    await expect(sanitize_all({ mwUrl: 'https://en.wikipedia.org/wiki', adminEmail: 'test@example.com' })).rejects.toThrow(/path/)
+  })
+
+  test('rejects URL with deep path', async () => {
+    await expect(sanitize_all({ mwUrl: 'https://en.wikipedia.org/wiki/Main_Page', adminEmail: 'test@example.com' })).rejects.toThrow(/path/)
   })
 })
 

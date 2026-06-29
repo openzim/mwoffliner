@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'url'
 import pathParser from 'path'
 import * as logger from './Logger.js'
 import fs from 'fs'
-import { isValidEmail, isValidUrl } from './util/index.js'
+import { isValidEmail } from './util/index.js'
 import * as path from 'path'
 import { parameterDescriptions } from './parameterList.js'
 import { RENDERERS_LIST } from './util/const.js'
@@ -223,8 +223,19 @@ export async function check_mwApiReachability(mwUrl: string, mwActionApiPath: st
 }
 
 export function sanitize_mwUrl(mwUrl: string) {
-  if (!isValidUrl(mwUrl)) {
+  let url: URL
+  try {
+    url = new URL(mwUrl)
+  } catch {
     throw new Error(`mwUrl is not a valid URL.`)
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error(`mwUrl must use http or https protocol, got '${url.protocol.replace(':', '')}'.`)
+  }
+
+  if (url.pathname !== '/') {
+    throw new Error(`mwUrl must not contain a path (only the hostname is expected), got '${url.pathname}'. See the FAQ.`)
   }
 }
 
