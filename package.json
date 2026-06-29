@@ -75,7 +75,6 @@
     "axios": "^1.18.0",
     "backoff": "^2.5.0",
     "deepmerge": "^4.3.1",
-    "details-element-polyfill": "^2.4.0",
     "domino": "^2.1.7",
     "execa": "^9.6.1",
     "follow-redirects": "^1.16.0",
