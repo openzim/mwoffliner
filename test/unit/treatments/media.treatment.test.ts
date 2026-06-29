@@ -15,14 +15,14 @@ describe('MediaTreatment', () => {
     getStaticFilesList(): Set<string> {
       return new Set()
     }
-    public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, articleId: string, videoEl: DominoElement) {
-      return this.treatAudioVideo(dump, srcCache, articleId, videoEl)
+    public async testTreatVideo(dump: Dump, srcCache: KVS<boolean>, zimPath: string, videoEl: DominoElement) {
+      return this.treatAudioVideo(dump, srcCache, zimPath as ZimPath, videoEl)
     }
-    public async testTreatSubtitle(trackEle: DominoElement, articleId: string) {
-      return this.treatSubtitle(trackEle, articleId)
+    public async testTreatSubtitle(trackEle: DominoElement, zimPath: string) {
+      return this.treatSubtitle(trackEle, zimPath as ZimPath)
     }
-    public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
-      return this.treatMedias(parsoidDoc, dump, articleId)
+    public async testTreatMedias(parsoidDoc: DominoElement, dump: Dump, zimPath: string) {
+      return this.treatMedias(parsoidDoc, dump, zimPath as ZimPath)
     }
   }
 
@@ -37,7 +37,7 @@ describe('MediaTreatment', () => {
     test('treat one subtitle', async () => {
       const { dump } = await setupScrapeClasses()
 
-      // Wikicode is taken from article "Mechanical energy" which has a video with subtitle
+      // Wikicode is taken from page "Mechanical energy" which has a video with subtitle
       const wikicode =
         '[[File:Physicsworks.ogv|thumb|200px|alt="Lecture demonstrating conservation of mechanical energy"|MIT professor [[Walter Lewin]] demonstrating conservation of mechanical energy]]'
       const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl)
@@ -55,7 +55,7 @@ describe('MediaTreatment', () => {
     test('treat multiple subtitles in one video', async () => {
       const { dump } = await setupScrapeClasses({ format: '' })
 
-      // Wikicode is taken from article "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
+      // Wikicode is taken from page "User:Charliechlorine/sandbox" which has multiple(4) subtitles in this video
       const wikicode = '[[File:Videoonwikipedia.ogv|thumb|thumbtime=0:58|left|320px|Video about kola nuts ]]'
       const htmlStr = await convertWikicodeToHtml(wikicode, dump.mwMetaData.baseUrl)
 
@@ -298,7 +298,7 @@ describe('MediaTreatment', () => {
       const dataUrl = 'data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjMwIiB3aWR0aD0iMzAiPjwvc3ZnPg=='
       const testHtml = `<img src="${dataUrl}">`
       const doc = domino.createDocument(testHtml)
-      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Test_Article')
+      const ret = await testableRenderer.testTreatMedias(doc, dump, 'Test_Page')
 
       const imgEl = doc.querySelector('img')
       expect(imgEl).not.toBeNull()

@@ -14,13 +14,13 @@ import { fileURLToPath } from 'url'
 import semver from 'semver'
 import * as path from 'path'
 import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzim/libzim'
-import { checkApiAvailability, getArticleIds } from './util/mw-api.js'
+import { checkApiAvailability, getPages } from './util/mw-api.js'
 import { createTranslator } from './i18n.js'
 import { zimCreatorMutex } from './mutex.js'
 import { check_all } from './sanitize-argument.js'
 
 import {
-  MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE,
+  MIN_IMAGE_THRESHOLD_INDEX_PAGE,
   downloadAndSaveModule,
   downloadAndSaveStartupModule,
   getModuleDependencies,
@@ -33,16 +33,17 @@ import {
   getRelativeFilePath,
   getSizeFromUrl,
   isValidEmail,
-  makeArticleImageTile,
-  makeArticleListItem,
+  makePageImageTile,
+  makePageListItem,
   mkdirPromise,
   sanitizeString,
   saveStaticFiles,
   addWebpJsScripts,
-  extractArticleList,
+  extractPageList,
   getTmpDirectory,
   validateMetadata,
-  truncateZimArticleTitleWords,
+  truncateZimEntryTitleWords,
+  makeZimPath,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -52,9 +53,9 @@ import { config } from './config.js'
 import MediaWiki from './MediaWiki.js'
 import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
-import { articleListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
-import { saveArticles } from './util/saveArticles.js'
-import { ARTICLE_REQUEST_INTERVAL, CATEGORIES_PAGE_SIZE } from './util/const.js'
+import { pageListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
+import { savePages } from './util/savePages.js'
+import { PAGE_REQUEST_INTERVAL, CATEGORIES_PAGE_SIZE } from './util/const.js'
 import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
 import FileManager from './util/FileManager.js'
@@ -108,7 +109,7 @@ async function execute(argv: any) {
     categoriesPageSize,
   } = argv
 
-  let { articleList, articleListToIgnore } = argv
+  let { pageList, pageListToIgnore } = argv
 
   /* *********************************** */
   /*       SYSTEM VARIABLE SECTION       */
@@ -126,8 +127,8 @@ async function execute(argv: any) {
   logger.debug(`Starting mwoffliner v${packageJSON.version}...`)
 
   // TODO: Move it to sanitize method
-  if (articleList) articleList = String(articleList)
-  if (articleListToIgnore) articleListToIgnore = String(articleListToIgnore)
+  if (pageList) pageList = String(pageList)
+  if (pageListToIgnore) pageListToIgnore = String(pageListToIgnore)
 
   // Parse --customCss and populate Downloader so renderers can use the list
   if (customCss) {
@@ -147,7 +148,7 @@ async function execute(argv: any) {
 
   const speed = _speed || 1
   const workers = speed >= 1 ? Math.floor(speed) : 1
-  const articleRequestInterval = speed < 1 ? Math.round(ARTICLE_REQUEST_INTERVAL / speed) : ARTICLE_REQUEST_INTERVAL
+  const pageRequestInterval = speed < 1 ? Math.round(PAGE_REQUEST_INTERVAL / speed) : PAGE_REQUEST_INTERVAL
 
   /* Check Node.js version */
   const nodeVersionSatisfiesPackage = semver.satisfies(process.version, packageJSON.engines.node)
@@ -195,7 +196,7 @@ async function execute(argv: any) {
   Downloader.init = {
     uaString,
     workers,
-    articleRequestInterval,
+    pageRequestInterval: pageRequestInterval,
     reqTimeout: requestTimeout * 1000 || config.defaults.requestTimeout,
     optimisationCacheUrl,
     s3,
@@ -247,17 +248,17 @@ async function execute(argv: any) {
   validateMetadata(metaDataRequiredKeys)
 
   // Sanitizing main page
-  let mainPage = articleList ? '' : mwMetaData.mainPage
+  let mainPage: PageTitle = pageList ? '' : mwMetaData.mainPage
 
   if (customMainPage) {
-    mainPage = customMainPage
+    mainPage = customMainPage.replace(/_/g, ' ')
     const mainPageUrl = MediaWiki.webUrl + encodeURIComponent(mainPage)
     if (!(await checkApiAvailability(mainPageUrl))) {
       throw new Error(`customMainPage doesn't return 200 status code for url ${mainPageUrl}`)
     }
   }
 
-  MediaWiki.apiCheckArticleId = mwMetaData.mainPage
+  MediaWiki.apiCheckPageTitle = mwMetaData.mainPage
   await MediaWiki.hasCoordinates()
   await MediaWiki.hasActionParseApi()
   await MediaWiki.hasModuleApi()
@@ -269,7 +270,6 @@ async function execute(argv: any) {
   await RenderingContext.createRenderers(forceRender)
 
   await RedisStore.connect()
-  const { articleDetailXId, filesToDownloadXPath, redirectsXId } = RedisStore
   // Output directory
   const outputDirectory = path.isAbsolute(_outputDirectory || '') ? _outputDirectory : path.join(process.cwd(), _outputDirectory || 'out')
   await mkdirPromise(outputDirectory)
@@ -300,50 +300,47 @@ async function execute(argv: any) {
   /* GET CONTENT ********************* */
   /* ********************************* */
 
-  let articleListToIgnoreLines: string[]
-  if (articleListToIgnore) {
+  const pagesToIgnore: PageTitle[] = []
+  if (pageListToIgnore) {
     try {
-      articleListToIgnoreLines = await extractArticleList(articleListToIgnore)
-      logger.debug(`ArticleListToIgnore has [${articleListToIgnoreLines.length}] items`)
+      pagesToIgnore.push(...(await extractPageList(pageListToIgnore)))
+      logger.debug(`pageListToIgnore has [${pagesToIgnore.length}] items`)
     } catch (err) {
-      logger.error(`Failed to read articleListToIgnore from [${articleListToIgnore}]`, err)
+      logger.error(`Failed to read pageListToIgnore from [${pageListToIgnore}]`, err)
       throw err
     }
   }
 
-  let articleListLines: string[]
-  if (articleList) {
+  const pages: PageTitle[] = []
+  if (pageList) {
     try {
-      articleListLines = await extractArticleList(articleList)
-      if (articleListToIgnore) {
-        articleListLines = articleListLines.filter((title: string) => !articleListToIgnoreLines.includes(title))
-      }
-      logger.debug(`ArticleList has [${articleListLines.length}] items`)
+      pages.push(...(await extractPageList(pageList)))
+      logger.info(`List of pages to include in the ZIM has [${pages.length}] items`)
     } catch (err) {
-      logger.error(`Failed to read articleList from [${articleList}]`, err)
+      logger.error(`Failed to read pageList from [${pageList}]`, err)
       throw err
     }
+  }
 
-    // When the article list contains exactly one article and no custom main
-    // page was provided, use that article as the ZIM main page directly
-    //(#1891)
-    if (articleListLines.length === 1 && !customMainPage) {
-      mainPage = articleListLines[0].replace(/ /g, '_')
-      logger.info(`Using single article list entry as main page: ${mainPage}`)
-    }
+  // When the page list contains exactly one page and no custom main
+  // page was provided, use that page as the ZIM main page directly
+  //(#1891)
+  if (pages.length === 1 && !customMainPage) {
+    mainPage = pages[0]
+    logger.info(`Using single page list entry as main page: ${mainPage}`)
   }
 
   const allowedContentModels = ['wikitext', ...addContentModels]
 
-  logger.debug('Getting article ids')
+  logger.debug('Getting pages details')
   let stime = Date.now()
-  await getArticleIds(mainPage, articleList ? articleListLines : null, articleListToIgnore ? articleListToIgnoreLines : null, allowedContentModels)
-  logger.info(`Got ArticleIDs in ${(Date.now() - stime) / 1000} seconds`)
+  await getPages(mainPage, pages, pagesToIgnore, allowedContentModels)
+  logger.info(`Got pages details in ${(Date.now() - stime) / 1000} seconds`)
 
   const filenameDate = new Date().toISOString().slice(0, 7)
 
-  // Getting total number of articles from Redis
-  logger.info(`Total articles found in Redis: ${await articleDetailXId.len()}`)
+  // Getting total number of pages from Redis
+  logger.info(`Total pages found in Redis: ${await RedisStore.pagesStore.len()}`)
 
   const dumps: Dump[] = []
 
@@ -361,7 +358,7 @@ async function execute(argv: any) {
           outputDirectory,
           mainPage,
           filenamePrefix,
-          articleList,
+          pageList,
           publisher,
           customZimDescription,
           customZimLongDescription,
@@ -395,7 +392,7 @@ async function execute(argv: any) {
         logger.info('Skipping dump')
       } else {
         await doDump(dump)
-        await filesToDownloadXPath.flush()
+        await RedisStore.filesStore.flush()
         logger.info('Finished dump')
       }
     }
@@ -484,10 +481,10 @@ async function execute(argv: any) {
       }
     }
 
-    logger.info('Getting articles')
+    logger.info('Getting pages content')
     stime = Date.now()
-    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await saveArticles(zimCreator, dump)
-    logger.info(`Fetching Articles finished in ${(Date.now() - stime) / 1000} seconds`)
+    const { jsModuleDependencies, cssModuleDependencies, staticFilesList } = await savePages(zimCreator, dump)
+    logger.info(`Got pages content in ${(Date.now() - stime) / 1000} seconds`)
 
     logger.debug('Copying Static Resource Files')
     await saveStaticFiles(staticFilesList, zimCreator)
@@ -554,10 +551,10 @@ async function execute(argv: any) {
 
     await FileManager.startDownloading(zimCreator, dump)
 
-    logger.info('Writing Article Redirects')
-    await writeArticleRedirects(dump, zimCreator)
+    logger.info('Writing Pages Redirects')
+    await writePageRedirects(dump, zimCreator)
 
-    const mainPath = mainPage ? mainPage : await createIndexPage(dump, zimCreator, false)
+    const mainPath = mainPage ? makeZimPath(mainPage) : await createIndexPage(dump, zimCreator, false)
     zimCreator.setMainPath(mainPath)
 
     logger.info('Finishing ZIM Creation')
@@ -571,43 +568,42 @@ async function execute(argv: any) {
   /* FUNCTIONS *********************** */
   /* ********************************* */
 
-  async function writeArticleRedirects(dump: Dump, zimCreator: Creator) {
+  async function writePageRedirects(dump: Dump, zimCreator: Creator) {
     let processed = -1
-    const total = await redirectsXId.len()
+    const total = await RedisStore.redirectsStore.len()
     logger.info(`${total} redirects to process`)
-    await redirectsXId.iterateItems(Downloader.workers, async (redirects) => {
-      for (const [redirectId, { targetId, fragment }] of Object.entries(redirects)) {
+    await RedisStore.redirectsStore.iterateItems(Downloader.workers, async (redirects) => {
+      for (const { from, to, fragment } of Object.values(redirects)) {
         processed += 1
         if (processed > 0 && processed % 5000 === 0) {
           logger.info(`${processed} redirects have been processed (${Math.round((processed / total) * 1000) / 10} %)`)
         }
-        if (await RedisStore.articleDetailXId.exists(redirectId)) {
-          logger.warn(`Skipping redirect of '${redirectId}' because it already exists as an article`)
+        if (await RedisStore.pagesStore.exists(from)) {
+          logger.warn(`Skipping redirect of '${from}' because it already exists as a page`)
           continue
         }
-        if (redirectId === targetId) {
-          logger.warn(`Skipping redirect of '${redirectId}' to self`)
+        if (from === to) {
+          logger.warn(`Skipping redirect of '${from}' to self`)
           continue
         }
-        if (!(await RedisStore.articleDetailXId.exists(targetId))) {
-          logger.warn(`Skipping redirect of '${redirectId}' to '${targetId}' because target is not a known article`)
+        if (!(await RedisStore.pagesStore.exists(to))) {
+          logger.warn(`Skipping redirect of '${from}' to '${to}' because target is not a known page`)
           continue
         }
-        // We fake a title, by just removing the underscores
-        const redirectTitle = truncateZimArticleTitleWords(String(redirectId).replace(/_/g, ' '))
+        const redirectTitle = truncateZimEntryTitleWords(from)
         if (fragment) {
-          // Should we have a fragment (i.e. we redirect to a section of an article), this is not (yet) supported by libzim
+          // Should we have a fragment (i.e. we redirect to a section of a page), this is not (yet) supported by libzim
           // (to have such a redirect with a fragment inside the path), so we create a "fake" entry with only an HTML-based
           // redirect inside
           const htmlTemplateString = htmlRedirectTemplateCode()
             .replace(/__TITLE__/g, redirectTitle)
             // we have to replace space in fragment with underscores, see https://phabricator.wikimedia.org/T398724
-            .replace(/__TARGET__/g, `${targetId}#${fragment.replace(/ /g, '_')}`)
-            .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(redirectId, ''))
-          await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(redirectId, 'text/html', redirectTitle, { FRONT_ARTICLE: 1 }, htmlTemplateString)))
+            .replace(/__TARGET__/g, `${makeZimPath(to)}#${fragment.replace(/ /g, '_')}`)
+            .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(makeZimPath(from), ''))
+          await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(makeZimPath(from), 'text/html', redirectTitle, { FRONT_ARTICLE: 1 }, htmlTemplateString)))
         } else {
           // Otherwise we simply add a "regular" libzim redirect
-          await zimCreatorMutex.runExclusive(() => zimCreator.addRedirection(redirectId, redirectTitle, targetId, { FRONT_ARTICLE: 1 }))
+          await zimCreatorMutex.runExclusive(() => zimCreator.addRedirection(makeZimPath(from), redirectTitle, makeZimPath(to), { FRONT_ARTICLE: 1 }))
         }
 
         dump.status.redirects.written += 1
@@ -660,40 +656,40 @@ async function execute(argv: any) {
     }
   }
 
-  async function getIndexPath() {
+  async function getIndexPath(): Promise<ZimPath> {
     for (const candidate of config.candidateIndexPath) {
-      if (!(await RedisStore.articleDetailXId.exists(candidate)) && !(await RedisStore.redirectsXId.exists(candidate))) {
-        return candidate
+      if (!(await RedisStore.pagesStore.exists(candidate)) && !(await RedisStore.redirectsStore.exists(candidate))) {
+        return candidate as ZimPath
       }
     }
-    throw new Error('All candidate main page paths are already used by an article or a redirect')
+    throw new Error('All candidate main page paths are already used by a page or a redirect')
   }
 
   /**
-   * Create a custom index page used as main page, listing all articles in the ZIM
+   * Create a custom index page used as main page, listing all pages in the ZIM
    * Mainly used for selections which do not have a proper main page to use
    * Supports a dry-run mode where main page is not really created, to be used before we
-   * fetch all articles. Real index creation must be done after we have fetched all articles,
+   * fetch all pages. Real index creation must be done after we have fetched all pages,
    * should some have failed we do not want to add them to the index
    */
   async function createIndexPage(dump: Dump, zimCreator: Creator, dryrun: boolean) {
     const indexPagePath = await getIndexPath()
 
     const doc = domino.createDocument(
-      articleListHomeTemplate
+      pageListHomeTemplate
         .replace(
           '</head>',
-          genHeaderCSSLink(config, 'mobile_main_page', dump.mwMetaData.mainPage, config.output.dirs.res) +
+          genHeaderCSSLink(config, 'mobile_main_page', indexPagePath, config.output.dirs.res) +
             '\n' +
-            genHeaderCSSLink(config, 'style', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            genHeaderCSSLink(config, 'style', indexPagePath, config.output.dirs.res) +
             '\n' +
-            genHeaderScript(config, 'images_loaded.min', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            genHeaderScript(config, 'images_loaded.min', indexPagePath, config.output.dirs.res) +
             '\n' +
-            genHeaderScript(config, 'masonry.min', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            genHeaderScript(config, 'masonry.min', indexPagePath, config.output.dirs.res) +
             '\n' +
-            genHeaderScript(config, 'article_list_home', dump.mwMetaData.mainPage, config.output.dirs.res) +
+            genHeaderScript(config, 'page_list_home', indexPagePath, config.output.dirs.res) +
             '\n' +
-            genCanonicalLink(config, dump.mwMetaData.webUrl, dump.mwMetaData.mainPage) +
+            genCanonicalLink(config, dump.mwMetaData.webUrl, indexPagePath) +
             '\n' +
             '\n</head>',
         )
@@ -703,35 +699,31 @@ async function execute(argv: any) {
         .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(indexPagePath, '')),
     )
     doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
-    const articlesWithImages: ArticleDetail[] = []
-    const allArticles: ArticleDetail[] = []
-    for (const articleTitle of articleListLines) {
-      let articleId = articleTitle.replace(/ /g, '_')
-
+    const pagesWithImages: PageDetail[] = []
+    const allPages: PageDetail[] = []
+    for (const page of pages) {
       // check if this is a redirect
-      const redirect = await redirectsXId.get(articleId)
-      if (redirect) {
-        articleId = redirect.targetId
-      }
+      const redirect = await RedisStore.redirectsStore.get(page)
+      const entryTitle = redirect ? redirect.to : page
 
-      const articleDetail = await articleDetailXId.get(articleId)
-      if (articleDetail) {
-        allArticles.push(articleDetail)
-        if (articleDetail.thumbnail && articleDetail.internalThumbnailUrl) {
-          articlesWithImages.push(articleDetail)
-          if (articlesWithImages.length >= 100) {
+      const pageDetail = await RedisStore.pagesStore.get(entryTitle)
+      if (pageDetail) {
+        allPages.push(pageDetail)
+        if (pageDetail.thumbnail && pageDetail.internalThumbnailUrl) {
+          pagesWithImages.push(pageDetail)
+          if (pagesWithImages.length >= 100) {
             break
           }
         }
       }
     }
 
-    if (articlesWithImages.length > MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) {
-      const articlesWithImagesEl = articlesWithImages.map((article) => makeArticleImageTile(dump, article)).join('\n')
-      doc.body.innerHTML = `<div id='container'><div id='content'>${articlesWithImagesEl}</div></div>`
+    if (pagesWithImages.length > MIN_IMAGE_THRESHOLD_INDEX_PAGE) {
+      const pagesWithImagesEl = pagesWithImages.map((page) => makePageImageTile(dump, page)).join('\n')
+      doc.body.innerHTML = `<div id='container'><div id='content'>${pagesWithImagesEl}</div></div>`
     } else {
-      const articlesWithoutImagesEl = allArticles.map((article) => makeArticleListItem(dump, article)).join('\n')
-      doc.body.innerHTML = `<ul id='list'>${articlesWithoutImagesEl}</ul>`
+      const pagesWithoutImagesEl = allPages.map((page) => makePageListItem(dump, page)).join('\n')
+      doc.body.innerHTML = `<ul id='list'>${pagesWithoutImagesEl}</ul>`
     }
 
     /* Write the static html file */
@@ -743,46 +735,42 @@ async function execute(argv: any) {
     return indexPagePath
   }
 
-  async function fetchArticleDetail(articleId: string) {
-    return articleDetailXId.get(articleId)
-  }
-
-  async function updateArticleThumbnail(articleDetail: any, articleId: string) {
-    const imageUrl = articleDetail.thumbnail
+  async function updatePageThumbnail(pageDetail: any, pageTitle: string) {
+    const imageUrl = pageDetail.thumbnail
 
     const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
     const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
     const { mult, width } = getSizeFromUrl(suitableResUrl)
     const path = getMediaBase(suitableResUrl, false)
 
-    articleDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page', getMediaBase(suitableResUrl, true))
+    pageDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page' as ZimPath, getMediaBase(suitableResUrl, true))
 
     await Promise.all([
       FileManager.addFileToProcess(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),
-      articleDetailXId.set(articleId, articleDetail),
+      RedisStore.pagesStore.set(pageTitle, pageDetail),
     ])
   }
 
   async function getThumbnailsData(): Promise<void> {
-    if (customMainPage || !articleList || articleListLines.length <= MIN_IMAGE_THRESHOLD_ARTICLELIST_PAGE) return
+    if (customMainPage || !pageList || pages.length <= MIN_IMAGE_THRESHOLD_INDEX_PAGE) return
 
-    logger.info('Updating article thumbnails for articles')
+    logger.info('Updating page thumbnails for pages')
 
-    let articleIndex = 0
-    let articlesWithImages = 0
+    let pageIndex = 0
+    let pagesWithImages = 0
 
-    while (articleIndex < articleListLines.length && articlesWithImages < 100) {
-      const articleId = articleListLines[articleIndex]
-      articleIndex++
+    while (pageIndex < pages.length && pagesWithImages < 100) {
+      const pageTitle = pages[pageIndex]
+      pageIndex++
 
       try {
-        const articleDetail = await fetchArticleDetail(articleId)
-        if (!articleDetail || !articleDetail.thumbnail) continue
+        const pageDetail = await RedisStore.pagesStore.get(pageTitle)
+        if (!pageDetail || !pageDetail.thumbnail) continue
 
-        await updateArticleThumbnail(articleDetail, articleId)
-        articlesWithImages++
+        await updatePageThumbnail(pageDetail, pageTitle)
+        pagesWithImages++
       } catch {
-        logger.warn(`Failed to parse thumbnail for [${articleId}], skipping...`)
+        logger.warn(`Failed to parse thumbnail for [${pageTitle}], skipping...`)
       }
     }
   }

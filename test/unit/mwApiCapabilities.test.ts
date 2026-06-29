@@ -48,7 +48,7 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.base = 'https://pokemon.fandom.com'
     MediaWiki.actionApiPath = '/api.php'
     MediaWiki.modulePathOpt = '/load.php'
-    MediaWiki.apiCheckArticleId = 'Volcarona' // MediaWiki:Sidebar does not exist in pokemon.fandom.com
+    MediaWiki.apiCheckPageTitle = 'Volcarona' as PageTitle // MediaWiki:Sidebar does not exist in pokemon.fandom.com
     MediaWiki.skin = 'fandomdesktop' // vector skin does not exist in pokemon.fandom.com
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
     expect(await MediaWiki.hasActionParseApi()).toBe(true)

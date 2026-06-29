@@ -15,7 +15,7 @@ export default class ApiURLDirector {
     return urlBuilder.setDomain(this.baseDomain).setQueryParams(queryParams, '?', true).build()
   }
 
-  buildCategoryMembersURL(articleId: string, continueStr = '') {
+  buildCategoryMembersURL(pageTitle: PageTitle, continueStr = '') {
     return urlBuilder
       .setDomain(this.baseDomain)
       .setQueryParams({
@@ -27,7 +27,7 @@ export default class ApiURLDirector {
         cmlimit: 'max',
         format: 'json',
         formatversion: '2',
-        cmtitle: articleId,
+        cmtitle: pageTitle,
         cmcontinue: continueStr,
         maxlag: config.defaults.maxlag,
       })
@@ -54,10 +54,10 @@ export default class ApiURLDirector {
       .build()
   }
 
-  buildLogEventsQuery(letype: string, articleId: string) {
+  buildLogEventsQuery(letype: string, pageTitle: PageTitle) {
     return urlBuilder
       .setDomain(this.baseDomain)
-      .setQueryParams({ action: 'query', list: 'logevents', letype: letype, letitle: articleId, format: 'json', maxlag: config.defaults.maxlag })
+      .setQueryParams({ action: 'query', list: 'logevents', letype: letype, letitle: pageTitle, format: 'json', maxlag: config.defaults.maxlag })
       .build()
   }
 }

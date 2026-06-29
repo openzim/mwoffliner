@@ -16,11 +16,11 @@
 		"other": "De volgende {{count}} bestanden zijn"
 	},
 	"categoryMediaHeader": "Media in categorie \"{{pageName}}\"",
-	"categoryArticleCount": {
+	"categoryPageCount": {
 		"one": "Deze categorie bevat alleen de volgende pagina.",
-		"other": "$t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) onderdeel van deze categorie, van totaal {{count}}."
+		"other": "$t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) onderdeel van deze categorie, van totaal {{count}}."
 	},
-	"categoryCurrentPageArticleCount": {
+	"categoryCurrentPagePageCount": {
 		"one": "De volgende pagina is",
 		"other": "De volgende {{count}} pagina zijn"
 	},
@@ -40,8 +40,8 @@
 	"LAST_EDITED_ON": "Laatst bewerkt op {{date}}",
 	"LICENSE_UNKNOWN": "een onbekende licentie",
 	"DOWNLOAD_ERRORS_HEADING": "Oeps. Artikel niet gevonden.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel '{{articleTitle}}' is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van {{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dit artikel is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel '{{pageTitle}}' is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Dit artikel is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
 	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "De toegang tot dit artikel is op de server {{server}} beperkt. Er zijn speciale machtigingen vereist die niet beschikbaar zijn tijdens het scrapen van ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "De toegang tot deze pagina is beperkt door een categoriegebaseerde vergrendeling op de server {{server}}. De vereiste categorierechten zijn niet beschikbaar tijdens het ZIM-scrapingproces.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server {{server}} niet op tijd details verstrekken over de HTML-code van dit artikel.",

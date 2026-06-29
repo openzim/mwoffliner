@@ -12,22 +12,22 @@ jest.setTimeout(30000)
 const now = new Date()
 const testId = join(process.cwd(), `mwo-test-${+now}`)
 
-const articleListUrl = join(testId, '/articleList')
+const pageListUrl = join(testId, '/pageList')
 
 test('Webp Option check', async () => {
   await execa('redis-cli flushall', { shell: true })
   await mkdirPromise(testId)
 
-  const articleList = `
+  const pageList = `
 Animation
 Real-time computer graphics`
 
-  await writeFilePromise(articleListUrl, articleList, 'utf8')
+  await writeFilePromise(pageListUrl, pageList, 'utf8')
 
   const outFiles = await MwOffliner.execute({
     mwUrl: 'https://en.wikipedia.org',
     adminEmail: 'test@kiwix.org',
-    articleList: articleListUrl,
+    pageList: pageListUrl,
     outputDirectory: testId,
     redis: process.env.REDIS,
     webp: true,

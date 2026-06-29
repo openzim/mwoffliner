@@ -4,24 +4,24 @@ import * as logger from '../Logger.js'
 import * as domino from 'domino'
 
 /**
- * Check if a given article title or id is main page of the target ZIM
+ * Check if a given page title is main page of the target ZIM
  */
-export function isMainPage(articleTitleOrId: string): boolean {
-  return MediaWiki.metaData.mainPage === articleTitleOrId || MediaWiki.metaData.mainPage === articleTitleOrId.replace(/ /g, '_')
+export function isMainPage(pageTitle: PageTitle): boolean {
+  return MediaWiki.metaData.mainPage === pageTitle
 }
 
 /**
- * Check if a given article title or id is a subpage or not
+ * Check if a given page title or id is a subpage or not
  *
  * A given is a subpage if subpages are activated on its namespace and it contains a / in its title/id
  */
-export function isSubpage(articleTitleOrId: string) {
-  if (articleTitleOrId && articleTitleOrId.indexOf('/') >= 0) {
-    if (articleTitleOrId.indexOf(':') < 0) {
+export function isSubpage(pageTitleOrId: string) {
+  if (pageTitleOrId && pageTitleOrId.indexOf('/') >= 0) {
+    if (pageTitleOrId.indexOf(':') < 0) {
       // namespace 0 never allows subpages
       return false
     }
-    const namespace = articleTitleOrId.substring(0, articleTitleOrId.indexOf(':'))
+    const namespace = pageTitleOrId.substring(0, pageTitleOrId.indexOf(':'))
     const ns = MediaWiki.namespaces[namespace]
     if (ns !== undefined) {
       return ns.allowedSubpages
@@ -38,7 +38,7 @@ export function getNamespaceName(namespace: number) {
 }
 
 /**
- * Extract the JS config variables from its headHtml, typically returned by MW API call when fetching article content
+ * Extract the JS config variables from its headHtml, typically returned by MW API call when fetching page content
  */
 export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any> = {}): KVS<any> {
   const match = headHtml.match(/;RLCONF=({".*?});\s?RLSTATE=/s) || headHtml.match(/{mw\.config\.set\(({".*?})\);mw\.loader\.state\(/s)
@@ -74,7 +74,7 @@ export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any
 }
 
 /**
- * Extract the CSS class to apply on article <body> tag from its headHtml, typically returned by MW API call when fetching article content
+ * Extract the CSS class to apply on page <body> tag from its headHtml, typically returned by MW API call when fetching page content
  */
 export function extractBodyCssClass(headHtml: string): string {
   const document = domino.createDocument(headHtml)
@@ -96,7 +96,7 @@ export function extractBodyCssClass(headHtml: string): string {
 }
 
 /**
- * Extract the CSS class to apply on article <html> tag from its headHtml, typically returned by MW API call when fetching article content
+ * Extract the CSS class to apply on page <html> tag from its headHtml, typically returned by MW API call when fetching page content
  */
 export function extractHtmlCssClass(headHtml: string): string {
   const document = domino.createDocument(headHtml)

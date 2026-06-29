@@ -6,7 +6,7 @@ import { config } from '../../../src/config.js'
 
 jest.setTimeout(10000)
 
-describe('ArticleRenderer', () => {
+describe('Renderers', () => {
   describe('test ActionParse renderer', () => {
     const actionParseRenderer = new ActionParseRenderer()
 
@@ -19,20 +19,22 @@ describe('ArticleRenderer', () => {
     })
 
     it('regular page has content', async () => {
-      const articleId = '荷蘭Floriade世界園藝博覽會'
-      const downloadRes = await actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })
+      const pageTitle = '荷蘭Floriade世界園藝博覽會' as PageTitle
+      const downloadRes = await actionParseRenderer.download({ pageTitle: pageTitle, pageUrl: Downloader.getPageUrl(pageTitle), pageDetail: { title: 'foo' as PageTitle } })
       expect(downloadRes.data).toBeDefined()
     })
 
     it('moved page has content retrieved from fallback logic', async () => {
-      const articleId = '荷兰Floriade世界園藝博覽會'
-      const downloadRes = await actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })
+      const pageTitle = '荷兰Floriade世界園藝博覽會' as PageTitle
+      const downloadRes = await actionParseRenderer.download({ pageTitle: pageTitle, pageUrl: Downloader.getPageUrl(pageTitle), pageDetail: { title: 'foo' as PageTitle } })
       expect(downloadRes.data).toBeDefined()
     })
 
     it('missing page throws a download error', async () => {
-      const articleId = 'foo-foo-foo'
-      expect(actionParseRenderer.download({ articleId, articleUrl: Downloader.getArticleUrl(articleId), articleDetail: { title: 'foo' } })).rejects.toThrow(DownloadError)
+      const pageTitle = 'foo-foo-foo' as PageTitle
+      expect(actionParseRenderer.download({ pageTitle: pageTitle, pageUrl: Downloader.getPageUrl(pageTitle), pageDetail: { title: 'foo' as PageTitle } })).rejects.toThrow(
+        DownloadError,
+      )
     })
   })
 })

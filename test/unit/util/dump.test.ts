@@ -13,7 +13,7 @@ describe('Download CSS or JS Module', () => {
   afterAll(stopRedis)
 
   beforeEach(async () => {
-    const { filesToDownloadXPath } = RedisStore
+    const { filesStore: filesToDownloadXPath } = RedisStore
     await filesToDownloadXPath.flush()
     FileManager.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
@@ -30,7 +30,7 @@ describe('Download CSS or JS Module', () => {
     expect(content).toContain(`background-image:url(../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg`)
 
     // One SVG (among others) expected to be tracked in filesToDownloadXPath
-    const keys = await RedisStore.filesToDownloadXPath.keys()
+    const keys = await RedisStore.filesStore.keys()
     expect(keys).toContain('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
   })
 
@@ -39,11 +39,11 @@ describe('Download CSS or JS Module', () => {
       'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
       'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d); }',
-      '',
+      '' as ZimPath,
     )
     expect(rewrittenCSS).toContain('a.external { background-image: url(../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg); }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
+    expect(await RedisStore.filesStore.keys()).toStrictEqual(['_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg'])
+    const redisValue = await RedisStore.filesStore.get('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe(
       'https://en.wikipedia.org/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d',
     )
@@ -54,11 +54,11 @@ describe('Download CSS or JS Module', () => {
       'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
       'a.external { background-image: url(/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d); }',
-      'article/with/slashes',
+      'page/with/slashes' as ZimPath,
     )
     expect(rewrittenCSS).toContain('a.external { background-image: url(../../_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg); }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
+    expect(await RedisStore.filesStore.keys()).toStrictEqual(['_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg'])
+    const redisValue = await RedisStore.filesStore.get('_assets_/4bcf8483172f7467f47867020b95783b/link-external-small-ltr-progressive.svg')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe(
       'https://en.wikipedia.org/w/skins/Vector/resources/skins.vector.styles/images/link-external-small-ltr-progressive.svg?fb64d',
     )
@@ -69,11 +69,11 @@ describe('Download CSS or JS Module', () => {
       'https://en.wikipedia.org/w/load.php?lang=en&modules=skins.vector.styles&only=styles&skin=vector',
       '',
       'a.external { background-image: url(//upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png); }',
-      'articleTitle',
+      'pageTitle' as ZimPath,
     )
     expect(rewrittenCSS).toContain('a.external { background-image: url(./_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png); }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png')
+    expect(await RedisStore.filesStore.keys()).toStrictEqual(['_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png'])
+    const redisValue = await RedisStore.filesStore.get('_assets_/0c70a452f799bfe840676ee341124611/Commons-logo.svg.png')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Commons-logo.svg/64px-Commons-logo.svg.png')
   })
 
@@ -82,11 +82,11 @@ describe('Download CSS or JS Module', () => {
       'https://minecraft.wiki/load.php?lang=en&modules=ext.gadget.site-styles&only=styles&skin=vector',
       '',
       '.mcui-arrow { background: url(/images/Grid_layout_Arrow_%28small%29.png?a4894) no-repeat; }',
-      '',
+      '' as ZimPath,
     )
     expect(rewrittenCSS).toContain('.mcui-arrow { background: url(../_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_%28small%29.png) no-repeat; }')
-    expect(await RedisStore.filesToDownloadXPath.keys()).toStrictEqual(['_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_(small).png'])
-    const redisValue = await RedisStore.filesToDownloadXPath.get('_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_(small).png')
+    expect(await RedisStore.filesStore.keys()).toStrictEqual(['_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_(small).png'])
+    const redisValue = await RedisStore.filesStore.get('_assets_/5af80496508534f4cdd561aac15bbc50/Grid_layout_Arrow_(small).png')
     expect(urlHelper.deserializeUrl(redisValue.url)).toBe('https://minecraft.wiki/images/Grid_layout_Arrow_%28small%29.png?a4894')
   })
 
@@ -102,7 +102,7 @@ describe('Download CSS or JS Module', () => {
       'https://example.wiki/load.php?modules=site.styles',
       '',
       '@import url("/customizations/custom.css");\n.main { color: blue; }',
-      '',
+      '' as ZimPath,
     )
 
     expect(rewrittenCSS).toContain('.main { color: blue; }')
@@ -124,7 +124,12 @@ describe('Download CSS or JS Module', () => {
       throw new Error(`Unexpected URL: ${url}`)
     })
 
-    const rewrittenCSS = await processStylesheetContent('https://example.wiki/load.php?modules=site.styles', '', '@import url("/css/a.css");\n.main { color: blue; }', '')
+    const rewrittenCSS = await processStylesheetContent(
+      'https://example.wiki/load.php?modules=site.styles',
+      '',
+      '@import url("/css/a.css");\n.main { color: blue; }',
+      '' as ZimPath,
+    )
 
     expect(rewrittenCSS).toContain('.main { color: blue; }')
     expect(rewrittenCSS).toContain('.from-a { color: red; }')
@@ -147,7 +152,12 @@ describe('Download CSS or JS Module', () => {
       throw new Error(`Unexpected URL: ${url}`)
     })
 
-    const rewrittenCSS = await processStylesheetContent('https://example.wiki/load.php?modules=site.styles', '', '@import url("/css/a.css");\n.main { color: blue; }', '')
+    const rewrittenCSS = await processStylesheetContent(
+      'https://example.wiki/load.php?modules=site.styles',
+      '',
+      '@import url("/css/a.css");\n.main { color: blue; }',
+      '' as ZimPath,
+    )
 
     expect(rewrittenCSS).toContain('.main { color: blue; }')
     expect(rewrittenCSS).toContain('.from-a { color: red; }')
@@ -165,7 +175,12 @@ describe('Download CSS or JS Module', () => {
       throw new Error(`Unexpected URL: ${url}`)
     })
 
-    const rewrittenCSS = await processStylesheetContent('https://example.wiki/load.php?modules=site.styles', '', '@import "/css/quoted.css";\n.main { color: blue; }', '')
+    const rewrittenCSS = await processStylesheetContent(
+      'https://example.wiki/load.php?modules=site.styles',
+      '',
+      '@import "/css/quoted.css";\n.main { color: blue; }',
+      '' as ZimPath,
+    )
 
     expect(rewrittenCSS).toContain('.quoted { font-weight: bold; }')
     expect(rewrittenCSS).toContain('.main { color: blue; }')
@@ -186,7 +201,7 @@ describe('Download CSS or JS Module', () => {
       'https://example.wiki/load.php?modules=site.styles',
       '',
       '@import url("/css/feature.css") supports(display: grid) screen and (min-width: 800px);\n.main { color: blue; }',
-      '',
+      '' as ZimPath,
     )
 
     expect(rewrittenCSS).not.toContain('@import')
@@ -205,12 +220,12 @@ describe('Download CSS or JS Module', () => {
       throw new Error(`Unexpected URL: ${url}`)
     })
 
-    const rewrittenCSS = await processStylesheetContent('https://example.wiki/load.php?modules=site.styles', '', '@import url("/css/imported.css");', '')
+    const rewrittenCSS = await processStylesheetContent('https://example.wiki/load.php?modules=site.styles', '', '@import url("/css/imported.css");', '' as ZimPath)
 
     // The url(images/icon.png) in imported.css should be resolved relative to
     // https://example.wiki/css/imported.css, giving https://example.wiki/css/images/icon.png
     expect(rewrittenCSS).toContain('_assets_/')
-    const keys = await RedisStore.filesToDownloadXPath.keys()
+    const keys = await RedisStore.filesStore.keys()
     expect(keys.some((k) => k.includes('icon.png'))).toBe(true)
 
     downloadSpy.mockRestore()

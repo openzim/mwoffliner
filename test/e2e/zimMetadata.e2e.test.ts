@@ -10,7 +10,7 @@ jest.setTimeout(20000)
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   adminEmail: 'test@kiwix.org',
-  articleList: 'Kiwix',
+  pageList: 'Kiwix',
   redis: process.env.REDIS,
   format: ['nopic'],
   customZimDescription: 'Example of the description',

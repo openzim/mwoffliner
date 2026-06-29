@@ -9,7 +9,7 @@ jest.setTimeout(60000)
 
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
-  articleList: 'BMW',
+  pageList: 'BMW',
   adminEmail: 'test@kiwix.org',
   mwActionApiPath: sanitizeApiPathParam('/w/api.php'),
   mwModulePath: sanitizeApiPathParam('/w/load.php'),

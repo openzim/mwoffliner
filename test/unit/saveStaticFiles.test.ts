@@ -19,7 +19,7 @@ describe('saveStaticFiles', () => {
       const desktopAndCommonStaticFiles = new Set([
         'script.js',
         'masonry.min.js',
-        'article_list_home.js',
+        'page_list_home.js',
         'images_loaded.min.js',
         'style.css',
         'mobile_main_page.css',

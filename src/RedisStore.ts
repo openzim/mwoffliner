@@ -9,9 +9,9 @@ class RedisStore implements RS {
 
   #client: RedisClientType
   #storesReady: boolean
-  #filesToDownloadXPath: RKVS<FileDetail>
-  #articleDetailXId: RKVS<ArticleDetail>
-  #redirectsXId: RKVS<ArticleRedirect>
+  #filesStore: RKVS<FileDetail>
+  #pagesStore: RKVS<PageDetail>
+  #redirectsStore: RKVS<PageRedirect>
   #filesQueues: RedisQueue<FileToDownload>[]
 
   private constructor() {
@@ -22,16 +22,16 @@ class RedisStore implements RS {
     return this.#client
   }
 
-  public get filesToDownloadXPath(): RKVS<FileDetail> {
-    return this.#filesToDownloadXPath
+  public get filesStore(): RKVS<FileDetail> {
+    return this.#filesStore
   }
 
-  public get articleDetailXId(): RKVS<ArticleDetail> {
-    return this.#articleDetailXId
+  public get pagesStore(): RKVS<PageDetail> {
+    return this.#pagesStore
   }
 
-  public get redirectsXId(): RKVS<ArticleRedirect> {
-    return this.#redirectsXId
+  public get redirectsStore(): RKVS<PageRedirect> {
+    return this.#redirectsStore
   }
 
   public get filesQueues(): RedisQueue<FileToDownload>[] {
@@ -88,7 +88,7 @@ class RedisStore implements RS {
   public async close() {
     if (this.#client.isReady && this.#storesReady) {
       logger.info('Flushing Redis DBs')
-      await Promise.all([this.#filesToDownloadXPath.flush(), this.#articleDetailXId.flush(), this.#redirectsXId.flush(), ...this.#filesQueues.map((queue) => queue.flush())])
+      await Promise.all([this.#filesStore.flush(), this.#pagesStore.flush(), this.#redirectsStore.flush(), ...this.#filesQueues.map((queue) => queue.flush())])
     }
     if (this.#client.isOpen) {
       await this.#client.quit()
@@ -116,13 +116,13 @@ class RedisStore implements RS {
   }
 
   private async populateStores() {
-    this.#filesToDownloadXPath = new RedisKvs(this.#client, `${Date.now()}-media`, {
+    this.#filesStore = new RedisKvs(this.#client, `${Date.now()}-media`, {
       u: 'url',
       m: 'mult',
       w: 'width',
       k: 'kind',
     })
-    this.#articleDetailXId = new RedisKvs(this.#client, `${Date.now()}-detail`, {
+    this.#pagesStore = new RedisKvs(this.#client, `${Date.now()}-detail`, {
       p: 'pages',
       h: 'thumbnail',
       g: 'coordinates',
@@ -132,7 +132,7 @@ class RedisStore implements RS {
       m: 'missing',
       n: 'title',
     })
-    this.#redirectsXId = new RedisKvs(this.#client, `${Date.now()}-redirect`, {
+    this.#redirectsStore = new RedisKvs(this.#client, `${Date.now()}-redirect`, {
       f: 'fragment',
       t: 'targetId',
       n: 'title',

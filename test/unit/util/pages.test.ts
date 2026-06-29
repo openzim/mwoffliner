@@ -1,7 +1,7 @@
-import { isSubpage, isMainPage, getNamespaceName, extractBodyCssClass, extractHtmlCssClass, extractJsConfigVars } from '../../../src/util/articles.js'
+import { isSubpage, isMainPage, getNamespaceName, extractBodyCssClass, extractHtmlCssClass, extractJsConfigVars } from '../../../src/util/pages.js'
 import MediaWiki from '../../../src/MediaWiki.js'
 
-describe('articles utility', () => {
+describe('pages utility', () => {
   const fakeHeadHtml = [
     [
       '1.31.10',
@@ -43,22 +43,22 @@ describe('articles utility', () => {
     }
   })
 
-  test.each(['Foo', 'Foo/Bar', 'Foo/Bar/Alix', 'Foo:Bar', 'Talk:Foo Bar', 'Talk:Foo_Bar'])('article is not subpage', (articleTitle) => {
-    expect(isSubpage(articleTitle)).toBe(false)
+  test.each(['Foo', 'Foo/Bar', 'Foo/Bar/Alix', 'Foo:Bar', 'Talk:Foo Bar', 'Talk:Foo_Bar'])('page is not subpage', (pageTitle) => {
+    expect(isSubpage(pageTitle)).toBe(false)
   })
 
-  test.each(['Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('article is a subpage', (articleTitle) => {
-    expect(isSubpage(articleTitle)).toBe(true)
+  test.each(['Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('page is a subpage', (pageTitle) => {
+    expect(isSubpage(pageTitle)).toBe(true)
   })
 
-  test.each(['Foo_Bar', 'Foo Bar'])('article is main page', (articleTitle) => {
+  test.each(['Foo_Bar', 'Foo Bar'])('page is main page', (pageTitle) => {
     MediaWiki.metaData = { mainPage: 'Foo_Bar' } as any
-    expect(isMainPage(articleTitle)).toBe(true)
+    expect(isMainPage(pageTitle)).toBe(true)
   })
 
-  test.each(['Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('article is not main page', (articleTitle) => {
+  test.each(['Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('page is not main page', (pageTitle) => {
     MediaWiki.metaData = { mainPage: 'Foo_Bar' } as any
-    expect(isMainPage(articleTitle)).toBe(false)
+    expect(isMainPage(pageTitle)).toBe(false)
   })
 
   test.each([

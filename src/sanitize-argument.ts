@@ -21,7 +21,7 @@ const parametersWithArrayType = ['format', 'langVariant']
 export async function sanitize_all(argv: any) {
   // extracting all arguments
   const {
-    articleList,
+    pageList,
     addNamespaces,
     speed,
     adminEmail,
@@ -43,7 +43,7 @@ export async function sanitize_all(argv: any) {
 
   sanitize_filenamePrefix_langVariant(filenamePrefix, langVariant)
 
-  sanitize_articlesList_addNamespaces(articleList, addNamespaces)
+  sanitize_pageList_addNamespaces(pageList, addNamespaces)
 
   // sanitizing logLevel
   sanitize_logLevel(logLevel)
@@ -82,7 +82,7 @@ export async function sanitize_all(argv: any) {
 
   // sanitize Custom Main Page
   if (argv.customMainPage) {
-    argv.customMainPage = argv.customMainPage.replace(/ /g, '_')
+    argv.customMainPage = argv.customMainPage.replace(/_/g, ' ')
   }
 
   if (!mwUrl || mwUrl.trim() === '') {
@@ -159,9 +159,9 @@ export function sanitize_filenamePrefix_langVariant(filenamePrefix: string, lang
   }
 }
 
-export function sanitize_articlesList_addNamespaces(articlesList: string, addNamespaces: string) {
-  if (articlesList && addNamespaces) {
-    throw new Error('options --articlesList and --addNamespaces cannot be used together')
+export function sanitize_pageList_addNamespaces(pageList: string, addNamespaces: string) {
+  if (pageList && addNamespaces) {
+    throw new Error('options --pageList and --addNamespaces cannot be used together')
   }
 }
 

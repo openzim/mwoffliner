@@ -3,8 +3,8 @@ export const requiredParams = ['mwUrl', 'adminEmail']
 export const parameterDescriptions = {
   mwUrl: 'MediaWiki base URL (any URL paths appending)',
   adminEmail: 'Email of the MWoffliner operator. Will be put in the HTTP user-agent string for information only',
-  articleList: 'List of articles to include. Comma separated list of titles or a local path or HTTP(S) URL to a file with one title (in UTF8) per line',
-  articleListToIgnore: 'List of articles to ignore. Comma separated list of titles or local path or HTTP(S) URL to a file with one title (in UTF8) per line',
+  pageList: 'List of pages to include. Comma separated list of titles or a local path or HTTP(S) URL to a file with one title (in UTF8) per line',
+  pageListToIgnore: 'List of pages to ignore. Comma separated list of titles or local path or HTTP(S) URL to a file with one title (in UTF8) per line',
   customZimFavicon: 'Local path or HTTP(S) URL to a PNG favicon (will be resized to 48x48). Default to MediaWiki if not set',
   customZimTitle: 'ZIM custom title metadata (30 characters max)',
   customZimDescription: 'ZIM custom description (80 characters max)',
@@ -14,10 +14,10 @@ export const parameterDescriptions = {
   customMainPage: 'Custom page to be used as welcome page.',
   filenamePrefix: 'Part of the ZIM filename which is before the format & date parts.',
   format:
-    'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
-  getCategories: 'Include the categories of all included articles.',
-  categoriesPageSize: 'Number of items (subcategories, pages, files) to display per page on category articles (default: 200)',
-  keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
+    'Flavour for the scraping. If missing, scrape all page contents. Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
+  getCategories: 'Include the categories of all included pages.',
+  categoriesPageSize: 'Number of items (subcategories, pages, files) to display per page on category pages (default: 200)',
+  keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected page structure.',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
   mwModulePath: 'MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise.',
   mwDomain: 'MediaWiki user domain (for private wikis)',
@@ -34,7 +34,7 @@ export const parameterDescriptions = {
   withoutZimFullTextIndex: "Don't include a fulltext search index to the ZIM",
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
-  addContentModels: 'Include additional content models besides wikitext (comma separated, e.g. "Scribunto,json"). By default, only wikitext articles are scraped.',
+  addContentModels: 'Include additional content models besides wikitext (comma separated, e.g. "Scribunto,json"). By default, only wikitext pages are scraped.',
 
   javaScript: 'Amount of JavaScript being allowed in pages, one of the following values can be given: "none", "trusted" or "all" (default being "trusted").',
   addModules: 'Add additional ResourceLoader modules for dynamic loading (comma separated list)',
@@ -46,7 +46,7 @@ export const parameterDescriptions = {
   insecure: 'Skip HTTPS server authenticity verification step',
   customCss: 'Comma-separated list of CSS URLs to inject into all rendered pages',
   userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',
-  stableRevision: 'Prefer stable articles revisions when available, based on FlaggedRevs extension (which needs to be active on the wiki).',
+  stableRevision: 'Prefer stable pages revisions when available, based on FlaggedRevs extension (which needs to be active on the wiki).',
 }
 
 // TODO: Add an interface based on the object above

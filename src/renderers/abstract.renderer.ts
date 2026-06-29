@@ -11,9 +11,9 @@ import { Dump } from '../Dump.js'
 import Downloader from '../Downloader.js'
 import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
-import { getFullUrl, getMediaBase, getRelativeFilePath, encodeArticleIdForZimHtmlUrl } from '../util/misc.js'
+import { getFullUrl, getMediaBase, getRelativeFilePath, encodePageTitleForZimHtmlUrl, makeZimPath } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
-import { isMainPage, isSubpage } from '../util/articles.js'
+import { isMainPage, isSubpage } from '../util/pages.js'
 import { buildCategoryTypeItems } from '../util/categories.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
@@ -36,15 +36,15 @@ interface RendererBuilderOptionsSpecific extends RendererBuilderOptionsBase {
 export type RendererBuilderOptions = RendererBuilderOptionsCommon | RendererBuilderOptionsSpecific
 
 export interface DownloadOpts {
-  articleId: string
-  articleUrl: string
-  articleDetail: ArticleDetail
+  pageTitle: PageTitle
+  pageUrl: string
+  pageDetail: PageDetail
   langVar?: string
 }
 
 export interface Redirect {
-  from: string
-  to: string
+  from: PageTitle
+  to: PageTitle
 }
 
 export interface DownloadRes {
@@ -52,7 +52,7 @@ export interface DownloadRes {
   moduleDependencies: any
   redirects: Redirect[]
   displayTitle?: string
-  articleSubtitle?: string
+  subtitle?: string
   categoriesHtml?: string
   bodyCssClass?: string
   htmlCssClass?: string
@@ -67,11 +67,10 @@ export interface RenderOptsModules {
 export interface RenderOpts {
   data?: any
   moduleDependencies: RenderOptsModules
-  articleId?: string
-  articleDetailXId?: RKVS<ArticleDetail>
-  articleDetail?: ArticleDetail
+  pageTitle?: PageTitle
+  pageDetail?: PageDetail
   displayTitle?: string
-  articleSubtitle?: string
+  subtitle?: string
   categoryMembers?: GroupedCategoryMembers
   categoriesHtml?: string
   bodyCssClass?: string
@@ -82,31 +81,14 @@ export interface RenderOpts {
 export interface ProcessHtmlOpts {
   html: string
   dump: Dump
-  articleId: string
-  articleDetail: ArticleDetail
+  pageTitle: PageTitle
+  pageDetail: PageDetail
   displayTitle?: string
-  articleSubtitle?: string
+  pageSubtitle?: string
   categoryMembers?: GroupedCategoryMembers
   categoriesHtml?: string
   moduleDependencies: any
-  callback: any
-}
-
-export type RenderSingleOutput = {
-  articleId: string
-  zimPath: string
-  zimTitle?: string
-  htmlContent: string
-}
-
-export type RenderOutput = {
-  items: RenderSingleOutput[]
-  imageDependencies: any
-  videoDependencies: any
-  mediaDependencies: any
-  moduleDependencies: any
-  subtitles: any
-  needsDownloadErrorStaticFiles: boolean
+  callback: (moduleDependencies: any, pagePath: ZimPath) => any
 }
 
 export abstract class Renderer {
@@ -124,7 +106,7 @@ export abstract class Renderer {
   protected async treatAudioVideo(
     dump: Dump,
     srcCache: KVS<boolean>,
-    articleId: string,
+    pagePath: ZimPath,
     audioVideoEl: DominoElement,
   ): Promise<{ imageDependencies: string[]; videoDependencies: string[]; subtitles: string[] }> {
     const imageDependencies: string[] = []
@@ -150,20 +132,20 @@ export abstract class Renderer {
     const chosenAudioVideoSourceEl = isVideo ? this.chooseBestVideoSource(audioVideoEl) : this.chooseBestAudioSource(audioVideoEl)
 
     if (!chosenAudioVideoSourceEl) {
-      logger.warn(`Deleting audio/video HTML node missing an appropriate source in article '${articleId}':\n${audioVideoEl.outerHTML}`)
+      logger.warn(`Deleting audio/video HTML node missing an appropriate source in page at '${pagePath}':\n${audioVideoEl.outerHTML}`)
       DOMUtils.deleteNode(audioVideoEl)
       return { imageDependencies, videoDependencies, subtitles }
     }
 
     if (isVideo) {
-      this.handleVideoPoster(audioVideoEl, articleId, imageDependencies, srcCache)
+      this.handleVideoPoster(audioVideoEl, pagePath, imageDependencies, srcCache)
     }
 
-    this.updateAudioVideoSrc(chosenAudioVideoSourceEl, articleId, srcCache, videoDependencies)
+    this.updateAudioVideoSrc(chosenAudioVideoSourceEl, pagePath, srcCache, videoDependencies)
 
     const trackElements = Array.from(audioVideoEl.querySelectorAll('track'))
     for (const track of trackElements) {
-      subtitles.push(await this.treatSubtitle(track, articleId))
+      subtitles.push(await this.treatSubtitle(track, pagePath))
     }
 
     return { imageDependencies, videoDependencies, subtitles }
@@ -307,11 +289,11 @@ export abstract class Renderer {
     return chosenAudioSourceEl
   }
 
-  private handleVideoPoster(videoEl: DominoElement, articleId: string, imageDependencies: string[], srcCache: KVS<boolean>): void {
+  private handleVideoPoster(videoEl: DominoElement, pagePath: ZimPath, imageDependencies: string[], srcCache: KVS<boolean>): void {
     const posterUrl = videoEl.getAttribute('poster')
     if (posterUrl) {
       const videoPosterUrl = getFullUrl(posterUrl, MediaWiki.baseUrl)
-      const newVideoPosterUrl = getRelativeFilePath(articleId, getMediaBase(videoPosterUrl, true))
+      const newVideoPosterUrl = getRelativeFilePath(pagePath, getMediaBase(videoPosterUrl, true))
 
       if (posterUrl) {
         videoEl.setAttribute('poster', newVideoPosterUrl)
@@ -326,7 +308,7 @@ export abstract class Renderer {
     }
   }
 
-  private updateAudioVideoSrc(chosenVideoSourceEl: DominoElement, articleId: string, srcCache: KVS<boolean>, videoDependencies: string[]): void {
+  private updateAudioVideoSrc(chosenVideoSourceEl: DominoElement, pagePath: ZimPath, srcCache: KVS<boolean>, videoDependencies: string[]): void {
     /* Download content, but avoid duplicate calls */
     const sourceUrl = getFullUrl(chosenVideoSourceEl.getAttribute('src'), MediaWiki.baseUrl)
     // eslint-disable-next-line no-prototype-builtins
@@ -337,16 +319,16 @@ export abstract class Renderer {
 
     /* Set new URL for the video element */
     const fileBase = getMediaBase(sourceUrl, true)
-    chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(articleId, fileBase))
+    chosenVideoSourceEl.setAttribute('src', getRelativeFilePath(pagePath, fileBase))
   }
 
-  protected async treatSubtitle(trackEle: DominoElement, articleId: string): Promise<string> {
+  protected async treatSubtitle(trackEle: DominoElement, pagePath: ZimPath): Promise<string> {
     const subtitleSourceUrl = getFullUrl(trackEle.getAttribute('src'), MediaWiki.baseUrl)
     const { title, lang } = QueryStringParser.parse(subtitleSourceUrl) as { title: string; lang: string }
-    // The source URL we get from Mediawiki article is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
+    // The source URL we get from Mediawiki page is in srt format, so we replace it to vtt which is standard subtitle trackformat for <track> src attribute.
     const vttFormatUrl = new URL(subtitleSourceUrl)
     vttFormatUrl.searchParams.set('trackformat', 'vtt')
-    trackEle.setAttribute('src', `${getRelativeFilePath(articleId, title)}-${lang}.vtt`)
+    trackEle.setAttribute('src', `${getRelativeFilePath(pagePath, title)}-${lang}.vtt`)
     return vttFormatUrl.href
   }
 
@@ -387,7 +369,7 @@ export abstract class Renderer {
     imageNode.parentNode.replaceChild(thumbDiv, imageNode)
   }
 
-  private async treatImage(dump: Dump, srcCache: KVS<boolean>, articleId: string, img: DominoElement): Promise<{ imageDependencies: string[] }> {
+  private async treatImage(dump: Dump, srcCache: KVS<boolean>, zimPath: ZimPath, img: DominoElement): Promise<{ imageDependencies: string[] }> {
     const imageDependencies: string[] = []
 
     if (!this.shouldKeepImage(img)) {
@@ -411,7 +393,7 @@ export abstract class Renderer {
     const src = getFullUrl(img.getAttribute('src'), MediaWiki.baseUrl)
     let newSrc: string
     try {
-      const slashesInUrl = articleId.split('/').length - 1
+      const slashesInUrl = zimPath.split('/').length - 1
       const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
       newSrc = upStr + getMediaBase(src, true)
       /* Download image, but avoid duplicate calls */
@@ -550,7 +532,7 @@ export abstract class Renderer {
     return !!src && !src.includes('./Special:FilePath/')
   }
 
-  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+  protected async treatMedias(parsoidDoc: DominoElement, dump: Dump, pagePath: ZimPath) {
     let imageDependencies: string[] = []
     let videoDependencies: string[] = []
     let subtitles: string[] = []
@@ -561,14 +543,14 @@ export abstract class Renderer {
 
     for (const audioVideoEl of audiosAndVideos) {
       // <video /> and <audio />
-      const ret = await this.treatAudioVideo(dump, srcCache, articleId, audioVideoEl)
+      const ret = await this.treatAudioVideo(dump, srcCache, pagePath, audioVideoEl)
       imageDependencies = imageDependencies.concat(ret.imageDependencies)
       videoDependencies = videoDependencies.concat(ret.videoDependencies)
       subtitles = subtitles.concat(ret.subtitles)
     }
 
     for (const imgEl of imgs) {
-      const ret = await this.treatImage(dump, srcCache, articleId, imgEl)
+      const ret = await this.treatImage(dump, srcCache, pagePath, imgEl)
       imageDependencies = imageDependencies.concat(ret.imageDependencies)
     }
 
@@ -654,20 +636,20 @@ export abstract class Renderer {
 
   // TODO: The first part of this method is common for all renders
   public async processHtml(processHtmlOpts: ProcessHtmlOpts): Promise<RenderOutput> {
-    const { html, dump, articleId, articleDetail, displayTitle, categoryMembers, categoriesHtml, moduleDependencies, callback } = processHtmlOpts
-    let { articleSubtitle } = processHtmlOpts
+    const { html, dump, pageTitle, pageDetail, displayTitle, categoryMembers, categoriesHtml, moduleDependencies, callback } = processHtmlOpts
+    let { pageSubtitle } = processHtmlOpts
     let imageDependencies: Array<{ url: string; path: string; width?: number }> = []
     let videoDependencies: Array<{ url: string; path: string }> = []
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
     let doc = domino.createDocument(html)
 
-    // Simplification for now, ZIM path = articleId
-    const articleZimPath = articleId
+    // Simplification for now, ZIM path = pageTitle
+    const pagePath = makeZimPath(pageTitle)
 
-    const articleItems: Array<RenderSingleOutput> = []
+    const pageItems: Array<RenderSingleOutput> = []
 
-    const ruRet = await rewriteUrlsOfDoc(doc, articleId, dump)
+    const ruRet = await rewriteUrlsOfDoc(doc, pagePath, dump)
     doc = ruRet.doc
     mediaDependencies = mediaDependencies.concat(
       ruRet.mediaDependencies
@@ -680,15 +662,15 @@ export abstract class Renderer {
     // applyOtherTreatments must run before treatMedias so that iframe
     // placeholders (e.g. YouTube thumbnails) are already in the DOM
     // when treatMedias processes <img> tags for download into the ZIM.
-    doc = await this.applyOtherTreatments(doc, dump, articleId)
+    doc = await this.applyOtherTreatments(doc, dump, pagePath)
     const imageRequestedWidths = this.getRequestedImageWidths(doc)
 
     /* The content of a category page, listing all its members */
-    if (articleDetail.categoryinfo) {
+    if (pageDetail.categoryinfo) {
       const categoryinfo = categoryMembers.categoryinfo
       const categoryContent = doc.createElement('div')
-      categoryContent.lang = articleDetail.pagelang
-      categoryContent.dir = articleDetail.pagedir
+      categoryContent.lang = pageDetail.pagelang
+      categoryContent.dir = pageDetail.pagedir
       categoryContent.classList.add('mw-category-generated')
       if (categoryinfo.size) {
         const categoryCollation = MediaWiki.metaData.categoryCollation
@@ -698,46 +680,43 @@ export abstract class Renderer {
           'subcats',
           categoryinfo,
           categoryMembers,
-          articleZimPath,
-          articleDetail,
+          pagePath,
+          pageDetail,
           doc,
           dump,
           numericSorting,
           moduleDependencies,
-          callback,
-          articleId,
+          pageTitle,
           categoryContent,
-          articleItems,
+          pageItems,
         )
         await buildCategoryTypeItems(
           'pages',
           categoryinfo,
           categoryMembers,
-          articleZimPath,
-          articleDetail,
+          pagePath,
+          pageDetail,
           doc,
           dump,
           numericSorting,
           moduleDependencies,
-          callback,
-          articleId,
+          pageTitle,
           categoryContent,
-          articleItems,
+          pageItems,
         )
         await buildCategoryTypeItems(
           'files',
           categoryinfo,
           categoryMembers,
-          articleZimPath,
-          articleDetail,
+          pagePath,
+          pageDetail,
           doc,
           dump,
           numericSorting,
           moduleDependencies,
-          callback,
-          articleId,
+          pageTitle,
           categoryContent,
-          articleItems,
+          pageItems,
         )
         if (MediaWiki.getCategories) {
           const p = doc.createElement('p')
@@ -749,26 +728,26 @@ export abstract class Renderer {
         p.innerHTML = dump.t('categoryEmpty')
         categoryContent.appendChild(p)
       }
-      const ruRetCategoryContent = await rewriteUrlsOfDoc(categoryContent, articleId, dump)
+      const ruRetCategoryContent = await rewriteUrlsOfDoc(categoryContent, pagePath, dump)
       doc.getElementsByTagName('body')[0].appendChild(ruRetCategoryContent.doc)
     }
 
-    const tmRet = await this.treatMedias(doc, dump, articleId)
+    const tmRet = await this.treatMedias(doc, dump, pagePath)
 
     doc = tmRet.doc
 
     // Subtitle
-    if (articleSubtitle) {
-      let articleSubtitleDoc = domino.createDocument(articleSubtitle)
-      const ruRetSubtitle = await rewriteUrlsOfDoc(articleSubtitleDoc, articleId, dump)
-      articleSubtitleDoc = ruRetSubtitle.doc
-      articleSubtitle = articleSubtitleDoc.getElementsByTagName('body')[0].innerHTML
+    if (pageSubtitle) {
+      let pageSubtitleDoc = domino.createDocument(pageSubtitle)
+      const ruRetSubtitle = await rewriteUrlsOfDoc(pageSubtitleDoc, pagePath, dump)
+      pageSubtitleDoc = ruRetSubtitle.doc
+      pageSubtitle = pageSubtitleDoc.getElementsByTagName('body')[0].innerHTML
     }
 
     // List of categories the page is a member of
     if (categoriesHtml) {
       let categoriesDoc = domino.createDocument(categoriesHtml)
-      const ruRetCategories = await rewriteUrlsOfDoc(categoriesDoc, articleId, dump)
+      const ruRetCategories = await rewriteUrlsOfDoc(categoriesDoc, pagePath, dump)
       categoriesDoc = ruRetCategories.doc
       doc.getElementsByTagName('body')[0].appendChild(categoriesDoc.getElementById('catlinks'))
     }
@@ -803,19 +782,19 @@ export abstract class Renderer {
         }),
     )
 
-    if (!isMainPage(articleId) && dump.customProcessor?.preProcessArticle) {
-      doc = await dump.customProcessor.preProcessArticle(articleId, doc)
+    if (!isMainPage(pageTitle) && dump.customProcessor?.preProcessPage) {
+      doc = await dump.customProcessor.preProcessPage(pageTitle, doc)
     }
 
-    const templateDoc = callback(moduleDependencies, articleId)
-    const articleFinalDoc = domino.createDocument(templateDoc.documentElement.outerHTML)
-    await this.mergeTemplateDoc(articleFinalDoc, doc, dump, articleDetail, RedisStore.articleDetailXId, articleId, displayTitle, articleSubtitle)
+    const templateDoc = callback(moduleDependencies, pagePath)
+    const pageFinalDoc = domino.createDocument(templateDoc.documentElement.outerHTML)
+    await this.mergeTemplateDoc(pageFinalDoc, doc, dump, pageDetail, pageTitle, displayTitle, pageSubtitle)
 
-    if (dump.customProcessor && dump.customProcessor.postProcessArticle) {
-      await dump.customProcessor.postProcessArticle(articleId, articleFinalDoc)
+    if (dump.customProcessor && dump.customProcessor.postProcessPage) {
+      await dump.customProcessor.postProcessPage(pageTitle, pageFinalDoc)
     }
 
-    let outHtml = articleFinalDoc.documentElement.outerHTML
+    let outHtml = pageFinalDoc.documentElement.outerHTML
 
     if (dump.opts.minifyHtml) {
       outHtml = await htmlMinifier.minify(outHtml, {
@@ -828,15 +807,19 @@ export abstract class Renderer {
       })
     }
 
-    articleItems.push({
-      articleId: articleId,
-      zimPath: articleZimPath,
-      zimTitle: articleId.replace(/_/g, ' '),
+    const div = doc.createElement('div')
+    div.innerHTML = displayTitle
+    const displayTitleText = div.innerText
+
+    pageItems.push({
+      pageTitle,
+      zimPath: pagePath,
+      zimTitle: displayTitleText ? displayTitleText : pageTitle,
       htmlContent: '<!DOCTYPE html>\n' + outHtml,
     })
 
     return {
-      items: articleItems,
+      items: pageItems,
       mediaDependencies,
       imageDependencies,
       videoDependencies,
@@ -850,45 +833,46 @@ export abstract class Renderer {
     htmlTemplateDoc: DominoElement,
     parsoidDoc: DominoElement,
     dump: Dump,
-    articleDetail: ArticleDetail,
-    articleDetailXId: RKVS<ArticleDetail>,
-    articleId: string,
+    pageDetail: PageDetail,
+    pageTitle: PageTitle,
     displayTitle: string,
-    articleSubtitle: string,
+    pageSubtitle: string,
   ) {
     /* Create final document by merging template and parsoid documents */
     const mwContentText = htmlTemplateDoc.getElementById('mw-content-text')
-    mwContentText.lang = articleDetail.pagelang
-    mwContentText.dir = articleDetail.pagedir
-    mwContentText.classList.add('mw-content-' + articleDetail.pagedir)
+    mwContentText.lang = pageDetail.pagelang
+    mwContentText.dir = pageDetail.pagedir
+    mwContentText.classList.add('mw-content-' + pageDetail.pagedir)
     mwContentText.innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML
 
     /* Title */
-    const articleTitle = htmlTemplateDoc.getElementById('title_0') ? htmlTemplateDoc.getElementById('title_0').textContent : articleId.replace(/_/g, ' ')
-    htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = articleTitle
+    const htmlTitle = htmlTemplateDoc.getElementById('title_0') ? htmlTemplateDoc.getElementById('title_0').textContent : displayTitle ? displayTitle : pageTitle
+    htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTitle
     // Set inline page title when missing
     const inlineTitle = htmlTemplateDoc.getElementById('firstHeading')
     if (inlineTitle && !inlineTitle.innerHTML) {
-      inlineTitle.innerHTML = displayTitle || articleTitle
+      inlineTitle.innerHTML = displayTitle || htmlTitle
     }
     DOMUtils.deleteNode(htmlTemplateDoc.getElementById('titleHeading'))
 
     /* Subpage */
     if (this.constructor.name === 'ActionParseRenderer') {
       const mwContentSubtitle = htmlTemplateDoc.getElementById('mw-content-subtitle')
-      mwContentSubtitle.innerHTML = articleSubtitle || ''
-    } else if (isSubpage(articleId) && !isMainPage(articleId)) {
+      mwContentSubtitle.innerHTML = pageSubtitle || ''
+    } else if (isSubpage(pageTitle) && !isMainPage(pageTitle)) {
       const headingNode = htmlTemplateDoc.getElementById('mw-content-text')
       const subpagesNode = htmlTemplateDoc.createElement('span')
-      const parents = articleId.split('/')
+      const parents = pageTitle.split('/')
       parents.pop()
       let subpages = ''
       await Promise.all(
         parents.map(async (parent) => {
           const label = parent.replace(/_/g, ' ')
-          const isParentMirrored = await articleDetailXId.exists(`${articleId.split(parent)[0]}${parent}`)
+          const isParentMirrored = await RedisStore.pagesStore.exists(`${pageTitle.split(parent)[0]}${parent}`)
           subpages += `&lt; ${
-            isParentMirrored ? `<a href="${'../'.repeat(parents.length)}${encodeArticleIdForZimHtmlUrl(`${articleId.split(parent)[0]}${parent}`)}" title="${label}">` : ''
+            isParentMirrored
+              ? `<a href="${'../'.repeat(parents.length)}${encodePageTitleForZimHtmlUrl(`${pageTitle.split(parent)[0]}${parent}` as PageTitle)}" title="${label}">`
+              : ''
           }${label}${isParentMirrored ? '</a> ' : ' '}`
         }),
       )
@@ -901,13 +885,13 @@ export abstract class Renderer {
     const div = htmlTemplateDoc.createElement('div')
 
     /* Revision date */
-    const date = new Date(articleDetail.timestamp)
+    const date = new Date(pageDetail.timestamp)
     const lastEditedOnString = date ? dump.t('LAST_EDITED_ON', { date: date.toISOString().substring(0, 10) }) : null
 
     const creatorLink =
       '<a class="external text" ' +
       `${lastEditedOnString ? `title="${lastEditedOnString}"` : ''} ` +
-      `href="${MediaWiki.webUrl.href}?title=${encodeURIComponent(articleId)}&oldid=${articleDetail.revisionId}">` +
+      `href="${MediaWiki.webUrl.href}?title=${encodeURIComponent(pageTitle.replace(/ /g, '_'))}&oldid=${pageDetail.revisionId}">` +
       `${dump.mwMetaData.title || dump.mwMetaData.creator}</a>`
 
     const licenseLink =
@@ -922,8 +906,8 @@ export abstract class Renderer {
     this.addNoIndexCommentToElement(div)
 
     /* Geo-coordinates */
-    if (articleDetail.coordinates) {
-      const geoCoordinates = articleDetail.coordinates
+    if (pageDetail.coordinates) {
+      const geoCoordinates = pageDetail.coordinates
       const metaNode = htmlTemplateDoc.createElement('meta')
       metaNode.name = 'geo.position'
       metaNode.content = geoCoordinates
@@ -1146,7 +1130,7 @@ export abstract class Renderer {
     }
   }
 
-  private async applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, articleId: string) {
+  private async applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, pagePath: ZimPath) {
     this.processIframeTags(parsoidDoc)
 
     if (dump.nodet) {
@@ -1181,7 +1165,7 @@ export abstract class Renderer {
       // We use MediaWiki.baseUrl which is an approximation but it is deemed sufficient because
       // all non-absolute URL found in inline CSS are expected to be relative to the root, not to
       // current web URL which is "moving" (could use something like /w/index.php?title=... or /wiki/...)
-      style.textContent = await processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, articleId)
+      style.textContent = await processStylesheetContent(MediaWiki.baseUrl.toString(), '', style.textContent, pagePath)
     }
 
     /* Remove element with id in the blacklist */
@@ -1233,15 +1217,15 @@ export abstract class Renderer {
   }
 
   /**
-   * Add an H1 tag with page title on top of article except main page
+   * Add an H1 tag with page title on top of page except main page
    */
-  protected injectH1TitleToHtml(content: string, articleDetail: any): string {
+  protected injectH1TitleToHtml(content: string, pageDetail: any): string {
     const doc = domino.createDocument(content)
     const header = doc.createElement('h1')
 
-    if (articleDetail?.title) {
-      header.appendChild(doc.createTextNode(articleDetail.title))
-      header.classList.add('article-header')
+    if (pageDetail?.title) {
+      header.appendChild(doc.createTextNode(pageDetail.title))
+      header.classList.add('page-header')
 
       const target = doc.querySelector('body.mw-body-content')
 

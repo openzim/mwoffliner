@@ -15,24 +15,24 @@ describe('Extra', () => {
     const now = new Date()
     const testId = join(process.cwd(), `mwo-test-${+now}`)
 
-    const articleListUrl = join(testId, '/articleList')
+    const pageListUrl = join(testId, '/pageList')
 
     test(`Simple customMainPage for ${renderer} renderer`, async () => {
       await mkdirPromise(testId)
 
-      const articleListLines = `
+      const pageListLines = `
   1%_(South_Park)
   İznik
   Egyptian_hieroglyphs
   Wikipedia:Books/archive/Cancer care
   AC/DC`
 
-      await writeFilePromise(articleListUrl, articleListLines, 'utf8')
+      await writeFilePromise(pageListUrl, pageListLines, 'utf8')
 
       const outFiles = await mwoffliner.execute({
         mwUrl: 'https://en.wikipedia.org',
         adminEmail: 'test@kiwix.org',
-        articleList: articleListUrl,
+        pageList: pageListUrl,
         customMainPage: 'Wikipedia:WikiProject_Medicine/Open_Textbook_of_Medicine2',
         outputDirectory: testId,
         redis: process.env.REDIS,
@@ -44,8 +44,8 @@ describe('Extra', () => {
 
       for (const dump of outFiles) {
         if (dump.nopic) {
-          const articleCount = articleListLines.split(/\r\n|\r|\n/).length
-          expect(dump.status.articles.success).toEqual(articleCount)
+          const pageCount = pageListLines.split(/\r\n|\r|\n/).length
+          expect(dump.status.pages.success).toEqual(pageCount)
         }
 
         if (await zimcheckAvailable()) {

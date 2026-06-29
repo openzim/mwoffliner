@@ -46,19 +46,19 @@ describe('ErrorRenderer', () => {
       })
       expect(matchingRule).not.toBeNull()
       expect(matchingRule.name).toBe('404 return code')
-      expect(matchingRule.detailsMessageKey).toBe('DELETED_ARTICLE')
+      expect(matchingRule.detailsMessageKey).toBe('DELETED_PAGE')
     })
-    it('should handle delete article message', async () => {
+    it('should handle delete page message', async () => {
       const matchingRule = findFirstMatchingRule({
         urlCalled: 'https://www.acme.com/api.php?action=parse&format=json&tile=page',
         errorCode: 'FOO',
         httpReturnCode: 200,
         responseContentType: 'any/content_type',
-        responseData: '--- Article has been deleted. ---',
+        responseData: '--- Page has been deleted. ---',
       })
       expect(matchingRule).not.toBeNull()
-      expect(matchingRule.name).toBe('deleted article error')
-      expect(matchingRule.detailsMessageKey).toBe('DELETED_ARTICLE')
+      expect(matchingRule.name).toBe('deleted page error')
+      expect(matchingRule.detailsMessageKey).toBe('DELETED_PAGE')
     })
   })
   describe('renderDownloadError', () => {
@@ -89,16 +89,16 @@ describe('ErrorRenderer', () => {
         },
       })
       expect(matchingRule).not.toBeNull()
-      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any, undefined, translator), 'My_Article_Title', 'My Article Title')
+      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any, undefined, translator), 'My Page Title' as PageTitle)
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')
       expect(rendererError).toContain('ActionParse API timed-out')
-      expect(rendererError).not.toContain('${server}')
-      expect(rendererError).not.toContain('${articleTitle}')
-      expect(rendererError).toContain('My Article Title')
+      expect(rendererError).not.toContain('{server}')
+      expect(rendererError).not.toContain('{pageTitle}')
+      expect(rendererError).toContain('My Page Title')
       expect(rendererError).toContain('hope the issue will be solved')
-      expect(rendererError).toContain('"./article_not_found.svg"')
+      expect(rendererError).toContain('"./page_not_found.svg"')
     })
     it('should handle 404 error', async () => {
       const matchingRule = findFirstMatchingRule({
@@ -109,16 +109,16 @@ describe('ErrorRenderer', () => {
         responseData: 'any response data',
       })
       expect(matchingRule).not.toBeNull()
-      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any, undefined, translator), 'My/Article/Title', 'My Article Title')
+      const rendererError = renderDownloadError(matchingRule, new Dump('', '', {} as any, {} as any, undefined, translator), 'My/Page/Title' as PageTitle)
       expect(rendererError).toBeTruthy()
       expect(rendererError).toContain('<title></title>')
       expect(rendererError).toContain('fr.wikipedia.org')
-      expect(rendererError).toContain('article was deleted after we compiled')
-      expect(rendererError).not.toContain('${server}')
-      expect(rendererError).not.toContain('${articleTitle}')
-      expect(rendererError).toContain('My Article Title')
+      expect(rendererError).toContain('page was deleted after we compiled')
+      expect(rendererError).not.toContain('{server}')
+      expect(rendererError).not.toContain('{pageTitle}')
+      expect(rendererError).toContain('My/Page/Title')
       expect(rendererError).not.toContain('hope the issue will be solved')
-      expect(rendererError).toContain('"../../article_not_found.svg"')
+      expect(rendererError).toContain('"../../page_not_found.svg"')
     })
     it('should handle permission denied error', async () => {
       const matchingRule = findFirstMatchingRule({

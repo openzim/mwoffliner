@@ -3,10 +3,10 @@ import RedisStore from '../../src/RedisStore.js'
 import { startRedis, stopRedis } from './bootstrap.js'
 import { rewriteUrls } from '../../src/util/rewriteUrls.js'
 import { makeLink, setupScrapeClasses } from '../util.js'
-import { getArticleIds } from '../../src/util/mw-api.js'
-import { saveArticles } from '../../src/util/saveArticles.js'
+import { getPages } from '../../src/util/mw-api.js'
+import { savePages } from '../../src/util/savePages.js'
 import { StringItem } from '@openzim/libzim'
-import { mwRetToArticleDetail } from '../../src/util/index.js'
+import { mwRetToPageDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
 import Downloader from '../../src/Downloader.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
@@ -14,8 +14,8 @@ import { Dump } from '../../src/Dump.js'
 
 jest.setTimeout(20000)
 
-function rewriteUrl(articleId: string, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
-  return rewriteUrls(articleId, dump, [linkNode])
+function rewriteUrl(zimPath: string, dump: Dump, linkNode: DominoElement): Promise<{ mediaDependencies: string[] }> {
+  return rewriteUrls(zimPath as ZimPath, dump, [linkNode])
 }
 
 describe('Styles', () => {
@@ -25,13 +25,13 @@ describe('Styles', () => {
   test('Url re-writing', async () => {
     const { dump } = await setupScrapeClasses() // en wikipedia
 
-    const _articlesDetail = await Downloader.getArticleDetailsIds(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'])
-    const articlesDetail = mwRetToArticleDetail(_articlesDetail)
-    await RedisStore.articleDetailXId.flush()
-    await RedisStore.articleDetailXId.setMany(articlesDetail)
+    const _pagesDetail = await Downloader.getPagesByTitle(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'] as PageTitle[])
+    const pagesDetail = mwRetToPageDetail(_pagesDetail)
+    await RedisStore.pagesStore.flush()
+    await RedisStore.pagesStore.setMany(pagesDetail)
 
-    const parentArticleId = 'London'
-    const complexParentArticleId = 'London/City_Example'
+    const parentPagePath = 'London'
+    const complexParentPagePath = 'London/City_Example'
 
     const $doc = domino.createDocument()
     const $geo = makeLink($doc, 'geo:37.786971,-122.399677', 'mw:ExtLink', 'some geo link')
@@ -63,112 +63,112 @@ describe('Styles', () => {
       resource: './Media:Fr-Laissez-faire.oga',
     })
 
-    await rewriteUrl(complexParentArticleId, dump, $geo)
+    await rewriteUrl(complexParentPagePath, dump, $geo)
     // Geo is still a link
     expect($geo.nodeName).toEqual('A')
     // Geo HREF is correct
     expect($geo.getAttribute('href')).toEqual('geo:37.786971,-122.399677')
 
-    await rewriteUrl(complexParentArticleId, dump, $geoHack)
+    await rewriteUrl(complexParentPagePath, dump, $geoHack)
     // GeoHack is still a link
     expect($geoHack.nodeName).toEqual('A')
     // GeoHack HREF is correct
     expect($geoHack.getAttribute('href')).toEqual('geo:51.507222222222225,-0.1275')
 
-    await rewriteUrl(complexParentArticleId, dump, $extHttp)
+    await rewriteUrl(complexParentPagePath, dump, $extHttp)
     // extHttp is still a link
     expect($extHttp.nodeName).toEqual('A')
     // extHttp HREF is correct
     expect($extHttp.getAttribute('href')).toEqual('http://google.com')
 
-    await rewriteUrl(complexParentArticleId, dump, $extHttps)
+    await rewriteUrl(complexParentPagePath, dump, $extHttps)
     // extHttps is still a link
     expect($extHttps.nodeName).toEqual('A')
     // extHttps HREF is correct
     expect($extHttps.getAttribute('href')).toEqual('https://google.com')
 
-    await rewriteUrl(complexParentArticleId, dump, $extNoProtocol)
+    await rewriteUrl(complexParentPagePath, dump, $extNoProtocol)
     // extNoProtocol is still a link
     expect($extNoProtocol.nodeName).toEqual('A')
     // $extNoProtocol HREF has HTTPS Protocol
     expect($extNoProtocol.getAttribute('href')).toEqual('https://google.com')
 
-    await rewriteUrl(complexParentArticleId, dump, $extHttpsNoRel)
+    await rewriteUrl(complexParentPagePath, dump, $extHttpsNoRel)
     // extHttpsNoRel is still a link
     expect($extHttpsNoRel.nodeName).toEqual('A')
     // extHttpsNoRel HREF is correct
     expect($extHttpsNoRel.getAttribute('href')).toEqual('https://google.com')
 
-    await rewriteUrl(parentArticleId, dump, $wikiLink)
+    await rewriteUrl(parentPagePath, dump, $wikiLink)
 
     // wikiLink is still a link with simple parent id
     expect($wikiLink.nodeName).toEqual('A')
     // wikiLink HREF is correct with simple parent id
     expect($wikiLink.getAttribute('href')).toEqual('British_Museum')
 
-    await rewriteUrl(complexParentArticleId, dump, $wikiLink2)
+    await rewriteUrl(complexParentPagePath, dump, $wikiLink2)
     // wikiLink is still a link with complex parent id
     expect($wikiLink2.nodeName).toEqual('A')
     // wikiLink HREF is correct with complex parent id
     expect($wikiLink2.getAttribute('href')).toEqual('../British_Museum')
 
-    await rewriteUrl(complexParentArticleId, dump, $absoluteWikiLink)
+    await rewriteUrl(complexParentPagePath, dump, $absoluteWikiLink)
     // absoluteWikiLink is still a link
     expect($absoluteWikiLink.nodeName).toEqual('A')
     // absoluteWikiLink HREF is correct and relative
     expect($absoluteWikiLink.getAttribute('href')).toEqual('../British_Museum')
 
-    await rewriteUrl(complexParentArticleId, dump, $wikiLinkWithSlash)
+    await rewriteUrl(complexParentPagePath, dump, $wikiLinkWithSlash)
     // wikiLinkWithSlash is still a link
     expect($wikiLinkWithSlash.nodeName).toEqual('A')
     // wikiLinkWithSlash HREF is correct
     expect($wikiLinkWithSlash.getAttribute('href')).toEqual('../Farnborough/Aldershot_built-up_area')
 
-    await rewriteUrl(complexParentArticleId, dump, $specialMap)
+    await rewriteUrl(complexParentPagePath, dump, $specialMap)
     // specialMap is still a link
     expect($specialMap.nodeName).toEqual('A')
     // specialMap HREF is correct
     expect($specialMap.getAttribute('href')).toEqual('geo:51.51,-0.08')
 
-    await rewriteUrl(complexParentArticleId, dump, $hashLink)
+    await rewriteUrl(complexParentPagePath, dump, $hashLink)
     // hashLink is still a link
     expect($hashLink.nodeName).toEqual('A')
     // hashLink HREF is correct
     expect($hashLink.getAttribute('href')).toEqual('#cite_note-LAS-150')
 
-    await rewriteUrl(complexParentArticleId, dump, $nonScrapedWikiLink)
+    await rewriteUrl(complexParentPagePath, dump, $nonScrapedWikiLink)
     // nonScrapedWikiLink has been deleted
     expect($nonScrapedWikiLink.parentElement).toBeNull()
 
-    await rewriteUrl(complexParentArticleId, dump, $redLink)
+    await rewriteUrl(complexParentPagePath, dump, $redLink)
     // redLink has been deleted
     expect($redLink.parentElement).toBeNull()
 
-    await rewriteUrl(complexParentArticleId, dump, $selfLink)
+    await rewriteUrl(complexParentPagePath, dump, $selfLink)
     // selfLink is still a link
     expect($selfLink.nodeName).toEqual('A')
     // selfLink still has no href
     expect($selfLink.getAttribute('href')).toBeFalsy()
 
-    await rewriteUrl(complexParentArticleId, dump, $mirrorLink)
+    await rewriteUrl(complexParentPagePath, dump, $mirrorLink)
     // mirrorLink is still a link
     expect($mirrorLink.nodeName).toEqual('A')
     // mirrorLink HREF is correct and relative
     expect($mirrorLink.getAttribute('href')).toEqual('../British_Museum')
 
-    await rewriteUrl(complexParentArticleId, dump, $editDiffLink)
+    await rewriteUrl(complexParentPagePath, dump, $editDiffLink)
     // editDiffLink is still a link
     expect($editDiffLink.nodeName).toEqual('A')
     // editDiffLink HREF is correct and external
     expect($editDiffLink.getAttribute('href')).toEqual('https://en.wikipedia.org/w/index.php?diff=1')
 
-    await rewriteUrl(complexParentArticleId, dump, $resourceLink)
+    await rewriteUrl(complexParentPagePath, dump, $resourceLink)
     // resourceLink is still a link
     expect($resourceLink.nodeName).toEqual('A')
     // resourceLink has been re-written
     expect($resourceLink.getAttribute('href')).toEqual('../_assets_/0c70a452f799bfe840676ee341124611/De-Z%C3%BCrich.ogg')
 
-    await rewriteUrl(complexParentArticleId, dump, $ogaResourceLink)
+    await rewriteUrl(complexParentPagePath, dump, $ogaResourceLink)
     // ogaResourceLink is still a link
     expect($ogaResourceLink.nodeName).toEqual('A')
     // ogaResourceLink has been re-written
@@ -176,22 +176,22 @@ describe('Styles', () => {
   })
 
   test('e2e url rewriting', async () => {
-    const { articleDetailXId } = RedisStore
-    await articleDetailXId.flush()
-    await RedisStore.redirectsXId.flush()
+    const { pagesStore: pageDetailStore } = RedisStore
+    await pageDetailStore.flush()
+    await RedisStore.redirectsStore.flush()
     const { dump } = await setupScrapeClasses() // en wikipedia
 
     await RenderingContext.createRenderers(null)
 
-    await getArticleIds('', ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'])
+    await getPages('' as PageTitle, ['London', 'British_Museum', 'Natural_History_Museum,_London', 'Farnborough/Aldershot_built-up_area'] as PageTitle[])
 
-    let LondonArticle: StringItem
+    let LondonItem: StringItem
 
-    await saveArticles(
+    await savePages(
       {
-        addItem(article: StringItem) {
-          if (article.title === 'London') {
-            LondonArticle = article
+        addItem(item: StringItem) {
+          if (item.title === 'London') {
+            LondonItem = item
           }
           return Promise.resolve(null)
         },
@@ -199,15 +199,15 @@ describe('Styles', () => {
       dump,
     )
 
-    const html = LondonArticle.getContentProvider().feed().toString()
+    const html = LondonItem.getContentProvider().feed().toString()
     const doc = domino.createDocument(html)
 
     const relevantAs = Array.from(doc.querySelectorAll('a')).filter((a) => !a.hash && !a.className.includes('external') && !a.host && a.getAttribute('href'))
 
-    const linkedArticleIds = relevantAs.map((a) => decodeURIComponent(`${a.getAttribute('href')}`))
-    for (const aId of linkedArticleIds) {
-      const article = await articleDetailXId.exists(aId)
-      expect(article).toBeDefined()
+    const linkedPagePaths = relevantAs.map((a) => decodeURIComponent(`${a.getAttribute('href')}`))
+    for (const pagePath of linkedPagePaths) {
+      const page = await pageDetailStore.exists(pagePath.replace(/_/g, ' '))
+      expect(page).toBeDefined()
     }
   })
 })

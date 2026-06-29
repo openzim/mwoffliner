@@ -1,6 +1,6 @@
 # MWoffliner
 
-MWoffliner is a tool for creating a local offline HTML snapshot of any online [MediaWiki](https://mediawiki.org) instance. It scrapes all articles (or a selection if specified) and creates the corresponding [ZIM](https://openzim.org) file. While primarily targeted for Wikimedia projects like [Wikipedia](https://wikipedia.org) and [Wiktionary](https://wiktionary.org), MWoffliner also supports any recent MediaWiki instance (version 1.27+), though instances with custom skins or highly unusual configurations may have limitations.
+MWoffliner is a tool for creating a local offline HTML snapshot of any online [MediaWiki](https://mediawiki.org) instance. It scrapes all pages (or a selection if specified) and creates the corresponding [ZIM](https://openzim.org) file. While primarily targeted for Wikimedia projects like [Wikipedia](https://wikipedia.org) and [Wiktionary](https://wiktionary.org), MWoffliner also supports any recent MediaWiki instance (version 1.27+), though instances with custom skins or highly unusual configurations may have limitations.
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) to learn more about MWoffliner development.
 
@@ -23,7 +23,7 @@ User help is available in the [FAQ](https://github.com/openzim/mwoffliner/wiki/F
 - Scrape with or without audio/video multimedia content
 - S3 cache (optional)
 - Image size optimization and WebP conversion
-- Scrape all articles in namespaces or title list based
+- Scrape all pages in namespaces or title list based
 - Specify additional/non-main namespaces to scrape
 
 Run `mwoffliner --help` to see all available options.
@@ -229,7 +229,7 @@ const parameters = {
   adminEmail: 'foo@bar.net',
   verbose: true,
   format: 'nopic',
-  articleList: './articleList',
+  pageList: './pageList',
 }
 
 mwoffliner.execute(parameters) // returns a Promise

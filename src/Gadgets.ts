@@ -20,7 +20,7 @@ class Gadgets {
   /*
    * Get list of gadgets which are not listed on action=parse results
    */
-  public getActiveGadgetsByType(articleDetail: ArticleDetail) {
+  public getActiveGadgetsByType(pageDetail: PageDetail) {
     const cssGadgets = []
     const jsGadgets = []
 
@@ -28,9 +28,9 @@ class Gadgets {
       const settings = gadget.metadata.settings
       if (settings.skins && settings.skins.length && !settings.skins.includes(MediaWiki.skin)) return false
       if (settings.actions && settings.actions.length && !settings.actions.includes('view')) return false
-      if (settings.namespaces && settings.namespaces.length && !settings.namespaces.includes(articleDetail.ns || 0)) return false
-      if (settings.contentModels && settings.contentModels.length && !settings.contentModels.includes(articleDetail.contentmodel || 'wikitext')) return false
-      if (settings.categories && settings.categories.length && !settings.categories.some((category) => (articleDetail.categories || []).includes(category))) return false
+      if (settings.namespaces && settings.namespaces.length && !settings.namespaces.includes(pageDetail.ns || 0)) return false
+      if (settings.contentModels && settings.contentModels.length && !settings.contentModels.includes(pageDetail.contentmodel || 'wikitext')) return false
+      if (settings.categories && settings.categories.length && !settings.categories.some((category) => (pageDetail.categories || []).includes(category))) return false
       return true
     })
 

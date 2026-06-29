@@ -6,7 +6,7 @@ import * as logger from '../Logger.js'
 class RenderingContext {
   private static instance: RenderingContext
 
-  public articlesRenderer: Renderer
+  public pagesRenderer: Renderer
 
   public static getInstance(): RenderingContext {
     if (!RenderingContext.instance) {
@@ -19,15 +19,15 @@ class RenderingContext {
     const rendererBuilder = new RendererBuilder()
 
     if (forceRender) {
-      this.articlesRenderer = await rendererBuilder.createRenderer({
+      this.pagesRenderer = await rendererBuilder.createRenderer({
         renderType: 'specific',
         renderName: forceRender,
       })
     } else {
-      this.articlesRenderer = await rendererBuilder.createRenderer({ renderType: 'auto' })
+      this.pagesRenderer = await rendererBuilder.createRenderer({ renderType: 'auto' })
     }
-    logger.info(`Using ${this.articlesRenderer.constructor.name} for articles renderer`)
-    Downloader.setUrlsDirectors(this.articlesRenderer)
+    logger.info(`Using ${this.pagesRenderer.constructor.name} for pages renderer`)
+    Downloader.setUrlsDirectors(this.pagesRenderer)
   }
 }
 

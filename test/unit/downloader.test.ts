@@ -2,7 +2,7 @@ import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
 import RedisStore from '../../src/RedisStore.js'
-import { mwRetToArticleDetail, stripHttpFromUrl } from '../../src/util/index.js'
+import { mwRetToPageDetail, stripHttpFromUrl } from '../../src/util/index.js'
 import S3 from '../../src/S3.js'
 import { Dump } from '../../src/Dump.js'
 import { createTranslator } from '../../src/i18n.js'
@@ -77,25 +77,29 @@ describe('Downloader class - wikipedia EN', () => {
     )
   })
 
-  test("getArticleDetailsIds Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISARTICLEDOESNTEXIST' successfully", async () => {
-    const _articleDetailsRet = await Downloader.getArticleDetailsIds(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISARTICLEDOESNTEXIST', 'Category:Container_categories'])
-    const articleDetailsRet = mwRetToArticleDetail(_articleDetailsRet)
-    RedisStore.articleDetailXId.setMany(articleDetailsRet)
-    const { London, Paris, Zurich, United_Kingdom, THISARTICLEDOESNTEXIST } = articleDetailsRet
+  test("getPagesByTitle Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISPAGEDOESNTEXIST' successfully", async () => {
+    const _pageDetailsRet = await Downloader.getPagesByTitle(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISPAGEDOESNTEXIST', 'Category:Container_categories'] as PageTitle[])
+    const pageDetailsRet = mwRetToPageDetail(_pageDetailsRet)
+    RedisStore.pagesStore.setMany(pageDetailsRet)
+    const London = pageDetailsRet['London']
+    const Paris = pageDetailsRet['Paris']
+    const Zurich = pageDetailsRet['Zurich']
+    const United_Kingdom = pageDetailsRet['United Kingdom']
+    const THISPAGEDOESNTEXIST = pageDetailsRet['THISPAGEDOESNTEXIST']
     expect(London).toBeDefined()
     expect(United_Kingdom).toBeDefined()
     expect(Paris).toBeDefined()
     expect(Zurich).toBeDefined()
-
-    expect(THISARTICLEDOESNTEXIST.missing).toBe(true)
+    expect(THISPAGEDOESNTEXIST).toBeDefined()
+    expect(THISPAGEDOESNTEXIST.missing).toBe(true)
   })
 
-  test("getArticleDetailsNS query returns 'gapContinue' or 'multiple articles', ", async () => {
-    const { gapContinue, articleDetails } = await Downloader.getArticleDetailsNS(0)
+  test("getPagesByNamespace query returns 'gapContinue' or 'multiple pages', ", async () => {
+    const { gapContinue, pages: pageDetails } = await Downloader.getPagesByNamespace(0)
     expect(gapContinue).toBeDefined()
-    expect(Object.keys(articleDetails).length).toBeGreaterThan(10)
+    expect(Object.keys(pageDetails).length).toBeGreaterThan(10)
 
-    const secondNsRet = await Downloader.getArticleDetailsNS(0, gapContinue)
+    const secondNsRet = await Downloader.getPagesByNamespace(0, gapContinue)
     expect(secondNsRet.gapContinue).toBeDefined()
   })
 
@@ -129,7 +133,7 @@ describe('Downloader class - wikipedia EN', () => {
     expect(LondonImage.contentType).toMatch(/image\//i)
   })
 
-  describe('getArticle method', () => {
+  describe('getPage method', () => {
     for (const renderer of RENDERERS_LIST) {
       let dump: Dump
       beforeAll(async () => {
@@ -139,27 +143,20 @@ describe('Downloader class - wikipedia EN', () => {
         await RenderingContext.createRenderers(renderer as renderName)
       })
 
-      test(`getArticle response content for non-existent article id is placeholder for ${renderer} render`, async () => {
-        const articleId = 'NeverExistingArticle'
-        const articleUrl = Downloader.getArticleUrl(articleId)
-        const articleDetail = {
-          title: articleId,
+      test(`getPage response content for non-existent page title is placeholder for ${renderer} render`, async () => {
+        const pageTitle = 'NeverExistingPage' as PageTitle
+        const pageUrl = Downloader.getPageUrl(pageTitle)
+        const pageDetail = {
+          title: pageTitle,
           missing: '',
         }
-        const neverExistingArticleResult = await Downloader.getArticle(
-          'NeverExistingArticle',
-          RedisStore.articleDetailXId,
-          RenderingContext.articlesRenderer,
-          articleUrl,
-          dump,
-          articleDetail,
-        )
-        expect(neverExistingArticleResult.items).toHaveLength(1)
-        expect(neverExistingArticleResult.needsDownloadErrorStaticFiles).toBe(true)
-        expect(neverExistingArticleResult.items[0].articleId).toBe('NeverExistingArticle')
-        expect(neverExistingArticleResult.items[0].zimPath).toBe('NeverExistingArticle')
-        expect(neverExistingArticleResult.items[0].zimTitle).toBe('')
-        expect(neverExistingArticleResult.items[0].htmlContent).toContain('Oops. Article not found.')
+        const pageResult = await Downloader.getPage(pageTitle, RenderingContext.pagesRenderer, pageUrl, dump, pageDetail)
+        expect(pageResult.items).toHaveLength(1)
+        expect(pageResult.needsDownloadErrorStaticFiles).toBe(true)
+        expect(pageResult.items[0].pageTitle).toBe('NeverExistingPage')
+        expect(pageResult.items[0].zimPath).toBe('NeverExistingPage')
+        expect(pageResult.items[0].zimTitle).toBe('')
+        expect(pageResult.items[0].htmlContent).toContain('Oops. Page not found.')
       })
     }
   })
@@ -264,7 +261,7 @@ describe('Downloader class - wikipedia ES', () => {
     await MediaWiki.hasCoordinates()
   })
 
-  describe('getArticle response content for moved article id with redirect', () => {
+  describe('getPagesByTitle response content for moved page id with redirect', () => {
     for (const renderer of RENDERERS_LIST) {
       // for (const renderer of ['ActionParse']) {
       let dump: Dump
@@ -276,50 +273,43 @@ describe('Downloader class - wikipedia ES', () => {
       })
 
       test(`for ${renderer} render`, async () => {
-        // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when
-        // listing articles and getting their details, but the article has then been moved (with a redirect)
-        // to 'Vicente_Alejandro_González_y_Robleto'
+        // In this test, we fake the situation where we found the page 'Alejandro González y Robleto' when
+        // listing pages and getting their details, but the page has then been moved (with a redirect)
+        // to 'Vicente Alejandro González y Robleto'
         // In such a case, we expect to:
         // - retrieve content of redirection target to have real content
-        // - place this content in original article path (Alejandro_González_y_Robleto)
-        const articleId = 'Alejandro_González_y_Robleto'
-        const redirectArticleId = 'Vicente_Alejandro_González_y_Robleto'
+        // - place this content in original page path (Alejandro González y Robleto)
+        const pageTitle = 'Alejandro González y Robleto' as PageTitle
+        const redirectPageTitle = 'Vicente Alejandro González y Robleto' as PageTitle
 
         // Retrieve details from the redirection target (in real-life scenario, this would have been retrieved
-        // because the move did not yet happened when getting article details, but happened before getting
-        // article content)
-        const mwArticleDetails = await Downloader.getArticleDetailsIds([redirectArticleId])
-        const articleDetails = mwRetToArticleDetail(mwArticleDetails)
+        // because the move did not yet happened when getting page details, but happened before getting
+        // page content)
+        const mwPageDetails = await Downloader.getPagesByTitle([redirectPageTitle])
+        const pageDetails = mwRetToPageDetail(mwPageDetails)
 
-        // Move detail to articleId instead of redirectArticleId
-        articleDetails[articleId] = articleDetails[redirectArticleId]
-        delete articleDetails[redirectArticleId]
-        await RedisStore.articleDetailXId.setMany(articleDetails)
+        // Move detail to pageTitle instead of redirectPageTitle
+        pageDetails[pageTitle] = pageDetails[redirectPageTitle]
+        delete pageDetails[redirectPageTitle]
+        await RedisStore.pagesStore.setMany(pageDetails)
 
-        const articleResult = await Downloader.getArticle(
-          articleId,
-          RedisStore.articleDetailXId,
-          RenderingContext.articlesRenderer,
-          Downloader.getArticleUrl(articleId),
-          dump,
-          articleDetails[articleId],
-        )
-        expect(articleResult.items).toHaveLength(1)
-        expect(articleResult.needsDownloadErrorStaticFiles).toBe(false)
-        expect(articleResult.items[0].articleId).toBe('Alejandro_González_y_Robleto')
-        expect(articleResult.items[0].zimPath).toBe('Alejandro_González_y_Robleto')
-        expect(articleResult.items[0].zimTitle).toBe('Alejandro González y Robleto')
-        expect(articleResult.items[0].htmlContent).toContain('Datos biográficos')
+        const pageResult = await Downloader.getPage(pageTitle, RenderingContext.pagesRenderer, Downloader.getPageUrl(pageTitle), dump, pageDetails[pageTitle])
+        expect(pageResult.items).toHaveLength(1)
+        expect(pageResult.needsDownloadErrorStaticFiles).toBe(false)
+        expect(pageResult.items[0].pageTitle).toBe('Alejandro González y Robleto')
+        expect(pageResult.items[0].zimPath).toBe('Alejandro_González_y_Robleto')
+        expect(pageResult.items[0].zimTitle).toBe('Alejandro González y Robleto')
+        expect(pageResult.items[0].htmlContent).toContain('Datos biográficos')
 
         // Only ActionParse API gives sufficient information so that we automatically add missing redirects
         if (renderer == 'ActionParse') {
-          expect(RedisStore.redirectsXId.exists('Vicente_Alejandro_González_y_Robleto')).toBeTruthy()
+          expect(RedisStore.redirectsStore.exists('Vicente Alejandro González y Robleto')).toBeTruthy()
         }
       })
     }
   })
 
-  test(`getArticle response content for article moved during listing`, async () => {
+  test(`getPagesByTitle response content for page moved during listing`, async () => {
     const renderer = ''
 
     const mwMetadata = await MediaWiki.getMwMetaData()
@@ -327,55 +317,47 @@ describe('Downloader class - wikipedia ES', () => {
     const dump = new Dump('', '', {} as any, mwMetadata, undefined, t)
     await RenderingContext.createRenderers(renderer as renderName)
 
-    // In this test, we fake the situation where we found the article 'Alejandro_González_y_Robleto' when
-    // listing articles and getting their details, but the article has then been moved (with a redirect)
-    // to 'Vicente_Alejandro_González_y_Robleto' during article listing, so we have both articles to fetch
-    const articleId = 'Alejandro_González_y_Robleto'
-    const redirectArticleId = 'Vicente_Alejandro_González_y_Robleto'
+    // In this test, we fake the situation where we found the page 'Alejandro González y Robleto' when
+    // listing pages and getting their details, but the page has then been moved (with a redirect)
+    // to 'Vicente Alejandro González y Robleto' during page listing, so we have both pages to fetch
+    const pageTitle = 'Alejandro González y Robleto' as PageTitle
+    const redirectPageTitle = 'Vicente Alejandro González y Robleto' as PageTitle
 
     // Retrieve details from the redirection target (in real-life scenario, this would have been retrieved
-    // because the move did not yet happened when getting article details, but happened before getting
-    // article content)
-    const mwArticleDetails = await Downloader.getArticleDetailsIds([redirectArticleId])
-    const articleDetails = mwRetToArticleDetail(mwArticleDetails)
+    // because the move did not yet happened when getting page details, but happened before getting
+    // page content)
+    const mwPageDetails = await Downloader.getPagesByTitle([redirectPageTitle])
+    const pageDetails = mwRetToPageDetail(mwPageDetails)
 
-    // Move detail to articleId instead of redirectArticleId
-    articleDetails[articleId] = articleDetails[redirectArticleId]
-    await RedisStore.articleDetailXId.setMany(articleDetails)
+    // Move detail to pageTitle instead of redirectPageTitle
+    pageDetails[pageTitle] = pageDetails[redirectPageTitle]
+    await RedisStore.pagesStore.setMany(pageDetails)
 
-    const articleResult = await Downloader.getArticle(
-      articleId,
-      RedisStore.articleDetailXId,
-      RenderingContext.articlesRenderer,
-      Downloader.getArticleUrl(articleId),
+    const pageResult = await Downloader.getPage(pageTitle, RenderingContext.pagesRenderer, Downloader.getPageUrl(pageTitle), dump, pageDetails[pageTitle])
+    expect(pageResult.items).toHaveLength(1)
+    expect(pageResult.needsDownloadErrorStaticFiles).toBe(false)
+    expect(pageResult.items[0].pageTitle).toBe('Alejandro González y Robleto')
+    expect(pageResult.items[0].zimPath).toBe('Alejandro_González_y_Robleto')
+    expect(pageResult.items[0].zimTitle).toBe('Alejandro González y Robleto')
+    expect(pageResult.items[0].htmlContent).toContain('Datos biográficos')
+
+    const redirectPageResult = await Downloader.getPage(
+      redirectPageTitle,
+      RenderingContext.pagesRenderer,
+      Downloader.getPageUrl(redirectPageTitle),
       dump,
-      articleDetails[articleId],
+      pageDetails[redirectPageTitle],
     )
-    expect(articleResult.items).toHaveLength(1)
-    expect(articleResult.needsDownloadErrorStaticFiles).toBe(false)
-    expect(articleResult.items[0].articleId).toBe('Alejandro_González_y_Robleto')
-    expect(articleResult.items[0].zimPath).toBe('Alejandro_González_y_Robleto')
-    expect(articleResult.items[0].zimTitle).toBe('Alejandro González y Robleto')
-    expect(articleResult.items[0].htmlContent).toContain('Datos biográficos')
-
-    const redirectArticleResult = await Downloader.getArticle(
-      redirectArticleId,
-      RedisStore.articleDetailXId,
-      RenderingContext.articlesRenderer,
-      Downloader.getArticleUrl(redirectArticleId),
-      dump,
-      articleDetails[redirectArticleId],
-    )
-    expect(redirectArticleResult.items).toHaveLength(1)
-    expect(redirectArticleResult.needsDownloadErrorStaticFiles).toBe(false)
-    expect(redirectArticleResult.items[0].articleId).toBe('Vicente_Alejandro_González_y_Robleto')
-    expect(redirectArticleResult.items[0].zimPath).toBe('Vicente_Alejandro_González_y_Robleto')
-    expect(redirectArticleResult.items[0].zimTitle).toBe('Vicente Alejandro González y Robleto')
-    expect(redirectArticleResult.items[0].htmlContent).toContain('Datos biográficos')
+    expect(redirectPageResult.items).toHaveLength(1)
+    expect(redirectPageResult.needsDownloadErrorStaticFiles).toBe(false)
+    expect(redirectPageResult.items[0].pageTitle).toBe('Vicente Alejandro González y Robleto')
+    expect(redirectPageResult.items[0].zimPath).toBe('Vicente_Alejandro_González_y_Robleto')
+    expect(redirectPageResult.items[0].zimTitle).toBe('Vicente Alejandro González y Robleto')
+    expect(redirectPageResult.items[0].htmlContent).toContain('Datos biográficos')
 
     // both redirects have been added by 'mistake' ; it will be the responsibility of code handling
     // redirects rewrite to recover from this situation
-    expect(RedisStore.redirectsXId.exists('Vicente_Alejandro_González_y_Robleto')).toBeTruthy()
-    expect(RedisStore.redirectsXId.exists('Alejandro_González_y_Robleto')).toBeTruthy()
+    expect(RedisStore.redirectsStore.exists('Vicente Alejandro González y Robleto')).toBeTruthy()
+    expect(RedisStore.redirectsStore.exists('Alejandro González y Robleto')).toBeTruthy()
   })
 })

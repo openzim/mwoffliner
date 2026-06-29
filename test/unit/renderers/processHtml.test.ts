@@ -27,13 +27,13 @@ describe('processHtml', () => {
     MediaWiki.baseUrl = MediaWiki.webUrl
     MediaWiki.metaData = { mainPage: 'Main_Page' } as any
     const t = await createTranslator('en')
-    const articleId = 'Test'
-    const articleDetail = { title: articleId, timestamp: '2023-09-10T17:36:04Z' }
+    const pageTitle = 'Test' as PageTitle
+    const pageDetail = { title: pageTitle, timestamp: '2023-09-10T17:36:04Z' }
     const opts: ProcessHtmlOpts = {
       html,
       dump: new Dump('', '', {} as any, MediaWiki.metaData, undefined, t),
-      articleId,
-      articleDetail,
+      pageTitle: pageTitle,
+      pageDetail: pageDetail,
       moduleDependencies: {},
       callback: () => {
         return domino.createDocument('<html><head><title></title></head><body><div id="mw-content-text"></div></body></html>')

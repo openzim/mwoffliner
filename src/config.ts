@@ -44,7 +44,7 @@ const config = {
     leadSectionId: '0',
 
     /* List of style to be removed. 'onlyoffline' is a *hack* to
-    /* display WPEN medical articles, see for example
+    /* display WPEN medical pages, see for example
     /* [[Carcinoid_syndrome]] */
     cssClassCallsBlackList: ['plainlinks', 'onlyoffline'],
 
@@ -61,9 +61,9 @@ const config = {
   output: {
     // CSS and JS resources added by Kiwix
     cssResourcesCommon: ['style.css', 'mobile_main_page.css', 'footer.css'],
-    jsResourcesCommon: ['script.js', 'masonry.min.js', 'article_list_home.js', 'images_loaded.min.js'],
+    jsResourcesCommon: ['script.js', 'masonry.min.js', 'page_list_home.js', 'images_loaded.min.js'],
 
-    downloadErrorResources: ['article_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
+    downloadErrorResources: ['page_not_found.svg', 'DMSans-Regular.ttf', 'download_error_placeholder.css'],
 
     // JS/CSS resources to be imported from MediaWiki
     mw: {
@@ -110,8 +110,8 @@ const config = {
     // Output templates (TODO: Needs more docs)
     templates: {
       /* In these files, the following replacements will occur:
-       * __ARTICLE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
-       * __ARTICLE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
+       * __PAGE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
+       * __PAGE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
        * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
        */
       pageVectorLegacy: './templates/pageVectorLegacy.html',
@@ -120,15 +120,15 @@ const config = {
 
       javaScript: './templates/javaScript.html',
 
-      articleListHomeTemplate: './templates/article_list_home.html',
+      pageListHomeTemplate: './templates/page_list_home.html',
 
       /* License footer template code */
       footer: './templates/footer.html',
 
-      /* Template for article download error */
+      /* Template for page download error */
       downloadErrorPlaceholder: './templates/download_error_placeholder.html',
 
-      /* Template for HTML-based redirects (to section of an article typically) */
+      /* Template for HTML-based redirects (to section of a page typically) */
       htmlRedirect: './templates/html_redirect.html',
     },
   },

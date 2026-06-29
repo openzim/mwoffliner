@@ -10,7 +10,7 @@ jest.setTimeout(60000)
 const parameters = {
   mwUrl: 'https://en.wikipedia.org',
   adminEmail: 'test@kiwix.org',
-  articleList: 'User:Kelson/MWoffliner_CI_reference',
+  pageList: 'User:Kelson/MWoffliner_CI_reference',
   redis: process.env.REDIS,
   customZimDescription: 'Example of the description',
 }
@@ -20,9 +20,9 @@ await testAllRenders('multimedia-content', parameters, async (outFiles) => {
     test(`check multimedia content from wikipedia test page for ${outFiles[0]?.renderer} renderer`, async () => {
       await execa('redis-cli flushall', { shell: true })
 
-      expect(outFiles[0].status.articles.success).toEqual(1)
-      expect(outFiles[0].status.articles.hardFail).toEqual(0)
-      expect(outFiles[0].status.articles.softFail).toEqual(0)
+      expect(outFiles[0].status.pages.success).toEqual(1)
+      expect(outFiles[0].status.pages.hardFail).toEqual(0)
+      expect(outFiles[0].status.pages.softFail).toEqual(0)
       const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
       const allFilesArr = allFiles.split('\n')
       const mediaFiles = allFilesArr.filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg') || elem.endsWith('webm') || elem.endsWith('ogg')).sort()
@@ -58,9 +58,9 @@ await testAllRenders('multimedia-content', { ...parameters, format: ['nopic', 'n
       expect(outFiles).toHaveLength(4)
 
       for (const dump of outFiles) {
-        expect(dump.status.articles.success).toEqual(1)
-        expect(dump.status.articles.hardFail).toEqual(0)
-        expect(dump.status.articles.softFail).toEqual(0)
+        expect(dump.status.pages.success).toEqual(1)
+        expect(dump.status.pages.hardFail).toEqual(0)
+        expect(dump.status.pages.softFail).toEqual(0)
 
         await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
 

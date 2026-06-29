@@ -16,7 +16,7 @@ describe('forceRender', () => {
     outputDirectory: testId,
     redis: process.env.REDIS,
     format: ['nopic'],
-    articleList: 'France',
+    pageList: 'France',
     mwActionApiPath: '/w/api.php',
   }
 
@@ -28,7 +28,7 @@ describe('forceRender', () => {
     expect(redisScan.stdout).toEqual('')
   })
 
-  test('Scrape article from bm.wikipedia.org using ActionParse render', async () => {
+  test('Scrape page from bm.wikipedia.org using ActionParse render', async () => {
     const forceRender = 'ActionParse'
     const outFiles = await mwoffliner.execute({ ...parameters, forceRender })
 

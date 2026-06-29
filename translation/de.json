@@ -19,11 +19,11 @@
 		"other": "folgenden {{count}} Dateien sind"
 	},
 	"categoryMediaHeader": "Medien in der Kategorie „{{pageName}}“",
-	"categoryArticleCount": {
+	"categoryPageCount": {
 		"one": "Diese Kategorie enthält nur die folgende Seite.",
-		"other": "Folgende $t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) in dieser Kategorie, von {{count}} insgesamt."
+		"other": "Folgende $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) in dieser Kategorie, von {{count}} insgesamt."
 	},
-	"categoryCurrentPageArticleCount": {
+	"categoryCurrentPagePageCount": {
 		"one": "Seite ist",
 		"other": "{{count}} Seiten sind"
 	},
@@ -42,8 +42,8 @@
 	"LAST_EDITED_ON": "Zuletzt bearbeitet am {{date}}",
 	"LICENSE_UNKNOWN": "einer unbekannten Lizenz",
 	"DOWNLOAD_ERRORS_HEADING": "Hoppla. Artikel nicht gefunden.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Der angeforderte Artikel „{{articleTitle}}“ ist in diesem ZIM nicht verfügbar, er konnte nicht von {{server}} abgerufen werden.",
-	"DOWNLOAD_ERRORS_LINE1_DELETED_ARTICLE": "Dieser Artikel wurde gelöscht, nachdem wir die Liste der abzurufenden Artikel zusammengestellt hatten, aber bevor wir ihn zum Erstellen dieser ZIM abgerufen haben.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Der angeforderte Artikel „{{pageTitle}}“ ist in diesem ZIM nicht verfügbar, er konnte nicht von {{server}} abgerufen werden.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Dieser Artikel wurde gelöscht, nachdem wir die Liste der abzurufenden Artikel zusammengestellt hatten, aber bevor wir ihn zum Erstellen dieser ZIM abgerufen haben.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Als das ZIM, das du durchsuchst, erstellt wurde, konnte der {{server}}-Server nicht rechtzeitig Details über diesen HTML-Artikel geben.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Beim Erstellen dieser ZIM hatte die ActionParse API des Servers {{server}} eine Zeitüberschreitung beim Verarbeiten dieses Artikels und gab einen HTTP 504-Fehler zurück.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Beim Erstellen dieser ZIM gab die ActionParse API des Servers {{server}} einen HTTP 503-Fehler zurück, beim Erhalten von Details über das HTML des Artikels.",

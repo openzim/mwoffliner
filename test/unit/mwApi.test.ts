@@ -2,8 +2,8 @@ import { startRedis, stopRedis } from './bootstrap.js'
 import Downloader from '../../src/Downloader.js'
 import MediaWiki, { SiteInfoSkin } from '../../src/MediaWiki.js'
 import RedisStore from '../../src/RedisStore.js'
-import { getArticleIds, mwRetToArticleDetail } from '../../src/util/mw-api.js'
-import { getArticlesByNS } from '../../src/util/index.js'
+import { getPages, mwRetToPageDetail } from '../../src/util/mw-api.js'
+import { getPagesByNamespace } from '../../src/util/index.js'
 import { config } from '../../src/config.js'
 import { jest } from '@jest/globals'
 
@@ -22,7 +22,7 @@ const initMW = async () => {
 
 describe('mwApi', () => {
   beforeEach(async () => {
-    await RedisStore.articleDetailXId.flush()
+    await RedisStore.pagesStore.flush()
 
     MediaWiki.base = 'https://en.wikipedia.org'
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
@@ -30,49 +30,52 @@ describe('mwApi', () => {
     await initMW()
   })
 
-  test('MWApi Article Ids', async () => {
-    const aIds = ['London', 'United_Kingdom', 'Farnborough/Aldershot_built-up_area']
+  test('MWApi Page Title', async () => {
+    const pageList = ['London', 'United_Kingdom', 'Farnborough/Aldershot built-up area']
+    const pagesTitles = ['London', 'United Kingdom', 'Farnborough/Aldershot built-up area']
 
-    await getArticleIds('Main_Page', aIds)
+    await getPages('Main_Page' as PageTitle, pageList as PageTitle[])
 
-    const articlesById = await RedisStore.articleDetailXId.getMany(aIds)
-    const { United_Kingdom, London } = articlesById
+    const pagesByTitle = await RedisStore.pagesStore.getMany(pagesTitles)
+    const London = pagesByTitle['London']
+    const United_Kingdom = pagesByTitle['United Kingdom']
+    const Farnborough = pagesByTitle['Farnborough/Aldershot built-up area']
 
-    // Article "United_Kingdom" was scraped
+    // Page "United_Kingdom" was scraped
     expect(United_Kingdom).toBeDefined()
 
-    // Article "United_Kingdom" has thumbnail
+    // Page "United_Kingdom" has thumbnail
     expect(United_Kingdom).toHaveProperty('thumbnail')
 
-    // Article "United_Kingdom" has revision
+    // Page "United_Kingdom" has revision
     expect(United_Kingdom).toHaveProperty('revisionId')
 
-    // Article "London" was scraped
+    // Page "London" was scraped
     expect(London).toBeDefined()
 
-    // Article "London" has geo coords
+    // Page "London" has geo coords
     expect(London).toHaveProperty('coordinates')
 
-    // Complex article was scraped
-    expect(articlesById).toHaveProperty('Farnborough/Aldershot_built-up_area')
+    // Complex page was scraped
+    expect(Farnborough).toBeDefined()
   })
 
   test('MWApi NS', async () => {
-    await getArticlesByNS(0, undefined, ['wikitext'], new Set(), 5) // Get 5 continues/pages of NSes
-    const interestingAIds = ['"...And_Ladies_of_the_Club"', '"Khan_gizi"_spring']
-    const articles = await RedisStore.articleDetailXId.getMany(interestingAIds)
-    const ArticleWithRevisions = articles['"...And_Ladies_of_the_Club"']
-    const ArticleWithCoordinates = articles['"Khan_gizi"_spring']
+    await getPagesByNamespace(0, [], ['wikitext'], new Set(), 5) // Get 5 continues/pages of NSes
+    const pageTitles = ['"...And Ladies of the Club"', '"Khan gizi" spring']
+    const pages = await RedisStore.pagesStore.getMany(pageTitles)
+    const PageWithRevisions = pages['"...And Ladies of the Club"']
+    const PageWithCoordinates = pages['"Khan gizi" spring']
 
-    // Articles have been retrieved
-    expect(ArticleWithRevisions).not.toBeNull()
-    expect(ArticleWithCoordinates).not.toBeNull()
+    // Pages have been retrieved
+    expect(PageWithRevisions).not.toBeNull()
+    expect(PageWithCoordinates).not.toBeNull()
 
-    // article has revision
-    expect(ArticleWithRevisions).toHaveProperty('revisionId')
+    // page has revision
+    expect(PageWithRevisions).toHaveProperty('revisionId')
 
-    // article has coordinates'
-    expect(ArticleWithCoordinates).toHaveProperty('coordinates')
+    // page has coordinates'
+    expect(PageWithCoordinates).toHaveProperty('coordinates')
 
     // Got items in namespaces
     expect(Object.keys(MediaWiki.namespaces).length).toBeGreaterThan(0)
@@ -85,60 +88,84 @@ describe('mwApi', () => {
     expect(keysAreValid).toBeTruthy()
   })
 
-  test('extracting title from href', () => {
-    const titleWithWiki = MediaWiki.extractPageTitleFromHref('/wiki/Hades')
-    // Title with hrefs contaning /wiki
-    expect(titleWithWiki).toEqual('Hades')
+  describe('extracting title from href', () => {
+    test('title with wiki', () => {
+      const titleWithWiki = MediaWiki.extractPageTitleFromHref('/wiki/Hades')
+      // Title with hrefs contaning /wiki
+      expect(titleWithWiki).toEqual('Hades')
+    })
 
-    const titleWithRelativePath = MediaWiki.extractPageTitleFromHref('./Damage_Formula')
-    // Title with relative path
-    expect(titleWithRelativePath).toEqual('Damage_Formula')
+    test('title with relative path', () => {
+      const titleWithRelativePath = MediaWiki.extractPageTitleFromHref('./Damage_Formula')
+      // Title with relative path
+      expect(titleWithRelativePath).toEqual('Damage Formula')
+    })
 
-    const titleWithTwoDir = MediaWiki.extractPageTitleFromHref('../../Mali_Dung')
-    // Title with two dir path
-    expect(titleWithTwoDir).toEqual('Mali_Dung')
+    test('title with two dir', () => {
+      const titleWithTwoDir = MediaWiki.extractPageTitleFromHref('../../Mali_Dung')
+      // Title with two dir path
+      expect(titleWithTwoDir).toEqual('Mali Dung')
+    })
 
-    const titleWithAnchorJump = MediaWiki.extractPageTitleFromHref('./Subarns#Mali')
-    // Title with Anchor Jump
-    expect(titleWithAnchorJump).toEqual('Subarns')
+    test('title with anchor jump', () => {
+      const titleWithAnchorJump = MediaWiki.extractPageTitleFromHref('./Subarns#Mali')
+      // Title with Anchor Jump
+      expect(titleWithAnchorJump).toEqual('Subarns')
+    })
 
-    const interWikiTitle = MediaWiki.extractPageTitleFromHref('Maldives')
-    // Interwiki title
-    expect(interWikiTitle).toBeNull()
+    test('inter wiki title', () => {
+      const interWikiTitle = MediaWiki.extractPageTitleFromHref('Maldives')
+      // Interwiki title
+      expect(interWikiTitle).toBeNull()
+    })
 
-    const relativeRedLink = MediaWiki.extractPageTitleFromHref('./Nanmangalam?action=edit&redlink=1')
-    // A red link which is relative
-    expect(relativeRedLink).toEqual('Nanmangalam')
+    test('red link', () => {
+      const relativeRedLink = MediaWiki.extractPageTitleFromHref('./Nanmangalam?action=edit&redlink=1')
+      // A red link which is relative
+      expect(relativeRedLink).toEqual('Nanmangalam')
+    })
 
-    const absoluteIndexPath = MediaWiki.extractPageTitleFromHref('/w/index.php?title=Blue_whale1')
-    // A link to index.php
-    expect(absoluteIndexPath).toEqual('Blue_whale1')
+    test('absolute index path', () => {
+      const absoluteIndexPath = MediaWiki.extractPageTitleFromHref('/w/index.php?title=Blue_whale1')
+      // A link to index.php
+      expect(absoluteIndexPath).toEqual('Blue whale1')
+    })
 
-    const absoluteIndexPathRedLink = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&title=Blue_whale2&redlink=1')
-    // A red link to index.php
-    expect(absoluteIndexPathRedLink).toEqual('Blue_whale2')
+    test('absolute index path red link', () => {
+      const absoluteIndexPathRedLink = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&title=Blue_whale2&redlink=1')
+      // A red link to index.php
+      expect(absoluteIndexPathRedLink).toEqual('Blue whale2')
+    })
 
-    const absoluteIndexPathNoTitle = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&redlink=1')
-    // An index.php link missing the article title
-    expect(absoluteIndexPathNoTitle).toBeNull()
+    test('absolute index path no title', () => {
+      const absoluteIndexPathNoTitle = MediaWiki.extractPageTitleFromHref('/w/index.php?action=edit&redlink=1')
+      // An index.php link missing the page title
+      expect(absoluteIndexPathNoTitle).toBeNull()
+    })
 
-    const fullUrl = MediaWiki.extractPageTitleFromHref('https://en.wikipedia.org/wiki/Blue_whale')
-    // test for a complete  URL
-    expect(fullUrl).toBe('Blue_whale')
+    test('full URL', () => {
+      const fullUrl = MediaWiki.extractPageTitleFromHref('https://en.wikipedia.org/wiki/Blue_whale')
+      // test for a complete  URL
+      expect(fullUrl).toBe('Blue whale')
+    })
 
-    const encodedUrl = MediaWiki.extractPageTitleFromHref('/wiki/Radio_Rom%C3%A2nia_Actualit%C4%83%C8%9Bi')
-    // URL with special encoded characters
-    expect(encodedUrl).toBe('Radio_România_Actualități')
+    test('encoded url', () => {
+      const encodedUrl = MediaWiki.extractPageTitleFromHref('/wiki/Radio_Rom%C3%A2nia_Actualit%C4%83%C8%9Bi')
+      // URL with special encoded characters
+      expect(encodedUrl).toBe('Radio România Actualități')
+    })
 
-    const emptyInput = MediaWiki.extractPageTitleFromHref('')
-    // Empty input should return null
-    expect(emptyInput).toBeNull()
+    test('empty input', () => {
+      const emptyInput = MediaWiki.extractPageTitleFromHref('')
+      // Empty input should return null
+      expect(emptyInput).toBeNull()
+    })
   })
 })
 
 describe('Test blacklisted NSs', () => {
   beforeEach(async () => {
-    await RedisStore.articleDetailXId.flush()
+    await RedisStore.pagesStore.flush()
 
     MediaWiki.base = 'https://id.wikipedia.org'
     MediaWiki.getCategories = true
@@ -150,7 +177,7 @@ describe('Test blacklisted NSs', () => {
 
   test('Prevent blacklisted namespaces to mirroring', async () => {
     const aIds = ['Story:Satelit_Oberon', 'London']
-    await getArticleIds('Main_Page', aIds)
+    await getPages('Main_Page' as PageTitle, aIds as PageTitle[])
 
     expect(MediaWiki.namespacesToMirror).not.toContain('Story')
   })
@@ -158,7 +185,7 @@ describe('Test blacklisted NSs', () => {
 
 describe('Test moved page with redirect', () => {
   beforeEach(async () => {
-    await RedisStore.articleDetailXId.flush()
+    await RedisStore.pagesStore.flush()
 
     MediaWiki.base = 'https://es.wikipedia.org'
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
@@ -166,17 +193,19 @@ describe('Test moved page with redirect', () => {
     await initMW()
   })
 
-  test('Moved Article Ids', async () => {
-    const aIds = ['Alejandro_González_y_Robleto', 'Vicente_Alejandro_González_y_Robleto']
+  test('Moved Page Ids', async () => {
+    const pageTitles = ['Alejandro González y Robleto', 'Vicente Alejandro González y Robleto']
 
-    await getArticleIds(null, aIds)
+    await getPages(null, pageTitles as PageTitle[])
 
-    const { Alejandro_González_y_Robleto, Vicente_Alejandro_González_y_Robleto } = await RedisStore.articleDetailXId.getMany(aIds)
+    const pages = await RedisStore.pagesStore.getMany(pageTitles)
+    const Alejandro_González_y_Robleto = pages['Alejandro González y Robleto']
+    const Vicente_Alejandro_González_y_Robleto = pages['Vicente Alejandro González y Robleto']
 
-    // Article "Alejandro_González_y_Robleto" has been moved so it is not fetched
+    // Page "Alejandro_González_y_Robleto" has been moved so it is not fetched
     expect(Alejandro_González_y_Robleto).toBeNull()
 
-    // Article "Vicente_Alejandro_González_y_Robleto" is defined and has a title and a revisionId
+    // Page "Vicente_Alejandro_González_y_Robleto" is defined and has a title and a revisionId
     expect(Vicente_Alejandro_González_y_Robleto).toBeDefined()
     expect(Vicente_Alejandro_González_y_Robleto).toHaveProperty('title')
     expect(Vicente_Alejandro_González_y_Robleto).toHaveProperty('revisionId')
@@ -220,11 +249,11 @@ describe('Mediawiki utils', () => {
   })
 })
 
-describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () => {
+describe('mwRetToPageDetail — FlaggedRevs stableRevisionId extraction', () => {
   test('extracts stableRevisionId when flagged.stable_revid is present', () => {
-    const mockQueryRet: QueryMwRet = {
-      Berlin: {
-        title: 'Berlin',
+    const mockQueryRet: QueryMwRet = [
+      {
+        title: 'Berlin' as PageTitle,
         ns: 0,
         contentmodel: 'wikitext',
         revisions: [{ revid: 200, parentid: 199, minor: '', user: 'TestUser', timestamp: '2024-01-01T00:00:00Z', comment: '' }],
@@ -234,9 +263,9 @@ describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () 
           level_text: 'stable',
         },
       } as any,
-    }
+    ]
 
-    const result = mwRetToArticleDetail(mockQueryRet)
+    const result = mwRetToPageDetail(mockQueryRet)
 
     expect(result.Berlin).toBeDefined()
     expect(result.Berlin.revisionId).toBe(200)
@@ -244,16 +273,16 @@ describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () 
   })
 
   test('does not include stableRevisionId when flagged data is absent', () => {
-    const mockQueryRet: QueryMwRet = {
-      London: {
-        title: 'London',
+    const mockQueryRet: QueryMwRet = [
+      {
+        title: 'London' as PageTitle,
         ns: 0,
         contentmodel: 'wikitext',
         revisions: [{ revid: 100, parentid: 99, minor: '', user: 'SomeUser', timestamp: '2024-01-01T00:00:00Z', comment: '' }],
       } as any,
-    }
+    ]
 
-    const result = mwRetToArticleDetail(mockQueryRet)
+    const result = mwRetToPageDetail(mockQueryRet)
 
     expect(result.London).toBeDefined()
     expect(result.London.revisionId).toBe(100)
@@ -261,9 +290,9 @@ describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () 
   })
 
   test('does not include stableRevisionId when flagged exists but stable_revid is missing', () => {
-    const mockQueryRet: QueryMwRet = {
-      Paris: {
-        title: 'Paris',
+    const mockQueryRet: QueryMwRet = [
+      {
+        title: 'Paris' as PageTitle,
         ns: 0,
         contentmodel: 'wikitext',
         revisions: [{ revid: 300, parentid: 299, minor: '', user: 'Editor', timestamp: '2024-06-01T00:00:00Z', comment: '' }],
@@ -272,33 +301,33 @@ describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () 
           level_text: 'quality',
         },
       } as any,
-    }
+    ]
 
-    const result = mwRetToArticleDetail(mockQueryRet)
+    const result = mwRetToPageDetail(mockQueryRet)
 
     expect(result.Paris).toBeDefined()
     expect(result.Paris.revisionId).toBe(300)
     expect(result.Paris.stableRevisionId).toBeUndefined()
   })
 
-  test('handles mix of articles with and without FlaggedRevs data', () => {
-    const mockQueryRet: QueryMwRet = {
-      München: {
-        title: 'München',
+  test('handles mix of pages with and without FlaggedRevs data', () => {
+    const mockQueryRet: QueryMwRet = [
+      {
+        title: 'München' as PageTitle,
         ns: 0,
         contentmodel: 'wikitext',
         revisions: [{ revid: 500, parentid: 499, minor: '', user: 'DEUser', timestamp: '2024-03-01T00:00:00Z', comment: '' }],
         flagged: { stable_revid: 490 },
       } as any,
-      Tokyo: {
-        title: 'Tokyo',
+      {
+        title: 'Tokyo' as PageTitle,
         ns: 0,
         contentmodel: 'wikitext',
         revisions: [{ revid: 600, parentid: 599, minor: '', user: 'JPUser', timestamp: '2024-03-01T00:00:00Z', comment: '' }],
       } as any,
-    }
+    ]
 
-    const result = mwRetToArticleDetail(mockQueryRet)
+    const result = mwRetToPageDetail(mockQueryRet)
 
     expect(result['München'].stableRevisionId).toBe(490)
     expect(result['München'].revisionId).toBe(500)
@@ -307,17 +336,17 @@ describe('mwRetToArticleDetail — FlaggedRevs stableRevisionId extraction', () 
   })
 
   test('handles stableRevisionId equal to latest revisionId (both should be set)', () => {
-    const mockQueryRet: QueryMwRet = {
-      Hamburg: {
-        title: 'Hamburg',
+    const mockQueryRet: QueryMwRet = [
+      {
+        title: 'Hamburg' as PageTitle,
         ns: 0,
         contentmodel: 'wikitext',
         revisions: [{ revid: 400, parentid: 399, minor: '', user: 'User1', timestamp: '2024-02-01T00:00:00Z', comment: '' }],
         flagged: { stable_revid: 400 },
       } as any,
-    }
+    ]
 
-    const result = mwRetToArticleDetail(mockQueryRet)
+    const result = mwRetToPageDetail(mockQueryRet)
 
     expect(result.Hamburg.revisionId).toBe(400)
     expect(result.Hamburg.stableRevisionId).toBe(400)

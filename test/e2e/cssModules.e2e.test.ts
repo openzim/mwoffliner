@@ -9,7 +9,7 @@ jest.setTimeout(60000)
 
 const parameters = {
   mwUrl: 'https://de.wikipedia.org',
-  articleList: 'Monty_Python’s_Flying_Circus', // use article with a slash in its name to check relative links are properly handled
+  pageList: 'Monty_Python’s_Flying_Circus', // use page with a slash in its name to check relative links are properly handled
   adminEmail: 'test@kiwix.org',
 }
 
@@ -17,9 +17,9 @@ await testRenders(
   'cssModules',
   parameters,
   async (outFiles) => {
-    const articleFromDump = await zimdump(`show --url "${parameters.articleList.replace(' ', '_')}" ${outFiles[0].outFile}`)
-    const window = domino.createWindow(articleFromDump)
-    const articleDoc = window.document
+    const pageFromDump = await zimdump(`show --url "${parameters.pageList.replace(' ', '_')}" ${outFiles[0].outFile}`)
+    const window = domino.createWindow(pageFromDump)
+    const pageDoc = window.document
     // @ts-expect-error Node is not defined but does exists
     const Node = window.Node
 
@@ -28,24 +28,24 @@ await testRenders(
     })
 
     test(`test preceding modules for ${outFiles[0]?.renderer} renderer`, async () => {
-      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.cite.styles.css"]')
-      const meta = articleDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
+      const module = pageDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.cite.styles.css"]')
+      const meta = pageDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
       expect(module).toBeTruthy()
       expect(meta).toBeTruthy()
       expect(meta.compareDocumentPosition(module) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
     })
 
     test(`test following modules for ${outFiles[0]?.renderer} renderer`, async () => {
-      const module = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.gadget.citeRef.css"]')
-      const meta = articleDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
+      const module = pageDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.gadget.citeRef.css"]')
+      const meta = pageDoc.querySelector('meta[name="ResourceLoaderDynamicStyles"]')
       expect(module).toBeTruthy()
       expect(meta).toBeTruthy()
       expect(meta.compareDocumentPosition(module) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
     test(`test site.styles position for ${outFiles[0]?.renderer} renderer`, async () => {
-      const gadgetModule = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.gadget.citeRef.css"]')
-      const siteStylesModule = articleDoc.querySelector('link[rel="stylesheet"][href="./_mw_/site.styles.css"]')
+      const gadgetModule = pageDoc.querySelector('link[rel="stylesheet"][href="./_mw_/ext.gadget.citeRef.css"]')
+      const siteStylesModule = pageDoc.querySelector('link[rel="stylesheet"][href="./_mw_/site.styles.css"]')
       expect(gadgetModule).toBeTruthy()
       expect(siteStylesModule).toBeTruthy()
       expect(siteStylesModule.compareDocumentPosition(gadgetModule) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()

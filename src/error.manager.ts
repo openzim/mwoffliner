@@ -1,9 +1,9 @@
 import { Dump } from './Dump.js'
 import { downloadErrorPlaceholderTemplate } from './Templates.js'
-import { getRelativeFilePath } from './util/misc.js'
+import { getRelativeFilePath, makeZimPath } from './util/misc.js'
 import MediaWiki from './MediaWiki.js'
 import { DownloadErrorContext } from './Downloader.js'
-import { DELETED_ARTICLE_ERROR } from './util/const.js'
+import { DELETED_PAGE_ERROR } from './util/const.js'
 
 interface HttpReturnCodeRange {
   min: number
@@ -39,20 +39,20 @@ const matchingRules: MatchingRule[] = [
     responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: null,
-    detailsMessageKey: 'DELETED_ARTICLE',
+    detailsMessageKey: 'DELETED_PAGE',
     displayThirdLine: false,
     isHardFailure: false,
   },
   {
-    name: 'deleted article error',
+    name: 'deleted page error',
     errorCodes: null,
     urlContains: null,
     httpReturnCodes: null,
     contentTypes: null,
     responseIsEmpty: false,
-    rawResponseDataContains: [DELETED_ARTICLE_ERROR],
+    rawResponseDataContains: [DELETED_PAGE_ERROR],
     jsonResponseDataContains: null,
-    detailsMessageKey: 'DELETED_ARTICLE',
+    detailsMessageKey: 'DELETED_PAGE',
     displayThirdLine: false,
     isHardFailure: false,
   },
@@ -65,7 +65,7 @@ const matchingRules: MatchingRule[] = [
     responseIsEmpty: false,
     rawResponseDataContains: null,
     jsonResponseDataContains: [{ key: 'error.code', valueContains: ['missingtitle'] }],
-    detailsMessageKey: 'DELETED_ARTICLE',
+    detailsMessageKey: 'DELETED_PAGE',
     displayThirdLine: false,
     isHardFailure: false,
   },
@@ -292,11 +292,12 @@ export function findFirstMatchingRule(err: DownloadErrorContext): MatchingRule |
   return null
 }
 
-export function renderDownloadError(matchingRule: MatchingRule, dump: Dump, articleId: string, articleTitle: string): string | null {
+export function renderDownloadError(matchingRule: MatchingRule, dump: Dump, pageTitle: PageTitle): string | null {
+  const pagePath = makeZimPath(pageTitle)
   return downloadErrorPlaceholderTemplate({
     heading: dump.t('DOWNLOAD_ERRORS_HEADING'),
-    relative_file_path: getRelativeFilePath(articleId, ''),
-    message: dump.t('DOWNLOAD_ERRORS_MESSAGE', { articleTitle, server: MediaWiki.baseUrl.hostname }),
+    relative_file_path: getRelativeFilePath(pagePath, ''),
+    message: dump.t('DOWNLOAD_ERRORS_MESSAGE', { pageTitle, server: MediaWiki.baseUrl.hostname }),
     advice_line1: dump.t(`DOWNLOAD_ERRORS_LINE1_${matchingRule.detailsMessageKey}`, { server: MediaWiki.baseUrl.hostname }),
     advice_line2: dump.t('DOWNLOAD_ERRORS_LINE2'),
     advice_line3: dump.t('DOWNLOAD_ERRORS_LINE3', { server: MediaWiki.baseUrl.hostname }),
