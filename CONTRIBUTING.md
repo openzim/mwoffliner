@@ -165,5 +165,5 @@ To publish/release, it's best to use a clean clone of the project:
 
 First, please read the [contributing guidelines for our parent
 project,
-openZIM](https://github.com/openzim/overview/blob/master/CONTRIBUTING.md).
+openZIM](https://github.com/openzim/overview/wiki/Contributing).
 They cover the general process.
