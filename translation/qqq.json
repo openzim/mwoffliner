@@ -31,6 +31,9 @@
 		"one": "Nested translation used inside categorySubcatCount (plural form) when curPageCount=1. Should read as \"[one subcategory]\".",
 		"other": "Nested translation used inside categorySubcatCount (plural form) when curPageCount>1. Should read as \"[N subcategories]\"."
 	},
+	"categoryPreviousPage": "This message is used on category pages to move to previous page",
+	"categoryNextPage": "This message is used on category pages to move to next page",
+	"categoryNoPagination": "This message is used on category pages when pagination is needed by Javascript is not available",
 	"subcategories": "Used as a header on category pages that have subcategories.",
 	"categoryEmpty": "The text displayed in category page when that category is empty.",
 	"categoryLimited": "The text displayed in category page when that category contents have been limited.",

@@ -16,6 +16,7 @@ export const parameterDescriptions = {
   format:
     'Flavour for the scraping. If missing, scrape all article contents. Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
   getCategories: 'Include the categories of all included articles.',
+  categoriesPageSize: 'Number of items (subcategories, pages, files) to display per page on category articles (default: 200)',
   keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected article structure.',
   mwActionApiPath: 'MediaWiki API path (by default "/w/api.php")',
   mwModulePath: 'MediaWiki module load path ($wgLoadScript), automatically chosen based on script path otherwise.',

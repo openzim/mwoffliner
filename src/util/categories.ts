@@ -1,5 +1,7 @@
 import MediaWiki from '../MediaWiki.js'
 import { Dump } from '../Dump.js'
+import { config } from '../config.js'
+import { rewriteUrlsOfDoc } from './rewriteUrls.js'
 
 export function buildCategoryMemberList(
   type: 'subcats' | 'pages' | 'files',
@@ -9,35 +11,34 @@ export function buildCategoryMemberList(
   doc: Document,
   dump: Dump,
   numericSorting: boolean,
-): DominoElement {
-  const count = categoryinfo[type]
-  const pageName = articleDetail.title.split(':').slice(1).join(':')
-
+  page: number,
+  isLastPage: boolean,
+  articleZimPath: string,
+): HTMLElement {
   let idName: string
   let headerContent: string
-  let descContent: string
-
+  let descText: string
+  const pageName = articleDetail.title.split(':').slice(1).join(':')
   if (type === 'subcats') {
     idName = 'mw-subcategories'
     headerContent = dump.t('subcategories')
-    descContent = dump.t('categorySubcatCount', { count, curPageCount: count })
+    descText = dump.t('categorySubcatCount', { curPageCount: categoryMembers.length, count: categoryinfo[type] })
   } else if (type === 'pages') {
     idName = 'mw-pages'
     headerContent = dump.t('categoryHeader', { pageName })
-    descContent = dump.t('categoryArticleCount', { count, curPageCount: count })
-  } else {
+    descText = dump.t('categoryArticleCount', { curPageCount: categoryMembers.length, count: categoryinfo[type] })
+  } else if (type === 'files') {
     idName = 'mw-category-media'
     headerContent = dump.t('categoryMediaHeader', { pageName })
-    descContent = dump.t('categoryFileCount', { count, curPageCount: count })
+    descText = dump.t('categoryFileCount', { curPageCount: categoryMembers.length, count: categoryinfo[type] })
   }
-
   const section = doc.createElement('div')
   section.id = idName
   const header = doc.createElement('h2')
   header.textContent = headerContent
   section.appendChild(header)
   const desc = doc.createElement('p')
-  desc.textContent = descContent
+  desc.textContent = descText
   section.appendChild(desc)
   const content = doc.createElement('div')
   content.lang = articleDetail.pagelang
@@ -76,6 +77,7 @@ export function buildCategoryMemberList(
       const span = doc.createElement('span')
       span.setAttribute('typeof', 'mw:File')
       const filelink = doc.createElement('a')
+      filelink.target = '_parent'
       filelink.classList.add('mw-file-description')
       filelink.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title.replace(/ /g, '_')))
       const file = doc.createElement('img')
@@ -94,6 +96,7 @@ export function buildCategoryMemberList(
       const text = doc.createElement('div')
       text.classList.add('gallerytext')
       const link = doc.createElement('a')
+      link.target = '_parent'
       link.classList.add('galleryfilename', 'galleryfilename-truncate')
       link.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title.replace(/ /g, '_')))
       link.setAttribute('title', categoryMember.title)
@@ -104,6 +107,7 @@ export function buildCategoryMemberList(
     } else {
       const member = doc.createElement('li')
       const link = doc.createElement('a')
+      link.target = '_parent'
       link.setAttribute('href', MediaWiki.webUrl.pathname + encodeURIComponent(categoryMember.title.replace(/ /g, '_')))
       link.setAttribute('title', categoryMember.title)
       link.textContent = type === 'subcats' ? categoryMember.title.split(':').slice(1).join(':') : categoryMember.title
@@ -116,6 +120,100 @@ export function buildCategoryMemberList(
     columns.appendChild(column)
   }
   content.appendChild(columns)
+  section.appendChild(buildPaginationDiv(doc, page, isLastPage, articleZimPath, type, idName, dump))
   section.appendChild(content)
+  section.appendChild(buildPaginationDiv(doc, page, isLastPage, articleZimPath, type, idName, dump))
+  return section
+}
+
+export async function buildCategoryTypeItems(
+  type: 'subcats' | 'pages' | 'files',
+  categoryinfo: CategoryInfo,
+  categoryMembers: GroupedCategoryMembers,
+  articleZimPath: string,
+  articleDetail: ArticleDetail,
+  doc: Document,
+  dump: Dump,
+  numericSorting: boolean,
+  moduleDependencies: { styleDependenciesList: string[] },
+  callback: (moduleDependencies: any, zimPath: string) => any,
+  articleId: string,
+  categoryContent: HTMLElement,
+  articleItems: Array<{ articleId: string; zimPath: string; zimTitle?: string; htmlContent: string }>,
+): Promise<void> {
+  if (!categoryinfo[type]) return
+  if (type === 'files' && !categoryinfo.nogallery) {
+    moduleDependencies.styleDependenciesList.push('mediawiki.page.gallery.styles')
+  }
+  let page = 1
+  for (let start = 0; start < categoryinfo[type]; start += MediaWiki.categoriesPageSize) {
+    const end = Math.min(start + MediaWiki.categoriesPageSize, categoryinfo[type])
+    const isLastPage = end >= categoryinfo[type]
+    const section = buildCategoryMemberList(type, categoryMembers[type].slice(start, end), categoryinfo, articleDetail, doc, dump, numericSorting, page, isLastPage, articleZimPath)
+    if (page === 1) {
+      // Append section directly to article itself if on first page so that noJS works fine
+      categoryContent.appendChild(section)
+    }
+
+    if (!(page == 1 && isLastPage)) {
+      // Save section in subdoc so that JS can load it (including first page so we can move back to it)
+      // No need to do it if we have only one page, everything will be directly in the article
+
+      const partialZimPath = `${config.output.dirs.categories_partials}${articleZimPath}_${type}_${page}`
+
+      // Create a copy so we can alter it without altering current article content
+      const partial = doc.createElement('div')
+      partial.innerHTML = section.outerHTML
+
+      // Rewrite URLs in partial
+      await rewriteUrlsOfDoc(partial, partialZimPath, dump)
+
+      articleItems.push({
+        articleId,
+        zimPath: partialZimPath,
+        zimTitle: '',
+        htmlContent: partial.innerHTML,
+      })
+    }
+    page++
+  }
+}
+
+function buildPaginationLink(doc: Document, targetPage: number, text: string, idName: string, partialUrl: string): HTMLAnchorElement {
+  const link = doc.createElement('a')
+  const url = `${partialUrl}_${targetPage}`
+  link.setAttribute('onclick', `displayCategoryPartial('${idName}', '${url}')`)
+  link.setAttribute('tabindex', '0')
+  link.setAttribute('onkeydown', `if(event.key==='Enter') displayCategoryPartial('${idName}', '${url}')`)
+  link.textContent = text
+  link.classList.add('mwo-norewrite')
+  return link
+}
+
+function buildPaginationDiv(doc: Document, page: number, isLastPage: boolean, articleZimPath: string, type: string, idName: string, dump: Dump): HTMLElement {
+  const section = doc.createElement('div')
+  section.classList.add('mwo-cat-pagination')
+
+  const spanNoJS = doc.createElement('span')
+  spanNoJS.classList.add('mwo-no-js')
+  spanNoJS.textContent = dump.t('categoryNoPagination')
+  section.appendChild(spanNoJS)
+
+  const slashesInUrl = articleZimPath.split('/').length - 1
+  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
+  const partialUrl = `${upStr}${config.output.dirs.categories_partials}${articleZimPath}_${type}`
+
+  const spanWithJS = doc.createElement('span')
+  spanWithJS.classList.add('mwo-js')
+  if (!(page == 1 && isLastPage)) {
+    const fragment = doc.createDocumentFragment()
+    fragment.appendChild(doc.createTextNode('('))
+    fragment.appendChild(page == 1 ? doc.createTextNode(dump.t('categoryPreviousPage')) : buildPaginationLink(doc, page - 1, dump.t('categoryPreviousPage'), idName, partialUrl))
+    fragment.appendChild(doc.createTextNode(') ('))
+    fragment.appendChild(isLastPage ? doc.createTextNode(dump.t('categoryNextPage')) : buildPaginationLink(doc, page + 1, dump.t('categoryNextPage'), idName, partialUrl))
+    fragment.appendChild(doc.createTextNode(')'))
+    spanWithJS.appendChild(fragment)
+  }
+  section.appendChild(spanWithJS)
   return section
 }
