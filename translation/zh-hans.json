@@ -4,28 +4,63 @@
 			"GuoPC",
 			"IceButBin",
 			"Prmsh",
-			"TFX202X"
+			"TFX202X",
+			"沈澄心"
 		]
 	},
-	"DISCLAIMER": "本文由{{creator}}发布。除非另有说明，文本内容遵循{{license}}协议。媒体文件可能适用附加条款。",
-	"LAST_EDITED_ON": "最后编辑于：{{date}}",
+	"categoryHeaderNumerals": "0-9",
+	"categoryFileCount": {
+		"one": "此分类仅包含以下文件。",
+		"other": "此分类中存在以下 $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) 个文件，总共有 {{count}} 个文件。"
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "file is",
+		"other": "{{count}} 个文件"
+	},
+	"categoryMediaHeader": "分类“{{pageName}}”中的媒体",
+	"categoryPageCount": {
+		"one": "此分类仅包含以下页面。",
+		"other": "此分类中的以下 $t(categoryCurrentPageArticleCount, {\"count\": {{curPageCount}} }) 个页面，共 {{count}} 个页面。"
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "页面",
+		"other": "{{count}} 个页面"
+	},
+	"categoryHeader": "分类“{{pageName}}”中的页面",
+	"categorySubcatCount": {
+		"one": "此分类仅包含以下子分类。",
+		"other": "此分类包含以下 $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) 个子分类，共 {{count}} 个子分类。"
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "子分类",
+		"other": "{{count}} 个子分类"
+	},
+	"categoryPreviousPage": "上一页",
+	"categoryNextPage": "下一页",
+	"categoryNoPagination": "未启用Javascript的浏览器无法显示下一个项目",
+	"subcategories": "子分类",
+	"categoryEmpty": "<em>本分类目前不含有任何页面或媒体文件。</em>",
+	"categoryLimited": "<em>此分类的内容已缩减至仅包含 ZIM 内的页面。</em>",
+	"DISCLAIMER": "本文由 {{creator}} 发布。除非另有说明，文本内容遵循 {{license}} 协议。媒体文件可能适用附加条款。",
+	"LAST_EDITED_ON": "最后编辑于 {{date}}",
 	"LICENSE_UNKNOWN": "未知的许可证",
 	"DOWNLOAD_ERRORS_HEADING": "哎呀！找不到条目。",
 	"DOWNLOAD_ERRORS_MESSAGE": "所请求的条目“{{pageTitle}}”在此 ZIM 中不可用，无法从 {{server}} 检索。",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "此条目在待检索条目的列表编译之后、获取此条目以构建您浏览的 ZIM 之前被删除。",
-	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "在{{server}}服务器上访问此条目受到限制。其所需要的特殊权限在ZIM抓取过程中无法获得。",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "在 {{server}} 服务器上对此条目的访问受到限制。其所需要的特殊权限在 ZIM 抓取过程中无法获得。",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "由于 {{server}} 服务器上的分类锁定，对本文的访问受到限制。在 ZIM 抓取过程中，所需的分类权限不可用。",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "当您正在浏览的ZIM文件被创建时，{{server}}服务器未能及时提供此文章HTML的详细信息。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "在构建您浏览的 ZIM 时，{{server}} 服务器的 ActionParse API 在处理此条目时超时，并返回 HTTP 504 错误。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "在构建您浏览的 ZIM 时，{{server}} 服务器的 ActionParse API 在提供此关于此条目 HTML 的详细信息时引发 HTTP 503 错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "当您正在浏览的 ZIM 文件构建时，{{server}} 服务器的 ActionParse API 在处理此条目时超时，并返回了 HTTP 504 错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "当您正在浏览的 ZIM 文件构建时，{{server}} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发了 HTTP 503 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "在构建您浏览的 ZIM 时，{{server}} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时，引发意外的修订版本 ID 不合法的错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "在构建您浏览的 ZIM 时，{{server}} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发无法访问的异常错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "当您正在浏览的ZIM文件构建时，{{server}}服务器的ActionParse API在提供此文章HTML详情时触发了不变异常错误。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "当您浏览的ZIM文件被构建时，{{server}}服务器的ActionParse API在提供此文章HTML详细信息时引发了与Parsoid资源限制超出相关的错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "当您正在浏览的 ZIM 文件构建时，{{server}} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发了与 Parsoid 资源限制超出相关的错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "在构建您浏览的 ZIM 时，{{server}} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发内部 API 错误。",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "当您正在浏览的ZIM文件被构建时，{{server}}服务器的ActionParse API在提供此文章HTML的详细信息时引发了内部API类型错误。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "当您正在浏览的ZIM文件构建时，{{server}}服务器的ActionParse API在提供有关此文章HTML的详细信息时引发了一个参数异常错误。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "在构建您浏览的 ZIM 时，{{server}} 服务器的 ActionParse API 未能提供关于此条目 HTML 的详细信息，因为此条目过长。需要在 {{server}} 服务器上将此条目拆分为多个相对短的条目。",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "当您正在浏览的ZIM文件被构建时，{{server}}服务器的ActionParse API未能返回关于此文章的HTML详细内容，返回了一个空响应。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "当您正在浏览的 ZIM 文件构建时，{{server}} 服务器的 ActionParse API 在提供关于此条目 HTML 的详细信息时引发了参数异常错误。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "当您正在浏览的 ZIM 文件构建时，{{server}} 服务器的 ActionParse API 未能提供关于此条目 HTML 的详细信息，因为此条目过长。需要在 {{server}} 服务器上将此条目拆分为多个相对短的条目。",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "当您正在浏览的 ZIM 文件构建时，{{server}} 服务器的 ActionParse API 未能返回关于此条目 HTML 的详细信息，返回了空响应。",
 	"DOWNLOAD_ERRORS_LINE2": "缺失的条目已被您当前看到的占位符页面所取代。",
 	"DOWNLOAD_ERRORS_LINE3": "希望 {{server}} 服务器上的问题能够得到解决，以及希望下一个版本的 ZIM 能够包含此条目。"
 }

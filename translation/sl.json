@@ -4,6 +4,15 @@
 			"Eleassar"
 		]
 	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": "{{PLURAL:${totalCount}|Ta kategorija vsebuje samo naslednjo datoteko.|V tej kategoriji {{PLURAL:${curPageCount}|je naslednja datoteka|sta ${curPageCount} naslednji datoteki|so ${curPageCount} naslednje datoteke|je ${curPageCount} naslednjih datotek}} od skupno ${totalCount}.}}",
+	"categoryMediaHeader": "Mediji v kategoriji »${pageName}«",
+	"categoryPageCount": "{{PLURAL:${totalCount}|Ta kategorija vsebuje samo naslednjo stran.|V tej kategoriji {{PLURAL:${curPageCount}|je stran|sta ${curPageCount} strani|so ${curPageCount} strani|je ${curPageCount} strani}} od skupno ${totalCount}.}}",
+	"categoryHeader": "Strani v kategoriji »${pageName}«",
+	"categorySubcatCount": "{{PLURAL:${totalCount}|Ta kategorija ima samo naslednjo podkategorijo.|Ta kategorija ima {{PLURAL:${curPageCount}|naslednjo podkategorijo|naslednji ${curPageCount} podkategoriji|naslednje ${curPageCount} podkategorije|naslednjih ${curPageCount} podkategorij}} od skupno ${totalCount}.}}",
+	"subcategories": "Podkategorije",
+	"categoryEmpty": "<em>Ta kategorija trenutno ne vsebuje strani ali predstavnosti.</em>",
+	"categoryLimited": "<em>Ta vsebina te kategorije je bila zmanjšana tako, da vključuje samo strani znotraj ZIM-a.</em>",
 	"DISCLAIMER": "Ta članek je izdal {{creator}}. Besedilo je na voljo pod {{license}}, razen če je navedeno drugače. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
 	"LAST_EDITED_ON": "Zadnja sprememba {{date}}.",
 	"LICENSE_UNKNOWN": "neznana licenca",

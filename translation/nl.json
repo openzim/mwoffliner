@@ -9,13 +9,13 @@
 	"categoryHeaderNumerals": "0–9",
 	"categoryFileCount": {
 		"one": "Deze categorie bevat alleen het volgende bestand.",
-		"other": "$t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) onderdeel van deze categorie, van totaal {{count}}."
+		"other": "De volgende $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) in deze categorie, van de {{count}} in totaal."
 	},
 	"categoryCurrentPageFileCount": {
 		"one": "Het volgende bestand is",
 		"other": "De volgende {{count}} bestanden zijn"
 	},
-	"categoryMediaHeader": "Media in categorie \"{{pageName}}\"",
+	"categoryMediaHeader": "Media in categorie “{{pageName}}”",
 	"categoryPageCount": {
 		"one": "Deze categorie bevat alleen de volgende pagina.",
 		"other": "$t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) onderdeel van deze categorie, van totaal {{count}}."
@@ -33,20 +33,23 @@
 		"one": "subcategorie",
 		"other": "{{count}} subcategorieën"
 	},
+	"categoryPreviousPage": "vorige pagina",
+	"categoryNextPage": "volgende pagina",
+	"categoryNoPagination": "De volgende vermeldingen zijn niet zichtbaar in browsers zonder JavaScript",
 	"subcategories": "Ondercategorieën",
 	"categoryEmpty": "<em>Deze categorie bevat geen pagina's of media.</em>",
 	"categoryLimited": "<em>De inhoud van deze categorie is beperkt tot alleen pagina's binnen het ZIM-bestand.</em>",
-	"DISCLAIMER": "Dit artikel is uitgegeven door {{creator}}. De tekst is beschikbaar onder {{license}}, tenzij anders vermeld. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
+	"DISCLAIMER": "Deze pagina is uitgegeven door {{creator}}. De tekst is beschikbaar onder {{license}}, tenzij anders vermeld. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
 	"LAST_EDITED_ON": "Laatst bewerkt op {{date}}",
 	"LICENSE_UNKNOWN": "een onbekende licentie",
-	"DOWNLOAD_ERRORS_HEADING": "Oeps. Artikel niet gevonden.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Het gevraagde artikel '{{pageTitle}}' is niet beschikbaar in deze ZIM. Het was niet mogelijk om het op te halen van {{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Dit artikel is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
-	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "De toegang tot dit artikel is op de server {{server}} beperkt. Er zijn speciale machtigingen vereist die niet beschikbaar zijn tijdens het scrapen van ZIM.",
-	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "De toegang tot deze pagina is beperkt door een categoriegebaseerde vergrendeling op de server {{server}}. De vereiste categorierechten zijn niet beschikbaar tijdens het ZIM-scrapingproces.",
-	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server {{server}} niet op tijd details verstrekken over de HTML-code van dit artikel.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, is er een time-out opgetreden in de ActionParse-API van de server {{server}} tijdens het verwerken van dit artikel. Er is een HTTP 504-fout geretourneerd.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server {{server}} een HTTP 503-fout terwijl er details werden gegeven over de HTML-code van dit artikel.",
+	"DOWNLOAD_ERRORS_HEADING": "Oeps. Pagina niet gevonden.",
+	"DOWNLOAD_ERRORS_MESSAGE": "De gevraagde pagina '{{pageTitle}}' is niet beschikbaar in deze ZIM. Het was niet mogelijk om deze op te halen van {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Deze pagina is verwijderd nadat we de lijst met op te halen artikelen hadden samengesteld, maar voordat we deze ophaalden om de ZIM op te bouwen die u nu bekijkt.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "De toegang tot deze pagina is op de server {{server}} beperkt. Er zijn speciale machtigingen voor nodig die tijdens het ophalen van ZIM-gegevens niet beschikbaar zijn.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "De toegang tot deze pagina is beperkt door een categoriegebaseerde vergrendeling op de server {{server}}. De vereiste categorierechten zijn tijdens het ophalen van ZIM-gegevens niet beschikbaar.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, kon de server {{server}} niet op tijd details verstrekken over de HTML-code van deze pagina.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Toen de ZIM die u bekijkt werd opgebouwd, is er een time-out opgetreden in de ActionParse-API van de server {{server}} tijdens het verwerken van deze pagina. Er is een HTTP-fout 504 geretourneerd.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server {{server}} een HTTP-fout 503 terwijl er details werden gegeven over de HTML-code van deze pagina.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server {{server}}, bij het geven van details over de HTML-code van dit artikel, een onverwachte fout met betrekking tot een onjuiste versie-ID.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server {{server}}, bij het geven van details over de HTML-code van dit artikel, een foutmelding die aangaf dat het artikel onbereikbaar was.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Toen de ZIM die u bekijkt werd opgebouwd, genereerde de ActionParse-API van de server {{server}}, bij het geven van details over de HTML-code van dit artikel, een HTTP 503-fout.",

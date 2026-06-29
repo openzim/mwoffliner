@@ -2,10 +2,22 @@
 	"@metadata": {
 		"authors": [
 			"Pyscowicz",
-			"Samoasambia"
+			"Samoasambia",
+			"Wikipeedikko"
 		]
 	},
+	"categoryCurrentPageFileCount": {
+		"one": "tiedosto on",
+		"other": "{{count}} tiedostoa on"
+	},
+	"categoryMediaHeader": "Mediatiedostot luokassa {{pageName}}",
+	"categoryCurrentPagePageCount": {
+		"one": "sivu on",
+		"other": "{{count}} sivua on"
+	},
+	"categoryHeader": "Sivut luokassa {{pageName}}",
 	"LAST_EDITED_ON": "Viimeksi muokattu {{date}}",
 	"LICENSE_UNKNOWN": "tuntematon lisenssi",
-	"DOWNLOAD_ERRORS_HEADING": "Hupsista. Artikkelia ei löytynyt."
+	"DOWNLOAD_ERRORS_HEADING": "Hupsista. Artikkelia ei löytynyt.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Tämän artikkelin käyttöoikeudet on rajattu palvelimeen {{server}}. Se edellyttää erityiskäyttöoikeuksia, jotka eivät ole saatavilla ZIM-haravointiprosessin aikana."
 }

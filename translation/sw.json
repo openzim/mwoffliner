@@ -1,9 +1,48 @@
 {
 	"@metadata": {
 		"authors": [
+			"Fredrick Kafuka",
 			"Peggy"
 		]
 	},
-	"DISCLAIMER": "Makala haya yametolewa kutoka {{creator}}. Maandishi yamepewa leseni chini ya {{license}}. Masharti ya ziada yanaweza kutumika kwa faili za midia.",
-	"LAST_EDITED_ON": "Ilihaririwa mwisho mnamo {{date}}"
+	"categoryFileCount": {
+		"one": "Kikundi hiki ina faili ifuatayo pekee.",
+		"other": "$t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) ifuatayo katika Kikundi hiki, kati ya jumla ya {{count}}."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "faili ni",
+		"other": "{{count}} faili ni"
+	},
+	"categoryMediaHeader": "Vyombo vya habari katika kikundi\"{{pageName}}\"",
+	"categoryPageCount": {
+		"one": "Kikundi hiki inakurasa pekee ifuatayo. ",
+		"other": "$t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) ifuatayo katika Kikundi hiki, kati ya jumla ya {{count}}."
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "ukurasa ni",
+		"other": "{{count}} kurasa ni"
+	},
+	"categoryHeader": "Kurasa katika kategoria \"{{pageName}}\"",
+	"categoryCurrentPageSubcatCount": {
+		"one": "kikundi kidogo",
+		"other": "{{count}}kikundi kidogo"
+	},
+	"DISCLAIMER": "Makala haya yametolewa kutoka {{creator}}. Maandishi yapo chini ya {{license}}. Masharti ya ziada yanaweza kutumika kwa faili za midia.",
+	"LAST_EDITED_ON": "Mara ya mwisho kuhaririwa mnamo {{date}}",
+	"DOWNLOAD_ERRORS_MESSAGE": "Makala iliyoombwa '{{articleTitle}}' haipatikani ndani ya ZIM hii, haikuwezekana kuirejesha kutoka kwa {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Ufikiaji wa makala haya umezuiwa kwenye seva ya {{server}}. Inahitaji ruhusa maalum ambazo hazipatikani wakati wa mchakato wa kukwangua ZIM.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "Ufikiaji wa makala haya umezuiwa na amri ya kutotoka nje kulingana na kategoria kwenye seva ya {{server}}. Ruhusa zinazohitajika za kategoria hazipatikani wakati wa mchakato wa kukwangua ZIM.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} ilishindwa kutoa maelezo kuhusu makala haya HTML kwa wakati unaofaa",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Wakati faili la ZIM lilipotengenezwa, seva ya {{server}} ilishindwa kukamilisha uchakataji wa makala hii ndani ya muda ulioruhusiwa, hivyo ikarudisha hitilafu ya HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} iliibua hitilafu ya ndani ya API wakati wa kutoa maelezo kuhusu makala haya ya HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Wakati faili la ZIM unalovinjari lilipoundwa, API ya ActionParse ya seva ya {{server}} ilitoa hitilafu isiyotarajiwa ya bad revision ID ilipokuwa ikitoa maelezo ya HTML ya makala hii.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} iliibua hitilafu isiyoweza kufikiwa ya ubaguzi wakati wa kutoa maelezo kuhusu HTML ya makala haya.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} iliibua hitilafu isiyoweza kufikiwa ya ubaguzi wakati wa kutoa maelezo kuhusu HTML ya makala haya.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} iliibua hitilafu isiyoweza kufikiwa ya ubaguzi wakati wa kutoa maelezo kuhusu HTML ya makala haya.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} iliibua hitilafu ya ndani ya API wakati wa kutoa maelezo kuhusu makala haya ya HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} iliibua hitilafu ya ndani ya API wakati wa kutoa maelezo kuhusu makala haya ya HTML.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Wakati faili la ZIM unalovinjari lilipoundwa, API ya ActionParse ya seva ya {{server}} ilikumbana na hitilafu ya ubaguzi wa hoja wakati wa kutoa maelezo ya HTML ya makala hii.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Wakati ZIM unayovinjari ilipoundwa, API ya ActionParse kwenye seva ya {{server}} ilishindwa kutoa maelezo ya HTML ya makala hii kwa sababu makala hii ni kubwa kupita kiasi. Huenda ikahitajika kuigawa makala hii katika makala ndogo ndogo kadhaa kwenye seva ya {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Wakati ZIM unayovinjari ilipojengwa, API ya ActionParse ya seva ya {{server}} ilishindwa kutoa maelezo kuhusu makala haya HTML ikirudisha jibu tupu.",
+	"DOWNLOAD_ERRORS_LINE3": "Tutegemee kwamba tatizo litatatuliwa kwenye seva ya {{server}} na toleo letu lijalo la ZIM hii litakuwa na makala haya."
 }
