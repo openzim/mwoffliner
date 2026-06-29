@@ -42,6 +42,7 @@ Unreleased:
 * FIX: Include page redirects in content namespaces or current article namespace (@benoit74 #2731)
 * FIX: Do not call "online" URL of custom main page (@benoit74 #2783)
 * CHANGED: *** Breaking *** Drop --filenamePrefix and add --customZimName and --customZimFilename with support for placeholders to better control ZIM Name and Filename (@anuragagrawal17 @benoit74 #2710)
+* CHANGED: Reintroduce support of --customFlavour option (beware API has changed due to #2380) (@benoit74 #2707)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
