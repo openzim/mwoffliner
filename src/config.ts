@@ -101,7 +101,6 @@ const config = {
     // Output paths for storing stuff
     dirs: {
       mediawiki: '_mw_', // mw related js and css resources
-      webp: '_webp_', // webp polyfills
       assets: '_assets_', // images, videos and other assets
       res: '_res_', // additional resources from mwoffliner
       categories_partials: '_categories_partials_', // HTML partials for category pagination
@@ -109,11 +108,6 @@ const config = {
 
     // Output templates (TODO: Needs more docs)
     templates: {
-      /* In these files, the following replacements will occur:
-       * __PAGE_JS_LIST__  ==> list of script tags linking to all the js modules dependencies
-       * __PAGE_CSS_LIST__ ==> list of link tags linking to all the css modules dependencies
-       * __CSS_LINKS__        ==> list of link tags for config.output.cssResources
-       */
       pageVectorLegacy: './templates/pageVectorLegacy.html',
       pageVector2022: './templates/pageVector2022.html',
       pageFallback: './templates/pageFallback.html',

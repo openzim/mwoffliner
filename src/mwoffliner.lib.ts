@@ -38,7 +38,6 @@ import {
   mkdirPromise,
   sanitizeString,
   saveStaticFiles,
-  addWebpJsScripts,
   extractPageList,
   getTmpDirectory,
   validateMetadata,
@@ -451,11 +450,6 @@ async function execute(argv: any) {
     })
 
     await saveFavicon(zimCreator, metaDataRequiredKeys['Illustration_48x48@1'])
-
-    if (Downloader.webp) {
-      logger.info('Adding webp polyfilling JS scripts')
-      await addWebpJsScripts(zimCreator)
-    }
 
     await getThumbnailsData()
 

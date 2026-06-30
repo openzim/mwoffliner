@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'url'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import FileManager from './FileManager.js'
@@ -6,14 +5,9 @@ import { getFullUrl, jsPath, cssPath, getRelativeFilePath, getMediaBase } from '
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
-import fs from 'fs'
 import { RULE_TO_REDIRECT } from './const.js'
-import * as path from 'path'
 import urlHelper from './url.helper.js'
 import { zimCreatorMutex } from '../mutex.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 export async function processStylesheetContent(cssUrl: string, linkMedia: string, body: string, pagePath?: ZimPath, isJs?: boolean) {
   // pagePath is supposed to be passed only when we rewrite inline CSS for a given page and we hence have
@@ -316,20 +310,6 @@ export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: stri
   const zimPath = cssPath(filename, config.output.dirs.res)
   await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/css', null, { FRONT_ARTICLE: 0 }, processedCss)))
   logger.info(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
-}
-
-// URLs should be kept the same as Kiwix JS relies on it.
-export async function addWebpJsScripts(zimCreator: Creator) {
-  await Promise.all(
-    [
-      { name: 'webpHeroPolyfill', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/polyfills.js') },
-      { name: 'webpHeroBundle', path: path.join(__dirname, '../../node_modules/webp-hero/dist-cjs/webp-hero.bundle.js') },
-      { name: 'webpHandler', path: path.join(__dirname, '../../res/webpHandler.js') },
-    ].map(async ({ name, path: scriptPath }) => {
-      const item = new StringItem(`${config.output.dirs.webp}/${jsPath(name)}`, 'text/javascript', null, { FRONT_ARTICLE: 0 }, fs.readFileSync(scriptPath, 'utf8').toString())
-      await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
-    }),
-  )
 }
 
 export interface ResourceLoaderModule extends Array<any> {

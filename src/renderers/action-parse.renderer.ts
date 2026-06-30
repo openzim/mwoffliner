@@ -54,10 +54,6 @@ export class ActionParseRenderer extends Renderer {
 
     const pageLangDir = `lang="${MediaWiki.metaData?.langMw || 'en'}" dir="${MediaWiki.metaData?.textDir || 'ltr'}"`
     jsConfigVars.zimRelativeFilePath = getRelativeFilePath(pagePath, '')
-    const pageJsScripts: string[] = []
-    if (Downloader.webp) {
-      pageJsScripts.push(...['webpHandler'].map((oneJsDep: string) => genHeaderScript(config, oneJsDep, pagePath, config.output.dirs.webp)))
-    }
     const pageJsStartup = Downloader.trustedJs ? genHeaderScript(config, 'startup', pagePath, config.output.dirs.mediawiki, 'async') : ''
     const pageCssState = { 'user.options': 'loading' }
     for (const oneCssDep of styleDependenciesList) {
@@ -98,7 +94,6 @@ export class ActionParseRenderer extends Renderer {
     const htmlTemplateString = this.#htmlTemplateCode()
       .replace(/__PAGE_LANG_DIR__/g, pageLangDir)
       .replace('__PAGE_CANONICAL_LINK__', genCanonicalLink(config, MediaWiki.webUrl.href, pagePath))
-      .replace('__PAGE_JS_LIST__', pageJsScripts.join('\n'))
       .replace('__PAGE_JAVASCRIPT__', javaScriptTemplateString)
       .replace('__PAGE_CSS_BEFORE_META__', pageCssBeforeMeta)
       .replace('__PAGE_JS_STARTUP__', pageJsStartup)
