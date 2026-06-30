@@ -145,7 +145,6 @@ export class Dump {
   }
 
   private formatTemplate(template: string, placeholders: KVS<string>, optionName: string) {
-    logger.warn(template)
     const formatted = template.replace(/\{([^{}]+)\}/g, (match, key) => {
       if (typeof placeholders[key] !== 'string') {
         const validPlaceholders = Object.keys(placeholders).sort().join(', ')
