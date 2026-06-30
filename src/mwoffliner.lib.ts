@@ -158,7 +158,7 @@ async function execute(argv: any) {
 
   /* Instantiate custom flavour module */
   logger.debug(`Using custom flavour: ${customFlavour || 'no'}`)
-  const customProcessor = customFlavour ? new (await import(customFlavour))() : null
+  const customProcessor = customFlavour ? new (await import(customFlavour)).default() : null
 
   let s3Obj
   // Check for S3 creds

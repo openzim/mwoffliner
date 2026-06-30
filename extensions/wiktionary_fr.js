@@ -1,4 +1,4 @@
-module.exports = class WiktionaryFR {
+export default class WiktionaryFR {
   // implements CustomProcessor
   async shouldKeepPage(pageTitle, doc) {
     const frenchTitle = doc.querySelector(`#fr.sectionlangue`)
