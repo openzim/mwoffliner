@@ -13,6 +13,7 @@
     "rootDir": "./",
     "outDir": "./lib/",
     "resolveJsonModule": true,
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "types": ["node", "jest"],
