@@ -7,7 +7,7 @@
 
 import fs, { readFileSync } from 'fs'
 import pmap from 'p-map'
-import sharp from 'sharp'
+import sharp, { type ResizeOptions } from 'sharp'
 import domino from 'domino'
 import { rimraf } from 'rimraf'
 import { fileURLToPath } from 'url'
@@ -606,7 +606,7 @@ async function execute(argv: any) {
   }
 
   async function getIllustrationMetadata(): Promise<Buffer> {
-    const resizeOptions: sharp.ResizeOptions = { fit: sharp.fit.contain, withoutEnlargement: true, background: { r: 1, g: 1, b: 1, alpha: 0 } }
+    const resizeOptions: ResizeOptions = { fit: sharp.fit.contain, withoutEnlargement: true, background: { r: 1, g: 1, b: 1, alpha: 0 } }
     if (customZimFavicon) {
       const faviconIsRemote = customZimFavicon.includes('http')
       let content
