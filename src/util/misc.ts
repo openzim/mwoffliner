@@ -70,9 +70,9 @@ export function getFullUrl(url: string, baseUrl: URL | string) {
 export function getSizeFromUrl(url: string) {
   let mult
   let width
-  const widthMatch = url.match(/[/-]([0-9]+)px-/)
-  if (widthMatch) {
-    width = Number(widthMatch[1])
+  const widthMatches = [...url.matchAll(/[/-]([0-9]+)px-/g)]
+  if (widthMatches.length) {
+    width = Number(widthMatches[widthMatches.length - 1][1])
   } else {
     const multMatch = url.match(/-([0-9.]+)x\./)
     if (multMatch) {

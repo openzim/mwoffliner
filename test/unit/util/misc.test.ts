@@ -1,4 +1,4 @@
-import { truncateUtf8Bytes, truncateZimEntryTitleWords } from '../../../src/util/misc.js'
+import { getSizeFromUrl, truncateUtf8Bytes, truncateZimEntryTitleWords } from '../../../src/util/misc.js'
 
 describe('miscelenaous utility functions tests', () => {
   const truncateUtf8BytesCases = [
@@ -30,5 +30,28 @@ describe('miscelenaous utility functions tests', () => {
   test.each(truncateZimEntryTitleWordsCases)('truncateZimEntryTitleWords', (...args) => {
     const [value, expected] = args as [string, string | undefined]
     expect(truncateZimEntryTitleWords(value)).toBe(expected || value)
+  })
+
+  const getSizeFromUrlWidthCases = [
+    ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/396px-foo.png/60px-396px-foo.png', 60],
+    ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/foo.jpg/60px-foo.jpg', 60],
+    ['https://upload.wikimedia.org/wikipedia/commons/foo.webp/250px-foo.webp', 250],
+    ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/foo-250px.jpg/60px-foo-250px.jpg', 60],
+  ]
+  test.each(getSizeFromUrlWidthCases)('getSizeFromUrl width', (url, expectedWidth) => {
+    expect(getSizeFromUrl(url as string)).toEqual({ mult: undefined, width: expectedWidth })
+  })
+
+  const getSizeFromUrlMultCases = [
+    ['https://upload.wikimedia.org/wikipedia/commons/foo-2x.png', 2],
+    ['https://upload.wikimedia.org/wikipedia/commons/foo-1.5x.png', 1.5],
+    ['https://upload.wikimedia.org/wikipedia/commons/12x-foo-1.5x.png', 1.5],
+  ]
+  test.each(getSizeFromUrlMultCases)('getSizeFromUrl mult', (url, expectedMult) => {
+    expect(getSizeFromUrl(url as string)).toEqual({ mult: expectedMult, width: undefined })
+  })
+
+  test('getSizeFromUrl returns empty object when neither width nor mult can be detected', () => {
+    expect(getSizeFromUrl('https://upload.wikimedia.org/wikipedia/commons/foo.png')).toEqual({ mult: undefined, width: undefined })
   })
 })
