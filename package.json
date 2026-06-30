@@ -127,5 +127,8 @@
   "allowScripts": {
     "@openzim/libzim@4.4.0": true,
     "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "minimist": "^1.2.8"
   }
 }
