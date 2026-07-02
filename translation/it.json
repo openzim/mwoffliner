@@ -11,11 +11,11 @@
 	"subcategories": "Sottocategorie",
 	"categoryEmpty": "<em>Questa categoria attualmente non contiene alcuna pagina o file multimediale.</em>",
 	"categoryLimited": "<em>Il contenuto di questa categoria è stato ridotto per includere solo le pagine all'interno del ZIM.</em>",
-	"DISCLAIMER": "Questa voce è stata pubblicata da {{creator}}. Il testo è rilasciato in base alla licenza {{license}}, salvo diversa indicazione. Potrebbero essere applicate clausole aggiuntive per i file multimediali.",
+	"DISCLAIMER": "Questa pagina è stata pubblicata da {{creator}}. Il testo è rilasciato in base alla licenza {{license}}, salvo diversa indicazione. Potrebbero essere applicate clausole aggiuntive per i file multimediali.",
 	"LAST_EDITED_ON": "Ultima modifica il {{date}}",
 	"LICENSE_UNKNOWN": "una licenza sconosciuta",
-	"DOWNLOAD_ERRORS_HEADING": "Oops. Voce non trovata.",
-	"DOWNLOAD_ERRORS_MESSAGE": "La voce richiesta '{{pageTitle}}' non è disponibile in questo ZIM. Non è stato possibile recuperarla da {{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "L'accesso a questa voce è limitata da un blocco sul server {{server}} basato su categorie. Le autorizzazioni di categoria richieste non sono disponibili durante il processo di scraping ZIM.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Durante la creazione dello ZIM che stai navigando, l'API ActionParse del server {{server}} ha registrato un timeout durante l'elaborazione di questa voce ed ha restituito un errore HTTP 504."
+	"DOWNLOAD_ERRORS_HEADING": "Oops. Pagina non trovata.",
+	"DOWNLOAD_ERRORS_MESSAGE": "La pagina richiesta '{{pageTitle}}' non è disponibile in questo ZIM, e non è stato possibile recuperarla da {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "L'accesso a questa pagina è limitata da un blocco sul server {{server}} basato su categorie. Le autorizzazioni di categoria richieste non sono disponibili durante il processo di scraping ZIM.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Durante la creazione dello ZIM che stai navigando, l'API ActionParse del server {{server}} ha registrato un timeout durante l'elaborazione di questa pagina ed ha restituito un errore HTTP 504."
 }
