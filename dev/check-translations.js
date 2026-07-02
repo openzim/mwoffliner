@@ -201,12 +201,26 @@ function main() {
   const files = fs.readdirSync(CONFIG.TRANSLATION_DIR).filter((f) => f.endsWith('.json') && f !== CONFIG.SOURCE_LANG && f !== CONFIG.DOC_LANG)
   console.log(`Checking ${files.length} other language files...`)
 
+  // A locale key K.cat is known if K.cat exists in source, or K is a plural
+  // group in source (e.g. K.one/K.other) and `cat` is a valid CLDR plural
+  // category. Locales can use more categories than English (e.g. Slovenian's
+  // "two"/"few") since English only needs "one"/"other".
+  const isLocaleKeyKnown = (k) => {
+    if (sourceKeys.has(k)) return true
+    const dotIdx = k.lastIndexOf('.')
+    if (dotIdx === -1) return false
+    const base = k.slice(0, dotIdx)
+    const cat = k.slice(dotIdx + 1)
+    if (!PLURAL_CATEGORIES.has(cat)) return false
+    return [...PLURAL_CATEGORIES].some((c) => sourceKeys.has(`${base}.${c}`))
+  }
+
   files.forEach((f) => {
     const data = loadJson(path.join(CONFIG.TRANSLATION_DIR, f))
     if (!data) return
 
     const keys = getAllKeys(data)
-    const unknownKeys = [...keys].filter((k) => !sourceKeys.has(k))
+    const unknownKeys = [...keys].filter((k) => !isLocaleKeyKnown(k))
 
     if (unknownKeys.length > 0) {
       error(`${C.Red}[FAIL] ${f}: Contains ${unknownKeys.length} keys not in ${CONFIG.SOURCE_LANG}${C.Reset}`)
