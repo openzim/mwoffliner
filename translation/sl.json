@@ -5,7 +5,10 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount": "{{PLURAL|one=Ta kategorija vsebuje samo naslednjo datoteko.|Naslednje $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }",
+	"categoryFileCount": {
+		"one": "Ta kategorija vsebuje samo naslednjo datoteko.",
+		"other": "Naslednje $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+	},
 	"categoryCurrentPageFileCount": {
 		"one": "datoteka je",
 		"other": "{{count}} datoteke so"
