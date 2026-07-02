@@ -4,6 +4,42 @@
 			"Eleassar"
 		]
 	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": {
+		"one": "Ta kategorija vsebuje samo naslednjo datoteko.",
+		"other": "V tej kategoriji $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) in this category, out of {{count}} total."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "je naslednja datoteka",
+		"two": "sta {{count}} naslednji datoteki",
+		"few": "so {{count}} naslednji datoteki",
+		"other": "je {{count}} naslednji datoteki"
+	},
+	"categoryMediaHeader": "Mediji v kategoriji »${pageName}«",
+	"categoryPageCount": {
+		"one": "Ta kategorija vsebuje samo naslednjo stran.",
+		"other": "V tej kategoriji $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "je stran",
+		"two": "sta {{count}} strani",
+		"few": "so {{count}} strani",
+		"other": "je {{count}} strani"
+	},
+	"categoryHeader": "Strani v kategoriji »${pageName}«",
+	"categorySubcatCount": {
+		"one": "Ta kategorija ima samo naslednjo podkategorijo.",
+		"other": "Ta kategorija ima $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "naslednjo podkategorijo",
+		"two": "naslednji {{count}} podkategoriji",
+		"few": "naslednje {{count}} podkategoriji",
+		"other": "naslednjih {{count}} podkategoriji"
+	},
+	"subcategories": "Podkategorije",
+	"categoryEmpty": "<em>Ta kategorija trenutno ne vsebuje strani ali predstavnosti.</em>",
+	"categoryLimited": "<em>Ta vsebina te kategorije je bila zmanjšana tako, da vključuje samo strani znotraj ZIM-a.</em>",
 	"DISCLAIMER": "Ta članek je izdal {{creator}}. Besedilo je na voljo pod {{license}}, razen če je navedeno drugače. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
 	"LAST_EDITED_ON": "Zadnja sprememba {{date}}.",
 	"LICENSE_UNKNOWN": "neznana licenca",

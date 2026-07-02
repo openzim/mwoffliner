@@ -34,6 +34,9 @@
 		"one": "하위 분류",
 		"other": "하위 분류 {{count}}개"
 	},
+	"categoryPreviousPage": "이전 페이지",
+	"categoryNextPage": "다음 페이지",
+	"categoryNoPagination": "자바스크립트가 설치되지 않은 브라우저에서는 다음 항목이 표시되지 않습니다",
 	"subcategories": "하위 분류",
 	"categoryEmpty": "현재 이 분류에는 문서나 미디어가 하나도 없습니다.",
 	"categoryLimited": "이 분류의 내용은 ZIM 내부에 있는 문서만 포함하도록 축소되었습니다.",
