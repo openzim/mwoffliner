@@ -5,61 +5,55 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount": {
-		"one": "Ta kategorija vsebuje samo naslednjo datoteko.",
-		"other": "V tej kategoriji $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) in this category, out of {{count}} total."
-	},
+	"categoryFileCount": "{{PLURAL|one=Ta kategorija vsebuje samo naslednjo datoteko.|Naslednje $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }",
 	"categoryCurrentPageFileCount": {
-		"one": "je naslednja datoteka",
-		"two": "sta {{count}} naslednji datoteki",
-		"few": "so {{count}} naslednji datoteki",
-		"other": "je {{count}} naslednji datoteki"
+		"one": "datoteka je",
+		"other": "{{count}} datoteke so"
 	},
-	"categoryMediaHeader": "Mediji v kategoriji »${pageName}«",
+	"categoryMediaHeader": "Mediji v kategoriji »{{pageName}}«",
 	"categoryPageCount": {
 		"one": "Ta kategorija vsebuje samo naslednjo stran.",
-		"other": "V tej kategoriji $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+		"other": "Naslednje $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) v tej kategoriji od skupno {{count}}."
 	},
 	"categoryCurrentPagePageCount": {
-		"one": "je stran",
-		"two": "sta {{count}} strani",
-		"few": "so {{count}} strani",
-		"other": "je {{count}} strani"
+		"one": "stran je",
+		"other": "{{count}} strani so"
 	},
-	"categoryHeader": "Strani v kategoriji »${pageName}«",
+	"categoryHeader": "Strani v kategoriji »{{pageName}}«",
 	"categorySubcatCount": {
 		"one": "Ta kategorija ima samo naslednjo podkategorijo.",
-		"other": "Ta kategorija ima $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+		"other": "Ta kategorija ima naslednje $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
 	},
 	"categoryCurrentPageSubcatCount": {
-		"one": "naslednjo podkategorijo",
-		"two": "naslednji {{count}} podkategoriji",
-		"few": "naslednje {{count}} podkategoriji",
-		"other": "naslednjih {{count}} podkategoriji"
+		"one": "podkategorija",
+		"other": "{{count}} podkategorij"
 	},
+	"categoryPreviousPage": "prejšnja stran",
+	"categoryNextPage": "naslednja stran",
+	"categoryNoPagination": "Naslednji predmeti niso vidni v brskalnikih brez Javascripta",
 	"subcategories": "Podkategorije",
 	"categoryEmpty": "<em>Ta kategorija trenutno ne vsebuje strani ali predstavnosti.</em>",
 	"categoryLimited": "<em>Ta vsebina te kategorije je bila zmanjšana tako, da vključuje samo strani znotraj ZIM-a.</em>",
-	"DISCLAIMER": "Ta članek je izdal {{creator}}. Besedilo je na voljo pod {{license}}, razen če je navedeno drugače. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
+	"DISCLAIMER": "To stran je izdal {{creator}}. Besedilo je na voljo pod {{license}}, razen če je navedeno drugače. Za predstavnostne datoteke lahko veljajo dodatni pogoji.",
 	"LAST_EDITED_ON": "Zadnja sprememba {{date}}.",
 	"LICENSE_UNKNOWN": "neznana licenca",
-	"DOWNLOAD_ERRORS_HEADING": "Ups. Članka ni bilo mogoče najti.",
-	"DOWNLOAD_ERRORS_MESSAGE": "Zahtevani članek '{{pageTitle}}' ni na voljo v tem ZIM-u, ni ga bilo mogoče pridobiti iz strežnika {{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Ta članek je bil izbrisan po tem, ko smo sestavili seznam člankov za pridobitev, vendar še preden smo ga pridobili za izdelavo datoteke ZIM, po kateri trenutno brskate.",
-	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Dostop do tega članka je omejen na strežnik {{server}}. Zahteva posebna dovoljenja, ki med postopkom strganja ZIM niso na voljo.",
-	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "Dostop do tega članka je omejen z zaklepanjem na podlagi kategorije v strežniku {{server}}. Zahtevana dovoljenja za kategorije med postopkom strganja ZIM niso na voljo.",
-	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik {{server}} ni pravočasno posredoval podrobnosti o HTML-ju tega članka.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionPArse strežnika {{server}} med obdelavo tega članka presegel časovno omejitev in vrnil napako HTTP 504.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik {{server}} ni pravočasno posredoval podrobnosti o HTML-ju tega članka.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil nepričakovano napako z napačnim ID-jem redakcije.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako izjeme »nedosegljivo«.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako zaradi invariantne izjeme.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako, povezanimi s preseženimi omejitvami virov Parsoida.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil notranjo napako API-ja.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako zaradi notranjo napako tipa API.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju tega članka sprožil napako izjeme argumenta.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Ko se je ZIM, po katerem brskate, sestavljal, API ActionParse strežnika {{server}} ni uspel podati podrobnosti o HTML-ju tega članka, ker je ta članek veliko prevelik. Nekdo bi ga verjetno moral razdeliti v več manjših člankov na strežniku {{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Ko se je ZIM, po katerem brskate, sestavljal, API ActionParse strežnika {{server}} ni uspel podati podrobnosti o HTML-ju tega članka in je vrnil prazen odgovor.",
-	"DOWNLOAD_ERRORS_LINE2": "Manjkajoči članek je bil nadomeščen z nadomestno stranjo, ki jo trenutno vidite.",
-	"DOWNLOAD_ERRORS_LINE3": "Upajmo, da bo težava na strežniku {{server}} rešena in da bo naša naslednja različica tega ZIM-a vsebovala ta članek."
+	"DOWNLOAD_ERRORS_HEADING": "Ups. Strani ni bilo mogoče najti.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Zahtevana stran '{{pageTitle}}' ni na voljo v tem ZIM-u, ni je bilo mogoče pridobiti iz strežnika {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Ta stran je bila izbrisana po tem, ko smo sestavili seznam člankov za pridobitev, vendar še preden smo ga pridobili za izdelavo datoteke ZIM, po kateri trenutno brskate.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Dostop do te strani je omejen na strežnik {{server}}. Zahteva posebna dovoljenja, ki med postopkom strganja ZIM niso na voljo.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "Dostop do te strani je omejen z zaklepanjem na podlagi kategorije v strežniku {{server}}. Zahtevana dovoljenja za kategorije med postopkom strganja ZIM niso na voljo.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik {{server}} ni pravočasno posredoval podrobnosti o HTML-ju te strani.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionPArse strežnika {{server}} med obdelavo te strani presegel časovno omejitev in vrnil napako HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, strežnik {{server}} ni pravočasno posredoval podrobnosti o HTML-ju te strani.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil nepričakovano napako z napačnim ID-jem redakcije.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil napako izjeme »nedosegljivo«.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil napako zaradi invariantne izjeme.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil napako, povezanimi s preseženimi omejitvami virov Parsoida.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil notranjo napako API-ja.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil napako zaradi notranjo napako tipa API.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Ko se je ZIM, po katerem brskate, sestavljal, je API ActionParse strežnika {{server}} pri podajanju podrobnosti o HTML-ju te strani sprožil napako izjeme argumenta.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Ko se je ZIM, po katerem brskate, sestavljal, API ActionParse strežnika {{server}} ni uspel podati podrobnosti o HTML-ju te strani, ker je ta stran veliko prevelika. Nekdo bi jo verjetno moral razdeliti v več manjših strani na strežniku {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Ko se je ZIM, po katerem brskate, sestavljal, API ActionParse strežnika {{server}} ni uspel podati podrobnosti o HTML-ju te strani in je vrnil prazen odgovor.",
+	"DOWNLOAD_ERRORS_LINE2": "Manjkajoča stran je bila nadomeščena z nadomestno stranjo, ki jo trenutno vidite.",
+	"DOWNLOAD_ERRORS_LINE3": "Upajmo, da bo težava na strežniku {{server}} rešena in da bo naša naslednja različica tega ZIM-a vsebovala to stran."
 }

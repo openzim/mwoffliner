@@ -1,0 +1,62 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wizzard"
+		]
+	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": {
+		"one": "Táto kategória obsahuje iba nasledujúci súbor.",
+		"other": "Nasleduje $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) v tejto kategórii, z celkového počtu {{count}}."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "súbor",
+		"other": "{{count}} súbory"
+	},
+	"categoryMediaHeader": "Médiá v kategórii „{{pageName}}“",
+	"categoryPageCount": {
+		"one": "Táto kategória obsahuje iba nasledujúcu stránku.",
+		"other": "Nasleduje $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) v tejto kategórii, z celkového počtu {{count}}."
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "stránka",
+		"other": "{{count}} stránky"
+	},
+	"categoryHeader": "Stránky v kategórii „{{pageName}}“",
+	"categorySubcatCount": {
+		"one": "Táto kategória má iba nasledujúcu podkategóriu.",
+		"other": "Táto kategória má nasledujúce $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }), z celkového počtu {{count}}."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "podkategóriu",
+		"other": "{{count}} podkategórie"
+	},
+	"categoryPreviousPage": "predchádzajúca stránka",
+	"categoryNextPage": "ďalšia stránka",
+	"categoryNoPagination": "Ďalšie položky nie sú viditeľné v prehliadačoch bez JavaScriptu",
+	"subcategories": "Podkategórie",
+	"categoryEmpty": "<em>Táto kategória momentálne neobsahuje žiadne stránky ani médiá.</em>",
+	"categoryLimited": "<em>Obsah tejto kategórie bol zredukovaný tak, aby obsahoval iba stránky v rámci súboru ZIM.</em>",
+	"DISCLAIMER": "Táto stránka pochádza z {{creator}}. Text je dostupný pod licenciou {{license}}, pokiaľ nie je uvedené inak. Na mediálne súbory sa môžu vzťahovať ďalšie podmienky.",
+	"LAST_EDITED_ON": "Naposledy upravené {{date}}",
+	"LICENSE_UNKNOWN": "neznáma licencia",
+	"DOWNLOAD_ERRORS_HEADING": "Ejha. Stránka sa nenašla.",
+	"DOWNLOAD_ERRORS_MESSAGE": "Požadovaná stránka „{{pageTitle}}“ nie je dostupná v tomto súbore ZIM a nebolo možné ju získať zo servera {{server}}.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Táto stránka bola zmazaná po tom, čo sme zostavili zoznam stránok na stiahnutie, ale predtým, než sme ju stiahli na zostavenie súboru ZIM, ktorý práve prehliadate.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Prístup na túto stránku je na serveri {{server}} obmedzený. Vyžaduje osobitné oprávnenia, ktoré nie sú počas procesu sťahovania (scraping) súboru ZIM k dispozícii.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "Prístup na túto stránku je obmedzený uzamknutím na základe kategórie na serveri {{server}}. Požadované oprávnenia ku kategórii nie sú počas procesu sťahovania (scraping) súboru ZIM k dispozícii.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, server {{server}} nedokázal poskytnúť podrobnosti o HTML tejto stránky včas.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} pri spracúvaní tejto stránky prekročilo časový limit a vrátilo chybu HTTP 504.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo chybu HTTP 503 pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo neočakávanú chybu nesprávneho ID revízie pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo výnimku o nedosiahnuteľnosti pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo výnimku invariantu pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo chybu súvisiacu s prekročením limitov zdrojov Parsoid pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo vnútornú chybu API pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo vnútornú typovú chybu API pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} vyvolalo výnimku o chybnom argumente pri poskytovaní podrobností o HTML tejto stránky.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} nedokázalo poskytnúť podrobnosti o HTML tejto stránky, pretože táto stránka je príliš veľká. Niekto by pravdepodobne mal túto stránku na serveri {{server}} rozdeliť na viacero menších stránok.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "Keď sa zostavoval súbor ZIM, ktorý práve prehliadate, API ActionParse servera {{server}} nedokázalo poskytnúť podrobnosti o HTML tejto stránky a vrátilo prázdnu odpoveď.",
+	"DOWNLOAD_ERRORS_LINE2": "Chýbajúca stránka bola nahradená zástupnou stránkou, ktorú práve vidíte.",
+	"DOWNLOAD_ERRORS_LINE3": "Dúfajme, že sa problém na serveri {{server}} vyrieši a naša ďalšia verzia tohto súboru ZIM bude túto stránku obsahovať."
+}
