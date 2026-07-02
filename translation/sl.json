@@ -5,11 +5,38 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
-	"categoryFileCount": "{{PLURAL:${totalCount}|Ta kategorija vsebuje samo naslednjo datoteko.|V tej kategoriji {{PLURAL:${curPageCount}|je naslednja datoteka|sta ${curPageCount} naslednji datoteki|so ${curPageCount} naslednje datoteke|je ${curPageCount} naslednjih datotek}} od skupno ${totalCount}.}}",
+	"categoryFileCount": {
+		"one": "Ta kategorija vsebuje samo naslednjo datoteko.",
+		"other": "V tej kategoriji $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) in this category, out of {{count}} total."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "je naslednja datoteka",
+		"two": "sta {{count}} naslednji datoteki",
+		"few": "so {{count}} naslednji datoteki",
+		"other": "je {{count}} naslednji datoteki"
+	},
 	"categoryMediaHeader": "Mediji v kategoriji »${pageName}«",
-	"categoryPageCount": "{{PLURAL:${totalCount}|Ta kategorija vsebuje samo naslednjo stran.|V tej kategoriji {{PLURAL:${curPageCount}|je stran|sta ${curPageCount} strani|so ${curPageCount} strani|je ${curPageCount} strani}} od skupno ${totalCount}.}}",
+	"categoryPageCount": {
+		"one": "Ta kategorija vsebuje samo naslednjo stran.",
+		"other": "V tej kategoriji $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "je stran",
+		"two": "sta {{count}} strani",
+		"few": "so {{count}} strani",
+		"other": "je {{count}} strani"
+	},
 	"categoryHeader": "Strani v kategoriji »${pageName}«",
-	"categorySubcatCount": "{{PLURAL:${totalCount}|Ta kategorija ima samo naslednjo podkategorijo.|Ta kategorija ima {{PLURAL:${curPageCount}|naslednjo podkategorijo|naslednji ${curPageCount} podkategoriji|naslednje ${curPageCount} podkategorije|naslednjih ${curPageCount} podkategorij}} od skupno ${totalCount}.}}",
+	"categorySubcatCount": {
+		"one": "Ta kategorija ima samo naslednjo podkategorijo.",
+		"other": "Ta kategorija ima $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) od skupno {{count}}."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "naslednjo podkategorijo",
+		"two": "naslednji {{count}} podkategoriji",
+		"few": "naslednje {{count}} podkategoriji",
+		"other": "naslednjih {{count}} podkategoriji"
+	},
 	"subcategories": "Podkategorije",
 	"categoryEmpty": "<em>Ta kategorija trenutno ne vsebuje strani ali predstavnosti.</em>",
 	"categoryLimited": "<em>Ta vsebina te kategorije je bila zmanjšana tako, da vključuje samo strani znotraj ZIM-a.</em>",
