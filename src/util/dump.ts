@@ -315,6 +315,14 @@ export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: stri
   logger.info(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
 }
 
+// Download a custom JS file and save it into the ZIM.
+export async function downloadAndSaveCustomJs(zimCreator: Creator, jsUrl: string, filename: string): Promise<void> {
+  logger.info(`Downloading custom JS [${jsUrl}]`)
+  const { content: jsBody } = await Downloader.downloadContent(jsUrl, 'js')
+  const zimPath = jsPath(filename, config.output.dirs.res)
+  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/javascript', null, { FRONT_ARTICLE: 0 }, jsBody.toString())))
+  logger.info(`Saved custom JS [${jsUrl}] at ${zimPath}`)
+}
 export interface ResourceLoaderModule extends Array<any> {
   0: string
   1: string
