@@ -447,7 +447,7 @@ class Downloader {
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
       Downloader.handleMWWarningsAndErrors(resp)
-      const pages = Object.values(resp.query?.pages)
+      const pages = Object.values(resp.query?.pages || {})
       pages.forEach((page) => filterRedirects(page))
 
       /* deepmerge because a single page data might be split over multiple API results pages */
