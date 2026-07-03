@@ -235,6 +235,74 @@ const parameters = {
 mwoffliner.execute(parameters) // returns a Promise
 ```
 
+## MathJax support
+
+> [!WARNING]
+> MathJax support is UNSTABLE: the `--mathJax*` CLI parameters described below may change, even in a minor release. Setting them up also requires wiki-specific technical preparation, so this is aimed at developers rather than end users.
+
+MWoffliner can bundle [MathJax](https://www.mathjax.org) into the ZIM so that math formulas keep rendering offline, on wikis that rely on it (e.g. via the `SimpleMathJax` extension).
+
+MathJax 2, 3 and 4 are very different beasts: each ships its own set of files and, more importantly, each requires its own incompatible configuration format (which defines things like math delimiters and custom macros). Because of this, MWoffliner cannot auto-detect and configure MathJax for you — you have to supply a matching MathJax build and configuration yourself, via three CLI parameters:
+
+- `--mathJaxSource`: local path or HTTP(S) URL to a ZIP archive of a compiled MathJax distribution. Its content is extracted and pushed to the ZIM (under an internal `_mathjax_/` namespace).
+- `--mathJaxConfig`: local path or HTTP(S) URL to an HTML file containing a single `<script>` tag with the MathJax configuration (this must be copied from the wiki, see below). Its content is injected inline, before the MathJax library, on every page that needs it.
+- `--mathJaxEntryPoint`: path, relative to the root of the extracted archive, to the MathJax script to load (e.g. `es5/tex-chtml.js` for MathJax 3). Defaults to `MathJax.js` (MathJax 2 entry point).
+
+`--mathJaxConfig` and `--mathJaxEntryPoint` both require `--mathJaxSource` to also be set. A page is considered to "need" MathJax, and only then gets the config/entry-point `<script>` tags injected, when one of the JS modules MediaWiki reports for that page matches `mathjax` (case-insensitive); the extracted library files themselves are always pushed to the ZIM as soon as `--mathJaxSource` is set, regardless of which pages use them.
+
+### Preparing the parameters for a given wiki
+
+1. **Find the live MathJax version and configuration.** Open a wiki page that renders math formulas, open your browser's developer console and type `MathJax.version` to get the exact version. Then find the configuration, typically a `<script>` block setting `window.MathJax = {...}` (MathJax 3/4) or `MathJax.Hub.Config({...})` (MathJax 2) in the page source — copy it as-is into a local file, e.g. `mathjax-config.html`.
+2. **Find the exact entry point.** In your browser's network tab, find the request loading the MathJax library itself (typically named `MathJax.js` for MathJax 2, or a `tex-chtml.js`/`tex-svg.js`/... for MathJax 3/4) and note its full path, including any query string.
+3. **Build a matching MathJax ZIP**, the exact steps depend on the major version in use (see below).
+4. **Run the scraper** with the three parameters, e.g.:
+   ```sh
+   mwoffliner --mwUrl=https://your.wiki --adminEmail=foo@bar.net \
+     --mathJaxSource=./mathjax-source.zip \
+     --mathJaxConfig=./mathjax-config.html \
+     --mathJaxEntryPoint=es5/tex-chtml.js
+   ```
+
+### Building the ZIP — MathJax 2
+
+MathJax 2 is not published to npm as an installable package; it is only distributed as source on GitHub. Download a release archive directly from the [MathJax releases page](https://github.com/mathjax/MathJax/releases) (e.g. `2.7.9`) and use it as-is as `--mathJaxSource`, no re-zipping needed:
+
+```sh
+curl -Lo mathjax-source.zip https://github.com/mathjax/MathJax/archive/refs/tags/2.7.9.zip
+```
+
+The archive has a single top-level folder (e.g. `MathJax-2.7.9/`); mwoffliner strips it automatically when extracting.
+
+Unlike MathJax 3/4, MathJax 2 loads its extensions/output-processor via a `config=` query parameter on the `MathJax.js` request itself (e.g. `MathJax.js?config=TeX-MML-AM_CHTML`) rather than solely through the injected configuration script — this is the URL you captured in step 2 above. Set `--mathJaxEntryPoint` to that same path and query string, e.g.:
+
+```sh
+--mathJaxEntryPoint="MathJax.js?config=TeX-MML-AM_CHTML"
+```
+
+The referenced combined-configuration file (here `config/TeX-MML-AM_CHTML.js`) is part of the standard MathJax 2 distribution, so it is already included in the ZIP from the release archive.
+
+### Building the ZIP — MathJax 3
+
+MathJax 3 is published to npm as `mathjax-full`, which bundles both the compiled runtime (under `es5/`) and the TypeScript sources (which mwoffliner automatically ignores when an `es5/` folder is present):
+
+```sh
+npm install mathjax-full@3.2.2
+cd node_modules/mathjax-full && zip -r ../../mathjax-source.zip . && cd ../..
+```
+
+Entry point example: `--mathJaxEntryPoint=es5/tex-chtml.js`.
+
+### Building the ZIP — MathJax 4
+
+MathJax 4 moved to scoped npm packages. Use the plain `mathjax` package (deployment-ready bundle), **not** `@mathjax/src` (the TypeScript source package meant for building MathJax itself, which requires separately installing font packages):
+
+```sh
+npm install mathjax@4
+cd node_modules/mathjax && zip -r ../../mathjax-source.zip . && cd ../..
+```
+
+Unlike MathJax 3, entry-point files live at the root of the package (no `es5/` folder), e.g. `--mathJaxEntryPoint=tex-chtml.js`.
+
 ## Background
 
 Complementary information about MWoffliner:

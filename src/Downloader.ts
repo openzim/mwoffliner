@@ -129,6 +129,10 @@ class Downloader {
   private _streamRequestOptions: AxiosRequestConfig
   public trustedJs: string[] = []
   public customCssUrls: string[] = []
+  public mathJaxSource: string | null = null
+  public mathJaxConfig: string | null = null
+  public mathJaxConfigScript: string | null = null
+  public mathJaxEntryPoint: string = 'MathJax.js'
 
   private uaString: string
   private backoffOptions: BackoffOptions

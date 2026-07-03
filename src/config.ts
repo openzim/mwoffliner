@@ -103,6 +103,7 @@ const config = {
       mediawiki: '_mw_', // mw related js and css resources
       assets: '_assets_', // images, videos and other assets
       res: '_res_', // additional resources from mwoffliner
+      mathjax: '_mathjax_', // MathJax library files
       categories_partials: '_categories_partials_', // HTML partials for category pagination
     },
 
