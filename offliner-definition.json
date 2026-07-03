@@ -305,12 +305,10 @@
       "allowRemoteUrl": true
     },
     "mathJaxSource": {
-      "type": "blob",
-      "kind": "zip",
+      "type": "url",
       "required": false,
       "title": "MathJax Source",
-      "description": "MathJax ZIP archive to extract and include in the ZIM. Pages needing MathJax are detected automatically from their JS module list.",
-      "allowRemoteUrl": true
+      "description": "MathJax ZIP archive to extract and include in the ZIM. Pages needing MathJax are detected automatically from their JS module list."
     },
     "mathJaxConfig": {
       "type": "blob",
