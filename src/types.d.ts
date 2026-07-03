@@ -11,7 +11,7 @@ declare module 'mkdirp'
 
 type DominoElement = any
 
-type DownloadKind = 'image' | 'json' | 'media' | 'video' | 'subtitle' | 'module' | 'css' | 'data'
+type DownloadKind = 'image' | 'json' | 'media' | 'video' | 'subtitle' | 'module' | 'css' | 'js' | 'data'
 
 type Callback = (err?: any, data?: any, extra?: any) => void
 interface KVS<T> {
@@ -306,5 +306,4 @@ interface SiteInfoArgv {
   mwModulePath?: string
   forceSkin?: string
   langVariants?: string[]
-  customCss?: string
 }

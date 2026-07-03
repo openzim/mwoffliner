@@ -25,6 +25,7 @@ import {
   downloadAndSaveStartupModule,
   getModuleDependencies,
   downloadAndSaveCustomCss,
+  downloadAndSaveCustomJs,
   downloadAndSaveMathJaxSource,
   genCanonicalLink,
   genHeaderCSSLink,
@@ -57,7 +58,7 @@ import { pageListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { savePages } from './util/savePages.js'
 import { PAGE_REQUEST_INTERVAL, CATEGORIES_PAGE_SIZE } from './util/const.js'
 import urlHelper from './util/url.helper.js'
-import { parseCustomCssUrls, customCssUrlToFilename } from './util/customCss.js'
+import { parseCustomCssUrls, customCssUrlToFilename, parseCustomJsUrls, customJsUrlToFilename } from './util/customCssJs.js'
 import FileManager from './util/FileManager.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -104,6 +105,7 @@ async function execute(argv: any) {
     forceSkin,
     langVariant,
     customCss,
+    customJs,
     userAgent: _userAgent,
     stableRevision,
     getCategories,
@@ -139,6 +141,14 @@ async function execute(argv: any) {
     Downloader.customCssUrls = parseCustomCssUrls(String(customCss))
     if (Downloader.customCssUrls.length > 0) {
       logger.info(`Custom CSS URLs configured: ${Downloader.customCssUrls.join(', ')}`)
+    }
+  }
+
+  // Parse --customJs and populate Downloader so renderers can use the list
+  if (customJs) {
+    Downloader.customJsUrls = parseCustomJsUrls(String(customJs))
+    if (Downloader.customJsUrls.length > 0) {
+      logger.info(`Custom JS URLs configured: ${Downloader.customJsUrls.join(', ')}`)
     }
   }
 
@@ -489,6 +499,23 @@ async function execute(argv: any) {
       }
       if (cssErrors.length > 0) {
         throw new Error(`Failed to download custom CSS file(s):\n${cssErrors.join('\n')}`)
+      }
+    }
+
+    // Download and save custom JS files
+    if (Downloader.customJsUrls.length > 0) {
+      logger.info(`Downloading ${Downloader.customJsUrls.length} custom JS file(s)`)
+      const jsErrors: string[] = []
+      for (const jsUrl of Downloader.customJsUrls) {
+        try {
+          const filename = customJsUrlToFilename(jsUrl)
+          await downloadAndSaveCustomJs(zimCreator, jsUrl, filename)
+        } catch (err) {
+          jsErrors.push(`  - Failed to download [${jsUrl}]: ${err}`)
+        }
+      }
+      if (jsErrors.length > 0) {
+        throw new Error(`Failed to download custom JS file(s):\n${jsErrors.join('\n')}`)
       }
     }
 

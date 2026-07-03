@@ -7,7 +7,7 @@ import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePat
 import MediaWiki from '../MediaWiki.js'
 import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode, javaScriptTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
-import { customCssUrlToFilename } from '../util/customCss.js'
+import { customCssUrlToFilename, customJsUrlToFilename } from '../util/customCssJs.js'
 import Gadgets from '../Gadgets.js'
 import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/pages.js'
 
@@ -91,6 +91,14 @@ export class ActionParseRenderer extends Renderer {
       })
       .join('\n    ')
 
+    // Generate custom JS links from --customJs option
+    const customJsLinks = (Downloader.customJsUrls || [])
+      .map((jsUrl: string) => {
+        const filename = customJsUrlToFilename(jsUrl)
+        return genHeaderScript(config, filename, pagePath, config.output.dirs.res)
+      })
+      .join('\n    ')
+
     // Generate MathJax script tags for pages that need it
     const mathJaxScripts =
       moduleDependencies.needsMathJax && Downloader.mathJaxSource
@@ -109,6 +117,7 @@ export class ActionParseRenderer extends Renderer {
       .replace('__PAGE_CSS_AFTER_META__', pageCssAfterMeta)
       .replace('__PAGE_CSS_NOSCRIPT__', pageCssNoscript)
       .replace('__CUSTOM_CSS__', customCssLinks)
+      .replace('__CUSTOM_JS__', customJsLinks)
       .replace('__MATHJAX_SCRIPTS__', mathJaxScripts)
       .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
       .replace(/__RES_DIR__/g, config.output.dirs.res)
