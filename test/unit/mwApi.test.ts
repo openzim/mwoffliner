@@ -82,7 +82,7 @@ describe('mwApi', () => {
 
     let keysAreValid = true
     Object.values(MediaWiki.namespaces).forEach((item) => {
-      if (!Object.keys(item).includes('num') || !Object.keys(item).includes('allowedSubpages') || !Object.keys(item).includes('isContent')) keysAreValid = false
+      if (!Object.keys(item).includes('num') || !Object.keys(item).includes('allowedSubpages')) keysAreValid = false
     })
     // Namespaces have valid keys
     expect(keysAreValid).toBeTruthy()

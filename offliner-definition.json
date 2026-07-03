@@ -131,13 +131,19 @@
       "type": "string",
       "required": false,
       "title": "Add Namespaces",
-      "description": "Force addional namespaces (comma separated numbers)"
+      "description": "Force additional namespaces (comma separated numbers)"
     },
     "addContentModels": {
       "type": "string",
       "required": false,
       "title": "Add Content Models",
       "description": "Include additional content models besides wikitext (comma separated, e.g 'Scribunto,json'). By default, only wikitext pages are scraped."
+    },
+    "onlyNamespaces": {
+      "type": "string",
+      "required": false,
+      "title": "Only Namespaces",
+      "description": "Include only pages of provided namespaces (comma separated numbers)"
     },
     "getCategories": {
       "type": "boolean",

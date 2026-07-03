@@ -224,12 +224,13 @@ interface MWMetaData {
   modulePathOpt: string
 }
 
+interface MWNamespaceData {
+  num: number
+  allowedSubpages: boolean
+}
+
 interface MWNamespaces {
-  [namespace: string]: {
-    num: number
-    allowedSubpages: boolean
-    isContent: boolean
-  }
+  [namespace: string]: MWNamespaceData
 }
 
 interface MWConfig {
@@ -301,8 +302,9 @@ type RenderOutput = {
   needsDownloadErrorStaticFiles: boolean
 }
 
-interface SiteInfoArgv {
+interface GetSiteInfoArgv {
   addNamespaces?: number[]
+  onlyNamespaces?: number[]
   mwModulePath?: string
   forceSkin?: string
   langVariants?: string[]

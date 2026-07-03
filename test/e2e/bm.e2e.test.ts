@@ -87,6 +87,25 @@ await testAllRenders('bm-wikipedia-with-ns-1', { ...parameters, addNamespaces: 1
     const discussionPagesStr = await zimdump(`list ${outFiles[0].outFile}`)
     const discussionPagesList = discussionPagesStr.match(/Discussion:/g)
     expect(discussionPagesList.length).toBeGreaterThan(30)
+    expect(discussionPagesStr).toContain('Mali')
+  })
+  afterAll(() => {
+    if (!process.env.KEEP_ZIMS) {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    }
+  })
+})
+
+await testAllRenders('bm-wikipedia-only-ns-12', { ...parameters, onlyNamespaces: 12 }, async (outFiles) => {
+  test(`Articles with "Discussion" namespace for ${outFiles[0]?.renderer} renderer for bm.wikipedia.org`, async () => {
+    await execa('redis-cli flushall', { shell: true })
+
+    // Created 1 output
+    expect(outFiles).toHaveLength(1)
+    const discussionPagesStr = await zimdump(`list ${outFiles[0].outFile}`)
+    const discussionPagesList = discussionPagesStr.match(/Aide:/g)
+    expect(discussionPagesList.length).toBeGreaterThan(8)
+    expect(discussionPagesStr).not.toContain('Mali')
   })
   afterAll(() => {
     if (!process.env.KEEP_ZIMS) {

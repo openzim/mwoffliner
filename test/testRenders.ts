@@ -10,6 +10,7 @@ interface Parameters {
   adminEmail: string
   outputDirectory?: string
   addNamespaces?: number
+  onlyNamespaces?: number
   pageList?: string
   pageListToIgnore?: string
   redis?: string

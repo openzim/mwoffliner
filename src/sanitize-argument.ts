@@ -23,6 +23,7 @@ export async function sanitize_all(argv: any) {
   const {
     pageList,
     addNamespaces,
+    onlyNamespaces,
     speed,
     adminEmail,
     mwUrl,
@@ -47,7 +48,7 @@ export async function sanitize_all(argv: any) {
 
   sanitize_customName_langVariant(customZimName, customZimFilename, langVariant)
 
-  sanitize_pageList_addNamespaces(pageList, addNamespaces)
+  sanitizePageSelection(pageList, addNamespaces, onlyNamespaces)
 
   // sanitizing logLevel
   sanitize_logLevel(logLevel)
@@ -166,9 +167,15 @@ export function sanitize_customName_langVariant(customZimName: string, customZim
   }
 }
 
-export function sanitize_pageList_addNamespaces(pageList: string, addNamespaces: string) {
+export function sanitizePageSelection(pageList: string, addNamespaces: string, onlyNamespaces: string) {
   if (pageList && addNamespaces) {
     throw new Error('options --pageList and --addNamespaces cannot be used together')
+  }
+  if (pageList && onlyNamespaces) {
+    throw new Error('options --pageList and --onlyNamespaces cannot be used together')
+  }
+  if (addNamespaces && onlyNamespaces) {
+    throw new Error('options --addNamespaces and --onlyNamespaces cannot be used together')
   }
 }
 

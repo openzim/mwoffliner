@@ -48,6 +48,7 @@ Unreleased:
 * FIX: Fix bug when listing empty namespaces (@benoit74 #2801)
 * NEW: Add MathJax support (@benoit74 #1371)
 * NEW: Add `--customJs` CLI option to inject custom scripts (@benoit74 #2805)
+* NEW: Add `--onlyNamespaces` CLI option to include only pages of provided namespaces (@benoit74 #2805)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
