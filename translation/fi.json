@@ -16,8 +16,16 @@
 		"other": "{{count}} sivua on"
 	},
 	"categoryHeader": "Sivut luokassa {{pageName}}",
+	"categoryCurrentPageSubcatCount": {
+		"one": "alaluokka",
+		"other": "{{count}} alaluokkaa"
+	},
+	"categoryPreviousPage": "edellinen sivu",
+	"categoryNextPage": "seuraava sivu",
+	"categoryNoPagination": "Seuraavat kohteet eivät näy selaimissa, jotka eivät tue Javascriptiä",
 	"LAST_EDITED_ON": "Viimeksi muokattu {{date}}",
 	"LICENSE_UNKNOWN": "tuntematon lisenssi",
-	"DOWNLOAD_ERRORS_HEADING": "Hupsista. Artikkelia ei löytynyt.",
+	"DOWNLOAD_ERRORS_HEADING": "Hupsista. Sivua ei löytynyt.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Tämä sivu on poistettu sen jälkeen kun loimme noudettavien sivujen luettelon mutta ennen sen noutamista selaamaasi ZIMiin.",
 	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Tämän artikkelin käyttöoikeudet on rajattu palvelimeen {{server}}. Se edellyttää erityiskäyttöoikeuksia, jotka eivät ole saatavilla ZIM-haravointiprosessin aikana."
 }
