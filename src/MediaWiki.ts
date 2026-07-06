@@ -344,7 +344,7 @@ class MediaWiki {
     }
   }
 
-  public setNamespaces(json: SiteInfoQueryResponse, addNamespaces: number[]) {
+  public setNamespaces(json: SiteInfoQueryResponse, addNamespaces: number[], onlyNamespaces: number[]) {
     ;['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json[type]
       Object.keys(entries).forEach((key) => {
@@ -352,10 +352,8 @@ class MediaWiki {
         const name = type === 'namespaces' ? entry.name : entry.alias
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
-        const isContent = type === 'namespaces' ? !!(entry.content || util.contains(addNamespaces, num)) : !!(entry.content !== undefined || util.contains(addNamespaces, num))
-        const isBlacklisted = BLACKLISTED_NS.includes(name)
         const canonical = entry.canonical ? entry.canonical : ''
-        const details = { num, allowedSubpages, isContent }
+        const details: MWNamespaceData = { num, allowedSubpages }
 
         /* Namespaces in local language */
         this.namespaces[util.lcFirst(name)] = details
@@ -367,9 +365,17 @@ class MediaWiki {
           this.namespaces[util.ucFirst(canonical)] = details
         }
 
-        /* Is content to mirror */
-        if (isContent && !isBlacklisted) {
-          this.namespacesToMirror.push(name)
+        /* Is namespace to mirror */
+        if (onlyNamespaces.length) {
+          if (util.contains(onlyNamespaces, num)) {
+            this.namespacesToMirror.push(name)
+          }
+        } else {
+          const isContent = type === 'namespaces' ? !!entry.content : !!(entry.content !== undefined)
+          const isBlacklisted = BLACKLISTED_NS.includes(name)
+          if ((isContent || util.contains(addNamespaces, num)) && !isBlacklisted) {
+            this.namespacesToMirror.push(name)
+          }
         }
       })
     })
@@ -454,7 +460,7 @@ class MediaWiki {
     return defaultSkins[0]
   }
 
-  public async getSiteInfo({ addNamespaces, mwModulePath, forceSkin, langVariants }: SiteInfoArgv = {}) {
+  public async getSiteInfo({ addNamespaces, onlyNamespaces, mwModulePath, forceSkin, langVariants }: GetSiteInfoArgv = {}) {
     logger.info('Getting site info...')
     const body = await Downloader.querySiteInfo()
 
@@ -467,7 +473,7 @@ class MediaWiki {
       throw new Error(`Mediawiki version ${mwVersion} not supported should be >=${mwMinimalVersion}`)
     }
 
-    this.setNamespaces(body.query, addNamespaces || [])
+    this.setNamespaces(body.query, addNamespaces || [], onlyNamespaces || [])
     Gadgets.setGadgets(body.query.gadgets)
 
     const { url: licenseUrl, text: licenseName } = body.query.rightsinfo
@@ -544,7 +550,7 @@ class MediaWiki {
     }
   }
 
-  public async getMwMetaData(argvOpts: SiteInfoArgv = {}): Promise<MWMetaData> {
+  public async getMwMetaData(argvOpts: GetSiteInfoArgv = {}): Promise<MWMetaData> {
     if (this.metaData) {
       return this.metaData
     }

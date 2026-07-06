@@ -24,6 +24,18 @@ describe('Exec Command With Bash', () => {
       )
     })
 
+    test('Exec Command With --pageList and --onlyNamespaces together', async () => {
+      await expect(execa(`${mwo} --adminEmail=test@test.test --pageList=Portal:Biology --mwUrl=https://en.wikipedia.org/ --onlyNamespaces=100`, { shell: true })).rejects.toThrow(
+        /options --pageList and --onlyNamespaces cannot be used together/,
+      )
+    })
+
+    test('Exec Command With --addNamespaces and --onlyNamespaces together', async () => {
+      await expect(execa(`${mwo} --adminEmail=test@test.test --addNamespaces=101 --mwUrl=https://en.wikipedia.org/ --onlyNamespaces=100`, { shell: true })).rejects.toThrow(
+        /options --addNamespaces and --onlyNamespaces cannot be used together/,
+      )
+    })
+
     test('Exec Command With --log-level option', async () => {
       await expect(execa(`${mwo} --log-level=anyString --mwUrl="https://en.wikipedia.org" --adminEmail="test@test.test"`, { shell: true })).rejects.toThrow(
         /"anyString" is not a valid value for option --log-level. It should be one of \[debug, info, warn, error, silent\]/,

@@ -95,6 +95,7 @@ async function execute(argv: any) {
     publisher: _publisher,
     outputDirectory: _outputDirectory,
     addNamespaces: _addNamespaces,
+    onlyNamespaces: _onlyNamespaces,
     addContentModels: _addContentModels,
     javaScript: _javaScript,
     addModules: _addModules,
@@ -254,10 +255,16 @@ async function execute(argv: any) {
         .map((a: string) => a.trim())
     : []
 
+  const onlyNamespaces = _onlyNamespaces
+    ? String(_onlyNamespaces)
+        .split(',')
+        .map((a: string) => Number(a))
+    : []
+
   /* Get MediaWiki Info */
   let mwMetaData
   try {
-    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, mwModulePath, forceSkin, langVariants })
+    mwMetaData = await MediaWiki.getMwMetaData({ addNamespaces, onlyNamespaces, mwModulePath, forceSkin, langVariants })
   } catch (err) {
     logger.error('FATAL - Failed to get MediaWiki Metadata')
     throw err

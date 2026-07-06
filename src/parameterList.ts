@@ -36,7 +36,7 @@ export const parameterDescriptions = {
   webp: 'Convert all jpeg, png and gif images to webp format',
   addNamespaces: 'Force additional namespace (comma separated numbers)',
   addContentModels: 'Include additional content models besides wikitext (comma separated, e.g. "Scribunto,json"). By default, only wikitext pages are scraped.',
-
+  onlyNamespaces: 'Include only pages of provided namespaces (comma separated numbers)',
   javaScript: 'Amount of JavaScript being allowed in pages, one of the following values can be given: "none", "trusted" or "all" (default being "trusted").',
   addModules: 'Add additional ResourceLoader modules for dynamic loading (comma separated list)',
   osTmpDir: 'Override default operating system temporary directory path environment variable',
