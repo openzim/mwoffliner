@@ -20,3 +20,11 @@ repos:
         language: system
         types: [file]
         files: \.[jt]sx?$
+  - repo: local
+    hooks:
+      - id: typecheck
+        name: typecheck (system)
+        entry: npm run typecheck
+        language: system
+        pass_filenames: false
+        files: \.[jt]sx?$

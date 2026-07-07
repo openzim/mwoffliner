@@ -25,6 +25,7 @@
     "codecov": "rm -rf coverage && npm run test:unit-coverage && npm run test:e2e-coverage && npm run codecov:merge",
     "lint": "eslint .",
     "lint-fix": "eslint --fix .",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write './**/*.ts' 'translation/*'",
     "format-check": "prettier --check './**/*.ts' 'translation/*'",
     "prebuild": "node -p \"'export const LIB_VERSION = \\'' + require('./package.json').version + '\\''\" > src/version.ts",

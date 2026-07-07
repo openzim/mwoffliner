@@ -22,22 +22,18 @@ describe('pages utility', () => {
     MediaWiki.namespaces = {
       '': {
         num: 0,
-        isContent: true,
         allowedSubpages: false,
       },
       Talk: {
         num: 1,
-        isContent: false,
         allowedSubpages: true,
       },
       User: {
         num: 2,
-        isContent: false,
         allowedSubpages: true,
       },
       Foo: {
         num: 100,
-        isContent: true,
         allowedSubpages: true,
       },
     }
@@ -66,7 +62,7 @@ describe('pages utility', () => {
     [1, 'Bar'],
     [999, undefined],
   ])('getNamespaceName', (namespaceNumber, expectedNamespaceName) => {
-    MediaWiki.namespaces = { Foo: { num: 0, allowedSubpages: false, isContent: true }, Bar: { num: 1, allowedSubpages: false, isContent: false } }
+    MediaWiki.namespaces = { Foo: { num: 0, allowedSubpages: false }, Bar: { num: 1, allowedSubpages: false } }
     expect(getNamespaceName(namespaceNumber)).toBe(expectedNamespaceName)
   })
 
