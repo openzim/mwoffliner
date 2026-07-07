@@ -134,6 +134,7 @@ class Downloader {
   public mathJaxConfig: string | null = null
   public mathJaxConfigScript: string | null = null
   public mathJaxEntryPoint: string = 'MathJax.js'
+  public mathJaxAllPages = false
 
   private uaString: string
   private backoffOptions: BackoffOptions

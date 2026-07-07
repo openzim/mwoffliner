@@ -42,6 +42,7 @@ export async function sanitize_all(argv: any) {
     mathJaxSource,
     mathJaxConfig,
     mathJaxEntryPoint,
+    mathJaxAllPages,
   } = argv
 
   sanitizeDoubleUsedParameters(argv)
@@ -109,7 +110,7 @@ export async function sanitize_all(argv: any) {
   }
 
   // sanitizing MathJax options
-  sanitize_mathJax(mathJaxSource, mathJaxConfig, mathJaxEntryPoint)
+  sanitize_mathJax(mathJaxSource, mathJaxConfig, mathJaxEntryPoint, mathJaxAllPages)
 }
 
 // perform live checks of arguments needing a connection "somewhere"
@@ -311,12 +312,15 @@ export function sanitize_customFlavour(customFlavour: string): string {
   )
 }
 
-export function sanitize_mathJax(mathJaxSource: any, mathJaxConfig: any, mathJaxEntryPoint: any) {
+export function sanitize_mathJax(mathJaxSource: any, mathJaxConfig: any, mathJaxEntryPoint: any, mathJaxAllPages: any) {
   if (mathJaxConfig && !mathJaxSource) {
     throw new Error('Option --mathJaxConfig requires --mathJaxSource to also be set')
   }
   if (mathJaxEntryPoint && !mathJaxSource) {
     throw new Error('Option --mathJaxEntryPoint requires --mathJaxSource to also be set')
+  }
+  if (mathJaxAllPages && !mathJaxSource) {
+    throw new Error('Option --mathJaxAllPages requires --mathJaxSource to also be set')
   }
 }
 

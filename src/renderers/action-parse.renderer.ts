@@ -185,7 +185,7 @@ export class ActionParseRenderer extends Renderer {
       jsDependenciesList.push('jquery.makeCollapsible')
     }
 
-    const needsMathJax = data.parse.modules.some((mod: string) => /mathjax/i.test(mod))
+    const needsMathJax = Downloader.mathJaxAllPages || data.parse.modules.some((mod: string) => /mathjax/i.test(mod))
 
     const moduleDependencies = {
       // Do not add JS-related stuff for now with ActionParse, see #2310

@@ -247,8 +247,9 @@ MathJax 2, 3 and 4 are very different beasts: each ships its own set of files an
 - `--mathJaxSource`: local path or HTTP(S) URL to a ZIP archive of a compiled MathJax distribution. Its content is extracted and pushed to the ZIM (under an internal `_mathjax_/` namespace).
 - `--mathJaxConfig`: local path or HTTP(S) URL to an HTML file containing a single `<script>` tag with the MathJax configuration (this must be copied from the wiki, see below). Its content is injected inline, before the MathJax library, on every page that needs it.
 - `--mathJaxEntryPoint`: path, relative to the root of the extracted archive, to the MathJax script to load (e.g. `es5/tex-chtml.js` for MathJax 3). Defaults to `MathJax.js` (MathJax 2 entry point).
+- `--mathJaxAllPages`: inject the config/entry-point `<script>` tags on every page instead of only on pages detected to need MathJax (see below). Some wikis don't list MathJax in their page JS modules, which defeats the automatic detection; this flag works around that at the cost of adding the scripts to every page.
 
-`--mathJaxConfig` and `--mathJaxEntryPoint` both require `--mathJaxSource` to also be set. A page is considered to "need" MathJax, and only then gets the config/entry-point `<script>` tags injected, when one of the JS modules MediaWiki reports for that page matches `mathjax` (case-insensitive); the extracted library files themselves are always pushed to the ZIM as soon as `--mathJaxSource` is set, regardless of which pages use them.
+`--mathJaxConfig`, `--mathJaxEntryPoint` and `--mathJaxAllPages` all require `--mathJaxSource` to also be set. A page is considered to "need" MathJax, and only then gets the config/entry-point `<script>` tags injected, when one of the JS modules MediaWiki reports for that page matches `mathjax` (case-insensitive), unless `--mathJaxAllPages` is set, in which case every page gets them. The extracted library files themselves are always pushed to the ZIM as soon as `--mathJaxSource` is set, regardless of which pages use them.
 
 ### Preparing the parameters for a given wiki
 

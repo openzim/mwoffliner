@@ -109,4 +109,32 @@ describe('mathJax', () => {
     const mathJaxScript = scripts.find((s) => s.getAttribute('src')?.includes('_mathjax_') || s.textContent?.includes('window.MathJax'))
     expect(mathJaxScript).toBeUndefined()
   })
+
+  test('MathJax scripts are injected on all pages when mathJaxAllPages is set, even without MathJax modules (nodet)', async () => {
+    // Same setup as the previous test (nodet, lead section has no MathJax modules), but
+    // with mathJaxAllPages forcing script injection regardless of detected modules.
+    const outFiles = await mwoffliner.execute({
+      ...baseParameters,
+      filenamePrefix: 'mathJax_allPages_nodet',
+      format: ['nodet'],
+      mathJaxAllPages: true,
+    })
+    const dump = outFiles[0]
+
+    expect(dump.status.pages.success).toEqual(1)
+    expect(dump.status.pages.hardFail).toEqual(0)
+    expect(dump.status.pages.softFail).toEqual(0)
+
+    await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
+
+    const pageHtml = await zimdump(`show --url "User:KiwixOffline/MWOffliner_Test" ${dump.outFile}`)
+    const pageDoc = domino.createDocument(pageHtml)
+    const scripts = Array.from(pageDoc.querySelectorAll('script'))
+
+    const configScript = scripts.find((s) => s.textContent?.includes('window.MathJax'))
+    expect(configScript).toBeTruthy()
+
+    const entryScript = scripts.find((s) => s.getAttribute('src')?.includes('_mathjax_/es5/tex-chtml.js'))
+    expect(entryScript).toBeTruthy()
+  })
 })

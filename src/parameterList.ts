@@ -56,6 +56,8 @@ export const parameterDescriptions = {
     'UNSTABLE: Local path or HTTP(S) URL to a MathJax configuration HTML <script>. Its content is injected inline in pages that need MathJax, before the MathJax library.',
   mathJaxEntryPoint:
     'UNSTABLE: Relative path inside the extracted MathJax archive to the main entry-point script. Defaults to "MathJax.js" (MathJax 2). For MathJax 3 use e.g. "es5/tex-chtml.js".',
+  mathJaxAllPages:
+    'UNSTABLE: Inject MathJax config/entry-point scripts on all pages, instead of only on pages whose JS module list mentions MathJax. Useful for wikis which do not list MathJax in their page modules. Requires --mathJaxSource to also be set.',
 }
 
 // TODO: Add an interface based on the object above
