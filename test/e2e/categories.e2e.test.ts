@@ -21,7 +21,16 @@ const parametersWithPagination = {
   categoriesPageSize: 2, // artificially low page size to "force" pagination
 }
 
-const perform_categories_tests = async (name, outFiles, expected_result) => {
+const expectedWpbmPages = [
+  { page: 'Bamanankan', expectedCategories: ['Kan'] },
+  { page: 'Dogoso', expectedCategories: ['Kan'] },
+  { page: 'Espankan', expectedCategories: ['Kan'] },
+  { page: 'Esperanto', expectedCategories: ['Kan'] },
+  { page: 'Dibo', expectedCategories: ['Jamu'] },
+  { page: 'Kulibali', expectedCategories: ['Jamu'] },
+]
+
+const performCategoriesTests = async (name, outFiles, expectedCategories, expectedPages) => {
   /**
    * Generic function to test a give ZIM categories handling
    */
@@ -34,36 +43,31 @@ const perform_categories_tests = async (name, outFiles, expected_result) => {
     await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
   })
 
-  for (const { page, expectedCategory } of [
-    { page: 'Bamanankan', expectedCategory: 'Kan' },
-    { page: 'Dogoso', expectedCategory: 'Kan' },
-    { page: 'Espankan', expectedCategory: 'Kan' },
-    { page: 'Esperanto', expectedCategory: 'Kan' },
-    { page: 'Dibo', expectedCategory: 'Jamu' },
-    { page: 'Kulibali', expectedCategory: 'Jamu' },
-  ]) {
+  for (const { page, expectedCategories } of expectedPages) {
     test(`${name} - check ${page} page for ${outFiles[0]?.renderer} renderer`, async () => {
       const allFiles = (await zimdump(`list ${outFiles[0].outFile}`)).split('\n')
       expect(allFiles).toContain(page)
       const content = await zimdump(`show --url ${page} ${outFiles[0].outFile}`)
       const document = domino.createDocument(content)
-      const catlinksEl = document.querySelectorAll('.catlinks')
-      expect(catlinksEl.length).toBe(1)
-      // eslint-disable-next-line no-irregular-whitespace
-      expect(Array.from(catlinksEl)[0].textContent).toBe(`Catégorie : ${expectedCategory}`)
+      const catlinksEl = document.querySelectorAll('div.catlinks ul a')
+      expect(catlinksEl.length).toBeGreaterThanOrEqual(expectedCategories.length)
+      const existingCategories = Array.from(catlinksEl).map((el) => el.textContent)
+      for (const expectedCategory of expectedCategories) {
+        expect(existingCategories).toContain(`${expectedCategory}`)
+      }
     })
   }
 
   const allFiles = (await zimdump(`list ${outFiles[0].outFile}`)).split('\n')
 
-  for (const { category, subcats, pages, files } of expected_result) {
+  for (const { category, subcats, pages, files } of expectedCategories) {
     const categoryPath = `Catégorie:${category}`
 
     test(`${name} - check ${category} category for ${outFiles[0]?.renderer} renderer has item`, async () => {
       expect(allFiles).toContain(categoryPath)
     })
 
-    const content = await zimdump(`show --url ${categoryPath} ${outFiles[0].outFile}`)
+    const content = await zimdump(`show --url "${categoryPath}" ${outFiles[0].outFile}`)
     const document = domino.createDocument(content)
 
     for (const type of ['subcats', 'pages', 'files']) {
@@ -122,7 +126,7 @@ const perform_categories_tests = async (name, outFiles, expected_result) => {
 await testAllRenders('categories-without-pagination', parametersWithoutPagination, async (outFiles) => {
   // Run tests without pagination (all category have a single page, no pagination needed)
 
-  const expected_result = [
+  const expectedCategories = [
     {
       category: 'Kan',
       subcats: {
@@ -140,7 +144,7 @@ await testAllRenders('categories-without-pagination', parametersWithoutPaginatio
     { category: 'Jamu', subcats: undefined, pages: { nbGroups: 2, nbLinks: 2, partials: [] }, files: undefined },
   ]
 
-  await perform_categories_tests('categories-without-pagination', outFiles, expected_result)
+  await performCategoriesTests('categories-with-pagination', outFiles, expectedCategories, expectedWpbmPages)
 
   afterAll(() => {
     if (!process.env.KEEP_ZIMS) {
@@ -152,7 +156,7 @@ await testAllRenders('categories-without-pagination', parametersWithoutPaginatio
 await testAllRenders('categories-with-pagination', parametersWithPagination, async (outFiles) => {
   // Run tests with pagination (one category has a single page, the other one need pagination for some element)
 
-  const expected_result = [
+  const expectedCategories = [
     {
       category: 'Kan',
       subcats: {
@@ -173,7 +177,60 @@ await testAllRenders('categories-with-pagination', parametersWithPagination, asy
     { category: 'Jamu', subcats: undefined, pages: { nbGroups: 2, nbLinks: 2, partials: [] }, files: undefined },
   ]
 
-  await perform_categories_tests('categories-with-pagination', outFiles, expected_result)
+  await performCategoriesTests('categories-with-pagination', outFiles, expectedCategories, expectedWpbmPages)
+
+  afterAll(() => {
+    if (!process.env.KEEP_ZIMS) {
+      rimraf.sync(`./${outFiles[0].testId}`)
+    }
+  })
+})
+
+const parametersWVFR = {
+  mwUrl: 'https://fr.wikivoyage.org',
+  pageList: 'Tanzanie,Madagascar',
+  adminEmail: 'test@kiwix.org',
+  redis: process.env.REDIS,
+  format: ['nopic'],
+  getCategories: true,
+}
+
+await testAllRenders('categories-tree-walk-up', parametersWVFR, async (outFiles) => {
+  // Run tests on wikivoyage FR to check category tree walking up
+
+  const expectedCategories = [
+    {
+      category: 'Afrique',
+      subcats: {
+        nbGroups: 1,
+        nbLinks: 1,
+        partials: [],
+      },
+      pages: undefined,
+      files: undefined,
+    },
+    {
+      category: "Afrique_de_l'Est",
+      subcats: {
+        nbGroups: 2,
+        nbLinks: 2,
+        partials: [],
+      },
+      pages: {
+        nbGroups: 2,
+        nbLinks: 2,
+        partials: [],
+      },
+      files: undefined,
+    },
+  ]
+
+  const expectedPages = [
+    { page: 'Tanzanie', expectedCategories: ['Pays', 'Tanzanie', "Afrique de l'Est"] },
+    { page: 'Madagascar', expectedCategories: ['Pays', 'Madagascar', "Afrique de l'Est"] },
+  ]
+
+  await performCategoriesTests('categories-tree-walk-up', outFiles, expectedCategories, expectedPages)
 
   afterAll(() => {
     if (!process.env.KEEP_ZIMS) {

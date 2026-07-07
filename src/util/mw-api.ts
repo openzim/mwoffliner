@@ -302,7 +302,19 @@ export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pa
   }
 
   if (MediaWiki.getCategories) {
-    const categoryIds = pagesToIgnore ? [...categorySet].filter((title: PageTitle) => !pagesToIgnore.includes(title)) : [...categorySet]
-    await getPagesByTitle(categoryIds, 'categories', pagesToIgnore, allowedContentModels, new Set())
+    // Categories can themselves belong to parent categories (subcategories), so we need to walk up the
+    // category tree until no new (unprocessed) category is discovered, to also capture root categories
+    const processedCategories = new Set<PageTitle>()
+    let categoriesToFetch = pagesToIgnore ? [...categorySet].filter((title: PageTitle) => !pagesToIgnore.includes(title)) : [...categorySet]
+
+    while (categoriesToFetch.length) {
+      categoriesToFetch.forEach((title) => processedCategories.add(title))
+
+      logger.debug(`Fetching category details of ${categoriesToFetch.join(', ')}`)
+      const newCategorySet = new Set<PageTitle>()
+      await getPagesByTitle(categoriesToFetch, 'categories', pagesToIgnore, allowedContentModels, newCategorySet)
+
+      categoriesToFetch = [...newCategorySet].filter((title: PageTitle) => !processedCategories.has(title) && !pagesToIgnore.includes(title))
+    }
   }
 }
