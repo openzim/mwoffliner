@@ -209,6 +209,9 @@ jobs:
       - name: Running ESLint
         run: npm run lint
 
+      - name: Running TypeScript typecheck
+        run: npm run typecheck
+
       - name: Validate Translations
         run: npm run test:i18n
 
