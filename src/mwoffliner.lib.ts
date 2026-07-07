@@ -114,6 +114,7 @@ async function execute(argv: any) {
     mathJaxSource,
     mathJaxConfig,
     mathJaxEntryPoint,
+    mathJaxAllPages,
   } = argv
 
   let { pageList, pageListToIgnore } = argv
@@ -163,6 +164,10 @@ async function execute(argv: any) {
   }
   if (mathJaxEntryPoint) {
     Downloader.mathJaxEntryPoint = String(mathJaxEntryPoint)
+  }
+  if (mathJaxAllPages) {
+    Downloader.mathJaxAllPages = true
+    logger.info('MathJax scripts will be injected on all pages')
   }
 
   const publisher = _publisher || config.defaults.publisher

@@ -329,6 +329,12 @@
       "required": false,
       "title": "MathJax Entry Point",
       "description": "Relative path inside the extracted MathJax archive to the main entry-point script. Defaults to MathJax.js (MathJax 2). For MathJax 3 use e.g. es5/tex-chtml.js."
+    },
+    "mathJaxAllPages": {
+      "type": "boolean",
+      "required": false,
+      "title": "MathJax On All Pages",
+      "description": "Inject MathJax config/entry-point scripts on all pages, instead of only on pages whose JS module list mentions MathJax. Useful for wikis which do not list MathJax in their page modules. Requires MathJax Source to also be set."
     }
   },
   "zimMetadata": [
