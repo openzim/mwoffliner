@@ -168,7 +168,6 @@ describe('Test blacklisted NSs', () => {
     await RedisStore.pagesStore.flush()
 
     MediaWiki.base = 'https://id.wikipedia.org'
-    MediaWiki.getCategories = true
 
     Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: false, optimisationCacheUrl: '' }
 
