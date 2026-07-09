@@ -53,6 +53,7 @@ Unreleased:
 * FIX: Walk the category tree up to find all parent categories (@benoit74 #2813)
 * FIX: Ensure externally-retrieved string content is replaced as-is, no special replacement meaning (@benoit74 #2821)
 * FIX: Fix computation of relative file paths (@benoit74 #2809)
+* FIX: Fix parsing of jsConfigVars using new line characters (@benoit74 #2808)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)

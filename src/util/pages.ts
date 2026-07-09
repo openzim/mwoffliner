@@ -47,7 +47,7 @@ export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any
     try {
       let jsonString = match[1]
       if (jsonString.includes('"wgBreakFrames":!')) {
-        jsonString = jsonString.replace(/":!0([,}])/g, '":true$1').replace(/":!1([,}])/g, '":false$1')
+        jsonString = jsonString.replace(/":\s*!0([,}])/g, '":true$1').replace(/":\s*!1([,}])/g, '":false$1')
       }
       jsConfigVars = JSON.parse(jsonString)
     } catch (e) {
