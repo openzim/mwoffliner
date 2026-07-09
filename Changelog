@@ -51,6 +51,7 @@ Unreleased:
 * NEW: Add `--onlyNamespaces` CLI option to include only pages of provided namespaces (@benoit74 #2805)
 * FIX: Add ability to set MathJax scripts on all pages (@benoit74 #2816)
 * FIX: Walk the category tree up to find all parent categories (@benoit74 #2813)
+* FIX: Ensure externally-retrieved string content is replaced as-is, no special replacement meaning (@benoit74 #2821)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
