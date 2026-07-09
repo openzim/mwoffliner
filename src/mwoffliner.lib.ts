@@ -45,6 +45,7 @@ import {
   validateMetadata,
   truncateZimEntryTitleWords,
   makeZimPath,
+  replaceSafe,
 } from './util/index.js'
 import S3 from './S3.js'
 import RedisStore from './RedisStore.js'
@@ -664,11 +665,12 @@ async function execute(argv: any) {
           // Should we have a fragment (i.e. we redirect to a section of a page), this is not (yet) supported by libzim
           // (to have such a redirect with a fragment inside the path), so we create a "fake" entry with only an HTML-based
           // redirect inside
-          const htmlTemplateString = htmlRedirectTemplateCode()
+          const htmlTemplateString = replaceSafe(htmlRedirectTemplateCode())
             .replace(/__TITLE__/g, redirectTitle)
             // we have to replace space in fragment with underscores, see https://phabricator.wikimedia.org/T398724
             .replace(/__TARGET__/g, `${makeZimPath(to)}#${fragment.replace(/ /g, '_')}`)
             .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(makeZimPath(from), ''))
+            .toString()
           await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(makeZimPath(from), 'text/html', redirectTitle, { FRONT_ARTICLE: 1 }, htmlTemplateString)))
         } else {
           // Otherwise we simply add a "regular" libzim redirect

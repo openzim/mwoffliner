@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as logger from '../Logger.js'
 import Downloader from '../Downloader.js'
 import FileManager from './FileManager.js'
-import { getFullUrl, jsPath, cssPath, getRelativeFilePath, getMediaBase } from './index.js'
+import { getFullUrl, jsPath, cssPath, getRelativeFilePath, getMediaBase, replaceSafe } from './index.js'
 import { config } from '../config.js'
 import MediaWiki from '../MediaWiki.js'
 import { Creator, StringItem } from '@openzim/libzim'
@@ -242,7 +242,7 @@ export async function downloadModule(module: string, type: 'js' | 'css', langVar
             }),
           ),
         ).replace(/__RELATIVE_FILE_PATH__/g, '"+RLCONF.zimRelativeFilePath+"')
-        text = text.replace(embeddedCss[0], `,{"css":${processedCss}}`)
+        text = replaceSafe(text).replace(embeddedCss[0], `,{"css":${processedCss}}`).toString()
       } catch (e) {
         logger.warn(`Unable to rewrite embedded CSS in JS module [${module}]`, e)
       }

@@ -45,6 +45,29 @@ export function ucFirst(str: string) {
   return f + str.substr(1)
 }
 
+/**
+ * Chainable wrapper around String.replace() which treats the replacement value as a plain string,
+ * ignoring special patterns like $&, $`, $', $$ and $<n> which String.replace would otherwise interpret.
+ * Use this whenever the replacement value is external/dynamic content (wiki text, downloaded JS/CSS, ...)
+ * which we do not control and must not be given any special meaning.
+ */
+class SafeStringReplacer {
+  constructor(private value: string) {}
+
+  replace(pattern: string | RegExp, replacement: string): this {
+    this.value = this.value.replace(pattern, () => replacement)
+    return this
+  }
+
+  toString(): string {
+    return this.value
+  }
+}
+
+export function replaceSafe(str: string): SafeStringReplacer {
+  return new SafeStringReplacer(str)
+}
+
 function _decodeURIComponent(uri: string) {
   try {
     return decodeURIComponent(uri)
