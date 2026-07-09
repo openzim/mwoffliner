@@ -394,9 +394,7 @@ export abstract class Renderer {
     const src = getFullUrl(img.getAttribute('src'), MediaWiki.baseUrl)
     let newSrc: string
     try {
-      const slashesInUrl = zimPath.split('/').length - 1
-      const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
-      newSrc = upStr + getMediaBase(src, true)
+      newSrc = getRelativeFilePath(zimPath, getMediaBase(src, true))
       /* Download image, but avoid duplicate calls */
       // eslint-disable-next-line no-prototype-builtins
       if (!srcCache.hasOwnProperty(src)) {
@@ -872,7 +870,7 @@ export abstract class Renderer {
           const isParentMirrored = await RedisStore.pagesStore.exists(`${pageTitle.split(parent)[0]}${parent}`)
           subpages += `&lt; ${
             isParentMirrored
-              ? `<a href="${'../'.repeat(parents.length)}${encodePageTitleForZimHtmlUrl(`${pageTitle.split(parent)[0]}${parent}` as PageTitle)}" title="${label}">`
+              ? `<a href="${getRelativeFilePath(makeZimPath(pageTitle), encodePageTitleForZimHtmlUrl(`${pageTitle.split(parent)[0]}${parent}` as PageTitle))}" title="${label}">`
               : ''
           }${label}${isParentMirrored ? '</a> ' : ' '}`
         }),

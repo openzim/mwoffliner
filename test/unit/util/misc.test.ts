@@ -1,4 +1,4 @@
-import { getSizeFromUrl, truncateUtf8Bytes, truncateZimEntryTitleWords } from '../../../src/util/misc.js'
+import { getRelativeFilePath, getSizeFromUrl, truncateUtf8Bytes, truncateZimEntryTitleWords } from '../../../src/util/misc.js'
 
 describe('miscelenaous utility functions tests', () => {
   const truncateUtf8BytesCases = [
@@ -53,5 +53,26 @@ describe('miscelenaous utility functions tests', () => {
 
   test('getSizeFromUrl returns empty object when neither width nor mult can be detected', () => {
     expect(getSizeFromUrl('https://upload.wikimedia.org/wikipedia/commons/foo.png')).toEqual({ mult: undefined, width: undefined })
+  })
+
+  const getRelativeFilePathCases = [
+    ['', 'foo.css', './foo.css'],
+    ['A', 'foo.css', './foo.css'],
+    ['A/B', 'foo.css', '../foo.css'],
+    ['A/B/C', 'foo.css', '../../foo.css'],
+    // consecutive slashes must count as a single subfolder separator, not one per slash
+    ['A//B', 'foo.css', '../foo.css'],
+    ['A///B', 'foo.css', '../foo.css'],
+    ['A//B//C', 'foo.css', '../../foo.css'],
+    ['A//B/C', 'foo.css', '../../foo.css'],
+    // leading slashes are ignored entirely, no matter how many
+    ['/A/B', 'foo.css', '../foo.css'],
+    ['//A/B', 'foo.css', '../foo.css'],
+    ['///A', 'foo.css', './foo.css'],
+    // trailing slashes still count as a separator
+    ['A/B/', 'foo.css', '../../foo.css'],
+  ]
+  test.each(getRelativeFilePathCases)('getRelativeFilePath(%p, %p)', (parentPagePath, fileBase, expected) => {
+    expect(getRelativeFilePath(parentPagePath as ZimPath, fileBase as string)).toBe(expected)
   })
 })

@@ -2,6 +2,7 @@ import MediaWiki from '../MediaWiki.js'
 import { Dump } from '../Dump.js'
 import { config } from '../config.js'
 import { rewriteUrlsOfDoc } from './rewriteUrls.js'
+import { getRelativeFilePath } from './misc.js'
 
 export function buildCategoryMemberList(
   type: 'subcats' | 'pages' | 'files',
@@ -198,9 +199,7 @@ function buildPaginationDiv(doc: Document, page: number, isLastPage: boolean, pa
   spanNoJS.textContent = dump.t('categoryNoPagination')
   section.appendChild(spanNoJS)
 
-  const slashesInUrl = pathPath.split('/').length - 1
-  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
-  const partialUrl = `${upStr}${config.output.dirs.categories_partials}${pathPath}_${type}`
+  const partialUrl = getRelativeFilePath(pathPath as ZimPath, `${config.output.dirs.categories_partials}${pathPath}_${type}`)
 
   const spanWithJS = doc.createElement('span')
   spanWithJS.classList.add('mwo-js')

@@ -207,15 +207,11 @@ export function jsPath(js: string, subDirectory = '') {
   return `${subDirectory ? `${subDirectory}/` : ''}${path.replace(/(\.js)?$/, '')}.js`
 }
 export function genHeaderCSSLink(config: Config, css: string, pagePath: ZimPath, subDirectory = '') {
-  const slashesInUrl = pagePath.split('/').length - 1
-  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
-  return `<link href="${upStr}${cssPath(css, subDirectory)}" rel="stylesheet" type="text/css"/>`
+  return `<link href="${getRelativeFilePath(pagePath, cssPath(css, subDirectory))}" rel="stylesheet" type="text/css"/>`
 }
 export function genHeaderScript(config: Config, js: string, pagePath: ZimPath, subDirectory = '', attributes = '') {
-  const slashesInUrl = pagePath.split('/').length - 1
-  const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
   const path = isNodeModule(js) ? normalizeModule(js) : js
-  return `<script ${attributes} src="${upStr}${jsPath(path, subDirectory)}"></script>`
+  return `<script ${attributes} src="${getRelativeFilePath(pagePath, jsPath(path, subDirectory))}"></script>`
 }
 export function genCanonicalLink(config: Config, webUrl: string, pagePath: ZimPath) {
   return `<link rel="canonical" href="${webUrl}${encodeURIComponent(pagePath)}" />`
@@ -352,7 +348,9 @@ export function deDup<T>(_arr: T[], getter: (o: T) => any) {
 }
 
 export function getRelativeFilePath(parentPagePath: ZimPath, fileBase: string) {
-  const slashesInUrl = parentPagePath.split('/').length - 1
+  // leading slashes carry no subfolder (nothing precedes the first segment), and consecutive
+  // slashes must count as a single subfolder separator, not one per slash
+  const slashesInUrl = (parentPagePath.replace(/^\/+/, '').match(/\/+/g) || []).length
   const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
   return upStr + fileBase
 }

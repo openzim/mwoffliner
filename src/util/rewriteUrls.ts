@@ -227,12 +227,10 @@ export async function rewriteUrls(pagePath: ZimPath, dump: Dump, linkNodes: Domi
   }
 
   if (pagePath.includes('/')) {
-    const slashesInUrl = pagePath.split('/').length - 1
-    const upStr = slashesInUrl ? '../'.repeat(slashesInUrl) : './'
     Object.values(wikilinkMappings).forEach((linkNodes: DominoElement[]) => {
       for (const linkNode of linkNodes) {
         const href = linkNode.getAttribute('href')
-        linkNode.setAttribute('href', `${upStr}${href}`)
+        linkNode.setAttribute('href', getRelativeFilePath(pagePath, href))
       }
     })
   }
