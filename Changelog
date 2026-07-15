@@ -55,6 +55,7 @@ Unreleased:
 * FIX: Fix computation of relative file paths (@benoit74 #2809)
 * FIX: Fix parsing of jsConfigVars using new line characters (@benoit74 #2808)
 * FIX: HTML page title should not contain HTML code (@benoit74 #2814)
+* FIX: Concurrent image download headers were leaking across workers (@benoit74 #2810 #2811)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)

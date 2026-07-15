@@ -816,12 +816,18 @@ class Downloader {
           // 'Versioning' of image is made via HTTP ETag. We should
           // check if we have the proper version by requesting proper
           // ETag from upstream MediaWiki.
+          // Headers are cloned per-request: concurrent downloads share this.arrayBufferRequestOptions,
+          // so mutating its headers in place would leak one image's If-None-Match onto another's request.
+          const requestOptions = {
+            ...this.arrayBufferRequestOptions,
+            headers: { ...this.arrayBufferRequestOptions.headers },
+          }
           if (s3Resp?.Metadata?.etag) {
-            this.arrayBufferRequestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
+            requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
           // Use the base domain of the wiki being scraped as the Referer header, so that we can
           // successfully scrape WMF map tiles.
-          const mwResp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
+          const mwResp = await this.request({ url, method: 'GET', ...requestOptions })
 
           // Most of the images, after having been uploaded once to the
           // cache, will always have 304 status, until modified. If cache
