@@ -246,7 +246,7 @@ describe('Utils', () => {
   test('isWebpCandidate by mime type', async () => {
     expect(isWebpCandidateImageMimeType('image/jpeg')).toBeTruthy()
     expect(isWebpCandidateImageMimeType('image/png')).toBeTruthy()
-    expect(isWebpCandidateImageMimeType('image/gif')).toBeFalsy()
+    expect(isWebpCandidateImageMimeType('image/gif')).toBeTruthy()
     expect(isWebpCandidateImageMimeType('application/json')).toBeFalsy()
     expect(isWebpCandidateImageMimeType('image/svg+xml')).toBeFalsy()
     expect(isWebpCandidateImageMimeType('image/svg')).toBeFalsy()

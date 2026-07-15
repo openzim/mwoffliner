@@ -735,7 +735,8 @@ class Downloader {
 
   private async compressDefault(data: Buffer, contentType: string): Promise<Buffer> {
     if (contentType === 'image/png') {
-      return await sharp(data).png({ palette: true, quality: 60, effort: 7 }).toBuffer()
+      // { animated: true } reads all frames of an animated PNG (APNG); it is a no-op for static PNGs
+      return await sharp(data, { animated: true }).png({ palette: true, quality: 60, effort: 7 }).toBuffer()
     } else if (contentType === 'image/jpeg') {
       return await sharp(data).jpeg({ quality: 60, mozjpeg: true }).toBuffer()
     } else if (contentType === 'image/gif') {
@@ -746,14 +747,15 @@ class Downloader {
   private async getCompressedBody(input: CompressionData, requestedWidth?: number): Promise<CompressionData> {
     const contentType = await this.getImageMimeType(input.data)
     if (isBitmapImageMimeType(contentType)) {
-      // Resize down with sharp before compression when the source is wider
-      // than the requested display width. Skip GIFs to avoid breaking animations.
+      // Resize down with sharp before compression when the source is wider than the requested
+      // display width. { animated: true } reads all frames so animated GIFs/APNGs are resized
+      // frame-by-frame and stay animated, instead of only keeping their first frame.
       let dataToCompress = input.data
-      if (requestedWidth && contentType !== 'image/gif') {
+      if (requestedWidth) {
         try {
-          const metadata = await sharp(input.data).metadata()
+          const metadata = await sharp(input.data, { animated: true }).metadata()
           if (metadata.width && metadata.width > requestedWidth) {
-            dataToCompress = await sharp(input.data).resize({ width: requestedWidth, withoutEnlargement: true }).toBuffer()
+            dataToCompress = await sharp(input.data, { animated: true }).resize({ width: requestedWidth, withoutEnlargement: true }).toBuffer()
           }
         } catch (err) {
           logger.warn(`Failed to resize image to ${requestedWidth}px, proceeding without resize: ${(err as any).message}`)
@@ -762,7 +764,7 @@ class Downloader {
 
       if (this.webp && isWebpCandidateImageMimeType(contentType)) {
         try {
-          return { data: await sharp(dataToCompress).webp({ quality: 50, effort: 6 }).toBuffer() }
+          return { data: await sharp(dataToCompress, { animated: true }).webp({ quality: 50, effort: 6 }).toBuffer() }
         } catch {
           return { data: await this.compressDefault(dataToCompress, contentType) }
         }
