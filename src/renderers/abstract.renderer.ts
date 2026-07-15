@@ -845,8 +845,18 @@ export abstract class Renderer {
     mwContentText.innerHTML = parsoidDoc.getElementsByTagName('body')[0].innerHTML
 
     /* Title */
-    const htmlTitle = htmlTemplateDoc.getElementById('title_0') ? htmlTemplateDoc.getElementById('title_0').textContent : displayTitle ? displayTitle : pageTitle
-    htmlTemplateDoc.getElementsByTagName('title')[0].innerHTML = htmlTitle
+    let htmlTitle: string
+    if (htmlTemplateDoc.getElementById('title_0')) {
+      htmlTitle = htmlTemplateDoc.getElementById('title_0').innerText
+    } else if (displayTitle) {
+      // displayTitle may contain HTML markup (e.g. italics), which has no place in the <title> tag
+      const titleDiv = htmlTemplateDoc.createElement('div')
+      titleDiv.innerHTML = displayTitle
+      htmlTitle = titleDiv.textContent
+    } else {
+      htmlTitle = pageTitle
+    }
+    htmlTemplateDoc.getElementsByTagName('title')[0].textContent = htmlTitle
     // Set inline page title when missing
     const inlineTitle = htmlTemplateDoc.getElementById('firstHeading')
     if (inlineTitle && !inlineTitle.innerHTML) {

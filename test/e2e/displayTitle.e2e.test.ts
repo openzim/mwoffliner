@@ -44,6 +44,13 @@ await testRenders(
         expect(pageTitle).toBeTruthy()
         expect(pageTitle.innerHTML).toBe('<i>Giraffe</i> (album)')
       })
+
+      test(`test html <title> for ${outFiles[0].renderer} renderer`, async () => {
+        const htmlTitle = giraffePageDoc.querySelector('title')
+        expect(htmlTitle).toBeTruthy()
+        expect(htmlTitle.textContent).toBe('Giraffe (album)')
+        expect(htmlTitle.innerHTML).not.toMatch(/[<>]/)
+      })
     })
 
     describe('main page display title', () => {
