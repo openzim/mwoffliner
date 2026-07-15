@@ -218,4 +218,12 @@ describe('pages utility', () => {
     }
     expect(extractJsConfigVars(fakeHeadHtml)).toEqual(result[mwVersion])
   })
+
+  test('extractJsConfigVars handles !0/!1 markers separated from the colon by whitespace (e.g. spanning multiple lines)', () => {
+    const headHtml = `<script>;RLCONF={"wgBreakFrames":!0,"wgIsArticle":\n!1,"wgIsRedirect":\t!0,"wgCanonicalSpecialPageName":!1};RLSTATE={};</script>`
+    const result = extractJsConfigVars(headHtml)
+    expect(result.wgIsArticle).toBe(false)
+    expect(result.wgIsRedirect).toBe(true)
+    expect(result.wgCanonicalSpecialPageName).toBe(false)
+  })
 })
