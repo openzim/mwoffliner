@@ -666,7 +666,7 @@ export abstract class Renderer {
 
     /* The content of a category page, listing all its members */
     if (pageDetail.categoryinfo) {
-      const categoryinfo = categoryMembers.categoryinfo
+      const categoryinfo = categoryMembers ? categoryMembers.categoryinfo : pageDetail.categoryinfo
       const categoryContent = doc.createElement('div')
       categoryContent.lang = pageDetail.pagelang
       categoryContent.dir = pageDetail.pagedir

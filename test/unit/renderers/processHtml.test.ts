@@ -284,4 +284,33 @@ describe('processHtml', () => {
       expect(link?.getAttribute('aria-label')).toBe('View this content externally')
     })
   })
+
+  describe('category pages', () => {
+    it('renders an empty category page without category members', async () => {
+      MediaWiki.webUrl = new URL('https://en.wikipedia.org')
+      MediaWiki.baseUrl = MediaWiki.webUrl
+      MediaWiki.metaData = { mainPage: 'Main_Page' } as any
+      const t = await createTranslator('en')
+      const pageTitle = 'Category:Empty' as PageTitle
+      const pageDetail = {
+        title: pageTitle,
+        timestamp: '2023-09-10T17:36:04Z',
+        categoryinfo: { size: 0, pages: 0, files: 0, subcats: 0, hidden: false, nogallery: false },
+      }
+      const opts: ProcessHtmlOpts = {
+        html: '<div id="mw-content-text"></div>',
+        dump: new Dump('', '', {} as any, MediaWiki.metaData, undefined, t),
+        pageTitle,
+        pageDetail,
+        moduleDependencies: { styleDependenciesList: [] },
+        callback: () => {
+          return domino.createDocument('<html><head><title></title></head><body><div id="mw-content-text"></div></body></html>')
+        },
+      }
+      const result = await testRenderer.processHtml(opts)
+      expect(result.items.length).toBe(1)
+      const finalDoc = domino.createDocument(result.items[0].htmlContent)
+      expect(finalDoc.querySelector('.mw-category-generated')).not.toBeNull()
+    })
+  })
 })
