@@ -517,9 +517,14 @@ class Downloader {
         }
       }
 
-      let categoryMembers: GroupedCategoryMembers = null
+      const categoryMembers: GroupedCategoryMembers = {
+        categoryinfo: pageDetail.categoryinfo,
+        subcats: [],
+        pages: [],
+        files: [],
+      }
       if (pageDetail.categoryinfo?.size) {
-        categoryMembers = await this.getCategoryMembers(pageTitle, { ...pageDetail.categoryinfo })
+        await this.getCategoryMembers(pageTitle, categoryMembers)
         if (MediaWiki.getCategories) {
           categoryMembers.categoryinfo.subcats = categoryMembers.subcats.length
           categoryMembers.categoryinfo.pages = categoryMembers.pages.length
@@ -919,7 +924,7 @@ class Downloader {
     handler(err)
   }
 
-  private async getCategoryMembers(pageTitle: PageTitle, categoryinfo: CategoryInfo, continueStr = ''): Promise<GroupedCategoryMembers> {
+  private async getCategoryMembers(pageTitle: PageTitle, categoryMembers: GroupedCategoryMembers, continueStr = ''): Promise<void> {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
     const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
@@ -929,20 +934,12 @@ class Downloader {
       return a && a.title
     })
     const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
-    const subcats = items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true))
-    const pages = items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true))
-    const files = items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true))
+    categoryMembers.subcats.push(...items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true)))
+    categoryMembers.pages.push(...items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true)))
+    categoryMembers.files.push(...items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true)))
 
     if (cont && cont.cmcontinue) {
-      const nextItems = await this.getCategoryMembers(pageTitle, categoryinfo, cont.cmcontinue)
-      return {
-        subcats: subcats.concat(nextItems.subcats),
-        pages: pages.concat(nextItems.pages),
-        files: files.concat(nextItems.files),
-        categoryinfo,
-      }
-    } else {
-      return { subcats, pages, files, categoryinfo }
+      await this.getCategoryMembers(pageTitle, categoryMembers, cont.cmcontinue)
     }
   }
 
