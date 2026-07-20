@@ -7,7 +7,7 @@ import { Dump } from '../Dump.js'
 import { parseRetryAfterHeader } from './misc.js'
 import { FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK, FILES_DOWNLOAD_FAILURE_TRESHOLD_PER_TEN_THOUSAND, MAX_FILE_DOWNLOAD_RETRIES } from './const.js'
 import urlHelper from './url.helper.js'
-import { fileDownloadMutex, zimCreatorMutex } from '../mutex.js'
+import { fileAddMutex, fileDownloadMutex, zimCreatorMutex } from '../mutex.js'
 import RedisQueue from './RedisQueue.js'
 
 const MAXIMUM_FILE_DOWNLOAD_DELAY = 20000
@@ -56,6 +56,10 @@ class FileManager {
    * method twice with different urls / data for other usage in the future.
    */
   public async addFileToProcess(path: string, detail: FileDetail): Promise<void> {
+    await fileAddMutex.runExclusive(async () => this._addFileToProcess(path, detail))
+  }
+
+  private async _addFileToProcess(path: string, detail: FileDetail): Promise<void> {
     const existing = await this.filesToDownloadXPath.get(path)
     if (existing) {
       const isHigherRes = existing.width < (detail.width || 10e6) || existing.mult < (detail.mult || 1)
@@ -73,6 +77,10 @@ class FileManager {
    * Batch version of addFileToProcess. Uses getMany for efficiency.
    */
   public async addManyFilesToProcess(files: KVS<FileDetail>): Promise<void> {
+    await fileAddMutex.runExclusive(async () => this._addManyFilesToProcess(files))
+  }
+
+  public async _addManyFilesToProcess(files: KVS<FileDetail>): Promise<void> {
     const paths = Object.keys(files)
     if (!paths.length) return
 
