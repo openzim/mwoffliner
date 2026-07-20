@@ -56,7 +56,7 @@ Unreleased:
 * FIX: Fix parsing of jsConfigVars using new line characters (@benoit74 #2808)
 * FIX: HTML page title should not contain HTML code (@benoit74 #2814)
 * FIX: Concurrent image download headers were leaking across workers (@benoit74 #2810 #2811)
-* FIX: Add support for animated PNGs (do not always recompress to static PNG) + compress GIF to WEBP (they do support animation) (@benoit74 #2830)
+* FIX: Add support for animated PNGs (do not always recompress to static PNG) + compress GIF to WEBP (they do support animation) (@benoit74 #2830, #2843)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
