@@ -9,8 +9,8 @@ export const FIND_HTTP_REGEX = /^(?:https?:\/\/)?/i
 export const DB_ERROR = 'internal_api_error_DBQueryError'
 export const DELETED_PAGE_ERROR = 'Page has been deleted.'
 export const WEAK_ETAG_REGEX = /^(W\/)/
-export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|gif)$/
-export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png|gif)/
+export const BITMAP_IMAGE_MIME_REGEX = /^image+[/-\w.]+(jpeg|png|apng|gif)$/
+export const WEBP_CANDIDATE_IMAGE_MIME_TYPE = /image+[/]+(jpeg|png|apng|gif)/
 export const RULE_TO_REDIRECT = /window\.top!==window\.self/
 export const MAX_FILE_DOWNLOAD_RETRIES = 5
 export const FILES_DOWNLOAD_FAILURE_MINIMUM_FOR_CHECK = 50 // minimum number of files failing download before starting to consider for failing the scrape

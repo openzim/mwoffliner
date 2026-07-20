@@ -4,7 +4,8 @@ import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapI
 import { Readable } from 'stream'
 import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
-import sharp from 'sharp'
+import sharp, { Sharp } from 'sharp'
+import apng from 'sharp-apng'
 import { fileTypeFromBuffer } from 'file-type'
 import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
 import { CookieJar } from 'tough-cookie'
@@ -43,7 +44,8 @@ interface BackoffOptions {
 }
 
 interface CompressionData {
-  data: any
+  data: Buffer
+  context: string
 }
 
 function isJsonContentType(contentType: string | null): boolean {
@@ -733,48 +735,67 @@ class Downloader {
     return fileType ? fileType.mime : null
   }
 
-  private async compressDefault(data: Buffer, contentType: string): Promise<Buffer> {
-    if (contentType === 'image/png') {
-      // { animated: true } reads all frames of an animated PNG (APNG); it is a no-op for static PNGs
-      return await sharp(data, { animated: true }).png({ palette: true, quality: 60, effort: 7 }).toBuffer()
-    } else if (contentType === 'image/jpeg') {
-      return await sharp(data).jpeg({ quality: 60, mozjpeg: true }).toBuffer()
-    } else if (contentType === 'image/gif') {
-      return await sharp(data, { animated: true }).gif({ colours: 64, effort: 7 }).toBuffer()
+  private async getSharpObject(input: CompressionData, contentType: string): Promise<Sharp> {
+    if (contentType == 'image/apng') {
+      try {
+        // resolveWithObject is not passed, so sharpFromApng always resolves to a Sharp instance, never ImageData
+        return (await apng.sharpFromApng(input.data)) as Sharp
+      } catch {
+        logger.warn(`Failed to read animated PNG at ${input.context}: static image will be used instead of animation`)
+        return sharp(input.data, { animated: true })
+      }
+    } else {
+      // { animated: true } reads all frames of an animated pictures; it is a no-op for static images
+      return sharp(input.data, { animated: true })
     }
   }
 
-  private async getCompressedBody(input: CompressionData, requestedWidth?: number): Promise<CompressionData> {
+  private async compressDefault(sharpObject: Sharp, context: string, contentType: string): Promise<Buffer> {
+    if (contentType == 'image/png') {
+      return sharpObject.png({ palette: true, quality: 60, effort: 7 }).toBuffer()
+    } else if (contentType == 'image/apng') {
+      logger.warn(`Cannot compress image at ${context}: recompressing APNG to APNG is not supported ATM, using original data`)
+      return sharpObject.toBuffer()
+    } else if (contentType === 'image/jpeg') {
+      return sharpObject.jpeg({ quality: 60, mozjpeg: true }).toBuffer()
+    } else if (contentType === 'image/gif') {
+      return sharpObject.gif({ colours: 64, effort: 7 }).toBuffer()
+    } else {
+      logger.warn(`Cannot compress image at ${context}: unknown content-type ${contentType}, using original data`)
+      return sharpObject.toBuffer()
+    }
+  }
+
+  private async getCompressedBody(input: CompressionData, requestedWidth?: number): Promise<Buffer> {
     const contentType = await this.getImageMimeType(input.data)
     if (isBitmapImageMimeType(contentType)) {
       // Resize down with sharp before compression when the source is wider than the requested
       // display width. { animated: true } reads all frames so animated GIFs/APNGs are resized
       // frame-by-frame and stay animated, instead of only keeping their first frame.
-      let dataToCompress = input.data
+      let sharpData = await this.getSharpObject(input, contentType)
       if (requestedWidth) {
         try {
-          const metadata = await sharp(input.data, { animated: true }).metadata()
+          const metadata = await sharpData.metadata()
           if (metadata.width && metadata.width > requestedWidth) {
-            dataToCompress = await sharp(input.data, { animated: true }).resize({ width: requestedWidth, withoutEnlargement: true }).toBuffer()
+            sharpData = sharpData.resize({ width: requestedWidth, withoutEnlargement: true })
           }
         } catch (err) {
-          logger.warn(`Failed to resize image to ${requestedWidth}px, proceeding without resize: ${(err as any).message}`)
+          logger.warn(`Failed to resize image from ${input.context} to ${requestedWidth}px, proceeding without resize: ${(err as any).message}`)
         }
       }
 
       if (this.webp && isWebpCandidateImageMimeType(contentType)) {
         try {
-          return { data: await sharp(dataToCompress, { animated: true }).webp({ quality: 50, effort: 6 }).toBuffer() }
+          return await sharpData.webp({ quality: 50, effort: 6 }).toBuffer()
         } catch {
-          return { data: await this.compressDefault(dataToCompress, contentType) }
+          logger.warn(`Failed to compress ${input.context} to WEBP as requested, falling back to simple recompression of original format`)
+          return await this.compressDefault(sharpData, input.context, contentType)
         }
       } else {
-        return { data: await this.compressDefault(dataToCompress, contentType) }
+        return await this.compressDefault(sharpData, input.context, contentType)
       }
     }
-    return {
-      data: input.data,
-    }
+    return input.data
   }
 
   private getContentCb = async (url: string, kind: DownloadKind, requestedWidth: number | undefined, handler: any): Promise<void> => {
@@ -785,7 +806,11 @@ class Downloader {
       } else {
         const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
         // If content is an image, we might benefit from compressing it
-        const content = kind === 'image' ? (await this.getCompressedBody({ data: resp.data }, requestedWidth)).data : resp.data
+        const content = kind === 'image' ? await this.getCompressedBody({ data: resp.data, context: url }, requestedWidth) : resp.data
+        // Check content really exists
+        if (!content?.length) {
+          logger.warn(`Content for ${url} is missing or empty (${typeof content})`)
+        }
         // compute content-type from content, since getCompressedBody might have modified it
         const contentType = kind === 'image' ? (await this.getImageMimeType(content)) || resp.headers['content-type'] : resp.headers['content-type']
         handler(null, {
@@ -854,7 +879,12 @@ class Downloader {
           }
 
           // Compress content because image blob comes from upstream MediaWiki
-          const compressedData = (await this.getCompressedBody({ data: mwResp.data }, requestedWidth)).data
+          const compressedData = await this.getCompressedBody({ data: mwResp.data, context: url }, requestedWidth)
+
+          // Check content really exists
+          if (!compressedData?.length) {
+            throw new Error(`Content for ${url} is missing or empty (${typeof compressedData})`)
+          }
 
           // Check for the ETag and upload to cache
           const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
