@@ -369,14 +369,14 @@ class Downloader {
     return this.getJSON<SiteInfoResponse>(this.apiUrlDirector.buildSiteInfoURL())
   }
 
-  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false): Promise<QueryMwRet> {
+  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false, followRedirects = true): Promise<QueryMwRet> {
     let continuation: ContinueOpts
     let allPages: { [key: string]: PageInfo & QueryRet } = {}
     const visitedUrls = new Set<string>()
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...(await this.getPageQueryOpts(shouldGetThumbnail, true)),
+        ...(await this.getPageQueryOpts(shouldGetThumbnail, followRedirects)),
         titles: pageTitles.join('|'),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories

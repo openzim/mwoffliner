@@ -48,7 +48,7 @@ export async function getPagesByTitle(
         }
 
         // Retrieve the details and save them in Redis
-        const allMwPages = await Downloader.getPagesByTitle(pageTitlesBatch, numThumbnails < 100)
+        const allMwPages = await Downloader.getPagesByTitle(pageTitlesBatch, numThumbnails < 100, purpose !== 'categories')
         const { numThumbnails: iterThumbnails } = await processPagesAndSaveToRedis(allMwPages, pagesToIgnore, allowedContentModels, categoryTitles)
         numThumbnails += iterThumbnails
       }
