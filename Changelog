@@ -36,7 +36,7 @@ Unreleased:
 * CHANGED: Use i18next library to handle internationalization (@benoit74 #2614 #2750)
 * CHANGED: Drop imagemin dependency and use sharp for image compression (@benoit74 #2765)
 * CHANGED: Upgrade title truncation logic to match libzim 9.4.0 constraints (@benoit74 #2318)
-* CHANGED: Upgrade dependencies especially node-libzim 4.4.0 / libzim 9.8.0 (@benoit74 #2770)
+* CHANGED: Upgrade dependencies especially node-libzim 4.5.0 / libzim 9.8.1 (@benoit74 #2770, #2842)
 * CHANGED: Clarify mwUrl sanitize function to avoid weird errors (@benoit74 #2613)
 * CHANGED: *** Breaking *** Use "page" instead of "article" everywhere in the codebase and CLI parameters ; use pageTitle instead of articleId in the codebase (@benoit74 #2697, #2380)
 * FIX: Include page redirects in content namespaces or current article namespace (@benoit74 #2731)
