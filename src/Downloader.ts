@@ -924,22 +924,27 @@ class Downloader {
     handler(err)
   }
 
-  private async getCategoryMembers(pageTitle: PageTitle, categoryMembers: GroupedCategoryMembers, continueStr = ''): Promise<void> {
+  private async getCategoryMembers(pageTitle: PageTitle, categoryMembers: GroupedCategoryMembers): Promise<void> {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
-    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
-    const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
-      const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':').slice(1).join(':')) || a.title)
-      a.sortkeyprefix = [...sortkey][0]
-      return a && a.title
-    })
-    const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
-    categoryMembers.subcats.push(...items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true)))
-    categoryMembers.pages.push(...items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true)))
-    categoryMembers.files.push(...items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true)))
+    let continueStr = ''
+    while (true) {
+      const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
+      const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
+        const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':').slice(1).join(':')) || a.title)
+        a.sortkeyprefix = [...sortkey][0]
+        return a && a.title
+      })
+      const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
+      categoryMembers.subcats.push(...items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true)))
+      categoryMembers.pages.push(...items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true)))
+      categoryMembers.files.push(...items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true)))
 
-    if (cont && cont.cmcontinue) {
-      await this.getCategoryMembers(pageTitle, categoryMembers, cont.cmcontinue)
+      if (cont && cont.cmcontinue) {
+        continueStr = cont.cmcontinue
+      } else {
+        break
+      }
     }
   }
 
