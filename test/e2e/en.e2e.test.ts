@@ -78,6 +78,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         'vector-feature-limited-width-clientpref-1',
         'vector-feature-limited-width-content-enabled',
         'vector-feature-main-menu-pinned-disabled',
+        'vector-feature-navigation-update-disabled',
         'vector-feature-page-tools-pinned-disabled',
         'vector-feature-toc-pinned-clientpref-0',
         'vector-sticky-header-enabled',
