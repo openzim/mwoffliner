@@ -6,7 +6,8 @@ import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import sharp, { Sharp } from 'sharp'
 import apng from 'sharp-apng'
-import { fileTypeFromBuffer } from 'file-type'
+import { FileTypeParser } from 'file-type'
+import { detectXml } from '@file-type/xml'
 import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
 import { CookieJar } from 'tough-cookie'
 
@@ -22,6 +23,11 @@ import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
 import deepmerge from 'deepmerge'
+
+// create file-type parser with add-on to detect XML documents content (typically SVG)
+// Nota: file-type is capable to detect only binary content mime-type without the custom
+// detector
+const fileTypeParser = new FileTypeParser({ customDetectors: [detectXml] })
 
 interface DownloaderOpts {
   uaString: string
@@ -731,13 +737,9 @@ class Downloader {
       })
   }
 
-  private async getImageMimeType(data: any): Promise<string | null> {
-    const fileType = await fileTypeFromBuffer(data)
-    if (fileType && fileType.mime === 'application/xml') {
-      // File type is known to be wrong, might be SVG
-      return null
-    }
-    return fileType ? fileType.mime : null
+  private async getImageMimeType(data: any): Promise<string> {
+    // get mime-type of a binary file, with XML addon to detect SVGs
+    return (await fileTypeParser.fromBuffer(data)).mime
   }
 
   private async getSharpObject(input: CompressionData, contentType: string): Promise<Sharp> {

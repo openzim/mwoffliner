@@ -224,7 +224,7 @@ class FileManager {
             dump.status.files.success += 1
             hostData.downloadSuccess += 1
           } else {
-            throw new Error(`Bad response received: ${resp}`)
+            throw new Error(`Bad response received: ${JSON.stringify(resp)}`)
           }
         })
         .catch(async (err) => {
