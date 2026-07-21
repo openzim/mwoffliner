@@ -746,9 +746,23 @@ export abstract class Renderer {
     // List of categories the page is a member of
     if (categoriesHtml) {
       let categoriesDoc = domino.createDocument(categoriesHtml)
-      const ruRetCategories = await rewriteUrlsOfDoc(categoriesDoc, pagePath, dump)
-      categoriesDoc = ruRetCategories.doc
-      doc.getElementsByTagName('body')[0].appendChild(categoriesDoc.getElementById('catlinks'))
+      // Remove categories which do not have an associated page
+      const catLinksDiv = categoriesDoc.getElementById('catlinks')
+      const listItems = catLinksDiv.getElementsByTagName('li')
+      for (const listItem of Array.from<HTMLElement>(listItems)) {
+        const link = listItem.getElementsByTagName('a')[0]
+        if (Array.from(link.classList).includes('new')) {
+          listItem.parentNode.removeChild(listItem)
+        }
+      }
+      const nbRemainingLinks = catLinksDiv.getElementsByTagName('li').length
+
+      // Rewrite and add categories HTML only if there is at least one category remaining in the list
+      if (nbRemainingLinks > 0) {
+        const ruRetCategories = await rewriteUrlsOfDoc(categoriesDoc, pagePath, dump)
+        categoriesDoc = ruRetCategories.doc
+        doc.getElementsByTagName('body')[0].appendChild(categoriesDoc.getElementById('catlinks'))
+      }
     }
 
     videoDependencies = videoDependencies.concat(
