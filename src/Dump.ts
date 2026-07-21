@@ -53,6 +53,7 @@ export class Dump {
     },
     redirects: {
       written: 0,
+      ignored: 0,
     },
   }
 

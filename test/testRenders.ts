@@ -54,7 +54,7 @@ async function getOutFiles(renderName: string, testId: string, parameters: Param
   return outFiles
 }
 
-interface TestDump extends Dump {
+export interface TestDump extends Dump {
   testId: string
   renderer: string
   error?: Error

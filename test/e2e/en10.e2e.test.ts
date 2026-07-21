@@ -35,8 +35,16 @@ await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
           expect(dump.status.files.success).toBeLessThan(700)
         }
         // has enough redirects
-        expect(dump.status.redirects.written).toBeGreaterThan(600)
-        expect(dump.status.redirects.written).toBeLessThan(650)
+        if (dump.nodet) {
+          expect(dump.status.redirects.written).toBeGreaterThan(420)
+          expect(dump.status.redirects.written).toBeLessThan(470)
+          expect(dump.status.redirects.ignored).toBeGreaterThan(150)
+          expect(dump.status.redirects.ignored).toBeLessThan(200)
+        } else {
+          expect(dump.status.redirects.written).toBeGreaterThan(600)
+          expect(dump.status.redirects.written).toBeLessThan(650)
+          expect(dump.status.redirects.ignored).toBe(0)
+        }
         // has 10 pages
         expect(dump.status.pages.success).toEqual(10)
         // No page and files error

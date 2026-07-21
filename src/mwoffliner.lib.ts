@@ -662,6 +662,11 @@ async function execute(argv: any) {
         }
         const redirectTitle = truncateZimEntryTitleWords(from)
         if (fragment) {
+          // Ignore redirects to fragment in 'nodet' since there is mostly no chance the section does exists
+          if (dump.nodet) {
+            dump.status.redirects.ignored += 1
+            continue
+          }
           // Should we have a fragment (i.e. we redirect to a section of a page), this is not (yet) supported by libzim
           // (to have such a redirect with a fragment inside the path), so we create a "fake" entry with only an HTML-based
           // redirect inside
