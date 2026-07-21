@@ -369,14 +369,14 @@ class Downloader {
     return this.getJSON<SiteInfoResponse>(this.apiUrlDirector.buildSiteInfoURL())
   }
 
-  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false): Promise<QueryMwRet> {
+  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false, followRedirects = true): Promise<QueryMwRet> {
     let continuation: ContinueOpts
     let allPages: { [key: string]: PageInfo & QueryRet } = {}
     const visitedUrls = new Set<string>()
 
     while (true) {
       const queryOpts: KVS<any> = {
-        ...(await this.getPageQueryOpts(shouldGetThumbnail, true)),
+        ...(await this.getPageQueryOpts(shouldGetThumbnail, followRedirects)),
         titles: pageTitles.join('|'),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
@@ -517,9 +517,14 @@ class Downloader {
         }
       }
 
-      let categoryMembers: GroupedCategoryMembers = null
+      const categoryMembers: GroupedCategoryMembers = {
+        categoryinfo: pageDetail.categoryinfo,
+        subcats: [],
+        pages: [],
+        files: [],
+      }
       if (pageDetail.categoryinfo?.size) {
-        categoryMembers = await this.getCategoryMembers(pageTitle, { ...pageDetail.categoryinfo })
+        await this.getCategoryMembers(pageTitle, categoryMembers)
         if (MediaWiki.getCategories) {
           categoryMembers.categoryinfo.subcats = categoryMembers.subcats.length
           categoryMembers.categoryinfo.pages = categoryMembers.pages.length
@@ -919,30 +924,27 @@ class Downloader {
     handler(err)
   }
 
-  private async getCategoryMembers(pageTitle: PageTitle, categoryinfo: CategoryInfo, continueStr = ''): Promise<GroupedCategoryMembers> {
+  private async getCategoryMembers(pageTitle: PageTitle, categoryMembers: GroupedCategoryMembers): Promise<void> {
     const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
 
-    const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
-    const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
-      const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':').slice(1).join(':')) || a.title)
-      a.sortkeyprefix = [...sortkey][0]
-      return a && a.title
-    })
-    const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
-    const subcats = items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true))
-    const pages = items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true))
-    const files = items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true))
+    let continueStr = ''
+    while (true) {
+      const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
+      const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
+        const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':').slice(1).join(':')) || a.title)
+        a.sortkeyprefix = [...sortkey][0]
+        return a && a.title
+      })
+      const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
+      categoryMembers.subcats.push(...items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true)))
+      categoryMembers.pages.push(...items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true)))
+      categoryMembers.files.push(...items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true)))
 
-    if (cont && cont.cmcontinue) {
-      const nextItems = await this.getCategoryMembers(pageTitle, categoryinfo, cont.cmcontinue)
-      return {
-        subcats: subcats.concat(nextItems.subcats),
-        pages: pages.concat(nextItems.pages),
-        files: files.concat(nextItems.files),
-        categoryinfo,
+      if (cont && cont.cmcontinue) {
+        continueStr = cont.cmcontinue
+      } else {
+        break
       }
-    } else {
-      return { subcats, pages, files, categoryinfo }
     }
   }
 
