@@ -426,6 +426,10 @@ async function execute(argv: any) {
   }
 
   for (const dump of dumps) {
+    // set main page since it might have changed since dump original creation
+    dump.opts.mainPage = mainPage
+    dump.mwMetaData.mainPage = mainPage
+    dump.opts.firstPage = pages[0]
     let logStr = 'Doing dump:'
     if (dump.langVar) logStr += ' variant=' + dump.langVar
     logStr += ` format=${dump.format || 'all'}`

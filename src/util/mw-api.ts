@@ -59,7 +59,7 @@ export async function getPagesByTitle(
 
 export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[]) {
   function revisionFilter(page: PageInfo & QueryRet): boolean {
-    return !page.revisions
+    return !page.revisions && page.ns != 14
   }
 
   function contentModelFilter(page: PageInfo & QueryRet): boolean {
@@ -73,19 +73,19 @@ export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allow
   // Filter pages without revisions (#2091)
   const revisionIssues = pages.filter(revisionFilter)
   if (revisionIssues.length > 0) {
-    logger.debug(`Ignoring pages without revisions: ${revisionIssues.join(', ')}`)
+    logger.debug(`Ignoring pages without revisions: ${revisionIssues.map((page) => page.title).join(', ')}`)
   }
 
   // Filter pages with unexpected content model (#2445)
   const contentModelIssues = pages.filter(contentModelFilter)
   if (contentModelIssues.length > 0) {
-    logger.debug(`Ignoring pages with unexpected content model: ${contentModelIssues.join(', ')}`)
+    logger.debug(`Ignoring pages with unexpected content model: ${contentModelIssues.map((page) => page.title).join(', ')}`)
   }
 
   // Filter pages asked for by user
   const ignoreListIssues = pages.filter(ignoredPagesFilter)
   if (ignoreListIssues.length > 0) {
-    logger.debug(`Ignoring pages in list: ${ignoreListIssues.join(', ')}`)
+    logger.debug(`Ignoring pages in list: ${ignoreListIssues.map((page) => page.title).join(', ')}`)
   }
 
   return pages

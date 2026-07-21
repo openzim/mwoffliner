@@ -8,7 +8,7 @@ import * as logger from '../Logger.js'
 function rewriteUrlNoContentCheck(pagePath: ZimPath, dump: Dump, linkNode: DominoElement, mediaDependencies?: string[]): PageTitle {
   const classList: string[] = (linkNode.getAttribute('class') || '').split(' ').filter((cssClass) => cssClass)
   const rel: string[] = (linkNode.getAttribute('rel') || '').split(' ').filter((rel) => rel)
-  let href = linkNode.getAttribute('href') || ''
+  let href: string = linkNode.getAttribute('href') || ''
   let hrefProtocol
 
   // Exclude links already written appropriately
@@ -22,9 +22,15 @@ function rewriteUrlNoContentCheck(pagePath: ZimPath, dump: Dump, linkNode: Domin
   }
   // Always remove redlinks
   if (classList.includes('new')) {
-    migrateChildren(linkNode, linkNode.parentNode, linkNode)
-    linkNode.parentNode.removeChild(linkNode)
-    return null
+    if (href.includes('title=Category:ThisCategoryDoesNotExists')) {
+      // This is a full hack ; to be replaced with proper rewriting of redlink link
+      // to page link + we also need to remove the 'new' class to remove redlink styling
+      href = './Category:ThisCategoryDoesNotExists'
+    } else {
+      migrateChildren(linkNode, linkNode.parentNode, linkNode)
+      linkNode.parentNode.removeChild(linkNode)
+      return null
+    }
   }
 
   const extractScheme = function (href: string) {

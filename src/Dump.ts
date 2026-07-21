@@ -18,6 +18,7 @@ interface DumpOpts {
   customZimLongDescription?: string
   customZimFilename?: string
   mainPage?: string
+  firstPage?: PageTitle
   pageList?: string
   resume?: boolean
   minifyHtml: boolean

@@ -909,7 +909,7 @@ export abstract class Renderer {
 
     /* Revision date */
     const date = new Date(pageDetail.timestamp)
-    const lastEditedOnString = date ? dump.t('LAST_EDITED_ON', { date: date.toISOString().substring(0, 10) }) : null
+    const lastEditedOnString = pageDetail.timestamp && date ? dump.t('LAST_EDITED_ON', { date: date.toISOString().substring(0, 10) }) : null
 
     const creatorLink =
       '<a class="external text" ' +

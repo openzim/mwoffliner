@@ -35,6 +35,10 @@ export interface ActionParseResult {
 export class ActionParseRenderer extends Renderer {
   #staticFilesList: Set<string> = new Set()
   #htmlTemplateCode: () => string
+  #defaultHtmlCssClass: string = ''
+  #defaultBodyCssClass: string = ''
+  #defaultStyleDependenciesList: string[] = []
+  #defaultJsDependenciesList: string[] = []
   constructor() {
     super()
     if (this.#staticFilesList.size === 0) {
@@ -132,11 +136,29 @@ export class ActionParseRenderer extends Renderer {
   }
 
   public async download(downloadOpts: DownloadOpts): Promise<DownloadRes> {
-    const { pageTitle, pageUrl, langVar } = downloadOpts
+    const { pageTitle, pageDetail, pageUrl, langVar } = downloadOpts
 
     let data: ActionParseResult
     try {
-      data = await Downloader.getJSON<ActionParseResult>(pageUrl)
+      if (pageDetail.ns === 14 && !pageDetail.revisionId) {
+        data = {
+          parse: {
+            title: pageTitle,
+            pageid: 0,
+            redirects: [],
+            text: '<span></span>',
+            displaytitle: '',
+            subtitle: '',
+            categorieshtml: '',
+            headhtml: '',
+            modules: [],
+            modulestyles: [],
+            jsconfigvars: null,
+          },
+        }
+      } else {
+        data = await Downloader.getJSON<ActionParseResult>(pageUrl)
+      }
     } catch (err) {
       if (err instanceof DownloadError && err.responseData.error?.code === 'missingtitle') {
         // For missing pages, query log events searching for a recent move, and if found check
@@ -174,6 +196,18 @@ export class ActionParseRenderer extends Renderer {
     const jsDependenciesList = data.parse.modules.filter((oneJsDep: string) => {
       return !oneJsDep.startsWith('user')
     })
+    if (!styleDependenciesList.length) {
+      styleDependenciesList.push(...this.#defaultStyleDependenciesList)
+    }
+    if (!jsDependenciesList.length) {
+      jsDependenciesList.push(...this.#defaultJsDependenciesList)
+    }
+    if (styleDependenciesList.length && !this.#defaultStyleDependenciesList.length) {
+      this.#defaultStyleDependenciesList = styleDependenciesList
+    }
+    if (jsDependenciesList.length && !this.#defaultJsDependenciesList.length) {
+      this.#defaultJsDependenciesList = jsDependenciesList
+    }
 
     // Preload jquery.tablesorter for mediawiki.page.ready
     if (data.parse.text.includes('sortable')) {
@@ -196,8 +230,17 @@ export class ActionParseRenderer extends Renderer {
       needsMathJax,
     }
 
-    const bodyCssClass = extractBodyCssClass(data.parse.headhtml)
-    const htmlCssClass = extractHtmlCssClass(data.parse.headhtml)
+    const bodyCssClass = extractBodyCssClass(data.parse.headhtml) || this.#defaultBodyCssClass
+    if (bodyCssClass && !this.#defaultBodyCssClass) {
+      this.#defaultBodyCssClass = bodyCssClass
+        .split(' ')
+        .filter((className) => !className.startsWith('ns-') && !className.startsWith('rootPage-'))
+        .join(' ')
+    }
+    const htmlCssClass = extractHtmlCssClass(data.parse.headhtml) || this.#defaultHtmlCssClass
+    if (htmlCssClass && !this.#defaultHtmlCssClass) {
+      this.#defaultHtmlCssClass = htmlCssClass
+    }
 
     return {
       data: data.parse.text,

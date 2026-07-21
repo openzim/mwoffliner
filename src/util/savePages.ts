@@ -117,6 +117,10 @@ export async function savePages(zimCreator: Creator, dump: Dump) {
   let prevPercentProgress: string
   const pagesTotal = await RedisStore.pagesStore.len()
 
+  // get first page once to save default CSS classes, and style + JS modules
+  const firstPage = await RedisStore.pagesStore.get(dump.opts.firstPage)
+  await Downloader.getPage(firstPage.title, RenderingContext.pagesRenderer, getPageRenderUrl(firstPage, dump), dump, firstPage)
+
   // number of pages allowed to fail is the greater of 5 or 0.001% (1 per 100k) pages
   dump.maxHardFailedPages = Math.max(5, Math.floor(pagesTotal / 100000))
 
