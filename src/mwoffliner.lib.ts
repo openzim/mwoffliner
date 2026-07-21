@@ -332,6 +332,10 @@ async function execute(argv: any) {
     process.exit(128 + 2)
   })
 
+  const filenameDate = new Date().toISOString().slice(0, 7)
+
+  const dumps: Dump[] = []
+
   /* ********************************* */
   /* GET CONTENT ********************* */
   /* ********************************* */
@@ -365,24 +369,6 @@ async function execute(argv: any) {
     mainPage = pages[0]
     logger.info(`Using single page list entry as main page: ${mainPage}`)
   }
-
-  const allowedContentModels = ['wikitext', ...addContentModels]
-
-  logger.debug('Getting pages details')
-  let stime = Date.now()
-  await getPages(mainPage, pages, pagesToIgnore, allowedContentModels)
-  logger.info(`Got pages details in ${(Date.now() - stime) / 1000} seconds`)
-
-  const filenameDate = new Date().toISOString().slice(0, 7)
-
-  // Getting total number of pages from Redis
-  logger.info(`Total pages found in Redis: ${await RedisStore.pagesStore.len()}`)
-
-  if (mainPage && !(await RedisStore.pagesStore.exists(mainPage)) && !(await RedisStore.redirectsStore.exists(mainPage))) {
-    throw new Error(`mainPage '${mainPage}' was not found`)
-  }
-
-  const dumps: Dump[] = []
 
   const t = await createTranslator(mwMetaData.langIso2 || 'en', 'en')
 
@@ -418,23 +404,51 @@ async function execute(argv: any) {
         t,
       )
       dumps.push(dump)
-      let logStr = 'Doing dump:'
-      if (langVar) logStr += ' variant=' + langVar
-      logStr += ` format=${dumpFormat || 'all'}`
-      logger.info(`******************** ${logStr} ********************`)
-      let shouldSkip = false
-      try {
-        dump.checkResume()
-      } catch {
-        shouldSkip = true
-      }
-      if (shouldSkip) {
-        logger.info('Skipping dump')
-      } else {
-        await doDump(dump)
-        await RedisStore.filesStore.flush()
-        logger.info('Finished dump')
-      }
+
+      // compute ZIM metadata early to fail early in case of issue ; we do that check
+      // for each dump, even if it will probably pass on all or fail on first one
+      computeZimMetadata(dump)
+    }
+  }
+
+  const allowedContentModels = ['wikitext', ...addContentModels]
+
+  logger.debug('Getting pages details')
+  let stime = Date.now()
+  await getPages(mainPage, pages, pagesToIgnore, allowedContentModels)
+  logger.info(`Got pages details in ${(Date.now() - stime) / 1000} seconds`)
+
+  // Getting total number of pages from Redis
+  logger.info(`Total pages found in Redis: ${await RedisStore.pagesStore.len()}`)
+
+  if (mainPage && !(await RedisStore.pagesStore.exists(mainPage)) && !(await RedisStore.redirectsStore.exists(mainPage))) {
+    throw new Error(`mainPage '${mainPage}' was not found`)
+  }
+
+  for (const dump of dumps) {
+    let logStr = 'Doing dump:'
+    if (dump.langVar) logStr += ' variant=' + dump.langVar
+    logStr += ` format=${dump.format || 'all'}`
+    logger.info(`******************** ${logStr} ********************`)
+    let shouldSkip = false
+    try {
+      dump.checkResume()
+    } catch {
+      shouldSkip = true
+    }
+    if (shouldSkip) {
+      logger.info('Skipping dump')
+    } else {
+      // Reset FileManager for the new dump
+      FileManager.reset()
+
+      // Check scraper is still logged-in (session from previous dump might have expired
+      // due to inactivity when downloading files)
+      await MediaWiki.login(true)
+
+      await doDump(dump)
+      await RedisStore.filesStore.flush()
+      logger.info('Finished dump')
     }
   }
 
@@ -442,18 +456,11 @@ async function execute(argv: any) {
 
   logger.info('All dumping(s) finished with success.')
 
-  async function doDump(dump: Dump) {
+  function computeZimMetadata(dump: Dump) {
     dump.outFile = dump.computeZimFullPath()
     logger.info(`Writing ZIM to ${dump.outFile}`)
 
-    // Reset FileManager for the new dump
-    FileManager.reset()
-
-    // Check scraper is still logged-in (session from previous dump might have expired
-    // due to inactivity when downloading files)
-    await MediaWiki.login(true)
-
-    const metadata = {
+    dump.zimMetadata = {
       ...metaDataRequiredKeys,
       Tags: dump.computeZimTags(),
       Name: dump.computeZimName(),
@@ -462,8 +469,10 @@ async function execute(argv: any) {
       Source: MediaWiki.webUrl.hostname,
       ...(dump.opts.customZimLongDescription ? { LongDescription: `${dump.opts.customZimLongDescription}` } : {}),
     }
-    validateMetadata(metadata)
+    validateMetadata(dump.zimMetadata)
+  }
 
+  async function doDump(dump: Dump) {
     const zimCreator = new Creator().configCompression(Compression.Zstd).configVerbose(logLevel === 'debug')
     if (!dump.opts.withoutZimFullTextIndex) {
       zimCreator.configIndexing(true, dump.mwMetaData.langIso3)
@@ -485,7 +494,7 @@ async function execute(argv: any) {
       }
     }
 
-    Object.entries(metadata).forEach(([key, value]) => {
+    Object.entries(dump.zimMetadata).forEach(([key, value]) => {
       zimCreator.addMetadata(key, Buffer.isBuffer(value) ? createBufferContentProvider(value) : value, key.startsWith('Illustration_') ? 'image/png' : 'text/plain')
     })
 
