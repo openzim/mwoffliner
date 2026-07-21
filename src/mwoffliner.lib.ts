@@ -728,8 +728,14 @@ async function execute(argv: any) {
 
     const parsedUrl = new URL(mwMetaData.logo, MediaWiki.baseUrl)
     const logoUrl = parsedUrl.protocol ? mwMetaData.logo : MediaWiki.baseUrl.protocol + mwMetaData.logo
-    const { content } = await Downloader.downloadContent(logoUrl, 'image')
-    return sharp(content).resize(48, 48, resizeOptions).png().toBuffer()
+    try {
+      const { content } = await Downloader.downloadContent(logoUrl, 'image')
+      return sharp(content).resize(48, 48, resizeOptions).png().toBuffer()
+    } catch (err) {
+      logger.error(`Failed to fetch or resize logo declared in site info: ${logoUrl}`)
+      logger.error(`Please try specifying a customZimFavicon (--customZimFavicon=./path/to/your/file.ico)`)
+      throw err
+    }
   }
 
   async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
