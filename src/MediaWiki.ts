@@ -547,6 +547,7 @@ class MediaWiki {
       licenseUrl,
       subTitle,
       categoryCollation,
+      versionMw: mwVersion,
     }
   }
 
@@ -557,7 +558,7 @@ class MediaWiki {
 
     const creator = this.getCreatorName() || 'Kiwix'
 
-    const { langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, textDir, licenseName, licenseUrl, subTitle, categoryCollation } =
+    const { langIso2, langIso3, mainPage, mainPageIsDomainRoot, siteName, logo, langMw, textDir, licenseName, licenseUrl, subTitle, categoryCollation, versionMw } =
       await this.getSiteInfo(argvOpts)
 
     const mwMetaData: MWMetaData = {
@@ -585,6 +586,7 @@ class MediaWiki {
       licenseName,
       licenseUrl,
       categoryCollation,
+      versionMw,
     }
 
     this.metaData = mwMetaData
