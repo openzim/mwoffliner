@@ -23,6 +23,7 @@ import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
 import deepmerge from 'deepmerge'
+import semver from 'semver'
 
 // create file-type parser with add-on to detect XML documents content (typically SVG)
 // Nota: file-type is capable to detect only binary content mime-type without the custom
@@ -433,10 +434,14 @@ class Downloader {
         ...(await this.getPageQueryOpts()),
         ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
         ...(MediaWiki.getCategories
-          ? {
-              cllimit: 'max',
-              clshow: '!hidden',
-            }
+          ? semver.satisfies(MediaWiki.metaData.versionMw, '>=1.46')
+            ? {
+                cllimit: 'max',
+              }
+            : {
+                cllimit: 'max',
+                clshow: '!hidden',
+              }
           : {}),
         rawcontinue: 'true',
         generator: 'allpages',

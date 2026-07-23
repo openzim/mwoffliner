@@ -207,6 +207,7 @@ interface MWMetaData {
   mainPageIsDomainRoot: boolean
   textDir: TextDirection
   langMw: string
+  versionMw: string
   logo: string
   licenseName: string
   licenseUrl: string
