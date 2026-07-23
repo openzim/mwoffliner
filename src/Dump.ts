@@ -28,6 +28,7 @@ interface DumpOpts {
 }
 
 export class Dump {
+  public format: string
   public customProcessor?: CustomProcessor
   public nopic: boolean
   public novid: boolean
@@ -38,6 +39,7 @@ export class Dump {
   public t: Translator
   public mwMetaData: MWMetaData
   public outFile: string
+  public zimMetadata: KVS<string | Buffer>
   public maxHardFailedPages: number = 0
   public status = {
     files: {
@@ -60,6 +62,7 @@ export class Dump {
   private formatFlavour: string
 
   constructor(format: string, langVar: string, opts: DumpOpts, mwMetaData: MWMetaData, customProcessor: CustomProcessor | undefined, t: Translator) {
+    this.format = format
     this.mwMetaData = mwMetaData
     this.opts = opts
     this.customProcessor = customProcessor

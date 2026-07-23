@@ -1,4 +1,4 @@
-import { testAllRenders, TestDump } from '../testRenders.js'
+import { testAllRenders } from '../testRenders.js'
 import domino from 'domino'
 import { zimdump, zimcheck } from '../util.js'
 import 'dotenv/config.js'
@@ -24,11 +24,6 @@ const parameters = {
   pageList: 'Providence/Stoughton Line', // use page with a slash in its name to check relative links are properly handled
   adminEmail: 'test@kiwix.org',
   format: ['', 'nopic,nodet:mini'],
-  //format: ['nopic,nodet:mini'],
-}
-
-const dumpName = (dump: TestDump) => {
-  return dump.nodet ? 'mini' : 'full'
 }
 
 await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
@@ -44,15 +39,15 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       const pageDoc = domino.createDocument(pagesFromDump[index])
       const allFilesArr = filesInDump[index]
 
-      test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+      test(`test ZIM integrity for ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
         await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
       })
 
-      test(`test page header for ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+      test(`test page header for ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
         expect(pageDoc.querySelector('h1#firstHeading, h1.page-header, h1.pcs-edit-section-title')).toBeTruthy()
       })
 
-      test(`test page <body> CSS class for ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+      test(`test page <body> CSS class for ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
         // This is implemented correctly only with ActionParse renderer for now
         if (dump.renderer !== 'ActionParse') {
           return
@@ -75,7 +70,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         expect(pageDoc.body.className.split(' ').sort()).toEqual(expectedClasses)
       })
 
-      test(`test page <html> CSS class for ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+      test(`test page <html> CSS class for ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
         // This is implemented correctly only with ActionParse renderer for now
         if (dump.renderer !== 'ActionParse') {
           return
@@ -102,14 +97,14 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
       })
 
       if (!dump.nopic) {
-        test(`test page image integrity for ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+        test(`test page image integrity for ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
           const imgFilesArr = allFilesArr.filter((elem) => elem.endsWith('pdf') || elem.endsWith('png') || elem.endsWith('jpg'))
           const imgElements = Array.from(pageDoc.querySelectorAll('img'))
           expect(verifyImgElements(imgFilesArr, imgElements)).toBe(true)
         })
       }
 
-      test(`test redirect without fragment ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+      test(`test redirect without fragment ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
         // "Providence_Line" should be a redirect to "Providence/Stoughton_Line"
         const redirectInfo = await zimdump(`list --details --url Providence_Line ${dump.outFile}`)
 
@@ -127,7 +122,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
         expect(redirectTargetInfo).toMatch(/type:\s*item/)
       })
 
-      test(`test redirect with fragment ${outFiles[0]?.renderer} renderer and ${dumpName(dump)} ZIM`, async () => {
+      test(`test redirect with fragment ${outFiles[0]?.renderer} renderer and ${dump.format} ZIM`, async () => {
         if (dump.nodet) {
           // Redirect with fragment are ignored in nodet
           expect(allFilesArr).not.toContain('Attleboro_Line')

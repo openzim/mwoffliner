@@ -58,6 +58,7 @@ Unreleased:
 * FIX: Concurrent image download headers were leaking across workers (@benoit74 #2810 #2811)
 * FIX: Add support for animated PNGs (do not always recompress to static PNG) + compress GIF to WEBP (they do support animation) (@benoit74 #2830, #2843)
 * FIX: Ignore redirects to fragment in 'nodet' since there is mostly no chance the section does exists (@benoit74 #2839)
+* CHANGED: Compute and check ZIM metadata as early as possible for quickest feedback (@benoit74 #2838)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
