@@ -122,6 +122,7 @@ export class ActionParseRenderer extends Renderer {
       .replace(/__ASSETS_DIR__/g, config.output.dirs.assets)
       .replace(/__RES_DIR__/g, config.output.dirs.res)
       .replace(/__MW_DIR__/g, config.output.dirs.mediawiki)
+      .replace(/__MATHJAX_ROOT__/g, getRelativeFilePath(pagePath, config.output.dirs.mathjax))
       .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(pagePath, ''))
       .replace('__PAGE_BODY_CSS_CLASS__', bodyCssClass)
       .replace('__PAGE_HTML_CSS_CLASS__', htmlCssClass)
