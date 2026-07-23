@@ -60,6 +60,7 @@ Unreleased:
 * FIX: Ignore redirects to fragment in 'nodet' since there is mostly no chance the section does exists (@benoit74 #2839)
 * CHANGED: Compute and check ZIM metadata as early as possible for quickest feedback (@benoit74 #2838)
 * CHANGED: Do not show inaccessible categories which do not have content on pages categories list (@benoit74 #2831)
+* CHANGED: Better error message when site logo fails to be fetched (@benoit74 #2834)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
