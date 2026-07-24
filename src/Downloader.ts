@@ -861,7 +861,12 @@ class Downloader {
             ...this.arrayBufferRequestOptions,
             headers: { ...this.arrayBufferRequestOptions.headers },
           }
-          if (s3Resp?.Metadata?.etag) {
+          // Display message when ignoring empty S3 objects
+          if (s3Resp && !s3Resp.ContentLength) {
+            logger.warn(`Ignoring empty S3 object for ${url}`)
+          }
+          // If S3 object has content and etag, check if upstream did changed
+          if (s3Resp?.ContentLength && s3Resp?.Metadata?.etag) {
             requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
           }
           // Use the base domain of the wiki being scraped as the Referer header, so that we can
