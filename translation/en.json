@@ -31,7 +31,7 @@
 	"categoryNoPagination": "Next items are not visible in browsers without Javascript",
 	"subcategories": "Subcategories",
 	"categoryEmpty": "<em>This category currently contains no pages or media.</em>",
-	"categoryLimited": "<em>This contents of this category have been reduced to only include pages inside the ZIM.</em>",
+	"categoryLimited": "<em>This category content has been reduced to only pages contained in the ZIM file.</em>",
 	"DISCLAIMER": "This page is issued from {{creator}}. The text is available under {{license}} unless otherwise noted. Additional terms may apply for the media files.",
 	"LAST_EDITED_ON": "Last edited on {{date}}",
 	"LICENSE_UNKNOWN": "an unknown license",
