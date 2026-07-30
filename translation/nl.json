@@ -38,7 +38,7 @@
 	"categoryNoPagination": "De volgende vermeldingen zijn niet zichtbaar in browsers zonder JavaScript",
 	"subcategories": "Ondercategorieën",
 	"categoryEmpty": "<em>Deze categorie bevat geen pagina's of media.</em>",
-	"categoryLimited": "<em>De inhoud van deze categorie is beperkt tot alleen pagina's binnen het ZIM-bestand.</em>",
+	"categoryLimited": "<em>De inhoud van deze categorie is beperkt tot alleen de pagina's die in het ZIM-bestand zijn opgenomen.</em>",
 	"DISCLAIMER": "Deze pagina is uitgegeven door {{creator}}. De tekst is beschikbaar onder {{license}}, tenzij anders vermeld. Voor de mediabestanden kunnen aanvullende voorwaarden gelden.",
 	"LAST_EDITED_ON": "Laatst bewerkt op {{date}}",
 	"LICENSE_UNKNOWN": "een onbekende licentie",
