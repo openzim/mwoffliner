@@ -10,7 +10,7 @@
 	"categoryHeader": "Pagine nella categoria \"{{pageName}}\"",
 	"subcategories": "Sottocategorie",
 	"categoryEmpty": "<em>Questa categoria attualmente non contiene alcuna pagina o file multimediale.</em>",
-	"categoryLimited": "<em>Il contenuto di questa categoria è stato ridotto per includere solo le pagine all'interno del ZIM.</em>",
+	"categoryLimited": "<em>Il contenuto di questa categoria è stato ridotto alle sole pagine contenute nel file ZIM.</em>",
 	"DISCLAIMER": "Questa pagina è stata pubblicata da {{creator}}. Il testo è rilasciato in base alla licenza {{license}}, salvo diversa indicazione. Potrebbero essere applicate clausole aggiuntive per i file multimediali.",
 	"LAST_EDITED_ON": "Ultima modifica il {{date}}",
 	"LICENSE_UNKNOWN": "una licenza sconosciuta",

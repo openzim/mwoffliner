@@ -2,29 +2,62 @@
 	"@metadata": {
 		"authors": [
 			"Bananax47",
+			"Benoit74",
 			"Chpol",
 			"Derugon",
 			"Muisha wiki hke",
 			"Verdy p"
 		]
 	},
-	"categoryPreviousPage": "kashashali kabere",
+	"categoryHeaderNumerals": "0-9",
+	"categoryFileCount": {
+		"one": "Cette catégorie ne contient que le fichier suivant.",
+		"other": "$t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) dans cette catégorie, sur un total de {{count}}."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "Le fichier suivant est",
+		"other": "Les {{count}} fichiers suivants sont"
+	},
+	"categoryMediaHeader": "Médias de la catégorie \"{{pageName}}\"",
+	"categoryPageCount": {
+		"one": "Cette catégorie ne contient que la page suivante.",
+		"other": "$t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) dans cette catégorie, sur un total de {{count}}."
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "La page suivante est",
+		"other": "Les {{count}} pages suivantes sont"
+	},
+	"categoryHeader": "Pages de la catégorie \"{{pageName}}\"",
+	"categorySubcatCount": {
+		"one": "Cette catégorie ne contient que la sous-catégorie suivante.",
+		"other": "$t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) dans cette catégorie, sur un total de {{count}}."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "La sous-catégorie suivante est",
+		"other": "Les {{count}} sous-catégories suivantes sont"
+	},
+	"categoryPreviousPage": "page précédente",
+	"categoryNextPage": "page suivante",
+	"categoryNoPagination": "Les éléments suivants ne sont pas visibles dans les navigateurs sans JavaScript.",
+	"subcategories": "Sous-catégories",
+	"categoryEmpty": "<em>Cette catégorie ne contient actuellement aucune page ni aucun média.</em>",
+	"categoryLimited": "<em>Le contenu de cette catégorie a été réduit aux seules pages contenues dans le fichier ZIM.</em>",
 	"DISCLAIMER": "Cette page est issue de {{creator}}. Sauf mention contraire, le texte est disponible sous {{license}}. Des conditions supplémentaires peuvent s’appliquer aux fichiers multimédias.",
 	"LAST_EDITED_ON": "Dernière modification le {{date}}",
 	"LICENSE_UNKNOWN": "une licence inconnue",
 	"DOWNLOAD_ERRORS_HEADING": "Oups. Page non trouvée.",
 	"DOWNLOAD_ERRORS_MESSAGE": "La page demandée « {{pageTitle}} » n’est pas disponible dans ce ZIM, il n’a pas été possible de la récupérer depuis {{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Cette page a été supprimée après que la liste des pages à récupérer ait été compliée, mais avant qu’il ait été récupéré pour créer le ZIM que vous parcourez.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Cette page a été supprimée après que la liste des pages à récupérer ait été compilée, mais avant qu’il ait été récupéré pour créer le ZIM que vous parcourez.",
 	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "L'accès à cette page sur le serveur {{server}} est restreint. Elle nécessite des autorisations spéciales qui ne sont pas disponibles lors du processus d'extraction de données ZIM.",
 	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "L'accès à cette page est restreint par un verrouillage par catégorie sur le serveur {{server}}. Les autorisations de catégorie requises ne sont pas disponibles lors du processus d'extraction de données ZIM.",
-	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Lorsque le ZIM que vous parcourez a été créé, le serveur {{server}} n’a pas réussi à fournir des détails sur l’HTML de cette page dans les délais impartis.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Lorsque le ZIM que vous parcourez a été créé, le serveur {{server}} n’a pas réussi à fournir des détails sur le code HTML de cette page dans les délais impartis.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Lorsque le ZIM que vous parcourez a été créé, la connexion à l’API ActionParse du serveur {{server}} a expiré pendant le traitement de cette page et le serveur a renvoyé une erreur HTTP 504.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur HTTP 503 pendant qu’elle donnait des détails sur l’HTML de cette page.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur HTTP 503 pendant qu’elle donnait des détails sur le code HTML de cette page.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur inattendue d’ID de révision incorrect pendant qu’elle donnait des détails sur l’HTML de cette page.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur d’exception inaccessible pendant qu’elle donnait des détails sur l’HTML de cette page.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur d’exception d’invariant pendant qu’elle donnait des détails sur l’HTML de cette page.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur d’exception d’invariant pendant qu’elle donnait des détails sur le code HTML de cette page.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur liée au dépassement des limites des ressources de Parsoid pendant qu’elle donnait des détails sur l’HTML de cette page.",
-	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur interne à l’API pendant qu’elle donnait des détails sur l’HTML de cette page.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur interne à l’API pendant qu’elle donnait des détails sur le code HTML de cette page.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur de typage interne à l’API pendant qu’elle donnait des détails sur l’HTML de cette page.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} a renvoyé une erreur d’exception d’argument d’API pendant qu’elle donnait des détails sur l’HTML de cette page.",
 	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "Lorsque le ZIM que vous parcourez a été créé, l’API ActionParse du serveur {{server}} n’a pas réussi à fournir de détails sur l’HTML de cette page, car celui-ci est trop volumineux. Il serait probablement judicieux de le diviser en plusieurs plus petites pages sur le serveur {{server}}.",
