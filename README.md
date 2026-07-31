@@ -28,10 +28,132 @@ User help is available in the [FAQ](https://github.com/openzim/mwoffliner/wiki/F
 
 Run `mwoffliner --help` to see all available options.
 
-## Prerequisites
+## Quick Start
+
+### Prerequisites
 
 - [Docker](https://docs.docker.com/engine/install/) (or Docker-based engine)
 - amd64 or arm64 architecture
+
+To turn the Bambara Wikipedia into an offline ZIM:
+
+```sh
+mkdir -p output
+docker run -v $(pwd)/output:/output ghcr.io/openzim/mwoffliner \
+  mwoffliner --mwUrl=https://bm.wikipedia.org --adminEmail=you@example.com \
+  --outputDirectory=/output
+```
+
+**NOTE**: In order to avoid [429 responses](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429), be sure to use an
+actual email address as dummy addresses like `you@example.com` will be flagged by the Wiki servers.
+
+That's it. When it finishes you'll find a `.zim` file in the `output/` directory. Open it with
+[Kiwix Reader](https://get.kiwix.org/en/solutions/applications/kiwix-reader/).
+
+### The Four Decisions
+
+Every scrape comes down to four choices:
+
+#### 1. Which wiki?
+
+```sh
+--mwUrl=https://en.wikipedia.org        # English Wikipedia
+--mwUrl=https://fr.wiktionary.org       # French Wiktionary
+--mwUrl=https://terraria.wiki.gg        # Terraria Wiki
+--mwUrl=https://proofwiki.org           # ProofWiki
+--mwUrl=https://wiki.my-org.com         # Any MediaWiki site
+```
+
+#### 2. Which API path?
+
+Most MediaWiki sites use the default API path `/w/api.php`, but many
+don't. Check by visiting `<wiki-url>/w/api.php` in your browser. If that returns a 404, you need to set `--mwActionApiPath` to the correct path.
+
+> [!TIP]
+> Try `https://terraria.wiki.gg/api.php` to see a wiki where
+> `--mwActionApiPath=/api.php` is required.
+
+#### 3. What content?
+
+| If you want…                            | Add this                        |
+| --------------------------------------- | ------------------------------- |
+| Everything (text, images, audio, video) | (nothing — this is the default) |
+| Everything except video and audio       | `--format=novid:maxi`           |
+| No pictures, no video, no audio         | `--format=nopic:nopic`          |
+| Head paragraphs only, no media at all   | `--format=nodet,nopic:mini`     |
+
+#### 4. Where does it go?
+
+The ZIM is written to `/output` inside the container. Map that to a folder on your machine:
+
+```sh
+docker run -v /path/on/my/machine:/output ghcr.io/openzim/mwoffliner ...
+```
+
+**NOTE**: `--adminEmail=you@example.com` is also required. It is included in the HTTP
+User-Agent so wiki operators know who is scraping.
+
+### A Few More Things You Might Want
+
+#### Scrape only specific pages
+
+Pass a comma-separated list of page titles directly:
+
+```sh
+--pageList="Main Page,Earth,Albert Einstein"
+```
+
+Or put one page title per line in a text file and point to it:
+
+```sh
+--pageList=./my-pages.txt
+```
+
+#### Scrape a private wiki
+
+Provide credentials with `--mwUsername` and `--mwPassword`:
+
+```sh
+--mwUsername=jdoe --mwPassword=s3cret
+```
+
+Preferably use a [bot password](https://www.mediawiki.org/wiki/Manual:Bot_passwords)
+rather than a regular user account.
+
+If authentication requires a separate domain, also pass `--mwDomain`:
+
+```sh
+--mwDomain=corp --mwUsername=jdoe --mwPassword=s3cret
+```
+
+#### Customising the Result
+
+Want your ZIM to have a specific title, description, or icon?
+
+```sh
+--customZimTitle="My Offline Wiki"
+--customZimDescription="A hand-picked selection of articles"
+--customZimFavicon=https://example.com/icon.png
+```
+
+#### Adjusting the scrape speed
+
+Since version 2.0.0, the default request rate (speed `1`) is fine for most
+wikis. The `--speed` option controls the climb rate — how aggressively
+mwoffliner ramps up its request concurrency:
+
+If you see lots of HTTP errors (e.g. 429 Too Many Requests) in the logs,
+try lowering the speed e.g `--speed=0.5` can help prevent
+the wiki from rate-limiting you.
+
+#### Going Further
+
+These and all other options are listed in `mwoffliner --help`.
+
+Also, see the [FAQ](https://github.com/openzim/mwoffliner/wiki/Frequently-Asked-Questions) for detailed explanations of
+the command line options and common issues.
+
+Need help? [![Join Slack](https://img.shields.io/badge/Join%20us%20on%20Slack%20%23mwoffliner-2EB67D)](https://slack.kiwix.org)
 
 ## Installation
 
@@ -169,42 +291,6 @@ npm i -g mwoffliner
 > You might need to run this command with the `sudo` command, depending on how your `npm` / OS is configured. `npm` permission checking can be a bit annoying for newcomers. Please read the [npm script documentation](https://docs.npmjs.com/cli/v7/using-npm/scripts#user) if you encounter issues.
 
 </details>
-
-## Usage
-
-### Using Docker (Recommended)
-
-```sh
-# Get help
-docker run -v $(pwd)/out:/out -ti ghcr.io/openzim/mwoffliner mwoffliner --help
-```
-
-```sh
-# Create a ZIM for https://bm.wikipedia.org
-docker run -v $(pwd)/out:/out -ti ghcr.io/openzim/mwoffliner \
-       mwoffliner --mwUrl=https://bm.wikipedia.org --adminEmail=foo@bar.net
-```
-
-<details>
-<summary>Using NPM / Local Install</summary>
-
-```sh
-# Get help
-mwoffliner --help
-```
-
-```sh
-# Create a ZIM for https://bm.wikipedia.org
-mwoffliner --mwUrl=https://bm.wikipedia.org --adminEmail=foo@bar.net
-```
-
-</details>
-
-To use MWoffliner with an S3 cache, provide an S3 URL:
-
-```sh
---optimisationCacheUrl="https://wasabisys.com/?bucketName=my-bucket&keyId=my-key-id&secretAccessKey=my-sac"
-```
 
 ## Contribute
 
