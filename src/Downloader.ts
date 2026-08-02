@@ -852,76 +852,99 @@ class Downloader {
 
         // Handle the cache response and act accordingly
         .then(async (s3Resp) => {
-          // 'Versioning' of image is made via HTTP ETag. We should
-          // check if we have the proper version by requesting proper
-          // ETag from upstream MediaWiki.
-          // Headers are cloned per-request: concurrent downloads share this.arrayBufferRequestOptions,
-          // so mutating its headers in place would leak one image's If-None-Match onto another's request.
-          const requestOptions = {
-            ...this.arrayBufferRequestOptions,
-            headers: { ...this.arrayBufferRequestOptions.headers },
-          }
-          // Display message when ignoring empty S3 objects
-          if (s3Resp && !s3Resp.ContentLength) {
-            logger.warn(`Ignoring empty S3 object for ${url}`)
-          }
-          // If S3 object has content and etag, check if upstream did changed
-          if (s3Resp?.ContentLength && s3Resp?.Metadata?.etag) {
-            requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
-          }
-          // Use the base domain of the wiki being scraped as the Referer header, so that we can
-          // successfully scrape WMF map tiles.
-          const mwResp = await this.request({ url, method: 'GET', ...requestOptions })
+          // While we might still need s3Resp.Body (below, or in the 304 branch), forward any
+          // stream error (e.g. ECONNRESET) into this handler's rejection path so it is retried
+          // like any other transient download error, instead of hanging (an errored AWS SDK
+          // stream never emits the 'data'/'end' that a later reader would wait for) or crashing
+          // the process (an AWS SDK stream left without an 'error' listener throws on a late
+          // socket-close error).
+          let onBodyError: (err: unknown) => void
+          const bodyError = s3Resp?.Body
+            ? new Promise<never>((_resolve, reject) => {
+                onBodyError = reject
+                s3Resp.Body.on('error', onBodyError)
+              })
+            : new Promise<never>(() => {})
 
-          // Most of the images, after having been uploaded once to the
-          // cache, will always have 304 status, until modified. If cache
-          // is up to date, return cached image. We always have an s3
-          // response when mwResp is 304, since this can only happen
-          // when we have an eTag coming from s3.
-          if (mwResp.status === 304) {
-            // Proceed with image
-            const data = (await this.streamToBuffer(s3Resp.Body as Readable)) as any
-            const contentType = await this.getImageMimeType(data)
-            logger.debug(`Using S3-cached image for ${url} (contentType: ${contentType})`)
-            handler(null, {
-              contentType,
-              content: data,
-            })
-            return
-          }
+          return Promise.race([
+            bodyError,
+            (async () => {
+              // 'Versioning' of image is made via HTTP ETag. We should
+              // check if we have the proper version by requesting proper
+              // ETag from upstream MediaWiki.
+              // Headers are cloned per-request: concurrent downloads share this.arrayBufferRequestOptions,
+              // so mutating its headers in place would leak one image's If-None-Match onto another's request.
+              const requestOptions = {
+                ...this.arrayBufferRequestOptions,
+                headers: { ...this.arrayBufferRequestOptions.headers },
+              }
+              // Display message when ignoring empty S3 objects
+              if (s3Resp && !s3Resp.ContentLength) {
+                logger.warn(`Ignoring empty S3 object for ${url}`)
+              }
+              // If S3 object has content and etag, check if upstream did changed
+              if (s3Resp?.ContentLength && s3Resp?.Metadata?.etag) {
+                requestOptions.headers['If-None-Match'] = this.removeEtagWeakPrefix(s3Resp.Metadata.etag)
+              }
+              // Use the base domain of the wiki being scraped as the Referer header, so that we can
+              // successfully scrape WMF map tiles.
+              const mwResp = await this.request({ url, method: 'GET', ...requestOptions })
 
-          // Destroy the Readable so that socket is freed and returned to the pool
-          if (s3Resp?.Body) {
-            s3Resp.Body.destroy()
-          }
+              // Most of the images, after having been uploaded once to the
+              // cache, will always have 304 status, until modified. If cache
+              // is up to date, return cached image. We always have an s3
+              // response when mwResp is 304, since this can only happen
+              // when we have an eTag coming from s3.
+              if (mwResp.status === 304) {
+                // Proceed with image
+                const data = (await this.streamToBuffer(s3Resp.Body as Readable)) as any
+                const contentType = await this.getImageMimeType(data)
+                logger.debug(`Using S3-cached image for ${url} (contentType: ${contentType})`)
+                handler(null, {
+                  contentType,
+                  content: data,
+                })
+                return
+              }
 
-          // Compress content because image blob comes from upstream MediaWiki
-          const compressedData = await this.getCompressedBody({ data: mwResp.data, context: url }, requestedWidth)
+              // From here we no longer need s3Resp.Body: stop treating its errors as fatal (we
+              // already have what we need from upstream MediaWiki), then destroy the Readable so
+              // the socket is freed and returned to the pool.
+              if (s3Resp?.Body) {
+                s3Resp.Body.off('error', onBodyError)
+                s3Resp.Body.on('error', () => {})
+                s3Resp.Body.destroy()
+              }
 
-          // Check content really exists
-          if (!compressedData?.length) {
-            throw new Error(`Content for ${url} is missing or empty (${typeof compressedData})`)
-          }
+              // Compress content because image blob comes from upstream MediaWiki
+              const compressedData = await this.getCompressedBody({ data: mwResp.data, context: url }, requestedWidth)
 
-          // Check for the ETag and upload to cache
-          const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
-          if (etag) {
-            await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, cacheVersion)
-          }
+              // Check content really exists
+              if (!compressedData?.length) {
+                throw new Error(`Content for ${url} is missing or empty (${typeof compressedData})`)
+              }
 
-          // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
-          const contentType = (await this.getImageMimeType(compressedData)) || mwResp.headers['content-type']
-          if (s3Resp) {
-            logger.debug(`Using image downloaded from upstream for ${url} (S3-cached image is outdated, contentType: ${contentType})`)
-          } else {
-            logger.debug(`Using image downloaded from upstream for ${url} (no S3-cached image found, contentType: ${contentType})`)
-          }
+              // Check for the ETag and upload to cache
+              const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
+              if (etag) {
+                await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, cacheVersion)
+              }
 
-          // Proceed with image
-          handler(null, {
-            contentType,
-            content: compressedData,
-          })
+              // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
+              const contentType = (await this.getImageMimeType(compressedData)) || mwResp.headers['content-type']
+              if (s3Resp) {
+                logger.debug(`Using image downloaded from upstream for ${url} (S3-cached image is outdated, contentType: ${contentType})`)
+              } else {
+                logger.debug(`Using image downloaded from upstream for ${url} (no S3-cached image found, contentType: ${contentType})`)
+              }
+
+              // Proceed with image
+              handler(null, {
+                contentType,
+                content: compressedData,
+              })
+            })(),
+          ])
         })
         .catch((err) => {
           this.errHandler(err, url, handler)

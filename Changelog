@@ -62,6 +62,7 @@ Unreleased:
 * CHANGED: Better error message when site logo fails to be fetched (@benoit74 #2834)
 * FIX: Workaround bug when filtering categories at API-level on MediaWiki >=1.46 (@benoit74 #2819)
 * FIX: Ignore S3-cached objects which are empty (@benoit74 #2859)
+* FIX: Correctly handle low-level network errors in S3 operations (@benoit74 #2872)
 
 1.17.5:
 * FIX: Ignore articles returning permissiondenied error code (@kunalsiyag #2604)
