@@ -40,7 +40,7 @@
 	"categoryNoPagination": "未启用Javascript的浏览器无法显示下一个项目",
 	"subcategories": "子分类",
 	"categoryEmpty": "<em>本分类目前不含有任何页面或媒体文件。</em>",
-	"categoryLimited": "<em>此分类的内容已缩减至仅包含 ZIM 内的页面。</em>",
+	"categoryLimited": "<em>此分类的内容已缩减至仅包含在 ZIM 文件内的页面。</em>",
 	"DISCLAIMER": "本页面由 {{creator}} 发布。除非另有说明，文本内容遵循 {{license}} 协议。媒体文件可能适用附加条款。",
 	"LAST_EDITED_ON": "最后编辑于 {{date}}",
 	"LICENSE_UNKNOWN": "未知的许可证",
