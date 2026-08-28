@@ -639,6 +639,10 @@ class Downloader {
   }
 
   public async request<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D>): Promise<R> {
+    // axios@1.20's typings resolve the `request` return type through a conditional type keyed on
+    // an internal sentinel default; since our own `R` generic is not that sentinel but TS cannot
+    // prove it at this level, the conditional type doesn't reduce and the (correct) result needs
+    // an explicit cast back to `R`.
     return axios.request<T, R, D>({
       ...this._basicRequestOptions,
       ...config,
@@ -647,7 +651,7 @@ class Downloader {
         ...config?.headers,
       },
       signal: AbortSignal.timeout(this.requestTimeout),
-    })
+    }) as Promise<R>
   }
 
   public async get<T = any, R extends AxiosResponse<T> = AxiosResponse<T>, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R> {
