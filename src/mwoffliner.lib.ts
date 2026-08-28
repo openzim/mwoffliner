@@ -98,6 +98,7 @@ async function execute(argv: any) {
     addNamespaces: _addNamespaces,
     onlyNamespaces: _onlyNamespaces,
     addContentModels: _addContentModels,
+    keepPageLanguages: _keepPageLanguages,
     javaScript: _javaScript,
     addModules: _addModules,
     customZimFavicon,
@@ -261,6 +262,13 @@ async function execute(argv: any) {
         .map((a: string) => a.trim())
     : []
 
+  const keepPageLanguages = _keepPageLanguages
+    ? String(_keepPageLanguages)
+        .split(',')
+        .map((a: string) => a.trim())
+        .filter((a: string) => a.length > 0)
+    : []
+
   const onlyNamespaces = _onlyNamespaces
     ? String(_onlyNamespaces)
         .split(',')
@@ -415,7 +423,7 @@ async function execute(argv: any) {
 
   logger.debug('Getting pages details')
   let stime = Date.now()
-  await getPages(mainPage, pages, pagesToIgnore, allowedContentModels)
+  await getPages(mainPage, pages, pagesToIgnore, allowedContentModels, keepPageLanguages)
   logger.info(`Got pages details in ${(Date.now() - stime) / 1000} seconds`)
 
   // Getting total number of pages from Redis
@@ -673,6 +681,20 @@ async function execute(argv: any) {
         if (fragment) {
           // Ignore redirects to fragment in 'nodet' since there is mostly no chance the section does exists
           if (dump.nodet) {
+            dump.status.redirects.ignored += 1
+            continue
+          }
+          // Ignore them under --keepPageLanguages too. libzim cannot express a
+          // redirect to an anchor, so the fallback below writes a real HTML
+          // entry whose only text is the redirect's own title. A redirect can
+          // carry a translated title while the wiki still reports it in the
+          // default language. Measured on wiki.archlinux.org, "X11 转发" and
+          // "Záloha celého systému pomocí rsync" both report pagelanguage=en,
+          // so filtering by language cannot remove them, and they would be the
+          // only text in the archive outside the requested languages. The
+          // target article stays; what is lost is a shortcut to a section of
+          // it, exactly as for 'nodet'.
+          if (keepPageLanguages.length) {
             dump.status.redirects.ignored += 1
             continue
           }
