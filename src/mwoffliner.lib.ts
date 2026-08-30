@@ -17,7 +17,6 @@ import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzi
 import { getPages } from './util/mw-api.js'
 import { createTranslator } from './i18n.js'
 import { zimCreatorMutex } from './mutex.js'
-import { check_all } from './sanitize-argument.js'
 
 import {
   MIN_IMAGE_THRESHOLD_INDEX_PAGE,
