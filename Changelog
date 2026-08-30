@@ -1,4 +1,5 @@
 Unreleased:
+* FIX: Do not trim down mini ZIM landing / main page to lead section only (@sundeep8967 #2882 #2883)
 * CHANGED: Create multiple files for language variants, similar to different formats (@Markus-Rost #2691)
 * CHANGED: Redesign speed to handle both worker count and request pacing (@triemerge #2393)
 * FIX: Fix URL size estimation to prevent 414 Request-URI Too Long on non-Latin wikis (@paratha14 #2705)
