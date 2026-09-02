@@ -1,4 +1,4 @@
-import { migrateChildren, getMediaBase, getFullUrl, getRelativeFilePath, encodePageTitleForZimHtmlUrl } from './misc.js'
+import { getMediaBase, getFullUrl, getRelativeFilePath, encodePageTitleForZimHtmlUrl } from './misc.js'
 import { Dump } from '../Dump.js'
 import MediaWiki from '../MediaWiki.js'
 import RedisStore from '../RedisStore.js'
@@ -22,8 +22,7 @@ function rewriteUrlNoContentCheck(pagePath: ZimPath, dump: Dump, linkNode: Domin
   }
   // Always remove redlinks
   if (classList.includes('new')) {
-    migrateChildren(linkNode, linkNode.parentNode, linkNode)
-    linkNode.parentNode.removeChild(linkNode)
+    linkNode.outerHTML = linkNode.innerHTML
     return null
   }
 
@@ -148,8 +147,7 @@ function rewriteUrlNoContentCheck(pagePath: ZimPath, dump: Dump, linkNode: Domin
       if (href.substring(0, 1) === '/') {
         linkNode.setAttribute('href', getFullUrl(href, MediaWiki.baseUrl))
       } else if (href.substring(0, 2) === './') {
-        migrateChildren(linkNode, linkNode.parentNode, linkNode)
-        linkNode.parentNode.removeChild(linkNode)
+        linkNode.outerHTML = linkNode.innerHTML
       }
       return null
     }
@@ -218,8 +216,12 @@ export async function rewriteUrls(pagePath: ZimPath, dump: Dump, linkNodes: Domi
       const redirect = pagesRedirected[pageTitle]
       if (!redirect) {
         wikilinkMappings[pageTitle].forEach((linkNode: DominoElement) => {
-          migrateChildren(linkNode, linkNode.parentNode, linkNode)
-          linkNode.parentNode.removeChild(linkNode)
+          const classList: string[] = (linkNode.getAttribute('class') || '').split(' ').filter((cssClass) => cssClass)
+          if (classList.includes('mw-file-description')) {
+            linkNode.outerHTML = `<span>${linkNode.innerHTML}</span>`
+          } else {
+            linkNode.outerHTML = linkNode.innerHTML
+          }
         })
         delete wikilinkMappings[pageTitle]
       }
