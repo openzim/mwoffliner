@@ -151,19 +151,6 @@ export function contains(arr: any[], value: any) {
   return arr.some((v) => v === value)
 }
 
-/*
- * Move 'from'.childNodes to 'to' adding them before 'beforeNode'
- * If 'beforeNode' is null, the nodes are appended at the end.
- */
-export function migrateChildren(from: any, to: any, beforeNode: any) {
-  if (beforeNode === undefined) {
-    beforeNode = null
-  }
-  while (from.firstChild) {
-    to.insertBefore(from.firstChild, beforeNode)
-  }
-}
-
 export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Creator) {
   try {
     await Promise.all(
