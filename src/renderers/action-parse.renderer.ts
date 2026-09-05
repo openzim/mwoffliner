@@ -9,7 +9,7 @@ import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackT
 import Downloader, { DownloadError } from '../Downloader.js'
 import { customCssUrlToFilename, customJsUrlToFilename } from '../util/customCssJs.js'
 import Gadgets from '../Gadgets.js'
-import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle } from '../util/pages.js'
+import { extractJsConfigVars, extractBodyCssClass, extractHtmlCssClass, getMainpageTitle, isMainPage } from '../util/pages.js'
 
 // Represent 'https://{wikimedia-wiki}/w/api.php?action=parse&format=json&prop=modules|jsconfigvars|headhtml|text|displaytitle|subtitle|categorieshtml&usearticle=1&disableeditsection=1&disablelimitreport=1&page={page_title}&useskin=vector-2022&redirects=1&formatversion=2'
 export interface ActionParseResult {
@@ -232,8 +232,10 @@ export class ActionParseRenderer extends Renderer {
 
     // Main page display title
     let hideFirstHeading = false
-    if (bodyCssClass.split(' ').includes('page-Main_Page')) {
-      // Check for class to avoid custom main pages
+    const isCustomMainPage = Boolean(dump?.opts?.customMainPage && (pageTitle === dump.opts.customMainPage.replace(/_/g, ' ') || isMainPage(pageTitle)))
+    if (isCustomMainPage) {
+      hideFirstHeading = true
+    } else if (bodyCssClass.split(' ').includes('page-Main_Page')) {
       const mainpageTitle = await getMainpageTitle()
       if (mainpageTitle === '') {
         hideFirstHeading = true
