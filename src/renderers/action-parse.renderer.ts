@@ -232,7 +232,10 @@ export class ActionParseRenderer extends Renderer {
 
     // Main page display title
     let hideFirstHeading = false
-    if (isMainPage(pageTitle) || bodyCssClass.split(' ').includes('page-Main_Page')) {
+    const isCustomMainPage = Boolean(dump?.opts?.customMainPage && (pageTitle === dump.opts.customMainPage.replace(/_/g, ' ') || isMainPage(pageTitle)))
+    if (isCustomMainPage) {
+      hideFirstHeading = true
+    } else if (bodyCssClass.split(' ').includes('page-Main_Page')) {
       const mainpageTitle = await getMainpageTitle()
       if (mainpageTitle === '') {
         hideFirstHeading = true
