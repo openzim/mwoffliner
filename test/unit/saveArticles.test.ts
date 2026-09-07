@@ -182,7 +182,7 @@ describe('savePages', () => {
     test(`Remove empty sections for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
       await RenderingContext.createRenderers(renderer as renderName)
-      const pageTitle = 'Western_Greenland' as PageTitle
+      const pageTitle = 'Qassiarsuk' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle)
       const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
@@ -191,17 +191,17 @@ describe('savePages', () => {
       pageDetailStore.setMany(pagesDetail)
       const result = await Downloader.getPage(pageTitle, RenderingContext.pagesRenderer, pageUrl, dump, pageDetail)
       const pageDoc = domino.createDocument(result.items[0].htmlContent)
-      expect(pageDoc.querySelector('#Get_around')).toBeTruthy()
+      expect(pageDoc.querySelector('#Get_in')).toBeTruthy()
+      expect(pageDoc.querySelector('#Get_around')).toBeFalsy()
+      expect(pageDoc.querySelector('#See')).toBeTruthy()
       expect(pageDoc.querySelector('#Do')).toBeFalsy()
-      expect(pageDoc.querySelector('#Eat')).toBeTruthy()
-      expect(pageDoc.querySelector('#Drink')).toBeFalsy()
     })
 
     test(`Keep empty sections for ${renderer} renderer`, async () => {
       const { dump } = await setupScrapeClasses({ mwUrl: 'https://en.wikivoyage.org', format: 'nopic' })
       dump.opts.keepEmptySections = true
       await RenderingContext.createRenderers(renderer as renderName)
-      const pageTitle = 'Western_Greenland' as PageTitle
+      const pageTitle = 'Qassiarsuk' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle)
       const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
@@ -210,10 +210,10 @@ describe('savePages', () => {
       pageDetailStore.setMany(pagesDetail)
       const result = await Downloader.getPage(pageTitle, RenderingContext.pagesRenderer, pageUrl, dump, pageDetail)
       const pageDoc = domino.createDocument(result.items[0].htmlContent)
+      expect(pageDoc.querySelector('#Get_in')).toBeTruthy()
       expect(pageDoc.querySelector('#Get_around')).toBeTruthy()
+      expect(pageDoc.querySelector('#See')).toBeTruthy()
       expect(pageDoc.querySelector('#Do')).toBeTruthy()
-      expect(pageDoc.querySelector('#Eat')).toBeTruthy()
-      expect(pageDoc.querySelector('#Drink')).toBeTruthy()
     })
   }
 
