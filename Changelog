@@ -1,3 +1,5 @@
+Unreleased
+
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)
 * NEW: Detect image size from HTML attribute instead of URL regex and recompress (@kunalsiyag #2192)
