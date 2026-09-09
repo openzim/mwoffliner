@@ -1,4 +1,5 @@
 Unreleased
+* FIX: Do not trim down mini ZIM landing / main page to lead section only (@sundeep8967 #2882 #2883)
 
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)
@@ -19,6 +20,7 @@ Unreleased
 * CHANGED: *** Breaking *** Remove deprecated CLI parameters `mwWikiPath`, `mwIndexPhpPath`, `keepEmptyParagraphs` (@Markus-Rost #2489)
 * CHANGED: *** Breaking *** Reintroduce support of --customFlavour option (beware API has changed due to #2380) (@benoit74 #2707)
 * CHANGED: *** Breaking *** Drop webp polyfill (@benoit74 #2758)
+>>>>>>> upstream/main
 * CHANGED: Create multiple files for language variants, similar to different formats (@Markus-Rost #2691)
 * CHANGED: Replace iFrame with a placeholder card instead of deleting them (@kunalsiyag #2481)
 * CHANGED: Compute and check ZIM metadata as early as possible for quickest feedback (@benoit74 #2838)
