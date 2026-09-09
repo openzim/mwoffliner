@@ -304,8 +304,8 @@ type RenderOutput = {
 }
 
 interface GetSiteInfoArgv {
-  addNamespaces?: number[]
-  onlyNamespaces?: number[]
+  addNamespaces?: (number | string)[]
+  onlyNamespaces?: (number | string)[]
   mwModulePath?: string
   forceSkin?: string
   langVariants?: string[]
