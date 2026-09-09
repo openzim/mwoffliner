@@ -15,7 +15,7 @@ User help is available in the [FAQ](https://github.com/openzim/mwoffliner/wiki/F
 [![codecov](https://codecov.io/gh/openzim/mwoffliner/branch/main/graph/badge.svg)](https://codecov.io/gh/openzim/mwoffliner)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/mwoffliner/badge)](https://www.codefactor.io/repository/github/openzim/mwoffliner)
 [![License](https://img.shields.io/npm/l/mwoffliner.svg)](LICENSE)
-[![Join Slack](https://img.shields.io/badge/Join%20us%20on%20Slack%20%23mwoffliner-2EB67D)](https://slack.kiwix.org)
+[![Join Slack](https://img.shields.io/badge/Join%20us%20on%20Slack%20%23mwoffliner-2EB67D)](https://slack-invite.kiwix.org)
 
 ## Features
 
@@ -153,7 +153,7 @@ These and all other options are listed in `mwoffliner --help`.
 Also, see the [FAQ](https://github.com/openzim/mwoffliner/wiki/Frequently-Asked-Questions) for detailed explanations of
 the command line options and common issues.
 
-Need help? [![Join Slack](https://img.shields.io/badge/Join%20us%20on%20Slack%20%23mwoffliner-2EB67D)](https://slack.kiwix.org)
+Need help? [![Join Slack](https://img.shields.io/badge/Join%20us%20on%20Slack%20%23mwoffliner-2EB67D)](https://slack-invite.kiwix.org)
 
 ## Installation
 

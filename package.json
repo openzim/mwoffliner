@@ -1,6 +1,6 @@
 {
   "name": "mwoffliner",
-  "version": "2.0.0-dev0",
+  "version": "2.0.1-dev0",
   "description": "MediaWiki ZIM scraper",
   "main": "lib/mwoffliner.lib.js",
   "license": "GPL-3.0",
@@ -63,7 +63,7 @@
     "@aws-sdk/client-s3": "^3.1090.0",
     "@file-type/xml": "^1.1.1",
     "@ladjs/country-language": "^1.0.3",
-    "@openzim/libzim": "4.5.0",
+    "@openzim/libzim": "4.6.0",
     "@types/async": "^3.2.25",
     "@types/backoff": "^2.5.5",
     "@types/bluebird": "^3.5.42",
@@ -121,7 +121,7 @@
     "file-type": "^22.0.1",
     "jest": "^30.4.2",
     "nyc": "^18.0.0",
-    "prettier": "3.9.5",
+    "prettier": "3.9.6",
     "tmp": "^0.2.7",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
@@ -130,7 +130,7 @@
     "typescript-eslint": "^8.64.0"
   },
   "allowScripts": {
-    "@openzim/libzim@4.5.0": true,
+    "@openzim/libzim@4.6.0": true,
     "unrs-resolver@1.12.2": true
   },
   "overrides": {
