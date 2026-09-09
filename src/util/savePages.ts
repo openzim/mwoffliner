@@ -17,7 +17,7 @@ import { truncateZimEntryTitleWords } from './misc.js'
 import { isMainPage } from './pages.js'
 
 function getPageRenderUrl(pageDetail: PageDetail, dump: Dump): string {
-  const leadSectionId = dump.nodet && !pageDetail.contentmodel && !pageDetail.missing ? config.filters.leadSectionId : ''
+  const leadSectionId = dump.nodet && !pageDetail.contentmodel && !pageDetail.missing && !isMainPage(pageDetail.title) ? config.filters.leadSectionId : ''
   const oldid = dump.opts.stableRevision && pageDetail.stableRevisionId !== undefined ? pageDetail.stableRevisionId : undefined
   return Downloader.getPageUrl(pageDetail.title, { sectionId: leadSectionId, oldid, langVar: dump.langVar })
 }
