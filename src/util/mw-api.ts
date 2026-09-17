@@ -4,7 +4,7 @@ import Downloader from '../Downloader.js'
 import Timer from './Timer.js'
 import RedisStore from '../RedisStore.js'
 import MediaWiki from '../MediaWiki.js'
-import { cleanupAxiosError } from './misc.js'
+import { cleanupAxiosError, lcFirst, ucFirst } from './misc.js'
 
 const MAX_TITLES_PARAM_SIZE = 7400
 const MAX_BATCH_SIZE = 50
@@ -57,6 +57,20 @@ export async function getPagesByTitle(
   )
 }
 
+export function isPageIgnored(title: PageTitle, pagesToIgnore: PageTitle[]): boolean {
+  if (!pagesToIgnore || pagesToIgnore.length === 0 || !title) {
+    return false
+  }
+  if (MediaWiki.case === 'case-sensitive') {
+    return pagesToIgnore.includes(title)
+  }
+
+  const titleUc = ucFirst(title) as PageTitle
+  const titleLc = lcFirst(title) as PageTitle
+
+  return pagesToIgnore.some((ignored) => ignored === title || ignored === titleUc || ignored === titleLc)
+}
+
 export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[]) {
   function revisionFilter(page: PageInfo & QueryRet): boolean {
     return !page.revisions
@@ -67,7 +81,7 @@ export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allow
   }
 
   function ignoredPagesFilter(page: PageInfo & QueryRet): boolean {
-    return pagesToIgnore.includes(page.title) || pagesToIgnore.includes((page.title as string).replace(/ /g, '_') as PageTitle)
+    return isPageIgnored(page.title, pagesToIgnore)
   }
 
   // Filter pages without revisions (#2091)
@@ -304,7 +318,7 @@ export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pa
     // Categories can themselves belong to parent categories (subcategories), so we need to walk up the
     // category tree until no new (unprocessed) category is discovered, to also capture root categories
     const processedCategories = new Set<PageTitle>()
-    let categoriesToFetch = pagesToIgnore ? [...categorySet].filter((title: PageTitle) => !pagesToIgnore.includes(title)) : [...categorySet]
+    let categoriesToFetch = pagesToIgnore ? [...categorySet].filter((title: PageTitle) => !isPageIgnored(title, pagesToIgnore)) : [...categorySet]
 
     while (categoriesToFetch.length) {
       categoriesToFetch.forEach((title) => processedCategories.add(title))
@@ -313,7 +327,7 @@ export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pa
       const newCategorySet = new Set<PageTitle>()
       await getPagesByTitle(categoriesToFetch, 'categories', pagesToIgnore, allowedContentModels, newCategorySet)
 
-      categoriesToFetch = [...newCategorySet].filter((title: PageTitle) => !processedCategories.has(title) && !pagesToIgnore.includes(title))
+      categoriesToFetch = [...newCategorySet].filter((title: PageTitle) => !processedCategories.has(title) && !isPageIgnored(title, pagesToIgnore))
     }
   }
 }
