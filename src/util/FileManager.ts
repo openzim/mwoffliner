@@ -256,7 +256,12 @@ class FileManager {
                 }
               }
             }
-            if (err.response && [429, 503, 524].includes(err.response.status) && !urlHelper.deserializeUrl(downloadUrl).match(/^https?:\/\/upload\.wikimedia\.org\/.*\/thumb\//)) {
+            if (
+              err.response &&
+              [429, 503, 524].includes(err.response.status) &&
+              !urlHelper.deserializeUrl(downloadUrl).match(/^https?:\/\/upload\.wikimedia\.org\/.*\/thumb\//) &&
+              !urlHelper.deserializeUrl(downloadUrl).match(/^https?:\/\/thumb\.wikimedia\.org\//)
+            ) {
               hostData.requestInterval = Math.min(MAXIMUM_FILE_DOWNLOAD_DELAY, hostData.requestInterval * 1.2)
               logger.info(`Received a [status=${err.response.status}], slowing down ${hostname} to ${hostData.requestInterval}ms interval`)
             }
