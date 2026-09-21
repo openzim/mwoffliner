@@ -16,8 +16,54 @@ env:
   KEEP_ZIMS: 1
 
 jobs:
+  prepare-zim-tools:
+    runs-on: ubuntu-24.04
+    outputs:
+      x86_64-version: ${{ steps.x86_64-version.outputs.version }}
+      aarch64-version: ${{ steps.aarch64-version.outputs.version }}
+
+    steps:
+      - name: Resolving zim-tools version (x86_64)
+        id: x86_64-version
+        run: |
+          url=$(curl -sI -o /dev/null -w '%{redirect_url}' https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz)
+          version=$(basename "$url" .tar.gz)
+          echo "Resolved zim-tools download URL: $url (version: $version)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Caching zim-tools (x86_64)
+        id: cache-x86_64
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.x86_64-version.outputs.version }}
+          key: zim-tools-${{ steps.x86_64-version.outputs.version }}
+
+      - name: Downloading zim-tools (x86_64)
+        if: steps.cache-x86_64.outputs.cache-hit != 'true'
+        run: wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+
+      - name: Resolving zim-tools version (aarch64)
+        id: aarch64-version
+        run: |
+          url=$(curl -sI -o /dev/null -w '%{redirect_url}' https://download.openzim.org/release/zim-tools/zim-tools_linux-aarch64.tar.gz)
+          version=$(basename "$url" .tar.gz)
+          echo "Resolved zim-tools download URL: $url (version: $version)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Caching zim-tools (aarch64)
+        id: cache-aarch64
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.aarch64-version.outputs.version }}
+          key: zim-tools-${{ steps.aarch64-version.outputs.version }}
+
+      - name: Downloading zim-tools (aarch64)
+        if: steps.cache-aarch64.outputs.cache-hit != 'true'
+        run: wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-aarch64.tar.gz | tar xvz
+
   unit-tests:
     runs-on: ubuntu-24.04
+    needs: prepare-zim-tools
 
     steps:
       - name: Download codebase
@@ -33,10 +79,15 @@ jobs:
         with:
           redis-version: '6.x'
 
-      - name: Installing other dependencies
-        run: |
-          npm install
-          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+      - name: Restoring zim-tools cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ needs.prepare-zim-tools.outputs.x86_64-version }}
+          key: zim-tools-${{ needs.prepare-zim-tools.outputs.x86_64-version }}
+          fail-on-cache-miss: true
+
+      - name: Installing Node.JS project dependencies
+        run: npm install
 
       - name: Running unit tests (w/coverage)
         if: ${{ github.event_name != 'schedule' }}
@@ -65,6 +116,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-24.04
+    needs: prepare-zim-tools
 
     steps:
       - name: Download codebase
@@ -80,10 +132,15 @@ jobs:
         with:
           redis-version: '6.x'
 
-      - name: Installing other dependencies
-        run: |
-          npm install
-          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+      - name: Restoring zim-tools cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ needs.prepare-zim-tools.outputs.x86_64-version }}
+          key: zim-tools-${{ needs.prepare-zim-tools.outputs.x86_64-version }}
+          fail-on-cache-miss: true
+
+      - name: Installing Node.JS project dependencies
+        run: npm install
 
       - name: Running e2e tests (w/coverage)
         if: ${{ github.event_name != 'schedule' }}
@@ -124,6 +181,7 @@ jobs:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
     needs:
+      - prepare-zim-tools
       - unit-tests
       - e2e-tests
     steps:
@@ -135,10 +193,15 @@ jobs:
         with:
           node-version-file: .node-version
 
+      - name: Restoring zim-tools cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ needs.prepare-zim-tools.outputs.x86_64-version }}
+          key: zim-tools-${{ needs.prepare-zim-tools.outputs.x86_64-version }}
+          fail-on-cache-miss: true
+
       - name: Installing dependencies
-        run: |
-          npm install
-          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-x86_64.tar.gz | tar xvz
+        run: npm install
 
       - name: Download coverage results for unit tests
         uses: actions/download-artifact@v6
@@ -162,6 +225,7 @@ jobs:
 
   unit-tests-arm64:
     runs-on: ubuntu-24.04-arm
+    needs: prepare-zim-tools
 
     steps:
       - name: Download codebase
@@ -177,10 +241,15 @@ jobs:
         with:
           redis-version: '6.x'
 
-      - name: Installing other dependencies
-        run: |
-          npm install
-          wget -qO- https://download.openzim.org/release/zim-tools/zim-tools_linux-aarch64.tar.gz | tar xvz
+      - name: Restoring zim-tools cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ needs.prepare-zim-tools.outputs.aarch64-version }}
+          key: zim-tools-${{ needs.prepare-zim-tools.outputs.aarch64-version }}
+          fail-on-cache-miss: true
+
+      - name: Installing Node.JS project dependencies
+        run: npm install
 
       - name: Running unit tests (no coverage)
         run: npm run test:unit
@@ -197,7 +266,7 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Installing other dependencies
+      - name: Installing Node.JS project dependencies
         run: |
           npm install
           npm i -g prettier
