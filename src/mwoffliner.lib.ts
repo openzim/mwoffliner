@@ -382,6 +382,7 @@ async function execute(argv: any) {
           username: mwUsername,
           password: mwPassword,
           outputDirectory,
+          customMainPage,
           mainPage,
           pageList,
           publisher,

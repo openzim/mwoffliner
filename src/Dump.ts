@@ -17,6 +17,7 @@ interface DumpOpts {
   customZimDescription?: string
   customZimLongDescription?: string
   customZimFilename?: string
+  customMainPage?: string
   mainPage?: string
   pageList?: string
   resume?: boolean
