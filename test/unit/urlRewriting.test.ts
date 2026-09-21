@@ -51,6 +51,10 @@ describe('Styles', () => {
     const $wikiLinkWithSlash = makeLink($doc, '/wiki/Farnborough/Aldershot_built-up_area', '', 'Farnborough/Aldershot built-up Area')
     const $nonScrapedWikiLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'fake link')
     const $redLink = makeLink($doc, '/wiki/this_page_does_not_exist', '', 'red link', '', { class: 'new' })
+    const $fileDescLink = makeLink($doc, '/wiki/File:NonExistent.jpg', '', 'file description link', '<img src="thumb.jpg" alt="thumb">', {
+      class: 'mw-file-description',
+    })
+    const $fileDescWrapper = $fileDescLink.parentNode as DominoElement
     const $selfLink = makeLink($doc, '', '', '', 'self link', { class: 'selflink mw-selflink' })
     const $mirrorLink = makeLink($doc, '/wiki/British_Museum', 'nofollow', 'British Museum', '', { class: 'mirror-link' })
     const $editDiffLink = makeLink($doc, '/w/index.php?diff=1', '', 'edit diff link')
@@ -143,6 +147,12 @@ describe('Styles', () => {
     await rewriteUrl(complexParentPagePath, dump, $redLink)
     // redLink has been deleted
     expect($redLink.parentElement).toBeNull()
+
+    await rewriteUrl(complexParentPagePath, dump, $fileDescLink)
+    // fileDescLink has been deleted
+    expect($fileDescLink.parentElement).toBeNull()
+    // fileDescLink content is preserved, wrapped in a span so that the image thumb layout is not broken
+    expect($fileDescWrapper.innerHTML).toEqual('<span><img src="thumb.jpg" alt="thumb"></span>')
 
     await rewriteUrl(complexParentPagePath, dump, $selfLink)
     // selfLink is still a link

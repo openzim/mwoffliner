@@ -1,5 +1,6 @@
 Unreleased
 * FIX: Wikimedia thumbnails host moved to thumb.wikimedia.org (@benoit74 #2905)
+* FIX: Fix image thumb layout when removing links (@Markus-Rost #2893)
 
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)
