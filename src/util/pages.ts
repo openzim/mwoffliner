@@ -2,12 +2,20 @@ import MediaWiki from '../MediaWiki.js'
 import Downloader from '../Downloader.js'
 import * as logger from '../Logger.js'
 import * as domino from 'domino'
+import { Dump } from '../Dump.js'
 
 /**
- * Check if a given page title is main page of the target ZIM
+ * Check if a given page title is the main page of the upstream MediaWiki
  */
 export function isMainPage(pageTitle: PageTitle): boolean {
   return MediaWiki.metaData.mainPage === pageTitle
+}
+
+/**
+ * Check if a given page title is the main page of the target ZIM
+ */
+export function isZimMainPage(pageTitle: PageTitle, dump: Dump): boolean {
+  return dump.opts.mainPage === pageTitle
 }
 
 /**

@@ -13,7 +13,7 @@ import { rewriteUrlsOfDoc } from '../util/rewriteUrls.js'
 import { footerTemplate } from '../Templates.js'
 import { getFullUrl, getMediaBase, getRelativeFilePath, encodePageTitleForZimHtmlUrl, makeZimPath } from '../util/misc.js'
 import { processStylesheetContent } from '../util/dump.js'
-import { isMainPage, isSubpage } from '../util/pages.js'
+import { isMainPage, isSubpage, isZimMainPage } from '../util/pages.js'
 import { buildCategoryTypeItems } from '../util/categories.js'
 
 type renderType = 'auto' | 'desktop' | 'mobile' | 'specific'
@@ -661,7 +661,7 @@ export abstract class Renderer {
     // applyOtherTreatments must run before treatMedias so that iframe
     // placeholders (e.g. YouTube thumbnails) are already in the DOM
     // when treatMedias processes <img> tags for download into the ZIM.
-    doc = await this.applyOtherTreatments(doc, dump, pagePath)
+    doc = await this.applyOtherTreatments(doc, dump, pagePath, isZimMainPage(pageTitle, dump))
     const imageRequestedWidths = this.getRequestedImageWidths(doc)
 
     /* The content of a category page, listing all its members */
@@ -1052,7 +1052,7 @@ export abstract class Renderer {
     }
   }
 
-  private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump) {
+  private clearLinkAndInputTags(parsoidDoc: DominoElement, filtersConfig: any, dump: Dump, isZimMainPage: boolean = false) {
     /* Don't need <link> and <input> tags */
     const nodesToDelete: Array<{ class?: string; tag?: string; filter?: (n: any) => boolean }> = [{ tag: 'link' }, { tag: 'input' }]
 
@@ -1080,7 +1080,7 @@ export abstract class Renderer {
       nodesToDelete.push({ class: classname })
     })
 
-    if (dump.nodet) {
+    if (dump.nodet && !isZimMainPage) {
       filtersConfig.nodetCssClassBlackList.forEach((classname: string) => {
         nodesToDelete.push({ class: classname })
       })
@@ -1153,15 +1153,15 @@ export abstract class Renderer {
     }
   }
 
-  private async applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, pagePath: ZimPath) {
+  private async applyOtherTreatments(parsoidDoc: DominoElement, dump: Dump, pagePath: ZimPath, isZimMainPage: boolean = false) {
     this.processIframeTags(parsoidDoc)
 
-    if (dump.nodet) {
+    if (dump.nodet && !isZimMainPage) {
       this.removeCitations(parsoidDoc)
     }
 
     const filtersConfig = config.filters
-    this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump)
+    this.clearLinkAndInputTags(parsoidDoc, filtersConfig, dump, isZimMainPage)
 
     /* Go through all reference calls */
     const spans: DominoElement[] = Array.from(parsoidDoc.getElementsByTagName('span'))
