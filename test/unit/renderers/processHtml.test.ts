@@ -284,4 +284,90 @@ describe('processHtml', () => {
       expect(link?.getAttribute('aria-label')).toBe('View this content externally')
     })
   })
+
+  describe('nodet ZIM main page preservation', () => {
+    const sampleHtml = `
+      <section data-mw-section-id="0">
+        <p>Lead section content<sup class="reference"><a href="#cite_note-1">[1]</a></sup></p>
+      </section>
+      <section data-mw-section-id="1">
+        <h2>Section 1</h2>
+        <p>Body section content</p>
+      </section>
+      <div class="mw-references-wrap"><ol class="references"><li><span class="reference-text">Citation text</span></li></ol></div>
+    `
+
+    async function testProcessHtmlWithDump(html: string, dump: Dump, pageTitle: PageTitle) {
+      MediaWiki.webUrl = new URL('https://en.wikipedia.org')
+      MediaWiki.baseUrl = MediaWiki.webUrl
+      const pageDetail = { title: pageTitle, timestamp: '2023-09-10T17:36:04Z' }
+      const opts: ProcessHtmlOpts = {
+        html,
+        dump,
+        pageTitle,
+        pageDetail,
+        moduleDependencies: {},
+        callback: () => {
+          return domino.createDocument('<html><head><title></title></head><body><div id="mw-content-text"></div></body></html>')
+        },
+      }
+      const result = await testRenderer.processHtml(opts)
+      return domino.createDocument(result.items[0].htmlContent)
+    }
+
+    it('does not trim sections or strip citations on ZIM main page in nodet mode', async () => {
+      const t = await createTranslator('en')
+      const dump = new Dump('nodet', '', { mainPage: 'Main_Page' } as any, { mainPage: 'Main_Page' } as any, undefined, t)
+
+      const doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Main_Page' as PageTitle)
+      expect(doc.querySelector('section[data-mw-section-id="0"]')).toBeTruthy()
+      expect(doc.querySelector('section[data-mw-section-id="1"]')).toBeTruthy()
+      expect(doc.querySelector('.mw-references-wrap')).toBeTruthy()
+      expect(doc.querySelector('sup.reference')).toBeTruthy()
+    })
+
+    it('trims non-lead sections and strips citations on regular articles in nodet mode', async () => {
+      const t = await createTranslator('en')
+      const dump = new Dump('nodet', '', { mainPage: 'Main_Page' } as any, { mainPage: 'Main_Page' } as any, undefined, t)
+
+      const doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Regular_Article' as PageTitle)
+      expect(doc.querySelector('section[data-mw-section-id="0"]')).toBeTruthy()
+      expect(doc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
+      expect(doc.querySelector('.mw-references-wrap')).toBeFalsy()
+      expect(doc.querySelector('sup.reference')).toBeFalsy()
+    })
+
+    it('preserves customMainPage as ZIM main page and trims default mainPage in nodet mode', async () => {
+      const t = await createTranslator('en')
+      const dump = new Dump('nodet', '', { mainPage: 'Custom_Landing' } as any, { mainPage: 'Custom_Landing' } as any, undefined, t)
+
+      const customLandingDoc = await testProcessHtmlWithDump(sampleHtml, dump, 'Custom_Landing' as PageTitle)
+      expect(customLandingDoc.querySelector('section[data-mw-section-id="1"]')).toBeTruthy()
+
+      const defaultMainDoc = await testProcessHtmlWithDump(sampleHtml, dump, 'Main_Page' as PageTitle)
+      expect(defaultMainDoc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
+    })
+
+    it('trims all pages when pageList has multiple entries and no customMainPage (mainPage is empty)', async () => {
+      const t = await createTranslator('en')
+      const dump = new Dump('nodet', '', { mainPage: '' } as any, { mainPage: '' } as any, undefined, t)
+
+      const page1Doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Main_Page' as PageTitle)
+      expect(page1Doc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
+
+      const page2Doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Earth' as PageTitle)
+      expect(page2Doc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
+    })
+
+    it('preserves single page as ZIM main page when pages.length === 1', async () => {
+      const t = await createTranslator('en')
+      // In mwoffliner.lib.ts, when pages.length === 1 && !customMainPage, dump.opts.mainPage is set to that single page
+      const dump = new Dump('nodet', '', { mainPage: 'Sole_Article' } as any, { mainPage: 'Sole_Article' } as any, undefined, t)
+
+      const doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Sole_Article' as PageTitle)
+      expect(doc.querySelector('section[data-mw-section-id="1"]')).toBeTruthy()
+      expect(doc.querySelector('.mw-references-wrap')).toBeTruthy()
+      expect(doc.querySelector('sup.reference')).toBeTruthy()
+    })
+  })
 })
