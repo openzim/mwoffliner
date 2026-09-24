@@ -14,10 +14,11 @@ import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
 import FileManager from './FileManager.js'
 import { truncateZimEntryTitleWords } from './misc.js'
-import { isMainPage } from './pages.js'
+import { isZimMainPage } from './pages.js'
 
 function getPageRenderUrl(pageDetail: PageDetail, dump: Dump): string {
-  const leadSectionId = dump.nodet && !pageDetail.contentmodel && !pageDetail.missing ? config.filters.leadSectionId : ''
+  const isZimMain = isZimMainPage(pageDetail.title, dump)
+  const leadSectionId = dump.nodet && !isZimMain && !pageDetail.contentmodel && !pageDetail.missing ? config.filters.leadSectionId : ''
   const oldid = dump.opts.stableRevision && pageDetail.stableRevisionId !== undefined ? pageDetail.stableRevisionId : undefined
   return Downloader.getPageUrl(pageDetail.title, { sectionId: leadSectionId, oldid, langVar: dump.langVar })
 }
@@ -27,7 +28,7 @@ async function getAllPagesToKeep(dump: Dump, pagesRenderer: Renderer) {
     for (const pageDetail of Object.values(pageKeyValuePairs)) {
       const pageTitle = pageDetail.title
       try {
-        const mainPage = isMainPage(pageTitle)
+        const isPageZimMain = isZimMainPage(pageTitle, dump)
         const pageUrl = getPageRenderUrl(pageDetail, dump)
 
         const rendererOutput = await Downloader.getPage(pageTitle, pagesRenderer, pageUrl, dump, pageDetail)
@@ -38,7 +39,7 @@ async function getAllPagesToKeep(dump: Dump, pagesRenderer: Renderer) {
           }
 
           const doc = domino.createDocument(htmlContent)
-          if (!mainPage && !(await dump.customProcessor.shouldKeepPage(pageTitle, doc))) {
+          if (!isPageZimMain && !(await dump.customProcessor.shouldKeepPage(pageTitle, doc))) {
             RedisStore.pagesStore.delete(pageTitle)
           }
         }

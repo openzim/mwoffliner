@@ -1,6 +1,7 @@
 Unreleased
 * FIX: Wikimedia thumbnails host moved to thumb.wikimedia.org (@benoit74 #2905)
 * FIX: Fix image thumb layout when removing links (@Markus-Rost #2893)
+* FIX: Do not trim down mini ZIM landing / main page to lead section only (@sundeep8967 #2882 #2883)
 
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)

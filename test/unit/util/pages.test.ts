@@ -1,4 +1,4 @@
-import { isSubpage, isMainPage, getNamespaceName, extractBodyCssClass, extractHtmlCssClass, extractJsConfigVars } from '../../../src/util/pages.js'
+import { isSubpage, isMainPage, isZimMainPage, getNamespaceName, extractBodyCssClass, extractHtmlCssClass, extractJsConfigVars } from '../../../src/util/pages.js'
 import MediaWiki from '../../../src/MediaWiki.js'
 
 describe('pages utility', () => {
@@ -55,6 +55,21 @@ describe('pages utility', () => {
   test.each(['Foo_Bar', 'Foo:Bar/Alix', 'Talk:Foo/Bar', 'Talk:Foo/Bar Alix'])('page is not main page', (pageTitle) => {
     MediaWiki.metaData = { mainPage: 'Foo Bar' } as any
     expect(isMainPage(pageTitle as PageTitle)).toBe(false)
+  })
+
+  describe('isZimMainPage', () => {
+    test('returns true when pageTitle matches dump.opts.mainPage', () => {
+      const dumpWithCustom = { opts: { mainPage: 'Custom Landing' } } as any
+      expect(isZimMainPage('Custom Landing' as PageTitle, dumpWithCustom)).toBe(true)
+      expect(isZimMainPage('Default Main' as PageTitle, dumpWithCustom)).toBe(false)
+      expect(isZimMainPage('Other Page' as PageTitle, dumpWithCustom)).toBe(false)
+    })
+
+    test('returns false when dump.opts.mainPage is empty string (multi-page pageList without customMainPage)', () => {
+      const dumpWithoutLanding = { opts: { mainPage: '' } } as any
+      expect(isZimMainPage('Default Main' as PageTitle, dumpWithoutLanding)).toBe(false)
+      expect(isZimMainPage('Any Page' as PageTitle, dumpWithoutLanding)).toBe(false)
+    })
   })
 
   test.each([
