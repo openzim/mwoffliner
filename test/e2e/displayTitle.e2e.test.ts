@@ -81,3 +81,61 @@ await testRenders(
   },
   ['ActionParse'],
 )
+
+await testRenders(
+  'displayTitle-customMainPage',
+  { ...parameters, pageList: 'Giraffe (album),Brian May', customMainPage: 'Giraffe (album)' },
+  async (outFiles) => {
+    const giraffePageDoc = domino.createDocument(await zimdump(`show --url "Giraffe_(album)" ${outFiles[0].outFile}`))
+    const brianMayPageDoc = domino.createDocument(await zimdump(`show --url "Brian_May" ${outFiles[0].outFile}`))
+
+    describe('custom main page display title', () => {
+      test(`zimcheck for ${outFiles[0].renderer} renderer`, async () => {
+        await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
+      })
+
+      test(`custom main page header is hidden for ${outFiles[0].renderer} renderer`, async () => {
+        const pageTitle = giraffePageDoc.querySelector('h1#firstHeading')
+        expect(pageTitle).toBeTruthy()
+        expect((pageTitle as HTMLElement).style.display).toBe('none')
+      })
+
+      test(`other page header is not hidden for ${outFiles[0].renderer} renderer`, async () => {
+        const pageTitle = brianMayPageDoc.querySelector('h1#firstHeading')
+        expect(pageTitle).toBeTruthy()
+        expect((pageTitle as HTMLElement).style.display).not.toBe('none')
+      })
+    })
+
+    afterAll(() => {
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
+    })
+  },
+  ['ActionParse'],
+)
+
+await testRenders(
+  'displayTitle-singlePage',
+  { ...parameters, pageList: 'Giraffe (album)' },
+  async (outFiles) => {
+    const giraffePageDoc = domino.createDocument(await zimdump(`show --url "Giraffe_(album)" ${outFiles[0].outFile}`))
+
+    describe('single page list display title', () => {
+      test(`single page used as ZIM main page keeps its header for ${outFiles[0].renderer} renderer`, async () => {
+        const pageTitle = giraffePageDoc.querySelector('h1#firstHeading')
+        expect(pageTitle).toBeTruthy()
+        expect((pageTitle as HTMLElement).style.display).not.toBe('none')
+        expect(pageTitle.innerHTML).toBe('<i>Giraffe</i> (album)')
+      })
+    })
+
+    afterAll(() => {
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
+    })
+  },
+  ['ActionParse'],
+)
