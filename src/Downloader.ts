@@ -666,7 +666,7 @@ class Downloader {
     _url: string,
     kind: DownloadKind,
     retry = true,
-    requestedWidth?: number,
+    displayWidth?: number,
   ): Promise<{ content: Buffer | string; contentType: string; setCookie: string | null }> {
     if (!_url) {
       throw new Error(`Parameter [${_url}] is not a valid url`)
@@ -687,9 +687,9 @@ class Downloader {
           }
         }
         if (retry) {
-          this.backoffCall(this.getContentCb, url, kind, requestedWidth, cb)
+          this.backoffCall(this.getContentCb, url, kind, displayWidth, cb)
         } else {
-          this.getContentCb(url, kind, requestedWidth, cb)
+          this.getContentCb(url, kind, displayWidth, cb)
         }
       })
     } catch (err) {
@@ -725,7 +725,7 @@ class Downloader {
     }
   }
 
-  private getJSONCb = <T>(url: string, kind: DownloadKind, _requestedWidth: number | undefined, handler: (...args: any[]) => any): void => {
+  private getJSONCb = <T>(url: string, kind: DownloadKind, _displayWidth: number | undefined, handler: (...args: any[]) => any): void => {
     logger.debug(`Getting JSON from [${url}]`)
     this.request<T>({ url, method: 'GET', ...this.jsonRequestOptions })
       .then((val) => {
@@ -782,21 +782,21 @@ class Downloader {
     }
   }
 
-  private async getCompressedBody(input: CompressionData, requestedWidth?: number): Promise<Buffer> {
+  private async getCompressedBody(input: CompressionData, displayWidth?: number): Promise<Buffer> {
     const contentType = await this.getImageMimeType(input.data)
     if (isBitmapImageMimeType(contentType)) {
       // Resize down with sharp before compression when the source is wider than the requested
       // display width. { animated: true } reads all frames so animated GIFs/APNGs are resized
       // frame-by-frame and stay animated, instead of only keeping their first frame.
       let sharpData = await this.getSharpObject(input, contentType)
-      if (requestedWidth) {
+      if (displayWidth) {
         try {
           const metadata = await sharpData.metadata()
-          if (metadata.width && metadata.width > requestedWidth) {
-            sharpData = sharpData.resize({ width: requestedWidth, withoutEnlargement: true })
+          if (metadata.width && metadata.width > displayWidth) {
+            sharpData = sharpData.resize({ width: displayWidth, withoutEnlargement: true })
           }
         } catch (err) {
-          logger.warn(`Failed to resize image from ${input.context} to ${requestedWidth}px, proceeding without resize: ${(err as any).message}`)
+          logger.warn(`Failed to resize image from ${input.context} to ${displayWidth}px, proceeding without resize: ${(err as any).message}`)
         }
       }
 
@@ -814,15 +814,15 @@ class Downloader {
     return input.data
   }
 
-  private getContentCb = async (url: string, kind: DownloadKind, requestedWidth: number | undefined, handler: any): Promise<void> => {
+  private getContentCb = async (url: string, kind: DownloadKind, displayWidth: number | undefined, handler: any): Promise<void> => {
     logger.debug(`Downloading [${url}]`)
     try {
       if (this.optimisationCacheUrl && kind === 'image') {
-        this.downloadImage(url, handler, requestedWidth)
+        this.downloadImage(url, handler, displayWidth)
       } else {
         const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
         // If content is an image, we might benefit from compressing it
-        const content = kind === 'image' ? await this.getCompressedBody({ data: resp.data, context: url }, requestedWidth) : resp.data
+        const content = kind === 'image' ? await this.getCompressedBody({ data: resp.data, context: url }, displayWidth) : resp.data
         // Check content really exists
         if (!content?.length) {
           logger.warn(`Content for ${url} is missing or empty (${typeof content})`)
@@ -843,10 +843,10 @@ class Downloader {
     }
   }
 
-  private async downloadImage(url: string, handler: any, requestedWidth?: number) {
+  private async downloadImage(url: string, handler: any, displayWidth?: number) {
     // Build a width-aware cache version token so the same URL at different
     // requested widths does not reuse an undersized cached image.
-    const cacheVersion = this.webp ? (requestedWidth ? `webp-w${requestedWidth}` : 'webp') : requestedWidth ? `1-w${requestedWidth}` : '1'
+    const cacheVersion = this.webp ? (displayWidth ? `webp-w${displayWidth}` : 'webp') : displayWidth ? `1-w${displayWidth}` : '1'
 
     try {
       this.s3
@@ -921,7 +921,7 @@ class Downloader {
               }
 
               // Compress content because image blob comes from upstream MediaWiki
-              const compressedData = await this.getCompressedBody({ data: mwResp.data, context: url }, requestedWidth)
+              const compressedData = await this.getCompressedBody({ data: mwResp.data, context: url }, displayWidth)
 
               // Check content really exists
               if (!compressedData?.length) {
@@ -991,11 +991,11 @@ class Downloader {
     handler: (...args: any[]) => void,
     url: string,
     kind: DownloadKind,
-    requestedWidth: number | undefined,
+    displayWidth: number | undefined,
     callback: (...args: any[]) => void | Promise<void>,
   ): void {
     this.backoffOptions.strategy.reset() // reset delay to initial one at each call
-    const call = backoff.call(handler, url, kind, requestedWidth, callback)
+    const call = backoff.call(handler, url, kind, displayWidth, callback)
     call.setStrategy(this.backoffOptions.strategy)
     call.retryIf(this.backoffOptions.retryIf)
     call.failAfter(this.backoffOptions.failAfter)

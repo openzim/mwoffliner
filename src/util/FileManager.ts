@@ -12,6 +12,28 @@ import RedisQueue from './RedisQueue.js'
 
 const MAXIMUM_FILE_DOWNLOAD_DELAY = 20000
 
+/**
+ * Merge details of a file already known with details of a new usage of the same file.
+ *
+ * URL resolution (width / mult found in the URL) and display width (width at which the file is
+ * displayed in HTML) are two distinct things which are merged independently:
+ * - we keep the URL with the highest resolution
+ * - we keep the highest display width seen so far
+ *
+ * Returns the merged details, or null if nothing changed.
+ */
+export function mergeFileDetails(existing: FileDetail, detail: FileDetail): FileDetail | null {
+  const isHigherRes = existing.width < (detail.width || 10e6) || existing.mult < (detail.mult || 1)
+  const merged: FileDetail = isHigherRes ? { ...detail } : { ...existing }
+  const displayWidth = Math.max(existing.displayWidth || 0, detail.displayWidth || 0)
+  if (displayWidth) {
+    merged.displayWidth = displayWidth
+  } else {
+    delete merged.displayWidth
+  }
+  return isHigherRes || merged.displayWidth !== existing.displayWidth ? merged : null
+}
+
 interface HostData {
   queue: RedisQueue<FileToDownload>
   lastRequestDate?: number
@@ -62,10 +84,9 @@ class FileManager {
   private async _addFileToProcess(path: string, detail: FileDetail): Promise<void> {
     const existing = await this.filesToDownloadXPath.get(path)
     if (existing) {
-      const isHigherRes = existing.width < (detail.width || 10e6) || existing.mult < (detail.mult || 1)
-      if (!isHigherRes) return
+      const merged = mergeFileDetails(existing, detail)
       // Resolution upgrade: update store only, queue already has this path
-      await this.filesToDownloadXPath.set(path, detail)
+      if (merged) await this.filesToDownloadXPath.set(path, merged)
       return
     }
     // New file: add to both store and host queue
@@ -90,9 +111,8 @@ class FileManager {
     for (const [path, detail] of Object.entries(files)) {
       const existing = existingVals[path]
       if (existing) {
-        const isHigherRes = existing.width < (detail.width || 10e6) || existing.mult < (detail.mult || 1)
-        if (!isHigherRes) continue
-        toSet[path] = detail // upgrade only, no queue push
+        const merged = mergeFileDetails(existing, detail)
+        if (merged) toSet[path] = merged // upgrade only, no queue push
       } else {
         toSet[path] = detail
         await this.pushToHostQueue(path, detail)
@@ -213,7 +233,7 @@ class FileManager {
 
       const downloadUrl = latestDetail.url
       const downloadKind = latestDetail.kind
-      const downloadWidth = latestDetail.width
+      const downloadWidth = latestDetail.displayWidth
 
       logger.debug(`Worker ${workerId} downloading ${urlHelper.deserializeUrl(downloadUrl)} (${downloadKind})`)
       await Downloader.downloadContent(downloadUrl, downloadKind, false, downloadWidth)

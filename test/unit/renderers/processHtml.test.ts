@@ -159,7 +159,7 @@ describe('processHtml', () => {
 
       expect(imageDependencies).toHaveLength(1)
       expect(imageDependencies[0].url).toEqual(`https:${imageSrc}`)
-      expect(imageDependencies[0].width).toEqual(180)
+      expect(imageDependencies[0].displayWidth).toEqual(180)
     })
 
     it('keeps the maximum requested width for duplicate image URLs', async () => {
@@ -168,7 +168,7 @@ describe('processHtml', () => {
 
       expect(imageDependencies).toHaveLength(1)
       expect(imageDependencies[0].url).toEqual(`https:${imageSrc}`)
-      expect(imageDependencies[0].width).toEqual(320)
+      expect(imageDependencies[0].displayWidth).toEqual(320)
     })
 
     it('missing width attribute still produces dependency without width (URL fallback)', async () => {
@@ -176,7 +176,7 @@ describe('processHtml', () => {
 
       expect(imageDependencies).toHaveLength(1)
       expect(imageDependencies[0].url).toEqual(`https:${imageSrc}`)
-      expect(imageDependencies[0].width).toBeUndefined()
+      expect(imageDependencies[0].displayWidth).toBeUndefined()
     })
   })
 

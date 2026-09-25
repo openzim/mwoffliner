@@ -637,7 +637,7 @@ export abstract class Renderer {
   public async processHtml(processHtmlOpts: ProcessHtmlOpts): Promise<RenderOutput> {
     const { html, dump, pageTitle, pageDetail, displayTitle, categoryMembers, categoriesHtml, moduleDependencies, callback } = processHtmlOpts
     let { pageSubtitle } = processHtmlOpts
-    let imageDependencies: Array<{ url: string; path: string; width?: number }> = []
+    let imageDependencies: Array<{ url: string; path: string; displayWidth?: number }> = []
     let videoDependencies: Array<{ url: string; path: string }> = []
     let mediaDependencies: Array<{ url: string; path: string }> = []
     let subtitles: Array<{ url: string; path: string }> = []
@@ -770,8 +770,8 @@ export abstract class Renderer {
         .filter((a) => a)
         .map((url) => {
           const path = getMediaBase(url, false)
-          const width = imageRequestedWidths[url]
-          return width ? { url, path, width } : { url, path }
+          const displayWidth = imageRequestedWidths[url]
+          return displayWidth ? { url, path, displayWidth } : { url, path }
         }),
     )
 
@@ -780,8 +780,8 @@ export abstract class Renderer {
         .filter((a) => a)
         .map((url) => {
           const path = getMediaBase(url, false)
-          const width = imageRequestedWidths[url]
-          return width ? { url, path, width } : { url, path }
+          const displayWidth = imageRequestedWidths[url]
+          return displayWidth ? { url, path, displayWidth } : { url, path }
         }),
     )
 
