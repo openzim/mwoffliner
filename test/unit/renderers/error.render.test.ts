@@ -60,6 +60,21 @@ describe('ErrorRenderer', () => {
       expect(matchingRule.name).toBe('deleted page error')
       expect(matchingRule.detailsMessageKey).toBe('DELETED_PAGE')
     })
+    it('should handle ActionParse truncated response', async () => {
+      const matchingRule = findFirstMatchingRule({
+        urlCalled: 'https://ru.wikipedia.org/w/api.php?action=parse&format=json&prop=modules%7Cjsconfigvars&page=Foo&formatversion=2',
+        errorCode: null,
+        httpReturnCode: null,
+        responseContentType: null,
+        responseData: {
+          warnings: { result: { warnings: 'This result was truncated because it would otherwise be larger than the limit of 12,582,912 bytes.' } },
+        },
+      })
+      expect(matchingRule).not.toBeNull()
+      expect(matchingRule.name).toBe('ActionParse API - Truncated Response')
+      expect(matchingRule.detailsMessageKey).toBe('ACTION_PARSE_TRUNCATED_RESPONSE')
+      expect(matchingRule.isHardFailure).toBe(true)
+    })
   })
   describe('renderDownloadError', () => {
     beforeAll(async () => {
