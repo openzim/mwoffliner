@@ -3,6 +3,7 @@ Unreleased
 * FIX: Fix image thumb layout when removing links (@Markus-Rost #2893)
 * FIX: Always pick highest resolution image URL, independently of the width at which it is displayed (@benoit74 #2881)
 * FIX: Ignore (and count as hard failure) pages whose ActionParse response is truncated because too big (@benoit74 #2896)
+* FIX: Do not set a literal "null" title on non-page entries (images, CSS, JS, ...) (@benoit74 #2904)
 
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)

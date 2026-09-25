@@ -39,6 +39,9 @@ Real-time computer graphics`
   expect(await isWebpPresent('d1f33b1cb42dc60ec0e42c6954875701/Animexample3edit.png', zimFile)).toBeTruthy()
   // passed test for jpg
   expect(await isWebpPresent('d1f33b1cb42dc60ec0e42c6954875701/Claychick.jpg', zimFile)).toBeTruthy()
+  // non-page entries have no title (libzim falls back to path), see https://github.com/openzim/mwoffliner/issues/2904
+  const imageEntry = zimFile.getEntryByPath('_assets_/d1f33b1cb42dc60ec0e42c6954875701/Animexample3edit.png')
+  expect(imageEntry.title).toBe(imageEntry.path)
   // redirection check successful
   expect(await isRedirectionPresent('href="Real-time_rendering"', zimFile)).toBeTruthy()
   rimraf.sync(testId)

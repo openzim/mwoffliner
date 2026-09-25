@@ -239,7 +239,7 @@ class FileManager {
       await Downloader.downloadContent(downloadUrl, downloadKind, false, downloadWidth)
         .then(async (resp) => {
           if (resp && resp.content && resp.contentType) {
-            const item = new StringItem(fileToDownload.path, resp.contentType, null, { FRONT_ARTICLE: 0 }, resp.content)
+            const item = new StringItem(fileToDownload.path, resp.contentType, '', { FRONT_ARTICLE: 0 }, resp.content)
             await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
             dump.status.files.success += 1
             hostData.downloadSuccess += 1

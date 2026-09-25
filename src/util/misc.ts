@@ -173,7 +173,7 @@ export async function saveStaticFiles(staticFiles: Set<string>, zimCreator: Crea
           mimetype = 'application/javascript'
         }
 
-        const page = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, null, { FRONT_ARTICLE: 0 }, staticFilesContent)
+        const page = new StringItem(`${config.output.dirs.res}/${zimPath}`, mimetype, '', { FRONT_ARTICLE: 0 }, staticFilesContent)
         await zimCreatorMutex.runExclusive(() => zimCreator.addItem(page))
       }),
     )
