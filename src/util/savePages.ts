@@ -12,7 +12,7 @@ import urlHelper from './url.helper.js'
 import { Renderer } from '../renderers/abstract.renderer.js'
 import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
-import FileManager from './FileManager.js'
+import FileManager, { mergeFileDetails } from './FileManager.js'
 import { truncateZimEntryTitleWords } from './misc.js'
 import { isMainPage } from './pages.js'
 
@@ -86,10 +86,10 @@ async function savePageFiles(mediaDependencies: any, imageDependencies: any, vid
 
     if (imageDependencies && imageDependencies.length) {
       for (const dep of imageDependencies) {
-        const urlSize = getSizeFromUrl(dep.url)
-        const width = dep.width || urlSize.width
-        const mult = urlSize.mult
-        pageFiles[dep.path] = { url: urlHelper.serializeUrl(dep.url), kind: 'image', mult, width }
+        const { mult, width } = getSizeFromUrl(dep.url)
+        const detail: FileDetail = { url: urlHelper.serializeUrl(dep.url), kind: 'image', mult, width, displayWidth: dep.displayWidth }
+        // same image might be used multiple times in the page with different URLs
+        pageFiles[dep.path] = pageFiles[dep.path] ? mergeFileDetails(pageFiles[dep.path], detail) || pageFiles[dep.path] : detail
       }
     }
 

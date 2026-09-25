@@ -45,8 +45,11 @@ type FileToDownload = {
 
 type FileDetail = {
   url: string
+  // resolution of the file to download, as found in the URL; used to pick the best URL
   mult?: number
   width?: number
+  // maximum width at which the file is displayed in pages; used to resize the downloaded file
+  displayWidth?: number
   kind: DownloadKind
 }
 
