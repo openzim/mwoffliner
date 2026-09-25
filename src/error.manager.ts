@@ -236,7 +236,7 @@ const matchingRules: MatchingRule[] = [
     contentTypes: null,
     responseIsEmpty: false,
     rawResponseDataContains: null,
-    jsonResponseDataContains: [{ key: 'warnings.result.*', valueContains: ['This result was truncated'] }],
+    jsonResponseDataContains: [{ key: 'warnings.result.warnings', valueContains: ['This result was truncated'] }],
     detailsMessageKey: 'ACTION_PARSE_TRUNCATED_RESPONSE',
     displayThirdLine: false,
     isHardFailure: true,
