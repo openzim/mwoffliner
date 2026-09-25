@@ -270,7 +270,7 @@ export async function downloadAndSaveModule(zimCreator: Creator, module: string,
     }
     const modulePath = type === 'js' ? jsPath(module + '.js', config.output.dirs.mediawiki) : cssPath(module + '.css', config.output.dirs.mediawiki)
     const mimetype = type === 'js' ? 'text/javascript' : 'text/css'
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, '', { FRONT_ARTICLE: 0 }, text)))
     logger.debug(`Saved module [${module}] at ${modulePath}`)
   } catch (e) {
     logger.error(`Failed to get module with url [${moduleApiUrl}]\nYou may need to specify a custom --mwModulePath`, e)
@@ -285,7 +285,7 @@ export async function downloadAndSaveStartupModule(zimCreator: Creator, langVar?
   try {
     const modulePath = jsPath(module, config.output.dirs.mediawiki)
     const mimetype = 'text/javascript'
-    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, null, { FRONT_ARTICLE: 0 }, text)))
+    await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(modulePath, mimetype, '', { FRONT_ARTICLE: 0 }, text)))
     logger.debug(`Saved module [${module}] at ${modulePath}`)
     return JSON.parse(text.match(/;mw\.loader\.register\((\[\[.*?\]\])\);+\s?mw\./s)[1])
   } catch (e) {
@@ -311,7 +311,7 @@ export async function downloadAndSaveCustomCss(zimCreator: Creator, cssUrl: stri
   const { content: cssBody } = await Downloader.downloadContent(cssUrl, 'css')
   const processedCss = await processStylesheetContent(cssUrl, '', cssBody.toString())
   const zimPath = cssPath(filename, config.output.dirs.res)
-  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/css', null, { FRONT_ARTICLE: 0 }, processedCss)))
+  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/css', '', { FRONT_ARTICLE: 0 }, processedCss)))
   logger.info(`Saved custom CSS [${cssUrl}] at ${zimPath}`)
 }
 
@@ -320,7 +320,7 @@ export async function downloadAndSaveCustomJs(zimCreator: Creator, jsUrl: string
   logger.info(`Downloading custom JS [${jsUrl}]`)
   const { content: jsBody } = await Downloader.downloadContent(jsUrl, 'js')
   const zimPath = jsPath(filename, config.output.dirs.res)
-  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/javascript', null, { FRONT_ARTICLE: 0 }, jsBody.toString())))
+  await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, 'text/javascript', '', { FRONT_ARTICLE: 0 }, jsBody.toString())))
   logger.info(`Saved custom JS [${jsUrl}] at ${zimPath}`)
 }
 export interface ResourceLoaderModule extends Array<any> {
@@ -403,7 +403,7 @@ export async function downloadAndSaveMathJaxSource(zimCreator: Creator, source: 
         }
         const zimPath = `${config.output.dirs.mathjax}/${relativePath}` as ZimPath
         const content = await entry.buffer()
-        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, mimeType, null, { FRONT_ARTICLE: 0 }, content)))
+        await zimCreatorMutex.runExclusive(() => zimCreator.addItem(new StringItem(zimPath, mimeType, '', { FRONT_ARTICLE: 0 }, content)))
         savedCount++
       }),
   )

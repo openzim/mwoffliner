@@ -741,7 +741,7 @@ async function execute(argv: any) {
   async function saveFavicon(zimCreator: Creator, data: Buffer): Promise<any> {
     logger.info('Saving favicon.png...')
     try {
-      return zimCreator.addItem(new StringItem(`${config.output.dirs.res}/favicon.png`, 'image/png', null, { FRONT_ARTICLE: 0 }, data))
+      return zimCreator.addItem(new StringItem(`${config.output.dirs.res}/favicon.png`, 'image/png', '', { FRONT_ARTICLE: 0 }, data))
     } catch {
       throw new Error('Failed to save favicon')
     }
