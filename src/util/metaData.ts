@@ -53,7 +53,7 @@ const schema = {
     Counter: { type: 'string' },
     Scraper: { type: 'string' },
   },
-  required: ['Creator', 'Description', 'Language', 'Publisher', 'Title', 'Illustration_48x48@1'],
+  required: ['Creator', 'Description', 'Language', 'Publisher', 'Title', 'Illustration_48x48@1', 'Flavour'],
   additionalProperties: true,
 }
 
