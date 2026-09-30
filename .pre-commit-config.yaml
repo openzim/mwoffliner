@@ -10,8 +10,8 @@ repos:
     hooks:
       - id: prettier
         name: prettier (system)
-        entry: prettier --write --ignore-unknown
-        language: node
+        entry: npx prettier --write --ignore-unknown
+        language: system
   - repo: local
     hooks:
       - id: eslint

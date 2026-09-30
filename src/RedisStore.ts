@@ -4,6 +4,8 @@ import RedisKvs from './util/RedisKvs.js'
 import * as logger from './Logger.js'
 import RedisQueue from './util/RedisQueue.js'
 
+const MAX_RECONNECT_RETRIES = 10
+
 class RedisStore implements RS {
   private static instance: RedisStore
 
@@ -60,12 +62,43 @@ class RedisStore implements RS {
         options.url = redisPath
       }
 
+      // On connection loss, try to reconnect with an exponential backoff (0.5s, 1s, 2s, ... capped at 10s),
+      // for about one minute overall before giving up
+      options.socket = {
+        ...options.socket,
+        reconnectStrategy:
+          options.socket?.reconnectStrategy ??
+          ((retries: number, cause: Error) => {
+            if (retries >= MAX_RECONNECT_RETRIES) {
+              return new Error(`Unable to reconnect to Redis after ${retries} retries`, { cause })
+            }
+            return Math.min(500 * 2 ** retries, 10000)
+          }),
+      }
+
       this.#client = createClient(options)
 
       this.#client.on('error', (err) => {
-        if (quitOnError) {
-          logger.error('Redis Client Error', err)
-          process.exit(3)
+        if (!quitOnError) {
+          return
+        }
+        // Client is still open when it is trying to reconnect: this is a transient failure
+        if (this.#client.isOpen) {
+          logger.warn('Redis Client Error, will try to reconnect', err)
+          return
+        }
+        logger.error('Redis Client Error', err)
+        process.exit(3)
+      })
+      let reconnecting = false
+      this.#client.on('reconnecting', () => {
+        reconnecting = true
+        logger.warn('Reconnecting to Redis')
+      })
+      this.#client.on('ready', () => {
+        if (reconnecting) {
+          reconnecting = false
+          logger.info('Reconnected to Redis')
         }
       })
     } else {

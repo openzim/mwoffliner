@@ -1,4 +1,5 @@
 import type { RedisClientType } from 'redis'
+import { withRedisRetry } from './redisRetry.js'
 
 export default class RedisKvs<T> implements RKVS<T> {
   private redisClient: RedisClientType
@@ -16,12 +17,12 @@ export default class RedisKvs<T> implements RKVS<T> {
   }
 
   public async get(prop: string): Promise<T> {
-    const val = await this.redisClient.hGet(this.dbName, prop)
+    const val = await withRedisRetry(this.redisClient, () => this.redisClient.hGet(this.dbName, prop))
     return this.hydrateObject(val as string)
   }
 
   public async getMany(prop: string[]): Promise<KVS<T>> {
-    const replies = await this.redisClient.hmGet(this.dbName, prop)
+    const replies = await withRedisRetry(this.redisClient, () => this.redisClient.hmGet(this.dbName, prop))
     const result: KVS<T> = {}
     for (let u = 0; u < prop.length; u += 1) {
       result[prop[u]] = this.hydrateObject(replies[u] as string)
@@ -30,16 +31,18 @@ export default class RedisKvs<T> implements RKVS<T> {
   }
 
   public exists(prop: string): Promise<boolean> {
-    return this.redisClient.hExists(this.dbName, prop).then((v) => v === 1)
+    return withRedisRetry(this.redisClient, () => this.redisClient.hExists(this.dbName, prop)).then((v) => v === 1)
   }
 
   public async existsMany(prop: string[], blocking = false): Promise<KVS<boolean>> {
     // array of keys
-    const multi = this.redisClient.multi()
-    prop.forEach((index) => {
-      multi.hExists(this.dbName, index)
+    const replies: any[] = await withRedisRetry(this.redisClient, () => {
+      const multi = this.redisClient.multi()
+      prop.forEach((index) => {
+        multi.hExists(this.dbName, index)
+      })
+      return multi.exec(!blocking)
     })
-    const replies: any[] = await multi.exec(!blocking)
     const result: KVS<boolean> = {}
     for (let u = 0; u < prop.length; u += 1) {
       result[prop[u]] = replies[u]
@@ -48,7 +51,7 @@ export default class RedisKvs<T> implements RKVS<T> {
   }
 
   public set(prop: string, val: T): Promise<number> {
-    return this.redisClient.hSet(this.dbName, prop, this.dehydrateObject(val))
+    return withRedisRetry(this.redisClient, () => this.redisClient.hSet(this.dbName, prop, this.dehydrateObject(val)))
   }
 
   public async setMany(val: KVS<T>): Promise<number> {
@@ -60,23 +63,23 @@ export default class RedisKvs<T> implements RKVS<T> {
     for (const key of keys) {
       data[key] = this.dehydrateObject(val[key])
     }
-    return this.redisClient.hSet(this.dbName, data)
+    return withRedisRetry(this.redisClient, () => this.redisClient.hSet(this.dbName, data))
   }
 
   public delete(prop: string): Promise<number> {
-    return this.redisClient.hDel(this.dbName, prop)
+    return withRedisRetry(this.redisClient, () => this.redisClient.hDel(this.dbName, prop))
   }
 
   public deleteMany(prop: string[]): Promise<number> {
-    return this.redisClient.hDel(this.dbName, prop)
+    return withRedisRetry(this.redisClient, () => this.redisClient.hDel(this.dbName, prop))
   }
 
   public keys(): Promise<string[]> {
-    return this.redisClient.hKeys(this.dbName)
+    return withRedisRetry(this.redisClient, () => this.redisClient.hKeys(this.dbName))
   }
 
   public len(): Promise<number> {
-    return this.redisClient.hLen(this.dbName)
+    return withRedisRetry(this.redisClient, () => this.redisClient.hLen(this.dbName))
   }
 
   /**
@@ -152,7 +155,7 @@ export default class RedisKvs<T> implements RKVS<T> {
     cursor: number
     items: KVS<T>
   }> {
-    const { cursor, entries } = await this.redisClient.hScan(this.dbName, String(scanCursor))
+    const { cursor, entries } = await withRedisRetry(this.redisClient, () => this.redisClient.hScan(this.dbName, String(scanCursor)))
     const items: KVS<T> = {}
     for (const { field, value } of entries) {
       items[field] = this.hydrateObject(value)
@@ -164,7 +167,7 @@ export default class RedisKvs<T> implements RKVS<T> {
   }
 
   public flush(): Promise<number> {
-    return this.redisClient.del(this.dbName)
+    return withRedisRetry(this.redisClient, () => this.redisClient.del(this.dbName))
   }
 
   private hydrateObject(value: string): any {
