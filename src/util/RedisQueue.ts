@@ -1,4 +1,5 @@
 import type { RedisClientType } from 'redis'
+import { withRedisRetry } from './redisRetry.js'
 
 export default class RedisQueue<T> {
   private redisClient: RedisClientType
@@ -16,20 +17,20 @@ export default class RedisQueue<T> {
   }
 
   public async pop(): Promise<T> {
-    const val = await this.redisClient.rPop(this.dbName)
+    const val = await withRedisRetry(this.redisClient, () => this.redisClient.rPop(this.dbName))
     return this.hydrateObject(val as string)
   }
 
   public push(val: T): Promise<number> {
-    return this.redisClient.lPush(this.dbName, this.dehydrateObject(val))
+    return withRedisRetry(this.redisClient, () => this.redisClient.lPush(this.dbName, this.dehydrateObject(val)))
   }
 
   public len(): Promise<number> {
-    return this.redisClient.lLen(this.dbName)
+    return withRedisRetry(this.redisClient, () => this.redisClient.lLen(this.dbName))
   }
 
   public flush(): Promise<number> {
-    return this.redisClient.del(this.dbName)
+    return withRedisRetry(this.redisClient, () => this.redisClient.del(this.dbName))
   }
 
   private hydrateObject(value: string): any {
