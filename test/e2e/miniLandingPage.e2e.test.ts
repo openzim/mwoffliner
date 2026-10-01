@@ -127,7 +127,7 @@ await testRenders(
 
 /**
  * Scenario 3: Single page passed in pageList.
- * It is automatically set as the ZIM main page (#1891) and must NOT be trimmed in either mode.
+ * It is automatically set as the ZIM main page (#1891) but is not a landing page, so it must still be trimmed in nodet mode.
  */
 await testRenders(
   'mini-single-page-landing',
@@ -138,17 +138,17 @@ await testRenders(
     format: ['nodet,nopic'],
   },
   async (outFiles) => {
-    describe('single page pageList ZIM main page preservation', () => {
+    describe('single page pageList ZIM main page trimming', () => {
       for (const dump of outFiles) {
         test(`zimcheck for ${dump.renderer} renderer [format: ${dump.format}]`, async () => {
           await expect(zimcheck(dump.outFile)).resolves.not.toThrow()
         })
 
-        test(`single page is automatically the ZIM main page and is not trimmed to lead section only [${dump.format}]`, async () => {
+        test(`single page is automatically the ZIM main page but is still trimmed to lead section only [${dump.format}]`, async () => {
           const mainPageFromDump = await zimdump(`show --url "Brian_May" ${dump.outFile}`)
           const mainPageDoc = domino.createDocument(mainPageFromDump)
           const headings = mainPageDoc.querySelectorAll('.mw-heading')
-          expect(headings.length).toBeGreaterThan(0)
+          expect(headings.length).toBe(0)
         })
       }
     })

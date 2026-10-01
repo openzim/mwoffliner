@@ -6,7 +6,8 @@ Unreleased
 * FIX: Do not set a literal "null" title on non-page entries (images, CSS, JS, ...) (@benoit74 #2904)
 * FIX: Better recovery in case of Redis connection issues (@benoit74 #2923)
 * CHANGED: Always set Flavour metadata and include it in default ZIM filename, defaulting to `full` (@benoit74 #2908)
-* FIX: Do not trim down mini ZIM landing / main page to lead section only (@sundeep8967 #2882)
+* FIX: Do not trim down wiki main page or custom main page to lead section only in nodet ZIMs (@sundeep8967 #2882)
+* FIX: Never let a custom flavour remove the ZIM main page, including custom main page or single page list entry (@sundeep8967 #2890)
 
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)

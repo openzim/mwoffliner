@@ -362,6 +362,10 @@ async function execute(argv: any) {
     }
   }
 
+  // Landing page is a real welcome page (wiki main page or custom main page), not
+  // trimmed down in nodet format ; this is not the case of the single page below
+  const landingPage = mainPage
+
   // When the page list contains exactly one page and no custom main
   // page was provided, use that page as the ZIM main page directly
   //(#1891)
@@ -383,6 +387,7 @@ async function execute(argv: any) {
           password: mwPassword,
           outputDirectory,
           mainPage,
+          landingPage,
           pageList,
           publisher,
           customZimDescription,

@@ -19,6 +19,15 @@ export function isZimMainPage(pageTitle: PageTitle, dump: Dump): boolean {
 }
 
 /**
+ * Check if a given page title is the landing page of the target ZIM, i.e. the wiki main page or the
+ * custom main page ; the page used as ZIM main page only because it is alone in the page list is not
+ * a landing page
+ */
+export function isZimLandingPage(pageTitle: PageTitle, dump: Dump): boolean {
+  return !!dump.opts.landingPage && dump.opts.landingPage === pageTitle
+}
+
+/**
  * Check if a given page title or id is a subpage or not
  *
  * A given is a subpage if subpages are activated on its namespace and it contains a / in its title/id

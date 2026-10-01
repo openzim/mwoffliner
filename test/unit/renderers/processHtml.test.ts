@@ -285,7 +285,7 @@ describe('processHtml', () => {
     })
   })
 
-  describe('nodet ZIM main page preservation', () => {
+  describe('nodet ZIM landing page preservation', () => {
     const sampleHtml = `
       <section data-mw-section-id="0">
         <p>Lead section content<sup class="reference"><a href="#cite_note-1">[1]</a></sup></p>
@@ -317,7 +317,7 @@ describe('processHtml', () => {
 
     it('does not trim sections or strip citations on ZIM main page in nodet mode', async () => {
       const t = await createTranslator('en')
-      const dump = new Dump('nodet', '', { mainPage: 'Main_Page' } as any, { mainPage: 'Main_Page' } as any, undefined, t)
+      const dump = new Dump('nodet', '', { mainPage: 'Main_Page', landingPage: 'Main_Page' } as any, { mainPage: 'Main_Page' } as any, undefined, t)
 
       const doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Main_Page' as PageTitle)
       expect(doc.querySelector('section[data-mw-section-id="0"]')).toBeTruthy()
@@ -328,7 +328,7 @@ describe('processHtml', () => {
 
     it('trims non-lead sections and strips citations on regular articles in nodet mode', async () => {
       const t = await createTranslator('en')
-      const dump = new Dump('nodet', '', { mainPage: 'Main_Page' } as any, { mainPage: 'Main_Page' } as any, undefined, t)
+      const dump = new Dump('nodet', '', { mainPage: 'Main_Page', landingPage: 'Main_Page' } as any, { mainPage: 'Main_Page' } as any, undefined, t)
 
       const doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Regular_Article' as PageTitle)
       expect(doc.querySelector('section[data-mw-section-id="0"]')).toBeTruthy()
@@ -339,7 +339,7 @@ describe('processHtml', () => {
 
     it('preserves customMainPage as ZIM main page and trims default mainPage in nodet mode', async () => {
       const t = await createTranslator('en')
-      const dump = new Dump('nodet', '', { mainPage: 'Custom_Landing' } as any, { mainPage: 'Custom_Landing' } as any, undefined, t)
+      const dump = new Dump('nodet', '', { mainPage: 'Custom_Landing', landingPage: 'Custom_Landing' } as any, { mainPage: 'Custom_Landing' } as any, undefined, t)
 
       const customLandingDoc = await testProcessHtmlWithDump(sampleHtml, dump, 'Custom_Landing' as PageTitle)
       expect(customLandingDoc.querySelector('section[data-mw-section-id="1"]')).toBeTruthy()
@@ -350,7 +350,7 @@ describe('processHtml', () => {
 
     it('trims all pages when pageList has multiple entries and no customMainPage (mainPage is empty)', async () => {
       const t = await createTranslator('en')
-      const dump = new Dump('nodet', '', { mainPage: '' } as any, { mainPage: '' } as any, undefined, t)
+      const dump = new Dump('nodet', '', { mainPage: '', landingPage: '' } as any, { mainPage: '' } as any, undefined, t)
 
       const page1Doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Main_Page' as PageTitle)
       expect(page1Doc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
@@ -359,15 +359,17 @@ describe('processHtml', () => {
       expect(page2Doc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
     })
 
-    it('preserves single page as ZIM main page when pages.length === 1', async () => {
+    it('trims single page used as ZIM main page when pages.length === 1, since it is not a landing page', async () => {
       const t = await createTranslator('en')
       // In mwoffliner.lib.ts, when pages.length === 1 && !customMainPage, dump.opts.mainPage is set to that single page
-      const dump = new Dump('nodet', '', { mainPage: 'Sole_Article' } as any, { mainPage: 'Sole_Article' } as any, undefined, t)
+      // but dump.opts.landingPage is left empty
+      const dump = new Dump('nodet', '', { mainPage: 'Sole_Article', landingPage: '' } as any, { mainPage: 'Sole_Article' } as any, undefined, t)
 
       const doc = await testProcessHtmlWithDump(sampleHtml, dump, 'Sole_Article' as PageTitle)
-      expect(doc.querySelector('section[data-mw-section-id="1"]')).toBeTruthy()
-      expect(doc.querySelector('.mw-references-wrap')).toBeTruthy()
-      expect(doc.querySelector('sup.reference')).toBeTruthy()
+      expect(doc.querySelector('section[data-mw-section-id="0"]')).toBeTruthy()
+      expect(doc.querySelector('section[data-mw-section-id="1"]')).toBeFalsy()
+      expect(doc.querySelector('.mw-references-wrap')).toBeFalsy()
+      expect(doc.querySelector('sup.reference')).toBeFalsy()
     })
   })
 })

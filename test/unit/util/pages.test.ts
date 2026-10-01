@@ -1,4 +1,4 @@
-import { isSubpage, isMainPage, isZimMainPage, getNamespaceName, extractBodyCssClass, extractHtmlCssClass, extractJsConfigVars } from '../../../src/util/pages.js'
+import { isSubpage, isMainPage, isZimMainPage, isZimLandingPage, getNamespaceName, extractBodyCssClass, extractHtmlCssClass, extractJsConfigVars } from '../../../src/util/pages.js'
 import MediaWiki from '../../../src/MediaWiki.js'
 
 describe('pages utility', () => {
@@ -69,6 +69,26 @@ describe('pages utility', () => {
       const dumpWithoutLanding = { opts: { mainPage: '' } } as any
       expect(isZimMainPage('Default Main' as PageTitle, dumpWithoutLanding)).toBe(false)
       expect(isZimMainPage('Any Page' as PageTitle, dumpWithoutLanding)).toBe(false)
+    })
+  })
+
+  describe('isZimLandingPage', () => {
+    test('returns true when pageTitle matches dump.opts.landingPage', () => {
+      const dump = { opts: { mainPage: 'Custom Landing', landingPage: 'Custom Landing' } } as any
+      expect(isZimLandingPage('Custom Landing' as PageTitle, dump)).toBe(true)
+      expect(isZimLandingPage('Other Page' as PageTitle, dump)).toBe(false)
+    })
+
+    test('returns false for single page used as ZIM main page (no landing page)', () => {
+      const dump = { opts: { mainPage: 'Sole Page', landingPage: '' } } as any
+      expect(isZimMainPage('Sole Page' as PageTitle, dump)).toBe(true)
+      expect(isZimLandingPage('Sole Page' as PageTitle, dump)).toBe(false)
+    })
+
+    test('returns false when no landing page is set, even for empty title', () => {
+      const dump = { opts: {} } as any
+      expect(isZimLandingPage('' as PageTitle, dump)).toBe(false)
+      expect(isZimLandingPage('Any Page' as PageTitle, dump)).toBe(false)
     })
   })
 

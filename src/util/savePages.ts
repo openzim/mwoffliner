@@ -14,11 +14,11 @@ import RenderingContext from '../renderers/rendering.context.js'
 import { zimCreatorMutex } from '../mutex.js'
 import FileManager, { mergeFileDetails } from './FileManager.js'
 import { truncateZimEntryTitleWords } from './misc.js'
-import { isZimMainPage } from './pages.js'
+import { isZimLandingPage, isZimMainPage } from './pages.js'
 
 function getPageRenderUrl(pageDetail: PageDetail, dump: Dump): string {
-  const isZimMain = isZimMainPage(pageDetail.title, dump)
-  const leadSectionId = dump.nodet && !isZimMain && !pageDetail.contentmodel && !pageDetail.missing ? config.filters.leadSectionId : ''
+  const isLandingPage = isZimLandingPage(pageDetail.title, dump)
+  const leadSectionId = dump.nodet && !isLandingPage && !pageDetail.contentmodel && !pageDetail.missing ? config.filters.leadSectionId : ''
   const oldid = dump.opts.stableRevision && pageDetail.stableRevisionId !== undefined ? pageDetail.stableRevisionId : undefined
   return Downloader.getPageUrl(pageDetail.title, { sectionId: leadSectionId, oldid, langVar: dump.langVar })
 }
