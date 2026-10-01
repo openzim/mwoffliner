@@ -117,6 +117,46 @@ await testRenders(
 )
 
 await testRenders(
+  'displayTitle-customMainPageSubpage',
+  { ...parameters, pageList: 'User:The_other_Kiwix_guy/Landing,User:The_other_Kiwix_guy/Apps', customMainPage: 'User:The_other_Kiwix_guy/Landing' },
+  async (outFiles) => {
+    const landingPageDoc = domino.createDocument(await zimdump(`show --url "User:The_other_Kiwix_guy/Landing" ${outFiles[0].outFile}`))
+    const appsPageDoc = domino.createDocument(await zimdump(`show --url "User:The_other_Kiwix_guy/Apps" ${outFiles[0].outFile}`))
+
+    describe('custom main page which is a subpage', () => {
+      test(`zimcheck for ${outFiles[0].renderer} renderer`, async () => {
+        await expect(zimcheck(outFiles[0].outFile)).resolves.not.toThrow()
+      })
+
+      test(`custom main page header is hidden for ${outFiles[0].renderer} renderer`, async () => {
+        const pageTitle = landingPageDoc.querySelector('h1#firstHeading')
+        expect(pageTitle).toBeTruthy()
+        expect((pageTitle as HTMLElement).style.display).toBe('none')
+      })
+
+      test(`custom main page subpage breadcrumb is hidden for ${outFiles[0].renderer} renderer`, async () => {
+        const pageSubtitle = landingPageDoc.querySelector('#contentSub > #mw-content-subtitle')
+        expect(pageSubtitle).toBeTruthy()
+        expect(pageSubtitle.innerHTML).toBe('')
+      })
+
+      test(`other subpage keeps its breadcrumb for ${outFiles[0].renderer} renderer`, async () => {
+        const breadcrumb = appsPageDoc.querySelector('#contentSub > #mw-content-subtitle > .subpages')
+        expect(breadcrumb).toBeTruthy()
+        expect(breadcrumb.textContent).toContain('User:The other Kiwix guy')
+      })
+    })
+
+    afterAll(() => {
+      if (!process.env.KEEP_ZIMS) {
+        rimraf.sync(`./${outFiles[0].testId}`)
+      }
+    })
+  },
+  ['ActionParse'],
+)
+
+await testRenders(
   'displayTitle-singlePage',
   { ...parameters, pageList: 'Giraffe (album)' },
   async (outFiles) => {

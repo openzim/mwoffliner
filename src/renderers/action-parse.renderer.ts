@@ -215,8 +215,8 @@ export class ActionParseRenderer extends Renderer {
   }
 
   public async render(renderOpts: RenderOpts): Promise<RenderOutput> {
-    const { data, pageTitle, pageDetail, subtitle: pageSubtitle, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
-    let { displayTitle } = renderOpts
+    const { data, pageTitle, pageDetail, moduleDependencies, categoryMembers, categoriesHtml, bodyCssClass, htmlCssClass, dump } = renderOpts
+    let { displayTitle, subtitle: pageSubtitle } = renderOpts
 
     if (!data) {
       throw new Error('Cannot render missing data into a page')
@@ -242,6 +242,10 @@ export class ActionParseRenderer extends Renderer {
       } else if (mainpageTitle !== '-') {
         displayTitle = mainpageTitle
       }
+    }
+    if (hideFirstHeading) {
+      // Subtitle (e.g. subpage breadcrumb to parent pages) belongs to the hidden title area
+      pageSubtitle = ''
     }
 
     // Add gadgets which are used on this page
