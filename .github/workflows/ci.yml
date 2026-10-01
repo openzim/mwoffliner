@@ -17,7 +17,7 @@ env:
 
 jobs:
   prepare-zim-tools:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       x86_64-version: ${{ steps.x86_64-version.outputs.version }}
       aarch64-version: ${{ steps.aarch64-version.outputs.version }}
@@ -110,15 +110,15 @@ jobs:
           exit 1
 
   unit-tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: prepare-zim-tools
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
 
@@ -149,7 +149,7 @@ jobs:
 
       - name: Mailgun Action
         if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: vineetchoudhary/mailgun-action@v1.2
+        uses: vineetchoudhary/mailgun-action@v1.5
         with:
           api-key: ${{ secrets.MAILGUN_API_KEY }}
           domain: ${{ secrets.MAILGUN_DOMAIN }}
@@ -158,22 +158,22 @@ jobs:
           subject: 'mwoffliner scheduled CI run FAILED (silent)'
 
       - name: Upload coverage results for unit tests
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-unit
           path: coverage/unit/coverage-final.json
           retention-days: 1
 
   e2e-tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: prepare-zim-tools
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
 
@@ -203,7 +203,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Uploading ZIM artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zims-e2e
@@ -214,7 +214,7 @@ jobs:
 
       - name: Mailgun Action
         if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: vineetchoudhary/mailgun-action@v1.2
+        uses: vineetchoudhary/mailgun-action@v1.5
         with:
           api-key: ${{ secrets.MAILGUN_API_KEY }}
           domain: ${{ secrets.MAILGUN_DOMAIN }}
@@ -223,7 +223,7 @@ jobs:
           subject: 'mwoffliner scheduled CI run FAILED (silent)'
 
       - name: Upload coverage results for e2e tests
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-e2e
           path: coverage/e2e/coverage-final.json
@@ -231,17 +231,17 @@ jobs:
 
   upload-coverage:
     if: ${{ github.event_name != 'schedule' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - prepare-zim-tools
       - unit-tests
       - e2e-tests
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
 
@@ -258,13 +258,13 @@ jobs:
         run: npm install
 
       - name: Download coverage results for unit tests
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: coverage-unit
           path: coverage/unit/
 
       - name: Download coverage results for e2e tests
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: coverage-e2e
           path: coverage/e2e/
@@ -273,20 +273,20 @@ jobs:
         run: npm run codecov:merge
 
       - name: Uploading Codecov stats
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   unit-tests-arm64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     needs: prepare-zim-tools
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
 
@@ -311,14 +311,14 @@ jobs:
         run: npm run test:unit
 
   code-quality:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Installing Node.JS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
 
@@ -341,10 +341,10 @@ jobs:
         run: npm run test:i18n
 
   build-docker-amd64:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Ensure we can build the Docker image
         run: |
@@ -355,10 +355,10 @@ jobs:
           docker run --rm local-mwoffliner mwoffliner --help
 
   build-docker-arm64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
       - name: Download codebase
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Ensure we can build the Docker image
         run: |
