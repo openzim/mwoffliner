@@ -16,24 +16,32 @@ describe('Dump filename radical', () => {
 
   describe('Based on format', () => {
     const formatTests = {
-      '': 'wikipedia_en_all_2026-04.zim',
-      ':extra-alias-tag': 'wikipedia_en_all_extra-alias-tag_2026-04.zim',
-      'nopic:nopic-alias': 'wikipedia_en_all_nopic-alias_2026-04.zim',
-      'nopic,nopdf': 'wikipedia_en_all_nopic_2026-04.zim',
-      'nopic,nopdf:pdf-alias': 'wikipedia_en_all_pdf-alias_2026-04.zim',
-      'nopic,:extra-alias': 'wikipedia_en_all_extra-alias_2026-04.zim',
-      'nopic:': 'wikipedia_en_all_2026-04.zim',
-      'nopic,novid:': 'wikipedia_en_all_2026-04.zim',
-      'nopic,nodet': 'wikipedia_en_all_nopic-nodet_2026-04.zim',
-      'nodet,nopic': 'wikipedia_en_all_nopic-nodet_2026-04.zim',
+      '': 'full',
+      ':': 'full',
+      'nopic:': 'full',
+      'nopic,novid:': 'full',
+      ':extra-alias-tag': 'extra-alias-tag',
+      'nopic:nopic-alias': 'nopic-alias',
+      'nopic,nopdf': 'nopic',
+      'nopic,nopdf:pdf-alias': 'pdf-alias',
+      'nopic,:extra-alias': 'extra-alias',
+      novid: 'novid',
+      'nopic,nodet': 'nopic-nodet',
+      'nodet,nopic': 'nopic-nodet',
     }
 
-    for (const [format, expectedFilename] of Object.entries(formatTests)) {
-      test(`format [${expectedFilename}] is correct`, async () => {
+    for (const [format, expectedFlavour] of Object.entries(formatTests)) {
+      test(`format [${format}] gives flavour [${expectedFlavour}]`, async () => {
         const dump = new Dump(format, '', { filenameDate: '2026-04' } as any, mwMetaData as any, undefined, t)
-        expect(dump.computeFilename()).toEqual(expectedFilename)
+        expect(dump.computeFlavour()).toEqual(expectedFlavour)
+        expect(dump.computeFilename()).toEqual(`wikipedia_en_all_${expectedFlavour}_2026-04.zim`)
       })
     }
+
+    test('full flavour is used in custom filename placeholder', async () => {
+      const dump = new Dump('', '', { customZimFilename: 'custom_{flavour}_{period}.zim', filenameDate: '2026-04' } as any, mwMetaData as any, undefined, t)
+      expect(dump.computeFilename()).toEqual('custom_full_2026-04.zim')
+    })
   })
 
   describe('Based on page list', () => {
@@ -49,7 +57,7 @@ describe('Dump filename radical', () => {
       test(`radical for page list [${pageList}] is correct`, async () => {
         const dump = new Dump('', '', { pageList, filenameDate: '2026-04' } as any, mwMetaData as any, undefined, t)
         const outFormat = dump.computeFilename()
-        expect(outFormat).toEqual(`wikipedia_en_${expectedRadicalSuffix}_2026-04.zim`)
+        expect(outFormat).toEqual(`wikipedia_en_${expectedRadicalSuffix}_full_2026-04.zim`)
       })
     }
   })
