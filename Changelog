@@ -5,6 +5,7 @@ Unreleased
 * FIX: Ignore (and count as hard failure) pages whose ActionParse response is truncated because too big (@benoit74 #2896)
 * FIX: Do not set a literal "null" title on non-page entries (images, CSS, JS, ...) (@benoit74 #2904)
 * FIX: Better recovery in case of Redis connection issues (@benoit74 #2923)
+* CHANGED: Always set Flavour metadata and include it in default ZIM filename, defaulting to `full` (@benoit74 #2908)
 
 2.0.0
 * NEW: Scrape only wikitext contentmodel articles by default (@triemerge #2445)

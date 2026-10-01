@@ -15,7 +15,7 @@ export const parameterDescriptions = {
   customZimFilename: 'Custom ZIM filename template, with the .zim extension. Placeholders: {zim_name}, {domain}, {lang}, {lang_or_variant}, {selection}, {flavour}, {period}.',
   customMainPage: 'Custom page to be used as welcome page.',
   format:
-    'Flavour for the scraping. If missing, scrape all page contents. Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
+    'Flavour for the scraping. If missing, scrape all page contents ("full" flavour). Each --format argument will cause a new ZIM file to be created but options can be combined. Supported options are:\n * novid: no video & audio content\n * nopic: no pictures (implies "novid")\n * nopdf: no PDF files\n * nodet: only the first/head paragraph (implies "novid")\nFlavour can be named (and corresponding ZIM metadata will be created) using a ":":\nExample: "--format=nopic,nodet:mini"',
   getCategories: 'Include the categories of all included pages.',
   categoriesPageSize: 'Number of items (subcategories, pages, files) to display per page on category pages (default: 200)',
   keepEmptySections: 'Keep all sections, even empty ones typically used as placeholders in wikis to outline expected page structure.',

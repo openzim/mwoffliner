@@ -111,7 +111,7 @@
       "type": "list-of-string-enum",
       "required": false,
       "title": "Formats",
-      "description": "Which flavours to build. Empty option will scrape all page contents, including videos.",
+      "description": "Which flavours to build. Empty option will scrape all page contents, including videos ('full' flavour).",
       "alias": "format",
       "choices": [
         { "title": "mini: no page details or pictures or videos", "value": "nodet,nopic:mini" },

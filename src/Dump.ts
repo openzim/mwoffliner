@@ -79,9 +79,9 @@ export class Dump {
 
   public computeFlavour() {
     const flavour = []
-    if (typeof this.formatFlavour === 'string') {
+    if (this.formatFlavour) {
       return this.formatFlavour
-    } else {
+    } else if (typeof this.formatFlavour !== 'string') {
       if (this.nopic) {
         flavour.push('nopic')
       } else if (this.nopdf) {
@@ -94,7 +94,8 @@ export class Dump {
         flavour.push('nodet')
       }
     }
-    return flavour.join('-')
+    // Flavour must always be set, falling back to 'full' when nothing is removed from the content
+    return flavour.join('-') || 'full'
   }
 
   private computeDomain() {
@@ -169,11 +170,7 @@ export class Dump {
   }
 
   public computeFilename() {
-    const filenameTemplate = this.opts.customZimFilename
-      ? this.opts.customZimFilename
-      : this.formatFlavour || (this.formatFlavour === undefined && (this.nodet || this.nopdf || this.nopic || this.novid))
-        ? '{zim_name}_{flavour}_{period}.zim'
-        : '{zim_name}_{period}.zim'
+    const filenameTemplate = this.opts.customZimFilename || '{zim_name}_{flavour}_{period}.zim'
     const filename = this.formatTemplate(filenameTemplate, { ...this.computeFilenamePlaceholders(), zim_name: this.computeZimName() }, 'customZimFilename')
     if (filename.includes('/') || filename.includes('\\')) {
       throw new Error(`option --customZimFilename must be a filename, not a path`)
