@@ -1,3 +1,5 @@
+Unreleased
+
 2.1.0
 * CHANGED: Always set Flavour metadata and include it in default ZIM filename, defaulting to `full` (@benoit74 #2908)
 * FIX: Wikimedia thumbnails host moved to thumb.wikimedia.org (@benoit74 #2905)
