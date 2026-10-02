@@ -17,7 +17,6 @@ import { Blob, Compression, ContentProvider, Creator, StringItem } from '@openzi
 import { getPages } from './util/mw-api.js'
 import { createTranslator } from './i18n.js'
 import { zimCreatorMutex } from './mutex.js'
-import { check_all } from './sanitize-argument.js'
 
 import {
   MIN_IMAGE_THRESHOLD_INDEX_PAGE,
@@ -247,12 +246,13 @@ async function execute(argv: any) {
     RedisStore.setOptions(argv.redis || config.defaults.redisPath)
   }
 
-  await check_all(argv)
-
   const addNamespaces = _addNamespaces
     ? String(_addNamespaces)
         .split(',')
-        .map((a: string) => Number(a))
+        .map((a: string) => {
+          const trimmed = a.trim()
+          return isNaN(Number(trimmed)) ? trimmed : Number(trimmed)
+        })
     : []
 
   const addContentModels = _addContentModels
@@ -264,7 +264,10 @@ async function execute(argv: any) {
   const onlyNamespaces = _onlyNamespaces
     ? String(_onlyNamespaces)
         .split(',')
-        .map((a: string) => Number(a))
+        .map((a: string) => {
+          const trimmed = a.trim()
+          return isNaN(Number(trimmed)) ? trimmed : Number(trimmed)
+        })
     : []
 
   /* Get MediaWiki Info */
