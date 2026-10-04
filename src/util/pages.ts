@@ -64,7 +64,7 @@ export function extractJsConfigVars(headHtml: string, extraJsConfigVars: KVS<any
     try {
       let jsonString = match[1]
       if (/"\s*:\s*![01]/.test(jsonString)) {
-        jsonString = jsonString.replace(/"\s*:\s*!0([,\s}])/g, '":true$1').replace(/"\s*:\s*!1([,\s}])/g, '":false$1')
+        jsonString = jsonString.replace(/"\s*:\s*!0\s*([,}])/g, '":true$1').replace(/"\s*:\s*!1\s*([,}])/g, '":false$1')
       }
       jsConfigVars = JSON.parse(jsonString)
     } catch (e) {
