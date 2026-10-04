@@ -261,4 +261,12 @@ describe('pages utility', () => {
     expect(result.wgIsRedirect).toBe(true)
     expect(result.wgCanonicalSpecialPageName).toBe(false)
   })
+
+  test('extractJsConfigVars handles whitespace or newlines before the colon with !0/!1 markers', () => {
+    const headHtml = `<script>;RLCONF={"wgBreakFrames"\n:!0,"wgIsArticle"\n:!1,"wgIsRedirect" : !0,"wgCanonicalSpecialPageName":!1};RLSTATE={};</script>`
+    const result = extractJsConfigVars(headHtml)
+    expect(result.wgIsArticle).toBe(false)
+    expect(result.wgIsRedirect).toBe(true)
+    expect(result.wgCanonicalSpecialPageName).toBe(false)
+  })
 })
