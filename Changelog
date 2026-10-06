@@ -1,5 +1,6 @@
 Unreleased
 * FIX: Fix parsing of jsConfigVars with whitespace before colon (@Sriram-Nambiar #2922)
+* CHANGED: Use node-libzim 4.7.0 (libzim 9.8.2-1) (@benoit74 #2935)
 
 2.1.0
 * CHANGED: Always set Flavour metadata and include it in default ZIM filename, defaulting to `full` (@benoit74 #2908)
