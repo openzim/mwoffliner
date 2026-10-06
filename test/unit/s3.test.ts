@@ -1,8 +1,56 @@
-import S3 from '../../src/S3.js'
+import S3, { toSafeS3Key } from '../../src/S3.js'
 import 'dotenv/config.js'
 import { jest } from '@jest/globals'
 
 jest.setTimeout(60000)
+
+describe('toSafeS3Key', () => {
+  test('leaves keys within the 1024-byte S3 limit untouched', () => {
+    const key = 'bm.wikipedia.org/static/images/project-logos/wiki.png'
+    expect(toSafeS3Key(key)).toBe(key)
+  })
+
+  test('shrinks a key exceeding the limit to 1024 bytes or fewer', () => {
+    // Mirrors the real-world failure in https://github.com/openzim/mwoffliner/issues/2917:
+    // a percent-encoded, non-Latin Wikimedia Commons thumbnail URL (plus query params) that
+    // is 1026 bytes once protocol-stripped, 2 bytes over S3's hard 1024-byte key limit.
+    const cyrillicSegment = '%D0%9F%D0%B0%D0%BC%D1%8F%D1%82%D0%BD%D0%B8%D0%BA_%D0%93%D0%B5%D1%80%D0%BE%D1%8E'
+    const longKey =
+      `thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/${cyrillicSegment}.jpg/` +
+      `250px-${cyrillicSegment}.jpg?utm_source=ru.wikipedia.org&utm_campaign=parser&utm_content=thumbnail-${'x'.repeat(900)}`
+
+    expect(Buffer.byteLength(longKey, 'utf8')).toBeGreaterThan(1024)
+
+    const safeKey = toSafeS3Key(longKey)
+
+    expect(Buffer.byteLength(safeKey, 'utf8')).toBeLessThanOrEqual(1024)
+    expect(safeKey).not.toBe(longKey)
+  })
+
+  test('is deterministic, so the same oversized key always maps to the same safe key', () => {
+    const longKey = `a/very/long/cache/key/${'segment-'.repeat(200)}.jpg`
+
+    expect(toSafeS3Key(longKey)).toBe(toSafeS3Key(longKey))
+  })
+
+  test('maps different oversized keys to different safe keys', () => {
+    const longKeyA = `a/very/long/cache/key/${'segment-a-'.repeat(200)}.jpg`
+    const longKeyB = `a/very/long/cache/key/${'segment-b-'.repeat(200)}.jpg`
+
+    expect(toSafeS3Key(longKeyA)).not.toBe(toSafeS3Key(longKeyB))
+  })
+
+  test('does not split a multi-byte UTF-8 character when trimming the prefix', () => {
+    // Every character here is a 2-byte UTF-8 sequence; a byte-oriented (rather than
+    // character-oriented) trim could cut one in half and produce invalid UTF-8.
+    const longKey = 'ü'.repeat(600)
+
+    const safeKey = toSafeS3Key(longKey)
+
+    expect(Buffer.byteLength(safeKey, 'utf8')).toBeLessThanOrEqual(1024)
+    expect(Buffer.from(safeKey, 'utf8').toString('utf8')).toBe(safeKey)
+  })
+})
 
 const describeIf = process.env.S3_URL ? describe : describe.skip
 describeIf('S3', () => {
