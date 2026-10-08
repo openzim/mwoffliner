@@ -5,8 +5,20 @@
 		]
 	},
 	"categoryHeaderNumerals": "0–9",
+	"categoryCurrentPageFileCount": {
+		"one": "dosya",
+		"other": "{{count}} dosya"
+	},
 	"categoryMediaHeader": "\"{{pageName}}\" kategorisindeki medya",
+	"categoryCurrentPagePageCount": {
+		"one": "sayfa",
+		"other": "{{count}} sayfa"
+	},
 	"categoryHeader": "\"{{pageName}}\" kategorisindeki sayfalar",
+	"categoryCurrentPageSubcatCount": {
+		"one": "alt kategori",
+		"other": "{{count}} alt kategori"
+	},
 	"categoryPreviousPage": "önceki sayfa",
 	"categoryNextPage": "sonraki sayfa",
 	"categoryNoPagination": "Sonraki öğeler JavaScript'siz tarayıcılarda görüntülenemez",
@@ -19,5 +31,10 @@
 	"DOWNLOAD_ERRORS_HEADING": "Tüh! Sayfa Bulunamadı.",
 	"DOWNLOAD_ERRORS_MESSAGE": "İstenen '{{pageTitle}}' sayfası bu ZIM dosyasında mevcut değil, {{server}} sunucusundan alınamadı.",
 	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "Bu sayfa, alınacak sayfaların listesini derledikten sonra, ancak, şu anda göz atmakta olduğunuz ZIM'i oluşturmak için gerekli verileri edinemeden önce silindi.",
-	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Bu sayfaya erişim {{server}} sunucusunda kısıtlıdır. ZIM kazıma işlemi sırasında mevcut olmayan özel izinler gerektirir."
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "Bu sayfaya erişim {{server}} sunucusunda kısıtlıdır. ZIM kazıma işlemi sırasında mevcut olmayan özel izinler gerektirir.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "Bu sayfaya erişim, {{server}} sunucusundaki kategori tabanlı biçimde kısıtlanmış. ZIM kazıma işlemi sırasında gerekli kategori izinleri mevcut değil.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "Göz attığınız ZIM oluşturulurken, {{server}} sunucusu bu HTML sayfası hakkında kabul edilebilecek zaman içinde bilgi veremedi.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "Göz atmakta olduğunuz ZIM oluşturulurken, {{server}} sunucusunun ActionParse API'si bu sayfayı işlerken zaman aşımına uğradı ve HTTP 504 hatası verdi.",
+	"DOWNLOAD_ERRORS_LINE2": "Eksik olan sayfa, şu anda gördüğünüz yer tutucu sayfa ile değiştirildi.",
+	"DOWNLOAD_ERRORS_LINE3": "Sorunun {{server}} sunucusunda çözüleceğini ve bu ZIM'in bir sonraki sürümünün bu sayfayı içereceğini umalım."
 }
