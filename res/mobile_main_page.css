@@ -31,7 +31,6 @@ h2 {
     padding: 0;
     display: flex;
     justify-content: center;
-    background:black;
     position: absolute;
     left:0;
     top:0;
@@ -44,7 +43,6 @@ h2 {
     width: 100%;
     overflow: hidden;
     font-size: 1em;
-    background: black;
     max-width: 8096px;
 }
 
