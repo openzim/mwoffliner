@@ -1,5 +1,7 @@
 Unreleased
 * FIX: Fix parsing of jsConfigVars with whitespace before colon (@Sriram-Nambiar #2922)
+
+2.1.1
 * CHANGED: Use node-libzim 4.7.0 (libzim 9.8.2-1) (@benoit74 #2935)
 
 2.1.0
