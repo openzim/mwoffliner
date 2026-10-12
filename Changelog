@@ -1,4 +1,5 @@
 Unreleased
+* FIX: Fix black box at the bottom of thumbnails on welcome page (#2694)
 
 2.1.1
 * CHANGED: Use node-libzim 4.7.0 (libzim 9.8.2-1) (@benoit74 #2935)
