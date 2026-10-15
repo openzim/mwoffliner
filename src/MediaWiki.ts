@@ -82,6 +82,7 @@ export interface SiteInfoGeneral {
     code: string
   }[]
   categorycollation: string
+  case?: string
 }
 
 export interface SiteInfoSkin {
@@ -111,6 +112,7 @@ class MediaWiki {
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
   public skin = 'vector' // Default fallback
+  public case = 'first-letter'
 
   #wikiPath: string
   #indexPhpPath: string
@@ -199,6 +201,7 @@ class MediaWiki {
     this.#username = ''
     this.#password = ''
     this.getCategories = false
+    this.case = 'first-letter'
 
     this.#actionApiPath = '/w/api.php'
     this.#wikiPath = '/wiki/'
@@ -475,6 +478,7 @@ class MediaWiki {
 
     this.setNamespaces(body.query, addNamespaces || [], onlyNamespaces || [])
     Gadgets.setGadgets(body.query.gadgets)
+    this.case = generalEntries.case
 
     const { url: licenseUrl, text: licenseName } = body.query.rightsinfo
     const subTitle = body.query.allmessages[0].content || ''
