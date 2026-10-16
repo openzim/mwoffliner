@@ -23,7 +23,7 @@ describe('savePages', () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
       await RenderingContext.createRenderers(renderer as renderName)
 
-      const _pagesDetail = await Downloader.getPagesByTitle(['London'] as PageTitle[])
+      const _pagesDetail = await Downloader.getPagesByTitle(['Big Ben'] as PageTitle[])
       const pagesDetail = mwRetToPageDetail(_pagesDetail)
       const { pagesStore: pageDetailStore } = RedisStore
       await pageDetailStore.flush()
@@ -46,14 +46,14 @@ describe('savePages', () => {
 
       // Successfully scrapped existent pages
       expect(addedItems).toHaveLength(1)
-      expect(addedItems[0].title).toEqual('London')
+      expect(addedItems[0].title).toEqual('Big Ben')
 
       const pageDoc = domino.createDocument(addedItems.shift().getContentProvider().feed().toString())
 
       // Successfully scrapped existent pages
       expect(pageDoc.querySelector('meta[name="geo.position"]')).toBeDefined()
       // Geo Position data is correct
-      expect(pageDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.50722222;-0.1275')
+      expect(pageDoc.querySelector('meta[name="geo.position"]')?.getAttribute('content')).toEqual('51.5007;-0.1245')
       // Check if header exists
       expect(pageDoc.querySelector('h1#firstHeading, h1.page-header, h1.pcs-edit-section-title')).toBeTruthy()
     })

@@ -31,13 +31,13 @@ describe('mwApi', () => {
   })
 
   test('MWApi Page Title', async () => {
-    const pageList = ['London', 'United_Kingdom', 'Farnborough/Aldershot built-up area']
-    const pagesTitles = ['London', 'United Kingdom', 'Farnborough/Aldershot built-up area']
+    const pageList = ['Big Ben', 'United_Kingdom', 'Farnborough/Aldershot built-up area']
+    const pagesTitles = ['Big Ben', 'United Kingdom', 'Farnborough/Aldershot built-up area']
 
     await getPages('Main_Page' as PageTitle, pageList as PageTitle[])
 
     const pagesByTitle = await RedisStore.pagesStore.getMany(pagesTitles)
-    const London = pagesByTitle['London']
+    const BigBen = pagesByTitle['Big Ben']
     const United_Kingdom = pagesByTitle['United Kingdom']
     const Farnborough = pagesByTitle['Farnborough/Aldershot built-up area']
 
@@ -50,11 +50,11 @@ describe('mwApi', () => {
     // Page "United_Kingdom" has revision
     expect(United_Kingdom).toHaveProperty('revisionId')
 
-    // Page "London" was scraped
-    expect(London).toBeDefined()
+    // Page "Big Ben" was scraped
+    expect(BigBen).toBeDefined()
 
-    // Page "London" has geo coords
-    expect(London).toHaveProperty('coordinates')
+    // Page "Big Ben" has geo coords
+    expect(BigBen).toHaveProperty('coordinates')
 
     // Complex page was scraped
     expect(Farnborough).toBeDefined()
