@@ -1,5 +1,6 @@
 Unreleased
 * FIX: Fix race condition where generated index main page could be missing from ZIM header (@benoit74 #2951)
+* FIX: `--speed` had no effect on pages listing and category members fetching, causing 429 errors (@benoit74 #2954)
 
 2.1.1
 * CHANGED: Use node-libzim 4.7.0 (libzim 9.8.2-1) (@benoit74 #2935)
