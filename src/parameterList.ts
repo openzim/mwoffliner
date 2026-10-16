@@ -49,7 +49,7 @@ export const parameterDescriptions = {
   customJs: 'Comma-separated list of JS URLs to inject into all rendered pages',
   userAgent: 'Custom User-Agent header for all HTTP requests. Defaults to "MWOffliner/<version> (<adminEmail>)"',
   stableRevision: 'Prefer stable pages revisions when available, based on FlaggedRevs extension (which needs to be active on the wiki).',
-  customFlavour: 'A custom processor that can filter and process articles (see extensions/*.js)',
+  customFlavour: 'A custom processor that can filter and process articles: a path or an HTTP(S) URL to a JS file (see extensions/*.js)',
   mathJaxSource:
     'UNSTABLE: Local path or HTTP(S) URL to a MathJax ZIP archive to extract and push to the ZIM. Enables math rendering on wikis using MathJax. Pages are detected automatically by their JS module list.',
   mathJaxConfig:

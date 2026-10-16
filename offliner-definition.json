@@ -303,6 +303,14 @@
       "description": "Custom JS to inject into all rendered pages ; remote value can be a comma-separated list of JS URLs.",
       "allowRemoteUrl": true
     },
+    "customFlavour": {
+      "type": "blob",
+      "kind": "js",
+      "required": false,
+      "title": "Custom Flavour",
+      "description": "JS module that filters and processes pages (see extensions/ in mwoffliner for an example).",
+      "allowRemoteUrl": true
+    },
     "mathJaxSource": {
       "type": "url",
       "required": false,
