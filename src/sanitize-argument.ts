@@ -11,6 +11,7 @@ import { RENDERERS_LIST } from './util/const.js'
 import Downloader from './Downloader.js'
 import MediaWiki from './MediaWiki.js'
 import { config } from './config.js'
+import { isCustomFlavourUrl } from './util/customFlavour.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -66,7 +67,8 @@ export async function sanitize_all(argv: any) {
   sanitizeStringMaxLength(customZimDescription, 'customZimDescription', 80)
 
   // sanitizing custom flavour
-  if (argv.customFlavour) {
+  // a URL is downloaded when the scraper starts
+  if (argv.customFlavour && !isCustomFlavourUrl(argv.customFlavour)) {
     argv.customFlavour = sanitize_customFlavour(argv.customFlavour)
     if (!argv.customFlavour) {
       throw new Error('Custom Flavour not found')
