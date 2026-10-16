@@ -825,7 +825,7 @@ async function execute(argv: any) {
     /* Write the static html file */
     if (!dryrun) {
       const item = new StringItem(indexPagePath, 'text/html', 'Main Page', {}, doc.documentElement.outerHTML)
-      zimCreator.addItem(item)
+      await zimCreatorMutex.runExclusive(() => zimCreator.addItem(item))
     }
 
     return indexPagePath
