@@ -402,6 +402,7 @@ class Downloader {
       visitedUrls.add(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
+      await new Promise((resolve) => setTimeout(resolve, this.pageRequestInterval))
       Downloader.handleMWWarningsAndErrors(resp)
       const pages = Object.values(resp.query?.pages)
       pages.forEach((page) => filterRedirects(page))
@@ -465,6 +466,7 @@ class Downloader {
       visitedUrls.add(reqUrl)
 
       const resp = await this.getJSON<MwApiResponse>(reqUrl)
+      await new Promise((resolve) => setTimeout(resolve, this.pageRequestInterval))
       Downloader.handleMWWarningsAndErrors(resp)
       const pages = Object.values(resp.query?.pages || {})
       pages.forEach((page) => filterRedirects(page))
@@ -969,6 +971,7 @@ class Downloader {
     let continueStr = ''
     while (true) {
       const { query, continue: cont } = await this.getJSON<any>(apiUrlDirector.buildCategoryMembersURL(pageTitle, continueStr))
+      await new Promise((resolve) => setTimeout(resolve, this.pageRequestInterval))
       const items: Array<CategoryMember> = query.categorymembers.filter((a: CategoryMember) => {
         const sortkey = a.sortkeyprefix + ((a.ns && a.title.split(':').slice(1).join(':')) || a.title)
         a.sortkeyprefix = [...sortkey][0]

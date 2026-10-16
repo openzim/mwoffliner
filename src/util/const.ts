@@ -1,4 +1,4 @@
-export const PAGE_REQUEST_INTERVAL = 100 // default pause (ms) between action=parse API requests per worker
+export const PAGE_REQUEST_INTERVAL = 100 // default pause (ms) between Mediawiki API requests per worker
 export const IMAGE_THUMB_URL_REGEX =
   /^(.*?\/)(transcoded\/|thumb\/)?([0-9a-fA-F]{1}\/[0-9a-fA-F]{2}\/)?([^/]+\.[A-Za-z0-9]{2,6}\/)?(\d+px[-]+)?([^/]+?\.[A-Za-z0-9]{2,6}(\.[A-Za-z0-9]{2,6})?)(\?[0-9a-fA-F]+|\?utm_.+)?$/
 export const LATEX_IMAGE_URL_REGEX = /^(.*\/math\/render\/svg\/)([A-Za-z0-9]+)$/
