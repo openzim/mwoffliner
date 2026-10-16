@@ -30,6 +30,15 @@ describe('Sanitize parameters', () => {
 
       await expect(sanitize_all(params)).rejects.toThrow(/Parameter '--mwUrl' can only be used once/)
     })
+
+    test('should throw if --customZimCreator is used more than once', async () => {
+      const params = {
+        ...baseValidParams,
+        customZimCreator: ['OrgA', 'OrgB'],
+      }
+
+      await expect(sanitize_all(params)).rejects.toThrow(/Parameter '--customZimCreator' can only be used once/)
+    })
   })
 
   describe('--format parameter behavior', () => {

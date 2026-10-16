@@ -87,6 +87,7 @@ async function execute(argv: any) {
     customZimLongDescription,
     customZimTags,
     customZimLanguage,
+    customZimCreator,
     customZimName,
     customZimFilename,
     withoutZimFullTextIndex,
@@ -277,7 +278,7 @@ async function execute(argv: any) {
   }
 
   const metaDataRequiredKeys = {
-    Creator: mwMetaData.creator,
+    Creator: customZimCreator || mwMetaData.creator,
     Description: customZimDescription || mwMetaData.subTitle,
     Language: customZimLanguage || mwMetaData.langIso3,
     Publisher: publisher,
@@ -394,6 +395,8 @@ async function execute(argv: any) {
           customZimLongDescription,
           customZimTags,
           customZimTitle,
+          customZimLanguage,
+          customZimCreator,
           customZimName,
           customZimFilename,
           withoutZimFullTextIndex,
