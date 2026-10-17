@@ -6,6 +6,7 @@ export const parameterDescriptions = {
   pageList: 'List of pages to include. Comma separated list of titles or a local path or HTTP(S) URL to a file with one title (in UTF8) per line',
   pageListToIgnore: 'List of pages to ignore. Comma separated list of titles or local path or HTTP(S) URL to a file with one title (in UTF8) per line',
   customZimFavicon: 'Local path or HTTP(S) URL to a PNG favicon (will be resized to 48x48). Default to MediaWiki if not set',
+  customZimCreator: 'ZIM custom creator metadata',
   customZimTitle: 'ZIM custom title metadata (30 characters max)',
   customZimDescription: 'ZIM custom description (80 characters max)',
   customZimLongDescription: 'ZIM custom long description (4000 characters max)',
