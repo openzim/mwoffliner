@@ -42,6 +42,7 @@ interface HostData {
   downloadSuccess: number
   downloadFailure: number
   downloadsComplete: boolean
+  inFlight: number
 }
 
 class FileManager {
@@ -136,6 +137,7 @@ class FileManager {
         downloadSuccess: 0,
         downloadFailure: 0,
         downloadsComplete: false,
+        inFlight: 0,
       })
     }
     await this.hosts.get(hostname).queue.push({
@@ -191,10 +193,13 @@ class FileManager {
 
           const fileToDownload = await hostData.queue.pop()
           if (!fileToDownload) {
-            hostData.downloadsComplete = true
+            if (hostData.inFlight === 0) {
+              hostData.downloadsComplete = true
+            }
             continue
           }
 
+          hostData.inFlight += 1
           hostData.lastRequestDate = Date.now()
           return { fileToDownload, hostData, hostname }
         }
@@ -297,7 +302,11 @@ class FileManager {
           const nextFileData = await fileDownloadMutex.runExclusive(getNextFileToDownload)
           if (!nextFileData) break
           const { fileToDownload, hostname, hostData } = nextFileData
-          await workerDownloadFile(fileToDownload, hostname, hostData, workerId)
+          try {
+            await workerDownloadFile(fileToDownload, hostname, hostData, workerId)
+          } finally {
+            hostData.inFlight -= 1
+          }
         }
       },
       { concurrency: Downloader.workers },
@@ -307,6 +316,13 @@ class FileManager {
       `Done with downloading ${filesTotal} files: ${dump.status.files.success} success, ${dump.status.files.fail} fail: `,
       JSON.stringify(Object.fromEntries([...hosts].map(([hostname, hostData]) => [hostname, { success: hostData.downloadSuccess, fail: hostData.downloadFailure }])), null, '\t'),
     )
+
+    const totalProcessed = dump.status.files.success + dump.status.files.fail
+    if (totalProcessed !== filesTotal) {
+      logger.warn(
+        `Files count mismatch after downloading: ${totalProcessed} accounted for (${dump.status.files.success} success, ${dump.status.files.fail} fail) out of ${filesTotal} total files`,
+      )
+    }
   }
 }
 
