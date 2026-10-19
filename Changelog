@@ -1,4 +1,5 @@
 Unreleased
+* NEW: Support a URL in `--customFlavour` (@Sarthak-Shreshtha01 #2946)
 * FIX: Fix race condition where generated index main page could be missing from ZIM header (@benoit74 #2951)
 * FIX: Fix parsing of jsConfigVars with whitespace before colon (@Sriram-Nambiar #2922)
 
