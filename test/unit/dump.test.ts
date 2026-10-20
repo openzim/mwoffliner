@@ -102,6 +102,22 @@ describe('Dump filename radical', () => {
       expect(dump.computeFilename()).toEqual('wikipedia_sr-ec_my-list_maxi_2026-04.zim')
     })
 
+    test('custom ZIM creator is used for domain placeholder when specified', async () => {
+      const dump = new Dump(
+        '',
+        '',
+        {
+          customZimCreator: 'CustomOrg',
+          filenameDate: '2026-04',
+        } as any,
+        mwMetaData as any,
+        undefined,
+        t,
+      )
+
+      expect(dump.computeZimName()).toEqual('customOrg_en_all')
+    })
+
     test('invalid placeholder fails with available placeholder list', async () => {
       const dump = new Dump('', '', { customZimName: '{missing}.zim' } as any, mwMetaData as any, undefined, t)
 
