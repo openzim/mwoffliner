@@ -2,6 +2,7 @@ Unreleased
 * FIX: Fix race condition where generated index main page could be missing from ZIM header (@benoit74 #2951)
 * FIX: Fix parsing of jsConfigVars with whitespace before colon (@Sriram-Nambiar #2922)
 * FIX: Do not cut a character outside the BMP (e.g. an emoji) in half when truncating title words (@Sarthak-Shreshtha01 #2958)
+* FIX: Strip a BOM and surrounding whitespace from page list files, so the first page of a BOM file is not missed (@Sarthak-Shreshtha01 #2960)
 * FIX: Prevent files from being silently dropped when retried after host is marked complete (@Sriram-Nambiar #2956)
 
 2.1.1
