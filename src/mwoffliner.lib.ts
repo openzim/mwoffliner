@@ -791,6 +791,8 @@ async function execute(argv: any) {
         .replace(/__RELATIVE_FILE_PATH__/g, getRelativeFilePath(indexPagePath, '')),
     )
     doc.querySelector('title').innerHTML = sanitizeString(dump.mwMetaData.title) || sanitizeString(dump.opts.customZimTitle)
+    doc.documentElement.setAttribute('lang', dump.mwMetaData.langMw || 'en')
+    doc.documentElement.setAttribute('dir', dump.mwMetaData.textDir || 'ltr')
     const pagesWithImages: PageDetail[] = []
     const allPages: PageDetail[] = []
     for (const page of pages) {
