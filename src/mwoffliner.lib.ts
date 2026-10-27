@@ -779,10 +779,6 @@ async function execute(argv: any) {
             '\n' +
             genHeaderCSSLink(config, 'style', indexPagePath, config.output.dirs.res) +
             '\n' +
-            genHeaderScript(config, 'images_loaded.min', indexPagePath, config.output.dirs.res) +
-            '\n' +
-            genHeaderScript(config, 'masonry.min', indexPagePath, config.output.dirs.res) +
-            '\n' +
             genHeaderScript(config, 'page_list_home', indexPagePath, config.output.dirs.res) +
             '\n' +
             genCanonicalLink(config, dump.mwMetaData.webUrl, indexPagePath) +
