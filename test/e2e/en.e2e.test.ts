@@ -79,6 +79,7 @@ await testAllRenders('en-wikipedia', parameters, async (outFiles) => {
           'client-nojs',
           'skin-theme-clientpref-os',
           'skin-thumbsize-clientpref-standard',
+          'skin-underline-clientpref-browser',
           'vector-feature-appearance-pinned-clientpref-0',
           'vector-feature-custom-font-size-clientpref-1',
           'vector-feature-language-in-header-enabled',
