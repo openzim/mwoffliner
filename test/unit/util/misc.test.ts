@@ -8,6 +8,10 @@ describe('miscelenaous utility functions tests', () => {
     ['fÖo', 2, 'f'],
     ['fÖo', 3, 'fÖ'],
     ['fÖo', 4, 'fÖo'],
+    ['f😀o', 1, 'f'],
+    ['f😀o', 3, 'f'],
+    ['f😀o', 4, 'f'],
+    ['f😀o', 5, 'f😀'],
   ]
   test.each(truncateUtf8BytesCases)('truncateUtf8Bytes', (...args) => {
     const [value, length, expected] = args as [string, number, string]
@@ -26,6 +30,7 @@ describe('miscelenaous utility functions tests', () => {
     ],
     [`${'f'.repeat(MAX_WORD_LENGTH - 2)}Ö`, undefined],
     [`${'f'.repeat(MAX_WORD_LENGTH - 1)}Ö`, 'f'.repeat(MAX_WORD_LENGTH - 1)],
+    [`f${'😀'.repeat(MAX_WORD_LENGTH / 4)}`, `f${'😀'.repeat(MAX_WORD_LENGTH / 4 - 1)}`],
   ]
   test.each(truncateZimEntryTitleWordsCases)('truncateZimEntryTitleWords', (...args) => {
     const [value, expected] = args as [string, string | undefined]

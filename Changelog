@@ -1,4 +1,8 @@
 Unreleased
+* FIX: Fix race condition where generated index main page could be missing from ZIM header (@benoit74 #2951)
+* FIX: Fix parsing of jsConfigVars with whitespace before colon (@Sriram-Nambiar #2922)
+* FIX: Do not cut a character outside the BMP (e.g. an emoji) in half when truncating title words (@Sarthak-Shreshtha01 #2958)
+* FIX: Prevent files from being silently dropped when retried after host is marked complete (@Sriram-Nambiar #2956)
 
 2.1.1
 * CHANGED: Use node-libzim 4.7.0 (libzim 9.8.2-1) (@benoit74 #2935)

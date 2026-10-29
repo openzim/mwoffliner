@@ -518,7 +518,18 @@ export function truncateUtf8Bytes(text: string, maxBytes: number) {
     }
   }
 
-  return text.slice(0, low - 1)
+  let end = low - 1
+  // Do not cut a character outside the BMP (e.g. an emoji) in half: a lone high surrogate
+  // would be written as U+FFFD
+  if (end > 0 && isHighSurrogate(text.charCodeAt(end - 1))) {
+    end--
+  }
+
+  return text.slice(0, end)
+}
+
+function isHighSurrogate(charCode: number) {
+  return charCode >= 0xd800 && charCode <= 0xdbff
 }
 
 /**
