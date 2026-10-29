@@ -46,63 +46,75 @@ h2 {
     font-size: 1em;
     background: black;
     max-width: 8096px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-self: flex-start; /* as tall as its tiles, not stretched to the window height */
+    --cols: 4;
+    --row-h: calc(75vw / var(--cols)); /* tiles as big as a column is wide, at 4:3 */
 }
 
 #list {
     background: white;
 }
 
-.nojs #content {
-    column-count: 4;
-    column-gap: 0;
-}
-
+/* Tiles. Without CSS variables (IE11), a fixed number of equal width tiles per row */
 .item {
     display: block;
     position: relative;
     overflow: hidden;
-}
-
-.nojs #content .item {
-    display: inline-block;
-    width: 100%;
+    color: white;
+    text-decoration: none;
 }
 
 .item img {
+    display: block;
     width: 100%;
     height: auto;
-    transition: all 0.3s;
-    transform: scale(1);
     background: white;
+    transition: transform 0.3s;
 }
 
-.item:hover img {
-    transform: scale(1.1);
+@media (hover: hover) {
+    .item:hover img {
+        transform: scale(1.1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .item img {
+        transition: none;
+    }
 }
 
 .item figure {
     margin: 0;
 }
 
+/* Title over the image on a gradient, clear at the top and 82% black where the text sits:
+   13.6:1 over a white image. Clamped to 2 lines; the bottom spacing is a transparent border
+   so that the top of a third line cannot show through under the clamp. */
 .item figcaption {
     position: absolute;
+    left: 0;
+    right: 0;
     bottom: 0;
-    width: calc(100% - 1.2em); /* remove left/right padding */
-    vertical-align: bottom;
-    background: rgba(48, 48, 48, 0.5);
+    padding: 3.25em 0.6em 0;
+    border-bottom: 0.45em solid transparent;
+    background: rgba(0, 0, 0, 0.82);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0.82) 3em, rgba(0, 0, 0, 0.82) 100%);
     color: white;
-    padding: 0.6em;
     font-weight: bold;
-    transition: all 0.3s;
-    transform: scale(1);
+    font-size: 0.875em;
+    line-height: 1.25;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    hyphens: auto;
 }
-
-/* .item:hover figcaption {
-    transform: scale(1);
-    bottom: 50%;
-} */
 
 #footer {
     margin: 0;
@@ -122,12 +134,12 @@ h2 {
         font-size: 0.5vw;
     }
 
-    #content .item {
-        width: 3.125%;
+    #content {
+        --cols: 32;
     }
 
-    .nojs #content {
-        column-count: 32;
+    #content .item {
+        width: 3.125%;
     }
 
     ul {
@@ -144,12 +156,12 @@ h2 {
         font-size: 1vw;
     }
 
-    #content .item {
-        width: 6.25%;
+    #content {
+        --cols: 16;
     }
 
-    .nojs #content {
-        column-count: 16;
+    #content .item {
+        width: 6.25%;
     }
 
     ul {
@@ -166,12 +178,12 @@ h2 {
         font-size: 2vw;
     }
 
-    #content .item {
-        width: 12.5%;
+    #content {
+        --cols: 8;
     }
 
-    .nojs #content {
-        column-count: 8;
+    #content .item {
+        width: 12.5%;
     }
 
     ul {
@@ -188,12 +200,12 @@ h2 {
         font-size: 4vw;
     }
 
-    #content .item {
-        width: 25%;
+    #content {
+        --cols: 4;
     }
 
-    .nojs #content {
-        column-count: 4;
+    #content .item {
+        width: 25%;
     }
 
     ul {
@@ -214,12 +226,12 @@ h2 {
         font-size: 1em;
     }
 
-    #content .item {
-        width: 33.3333%;
+    #content {
+        --cols: 3;
     }
 
-    .nojs #content {
-        column-count: 3;
+    #content .item {
+        width: 33.3333%;
     }
 
     ul {
@@ -244,12 +256,12 @@ h2 {
         font-size: 1.2em;
     }
 
-    #content .item {
-        width: 50%
+    #content {
+        --cols: 2;
     }
 
-    .nojs #content {
-        column-count: 2;
+    #content .item {
+        width: 50%;
     }
 
     ul {
@@ -258,5 +270,41 @@ h2 {
 
     #footer ul li {
         font-size: 1em;
+    }
+}
+
+/* Flex rows: each tile grows by its aspect ratio --r (set per tile, clamped to 1:2 to 2:1),
+   so the tiles of a row share one height and fill the width. The filler keeps the last row
+   at its natural height, left aligned, instead of stretching it. page_list_home.js then
+   sizes every tile so that the last row is full width too (.is-justified). */
+@supports (--r: 0) {
+    #content .item {
+        width: auto;
+        min-width: 0;
+        flex: var(--r) 1 calc(var(--r) * var(--row-h));
+    }
+
+    #content .item img {
+        aspect-ratio: var(--r);
+        object-fit: cover;
+    }
+
+    #content::after {
+        content: '';
+        flex: 1000000 1 0px;
+    }
+
+    #content.is-justified::after {
+        content: none;
+    }
+
+    #content.is-justified .item {
+        flex: none;
+        width: var(--w);
+    }
+
+    #content.is-justified .item img {
+        aspect-ratio: auto;
+        height: var(--h);
     }
 }
