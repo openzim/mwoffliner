@@ -66,6 +66,7 @@ describe('javaScript', () => {
     expect(jsFiles).toEqual(
       [
         '_mw_/ext.cite.ux-enhancements.js',
+        '_mw_/ext.tmh.dash.js',
         '_mw_/ext.tmh.player.dialog.js',
         '_mw_/ext.tmh.player.inline.js',
         '_mw_/ext.tmh.player.js',
@@ -124,6 +125,7 @@ describe('javaScript', () => {
       [
         '_mw_/ext.cite.ux-enhancements.js',
         '_mw_/ext.gadget.ReferenceTooltips.js',
+        '_mw_/ext.tmh.dash.js',
         '_mw_/ext.tmh.player.dialog.js',
         '_mw_/ext.tmh.player.inline.js',
         '_mw_/ext.tmh.player.js',
