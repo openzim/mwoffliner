@@ -28,15 +28,15 @@ await testAllRenders(
     test(`test audio files for ${outFiles[0]?.renderer} renderer`, async () => {
       const allFiles = await zimdump(`list ${outFiles[0].outFile}`)
       const allFilesArr = allFiles.split('\n')
-      const mediaFiles = allFilesArr.filter((elem) => elem.endsWith('webm') || elem.endsWith('ogg')).sort()
+      const mediaFiles = allFilesArr.filter((elem) => elem.endsWith('webm') || elem.endsWith('ogg') || elem.endsWith('mp3')).sort()
 
       expect(mediaFiles).toEqual(
         [
-          '_assets_/0c70a452f799bfe840676ee341124611/Cs-index.ogg',
-          '_assets_/0c70a452f799bfe840676ee341124611/En-au-favicon.ogg',
-          '_assets_/0c70a452f799bfe840676ee341124611/En-us-index.ogg',
-          '_assets_/0c70a452f799bfe840676ee341124611/En-us-location.ogg',
-          '_assets_/0c70a452f799bfe840676ee341124611/Fr-une_maison-fr-ouest.ogg',
+          '_assets_/0c70a452f799bfe840676ee341124611/Cs-index.ogg.mp3',
+          '_assets_/0c70a452f799bfe840676ee341124611/En-au-favicon.ogg.mp3',
+          '_assets_/0c70a452f799bfe840676ee341124611/En-us-index.ogg.mp3',
+          '_assets_/0c70a452f799bfe840676ee341124611/En-us-location.ogg.mp3',
+          '_assets_/0c70a452f799bfe840676ee341124611/Fr-une_maison-fr-ouest.ogg.mp3',
           '_assets_/0c70a452f799bfe840676ee341124611/LL-Q150_(fra)-Jérémy-Günther-Heinz_Jähnick-index.wav.ogg',
           '_assets_/0c70a452f799bfe840676ee341124611/LL-Q150_(fra)-Jérémy-Günther-Heinz_Jähnick-maison.wav.ogg',
           '_assets_/0c70a452f799bfe840676ee341124611/LL-Q150_(fra)-Lepticed7-index.wav.ogg',
@@ -46,7 +46,7 @@ await testAllRenders(
           '_assets_/0c70a452f799bfe840676ee341124611/LL-Q150_(fra)-Poslovitch-maison.wav.ogg',
           '_assets_/0c70a452f799bfe840676ee341124611/LL-Q150_(fra)-WikiLucas00-location.wav.ogg',
           '_assets_/0c70a452f799bfe840676ee341124611/LL-Q150_(fra)-WikiLucas00-maison.wav.ogg',
-          '_assets_/0c70a452f799bfe840676ee341124611/Nl-index.ogg',
+          '_assets_/0c70a452f799bfe840676ee341124611/Nl-index.ogg.mp3',
         ].sort(),
       )
     })
