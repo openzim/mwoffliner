@@ -12,6 +12,9 @@
  *      (linear partition, a small dynamic program, instant for 100 tiles)
  *   3. a row with ratio sum S is W / S tall, so its tiles fill the width exactly
  * Image loading plays no part, so nothing reflows when images arrive.
+ *
+ * An image smaller than its tile is not blown up to cover it: it gets .is-small, which
+ * shows it at its own size, centred, instead of cropped and upscaled.
  */
 ;(function () {
   // Splits ratios, in order, into k groups minimising the sum of squared distances to the
@@ -73,6 +76,26 @@
     return boxes
   }
 
+  // True when object-fit: cover would scale a naturalWidth x naturalHeight image up to fill
+  // a boxWidth x boxHeight tile
+  function isUpscaled(naturalWidth, naturalHeight, boxWidth, boxHeight) {
+    if (!naturalWidth || !naturalHeight || !boxWidth || !boxHeight) return false
+    return Math.max(boxWidth / naturalWidth, boxHeight / naturalHeight) > 1
+  }
+
+  function markSmall(img) {
+    if (!img.complete || !img.naturalWidth) return
+    var box = img.getBoundingClientRect()
+    var small = isUpscaled(img.naturalWidth, img.naturalHeight, box.width, box.height)
+    if (small) img.classList.add('is-small')
+    else img.classList.remove('is-small')
+  }
+
+  function markAllSmall(container) {
+    var imgs = container.querySelectorAll('.item img')
+    for (var i = 0; i < imgs.length; i++) markSmall(imgs[i])
+  }
+
   function layout(container) {
     var items = container.querySelectorAll('.item')
     var width = Math.floor(container.getBoundingClientRect().width)
@@ -87,14 +110,22 @@
       items[i].style.setProperty('--h', boxes[i].h + 'px')
     }
     container.classList.add('is-justified')
+    markAllSmall(container)
   }
 
-  window.pageListHome = { partition: partition, justify: justify }
+  window.pageListHome = { partition: partition, justify: justify, isUpscaled: isUpscaled }
 
   document.addEventListener('DOMContentLoaded', function () {
     var content = document.getElementById('content')
     // Engines without CSS variables keep the CSS fallback layout
     if (!document.body.classList.contains('page-list-home') || !content || !(window.CSS && CSS.supports && CSS.supports('--r', '0'))) return
+    // Lazy images are measured as they arrive
+    var imgs = content.querySelectorAll('.item img')
+    for (var i = 0; i < imgs.length; i++) {
+      imgs[i].addEventListener('load', function () {
+        markSmall(this)
+      })
+    }
     layout(content)
     // Relayout when the width changes, including when a scrollbar comes or goes
     var timer

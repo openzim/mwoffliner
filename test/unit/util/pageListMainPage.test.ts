@@ -44,7 +44,7 @@ describe('welcome page tiles', () => {
 })
 
 describe('welcome page justified rows', () => {
-  const { partition, justify } = loadPageListHome()
+  const { partition, justify, isUpscaled } = loadPageListHome()
 
   test('splits ratios into rows with sums as equal as possible, keeping the order', () => {
     expect(partition([1, 1, 1, 1], 2)).toEqual([2, 2])
@@ -75,5 +75,16 @@ describe('welcome page justified rows', () => {
 
   test('a single tile takes the whole width', () => {
     expect(justify([0.5], 300, 200)).toEqual([{ w: 300, h: 600 }])
+  })
+
+  test.each([
+    [640, 480, 320, 240, false],
+    [320, 240, 320, 240, false],
+    [320, 240, 400, 240, true],
+    [320, 240, 320, 300, true],
+    [160, 90, 300, 400, true],
+    [0, 0, 300, 400, false],
+  ])('a %sx%s image in a %sx%s tile is upscaled: %s', (nw, nh, w, h, expected) => {
+    expect(isUpscaled(nw, nh, w, h)).toBe(expected)
   })
 })
