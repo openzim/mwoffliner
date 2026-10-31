@@ -36,7 +36,7 @@
 	"categoryNoPagination": "Ďalšie položky nie sú viditeľné v prehliadačoch bez JavaScriptu",
 	"subcategories": "Podkategórie",
 	"categoryEmpty": "<em>Táto kategória momentálne neobsahuje žiadne stránky ani médiá.</em>",
-	"categoryLimited": "<em>Obsah tejto kategórie bol zredukovaný tak, aby obsahoval iba stránky v rámci súboru ZIM.</em>",
+	"categoryLimited": "<em>Obsah tejto kategórie bol zredukovaný iba na stránky, ktoré obsahuje súbor ZIM.</em>",
 	"DISCLAIMER": "Táto stránka pochádza z {{creator}}. Text je dostupný pod licenciou {{license}}, pokiaľ nie je uvedené inak. Na mediálne súbory sa môžu vzťahovať ďalšie podmienky.",
 	"LAST_EDITED_ON": "Naposledy upravené {{date}}",
 	"LICENSE_UNKNOWN": "neznáma licencia",
