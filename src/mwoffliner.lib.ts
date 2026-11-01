@@ -57,6 +57,7 @@ import Downloader from './Downloader.js'
 import RenderingContext from './renderers/rendering.context.js'
 import { pageListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { savePages } from './util/savePages.js'
+import { loadCustomFlavour } from './util/customFlavour.js'
 import { PAGE_REQUEST_INTERVAL, CATEGORIES_PAGE_SIZE } from './util/const.js'
 import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename, parseCustomJsUrls, customJsUrlToFilename } from './util/customCssJs.js'
@@ -190,10 +191,6 @@ async function execute(argv: any) {
     logger.warn(`***********\n\n\tCurrent node version is [${process.version}]. We recommend [${packageJSON.engines.node}]\n\n***********`)
   }
 
-  /* Instantiate custom flavour module */
-  logger.debug(`Using custom flavour: ${customFlavour || 'no'}`)
-  const customProcessor = customFlavour ? new (await import(customFlavour)).default() : null
-
   let s3Obj
   // Check for S3 creds
   if (optimisationCacheUrl) {
@@ -238,6 +235,10 @@ async function execute(argv: any) {
     trustedJs,
     insecure: argv.insecure,
   }
+
+  /* Instantiate custom flavour module (after Downloader.init, as it may have to be downloaded) */
+  logger.debug(`Using custom flavour: ${customFlavour || 'no'}`)
+  const customProcessor = customFlavour ? await loadCustomFlavour(customFlavour) : null
 
   /* perform login */
   await MediaWiki.login()
