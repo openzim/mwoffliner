@@ -1,8 +1,6 @@
-import * as backoff from 'backoff'
 import { config } from './config.js'
-import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
+import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
 import { Readable } from 'stream'
-import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import sharp, { Sharp } from 'sharp'
 import apng from 'sharp-apng'
@@ -17,6 +15,8 @@ import MediaWiki, { QueryOpts, SiteInfoResponse } from './MediaWiki.js'
 import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
+import { BackoffOptions, RequestScheduler, isMalformedJsonResponseError } from './RequestScheduler.js'
+import { CacheStore, buildCacheVersion } from './CacheStore.js'
 
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
@@ -43,13 +43,6 @@ interface DownloaderOpts {
   insecure?: boolean
 }
 
-interface BackoffOptions {
-  strategy: BackoffStrategy
-  failAfter: number
-  retryIf: (error?: any) => boolean
-  backoffHandler: (number: number, delay: number, error?: any) => void
-}
-
 interface CompressionData {
   data: Buffer
   context: string
@@ -57,18 +50,6 @@ interface CompressionData {
 
 function isJsonContentType(contentType: string | null): boolean {
   return typeof contentType === 'string' && /\b(?:application\/json|[\w.-]+\+json)\b/i.test(contentType)
-}
-
-function isMalformedJsonResponseError(err: unknown): boolean {
-  if (err instanceof SyntaxError) {
-    return true
-  }
-
-  if (!axios.isAxiosError(err) || err.code !== AxiosError.ERR_BAD_RESPONSE) {
-    return false
-  }
-
-  return err.cause instanceof SyntaxError
 }
 
 function parseJsonResponse<T>(url: string, status: number, contentType: string | null, body: unknown): T {
@@ -128,10 +109,7 @@ class Downloader {
     }
     return Downloader.instance
   }
-  private _workers: number
-  private _pageRequestInterval: number
   private _webp: boolean = false
-  private _requestTimeout: number
   private _basicRequestOptions: AxiosRequestConfig
   private _arrayBufferRequestOptions: AxiosRequestConfig
   private _jsonRequestOptions: AxiosRequestConfig
@@ -146,9 +124,8 @@ class Downloader {
   public mathJaxAllPages = false
 
   private uaString: string
-  private backoffOptions: BackoffOptions
-  private optimisationCacheUrl: string
-  private s3: S3
+  private requestScheduler: RequestScheduler
+  private cacheStore: CacheStore
   private _apiUrlDirector: ApiURLDirector
   private cookierJar: CookieJar
 
@@ -156,18 +133,18 @@ class Downloader {
   private insecure: boolean = false
 
   get workers() {
-    return this._workers
+    return this.requestScheduler.workers
   }
 
   get pageRequestInterval() {
-    return this._pageRequestInterval
+    return this.requestScheduler.pageRequestInterval
   }
 
   get webp() {
     return this._webp
   }
   get requestTimeout() {
-    return this._requestTimeout
+    return this.requestScheduler.requestTimeout
   }
   get basicRequestOptions() {
     return this._basicRequestOptions
@@ -199,65 +176,13 @@ class Downloader {
   }: DownloaderOpts) {
     this.reset()
     this.uaString = uaString
-    this._workers = workers
-    this._pageRequestInterval = pageRequestInterval
-    this._requestTimeout = reqTimeout
-    this.optimisationCacheUrl = optimisationCacheUrl
+    this.requestScheduler = new RequestScheduler({ workers, pageRequestInterval, requestTimeout: reqTimeout, backoffOptions })
+    this.cacheStore = new CacheStore({ optimisationCacheUrl, s3 })
     this._webp = webp
     this.trustedJs = trustedJs
-    this.s3 = s3
     this._apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
     this.insecure = insecure
     this.cookierJar = new CookieJar()
-
-    this.backoffOptions = {
-      // retry up to 10 times, with a minimum of 1sec, maximum of 1min
-      // this means we retry for up to about 6 mins, which is supposed
-      // to be sufficient for backend to recover from transient errors
-      strategy: new backoff.ExponentialStrategy({ initialDelay: 1000, maxDelay: 60000 }),
-      failAfter: 10,
-      retryIf: (err: any) => {
-        const requestedUrl = err.urlCalled || err.config?.url || 'unknown'
-        if (isMalformedJsonResponseError(err)) {
-          logger.info(`Retrying ${requestedUrl} due to malformed JSON response`)
-          return true
-        }
-
-        if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE'].includes(err.code)) {
-          logger.info(`Retrying ${requestedUrl} URL due to ${err.code} error`)
-          return true // retry all connection issues
-        }
-        if (err.responseData?.error?.code === 'maxlag') {
-          logger.info(`Mediawiki server is lagging ${err.responseData?.error?.lag}s; retrying in few seconds`)
-          return true // note that we do not honor Retry-After header value because it is not possible in current code architecture
-        }
-        const httpReturnCode = err.response?.status || err.httpReturnCode
-        if ([429, 500, 502, 503, 504, 524].includes(httpReturnCode)) {
-          logger.info(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
-          return true // retry these HTTP status codes
-        }
-        if (
-          err.responseData?.error?.code &&
-          ![
-            'missingtitle',
-            'readapidenied',
-            'permissiondenied',
-            'internal_api_error_MediaWiki\\Revision\\BadRevisionException',
-            'internal_api_error_Wikimedia\\Assert\\UnreachableException',
-            'internal_api_error_Wikimedia\\Assert\\InvariantException',
-            'internal_api_error_Wikimedia\\Parsoid\\Core\\ResourceLimitExceededException',
-          ].includes(err.responseData?.error?.code)
-        ) {
-          logger.info(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
-          return true // retry these Mediawiki codes which are known to be transient
-        }
-        return false // don't retry other errors
-      },
-      backoffHandler: (number: number, delay: number) => {
-        logger.debug(`[backoff] #${number} after ${delay} ms`)
-      },
-      ...backoffOptions,
-    }
 
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
@@ -308,17 +233,13 @@ class Downloader {
 
   private reset() {
     this.uaString = undefined
-    this._workers = undefined
-    this._pageRequestInterval = undefined
-    this._requestTimeout = undefined
-    this.optimisationCacheUrl = undefined
+    this.requestScheduler = undefined
+    this.cacheStore = undefined
     this._webp = false
     this.trustedJs = []
-    this.s3 = undefined
     this._apiUrlDirector = undefined
     this.insecure = false
 
-    this.backoffOptions = undefined
     this._basicRequestOptions = undefined
     this._arrayBufferRequestOptions = undefined
     this._jsonRequestOptions = undefined
@@ -626,7 +547,7 @@ class Downloader {
   public async getJSON<T>(_url: string): Promise<T> {
     const url = urlHelper.deserializeUrl(_url)
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, url, 'json', undefined, (err: any, val: any) => {
+      this.requestScheduler.schedule(this.getJSONCb, url, 'json', undefined, (err: any, val: any) => {
         if (err) {
           const httpStatus = (err.response && err.response.status) || err.httpReturnCode
           logger.debug(`Failed to get [${url}] [status=${httpStatus}]`)
@@ -687,7 +608,7 @@ class Downloader {
           }
         }
         if (retry) {
-          this.backoffCall(this.getContentCb, url, kind, displayWidth, cb)
+          this.requestScheduler.schedule(this.getContentCb, url, kind, displayWidth, cb)
         } else {
           this.getContentCb(url, kind, displayWidth, cb)
         }
@@ -817,7 +738,7 @@ class Downloader {
   private getContentCb = async (url: string, kind: DownloadKind, displayWidth: number | undefined, handler: any): Promise<void> => {
     logger.debug(`Downloading [${url}]`)
     try {
-      if (this.optimisationCacheUrl && kind === 'image') {
+      if (this.cacheStore.enabled && kind === 'image') {
         this.downloadImage(url, handler, displayWidth)
       } else {
         const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
@@ -844,15 +765,13 @@ class Downloader {
   }
 
   private async downloadImage(url: string, handler: any, displayWidth?: number) {
-    // Build a width-aware cache version token so the same URL at different
-    // requested widths does not reuse an undersized cached image.
-    const cacheVersion = this.webp ? (displayWidth ? `webp-w${displayWidth}` : 'webp') : displayWidth ? `1-w${displayWidth}` : '1'
+    const cacheVersion = buildCacheVersion(this.webp, displayWidth)
 
     try {
-      this.s3
+      this.cacheStore
 
         // Check first if we have an entry in the (object storage) cache for this URL
-        .downloadBlob(stripHttpFromUrl(url), cacheVersion)
+        .download(url, cacheVersion)
 
         // Handle the cache response and act accordingly
         .then(async (s3Resp) => {
@@ -931,7 +850,7 @@ class Downloader {
               // Check for the ETag and upload to cache
               const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
               if (etag) {
-                await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, cacheVersion)
+                await this.cacheStore.upload(url, compressedData, etag, cacheVersion)
               }
 
               // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
@@ -985,22 +904,6 @@ class Downloader {
         break
       }
     }
-  }
-
-  private backoffCall(
-    handler: (...args: any[]) => void,
-    url: string,
-    kind: DownloadKind,
-    displayWidth: number | undefined,
-    callback: (...args: any[]) => void | Promise<void>,
-  ): void {
-    this.backoffOptions.strategy.reset() // reset delay to initial one at each call
-    const call = backoff.call(handler, url, kind, displayWidth, callback)
-    call.setStrategy(this.backoffOptions.strategy)
-    call.retryIf(this.backoffOptions.retryIf)
-    call.failAfter(this.backoffOptions.failAfter)
-    call.on('backoff', this.backoffOptions.backoffHandler)
-    call.start()
   }
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
