@@ -1,8 +1,10 @@
+import * as backoff from 'backoff'
 import { AxiosError } from 'axios'
 import { jest } from '@jest/globals'
 
 import { DownloaderClass } from '../../src/Downloader.js'
 import MediaWiki from '../../src/MediaWiki.js'
+import { defaultRetryIf } from '../../src/RequestScheduler.js'
 
 const createDownloader = () => {
   MediaWiki.reset()
@@ -15,27 +17,15 @@ const createDownloader = () => {
     reqTimeout: 1000,
     optimisationCacheUrl: '',
     webp: false,
+    backoffOptions: {
+      strategy: new backoff.FibonacciStrategy({ initialDelay: 1, maxDelay: 1000 }),
+      failAfter: 3,
+      retryIf: defaultRetryIf,
+      backoffHandler: () => {},
+    },
   }
 
   return downloader
-}
-
-const stubImmediateBackoff = (downloader: DownloaderClass) => {
-  ;(downloader as any).backoffCall = (handler: any, url: string, kind: any, requestedWidth: any, cb: any) => {
-    const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
-    let attempts = 0
-    const run = () => {
-      attempts += 1
-      handler(url, kind, requestedWidth, (err: any, val: any) => {
-        if (err && attempts < 3 && retryIf(err)) {
-          run()
-          return
-        }
-        cb(err, val)
-      })
-    }
-    run()
-  }
 }
 
 describe('Downloader malformed JSON retry strategy', () => {
@@ -46,37 +36,29 @@ describe('Downloader malformed JSON retry strategy', () => {
   })
 
   test('retries plain SyntaxError parse failures', () => {
-    const downloader = createDownloader()
-    const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
     const err = new SyntaxError('Unexpected end of JSON input')
 
-    expect(retryIf(err)).toBe(true)
+    expect(defaultRetryIf(err)).toBe(true)
   })
 
   test('retries malformed JSON parse failures when wrapped in cause', () => {
-    const downloader = createDownloader()
-    const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
     const err = new AxiosError('Failed to parse API response', AxiosError.ERR_BAD_RESPONSE)
     ;(err as any).cause = new SyntaxError('Unexpected end of JSON input')
 
-    expect(retryIf(err)).toBe(true)
+    expect(defaultRetryIf(err)).toBe(true)
   })
 
   test('does not treat generic ERR_BAD_RESPONSE as malformed JSON', () => {
-    const downloader = createDownloader()
-    const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
     const err = new AxiosError('Request failed while handling response', AxiosError.ERR_BAD_RESPONSE)
 
-    expect(retryIf(err)).toBe(false)
+    expect(defaultRetryIf(err)).toBe(false)
   })
 
   test('does not retry non-transient bad responses', () => {
-    const downloader = createDownloader()
-    const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
     const err = new AxiosError('Request failed with status code 418', AxiosError.ERR_BAD_RESPONSE)
     ;(err as any).response = { status: 418 }
 
-    expect(retryIf(err)).toBe(false)
+    expect(defaultRetryIf(err)).toBe(false)
   })
 
   test('getJSON parses successful raw string JSON responses', async () => {
@@ -86,7 +68,6 @@ describe('Downloader malformed JSON retry strategy', () => {
       status: 200,
       headers: { 'content-type': 'application/json' },
     })
-    stubImmediateBackoff(downloader)
 
     await expect(downloader.getJSON('https://example.org/api')).resolves.toEqual({ ok: true })
   })
@@ -104,7 +85,6 @@ describe('Downloader malformed JSON retry strategy', () => {
         status: 200,
         headers: { 'content-type': 'application/json' },
       })
-    stubImmediateBackoff(downloader)
 
     await expect(downloader.getJSON('https://example.org/api')).resolves.toEqual({ ok: true })
     expect((downloader as any).request).toHaveBeenCalledTimes(2)
@@ -120,10 +100,8 @@ describe('Downloader malformed JSON retry strategy', () => {
     }
     ;(err as any).config = { url: 'https://example.org/api' }
     ;(downloader as any).request = (jest.fn() as any).mockRejectedValue(err)
-    stubImmediateBackoff(downloader)
 
-    const retryIf = (downloader as any).backoffOptions.retryIf as (error?: any) => boolean
-    expect(retryIf(err)).toBe(false)
+    expect(defaultRetryIf(err)).toBe(false)
     await expect(downloader.getJSON('https://example.org/api')).rejects.toMatchObject({
       response: {
         status: 404,
