@@ -178,7 +178,7 @@ describe('Test blacklisted NSs', () => {
     const aIds = ['Story:Satelit_Oberon', 'London']
     await getPages('Main_Page' as PageTitle, aIds as PageTitle[])
 
-    expect(MediaWiki.namespacesToMirror).not.toContain('Story')
+    expect(MediaWiki.namespacesToMirror).not.toContain(1704)
   })
 })
 

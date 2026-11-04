@@ -106,7 +106,7 @@ class MediaWiki {
   public getCategories: boolean
   public categoriesPageSize: number
   public namespaces: MWNamespaces = {}
-  public namespacesToMirror: string[] = []
+  public namespacesToMirror: number[] = []
   public apiCheckPageTitle: PageTitle
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
@@ -382,14 +382,14 @@ class MediaWiki {
 
         /* Is namespace to mirror */
         if (onlyNamespaces.length) {
-          if (matchesNamespace(onlyNamespaces, num, name, canonical, alias)) {
-            this.namespacesToMirror.push(name)
+          if (matchesNamespace(onlyNamespaces, num, name, canonical, alias) && !this.namespacesToMirror.includes(num)) {
+            this.namespacesToMirror.push(num)
           }
         } else {
           const isContent = type === 'namespaces' ? !!entry.content : !!(entry.content !== undefined)
           const isBlacklisted = BLACKLISTED_NS.includes(name)
-          if ((isContent || matchesNamespace(addNamespaces, num, name, canonical, alias)) && !isBlacklisted) {
-            this.namespacesToMirror.push(name)
+          if ((isContent || matchesNamespace(addNamespaces, num, name, canonical, alias)) && !isBlacklisted && !this.namespacesToMirror.includes(num)) {
+            this.namespacesToMirror.push(num)
           }
         }
       })

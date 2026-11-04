@@ -22,32 +22,31 @@ describe('MediaWiki.setNamespaces with string names and IDs', () => {
 
   test('includes namespaces by number in addNamespaces', () => {
     MediaWiki.setNamespaces(mockSiteInfo, [100], [])
-    expect(MediaWiki.namespacesToMirror).toContain('Portal')
-    expect(MediaWiki.namespacesToMirror).not.toContain('Thésaurus')
+    expect(MediaWiki.namespacesToMirror).toContain(100)
+    expect(MediaWiki.namespacesToMirror).not.toContain(106)
   })
 
   test('includes namespaces by name (case-insensitive) in addNamespaces', () => {
     MediaWiki.setNamespaces(mockSiteInfo, ['thesaurus'], [])
-    expect(MediaWiki.namespacesToMirror).toContain('Thésaurus')
-    expect(MediaWiki.namespacesToMirror).toContain('Thesaurus')
+    expect(MediaWiki.namespacesToMirror).toContain(106)
+    expect(MediaWiki.namespacesToMirror).toContain(110)
   })
 
   test('includes namespaces by canonical name in addNamespaces', () => {
     MediaWiki.setNamespaces(mockSiteInfo, ['Thesaurus'], [])
-    expect(MediaWiki.namespacesToMirror).toContain('Thésaurus')
-    expect(MediaWiki.namespacesToMirror).toContain('Thesaurus')
+    expect(MediaWiki.namespacesToMirror).toContain(106)
+    expect(MediaWiki.namespacesToMirror).toContain(110)
   })
 
   test('includes only specified namespaces by name in onlyNamespaces', () => {
     MediaWiki.setNamespaces(mockSiteInfo, [], ['portal'])
-    expect(MediaWiki.namespacesToMirror).toContain('Portal')
-    expect(MediaWiki.namespacesToMirror).not.toContain('Thésaurus')
+    expect(MediaWiki.namespacesToMirror).toContain(100)
+    expect(MediaWiki.namespacesToMirror).not.toContain(106)
   })
 
   test('includes only specified namespaces by number in onlyNamespaces', () => {
     MediaWiki.setNamespaces(mockSiteInfo, [], [100])
-    expect(MediaWiki.namespacesToMirror).toContain('Portal')
-    expect(MediaWiki.namespacesToMirror).toContain('P')
-    expect(MediaWiki.namespacesToMirror).not.toContain('Thésaurus')
+    expect(MediaWiki.namespacesToMirror).toContain(100)
+    expect(MediaWiki.namespacesToMirror).not.toContain(106)
   })
 })
