@@ -1,0 +1,5 @@
+/* Change fixed width to full width */
+.pre-content,
+.content {
+  max-width: 100%;
+}
