@@ -2,10 +2,11 @@
 	"@metadata": {
 		"authors": [
 			"B3rnas",
-			"Mansil alfalb"
+			"Mansil alfalb",
+			"O andras"
 		]
 	},
-	"DISCLAIMER": "Este artigo é emitido por {{creator}}. O texto é licenciado sob {{license}}. Termos adicionais podem ser aplicados aos arquivos de mídia.",
+	"DISCLAIMER": "Esta página é emitida por {{creator}}. O texto é publicado sob {{license}}, salvo indicação de contrário. Podem ser aplicados termos adicionais aos ficheiros multimédia.",
 	"LAST_EDITED_ON": "Última edição em {{date}}",
 	"LICENSE_UNKNOWN": "uma licença desconhecida"
 }
