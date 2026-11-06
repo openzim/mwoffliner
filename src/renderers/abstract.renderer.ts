@@ -1,7 +1,6 @@
 import * as domino from 'domino'
 import * as logger from '../Logger.js'
 import * as QueryStringParser from 'querystring'
-import htmlMinifier from 'html-minifier-terser'
 import MediaWiki from '../MediaWiki.js'
 import RedisStore from '../RedisStore.js'
 import DOMUtils from '../DOMUtils.js'
@@ -807,19 +806,7 @@ export abstract class Renderer {
       await dump.customProcessor.postProcessPage(pageTitle, pageFinalDoc)
     }
 
-    let outHtml = pageFinalDoc.documentElement.outerHTML
-
-    if (dump.opts.minifyHtml) {
-      outHtml = await htmlMinifier.minify(outHtml, {
-        removeComments: true,
-        conservativeCollapse: true,
-        collapseBooleanAttributes: true,
-        removeRedundantAttributes: true,
-        removeEmptyAttributes: true,
-        minifyCSS: true,
-      })
-    }
-
+    const outHtml = pageFinalDoc.documentElement.outerHTML
     const div = doc.createElement('div')
     div.innerHTML = displayTitle
     const displayTitleText = div.innerText
