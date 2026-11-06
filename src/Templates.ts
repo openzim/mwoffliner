@@ -24,6 +24,10 @@ const htmlVector2022TemplateCode = () => {
   return readTemplate(config.output.templates.pageVector2022)
 }
 
+const htmlMinervaTemplateCode = () => {
+  return readTemplate(config.output.templates.pageMinerva)
+}
+
 const htmlFallbackTemplateCode = () => {
   return readTemplate(config.output.templates.pageFallback)
 }
@@ -42,6 +46,7 @@ export {
   footerTemplate,
   htmlVectorLegacyTemplateCode,
   htmlVector2022TemplateCode,
+  htmlMinervaTemplateCode,
   htmlFallbackTemplateCode,
   htmlRedirectTemplateCode,
   javaScriptTemplateCode,

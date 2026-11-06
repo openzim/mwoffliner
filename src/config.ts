@@ -111,6 +111,7 @@ const config = {
     templates: {
       pageVectorLegacy: './templates/pageVectorLegacy.html',
       pageVector2022: './templates/pageVector2022.html',
+      pageMinerva: './templates/pageMinerva.html',
       pageFallback: './templates/pageFallback.html',
 
       javaScript: './templates/javaScript.html',

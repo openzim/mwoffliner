@@ -5,7 +5,7 @@ import * as logger from '../Logger.js'
 import { config } from '../config.js'
 import { genCanonicalLink, genHeaderScript, genHeaderCSSLink, getRelativeFilePath, jsonStringify, replaceSafe } from '../util/misc.js'
 import MediaWiki from '../MediaWiki.js'
-import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlFallbackTemplateCode, javaScriptTemplateCode } from '../Templates.js'
+import { htmlVectorLegacyTemplateCode, htmlVector2022TemplateCode, htmlMinervaTemplateCode, htmlFallbackTemplateCode, javaScriptTemplateCode } from '../Templates.js'
 import Downloader, { DownloadError } from '../Downloader.js'
 import { customCssUrlToFilename, customJsUrlToFilename } from '../util/customCssJs.js'
 import Gadgets from '../Gadgets.js'
@@ -43,7 +43,14 @@ export class ActionParseRenderer extends Renderer {
         this.#staticFilesList.add(`${MediaWiki.skin}.css`)
       }
     }
-    this.#htmlTemplateCode = MediaWiki.skin === 'vector' ? htmlVectorLegacyTemplateCode : MediaWiki.skin === 'vector-2022' ? htmlVector2022TemplateCode : htmlFallbackTemplateCode
+    this.#htmlTemplateCode =
+      MediaWiki.skin === 'vector'
+        ? htmlVectorLegacyTemplateCode
+        : MediaWiki.skin === 'vector-2022'
+          ? htmlVector2022TemplateCode
+          : MediaWiki.skin === 'minerva'
+            ? htmlMinervaTemplateCode
+            : htmlFallbackTemplateCode
     if (this.#htmlTemplateCode === htmlFallbackTemplateCode) {
       logger.warn(`Unsupported skin ${MediaWiki.skin}, using fallback template to display pages.`)
     }
