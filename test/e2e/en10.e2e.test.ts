@@ -24,11 +24,11 @@ await testAllRenders('en10-wikipedia', parameters, async (outFiles) => {
         // as wiki changes).
         if (dump.nopic) {
           // has enough files
-          expect(dump.status.files.success).toBeGreaterThan(110)
-          expect(dump.status.files.success).toBeLessThan(130)
+          expect(dump.status.files.success).toBeGreaterThan(120)
+          expect(dump.status.files.success).toBeLessThan(140)
         } else if (dump.nodet) {
-          expect(dump.status.files.success).toBeGreaterThan(130)
-          expect(dump.status.files.success).toBeLessThan(150)
+          expect(dump.status.files.success).toBeGreaterThan(140)
+          expect(dump.status.files.success).toBeLessThan(160)
         } else {
           // novid, nopdf
           expect(dump.status.files.success).toBeGreaterThan(640)
