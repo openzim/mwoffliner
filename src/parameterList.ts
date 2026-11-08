@@ -24,7 +24,6 @@ export const parameterDescriptions = {
   mwDomain: 'MediaWiki user domain (for private wikis)',
   mwUsername: 'MediaWiki username (for private wikis)',
   mwPassword: 'MediaWiki user password (for private wikis)',
-  minifyHtml: 'Try to reduce the size of the HTML',
   outputDirectory: 'Directory to write the downloaded content',
   publisher: "ZIM publisher meta data, by default 'Kiwix'",
   redis: 'Redis path (redis:// URL or path to UNIX socket)',
