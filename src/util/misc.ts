@@ -454,11 +454,14 @@ export async function extractPageList(pageList: string): Promise<PageTitle[]> {
           }
         }
         if (fs.existsSync(item)) {
+          // A file saved as "UTF-8 with BOM" starts with U+FEFF, which would end up in the first
+          // title. Titles never start or end with whitespace, so lines are trimmed as well.
           item = fs
             .readFileSync(item)
             .toString()
+            .replace(/^\uFEFF/, '')
             .split('\n')
-            .map((a) => a.replace(/\r/gm, ''))
+            .map((a) => a.trim())
             .filter((a) => a)
         }
         return item
