@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { createTranslator } from '../../src/i18n.js'
 import { Dump } from '../../src/Dump.js'
 
@@ -117,5 +120,31 @@ describe('Dump filename radical', () => {
       const pathDump = new Dump('', '', { customZimFilename: '{zim_name}_{flavour}_{period}', filenameDate: '2026-04' } as any, mwMetaData as any, undefined, t)
       expect(() => pathDump.computeFilename()).toThrow(/must include the \.zim extension/)
     })
+  })
+})
+
+describe('Dump resume', () => {
+  const mwMetaData = { creator: 'Wikipedia', webUrl: 'https://en.wikipedia.org', langIso2: 'en', langIso3: 'eng', langVar: null }
+  let t
+  let outputDirectory: string
+  beforeAll(async () => {
+    t = await createTranslator('en', 'en')
+    outputDirectory = mkdtempSync(join(tmpdir(), 'mwo-resume-'))
+  })
+
+  const makeDump = (resume: boolean) => new Dump('', '', { outputDirectory, resume, filenameDate: '2026-04' } as any, mwMetaData as any, undefined, t)
+
+  test('is not done when the ZIM file does not exist', () => {
+    expect(makeDump(true).isAlreadyDone()).toBe(false)
+  })
+
+  test('is done when --resume is set and the ZIM file exists', () => {
+    const dump = makeDump(true)
+    writeFileSync(dump.computeZimFullPath(), '')
+    expect(dump.isAlreadyDone()).toBe(true)
+  })
+
+  test('is never done without --resume, even if the ZIM file exists', () => {
+    expect(makeDump(false).isAlreadyDone()).toBe(false)
   })
 })

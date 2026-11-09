@@ -416,6 +416,15 @@ async function execute(argv: any) {
     }
   }
 
+  // With --resume, stop before the (possibly hours long) page listing when every
+  // requested ZIM file already exists. See #2992.
+  if (dumps.length > 0 && dumps.every((dump) => dump.isAlreadyDone())) {
+    logger.info('All requested ZIM files already exist and --resume is set, nothing to do')
+    MediaWiki.reset()
+    await RedisStore.close()
+    return dumps
+  }
+
   const allowedContentModels = ['wikitext', ...addContentModels]
 
   logger.debug('Getting pages details')

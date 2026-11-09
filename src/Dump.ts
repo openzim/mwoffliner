@@ -182,13 +182,15 @@ export class Dump {
     return filename
   }
 
+  /** True when --resume is set and this dump's ZIM file already exists. */
+  public isAlreadyDone(): boolean {
+    return Boolean(this.opts.resume) && existsSync(this.computeZimFullPath())
+  }
+
   public checkResume() {
-    if (this.opts.resume) {
-      const zimPath = this.computeZimFullPath()
-      if (existsSync(zimPath)) {
-        logger.info(`${zimPath} is already done, skip dumping & ZIM file generation`)
-        throw new Error('TODO: IMPLEMENT RESUME')
-      }
+    if (this.isAlreadyDone()) {
+      logger.info(`${this.computeZimFullPath()} is already done, skip dumping & ZIM file generation`)
+      throw new Error('TODO: IMPLEMENT RESUME')
     }
   }
 
