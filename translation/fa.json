@@ -1,0 +1,62 @@
+{
+	"@metadata": {
+		"authors": [
+			"Darafsh"
+		]
+	},
+	"categoryHeaderNumerals": "0–9",
+	"categoryFileCount": {
+		"one": "این رده فقط پروندهٔ زیر را در بر دارد.",
+		"other": "{{count}} پرونده در این رده وجود دارد که $t(categoryCurrentPageFileCount, {\"count\": {{curPageCount}} }) در این صفحه نمایش داده شده‌اند."
+	},
+	"categoryCurrentPageFileCount": {
+		"one": "یک پرونده",
+		"other": "{{count}} پرونده"
+	},
+	"categoryMediaHeader": "پرونده‌های رسانه‌ای در ردهٔ «{{pageName}}»",
+	"categoryPageCount": {
+		"one": "این رده فقط صفحهٔ زیر را در بر دارد.",
+		"other": "از مجموع {{count}} صفحهٔ این رده، $t(categoryCurrentPagePageCount, {\"count\": {{curPageCount}} }) در این صفحه نمایش داده شده‌اند."
+	},
+	"categoryCurrentPagePageCount": {
+		"one": "یک صفحه",
+		"other": "{{count}} صفحه"
+	},
+	"categoryHeader": "صفحه‌های ردهٔ «{{pageName}}»",
+	"categorySubcatCount": {
+		"one": "این رده فقط زیرردهٔ زیر را دارد.",
+		"other": "از مجموع {{count}} زیررده، $t(categoryCurrentPageSubcatCount, {\"count\": {{curPageCount}} }) در این صفحه نمایش داده شده‌اند."
+	},
+	"categoryCurrentPageSubcatCount": {
+		"one": "یک زیررده",
+		"other": "{{count}} زیررده"
+	},
+	"categoryPreviousPage": "صفحهٔ پیشین",
+	"categoryNextPage": "صفحهٔ بعدی",
+	"categoryNoPagination": "موارد بعدی در مرورگرهایی که جاوااسکریپت ندارند نمایش داده نمی‌شوند",
+	"subcategories": "زیررده‌ها",
+	"categoryEmpty": "<em>این رده در حال حاضر هیچ صفحه یا پروندهٔ رسانه‌ای ندارد.</em>",
+	"categoryLimited": "<em>محتوای این رده به صفحه‌های موجود در پروندهٔ ZIM محدود شده است.</em>",
+	"DISCLAIMER": "این صفحه از {{creator}} گرفته شده است. متن آن، مگر آنکه خلافش ذکر شده باشد، تحت پروانهٔ {{license}} در دسترس است. ممکن است شرایط دیگری برای پرونده‌های رسانه‌ای اعمال شود.",
+	"LAST_EDITED_ON": "آخرین ویرایش در {{date}}",
+	"LICENSE_UNKNOWN": "پروانه‌ای نامشخص",
+	"DOWNLOAD_ERRORS_HEADING": "اوه، صفحه پیدا نشد.",
+	"DOWNLOAD_ERRORS_MESSAGE": "صفحهٔ درخواستی «{{pageTitle}}» در این پروندهٔ ZIM در دسترس نیست و دریافت آن از {{server}} ممکن نشد.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "این صفحه پس از تهیهٔ فهرست صفحه‌هایی که قرار بود دریافت شوند، اما پیش از دریافت آن برای ساخت پروندهٔ ZIM کنونی، حذف شده است.",
+	"DOWNLOAD_ERRORS_LINE1_PERMISSION_DENIED": "دسترسی به این صفحه در سرور {{server}} محدود شده است. مشاهدهٔ آن به مجوزهای ویژه‌ای نیاز دارد که هنگام استخراج محتوا برای ساخت پروندهٔ ZIM در دسترس نیستند.",
+	"DOWNLOAD_ERRORS_LINE1_CATEGORY_LOCKDOWN": "دسترسی به این صفحه در سرور {{server}} به‌دلیل محدودیت دسترسی مبتنی بر رده امکان‌پذیر نیست. مجوزهای لازم برای دسترسی به آن رده هنگام استخراج محتوا برای ساخت پروندهٔ ZIM در دسترس نبوده‌اند.",
+	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "هنگام ساخت پروندهٔ ZIM کنونی، سرور {{server}} نتوانست اطلاعات لازم دربارهٔ کد HTML این صفحه را به‌موقع ارائه کند.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UPSTREAM_TIMEOUT": "هنگام ساخت پروندهٔ ZIM کنونی، مهلت پردازش این صفحه در API مربوط به ActionParse سرور {{server}} به پایان رسید و خطای HTTP 504 بازگردانده شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_HTML_503_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، خطای HTTP 503 را بازگرداند.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_BAD_REVISION_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، به‌طور غیرمنتظره خطای شناسهٔ بازبینی نامعتبر را بازگرداند.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_UNREACHABLE_EXCEPTION_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، با خطای استثنای دسترس‌ناپذیر روبه‌رو شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVARIANT_EXCEPTION_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، با خطای نقض یک شرط ثابت روبه‌رو شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_PARSOID_RESOURCE_LIMIT_EXCEEDED": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، به‌دلیل فراتررفتن از محدودیت منابع Parsoid با خطا روبه‌رو شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_GENERIC_INTERNAL_API_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، با خطای داخلی API روبه‌رو شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INTERNAL_API_TYPE_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، با خطای داخلی مربوط به نوع داده در API روبه‌رو شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_INVALID_ARGUMENT_EXCEPTION_ERROR": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} در زمان ارائهٔ اطلاعات کد HTML این صفحه، با خطای آرگومان نامعتبر روبه‌رو شد.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_TRUNCATED_RESPONSE": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} نتوانست اطلاعات کد HTML این صفحه را به‌طور کامل ارائه کند، زیرا صفحه بیش از حد بزرگ بود. بهتر است این صفحه در سرور {{server}} به چند صفحهٔ کوچک‌تر تقسیم شود.",
+	"DOWNLOAD_ERRORS_LINE1_ACTION_PARSE_EMPTY_500_RESPONSE": "هنگام ساخت پروندهٔ ZIM کنونی، API مربوط به ActionParse سرور {{server}} نتوانست اطلاعات کد HTML این صفحه را ارائه کند و پاسخی خالی بازگرداند.",
+	"DOWNLOAD_ERRORS_LINE2": "صفحهٔ ناموجود با صفحهٔ جایگزینی که اکنون می‌بینید جایگزین شده است.",
+	"DOWNLOAD_ERRORS_LINE3": "امیدواریم مشکل در سرور {{server}} برطرف شود و نسخهٔ بعدی این پروندهٔ ZIM شامل این صفحه باشد."
+}
