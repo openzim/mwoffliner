@@ -99,7 +99,6 @@ describe('javaScript', () => {
         '_mw_/oojs-ui.styles.indicators.js',
         '_mw_/oojs.js',
         '_mw_/startup.js',
-        '_mw_/web2017-polyfills.js',
       ].sort(),
     )
   })
@@ -159,7 +158,6 @@ describe('javaScript', () => {
         '_mw_/oojs.js',
         '_mw_/site.js',
         '_mw_/startup.js',
-        '_mw_/web2017-polyfills.js',
       ].sort(),
     )
   })
