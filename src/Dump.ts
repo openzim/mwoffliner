@@ -12,6 +12,7 @@ interface DumpOpts {
   withoutZimFullTextIndex: boolean
   customZimTags?: string
   customZimLanguage?: string
+  customZimCreator?: string
   customZimName?: string
   customZimTitle?: string
   customZimDescription?: string
@@ -100,7 +101,8 @@ export class Dump {
   }
 
   private computeDomain() {
-    return this.mwMetaData.creator.charAt(0).toLowerCase() + this.mwMetaData.creator.substr(1)
+    const creator = this.opts.customZimCreator || this.mwMetaData.creator
+    return creator.charAt(0).toLowerCase() + creator.substr(1)
   }
 
   private computeLang() {

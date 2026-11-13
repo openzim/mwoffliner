@@ -1,4 +1,5 @@
 Unreleased
+* NEW: Add `--customZimCreator` CLI option to customize ZIM Creator metadata and domain fallback (@sundeep8967 #2949)
 * NEW: Add support for Minerva skin (@Markus-Rost #2343)
 * CHANGED: Lay out the thumbnails welcome page in justified rows covering the whole area, instead of Masonry (@jsabutis #2694)
 * FIX: Fix race condition where generated index main page could be missing from ZIM header (@benoit74 #2951)
