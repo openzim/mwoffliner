@@ -316,6 +316,13 @@ describe('Utils', () => {
       expect(result).toEqual(argumentsList)
     })
 
+    test('Filename with a BOM and surrounding whitespace as parameter', async () => {
+      const bomFilePath = path.join(dirname, 'list-bom.txt')
+      await writeFilePromise(bomFilePath, '\uFEFFtestString1\r\n  testString2  \r\n \r\ntestString3\r\n')
+      const result: string[] = await extractPageList(bomFilePath)
+      expect(result).toEqual(argumentsList)
+    })
+
     test('Comma separated filenames string as parameter', async () => {
       const result: string[] = await extractPageList(`${filePath},${anotherFilePath}`)
       expect(result.sort()).toEqual(argumentsList.concat(anotherArgumentsList))
