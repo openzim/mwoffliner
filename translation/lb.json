@@ -4,6 +4,20 @@
 			"Volvox"
 		]
 	},
+	"categoryCurrentPageFileCount": {
+		"one": "Fichier ass",
+		"other": "{{count}} Fichiere sinn"
+	},
+	"categoryMediaHeader": "Medien an der Kategorie „{{pageName}}“",
+	"categoryCurrentPagePageCount": {
+		"one": "Säit ass",
+		"other": "{{count}} Säite sinn"
+	},
+	"categoryHeader": "Säiten an der Kategorie „{{pageName}}“",
+	"categoryCurrentPageSubcatCount": {
+		"one": "Ënnerkategorie",
+		"other": "{{count}} Ënnerkategorien"
+	},
 	"categoryPreviousPage": "vireg Säit",
 	"categoryNextPage": "nächst Säit",
 	"subcategories": "Ënnerkategorien",
