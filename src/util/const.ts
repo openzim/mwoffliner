@@ -4,6 +4,7 @@ export const IMAGE_THUMB_URL_REGEX =
 export const LATEX_IMAGE_URL_REGEX = /^(.*\/math\/render\/svg\/)([A-Za-z0-9]+)$/
 export const FANDOM_IMAGE_URL_REGEX = /^(.*\/)[0-9a-fA-F]{1}\/[0-9a-fA-F]{2}\/([^/]+)\/revision\//i
 export const MIN_IMAGE_THRESHOLD_INDEX_PAGE = 10
+export const MAIN_PAGE_THUMBNAIL_WIDTH = 500 // width of the page images shown on the welcome page
 export const IMAGE_MIME_REGEX = /^image+[/-\w.]+$/
 export const FIND_HTTP_REGEX = /^(?:https?:\/\/)?/i
 export const DB_ERROR = 'internal_api_error_DBQueryError'
