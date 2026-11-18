@@ -1,5 +1,7 @@
 import { Dump } from '../Dump.js'
-import { encodePageTitleForZimHtmlUrl } from './index.js'
+import { encodePageTitleForZimHtmlUrl, getSizeFromUrl } from './index.js'
+import { MAIN_PAGE_THUMBNAIL_WIDTH } from './const.js'
+import urlHelper from './url.helper.js'
 
 // Tiles keep the shape of their thumbnail within 1:2 to 2:1. Beyond that the tile takes the
 // clamped shape and the image is cropped to it, so a very tall or very wide image cannot
@@ -23,4 +25,16 @@ export function makePageImageTile(dump: Dump, page: PageDetail) {
   return `<a class="item" href="${encodePageTitleForZimHtmlUrl(page.title)}" style="--r:${getPageImageTileRatio(page)}">
             <figure><img loading="lazy" src="${page.internalThumbnailUrl}" alt="" />
             <figcaption>${page.title || ''}</figcaption></figure></a>\n`
+}
+
+/**
+ * Details of the file to download for the page image of a welcome page tile.
+ *
+ * Pages often show the same image smaller, under the same ZIM path, and file details are merged
+ * keeping the largest display width. Setting the tile width here keeps that merged file from being
+ * resized down to the smallest use in a page.
+ */
+export function getPageImageFileDetail(source: string): FileDetail {
+  const { mult, width } = getSizeFromUrl(source)
+  return { url: urlHelper.serializeUrl(source), mult, width, displayWidth: MAIN_PAGE_THUMBNAIL_WIDTH, kind: 'image' }
 }

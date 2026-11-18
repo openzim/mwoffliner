@@ -1,6 +1,15 @@
 import * as backoff from 'backoff'
 import { config } from './config.js'
-import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
+import {
+  filterRedirects,
+  DB_ERROR,
+  WEAK_ETAG_REGEX,
+  MAIN_PAGE_THUMBNAIL_WIDTH,
+  stripHttpFromUrl,
+  isBitmapImageMimeType,
+  isWebpCandidateImageMimeType,
+  makeZimPath,
+} from './util/index.js'
 import { Readable } from 'stream'
 import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
@@ -722,6 +731,8 @@ class Downloader {
       prop: MediaWiki.queryOpts.prop.concat(prop),
       formatversion: '2',
       redirects: followRedirects ? true : undefined,
+      // Page images are only used on the welcome page: ask for them at the size shown there
+      pithumbsize: includePageimages ? MAIN_PAGE_THUMBNAIL_WIDTH : undefined,
     }
   }
 

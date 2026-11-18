@@ -32,8 +32,8 @@ import {
   genHeaderScript,
   getDumps,
   getMediaBase,
+  getPageImageFileDetail,
   getRelativeFilePath,
-  getSizeFromUrl,
   isValidEmail,
   makePageImageTile,
   makePageListItem,
@@ -58,7 +58,6 @@ import RenderingContext from './renderers/rendering.context.js'
 import { pageListHomeTemplate, htmlRedirectTemplateCode } from './Templates.js'
 import { savePages } from './util/savePages.js'
 import { PAGE_REQUEST_INTERVAL, CATEGORIES_PAGE_SIZE } from './util/const.js'
-import urlHelper from './util/url.helper.js'
 import { parseCustomCssUrls, customCssUrlToFilename, parseCustomJsUrls, customJsUrlToFilename } from './util/customCssJs.js'
 import FileManager from './util/FileManager.js'
 
@@ -833,19 +832,13 @@ async function execute(argv: any) {
   }
 
   async function updatePageThumbnail(pageDetail: any, pageTitle: string) {
-    const imageUrl = pageDetail.thumbnail
+    // Already at the welcome page size, see pithumbsize in Downloader.getPageQueryOpts
+    const { source } = pageDetail.thumbnail
+    const path = getMediaBase(source, false)
 
-    const { width: oldWidth } = getSizeFromUrl(imageUrl.source)
-    const suitableResUrl = imageUrl.source.replace(`/${oldWidth}px-`, '/500px-').replace(`-${oldWidth}px-`, '-500px-')
-    const { mult, width } = getSizeFromUrl(suitableResUrl)
-    const path = getMediaBase(suitableResUrl, false)
+    pageDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page' as ZimPath, getMediaBase(source, true))
 
-    pageDetail.internalThumbnailUrl = getRelativeFilePath('Main_Page' as ZimPath, getMediaBase(suitableResUrl, true))
-
-    await Promise.all([
-      FileManager.addFileToProcess(path, { url: urlHelper.serializeUrl(suitableResUrl), mult, width, kind: 'image' } as FileDetail),
-      RedisStore.pagesStore.set(pageTitle, pageDetail),
-    ])
+    await Promise.all([FileManager.addFileToProcess(path, getPageImageFileDetail(source)), RedisStore.pagesStore.set(pageTitle, pageDetail)])
   }
 
   async function getThumbnailsData(): Promise<void> {

@@ -2,7 +2,10 @@ import { readFileSync } from 'fs'
 import pathParser from 'path'
 import vm from 'vm'
 import { fileURLToPath } from 'url'
-import { getPageImageTileRatio, makePageImageTile } from '../../../src/util/pageListMainPage.js'
+import { getPageImageFileDetail, getPageImageTileRatio, makePageImageTile } from '../../../src/util/pageListMainPage.js'
+import { mergeFileDetails } from '../../../src/util/FileManager.js'
+import { getMediaBase } from '../../../src/util/misc.js'
+import urlHelper from '../../../src/util/url.helper.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = pathParser.dirname(__filename)
@@ -86,5 +89,32 @@ describe('welcome page justified rows', () => {
     [0, 0, 300, 400, false],
   ])('a %sx%s image in a %sx%s tile is upscaled: %s', (nw, nh, w, h, expected) => {
     expect(isUpscaled(nw, nh, w, h)).toBe(expected)
+  })
+})
+
+describe('welcome page image file', () => {
+  // As returned by prop=pageimages with pithumbsize=500, and as used at 37px in the page itself
+  const pageImageUrl =
+    'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Flag_of_New_York_City.svg/500px-Flag_of_New_York_City.svg.png?utm_source=fr.wikipedia.org&utm_campaign=api&utm_content=thumbnail'
+  const inPageUrl =
+    'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Flag_of_New_York_City.svg/40px-Flag_of_New_York_City.svg.png?utm_source=fr.wikipedia.org&utm_campaign=parser&utm_content=thumbnail'
+  const inPageDetail: FileDetail = { url: urlHelper.serializeUrl(inPageUrl), kind: 'image', width: 40, displayWidth: 37 }
+
+  test('is displayed at the tile width', () => {
+    expect(getPageImageFileDetail(pageImageUrl)).toEqual({
+      url: urlHelper.serializeUrl(pageImageUrl),
+      mult: undefined,
+      width: 500,
+      displayWidth: 500,
+      kind: 'image',
+    })
+  })
+
+  test('is stored once, not resized down to a smaller use in a page', () => {
+    // see https://github.com/openzim/mwoffliner/issues/2979
+    expect(getMediaBase(pageImageUrl, false)).toBe(getMediaBase(inPageUrl, false))
+    const pageImageDetail = getPageImageFileDetail(pageImageUrl)
+    expect(mergeFileDetails(pageImageDetail, inPageDetail)).toBeNull()
+    expect(mergeFileDetails(inPageDetail, pageImageDetail)).toEqual(pageImageDetail)
   })
 })

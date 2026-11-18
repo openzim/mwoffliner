@@ -25,6 +25,7 @@ export interface QueryOpts {
   redirects?: boolean
   formatversion: string
   maxlag: string
+  pithumbsize?: number
 }
 
 export interface SiteInfoResponse {
