@@ -106,7 +106,7 @@ class MediaWiki {
   public getCategories: boolean
   public categoriesPageSize: number
   public namespaces: MWNamespaces = {}
-  public namespacesToMirror: string[] = []
+  public namespacesToMirror: number[] = []
   public apiCheckPageTitle: PageTitle
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
@@ -344,7 +344,21 @@ class MediaWiki {
     }
   }
 
-  public setNamespaces(json: SiteInfoQueryResponse, addNamespaces: number[], onlyNamespaces: number[]) {
+  public setNamespaces(json: SiteInfoQueryResponse, addNamespaces: (number | string)[], onlyNamespaces: (number | string)[]) {
+    const matchesNamespace = (list: (number | string)[], id: number, name: string, canonical?: string, alias?: string): boolean => {
+      return list.some((item) => {
+        if (typeof item === 'number' || !isNaN(Number(item))) {
+          return Number(item) === id
+        }
+        const strItem = String(item).trim().toLowerCase()
+        return (
+          strItem === name?.toLowerCase() ||
+          (canonical && strItem === canonical.toLowerCase()) ||
+          (alias && strItem === alias.toLowerCase())
+        )
+      })
+    }
+
     ;['namespaces', 'namespacealiases'].forEach((type) => {
       const entries = json[type]
       Object.keys(entries).forEach((key) => {
@@ -353,6 +367,7 @@ class MediaWiki {
         const num = entry.id
         const allowedSubpages = 'subpages' in entry
         const canonical = entry.canonical ? entry.canonical : ''
+        const alias = type === 'namespacealiases' ? entry.alias : ''
         const details: MWNamespaceData = { num, allowedSubpages }
 
         /* Namespaces in local language */
@@ -367,14 +382,14 @@ class MediaWiki {
 
         /* Is namespace to mirror */
         if (onlyNamespaces.length) {
-          if (util.contains(onlyNamespaces, num)) {
-            this.namespacesToMirror.push(name)
+          if (matchesNamespace(onlyNamespaces, num, name, canonical, alias) && !this.namespacesToMirror.includes(num)) {
+            this.namespacesToMirror.push(num)
           }
         } else {
           const isContent = type === 'namespaces' ? !!entry.content : !!(entry.content !== undefined)
           const isBlacklisted = BLACKLISTED_NS.includes(name)
-          if ((isContent || util.contains(addNamespaces, num)) && !isBlacklisted) {
-            this.namespacesToMirror.push(name)
+          if ((isContent || matchesNamespace(addNamespaces, num, name, canonical, alias)) && !isBlacklisted && !this.namespacesToMirror.includes(num)) {
+            this.namespacesToMirror.push(num)
           }
         }
       })
