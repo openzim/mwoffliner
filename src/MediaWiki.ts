@@ -1,95 +1,19 @@
 import * as pathParser from 'path'
 import * as logger from './Logger.js'
 import * as util from './util/index.js'
-import Downloader from './Downloader.js'
-import Gadgets, { Gadget } from './Gadgets.js'
-import qs from 'querystring'
+import Gadgets from './Gadgets.js'
+import MediaWikiApi from './MediaWikiApi.js'
+import HttpClientDownloader from './http/HttpClientDownloader.js'
+import type { QueryOpts, SiteInfoQueryResponse, SiteInfoSkin } from './MediaWikiApi.js'
 import semver from 'semver'
 import basicURLDirector from './util/builders/url/basic.director.js'
 import BaseURLDirector from './util/builders/url/base.director.js'
-import ApiURLDirector from './util/builders/url/api.director.js'
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { checkApiAvailability } from './util/mw-api.js'
 import { BLACKLISTED_NS } from './util/const.js'
 import { config } from './config.js'
 
-export interface QueryOpts {
-  action: string
-  format: string
-  prop: string
-  rdlimit: string
-  rdprop: string
-  ppprop: string
-  clprop: string
-  cllimit: string
-  redirects?: boolean
-  formatversion: string
-  maxlag: string
-}
-
-export interface SiteInfoResponse {
-  batchcomplete: boolean
-  query: SiteInfoQueryResponse
-  warnings?: {
-    [key: string]: {
-      [key: string]: string
-    }
-  }
-}
-
-export interface SiteInfoQueryResponse {
-  general: SiteInfoGeneral
-  skins: SiteInfoSkin[]
-  rightsinfo: {
-    url: string
-    text: string
-  }
-  namespaces: {
-    [key: string]: {
-      id: number
-      name: string
-      canonical: string
-      content: boolean
-      subpages: boolean
-    }
-  }
-  namespacealiases: {
-    id: number
-    alias: string
-  }[]
-  allmessages: {
-    name: string
-    content: string
-  }[]
-  gadgets?: Gadget[]
-}
-
-export interface SiteInfoGeneral {
-  generator: string
-  mainpage: string
-  mainpageisdomainroot: boolean
-  sitename: string
-  logo: string
-  lang: string
-  rtl: boolean
-  articlepath: string
-  script: string
-  scriptpath: string
-  fallback: {
-    code: string
-  }[]
-  variants?: {
-    code: string
-  }[]
-  categorycollation: string
-}
-
-export interface SiteInfoSkin {
-  code: string
-  name: string
-  default?: boolean
-  unusable?: boolean
-}
+export type { QueryOpts, SiteInfoResponse, SiteInfoQueryResponse, SiteInfoSkin } from './MediaWikiApi.js'
 
 class MediaWiki {
   private static instance: MediaWiki
@@ -107,7 +31,6 @@ class MediaWiki {
   public categoriesPageSize: number
   public namespaces: MWNamespaces = {}
   public namespacesToMirror: string[] = []
-  public apiCheckPageTitle: PageTitle
   public queryOpts: QueryOpts
   public urlDirector: BaseURLDirector
   public skin = 'vector' // Default fallback
@@ -116,6 +39,7 @@ class MediaWiki {
   #indexPhpPath: string
   #actionApiPath: string
   #modulePathOpt: string
+  #apiCheckPageTitle: PageTitle
   #username: string
   #password: string
   #domain: string
@@ -127,18 +51,29 @@ class MediaWiki {
 
   public modulePath: string // only for reading
 
-  #apiUrlDirector: ApiURLDirector
   #hasActionParseApi: boolean | null
-  #hasCoordinates: boolean | null
   #hasModuleApi: boolean | null
-  #hasFlaggedRevs: boolean | null
+
+  public readonly api: MediaWikiApi
+
+  get apiCheckPageTitle(): PageTitle {
+    return this.#apiCheckPageTitle
+  }
+
+  set apiCheckPageTitle(value: PageTitle) {
+    this.#apiCheckPageTitle = value
+    this.api?.setOptions({ apiCheckPageTitle: value })
+    this.api?.reset()
+  }
 
   set username(value: string) {
     this.#username = value
+    this.api.setOptions({ username: value })
   }
 
   set password(value: string) {
     this.#password = value
+    this.api.setOptions({ password: value })
   }
 
   get actionApiPath() {
@@ -149,12 +84,13 @@ class MediaWiki {
     if (value) {
       this.#actionApiPath = value
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
-      this.#apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
+      this.api?.setOptions({ actionApiUrl: this.actionApiUrl.href })
     }
   }
 
   set domain(value: string) {
     this.#domain = value
+    this.api?.setOptions({ domain: value })
   }
 
   set wikiPath(value: string) {
@@ -177,7 +113,7 @@ class MediaWiki {
       this.urlDirector = new BaseURLDirector(this.baseUrl.href)
       this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
       this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
-      this.#apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
+      this.api?.setOptions({ actionApiUrl: this.actionApiUrl.href })
       this.setModuleURL()
     }
   }
@@ -205,9 +141,15 @@ class MediaWiki {
     this.#indexPhpPath = '/w/index.php'
     this.#modulePathOpt = '/w/load.php'
 
+    this.baseUrl = basicURLDirector.buildMediawikiBaseURL('https://en.wikipedia.org')
+    this.urlDirector = new BaseURLDirector(this.baseUrl.href)
+    this.webUrl = this.urlDirector.buildURL(this.#wikiPath)
+    this.actionApiUrl = this.urlDirector.buildURL(this.#actionApiPath)
+    this.setModuleURL()
+
     this.namespaces = {}
     this.namespacesToMirror = []
-    this.apiCheckPageTitle = 'MediaWiki:Sidebar' as PageTitle
+    this.#apiCheckPageTitle = 'MediaWiki:Sidebar' as PageTitle
 
     this.queryOpts = {
       action: 'query',
@@ -226,14 +168,22 @@ class MediaWiki {
     }
 
     this.#hasActionParseApi = null
-    this.#hasCoordinates = null
     this.#hasModuleApi = null
-    this.#hasFlaggedRevs = null
     this.metaData = null
   }
 
   private constructor() {
     this.initializeMediaWikiDefaults()
+    this.api = new MediaWikiApi({
+      httpClient: new HttpClientDownloader(),
+      actionApiUrl: this.actionApiUrl.href,
+      queryOpts: this.queryOpts,
+      apiCheckPageTitle: this.apiCheckPageTitle,
+      getCategories: this.getCategories,
+      username: this.#username,
+      password: this.#password,
+      domain: this.#domain,
+    })
   }
 
   public async hasActionParseApi(): Promise<boolean> {
@@ -247,22 +197,7 @@ class MediaWiki {
   }
 
   public async hasCoordinates(): Promise<boolean> {
-    if (this.#hasCoordinates === null) {
-      const reqOpts = {
-        ...this.queryOpts,
-        prop: this.queryOpts.prop + '|coordinates', // add coordinates for this call to get proper warning if not supported
-      }
-
-      const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
-      const isCoordinateWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('coordinates')
-      if (isCoordinateWarning) {
-        logger.info('Coordinates not available on this wiki')
-        return (this.#hasCoordinates = false)
-      }
-      logger.info('Coordinates available on this wiki')
-      return (this.#hasCoordinates = true)
-    }
-    return this.#hasCoordinates
+    return this.api.hasCoordinates()
   }
 
   public async hasModuleApi(): Promise<boolean> {
@@ -276,22 +211,7 @@ class MediaWiki {
   }
 
   public async hasFlaggedRevs(): Promise<boolean> {
-    if (this.#hasFlaggedRevs === null) {
-      const reqOpts = {
-        ...this.queryOpts,
-        prop: 'info|flagged',
-        titles: this.apiCheckPageTitle,
-      }
-      const resp = await Downloader.getJSON<MwApiResponse>(this.#apiUrlDirector.buildQueryURL(reqOpts))
-      const isFlaggedWarning = JSON.stringify(resp?.warnings?.query ?? '').includes('flagged')
-      if (isFlaggedWarning) {
-        logger.info('FlaggedRevs not available on this wiki')
-        return (this.#hasFlaggedRevs = false)
-      }
-      logger.info('FlaggedRevs available on this wiki')
-      return (this.#hasFlaggedRevs = true)
-    }
-    return this.#hasFlaggedRevs
+    return this.api.hasFlaggedRevs()
   }
 
   private setModuleURL() {
@@ -299,49 +219,7 @@ class MediaWiki {
   }
 
   public async login(mightBeAlreadyLoggedIn: boolean = false) {
-    if (this.#username && this.#password) {
-      let url = this.actionApiUrl.href + '?'
-
-      // Add domain if configured
-      if (this.#domain) {
-        url = `${url}lgdomain=${this.#domain}&`
-      }
-
-      // Getting token to login.
-      const { content } = await Downloader.downloadContent(url + 'action=query&meta=tokens&type=login&format=json&formatversion=2&maxlag=' + config.defaults.maxlag, 'data')
-
-      // Logging in
-      await Downloader.request({
-        url: this.actionApiUrl.href,
-        data: qs.stringify({
-          action: 'login',
-          format: 'json',
-          lgname: this.#username,
-          lgpassword: this.#password,
-          lgtoken: JSON.parse(content.toString()).query.tokens.logintoken,
-        }),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        method: 'POST',
-      }).then(async (resp) => {
-        if (resp.data.login?.result !== 'Success') {
-          const reason = resp.data.login?.reason
-          if (reason) {
-            if (mightBeAlreadyLoggedIn && reason.includes('Cannot log in when using MediaWiki\\Session\\BotPasswordSessionProvider sessions')) {
-              logger.info('Already logged in')
-            } else {
-              logger.error(reason)
-              throw new Error('Login Failed')
-            }
-          } else {
-            throw new Error('Login Failed')
-          }
-        } else {
-          logger.info('Login Success')
-        }
-      })
-    }
+    return this.api.login(mightBeAlreadyLoggedIn)
   }
 
   public setNamespaces(json: SiteInfoQueryResponse, addNamespaces: number[], onlyNamespaces: number[]) {
@@ -462,7 +340,13 @@ class MediaWiki {
 
   public async getSiteInfo({ addNamespaces, onlyNamespaces, mwModulePath, forceSkin, langVariants }: GetSiteInfoArgv = {}) {
     logger.info('Getting site info...')
-    const body = await Downloader.querySiteInfo()
+    this.api.setOptions({
+      actionApiUrl: this.actionApiUrl.href,
+      queryOpts: this.queryOpts,
+      apiCheckPageTitle: this.apiCheckPageTitle,
+      getCategories: this.getCategories,
+    })
+    const body = await this.api.querySiteInfo()
 
     const generalEntries = body.query.general
 
@@ -472,6 +356,7 @@ class MediaWiki {
     if (!generalEntries.generator || !semver.satisfies(mwVersion, `>=${mwMinimalVersion}`)) {
       throw new Error(`Mediawiki version ${mwVersion} not supported should be >=${mwMinimalVersion}`)
     }
+    this.api.setOptions({ versionMw: mwVersion })
 
     this.setNamespaces(body.query, addNamespaces || [], onlyNamespaces || [])
     Gadgets.setGadgets(body.query.gadgets)
@@ -596,6 +481,17 @@ class MediaWiki {
 
   public reset(): void {
     this.initializeMediaWikiDefaults()
+    this.api?.reset()
+    this.api?.setOptions({
+      actionApiUrl: this.actionApiUrl.href,
+      queryOpts: this.queryOpts,
+      apiCheckPageTitle: this.apiCheckPageTitle,
+      getCategories: this.getCategories,
+      versionMw: undefined,
+      username: this.#username,
+      password: this.#password,
+      domain: this.#domain,
+    })
   }
 }
 

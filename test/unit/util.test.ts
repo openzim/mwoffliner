@@ -30,7 +30,16 @@ const __dirname = path.dirname(__filename)
 describe('Utils', () => {
   MediaWiki.base = 'https://en.wikipedia.org' // Mandatory setting for proper downloader initialization
   beforeAll(async () => {
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
   })
 
   test('Encoding Page Title for Zim HTML Url', async () => {

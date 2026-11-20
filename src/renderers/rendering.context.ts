@@ -1,4 +1,5 @@
 import Downloader from '../Downloader.js'
+import MediaWiki from '../MediaWiki.js'
 import { Renderer, renderName } from './abstract.renderer.js'
 import { RendererBuilder } from './renderer.builder.js'
 import * as logger from '../Logger.js'
@@ -27,7 +28,7 @@ class RenderingContext {
       this.pagesRenderer = await rendererBuilder.createRenderer({ renderType: 'auto' })
     }
     logger.info(`Using ${this.pagesRenderer.constructor.name} for pages renderer`)
-    Downloader.setUrlsDirectors(this.pagesRenderer)
+    Downloader.setUrlsDirectors(this.pagesRenderer, MediaWiki.actionParseUrlDirector)
   }
 }
 

@@ -150,7 +150,7 @@ export class ActionParseRenderer extends Renderer {
         // For missing pages, query log events searching for a recent move, and if found check
         // if it has been done without redirect left behind. If so, download content from the new
         // page location
-        const logEvents = await Downloader.getLogEvents('move', pageTitle)
+        const logEvents = await MediaWiki.api.getLogEvents('move', pageTitle)
         if (!logEvents || !logEvents[0]) {
           throw err
         }
