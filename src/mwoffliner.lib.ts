@@ -238,6 +238,9 @@ async function execute(argv: any) {
     webp,
     trustedJs,
     insecure: argv.insecure,
+    actionApiUrl: MediaWiki.actionApiUrl.href,
+    baseUrl: MediaWiki.baseUrl.href,
+    getCategories: !!getCategories,
   }
 
   /* perform login */

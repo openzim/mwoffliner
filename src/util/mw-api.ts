@@ -48,7 +48,7 @@ export async function getPagesByTitle(
         }
 
         // Retrieve the details and save them in Redis
-        const allMwPages = await Downloader.getPagesByTitle(pageTitlesBatch, numThumbnails < 100, purpose !== 'categories')
+        const allMwPages = await MediaWiki.api.getPagesByTitle(pageTitlesBatch, numThumbnails < 100, purpose !== 'categories')
         const { numThumbnails: iterThumbnails } = await processPagesAndSaveToRedis(allMwPages, pagesToIgnore, allowedContentModels, categoryTitles)
         numThumbnails += iterThumbnails
       }
@@ -167,7 +167,7 @@ export async function getPagesByNamespace(
     do {
       timer.reset()
 
-      const resp = await Downloader.getPagesByNamespace(namespace, gapContinue)
+      const resp = await MediaWiki.api.getPagesByNamespace(namespace, gapContinue)
 
       gapContinue = resp.gapContinue
       if (gapContinue) {

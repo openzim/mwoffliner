@@ -1,5 +1,5 @@
 import { config } from './config.js'
-import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
+import { WEAK_ETAG_REGEX, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
 import { Readable } from 'stream'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import sharp, { Sharp } from 'sharp'
@@ -11,7 +11,6 @@ import { CookieJar } from 'tough-cookie'
 
 import S3 from './S3.js'
 import * as logger from './Logger.js'
-import MediaWiki, { QueryOpts, SiteInfoResponse } from './MediaWiki.js'
 import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
@@ -22,8 +21,6 @@ import ActionParseURLDirector from './util/builders/url/action-parse.director.js
 import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
-import deepmerge from 'deepmerge'
-import semver from 'semver'
 
 // create file-type parser with add-on to detect XML documents content (typically SVG)
 // Nota: file-type is capable to detect only binary content mime-type without the custom
@@ -41,6 +38,9 @@ interface DownloaderOpts {
   trustedJs?: string[]
   backoffOptions?: BackoffOptions
   insecure?: boolean
+  actionApiUrl?: string
+  baseUrl?: string
+  getCategories?: boolean
 }
 
 interface CompressionData {
@@ -127,6 +127,9 @@ class Downloader {
   private requestScheduler: RequestScheduler
   private cacheStore: CacheStore
   private _apiUrlDirector: ApiURLDirector
+  private actionApiUrl: URL
+  private baseUrl: URL
+  private getCategories = false
   private cookierJar: CookieJar
 
   private pageUrlDirector: URLDirector
@@ -173,6 +176,9 @@ class Downloader {
     trustedJs = config.output.mw.js_trusted.slice(),
     backoffOptions,
     insecure,
+    actionApiUrl = 'https://en.wikipedia.org/w/api.php',
+    baseUrl = 'https://en.wikipedia.org',
+    getCategories = false,
   }: DownloaderOpts) {
     this.reset()
     this.uaString = uaString
@@ -180,7 +186,10 @@ class Downloader {
     this.cacheStore = new CacheStore({ optimisationCacheUrl, s3 })
     this._webp = webp
     this.trustedJs = trustedJs
-    this._apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    this.actionApiUrl = new URL(actionApiUrl)
+    this.baseUrl = new URL(baseUrl)
+    this.getCategories = getCategories
+    this._apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
     this.insecure = insecure
     this.cookierJar = new CookieJar()
 
@@ -193,7 +202,7 @@ class Downloader {
       headers: {
         // Use the base domain of the wiki being scraped as the Referer header, so that we can
         // successfully scrape WMF map tiles.
-        Referer: MediaWiki.baseUrl.href,
+        Referer: this.baseUrl.href,
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
       },
@@ -271,18 +280,21 @@ class Downloader {
     }
   }
 
-  private getUrlDirector(renderer: object): URLDirector {
+  private getUrlDirector(renderer: object, actionParseUrlDirector?: URLDirector): URLDirector {
     switch (renderer.constructor.name) {
       case 'ActionParseRenderer':
-        return MediaWiki.actionParseUrlDirector
+        if (!actionParseUrlDirector) {
+          throw new Error('ActionParseRenderer needs an ActionParseURLDirector')
+        }
+        return actionParseUrlDirector
       /* istanbul ignore next */
       default:
         throw new Error(`Unknown renderer ${renderer.constructor.name}`)
     }
   }
 
-  public setUrlsDirectors(pagesRenderer: Renderer): void {
-    this.pageUrlDirector = this.getUrlDirector(pagesRenderer)
+  public setUrlsDirectors(pagesRenderer: Renderer, actionParseUrlDirector?: URLDirector): void {
+    this.pageUrlDirector = this.getUrlDirector(pagesRenderer, actionParseUrlDirector)
   }
 
   public getPageUrl(pageTitle: PageTitle, pageUrlOpts: PageUrlOpts = {}): string {
@@ -291,130 +303,6 @@ class Downloader {
 
   public removeEtagWeakPrefix(etag: string): string {
     return etag && etag.replace(WEAK_ETAG_REGEX, '')
-  }
-
-  public querySiteInfo(): Promise<SiteInfoResponse> {
-    return this.getJSON<SiteInfoResponse>(this.apiUrlDirector.buildSiteInfoURL())
-  }
-
-  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false, followRedirects = true): Promise<QueryMwRet> {
-    let continuation: ContinueOpts
-    let allPages: { [key: string]: PageInfo & QueryRet } = {}
-    const visitedUrls = new Set<string>()
-
-    while (true) {
-      const queryOpts: KVS<any> = {
-        ...(await this.getPageQueryOpts(shouldGetThumbnail, followRedirects)),
-        titles: pageTitles.join('|'),
-        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
-        ...(MediaWiki.getCategories
-          ? {
-              cllimit: 'max',
-              clshow: '!hidden',
-            }
-          : {}),
-        ...continuation,
-      }
-
-      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
-      if (visitedUrls.has(reqUrl)) {
-        throw new Error(`Detected continuation cycle while fetching page details by IDs. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
-      }
-      visitedUrls.add(reqUrl)
-
-      const resp = await this.getJSON<MwApiResponse>(reqUrl)
-      Downloader.handleMWWarningsAndErrors(resp)
-      const pages = Object.values(resp.query?.pages)
-      pages.forEach((page) => filterRedirects(page))
-
-      /* deepmerge because a single page data might be split over multiple API results pages */
-      allPages = deepmerge(
-        allPages,
-        pages.reduce((acc, page) => {
-          acc[page.title] = page
-          return acc
-        }, {}),
-      )
-
-      continuation = resp.continue
-      if (!continuation) {
-        break
-      }
-    }
-
-    return Object.values(allPages)
-  }
-
-  public async getPagesByNamespace(namespace: number, requestGapcontinue = ''): Promise<{ gapContinue: string; pages: QueryMwRet }> {
-    let queryContinuation: QueryContinueOpts = null
-    let allPages: { [key: string]: PageInfo & QueryRet } = {}
-    const visitedUrls = new Set<string>()
-
-    while (true) {
-      const queryOpts: KVS<any> = {
-        ...(await this.getPageQueryOpts()),
-        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
-        ...(MediaWiki.getCategories
-          ? semver.satisfies(MediaWiki.metaData.versionMw, '>=1.46')
-            ? {
-                cllimit: 'max',
-              }
-            : {
-                cllimit: 'max',
-                clshow: '!hidden',
-              }
-          : {}),
-        rawcontinue: 'true',
-        generator: 'allpages',
-        gapfilterredir: 'nonredirects',
-        gaplimit: 'max',
-        gapnamespace: String(namespace),
-        gapcontinue: requestGapcontinue,
-      }
-
-      if (queryContinuation) {
-        queryOpts.cocontinue = queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue
-        queryOpts.clcontinue = queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue
-        queryOpts.picontinue = queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue
-        queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
-      }
-
-      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
-      if (visitedUrls.has(reqUrl)) {
-        throw new Error(`Detected continuation cycle while fetching pages details in namespace ${namespace}. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
-      }
-      visitedUrls.add(reqUrl)
-
-      const resp = await this.getJSON<MwApiResponse>(reqUrl)
-      Downloader.handleMWWarningsAndErrors(resp)
-      const pages = Object.values(resp.query?.pages || {})
-      pages.forEach((page) => filterRedirects(page))
-
-      /* deepmerge because a single page data might be split over multiple API results pages */
-      allPages = deepmerge(
-        allPages,
-        pages.reduce((acc, page) => {
-          acc[page.title] = page
-          return acc
-        }, {}),
-      )
-
-      queryContinuation = resp['query-continue']
-      const queryComplete = Object.keys(queryContinuation || {}).filter((key) => key !== 'allpages').length === 0
-      if (queryComplete) {
-        break
-      }
-    }
-
-    return {
-      pages: Object.values(allPages),
-      gapContinue: queryContinuation?.allpages?.gapcontinue || null,
-    }
-  }
-
-  public async getLogEvents(letype: string, pageTitle: PageTitle): Promise<any> {
-    const logEventsData = await this.getJSON<any>(this.apiUrlDirector.buildLogEventsQuery(letype, pageTitle))
-    return logEventsData.query?.logevents
   }
 
   public async getPage(pageTitle: PageTitle, pageRenderer: Renderer, pageUrl, dump: Dump, pageDetail?: PageDetail): Promise<RenderOutput> {
@@ -457,7 +345,7 @@ class Downloader {
       }
       if (pageDetail.categoryinfo?.size) {
         await this.getCategoryMembers(pageTitle, categoryMembers)
-        if (MediaWiki.getCategories) {
+        if (this.getCategories) {
           categoryMembers.categoryinfo.subcats = categoryMembers.subcats.length
           categoryMembers.categoryinfo.pages = categoryMembers.pages.length
           categoryMembers.categoryinfo.files = categoryMembers.files.length
@@ -595,7 +483,7 @@ class Downloader {
 
     let url = urlHelper.deserializeUrl(_url)
     if (url.startsWith('//')) {
-      url = `${MediaWiki.baseUrl.protocol}${url}`
+      url = `${this.baseUrl.protocol}${url}`
     }
 
     try {
@@ -627,22 +515,6 @@ class Downloader {
       return true
     } catch {
       return false
-    }
-  }
-
-  private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
-    if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
-    if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`)
-    if (resp.error) logger.info(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
-  }
-
-  private async getPageQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
-    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}${(await MediaWiki.hasFlaggedRevs()) ? '|flagged' : ''}`
-    return {
-      ...MediaWiki.queryOpts,
-      prop: MediaWiki.queryOpts.prop.concat(prop),
-      formatversion: '2',
-      redirects: followRedirects ? true : undefined,
     }
   }
 
@@ -883,7 +755,7 @@ class Downloader {
   }
 
   private async getCategoryMembers(pageTitle: PageTitle, categoryMembers: GroupedCategoryMembers): Promise<void> {
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    const apiUrlDirector = this.apiUrlDirector
 
     let continueStr = ''
     while (true) {
@@ -893,7 +765,7 @@ class Downloader {
         a.sortkeyprefix = [...sortkey][0]
         return a && a.title
       })
-      const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
+      const pagesInZim = this.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
       categoryMembers.subcats.push(...items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true)))
       categoryMembers.pages.push(...items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true)))
       categoryMembers.files.push(...items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true)))

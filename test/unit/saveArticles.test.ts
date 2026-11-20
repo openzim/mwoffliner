@@ -10,6 +10,7 @@ import { jest } from '@jest/globals'
 import { RENDERERS_LIST } from '../../src/util/const.js'
 import { renderName } from '../../src/renderers/abstract.renderer.js'
 import Downloader from '../../src/Downloader.js'
+import MediaWiki from '../../src/MediaWiki.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
 
 jest.setTimeout(40000)
@@ -23,7 +24,7 @@ describe('savePages', () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
       await RenderingContext.createRenderers(renderer as renderName)
 
-      const _pagesDetail = await Downloader.getPagesByTitle(['London'] as PageTitle[])
+      const _pagesDetail = await MediaWiki.api.getPagesByTitle(['London'] as PageTitle[])
       const pagesDetail = mwRetToPageDetail(_pagesDetail)
       const { pagesStore: pageDetailStore } = RedisStore
       await pageDetailStore.flush()
@@ -63,7 +64,7 @@ describe('savePages', () => {
       await RenderingContext.createRenderers(renderer as renderName)
       const pageTitle = 'Canada' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle, { sectionId: '0' })
-      const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
+      const _pageDetailsRet = await MediaWiki.api.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
       const { pagesStore: pageDetailStore } = RedisStore
       const pageDetail = { title: pageTitle, timestamp: '2023-09-10T17:36:04Z' }
@@ -86,7 +87,7 @@ describe('savePages', () => {
       await RenderingContext.createRenderers(renderer as renderName)
       const pageTitle = 'Main_Page' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle)
-      const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
+      const _pageDetailsRet = await MediaWiki.api.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
       const { pagesStore: pageDetailStore } = RedisStore
       const pageDetail = { title: pageTitle, timestamp: '2023-08-20T14:54:01Z' }
@@ -126,7 +127,7 @@ describe('savePages', () => {
       const customFlavour = new CustomFlavour()
       dump.customProcessor = customFlavour
 
-      const _pagesDetail = await Downloader.getPagesByTitle(['London', 'Paris', 'Prague'] as PageTitle[])
+      const _pagesDetail = await MediaWiki.api.getPagesByTitle(['London', 'Paris', 'Prague'] as PageTitle[])
       const pagesDetail = mwRetToPageDetail(_pagesDetail)
       const { pagesStore: pageDetailStore } = RedisStore
       await pageDetailStore.flush()
@@ -165,7 +166,7 @@ describe('savePages', () => {
       await RenderingContext.createRenderers(renderer as renderName)
       const pageTitle = 'Potato' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle)
-      const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
+      const _pageDetailsRet = await MediaWiki.api.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
       const { pagesStore: pageDetailStore } = RedisStore
       const pageDetail = { title: pageTitle, timestamp: '2023-08-20T14:54:01Z' }
@@ -184,7 +185,7 @@ describe('savePages', () => {
       await RenderingContext.createRenderers(renderer as renderName)
       const pageTitle = 'Qassiarsuk' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle)
-      const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
+      const _pageDetailsRet = await MediaWiki.api.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
       const { pagesStore: pageDetailStore } = RedisStore
       const pageDetail = { title: pageTitle, timestamp: '2023-08-20T14:54:01Z' }
@@ -203,7 +204,7 @@ describe('savePages', () => {
       await RenderingContext.createRenderers(renderer as renderName)
       const pageTitle = 'Qassiarsuk' as PageTitle
       const pageUrl = Downloader.getPageUrl(pageTitle)
-      const _pageDetailsRet = await Downloader.getPagesByTitle([pageTitle])
+      const _pageDetailsRet = await MediaWiki.api.getPagesByTitle([pageTitle])
       const pagesDetail = mwRetToPageDetail(_pageDetailsRet)
       const { pagesStore: pageDetailStore } = RedisStore
       const pageDetail = { title: pageTitle, timestamp: '2023-08-20T14:54:01Z' }

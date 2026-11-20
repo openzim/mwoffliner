@@ -15,7 +15,16 @@ describe('RendererBuilder', () => {
   beforeEach(() => {
     rendererBuilder = new RendererBuilder()
     MediaWiki.base = 'https://en.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
   })
 
   it('should create a ActionParseRenderer for desktop mode', async () => {

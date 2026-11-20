@@ -7,7 +7,7 @@ import { startRedis, stopRedis } from '../bootstrap.js'
 import { savePages } from '../../../src/util/savePages.js'
 import { jest } from '@jest/globals'
 import { RENDERERS_LIST } from '../../../src/util/const.js'
-import Downloader from '../../../src/Downloader.js'
+import MediaWiki from '../../../src/MediaWiki.js'
 import RenderingContext from '../../../src/renderers/rendering.context.js'
 import { renderName } from '../../../src/renderers/abstract.renderer.js'
 
@@ -21,7 +21,7 @@ describe('PageTreatment', () => {
     test(`Html processing for ${renderer} render`, async () => {
       const { dump } = await setupScrapeClasses() // en wikipedia
       await RenderingContext.createRenderers(renderer as renderName)
-      const _pagesDetail = await Downloader.getPagesByTitle(['London', 'Non-existent-page'] as PageTitle[])
+      const _pagesDetail = await MediaWiki.api.getPagesByTitle(['London', 'Non-existent-page'] as PageTitle[])
       const pagesDetail = mwRetToPageDetail(_pagesDetail)
       const { pagesStore: pageDetailStore } = RedisStore
       await pageDetailStore.flush()
