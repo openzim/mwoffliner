@@ -70,7 +70,8 @@ class RedisStore implements RS {
           options.socket?.reconnectStrategy ??
           ((retries: number, cause: Error) => {
             if (retries >= MAX_RECONNECT_RETRIES) {
-              return new Error(`Unable to reconnect to Redis after ${retries} retries`, { cause })
+              const lastError = cause instanceof Error ? cause.message : String(cause)
+              return new Error(`Unable to reconnect to Redis after ${retries} retries (last error: ${lastError})`, { cause })
             }
             return Math.min(500 * 2 ** retries, 10000)
           }),
@@ -87,7 +88,10 @@ class RedisStore implements RS {
           logger.warn('Redis Client Error, will try to reconnect', err)
           return
         }
-        logger.error('Redis Client Error', err)
+        logger.error(
+          'Redis connection lost permanently; giving up (exit 3). If using the bundled Docker Redis, it has no supervisor: an OOM-killed redis-server is not restarted and all in-memory stores are lost. Check the container memory limit and /dev/shm/redis.log.',
+          err,
+        )
         process.exit(3)
       })
       let reconnecting = false
