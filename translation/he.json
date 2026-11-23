@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"A100Star",
 			"Amire80",
 			"Ladypine",
 			"Neriah",
@@ -12,6 +13,6 @@
 	"LICENSE_UNKNOWN": "רישיון לא ידוע",
 	"DOWNLOAD_ERRORS_HEADING": "אופס. הדף לא נמצא.",
 	"DOWNLOAD_ERRORS_MESSAGE": "הדף המבוקש '{{pageTitle}}' לא זמין בתוך ה־ZIM, לא היתה אפשרות למשוך אותו מ־{{server}}.",
-	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "הערך הזה נמחק לאחר שאספנו את רשימת הערכים למשיכה אבל לפני שמשכנו אותה לבנות את ה־ZIM שמופיע בפניך כרגע.",
+	"DOWNLOAD_ERRORS_LINE1_DELETED_PAGE": "הדף הזה נמחק לאחר שהכנו את רשימת הדפים לאחזור, אך לפני שהספקנו לאחזר אותו לצורך יצירת קובץ ה־ZIM שבו מעיינים כעת.",
 	"DOWNLOAD_ERRORS_LINE1_CLIENT_SIDE_TIMEOUT": "כאשר ה־ZIM שמוצג בפניך כרגע נבנה, השרת {{server}} לא הצליחה למסור פרטים על ה־HTML של הדף הזה בזמן סביר."
 }
