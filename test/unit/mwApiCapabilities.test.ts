@@ -16,21 +16,48 @@ describe('Checking Mediawiki capabilities', () => {
 
   test('test capabilities of en.wikipedia.org', async () => {
     MediaWiki.base = 'https://en.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
     expect(await MediaWiki.hasActionParseApi()).toBe(true)
     expect(await MediaWiki.hasModuleApi()).toBe(true)
   })
 
   test('test capabilities of wiki.openstreetmap.org', async () => {
     MediaWiki.base = 'https://wiki.openstreetmap.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
     expect(await MediaWiki.hasActionParseApi()).toBe(true)
     expect(await MediaWiki.hasModuleApi()).toBe(true)
   })
 
   test('test capabilities of fo.wikisource.org', async () => {
     MediaWiki.base = 'https://fo.wikisource.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
     expect(await MediaWiki.hasActionParseApi()).toBe(true)
     expect(await MediaWiki.hasModuleApi()).toBe(true)
   })
@@ -39,7 +66,16 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.base = 'https://minecraft.wiki'
     MediaWiki.actionApiPath = '/api.php'
     MediaWiki.modulePathOpt = '/load.php'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
     expect(await MediaWiki.hasActionParseApi()).toBe(true)
     expect(await MediaWiki.hasModuleApi()).toBe(true)
   })
@@ -50,7 +86,16 @@ describe('Checking Mediawiki capabilities', () => {
     MediaWiki.modulePathOpt = '/load.php'
     MediaWiki.apiCheckPageTitle = 'Volcarona' as PageTitle // MediaWiki:Sidebar does not exist in pokemon.fandom.com
     MediaWiki.skin = 'fandomdesktop' // vector skin does not exist in pokemon.fandom.com
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
     expect(await MediaWiki.hasActionParseApi()).toBe(true)
     /* DROPPED: this is a very flaky test on Github CI
     expect(await MediaWiki.hasModuleApi()).toBe(true)

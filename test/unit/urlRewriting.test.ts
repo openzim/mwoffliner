@@ -8,7 +8,7 @@ import { savePages } from '../../src/util/savePages.js'
 import { StringItem } from '@openzim/libzim'
 import { mwRetToPageDetail } from '../../src/util/index.js'
 import { jest } from '@jest/globals'
-import Downloader from '../../src/Downloader.js'
+import MediaWiki from '../../src/MediaWiki.js'
 import RenderingContext from '../../src/renderers/rendering.context.js'
 import { Dump } from '../../src/Dump.js'
 
@@ -25,7 +25,7 @@ describe('Styles', () => {
   test('Url re-writing', async () => {
     const { dump } = await setupScrapeClasses() // en wikipedia
 
-    const _pagesDetail = await Downloader.getPagesByTitle(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'] as PageTitle[])
+    const _pagesDetail = await MediaWiki.api.getPagesByTitle(['London', 'British_Museum', 'Farnborough/Aldershot_built-up_area'] as PageTitle[])
     const pagesDetail = mwRetToPageDetail(_pagesDetail)
     await RedisStore.pagesStore.flush()
     await RedisStore.pagesStore.setMany(pagesDetail)

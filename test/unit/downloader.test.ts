@@ -25,7 +25,16 @@ describe('Downloader class - wikipedia EN', () => {
   beforeAll(async () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://en.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()
   })
@@ -37,7 +46,7 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test('downloader.querySiteInfo returns valid JSON', async () => {
-    const queryRet = await Downloader.querySiteInfo()
+    const queryRet = await MediaWiki.api.querySiteInfo()
     expect(typeof queryRet).toBe('object')
   })
 
@@ -78,7 +87,14 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test("getPagesByTitle Scraped 'London', 'United_Kingdom', 'Paris', 'Zürich', 'THISPAGEDOESNTEXIST' successfully", async () => {
-    const _pageDetailsRet = await Downloader.getPagesByTitle(['London', 'United_Kingdom', 'Paris', 'Zurich', 'THISPAGEDOESNTEXIST', 'Category:Container_categories'] as PageTitle[])
+    const _pageDetailsRet = await MediaWiki.api.getPagesByTitle([
+      'London',
+      'United_Kingdom',
+      'Paris',
+      'Zurich',
+      'THISPAGEDOESNTEXIST',
+      'Category:Container_categories',
+    ] as PageTitle[])
     const pageDetailsRet = mwRetToPageDetail(_pageDetailsRet)
     RedisStore.pagesStore.setMany(pageDetailsRet)
     const London = pageDetailsRet['London']
@@ -95,11 +111,11 @@ describe('Downloader class - wikipedia EN', () => {
   })
 
   test("getPagesByNamespace query returns 'gapContinue' or 'multiple pages', ", async () => {
-    const { gapContinue, pages: pageDetails } = await Downloader.getPagesByNamespace(0)
+    const { gapContinue, pages: pageDetails } = await MediaWiki.api.getPagesByNamespace(0)
     expect(gapContinue).toBeDefined()
     expect(Object.keys(pageDetails).length).toBeGreaterThan(10)
 
-    const secondNsRet = await Downloader.getPagesByNamespace(0, gapContinue)
+    const secondNsRet = await MediaWiki.api.getPagesByNamespace(0, gapContinue)
     expect(secondNsRet.gapContinue).toBeDefined()
   })
 
@@ -189,6 +205,9 @@ describe('Downloader class - wikipedia EN', () => {
         webp: false,
         optimisationCacheUrl: 'random-string',
         s3,
+        actionApiUrl: MediaWiki.actionApiUrl.href,
+        baseUrl: MediaWiki.baseUrl.href,
+        getCategories: MediaWiki.getCategories,
       }
 
       await s3.initialise()
@@ -255,7 +274,16 @@ describe('Downloader class - wikipedia ES', () => {
   beforeAll(async () => {
     MediaWiki.reset()
     MediaWiki.base = 'https://es.wikipedia.org'
-    Downloader.init = { uaString: `${config.userAgent} (contact@kiwix.org)`, workers: 1, reqTimeout: 1000 * 60, webp: true, optimisationCacheUrl: '' }
+    Downloader.init = {
+      uaString: `${config.userAgent} (contact@kiwix.org)`,
+      workers: 1,
+      reqTimeout: 1000 * 60,
+      webp: true,
+      optimisationCacheUrl: '',
+      actionApiUrl: MediaWiki.actionApiUrl.href,
+      baseUrl: MediaWiki.baseUrl.href,
+      getCategories: MediaWiki.getCategories,
+    }
 
     await MediaWiki.getMwMetaData()
     await MediaWiki.hasCoordinates()
@@ -285,7 +313,7 @@ describe('Downloader class - wikipedia ES', () => {
         // Retrieve details from the redirection target (in real-life scenario, this would have been retrieved
         // because the move did not yet happened when getting page details, but happened before getting
         // page content)
-        const mwPageDetails = await Downloader.getPagesByTitle([redirectPageTitle])
+        const mwPageDetails = await MediaWiki.api.getPagesByTitle([redirectPageTitle])
         const pageDetails = mwRetToPageDetail(mwPageDetails)
 
         // Move detail to pageTitle instead of redirectPageTitle
@@ -326,7 +354,7 @@ describe('Downloader class - wikipedia ES', () => {
     // Retrieve details from the redirection target (in real-life scenario, this would have been retrieved
     // because the move did not yet happened when getting page details, but happened before getting
     // page content)
-    const mwPageDetails = await Downloader.getPagesByTitle([redirectPageTitle])
+    const mwPageDetails = await MediaWiki.api.getPagesByTitle([redirectPageTitle])
     const pageDetails = mwRetToPageDetail(mwPageDetails)
 
     // Move detail to pageTitle instead of redirectPageTitle

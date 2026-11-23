@@ -1,8 +1,6 @@
-import * as backoff from 'backoff'
 import { config } from './config.js'
-import { filterRedirects, DB_ERROR, WEAK_ETAG_REGEX, stripHttpFromUrl, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
+import { WEAK_ETAG_REGEX, isBitmapImageMimeType, isWebpCandidateImageMimeType, makeZimPath } from './util/index.js'
 import { Readable } from 'stream'
-import type { BackoffStrategy } from 'backoff'
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import sharp, { Sharp } from 'sharp'
 import apng from 'sharp-apng'
@@ -13,17 +11,16 @@ import { CookieJar } from 'tough-cookie'
 
 import S3 from './S3.js'
 import * as logger from './Logger.js'
-import MediaWiki, { QueryOpts, SiteInfoResponse } from './MediaWiki.js'
 import { Dump } from './Dump.js'
 import ApiURLDirector from './util/builders/url/api.director.js'
 import urlHelper from './util/url.helper.js'
+import { BackoffOptions, RequestScheduler, isMalformedJsonResponseError } from './RequestScheduler.js'
+import { CacheStore, buildCacheVersion } from './CacheStore.js'
 
 import ActionParseURLDirector from './util/builders/url/action-parse.director.js'
 import { Renderer } from './renderers/abstract.renderer.js'
 import { findFirstMatchingRule, renderDownloadError } from './error.manager.js'
 import RedisStore from './RedisStore.js'
-import deepmerge from 'deepmerge'
-import semver from 'semver'
 
 // create file-type parser with add-on to detect XML documents content (typically SVG)
 // Nota: file-type is capable to detect only binary content mime-type without the custom
@@ -41,13 +38,9 @@ interface DownloaderOpts {
   trustedJs?: string[]
   backoffOptions?: BackoffOptions
   insecure?: boolean
-}
-
-interface BackoffOptions {
-  strategy: BackoffStrategy
-  failAfter: number
-  retryIf: (error?: any) => boolean
-  backoffHandler: (number: number, delay: number, error?: any) => void
+  actionApiUrl?: string
+  baseUrl?: string
+  getCategories?: boolean
 }
 
 interface CompressionData {
@@ -57,18 +50,6 @@ interface CompressionData {
 
 function isJsonContentType(contentType: string | null): boolean {
   return typeof contentType === 'string' && /\b(?:application\/json|[\w.-]+\+json)\b/i.test(contentType)
-}
-
-function isMalformedJsonResponseError(err: unknown): boolean {
-  if (err instanceof SyntaxError) {
-    return true
-  }
-
-  if (!axios.isAxiosError(err) || err.code !== AxiosError.ERR_BAD_RESPONSE) {
-    return false
-  }
-
-  return err.cause instanceof SyntaxError
 }
 
 function parseJsonResponse<T>(url: string, status: number, contentType: string | null, body: unknown): T {
@@ -128,10 +109,7 @@ class Downloader {
     }
     return Downloader.instance
   }
-  private _workers: number
-  private _pageRequestInterval: number
   private _webp: boolean = false
-  private _requestTimeout: number
   private _basicRequestOptions: AxiosRequestConfig
   private _arrayBufferRequestOptions: AxiosRequestConfig
   private _jsonRequestOptions: AxiosRequestConfig
@@ -146,28 +124,30 @@ class Downloader {
   public mathJaxAllPages = false
 
   private uaString: string
-  private backoffOptions: BackoffOptions
-  private optimisationCacheUrl: string
-  private s3: S3
+  private requestScheduler: RequestScheduler
+  private cacheStore: CacheStore
   private _apiUrlDirector: ApiURLDirector
+  private actionApiUrl: URL
+  private baseUrl: URL
+  private getCategories = false
   private cookierJar: CookieJar
 
   private pageUrlDirector: URLDirector
   private insecure: boolean = false
 
   get workers() {
-    return this._workers
+    return this.requestScheduler.workers
   }
 
   get pageRequestInterval() {
-    return this._pageRequestInterval
+    return this.requestScheduler.pageRequestInterval
   }
 
   get webp() {
     return this._webp
   }
   get requestTimeout() {
-    return this._requestTimeout
+    return this.requestScheduler.requestTimeout
   }
   get basicRequestOptions() {
     return this._basicRequestOptions
@@ -196,68 +176,22 @@ class Downloader {
     trustedJs = config.output.mw.js_trusted.slice(),
     backoffOptions,
     insecure,
+    actionApiUrl = 'https://en.wikipedia.org/w/api.php',
+    baseUrl = 'https://en.wikipedia.org',
+    getCategories = false,
   }: DownloaderOpts) {
     this.reset()
     this.uaString = uaString
-    this._workers = workers
-    this._pageRequestInterval = pageRequestInterval
-    this._requestTimeout = reqTimeout
-    this.optimisationCacheUrl = optimisationCacheUrl
+    this.requestScheduler = new RequestScheduler({ workers, pageRequestInterval, requestTimeout: reqTimeout, backoffOptions })
+    this.cacheStore = new CacheStore({ optimisationCacheUrl, s3 })
     this._webp = webp
     this.trustedJs = trustedJs
-    this.s3 = s3
-    this._apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    this.actionApiUrl = new URL(actionApiUrl)
+    this.baseUrl = new URL(baseUrl)
+    this.getCategories = getCategories
+    this._apiUrlDirector = new ApiURLDirector(this.actionApiUrl.href)
     this.insecure = insecure
     this.cookierJar = new CookieJar()
-
-    this.backoffOptions = {
-      // retry up to 10 times, with a minimum of 1sec, maximum of 1min
-      // this means we retry for up to about 6 mins, which is supposed
-      // to be sufficient for backend to recover from transient errors
-      strategy: new backoff.ExponentialStrategy({ initialDelay: 1000, maxDelay: 60000 }),
-      failAfter: 10,
-      retryIf: (err: any) => {
-        const requestedUrl = err.urlCalled || err.config?.url || 'unknown'
-        if (isMalformedJsonResponseError(err)) {
-          logger.info(`Retrying ${requestedUrl} due to malformed JSON response`)
-          return true
-        }
-
-        if (err instanceof AxiosError && err.code && !['ERR_BAD_REQUEST', 'ERR_BAD_RESPONSE'].includes(err.code)) {
-          logger.info(`Retrying ${requestedUrl} URL due to ${err.code} error`)
-          return true // retry all connection issues
-        }
-        if (err.responseData?.error?.code === 'maxlag') {
-          logger.info(`Mediawiki server is lagging ${err.responseData?.error?.lag}s; retrying in few seconds`)
-          return true // note that we do not honor Retry-After header value because it is not possible in current code architecture
-        }
-        const httpReturnCode = err.response?.status || err.httpReturnCode
-        if ([429, 500, 502, 503, 504, 524].includes(httpReturnCode)) {
-          logger.info(`Retrying ${requestedUrl} URL due to HTTP ${httpReturnCode} error`)
-          return true // retry these HTTP status codes
-        }
-        if (
-          err.responseData?.error?.code &&
-          ![
-            'missingtitle',
-            'readapidenied',
-            'permissiondenied',
-            'internal_api_error_MediaWiki\\Revision\\BadRevisionException',
-            'internal_api_error_Wikimedia\\Assert\\UnreachableException',
-            'internal_api_error_Wikimedia\\Assert\\InvariantException',
-            'internal_api_error_Wikimedia\\Parsoid\\Core\\ResourceLimitExceededException',
-          ].includes(err.responseData?.error?.code)
-        ) {
-          logger.info(`Retrying ${requestedUrl} URL due to ${err.responseData?.error?.code} Mediawiki error`)
-          return true // retry these Mediawiki codes which are known to be transient
-        }
-        return false // don't retry other errors
-      },
-      backoffHandler: (number: number, delay: number) => {
-        logger.debug(`[backoff] #${number} after ${delay} ms`)
-      },
-      ...backoffOptions,
-    }
 
     this._basicRequestOptions = {
       // HTTP agent pools with 'keepAlive' to reuse TCP connections, so it's faster
@@ -268,7 +202,7 @@ class Downloader {
       headers: {
         // Use the base domain of the wiki being scraped as the Referer header, so that we can
         // successfully scrape WMF map tiles.
-        Referer: MediaWiki.baseUrl.href,
+        Referer: this.baseUrl.href,
         'cache-control': 'public, max-stale=86400',
         'user-agent': this.uaString,
       },
@@ -308,17 +242,13 @@ class Downloader {
 
   private reset() {
     this.uaString = undefined
-    this._workers = undefined
-    this._pageRequestInterval = undefined
-    this._requestTimeout = undefined
-    this.optimisationCacheUrl = undefined
+    this.requestScheduler = undefined
+    this.cacheStore = undefined
     this._webp = false
     this.trustedJs = []
-    this.s3 = undefined
     this._apiUrlDirector = undefined
     this.insecure = false
 
-    this.backoffOptions = undefined
     this._basicRequestOptions = undefined
     this._arrayBufferRequestOptions = undefined
     this._jsonRequestOptions = undefined
@@ -350,18 +280,21 @@ class Downloader {
     }
   }
 
-  private getUrlDirector(renderer: object): URLDirector {
+  private getUrlDirector(renderer: object, actionParseUrlDirector?: URLDirector): URLDirector {
     switch (renderer.constructor.name) {
       case 'ActionParseRenderer':
-        return MediaWiki.actionParseUrlDirector
+        if (!actionParseUrlDirector) {
+          throw new Error('ActionParseRenderer needs an ActionParseURLDirector')
+        }
+        return actionParseUrlDirector
       /* istanbul ignore next */
       default:
         throw new Error(`Unknown renderer ${renderer.constructor.name}`)
     }
   }
 
-  public setUrlsDirectors(pagesRenderer: Renderer): void {
-    this.pageUrlDirector = this.getUrlDirector(pagesRenderer)
+  public setUrlsDirectors(pagesRenderer: Renderer, actionParseUrlDirector?: URLDirector): void {
+    this.pageUrlDirector = this.getUrlDirector(pagesRenderer, actionParseUrlDirector)
   }
 
   public getPageUrl(pageTitle: PageTitle, pageUrlOpts: PageUrlOpts = {}): string {
@@ -370,130 +303,6 @@ class Downloader {
 
   public removeEtagWeakPrefix(etag: string): string {
     return etag && etag.replace(WEAK_ETAG_REGEX, '')
-  }
-
-  public querySiteInfo(): Promise<SiteInfoResponse> {
-    return this.getJSON<SiteInfoResponse>(this.apiUrlDirector.buildSiteInfoURL())
-  }
-
-  public async getPagesByTitle(pageTitles: PageTitle[], shouldGetThumbnail = false, followRedirects = true): Promise<QueryMwRet> {
-    let continuation: ContinueOpts
-    let allPages: { [key: string]: PageInfo & QueryRet } = {}
-    const visitedUrls = new Set<string>()
-
-    while (true) {
-      const queryOpts: KVS<any> = {
-        ...(await this.getPageQueryOpts(shouldGetThumbnail, followRedirects)),
-        titles: pageTitles.join('|'),
-        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
-        ...(MediaWiki.getCategories
-          ? {
-              cllimit: 'max',
-              clshow: '!hidden',
-            }
-          : {}),
-        ...continuation,
-      }
-
-      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
-      if (visitedUrls.has(reqUrl)) {
-        throw new Error(`Detected continuation cycle while fetching page details by IDs. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
-      }
-      visitedUrls.add(reqUrl)
-
-      const resp = await this.getJSON<MwApiResponse>(reqUrl)
-      Downloader.handleMWWarningsAndErrors(resp)
-      const pages = Object.values(resp.query?.pages)
-      pages.forEach((page) => filterRedirects(page))
-
-      /* deepmerge because a single page data might be split over multiple API results pages */
-      allPages = deepmerge(
-        allPages,
-        pages.reduce((acc, page) => {
-          acc[page.title] = page
-          return acc
-        }, {}),
-      )
-
-      continuation = resp.continue
-      if (!continuation) {
-        break
-      }
-    }
-
-    return Object.values(allPages)
-  }
-
-  public async getPagesByNamespace(namespace: number, requestGapcontinue = ''): Promise<{ gapContinue: string; pages: QueryMwRet }> {
-    let queryContinuation: QueryContinueOpts = null
-    let allPages: { [key: string]: PageInfo & QueryRet } = {}
-    const visitedUrls = new Set<string>()
-
-    while (true) {
-      const queryOpts: KVS<any> = {
-        ...(await this.getPageQueryOpts()),
-        ...((await MediaWiki.hasCoordinates()) ? { colimit: 'max' } : {}),
-        ...(MediaWiki.getCategories
-          ? semver.satisfies(MediaWiki.metaData.versionMw, '>=1.46')
-            ? {
-                cllimit: 'max',
-              }
-            : {
-                cllimit: 'max',
-                clshow: '!hidden',
-              }
-          : {}),
-        rawcontinue: 'true',
-        generator: 'allpages',
-        gapfilterredir: 'nonredirects',
-        gaplimit: 'max',
-        gapnamespace: String(namespace),
-        gapcontinue: requestGapcontinue,
-      }
-
-      if (queryContinuation) {
-        queryOpts.cocontinue = queryContinuation?.coordinates?.cocontinue ?? queryOpts.cocontinue
-        queryOpts.clcontinue = queryContinuation?.categories?.clcontinue ?? queryOpts.clcontinue
-        queryOpts.picontinue = queryContinuation?.pageimages?.picontinue ?? queryOpts.picontinue
-        queryOpts.rdcontinue = queryContinuation?.redirects?.rdcontinue ?? queryOpts.rdcontinue
-      }
-
-      const reqUrl = this.apiUrlDirector.buildQueryURL(queryOpts)
-      if (visitedUrls.has(reqUrl)) {
-        throw new Error(`Detected continuation cycle while fetching pages details in namespace ${namespace}. ` + `visitedUrls=[\n${[...visitedUrls].join('\n')}\n]`)
-      }
-      visitedUrls.add(reqUrl)
-
-      const resp = await this.getJSON<MwApiResponse>(reqUrl)
-      Downloader.handleMWWarningsAndErrors(resp)
-      const pages = Object.values(resp.query?.pages || {})
-      pages.forEach((page) => filterRedirects(page))
-
-      /* deepmerge because a single page data might be split over multiple API results pages */
-      allPages = deepmerge(
-        allPages,
-        pages.reduce((acc, page) => {
-          acc[page.title] = page
-          return acc
-        }, {}),
-      )
-
-      queryContinuation = resp['query-continue']
-      const queryComplete = Object.keys(queryContinuation || {}).filter((key) => key !== 'allpages').length === 0
-      if (queryComplete) {
-        break
-      }
-    }
-
-    return {
-      pages: Object.values(allPages),
-      gapContinue: queryContinuation?.allpages?.gapcontinue || null,
-    }
-  }
-
-  public async getLogEvents(letype: string, pageTitle: PageTitle): Promise<any> {
-    const logEventsData = await this.getJSON<any>(this.apiUrlDirector.buildLogEventsQuery(letype, pageTitle))
-    return logEventsData.query?.logevents
   }
 
   public async getPage(pageTitle: PageTitle, pageRenderer: Renderer, pageUrl, dump: Dump, pageDetail?: PageDetail): Promise<RenderOutput> {
@@ -536,7 +345,7 @@ class Downloader {
       }
       if (pageDetail.categoryinfo?.size) {
         await this.getCategoryMembers(pageTitle, categoryMembers)
-        if (MediaWiki.getCategories) {
+        if (this.getCategories) {
           categoryMembers.categoryinfo.subcats = categoryMembers.subcats.length
           categoryMembers.categoryinfo.pages = categoryMembers.pages.length
           categoryMembers.categoryinfo.files = categoryMembers.files.length
@@ -626,7 +435,7 @@ class Downloader {
   public async getJSON<T>(_url: string): Promise<T> {
     const url = urlHelper.deserializeUrl(_url)
     return new Promise<T>((resolve, reject) => {
-      this.backoffCall(this.getJSONCb, url, 'json', undefined, (err: any, val: any) => {
+      this.requestScheduler.schedule(this.getJSONCb, url, 'json', undefined, (err: any, val: any) => {
         if (err) {
           const httpStatus = (err.response && err.response.status) || err.httpReturnCode
           logger.debug(`Failed to get [${url}] [status=${httpStatus}]`)
@@ -674,7 +483,7 @@ class Downloader {
 
     let url = urlHelper.deserializeUrl(_url)
     if (url.startsWith('//')) {
-      url = `${MediaWiki.baseUrl.protocol}${url}`
+      url = `${this.baseUrl.protocol}${url}`
     }
 
     try {
@@ -687,7 +496,7 @@ class Downloader {
           }
         }
         if (retry) {
-          this.backoffCall(this.getContentCb, url, kind, displayWidth, cb)
+          this.requestScheduler.schedule(this.getContentCb, url, kind, displayWidth, cb)
         } else {
           this.getContentCb(url, kind, displayWidth, cb)
         }
@@ -706,22 +515,6 @@ class Downloader {
       return true
     } catch {
       return false
-    }
-  }
-
-  private static handleMWWarningsAndErrors(resp: MwApiResponse): void {
-    if (resp.warnings) logger.warn(`Got warning from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
-    if (resp.error?.code === DB_ERROR) throw new Error(`Got error from MW Query ${JSON.stringify(resp.error, null, '\t')}`)
-    if (resp.error) logger.info(`Got error from MW Query ${JSON.stringify(resp.warnings, null, '\t')}`)
-  }
-
-  private async getPageQueryOpts(includePageimages = false, followRedirects = false): Promise<QueryOpts> {
-    const prop = `${includePageimages ? '|pageimages' : ''}${(await MediaWiki.hasCoordinates()) ? '|coordinates' : ''}${MediaWiki.getCategories ? '|categories' : ''}${(await MediaWiki.hasFlaggedRevs()) ? '|flagged' : ''}`
-    return {
-      ...MediaWiki.queryOpts,
-      prop: MediaWiki.queryOpts.prop.concat(prop),
-      formatversion: '2',
-      redirects: followRedirects ? true : undefined,
     }
   }
 
@@ -817,7 +610,7 @@ class Downloader {
   private getContentCb = async (url: string, kind: DownloadKind, displayWidth: number | undefined, handler: any): Promise<void> => {
     logger.debug(`Downloading [${url}]`)
     try {
-      if (this.optimisationCacheUrl && kind === 'image') {
+      if (this.cacheStore.enabled && kind === 'image') {
         this.downloadImage(url, handler, displayWidth)
       } else {
         const resp = await this.request({ url, method: 'GET', ...this.arrayBufferRequestOptions })
@@ -844,15 +637,13 @@ class Downloader {
   }
 
   private async downloadImage(url: string, handler: any, displayWidth?: number) {
-    // Build a width-aware cache version token so the same URL at different
-    // requested widths does not reuse an undersized cached image.
-    const cacheVersion = this.webp ? (displayWidth ? `webp-w${displayWidth}` : 'webp') : displayWidth ? `1-w${displayWidth}` : '1'
+    const cacheVersion = buildCacheVersion(this.webp, displayWidth)
 
     try {
-      this.s3
+      this.cacheStore
 
         // Check first if we have an entry in the (object storage) cache for this URL
-        .downloadBlob(stripHttpFromUrl(url), cacheVersion)
+        .download(url, cacheVersion)
 
         // Handle the cache response and act accordingly
         .then(async (s3Resp) => {
@@ -931,7 +722,7 @@ class Downloader {
               // Check for the ETag and upload to cache
               const etag = this.removeEtagWeakPrefix(mwResp.headers.etag)
               if (etag) {
-                await this.s3.uploadBlob(stripHttpFromUrl(url), compressedData, etag, cacheVersion)
+                await this.cacheStore.upload(url, compressedData, etag, cacheVersion)
               }
 
               // get contentType from image, with fallback to response headers should the image be unsupported at all (e.g. SVG)
@@ -964,7 +755,7 @@ class Downloader {
   }
 
   private async getCategoryMembers(pageTitle: PageTitle, categoryMembers: GroupedCategoryMembers): Promise<void> {
-    const apiUrlDirector = new ApiURLDirector(MediaWiki.actionApiUrl.href)
+    const apiUrlDirector = this.apiUrlDirector
 
     let continueStr = ''
     while (true) {
@@ -974,7 +765,7 @@ class Downloader {
         a.sortkeyprefix = [...sortkey][0]
         return a && a.title
       })
-      const pagesInZim = MediaWiki.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
+      const pagesInZim = this.getCategories ? await RedisStore.pagesStore.existsMany(items.map((a) => a.title)) : null
       categoryMembers.subcats.push(...items.filter((a) => a.type === 'subcat' && (pagesInZim ? pagesInZim[a.title] : true)))
       categoryMembers.pages.push(...items.filter((a) => a.type === 'page' && (pagesInZim ? pagesInZim[a.title] : true)))
       categoryMembers.files.push(...items.filter((a) => a.type === 'file' && (pagesInZim ? pagesInZim[a.title] : true)))
@@ -985,22 +776,6 @@ class Downloader {
         break
       }
     }
-  }
-
-  private backoffCall(
-    handler: (...args: any[]) => void,
-    url: string,
-    kind: DownloadKind,
-    displayWidth: number | undefined,
-    callback: (...args: any[]) => void | Promise<void>,
-  ): void {
-    this.backoffOptions.strategy.reset() // reset delay to initial one at each call
-    const call = backoff.call(handler, url, kind, displayWidth, callback)
-    call.setStrategy(this.backoffOptions.strategy)
-    call.retryIf(this.backoffOptions.retryIf)
-    call.failAfter(this.backoffOptions.failAfter)
-    call.on('backoff', this.backoffOptions.backoffHandler)
-    call.start()
   }
 
   // Solution to handle aws js sdk v3 from https://github.com/aws/aws-sdk-js-v3/issues/1877
