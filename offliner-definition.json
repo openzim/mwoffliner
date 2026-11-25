@@ -164,12 +164,6 @@
       "title": "Keep empty sections",
       "description": "Keep all sections, even empty ones typically used as placeholders in wikis to outline expected page structure."
     },
-    "minifyHtml": {
-      "type": "boolean",
-      "required": false,
-      "title": "Minify HTML",
-      "description": "Try to reduce the size of the HTML"
-    },
     "mwActionApiPath": {
       "type": "string",
       "required": false,

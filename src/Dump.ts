@@ -22,7 +22,6 @@ interface DumpOpts {
   landingPage?: string
   pageList?: string
   resume?: boolean
-  minifyHtml: boolean
   keepEmptySections: boolean
   tags?: string
   filenameDate: string
