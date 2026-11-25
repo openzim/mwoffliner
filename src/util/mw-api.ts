@@ -23,6 +23,7 @@ export async function getPagesByTitle(
   pagesToIgnore?: PageTitle[],
   allowedContentModels: string[] = ['wikitext'],
   categoryTitles: Set<PageTitle> = new Set(),
+  keepPageLanguages: string[] = [],
 ): Promise<void> {
   let from = 0
   let numThumbnails = 0
@@ -49,7 +50,7 @@ export async function getPagesByTitle(
 
         // Retrieve the details and save them in Redis
         const allMwPages = await Downloader.getPagesByTitle(pageTitlesBatch, numThumbnails < 100, purpose !== 'categories')
-        const { numThumbnails: iterThumbnails } = await processPagesAndSaveToRedis(allMwPages, pagesToIgnore, allowedContentModels, categoryTitles)
+        const { numThumbnails: iterThumbnails } = await processPagesAndSaveToRedis(allMwPages, pagesToIgnore, allowedContentModels, categoryTitles, keepPageLanguages)
         numThumbnails += iterThumbnails
       }
     },
@@ -57,7 +58,7 @@ export async function getPagesByTitle(
   )
 }
 
-export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[]) {
+export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[], keepPageLanguages: string[] = []) {
   function revisionFilter(page: PageInfo & QueryRet): boolean {
     return !page.revisions
   }
@@ -68,6 +69,24 @@ export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allow
 
   function ignoredPagesFilter(page: PageInfo & QueryRet): boolean {
     return pagesToIgnore.includes(page.title) || pagesToIgnore.includes((page.title as string).replace(/ /g, '_') as PageTitle)
+  }
+
+  // Filter pages written in an unwanted language.
+  //
+  // Many wikis keep their translations in the main namespace rather than on a
+  // separate language wiki, so scraping such a wiki yields a ZIM whose declared
+  // language is a small minority of its contents. MediaWiki records the
+  // authoritative language per page, which prop=info already returns here, so
+  // this needs no heuristic on titles or on the text.
+  //
+  // A page reporting no language at all is KEPT: the field is absent rather
+  // than empty on wikis that do not set it, and dropping those would silently
+  // empty the scrape instead of failing visibly.
+  function pageLanguageFilter(page: PageInfo & QueryRet): boolean {
+    if (!keepPageLanguages.length || !page.pagelanguagehtmlcode) {
+      return false
+    }
+    return !keepPageLanguages.includes(page.pagelanguagehtmlcode)
   }
 
   // Filter pages without revisions (#2091)
@@ -88,16 +107,29 @@ export function filterPages(pages: QueryMwRet, pagesToIgnore: PageTitle[], allow
     logger.debug(`Ignoring pages in list: ${ignoreListIssues.join(', ')}`)
   }
 
+  // Filter pages in an unwanted language (--keepPageLanguages)
+  const pageLanguageIssues = pages.filter(pageLanguageFilter)
+  if (pageLanguageIssues.length > 0) {
+    logger.debug(`Ignoring pages in other languages: ${pageLanguageIssues.join(', ')}`)
+  }
+
   return pages
     .filter((p) => !revisionFilter(p))
     .filter((p) => !contentModelFilter(p))
     .filter((p) => !ignoredPagesFilter(p))
+    .filter((p) => !pageLanguageFilter(p))
 }
 
-async function processPagesAndSaveToRedis(pages: QueryMwRet, pagesToIgnore: PageTitle[], allowedContentModels: string[], categoryTitles: Set<PageTitle> = new Set()) {
+async function processPagesAndSaveToRedis(
+  pages: QueryMwRet,
+  pagesToIgnore: PageTitle[],
+  allowedContentModels: string[],
+  categoryTitles: Set<PageTitle> = new Set(),
+  keepPageLanguages: string[] = [],
+) {
   const redirects: PageRedirect[] = []
   const pagesToRemove: (PageInfo & QueryRet)[] = []
-  const filteredPages = filterPages(pages, pagesToIgnore, allowedContentModels)
+  const filteredPages = filterPages(pages, pagesToIgnore, allowedContentModels, keepPageLanguages)
   for (const page of filteredPages) {
     page.categories?.forEach((category) => {
       if (!category.hidden) categoryTitles.add(category.title)
@@ -128,9 +160,11 @@ async function processPagesAndSaveToRedis(pages: QueryMwRet, pagesToIgnore: Page
     filteredPages.splice(filteredPages.indexOf(page), 1)
   }
 
+  const keptRedirects = await filterRedirectsByLanguage(redirects, keepPageLanguages)
+
   const numPages = await RedisStore.pagesStore.setMany(mwRetToPageDetail(filteredPages))
   const numRedirects = await RedisStore.redirectsStore.setMany(
-    redirects.reduce((acc, redirect) => {
+    keptRedirects.reduce((acc, redirect) => {
       acc[redirect.from] = { from: redirect.from, to: redirect.to, fragment: redirect.fragment || '' }
       return acc
     }, {}),
@@ -140,12 +174,57 @@ async function processPagesAndSaveToRedis(pages: QueryMwRet, pagesToIgnore: Page
   return { numPages, numRedirects, numThumbnails }
 }
 
+/**
+ * Drop redirects whose own page language is not wanted.
+ *
+ * A redirect needs its own lookup: it reaches this code through prop=redirects,
+ * which returns only {pageid, ns, title, fragment} and no language. So when the
+ * filter is active the redirect titles are queried directly, with
+ * followRedirects disabled so the API describes each redirect rather than its
+ * target.
+ *
+ * A redirect whose language the API does not report is KEPT, for the same
+ * reason an undeclared page is: this must narrow a scrape, never empty one.
+ * Note that a redirect can carry a translated TITLE and still report the wiki
+ * default language, because the wiki considers it untranslated and there is no
+ * other authoritative signal, so this narrows the set rather than guaranteeing
+ * every title is in the wanted language.
+ */
+export async function filterRedirectsByLanguage(redirects: PageRedirect[], keepPageLanguages: string[]): Promise<PageRedirect[]> {
+  if (!keepPageLanguages.length || !redirects.length) {
+    return redirects
+  }
+
+  const titles = [...new Set(redirects.map((r) => r.from))] as PageTitle[]
+  const languages = new Map<string, string>()
+  for (let i = 0; i < titles.length; i += 50) {
+    const batch = titles.slice(i, i + 50)
+    // followRedirects=false: describe each redirect, not what it points at.
+    const infos = await Downloader.getPagesByTitle(batch, false, false)
+    for (const info of infos) {
+      if (info.pagelanguagehtmlcode) {
+        languages.set(info.title as string, info.pagelanguagehtmlcode)
+      }
+    }
+  }
+
+  const kept = redirects.filter((r) => {
+    const lang = languages.get(r.from as string)
+    return !lang || keepPageLanguages.includes(lang)
+  })
+  if (kept.length !== redirects.length) {
+    logger.debug(`Ignoring ${redirects.length - kept.length} redirects in other languages`)
+  }
+  return kept
+}
+
 export async function getPagesByNamespace(
   namespace: number,
   pagesToIgnore?: PageTitle[],
   allowedContentModels: string[] = ['wikitext'],
   categoryTitles: Set<PageTitle> = new Set(),
   continueLimit?: number,
+  keepPageLanguages: string[] = [],
 ): Promise<void> {
   let totalPages = 0
   let gapContinue = ''
@@ -179,7 +258,7 @@ export async function getPagesByNamespace(
         }
         seenGapContinueValues.push(gapContinue)
       }
-      const { numPages } = await processPagesAndSaveToRedis(resp.pages, pagesToIgnore, allowedContentModels, categoryTitles)
+      const { numPages } = await processPagesAndSaveToRedis(resp.pages, pagesToIgnore, allowedContentModels, categoryTitles, keepPageLanguages)
       totalPages += numPages
       logger.info(`Got [${numPages} / ${totalPages}] pages chunk from namespace [${namespace}]`)
 
@@ -281,20 +360,28 @@ export async function checkApiAvailability(url: string, allowedMimeTypes = null)
   }
 }
 
-export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pagesToIgnore: PageTitle[] = [], allowedContentModels: string[] = ['wikitext']) {
+export async function getPages(
+  mainPage?: PageTitle,
+  pages: PageTitle[] = [],
+  pagesToIgnore: PageTitle[] = [],
+  allowedContentModels: string[] = ['wikitext'],
+  keepPageLanguages: string[] = [],
+) {
   const categorySet = new Set<PageTitle>()
 
+  // The main page is never language-filtered: it is the entry point of the ZIM
+  // and dropping it would leave an archive with no way in.
   if (mainPage) {
     await getPagesByTitle([mainPage], 'mainPage', pagesToIgnore, allowedContentModels, categorySet)
   }
 
   if (pages.length) {
-    await getPagesByTitle(pages, 'pages', pagesToIgnore, allowedContentModels, categorySet)
+    await getPagesByTitle(pages, 'pages', pagesToIgnore, allowedContentModels, categorySet, keepPageLanguages)
   } else {
     await pmap(
       MediaWiki.namespacesToMirror,
       (namespace: string) => {
-        return getPagesByNamespace(MediaWiki.namespaces[namespace].num, pagesToIgnore, allowedContentModels, categorySet)
+        return getPagesByNamespace(MediaWiki.namespaces[namespace].num, pagesToIgnore, allowedContentModels, categorySet, undefined, keepPageLanguages)
       },
       { concurrency: Downloader.workers },
     )
@@ -311,7 +398,7 @@ export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pa
 
       logger.debug(`Fetching category details of ${categoriesToFetch.join(', ')}`)
       const newCategorySet = new Set<PageTitle>()
-      await getPagesByTitle(categoriesToFetch, 'categories', pagesToIgnore, allowedContentModels, newCategorySet)
+      await getPagesByTitle(categoriesToFetch, 'categories', pagesToIgnore, allowedContentModels, newCategorySet, keepPageLanguages)
 
       categoriesToFetch = [...newCategorySet].filter((title: PageTitle) => !processedCategories.has(title) && !pagesToIgnore.includes(title))
     }
