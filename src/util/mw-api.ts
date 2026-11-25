@@ -197,7 +197,7 @@ export function filterRedirects(mwPage: PageInfo & QueryRet) {
   if (mwPage.redirects) {
     mwPage.redirects = mwPage.redirects
       // keep redirects only to current page namespace + other content namespaces
-      .filter((redirect) => redirect.ns == mwPage.ns || MediaWiki.namespacesToMirror.some((ns) => MediaWiki.namespaces[ns].num === redirect.ns))
+      .filter((redirect) => redirect.ns == mwPage.ns || MediaWiki.namespacesToMirror.includes(redirect.ns))
   }
 }
 
@@ -293,8 +293,8 @@ export async function getPages(mainPage?: PageTitle, pages: PageTitle[] = [], pa
   } else {
     await pmap(
       MediaWiki.namespacesToMirror,
-      (namespace: string) => {
-        return getPagesByNamespace(MediaWiki.namespaces[namespace].num, pagesToIgnore, allowedContentModels, categorySet)
+      (ns: number) => {
+        return getPagesByNamespace(ns, pagesToIgnore, allowedContentModels, categorySet)
       },
       { concurrency: Downloader.workers },
     )
